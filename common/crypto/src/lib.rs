@@ -78,7 +78,7 @@ mod benches {
                 BlsPrivateKey::try_from([&[0u8; 16], seckey.as_ref()].concat().as_ref()).unwrap();
             let bls_pub_key = bls_priv_key.pub_key(common_ref);
 
-            let sig = bls_priv_key.sign_message(&hash);
+            let sig = bls_priv_key.sign_message(hash);
             keypairs.push((bls_priv_key, bls_pub_key));
             sigs.push(sig);
         }

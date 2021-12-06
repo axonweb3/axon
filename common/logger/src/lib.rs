@@ -130,7 +130,7 @@ pub fn init<S: ::std::hash::BuildHasher>(
             .additive(false)
             .appender("console")
             .appender("file")
-            .build(module, convert_level(&level));
+            .build(module, convert_level(level));
         config_builder = config_builder.logger(module_logger);
     }
     let config = config_builder.build(root).unwrap();

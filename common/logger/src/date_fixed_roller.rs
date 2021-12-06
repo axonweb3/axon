@@ -52,7 +52,7 @@ impl DateFixedWindowRoller {
         let archived_log = {
             let pattern = self.pattern.clone();
             let partial_log = pattern.replace("{date}", date);
-            partial_log.replace("{timestamp}", &timestamp)
+            partial_log.replace("{timestamp}", timestamp)
         };
 
         if let Some(parent) = Path::new(&archived_log).parent() {
@@ -130,7 +130,7 @@ mod tests {
         let date = &now.format("%Y-%m-%d").to_string();
         let timestamp = &now.timestamp().to_string();
 
-        roller.roll_file(&test_log, &date, &timestamp).unwrap();
+        roller.roll_file(&test_log, date, timestamp).unwrap();
         assert!(!test_log.exists());
 
         let mut log_data = vec![];
