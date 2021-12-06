@@ -1,0 +1,24 @@
+name: muta_keypair
+version: "0.1"
+about: a tool to generate keypairs for muta
+author: Muta Dev <muta@nervos.org>
+
+args:
+    - number:
+        help: Number of keypairs to generate
+        short: n
+        long: number
+        default_value: "4"
+
+    - private_keys:
+        help: Generate keypairs from a given private key vector
+        short: p
+        long: private_keys
+        multiple: true
+        takes_value: true
+
+    - common_ref:
+        help: common_ref for bls signature, it will be randomly generated if not passed
+        short: c
+        long: common_ref
+        default_value: ""

@@ -1,0 +1,11 @@
+[package]
+name = "axon-protocol"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bytes = { version = "1.1", features = ["serde"] }
+hasher = { version = "0.1", features = ['hash-keccak'] }
+lazy_static = "1.4"

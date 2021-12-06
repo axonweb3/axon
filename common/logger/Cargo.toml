@@ -1,0 +1,21 @@
+[package]
+name = "common-logger"
+version = "0.2.1"
+authors = ["Nervos Dev <dev@nervos.org>"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0"
+env_logger = "0.9"
+log = "0.4"
+# Turn off gzip feature, it hurts performance. For more information, reference
+# log4rs document.
+log4rs = { version = "1.0", features = ["all_components", "file_appender", "yaml_format"] }
+json = "0.12"
+creep = "0.2"
+rustracing_jaeger = "0.7"
+serde = "1.0"
+serde_derive = "1.0"
+chrono = "0.4"

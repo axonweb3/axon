@@ -1,0 +1,32 @@
+buildPack: none
+pipelineConfig:
+  pipelines:
+    pullRequest:
+      pipeline:
+        agent:
+          image: mutadev/muta-build-env:v0.3.0
+        options:
+          timeout:
+            time: 30
+            unit: minutes
+        stages:
+          - name: lint
+            options:
+              containerOptions:
+                resources:
+                  limits:
+                    cpu: 4
+                    memory: 8Gi
+                  requests:
+                    cpu: 2
+                    memory: 8Gi
+
+            steps:
+              - name: fmt
+                command: make
+                args:
+                  - fmt
+              - name: clippy
+                command: make
+                args:
+                  - clippy

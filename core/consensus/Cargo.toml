@@ -1,0 +1,13 @@
+[package]
+name = "core-consensus"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+overlord = "0.3"
+
+[features]
+default = []
+random_leader = ["overlord/random_leader"]

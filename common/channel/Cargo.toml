@@ -1,0 +1,9 @@
+[package]
+name = "common-channel"
+version = "0.2.1"
+authors = ["Nervos Dev <dev@nervos.org>"]
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
