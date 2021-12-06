@@ -8,6 +8,8 @@ edition = "2021"
 [dependencies]
 overlord = "0.3"
 
+protocol = { path = "../../protocol", package = "axon-protocol"}
+
 [features]
 default = []
 random_leader = ["overlord/random_leader"]

@@ -29,9 +29,6 @@ tests/e2e/yarn-error.log
 **/rocksdb/
 logs/
 
-# cargo.lock
-Cargo.lock
-
 # free space, you can store anything you want here
 free-space
 
