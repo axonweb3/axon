@@ -6,6 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+async-trait = "0.1"
 bytes = { version = "1.1", features = ["serde"] }
+creep = "0.2"
+derive_more = "0.99"
+ethereum = "0.10.0"
+ethereum-types = "0.12.1"
 hasher = { version = "0.1", features = ['hash-keccak'] }
+hex = "0.4"
 lazy_static = "1.4"
