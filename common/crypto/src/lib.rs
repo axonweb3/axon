@@ -35,7 +35,7 @@ mod benches {
     use test::Bencher;
 
     use protocol::types::Hash;
-    use protocol::{Bytes, BytesMut};
+    use protocol::types::{Bytes, BytesMut};
 
     use super::*;
 

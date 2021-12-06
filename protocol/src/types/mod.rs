@@ -1,26 +1,50 @@
-use bytes::Bytes;
-use hasher::{Hasher, HasherKeccak};
+pub use address::*;
+pub use block::*;
+pub use bytes::{Buf, BufMut, Bytes, BytesMut};
+pub use primitive::*;
+pub use receipt::*;
+pub use transaction::*;
 
-lazy_static::lazy_static! {
-    static ref HASHER_INST: HasherKeccak = HasherKeccak::new();
+pub mod block;
+pub mod primitive;
+pub mod transaction;
+
+pub mod address {
+    pub use ethereum::{AccessList, AccessListItem, Account};
 }
 
-#[repr(C)]
-#[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
-pub struct Hash(pub [u8; 32]);
+pub mod receipt {
+    pub use ethereum::{Log, Receipt};
+}
 
-impl Hash {
-    /// Enter an array of bytes to get a 32-bit hash.
-    /// Note: sha3 is used for the time being and may be replaced with other
-    /// hashing algorithms later.
-    pub fn digest<B: AsRef<[u8]>>(bytes: B) -> Self {
-        let out = HASHER_INST.digest(bytes.as_ref());
-        let mut inner = [0u8; 32];
-        inner.copy_from_slice(&out);
-        Hash(inner)
-    }
+use std::error::Error;
 
-    pub fn as_bytes(&self) -> Bytes {
-        Bytes::from(self.0.to_vec())
+use derive_more::{Display, From};
+
+use crate::{ProtocolError, ProtocolErrorKind};
+
+#[derive(Debug, Display, From)]
+pub enum TypesError {
+    #[display(fmt = "Expect {:?}, get {:?}.", expect, real)]
+    LengthMismatch { expect: usize, real: usize },
+
+    #[display(fmt = "{:?}", error)]
+    FromHex { error: hex::FromHexError },
+
+    #[display(fmt = "{:?} is an invalid address", address)]
+    InvalidAddress { address: String },
+
+    #[display(fmt = "Hex should start with 0x")]
+    HexPrefix,
+
+    #[display(fmt = "Invalid public key")]
+    InvalidPublicKey,
+}
+
+impl Error for TypesError {}
+
+impl From<TypesError> for ProtocolError {
+    fn from(error: TypesError) -> ProtocolError {
+        ProtocolError::new(ProtocolErrorKind::Types, Box::new(error))
     }
 }
