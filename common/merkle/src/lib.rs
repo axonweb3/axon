@@ -21,10 +21,7 @@ impl Merkle {
     }
 
     pub fn get_root_hash(&self) -> Option<Hash> {
-        match self.tree.get_root_hash() {
-            Some(hash) => Some(hash.clone()),
-            None => None,
-        }
+        self.tree.get_root_hash().copied()
     }
 
     pub fn get_proof_by_input_index(&self, input_index: usize) -> Option<Vec<ProofNode>> {
