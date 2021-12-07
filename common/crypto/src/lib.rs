@@ -34,8 +34,7 @@ mod benches {
     use rand::{random, Rng, RngCore};
     use test::Bencher;
 
-    use protocol::types::Hash;
-    use protocol::types::{Bytes, BytesMut};
+    use protocol::types::{Bytes, Hash, Hasher, BytesMut};
 
     use super::*;
 
@@ -48,7 +47,7 @@ mod benches {
 
     fn mock_block_hash() -> Hash {
         let temp = (0..10).map(|_| random::<u8>()).collect::<Vec<_>>();
-        Hash::digest(Bytes::from(temp))
+        Hasher::digest(Bytes::from(temp))
     }
 
     fn mock_vote() -> Vote {
@@ -56,7 +55,7 @@ mod benches {
             height:     0u64,
             round:      0u64,
             vote_type:  VoteType::Prevote,
-            block_hash: mock_block_hash().as_bytes(),
+            block_hash: Bytes::from(mock_block_hash().as_bytes().to_vec()),
         }
     }
 
@@ -71,7 +70,8 @@ mod benches {
             let seckey = {
                 let mut seed = [0u8; 32];
                 rand::rngs::OsRng.fill_bytes(&mut seed);
-                Hash::digest(BytesMut::from(seed.as_ref()).freeze()).as_bytes()
+                let hash = Hasher::digest(BytesMut::from(seed.as_ref()).freeze());
+                Bytes::from(hash.as_bytes().to_vec())
             };
 
             let bls_priv_key =
@@ -88,9 +88,8 @@ mod benches {
     fn bench_4_aggregated_sig(b: &mut Bencher) {
         let common_ref: BlsCommonReference = gen_common_ref().as_str().into();
         let vote_msg = HashValue::try_from(
-            Hash::digest(Bytes::from(rlp::encode(&mock_vote())))
-                .as_bytes()
-                .as_ref(),
+            Hasher::digest(Bytes::from(rlp::encode(&mock_vote())))
+                .as_bytes(),
         )
         .unwrap();
 
@@ -120,9 +119,8 @@ mod benches {
     fn bench_8_aggregated_sig(b: &mut Bencher) {
         let common_ref: BlsCommonReference = gen_common_ref().as_str().into();
         let vote_msg = HashValue::try_from(
-            Hash::digest(Bytes::from(rlp::encode(&mock_vote())))
-                .as_bytes()
-                .as_ref(),
+            Hasher::digest(Bytes::from(rlp::encode(&mock_vote())))
+                .as_bytes(),
         )
         .unwrap();
 
@@ -152,9 +150,8 @@ mod benches {
     fn bench_16_aggregated_sig(b: &mut Bencher) {
         let common_ref: BlsCommonReference = gen_common_ref().as_str().into();
         let vote_msg = HashValue::try_from(
-            Hash::digest(Bytes::from(rlp::encode(&mock_vote())))
-                .as_bytes()
-                .as_ref(),
+            Hasher::digest(Bytes::from(rlp::encode(&mock_vote())))
+                .as_bytes(),
         )
         .unwrap();
 
@@ -184,9 +181,8 @@ mod benches {
     fn bench_32_aggregated_sig(b: &mut Bencher) {
         let common_ref: BlsCommonReference = gen_common_ref().as_str().into();
         let vote_msg = HashValue::try_from(
-            Hash::digest(Bytes::from(rlp::encode(&mock_vote())))
-                .as_bytes()
-                .as_ref(),
+            Hasher::digest(Bytes::from(rlp::encode(&mock_vote())))
+                .as_bytes(),
         )
         .unwrap();
 
@@ -216,9 +212,8 @@ mod benches {
     fn bench_64_aggregated_sig(b: &mut Bencher) {
         let common_ref: BlsCommonReference = gen_common_ref().as_str().into();
         let vote_msg = HashValue::try_from(
-            Hash::digest(Bytes::from(rlp::encode(&mock_vote())))
-                .as_bytes()
-                .as_ref(),
+            Hasher::digest(Bytes::from(rlp::encode(&mock_vote())))
+                .as_bytes(),
         )
         .unwrap();
 
@@ -248,9 +243,8 @@ mod benches {
     fn bench_4_aggregated_sig_verify(b: &mut Bencher) {
         let common_ref: BlsCommonReference = gen_common_ref().as_str().into();
         let vote_msg = HashValue::try_from(
-            Hash::digest(Bytes::from(rlp::encode(&mock_vote())))
-                .as_bytes()
-                .as_ref(),
+            Hasher::digest(Bytes::from(rlp::encode(&mock_vote())))
+                .as_bytes(),
         )
         .unwrap();
 
@@ -289,9 +283,8 @@ mod benches {
     fn bench_8_aggregated_sig_verify(b: &mut Bencher) {
         let common_ref: BlsCommonReference = gen_common_ref().as_str().into();
         let vote_msg = HashValue::try_from(
-            Hash::digest(Bytes::from(rlp::encode(&mock_vote())))
-                .as_bytes()
-                .as_ref(),
+            Hasher::digest(Bytes::from(rlp::encode(&mock_vote())))
+                .as_bytes(),
         )
         .unwrap();
 
@@ -330,9 +323,8 @@ mod benches {
     fn bench_16_aggregated_sig_verify(b: &mut Bencher) {
         let common_ref: BlsCommonReference = gen_common_ref().as_str().into();
         let vote_msg = HashValue::try_from(
-            Hash::digest(Bytes::from(rlp::encode(&mock_vote())))
-                .as_bytes()
-                .as_ref(),
+            Hasher::digest(Bytes::from(rlp::encode(&mock_vote())))
+                .as_bytes(),
         )
         .unwrap();
 
@@ -371,9 +363,8 @@ mod benches {
     fn bench_32_aggregated_sig_verify(b: &mut Bencher) {
         let common_ref: BlsCommonReference = gen_common_ref().as_str().into();
         let vote_msg = HashValue::try_from(
-            Hash::digest(Bytes::from(rlp::encode(&mock_vote())))
-                .as_bytes()
-                .as_ref(),
+            Hasher::digest(Bytes::from(rlp::encode(&mock_vote())))
+                .as_bytes(),
         )
         .unwrap();
 
@@ -412,9 +403,8 @@ mod benches {
     fn bench_64_aggregated_sig_verify(b: &mut Bencher) {
         let common_ref: BlsCommonReference = gen_common_ref().as_str().into();
         let vote_msg = HashValue::try_from(
-            Hash::digest(Bytes::from(rlp::encode(&mock_vote())))
-                .as_bytes()
-                .as_ref(),
+            Hasher::digest(Bytes::from(rlp::encode(&mock_vote())))
+                .as_bytes(),
         )
         .unwrap();
 

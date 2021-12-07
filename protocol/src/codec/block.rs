@@ -1,8 +1,7 @@
 use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
 use crate::types::{
-    Address, Block, Bloom, Bytes, Header, Proof, UnverifiedTransaction, Validator,
-    H256, H64, U256,
+    Address, Block, Bloom, Bytes, Header, Proof, UnverifiedTransaction, Validator, H256, H64, U256,
 };
 
 impl Encodable for Header {
