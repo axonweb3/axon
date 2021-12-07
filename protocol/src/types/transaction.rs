@@ -1,6 +1,6 @@
 pub use ethereum::{
-    EIP2930Transaction as Transaction, EIP2930TransactionMessage as TransactionMessage,
-    TransactionRecoveryId, TransactionSignature,
+    EIP1559Transaction as Transaction, EIP1559TransactionMessage as TransactionMessage,
+    TransactionAction, TransactionRecoveryId, TransactionSignature,
 };
 
 use crate::types::{Address, Public, H256, U256};
@@ -22,7 +22,7 @@ pub struct SignatureComponents {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SignedTransaction {
-    transaction: UnverifiedTransaction,
-    sender:      Address,
-    public:      Option<Public>,
+    pub transaction: UnverifiedTransaction,
+    pub sender:      Address,
+    pub public:      Option<Public>,
 }
