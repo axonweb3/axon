@@ -409,17 +409,16 @@ mod tests {
 
     use std::sync::Arc;
 
-    use rand::random;
     use test::Bencher;
 
     use protocol::tokio;
     use protocol::types::{Hash, SignedTransaction};
 
     use crate::map::Map;
+    use crate::tests::mock_signed_tx;
     use crate::tx_cache::{TxCache, TxWrapper};
 
     const POOL_SIZE: usize = 1000;
-    const BYTES_LEN: usize = 10;
     const TX_NUM: usize = 1000;
     const TX_CYCLE: u64 = 1;
     const TX_NUM_LIMIT: u64 = 20000;
@@ -427,31 +426,12 @@ mod tests {
     const CURRENT_H: u64 = 100;
     const TIMEOUT: u64 = 150;
 
-    fn gen_bytes() -> Vec<u8> {
-        (0..BYTES_LEN).map(|_| random::<u8>()).collect()
-    }
-
     fn gen_signed_txs(n: usize) -> Vec<SignedTransaction> {
         let mut vec = Vec::new();
         for _ in 0..n {
-            vec.push(mock_signed_tx(gen_bytes()));
+            vec.push(mock_signed_tx());
         }
         vec
-    }
-
-    fn mock_signed_tx(_bytes: Vec<u8>) -> SignedTransaction {
-        // let rand_hash = Hasher::digest(Bytes::from(bytes));
-        // let chain_id = rand_hash.clone();
-        // let nonce = rand_hash.clone();
-        // let tx_hash = rand_hash;
-        // let pubkey = {
-        //     let hex_str =
-        // "03380295981e77dcd0a3f50c1d58867e590f2837f03daf639d683ec5e995c02984";
-        //     Bytes::from(hex::decode(hex_str).unwrap())
-        // };
-        // let fake_sig = Hasher::digest(pubkey.clone()).as_bytes();
-
-        todo!()
     }
 
     async fn concurrent_insert(txs: Vec<SignedTransaction>, tx_cache: Arc<TxCache>) {

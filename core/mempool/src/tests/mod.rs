@@ -279,7 +279,7 @@ fn mock_unverfied_tx(chain_id: Option<u64>) -> UnverifiedTransaction {
     }
 }
 
-fn mock_signed_tx() -> SignedTransaction {
+pub fn mock_signed_tx() -> SignedTransaction {
     SignedTransaction {
         transaction: mock_unverfied_tx(Some(random::<u64>())),
         sender:      Address::default(),
