@@ -34,7 +34,7 @@ mod benches {
     use rand::{random, Rng, RngCore};
     use test::Bencher;
 
-    use protocol::types::{Bytes, Hash, Hasher, BytesMut};
+    use protocol::types::{Bytes, H256, Hasher, BytesMut};
 
     use super::*;
 
@@ -45,7 +45,7 @@ mod benches {
             .collect::<String>()
     }
 
-    fn mock_block_hash() -> Hash {
+    fn mock_block_hash() -> H256 {
         let temp = (0..10).map(|_| random::<u8>()).collect::<Vec<_>>();
         Hasher::digest(Bytes::from(temp))
     }

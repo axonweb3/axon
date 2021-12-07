@@ -48,8 +48,6 @@ pub trait MemPool: Send + Sync {
         ctx: Context,
         propose_tx_hashes: Vec<Hash>,
     ) -> ProtocolResult<()>;
-
-    fn set_args(&self, timeout_gap: u64, cycles_limit: u64, max_tx_size: u64);
 }
 
 #[async_trait]
@@ -83,6 +81,4 @@ pub trait MemPoolAdapter: Send + Sync {
     ) -> ProtocolResult<Vec<Option<SignedTransaction>>>;
 
     fn report_good(&self, ctx: Context);
-
-    fn set_args(&self, timeout_gap: u64, cycles_limit: u64, max_tx_size: u64);
 }
