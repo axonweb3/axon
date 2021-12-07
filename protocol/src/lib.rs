@@ -23,6 +23,7 @@ pub enum ProtocolErrorKind {
 
     // types
     Types,
+    Codec,
 
     // metric
     Metric,
