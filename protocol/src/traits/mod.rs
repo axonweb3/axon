@@ -8,4 +8,7 @@ mod storage;
 pub use creep::{Cloneable, Context};
 pub use mempool::{MemPool, MemPoolAdapter, MixedTxHashes};
 pub use network::{Gossip, MessageCodec, MessageHandler, PeerTrust, Priority, Rpc, TrustFeedback};
-pub use storage::{Storage, StorageAdapter};
+pub use storage::{
+    CommonStorage, IntoIteratorByRef, Storage, StorageAdapter, StorageBatchModify, StorageCategory,
+    StorageIterator, StorageSchema,
+};

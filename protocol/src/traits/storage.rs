@@ -79,6 +79,7 @@ pub trait Storage: CommonStorage {
         &self,
         ctx: Context,
         block_height: u64,
+        tx_hashes: Vec<Hash>,
         receipts: Vec<Receipt>,
     ) -> ProtocolResult<()>;
 

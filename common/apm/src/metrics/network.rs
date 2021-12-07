@@ -2,7 +2,7 @@ use lazy_static::lazy_static;
 
 use crate::metrics::{
     auto_flush_from, exponential_buckets, linear_buckets, make_auto_flush_static_metric,
-    register_histogram_vec, register_int_counter, register_int_counter_vec, register_int_gauge,
+    register_counter_vec, register_histogram_vec, register_int_counter, register_int_gauge,
     register_int_gauge_vec, HistogramVec, IntCounter, IntCounterVec, IntGauge, IntGaugeVec,
 };
 
@@ -41,19 +41,19 @@ make_auto_flush_static_metric! {
 }
 
 lazy_static! {
-    pub static ref NETWORK_MESSAGE_COUNT_VEC: IntCounterVec = register_int_counter_vec!(
+    pub static ref NETWORK_MESSAGE_COUNT_VEC: IntCounterVec = register_counter_vec!(
         "muta_network_message_total",
         "Total number of network message",
         &["direction", "target", "type", "module", "action"]
     )
     .expect("network message total");
-    pub static ref NETWORK_MESSAGE_SIZE_COUNT_VEC: IntCounterVec = register_int_counter_vec!(
+    pub static ref NETWORK_MESSAGE_SIZE_COUNT_VEC: IntCounterVec = register_counter_vec!(
         "muta_network_message_size",
         "Accumulated compressed network message size",
         &["direction", "url"]
     )
     .expect("network message size");
-    pub static ref NETWORK_RPC_RESULT_COUNT_VEC: IntCounterVec = register_int_counter_vec!(
+    pub static ref NETWORK_RPC_RESULT_COUNT_VEC: IntCounterVec = register_counter_vec!(
         "muta_network_rpc_result_total",
         "Total number of network rpc result",
         &["result"]
@@ -111,7 +111,7 @@ lazy_static! {
     pub static ref NETWORK_CONNECTED_PEERS: IntGauge =
         register_int_gauge!("muta_network_connected_peers", "Total connected peer count")
             .expect("network total connecteds");
-    pub static ref NETWORK_IP_DISCONNECTED_COUNT_VEC: IntCounterVec = register_int_counter_vec!(
+    pub static ref NETWORK_IP_DISCONNECTED_COUNT_VEC: IntCounterVec = register_counter_vec!(
         "muta_network_ip_disconnected_count",
         "Total number of ip disconnected count",
         &["ip"]

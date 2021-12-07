@@ -6,5 +6,20 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
+common-apm = { path = "../../common/apm" }
 protocol = { path = "../../protocol", package = "axon-protocol"}
+
+futures = "0.3"
+derive_more = "0.15"
+lazy_static = "1.4"
+parking_lot = "0.11"
+async-trait = "0.1"
+rocksdb = "0.14"
+tokio = { version = "0.2", features = [ "sync" ] }
+
+
+[dev-dependencies]
+num-traits = "0.2"
+rand = "0.6"
+hex = "0.4"
+tokio = { version = "0.2", features = ["macros", "rt-core", "rt-util", "signal", "time"]}
