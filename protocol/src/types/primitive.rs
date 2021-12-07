@@ -1,8 +1,9 @@
-use bytes::Bytes;
 pub use ethereum_types::{
-    Address, Public, Secret, Signature, H128, H160, H256, H512, U128, U256, U512,
+    Address, Bloom, Public, Secret, Signature, H128, H160, H256, H512, H64, U128, U256, U512,
 };
-use hasher::{Hasher, HasherKeccak};
+
+use bytes::Bytes;
+use hasher::{Hasher as KeccakHasher, HasherKeccak};
 
 use crate::{types::TypesError, ProtocolResult};
 
@@ -10,23 +11,16 @@ lazy_static::lazy_static! {
     static ref HASHER_INST: HasherKeccak = HasherKeccak::new();
 }
 
-#[repr(C)]
-#[derive(Default, Clone, Copy, Debug, Hash, PartialEq, Eq)]
-pub struct Hash(pub [u8; 32]);
+pub type Hash = H256;
 
-impl Hash {
-    /// Enter an array of bytes to get a 32-bit hash.
-    /// Note: sha3 is used for the time being and may be replaced with other
-    /// hashing algorithms later.
-    pub fn digest<B: AsRef<[u8]>>(bytes: B) -> Self {
-        let out = HASHER_INST.digest(bytes.as_ref());
-        let mut inner = [0u8; 32];
-        inner.copy_from_slice(&out);
-        Hash(inner)
-    }
+pub struct Hasher;
 
-    pub fn as_bytes(&self) -> Bytes {
-        Bytes::from(self.0.to_vec())
+impl Hasher {
+    pub fn digest<B: AsRef<[u8]>>(bytes: B) -> H256 {
+        let hash = HASHER_INST.digest(bytes.as_ref());
+        let mut ret = H256::default();
+        ret.0.copy_from_slice(&hash[0..32]);
+        ret
     }
 }
 

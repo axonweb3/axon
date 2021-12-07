@@ -2,7 +2,7 @@
 
 use static_merkle_tree::Tree;
 
-use protocol::types::{Bytes, Hash};
+use protocol::types::{Bytes, Hash, Hasher};
 
 #[derive(Debug, Clone)]
 pub struct ProofNode {
@@ -45,9 +45,9 @@ fn merge(left: &Hash, right: &Hash) -> Hash {
     let right = right.as_bytes();
 
     let mut root = Vec::with_capacity(left.len() + right.len());
-    root.extend_from_slice(&left);
-    root.extend_from_slice(&right);
-    Hash::digest(Bytes::from(root))
+    root.extend_from_slice(left);
+    root.extend_from_slice(right);
+    Hasher::digest(Bytes::from(root))
 }
 
 #[rustfmt::skip]
@@ -68,7 +68,7 @@ mod benches {
     use super::*;
 
     fn mock_hash() -> Hash {
-        Hash::digest(Bytes::from(
+        Hasher::digest(Bytes::from(
             (0..10).map(|_| random::<u8>()).collect::<Vec<_>>(),
         ))
     }
