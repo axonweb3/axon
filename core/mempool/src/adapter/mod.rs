@@ -20,11 +20,8 @@ use protocol::{
     codec::ProtocolCodec,
     tokio,
     tokio::time::sleep,
-    traits::{
-        Context, Gossip, MemPoolAdapter, MessageCodec, PeerTrust, Priority, Rpc, Storage,
-        TrustFeedback,
-    },
-    types::{Address, Bytes, Hash, SignedTransaction, UnverifiedTransaction, U256},
+    traits::{Context, Gossip, MemPoolAdapter, PeerTrust, Priority, Rpc, Storage, TrustFeedback},
+    types::{Hash, SignedTransaction, U256},
     Display, ProtocolError, ProtocolErrorKind, ProtocolResult,
 };
 
@@ -130,14 +127,14 @@ impl IntervalTxsBroadcaster {
 }
 
 pub struct DefaultMemPoolAdapter<C, N, S, DB> {
-    network: N,
-    storage: Arc<S>,
-    trie_db: Arc<DB>,
+    network:  N,
+    storage:  Arc<S>,
+    _trie_db: Arc<DB>,
 
-    timeout_gap: u64,
-    gas_limit:   U256,
-    max_tx_size: usize,
-    chain_id:    u64,
+    _timeout_gap: u64,
+    gas_limit:    U256,
+    max_tx_size:  usize,
+    chain_id:     u64,
 
     stx_tx: UnboundedSender<SignedTransaction>,
     err_rx: Mutex<UnboundedReceiver<ProtocolError>>,
@@ -155,9 +152,9 @@ where
     pub fn new(
         network: N,
         storage: Arc<S>,
-        trie_db: Arc<DB>,
+        _trie_db: Arc<DB>,
         chain_id: u64,
-        timeout_gap: u64,
+        _timeout_gap: u64,
         gas_limit: U256,
         max_tx_size: usize,
         broadcast_txs_size: usize,
@@ -183,9 +180,9 @@ where
         DefaultMemPoolAdapter {
             network,
             storage,
-            trie_db,
+            _trie_db,
 
-            timeout_gap,
+            _timeout_gap,
             gas_limit,
             max_tx_size,
             chain_id,
@@ -247,15 +244,15 @@ where
 
     async fn check_authorization(
         &self,
-        ctx: Context,
-        tx: Box<SignedTransaction>,
+        _ctx: Context,
+        _tx: Box<SignedTransaction>,
     ) -> ProtocolResult<()> {
         Ok(())
     }
 
     async fn check_transaction(&self, ctx: Context, stx: &SignedTransaction) -> ProtocolResult<()> {
         let fixed_bytes = stx.transaction.unsigned.encode()?;
-        let tx_hash = stx.transaction.hash.clone();
+        let tx_hash = stx.transaction.hash;
 
         // check tx size
         if fixed_bytes.len() > self.max_tx_size {
@@ -299,15 +296,13 @@ where
                     TrustFeedback::Worse(format!("Mempool wrong chain of tx {:?}", tx_hash)),
                 );
             }
-            let wrong_chain_id = MemPoolError::WrongChain {
-                tx_hash: tx_hash.clone(),
-            };
+            let wrong_chain_id = MemPoolError::WrongChain { tx_hash };
 
             return Err(wrong_chain_id.into());
         }
 
         // Verify timeout
-        let latest_height = latest_header.number;
+        let _latest_height = latest_header.number;
         // if stx.raw.timeout > latest_height + timeout_gap {
         //     let invalid_timeout = MemPoolError::InvalidTimeout {
         //         tx_hash: tx_hash.clone(),
@@ -330,10 +325,7 @@ where
 
     async fn check_storage_exist(&self, ctx: Context, tx_hash: &Hash) -> ProtocolResult<()> {
         match self.storage.get_transaction_by_hash(ctx, tx_hash).await {
-            Ok(Some(_)) => Err(MemPoolError::CommittedTx {
-                tx_hash: tx_hash.clone(),
-            }
-            .into()),
+            Ok(Some(_)) => Err(MemPoolError::CommittedTx { tx_hash: *tx_hash }.into()),
             Ok(None) => Ok(()),
             Err(err) => Err(err),
         }
@@ -396,6 +388,7 @@ mod tests {
     use super::*;
 
     use crate::{adapter::message::MsgNewTxs, tests::default_mock_txs};
+    use protocol::{traits::MessageCodec, types::Bytes};
 
     use futures::{
         channel::mpsc::{channel, unbounded, UnboundedSender},

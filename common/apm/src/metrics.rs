@@ -10,9 +10,9 @@ pub use prometheus::{
 
 use derive_more::Display;
 use prometheus::{
-    exponential_buckets, linear_buckets, register_counter_vec, register_histogram,
-    register_histogram_vec, register_int_counter, register_int_counter_vec, register_int_gauge,
-    register_int_gauge_vec, Encoder, TextEncoder,
+    exponential_buckets, linear_buckets, register_histogram, register_histogram_vec,
+    register_int_counter, register_int_counter_vec, register_int_gauge, register_int_gauge_vec,
+    Encoder, TextEncoder,
 };
 use prometheus_static_metric::{auto_flush_from, make_auto_flush_static_metric};
 use protocol::{ProtocolError, ProtocolErrorKind, ProtocolResult};
@@ -65,6 +65,6 @@ mod tests {
         let d = Duration::from_millis(1110);
         let sec = duration_to_sec(d);
 
-        assert_eq!(sec, 1.11 as f64);
+        assert_eq!(sec, 1.11_f64);
     }
 }

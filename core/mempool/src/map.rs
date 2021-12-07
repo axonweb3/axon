@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{hash_map::Entry, HashMap};
 use std::sync::Arc;
 
 use futures::future::try_join_all;
@@ -54,7 +54,7 @@ where
 
         for hash in hashes.iter() {
             let index = get_index(hash);
-            h.entry(index).or_insert_with(Vec::new).push(hash.clone());
+            h.entry(index).or_insert_with(Vec::new).push(*hash);
         }
 
         let futs = h
@@ -114,10 +114,11 @@ where
     /// check this.
     async fn insert(&self, hash: Hash, value: V) -> Option<V> {
         let mut lock_data = self.store.write().await;
-        if lock_data.contains_key(&hash) {
-            Some(value)
+        if let Entry::Vacant(e) = lock_data.entry(hash) {
+            e.insert(value);
+            None
         } else {
-            lock_data.insert(hash, value)
+            Some(value)
         }
     }
 
@@ -177,7 +178,7 @@ mod tests {
         b.iter(move || {
             let cache = Map::new(GEN_TX_SIZE);
             txs.iter().for_each(|(hash, tx)| {
-                runtime.block_on(cache.insert(*hash, tx));
+                runtime.block_on(cache.insert(*hash, *tx));
             });
         });
     }

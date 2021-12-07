@@ -2,18 +2,13 @@ extern crate test;
 
 mod mempool;
 
-use std::convert::{From, TryFrom};
 use std::sync::Arc;
 
 use chashmap::CHashMap;
-use futures::executor;
 use rand::random;
 use rand::rngs::OsRng;
 
-use common_crypto::{
-    Crypto, PrivateKey, PublicKey, Secp256k1, Secp256k1PrivateKey, Secp256k1PublicKey,
-    Secp256k1Signature, Signature, ToPublicKey,
-};
+use common_crypto::{PrivateKey, Secp256k1PrivateKey, ToPublicKey};
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{Context, MemPool, MemPoolAdapter, MixedTxHashes};
 use protocol::types::{
@@ -107,11 +102,11 @@ pub fn default_mock_txs(size: usize) -> Vec<SignedTransaction> {
     mock_txs(size, 0, TIMEOUT)
 }
 
-fn mock_txs(valid_size: usize, invalid_size: usize, timeout: u64) -> Vec<SignedTransaction> {
+fn mock_txs(valid_size: usize, invalid_size: usize, _timeout: u64) -> Vec<SignedTransaction> {
     let mut vec = Vec::new();
     let priv_key = Secp256k1PrivateKey::generate(&mut OsRng);
-    let pub_key = priv_key.pub_key();
-    for i in 0..valid_size + invalid_size {
+    let _pub_key = priv_key.pub_key();
+    for _i in 0..valid_size + invalid_size {
         vec.push(mock_signed_tx());
     }
     vec
@@ -128,9 +123,9 @@ async fn default_mempool() -> HashMemPool<HashMemPoolAdapter> {
 
 async fn new_mempool(
     pool_size: usize,
-    timeout_gap: u64,
-    cycles_limit: u64,
-    max_tx_size: u64,
+    _timeout_gap: u64,
+    _cycles_limit: u64,
+    _max_tx_size: u64,
 ) -> HashMemPool<HashMemPoolAdapter> {
     let adapter = HashMemPoolAdapter::new();
     let mempool = HashMemPool::new(pool_size, adapter, vec![]).await;
@@ -151,7 +146,7 @@ async fn check_hash(tx: &SignedTransaction) -> ProtocolResult<()> {
     Ok(())
 }
 
-fn check_sig(tx: &SignedTransaction) -> ProtocolResult<()> {
+fn check_sig(_tx: &SignedTransaction) -> ProtocolResult<()> {
     Ok(())
 }
 

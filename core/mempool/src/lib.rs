@@ -243,7 +243,7 @@ where
         );
         self.tx_cache
             .flush(
-                &tx_hashes,
+                tx_hashes,
                 current_height,
                 current_height + self.timeout_gap.load(Ordering::Relaxed),
             )
@@ -269,7 +269,7 @@ where
             } else if let Some(tx) = self.callback_cache.get(tx_hash).await {
                 full_txs.push(tx);
             } else {
-                missing_hashes.push(tx_hash.clone());
+                missing_hashes.push(*tx_hash);
             }
         }
 
@@ -280,10 +280,7 @@ where
                 .adapter
                 .get_transactions_from_storage(ctx, height, &missing_hashes)
                 .await?;
-            let txs = txs
-                .into_iter()
-                .filter_map(|opt_tx| opt_tx)
-                .collect::<Vec<_>>();
+            let txs = txs.into_iter().flatten().collect::<Vec<_>>();
 
             full_txs.extend(txs);
         }
@@ -336,7 +333,7 @@ where
 
             for signed_tx in txs.into_iter() {
                 self.callback_cache
-                    .insert(signed_tx.transaction.hash.clone(), *signed_tx)
+                    .insert(signed_tx.transaction.hash, *signed_tx)
                     .await;
             }
 
@@ -373,10 +370,10 @@ fn check_dup_order_hashes(order_tx_hashes: &[Hash]) -> ProtocolResult<()> {
 
     for hash in order_tx_hashes.iter() {
         if dup_set.contains(hash) {
-            return Err(MemPoolError::EnsureDup { hash: hash.clone() }.into());
+            return Err(MemPoolError::EnsureDup { hash: *hash }.into());
         }
 
-        dup_set.insert(hash.clone());
+        dup_set.insert(hash);
     }
 
     Ok(())

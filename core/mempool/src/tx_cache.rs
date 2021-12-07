@@ -145,14 +145,14 @@ impl TxCache {
     }
 
     pub async fn insert_new_tx(&self, signed_tx: SignedTransaction) -> ProtocolResult<()> {
-        let tx_hash = signed_tx.transaction.hash.clone();
+        let tx_hash = signed_tx.transaction.hash;
         let tx_wrapper = TxWrapper::new(signed_tx);
         let shared_tx = Arc::new(tx_wrapper);
         self.insert(tx_hash, shared_tx).await
     }
 
     pub async fn insert_propose_tx(&self, signed_tx: SignedTransaction) -> ProtocolResult<()> {
-        let tx_hash = signed_tx.transaction.hash.clone();
+        let tx_hash = signed_tx.transaction.hash;
         let tx_wrapper = TxWrapper::propose(signed_tx);
         let shared_tx = Arc::new(tx_wrapper);
         self.insert(tx_hash, shared_tx).await
@@ -163,7 +163,7 @@ impl TxCache {
 
         for tx_hash in tx_hashes.iter() {
             if !self.contain(tx_hash).await {
-                unknow_hashes.push(tx_hash.clone());
+                unknow_hashes.push(*tx_hash);
             }
         }
 
@@ -186,14 +186,14 @@ impl TxCache {
         &self,
         _cycles_limit: u64,
         tx_num_limit: u64,
-        current_height: u64,
-        timeout: u64,
+        _current_height: u64,
+        _timeout: u64,
     ) -> ProtocolResult<MixedTxHashes> {
         let queue_role = self.get_queue_role();
 
         let mut order_tx_hashes = Vec::new();
         let mut propose_tx_hashes = Vec::new();
-        let mut timeout_tx_hashes = Vec::new();
+        let timeout_tx_hashes = Vec::new();
 
         let mut tx_count: u64 = 0;
         let mut stage = Stage::OrderTxs;
@@ -236,8 +236,8 @@ impl TxCache {
                 }
 
                 match stage {
-                    Stage::OrderTxs => order_tx_hashes.push(tx_hash.clone()),
-                    Stage::ProposeTxs => propose_tx_hashes.push(tx_hash.clone()),
+                    Stage::OrderTxs => order_tx_hashes.push(*tx_hash),
+                    Stage::ProposeTxs => propose_tx_hashes.push(*tx_hash),
                     Stage::Finished => {}
                 }
             } else {
@@ -259,10 +259,7 @@ impl TxCache {
 
     pub async fn check_exist(&self, tx_hash: &Hash) -> ProtocolResult<()> {
         if self.contain(tx_hash).await {
-            return Err(MemPoolError::Dup {
-                tx_hash: tx_hash.clone(),
-            }
-            .into());
+            return Err(MemPoolError::Dup { tx_hash: *tx_hash }.into());
         }
         Ok(())
     }
@@ -299,7 +296,7 @@ impl TxCache {
         // this will prevent them to be both insert successfully into queue.
         if self
             .map
-            .insert(tx_hash.clone(), Arc::<TxWrapper>::clone(&shared_tx))
+            .insert(tx_hash, Arc::<TxWrapper>::clone(&shared_tx))
             .await
             .is_some()
         {
@@ -347,13 +344,13 @@ impl TxCache {
         }
     }
 
-    async fn flush_incumbent_queue(&self, current_height: u64, timeout: u64) {
+    async fn flush_incumbent_queue(&self, _current_height: u64, _timeout: u64) {
         let queue_role = self.get_queue_role();
-        let mut timeout_tx_hashes = Vec::new();
+        let timeout_tx_hashes = Vec::new();
 
         loop {
             if let Some(shared_tx) = queue_role.incumbent.pop() {
-                let tx_hash = &shared_tx.tx.transaction.hash;
+                let _tx_hash = &shared_tx.tx.transaction.hash;
 
                 if shared_tx.is_removed() {
                     continue;
@@ -416,7 +413,7 @@ mod tests {
     use test::Bencher;
 
     use protocol::tokio;
-    use protocol::types::{Address, Bytes, Hash, Hasher, SignedTransaction, UnverifiedTransaction};
+    use protocol::types::{Hash, SignedTransaction};
 
     use crate::map::Map;
     use crate::tx_cache::{TxCache, TxWrapper};
