@@ -104,9 +104,9 @@ where
     async fn initial_insert(&self, ctx: Context, tx: SignedTransaction) -> ProtocolResult<()> {
         let _lock = self.flush_lock.read().await;
 
-        self.tx_cache.check_exist(&tx.tx_hash).await?;
+        self.tx_cache.check_exist(&tx.transaction.hash).await?;
         self.adapter
-            .check_storage_exist(ctx.clone(), &tx.tx_hash)
+            .check_storage_exist(ctx.clone(), &tx.transaction.hash)
             .await?;
         self.tx_cache.insert_propose_tx(tx).await
     }
@@ -120,7 +120,7 @@ where
         let _lock = self.flush_lock.read().await;
 
         let tx = Box::new(tx);
-        let tx_hash = &tx.tx_hash;
+        let tx_hash = &tx.transaction.hash;
         self.tx_cache.check_reach_limit(self.pool_size).await?;
         self.tx_cache.check_exist(tx_hash).await?;
         self.adapter
@@ -162,7 +162,7 @@ where
                     adapter.check_authorization(ctx.clone(), boxed_stx).await?;
                     adapter.check_transaction(ctx.clone(), &signed_tx).await?;
                     adapter
-                        .check_storage_exist(ctx.clone(), &signed_tx.tx_hash)
+                        .check_storage_exist(ctx.clone(), &signed_tx.transaction.hash)
                         .await
                 })
             })
@@ -336,7 +336,7 @@ where
 
             for signed_tx in txs.into_iter() {
                 self.callback_cache
-                    .insert(signed_tx.tx_hash.clone(), *signed_tx)
+                    .insert(signed_tx.transaction.hash.clone(), *signed_tx)
                     .await;
             }
 

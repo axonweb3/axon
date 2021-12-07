@@ -470,6 +470,7 @@ dependencies = [
  "chashmap",
  "cita_trie",
  "common-apm",
+ "common-crypto",
  "crossbeam-queue",
  "futures",
  "hex",

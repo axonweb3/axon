@@ -45,7 +45,7 @@ mod benches {
             .collect::<String>()
     }
 
-    fn mock_block_hash() -> Hash {
+    fn mock_block_hash() -> H256 {
         let temp = (0..10).map(|_| random::<u8>()).collect::<Vec<_>>();
         Hasher::digest(Bytes::from(temp))
     }

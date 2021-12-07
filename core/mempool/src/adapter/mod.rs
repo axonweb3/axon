@@ -135,11 +135,10 @@ impl IntervalTxsBroadcaster {
     }
 }
 
-pub struct DefaultMemPoolAdapter<EF, C, N, S, DB, Mapping> {
+pub struct DefaultMemPoolAdapter<C, N, S, DB> {
     network:         N,
     storage:         Arc<S>,
     trie_db:         Arc<DB>,
-    service_mapping: Arc<Mapping>,
 
     timeout_gap:  AtomicU64,
     cycles_limit: AtomicU64,
@@ -149,23 +148,19 @@ pub struct DefaultMemPoolAdapter<EF, C, N, S, DB, Mapping> {
     err_rx: Mutex<UnboundedReceiver<ProtocolError>>,
 
     pin_c:  PhantomData<C>,
-    pin_ef: PhantomData<EF>,
 }
 
-impl<EF, C, N, S, DB, Mapping> DefaultMemPoolAdapter<EF, C, N, S, DB, Mapping>
+impl<C, N, S, DB> DefaultMemPoolAdapter<C, N, S, DB>
 where
-    EF: ExecutorFactory<DB, S, Mapping>,
     C: Crypto,
     N: Rpc + PeerTrust + Gossip + Clone + Unpin + 'static,
     S: Storage,
     DB: cita_trie::DB + 'static,
-    Mapping: ServiceMapping + 'static,
 {
     pub fn new(
         network: N,
         storage: Arc<S>,
         trie_db: Arc<DB>,
-        service_mapping: Arc<Mapping>,
         broadcast_txs_size: usize,
         broadcast_txs_interval: u64,
     ) -> Self {
@@ -190,7 +185,6 @@ where
             network,
             storage,
             trie_db,
-            service_mapping,
 
             timeout_gap: AtomicU64::new(0),
             cycles_limit: AtomicU64::new(0),
@@ -200,20 +194,17 @@ where
             err_rx: Mutex::new(err_rx),
 
             pin_c: PhantomData,
-            pin_ef: PhantomData,
         }
     }
 }
 
 #[async_trait]
-impl<EF, C, N, S, DB, Mapping> MemPoolAdapter for DefaultMemPoolAdapter<EF, C, N, S, DB, Mapping>
+impl<C, N, S, DB> MemPoolAdapter for DefaultMemPoolAdapter<C, N, S, DB>
 where
-    EF: ExecutorFactory<DB, S, Mapping>,
     C: Crypto + Send + Sync + 'static,
     N: Rpc + PeerTrust + Gossip + Clone + Unpin + 'static,
     S: Storage + 'static,
     DB: cita_trie::DB + 'static,
-    Mapping: ServiceMapping + 'static,
 {
     // #[muta_apm::derive::tracing_span(
     //     kind = "mempool.adapter",
@@ -259,91 +250,13 @@ where
         ctx: Context,
         tx: Box<SignedTransaction>,
     ) -> ProtocolResult<()> {
-        let network = self.network.clone();
-        let ctx_clone = ctx.clone();
-        let header = self.storage.get_latest_block_header(ctx.clone()).await?;
-        let trie_db_clone = Arc::clone(&self.trie_db);
-        let storage_clone = Arc::clone(&self.storage);
-        let service_mapping_clone = Arc::clone(&self.service_mapping);
-        let tx_hash = tx.tx_hash.clone();
-
-        let blocking_res: ProtocolResult<ServiceResponse<String>> =
-            tokio::task::spawn_blocking(move || {
-                // Verify transaction hash
-                let fixed_bytes = tx.raw.encode_fixed()?;
-                let tx_hash = Hash::digest(fixed_bytes);
-
-                if tx_hash != tx.tx_hash {
-                    if ctx_clone.is_network_origin_txs() {
-                        network.report(
-                            ctx_clone,
-                            TrustFeedback::Worse(format!(
-                                "Mempool wrong tx_hash of tx {:?}",
-                                tx.tx_hash
-                            )),
-                        );
-                    }
-
-                    return Err(MemPoolError::CheckHash {
-                        expect: tx.tx_hash,
-                        actual: tx_hash,
-                    }
-                    .into());
-                }
-
-                // Verify transaction signatures
-                let caller = Address::from_hash(Hash::digest(protocol::address_hrp().as_str()))?;
-                let executor = EF::from_root(
-                    header.state_root.clone(),
-                    Arc::clone(&trie_db_clone),
-                    Arc::clone(&storage_clone),
-                    Arc::clone(&service_mapping_clone),
-                )?;
-                let params = ExecutorParams {
-                    state_root:   header.state_root,
-                    height:       header.height,
-                    timestamp:    header.timestamp,
-                    cycles_limit: 99999,
-                    proposer:     header.proposer,
-                };
-
-                let stx_ptr_json = format!("{{ \"ptr\": {} }}", Box::into_raw(tx) as usize);
-                let check_resp = executor.read(&params, &caller, 1, &TransactionRequest {
-                    service_name: "authorization".to_string(),
-                    method:       "check_authorization_by_ptr".to_string(),
-                    payload:      stx_ptr_json,
-                })?;
-
-                Ok(check_resp)
-            })
-            .await
-            .map_err(|_| AdapterError::Internal)?;
-
-        let check_resp = blocking_res?;
-        if check_resp.is_error() {
-            if ctx.is_network_origin_txs() {
-                self.network.report(
-                    ctx,
-                    TrustFeedback::Worse(format!(
-                        "Mempool check authorization failed tx hash {:?}",
-                        tx_hash
-                    )),
-                )
-            }
-
-            return Err(MemPoolError::CheckAuthorization {
-                tx_hash,
-                err_info: check_resp.error_message,
-            }
-            .into());
-        }
         Ok(())
     }
 
     async fn check_transaction(&self, ctx: Context, stx: &SignedTransaction) -> ProtocolResult<()> {
-        let fixed_bytes = stx.raw.encode_fixed()?;
+        let fixed_bytes = stx.transaction.unsigned.encode()?;
         let size = fixed_bytes.len() as u64;
-        let tx_hash = stx.tx_hash.clone();
+        let tx_hash = stx.transaction.hash.clone();
 
         // check tx size
         let max_tx_size = self.max_tx_size.load(Ordering::SeqCst);
@@ -353,7 +266,7 @@ where
                     ctx.clone(),
                     TrustFeedback::Bad(format!(
                         "Mempool exceed size limit of tx {:?}",
-                        stx.tx_hash
+                        tx_hash
                     )),
                 );
             }
@@ -374,7 +287,7 @@ where
                     ctx.clone(),
                     TrustFeedback::Bad(format!(
                         "Mempool exceed cycle limit of tx {:?}",
-                        stx.tx_hash
+                        tx_hash
                     )),
                 );
             }
@@ -392,11 +305,11 @@ where
             if ctx.is_network_origin_txs() {
                 self.network.report(
                     ctx.clone(),
-                    TrustFeedback::Worse(format!("Mempool wrong chain of tx {:?}", stx.tx_hash)),
+                    TrustFeedback::Worse(format!("Mempool wrong chain of tx {:?}", tx_hash)),
                 );
             }
             let wrong_chain_id = MemPoolError::WrongChain {
-                tx_hash: stx.tx_hash.clone(),
+                tx_hash: tx_hash.clone(),
             };
 
             return Err(wrong_chain_id.into());
@@ -406,22 +319,22 @@ where
         let latest_height = latest_header.height;
         let timeout_gap = self.timeout_gap.load(Ordering::SeqCst);
 
-        if stx.raw.timeout > latest_height + timeout_gap {
-            let invalid_timeout = MemPoolError::InvalidTimeout {
-                tx_hash: stx.tx_hash.clone(),
-            };
+        // if stx.raw.timeout > latest_height + timeout_gap {
+        //     let invalid_timeout = MemPoolError::InvalidTimeout {
+        //         tx_hash: tx_hash.clone(),
+        //     };
 
-            return Err(invalid_timeout.into());
-        }
+        //     return Err(invalid_timeout.into());
+        // }
 
-        if stx.raw.timeout < latest_height {
-            let timeout = MemPoolError::Timeout {
-                tx_hash: stx.tx_hash.clone(),
-                timeout: stx.raw.timeout,
-            };
+        // if stx.raw.timeout < latest_height {
+        //     let timeout = MemPoolError::Timeout {
+        //         tx_hash: stx.tx_hash.clone(),
+        //         timeout: stx.raw.timeout,
+        //     };
 
-            return Err(timeout.into());
-        }
+        //     return Err(timeout.into());
+        // }
 
         Ok(())
     }
@@ -540,7 +453,7 @@ mod tests {
         where
             M: MessageCodec,
         {
-            let bytes = msg.encode().expect("encode message fail");
+            let bytes = msg.encode_msg().expect("encode message fail");
             self.msgs.lock().push(bytes);
 
             self.signal_tx

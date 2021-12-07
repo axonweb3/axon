@@ -5,7 +5,6 @@ mod mempool;
 use std::convert::{From, TryFrom};
 use std::sync::Arc;
 
-use async_trait::async_trait;
 use chashmap::CHashMap;
 use futures::executor;
 use rand::random;
@@ -17,8 +16,8 @@ use common_crypto::{
 };
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{Context, MemPool, MemPoolAdapter, MixedTxHashes};
-use protocol::types::{Address, Hash, RawTransaction, SignedTransaction, TransactionRequest};
-use protocol::{Bytes, ProtocolResult};
+use protocol::types::{Address, Bytes, Hash, RawTransaction, SignedTransaction, TransactionRequest};
+use protocol::{async_trait, tokio, ProtocolResult};
 
 use crate::{check_dup_order_hashes, HashMemPool, MemPoolError};
 

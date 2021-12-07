@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use test::Bencher;
 
-use protocol::types::Hash;
+use protocol::types::Hasher;
 
 use super::*;
 
@@ -30,19 +30,19 @@ macro_rules! insert {
 #[test]
 fn test_dup_order_hashes() {
     let hashes = vec![
-        Hash::digest(Bytes::from("test1")),
-        Hash::digest(Bytes::from("test2")),
-        Hash::digest(Bytes::from("test3")),
-        Hash::digest(Bytes::from("test4")),
-        Hash::digest(Bytes::from("test2")),
+        Hasher::digest(Bytes::from("test1")),
+        Hasher::digest(Bytes::from("test2")),
+        Hasher::digest(Bytes::from("test3")),
+        Hasher::digest(Bytes::from("test4")),
+        Hasher::digest(Bytes::from("test2")),
     ];
     assert_eq!(check_dup_order_hashes(&hashes).is_err(), true);
 
     let hashes = vec![
-        Hash::digest(Bytes::from("test1")),
-        Hash::digest(Bytes::from("test2")),
-        Hash::digest(Bytes::from("test3")),
-        Hash::digest(Bytes::from("test4")),
+        Hasher::digest(Bytes::from("test1")),
+        Hasher::digest(Bytes::from("test2")),
+        Hasher::digest(Bytes::from("test3")),
+        Hasher::digest(Bytes::from("test4")),
     ];
     assert_eq!(check_dup_order_hashes(&hashes).is_err(), false);
 }

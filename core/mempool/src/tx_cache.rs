@@ -64,11 +64,11 @@ impl TxWrapper {
         self.proposed.load(Ordering::SeqCst)
     }
 
-    #[inline]
-    fn is_timeout(&self, current_height: u64, timeout: u64) -> bool {
-        let tx_timeout = self.tx.raw.timeout;
-        tx_timeout <= current_height || tx_timeout > timeout
-    }
+    // #[inline]
+    // fn is_timeout(&self, current_height: u64, timeout: u64) -> bool {
+    //     let tx_timeout = self.tx.transaction.timeout;
+    //     tx_timeout <= current_height || tx_timeout > timeout
+    // }
 }
 
 /// Share `TxWrapper` for collections in `TxCache`.
@@ -145,14 +145,14 @@ impl TxCache {
     }
 
     pub async fn insert_new_tx(&self, signed_tx: SignedTransaction) -> ProtocolResult<()> {
-        let tx_hash = signed_tx.tx_hash.clone();
+        let tx_hash = signed_tx.transaction.hash.clone();
         let tx_wrapper = TxWrapper::new(signed_tx);
         let shared_tx = Arc::new(tx_wrapper);
         self.insert(tx_hash, shared_tx).await
     }
 
     pub async fn insert_propose_tx(&self, signed_tx: SignedTransaction) -> ProtocolResult<()> {
-        let tx_hash = signed_tx.tx_hash.clone();
+        let tx_hash = signed_tx.transaction.hash.clone();
         let tx_wrapper = TxWrapper::propose(signed_tx);
         let shared_tx = Arc::new(tx_wrapper);
         self.insert(tx_hash, shared_tx).await
@@ -199,16 +199,18 @@ impl TxCache {
         let mut stage = Stage::OrderTxs;
 
         loop {
-            if let Ok(shared_tx) = queue_role.incumbent.pop() {
-                let tx_hash = &shared_tx.tx.tx_hash;
+            if let Some(shared_tx) = queue_role.incumbent.pop() {
+                let tx_hash = &shared_tx.tx.transaction.hash;
 
                 if shared_tx.is_removed() {
                     continue;
                 }
-                if shared_tx.is_timeout(current_height, timeout) {
-                    timeout_tx_hashes.push(tx_hash.clone());
-                    continue;
-                }
+
+                // if shared_tx.is_timeout(current_height, timeout) {
+                //     timeout_tx_hashes.push(tx_hash.clone());
+                //     continue;
+                // }
+
                 // After previous filter, tx are valid and should cache in temp_queue.
                 if queue_role
                     .candidate
@@ -217,9 +219,9 @@ impl TxCache {
                 {
                     log::error!(
                         "[core_mempool]: candidate queue is full while package, delete {:?}",
-                        &shared_tx.tx.tx_hash
+                        &shared_tx.tx.transaction.hash
                     );
-                    self.map.remove(&shared_tx.tx.tx_hash).await;
+                    self.map.remove(&shared_tx.tx.transaction.hash).await;
                 }
 
                 if stage == Stage::Finished
@@ -326,7 +328,7 @@ impl TxCache {
             // When there are no transaction insertions processing,
             // pop off previous incumbent queue and push them into current incumbent queue.
             if self.concurrent_count.load(Ordering::SeqCst) == 0 {
-                while let Ok(shared_tx) = queue_role.candidate.pop() {
+                while let Some(shared_tx) = queue_role.candidate.pop() {
                     if queue_role
                         .incumbent
                         .push(Arc::<TxWrapper>::clone(&shared_tx))
@@ -334,9 +336,9 @@ impl TxCache {
                     {
                         log::error!(
                             "[core_mempool]: incumbent queue is full while process_omission_txs, delete {:?}",
-                            &shared_tx.tx.tx_hash
+                            &shared_tx.tx.transaction.hash
                         );
-                        self.map.remove(&shared_tx.tx.tx_hash).await;
+                        self.map.remove(&shared_tx.tx.transaction.hash).await;
                     }
                 }
                 break 'outer;
@@ -349,16 +351,18 @@ impl TxCache {
         let mut timeout_tx_hashes = Vec::new();
 
         loop {
-            if let Ok(shared_tx) = queue_role.incumbent.pop() {
-                let tx_hash = &shared_tx.tx.tx_hash;
+            if let Some(shared_tx) = queue_role.incumbent.pop() {
+                let tx_hash = &shared_tx.tx.transaction.hash;
 
                 if shared_tx.is_removed() {
                     continue;
                 }
-                if shared_tx.is_timeout(current_height, timeout) {
-                    timeout_tx_hashes.push(tx_hash.clone());
-                    continue;
-                }
+
+                // if shared_tx.is_timeout(current_height, timeout) {
+                //     timeout_tx_hashes.push(tx_hash.clone());
+                //     continue;
+                // }
+
                 // After previous filter, tx are valid and should cache in temp_queue.
                 if queue_role
                     .candidate
@@ -367,9 +371,9 @@ impl TxCache {
                 {
                     log::error!(
                         "[core_mempool]: candidate queue is full while flush_incumbent_queue, delete {:?}",
-                        &shared_tx.tx.tx_hash
+                        &shared_tx.tx.transaction.hash
                     );
-                    self.map.remove(&shared_tx.tx.tx_hash).await;
+                    self.map.remove(&shared_tx.tx.transaction.hash).await;
                 }
             } else {
                 // Switch queue_roles
@@ -412,7 +416,7 @@ mod tests {
 
     use protocol::tokio;
     use protocol::types::{
-        Address, Bytes, Hash, RawTransaction, SignedTransaction, TransactionRequest,
+        Address, Bytes, Hash, Hasher, UnverifiedTransaction, SignedTransaction,
     };
 
     use crate::map::Map;
@@ -440,7 +444,7 @@ mod tests {
     }
 
     fn mock_signed_tx(bytes: Vec<u8>) -> SignedTransaction {
-        let rand_hash = Hash::digest(Bytes::from(bytes));
+        let rand_hash = Hasher::digest(Bytes::from(bytes));
         let chain_id = rand_hash.clone();
         let nonce = rand_hash.clone();
         let tx_hash = rand_hash;
@@ -448,29 +452,9 @@ mod tests {
             let hex_str = "03380295981e77dcd0a3f50c1d58867e590f2837f03daf639d683ec5e995c02984";
             Bytes::from(hex::decode(hex_str).unwrap())
         };
-        let fake_sig = Hash::digest(pubkey.clone()).as_bytes();
+        let fake_sig = Hasher::digest(pubkey.clone()).as_bytes();
 
-        let request = TransactionRequest {
-            service_name: "test".to_owned(),
-            method:       "test".to_owned(),
-            payload:      "test".to_owned(),
-        };
-
-        let raw = RawTransaction {
-            chain_id,
-            nonce,
-            timeout: TIMEOUT,
-            cycles_limit: TX_CYCLE,
-            cycles_price: 1,
-            request,
-            sender: Address::from_pubkey_bytes(pubkey.clone()).unwrap(),
-        };
-        SignedTransaction {
-            raw,
-            tx_hash,
-            pubkey,
-            signature: fake_sig,
-        }
+        todo!()
     }
 
     async fn concurrent_insert(txs: Vec<SignedTransaction>, tx_cache: Arc<TxCache>) {
@@ -528,13 +512,13 @@ mod tests {
 
         let tx_wrapper_0 = TxWrapper::new(tx.clone());
         tx_wrapper_0.set_removed();
-        map.insert(tx.tx_hash.clone(), Arc::new(tx_wrapper_0)).await;
-        let shared_tx_0 = map.get(&tx.tx_hash).await.unwrap();
+        map.insert(tx.transaction.hash.clone(), Arc::new(tx_wrapper_0)).await;
+        let shared_tx_0 = map.get(&tx.transaction.hash).await.unwrap();
         assert!(shared_tx_0.is_removed());
 
         let tx_wrapper_1 = TxWrapper::new(tx.clone());
-        map.insert(tx.tx_hash.clone(), Arc::new(tx_wrapper_1)).await;
-        let shared_tx_1 = map.get(&tx.tx_hash).await.unwrap();
+        map.insert(tx.transaction.hash.clone(), Arc::new(tx_wrapper_1)).await;
+        let shared_tx_1 = map.get(&tx.transaction.hash).await.unwrap();
         assert!(shared_tx_1.is_removed());
     }
 
@@ -565,7 +549,7 @@ mod tests {
         let txs = gen_signed_txs(TX_NUM);
         let tx_hashes: Vec<Hash> = txs
             .iter()
-            .map(|signed_tx| signed_tx.tx_hash.clone())
+            .map(|signed_tx| signed_tx.transaction.hash.clone())
             .collect();
         b.iter(|| {
             let tx_cache = Arc::new(TxCache::new(POOL_SIZE));
@@ -586,7 +570,7 @@ mod tests {
         let txs_insert = gen_signed_txs(TX_NUM / 2);
         let txs_flush: Vec<Hash> = txs_base
             .iter()
-            .map(|signed_tx| signed_tx.tx_hash.clone())
+            .map(|signed_tx| signed_tx.transaction.hash.clone())
             .collect();
         b.iter(|| {
             let tx_cache = Arc::new(TxCache::new(POOL_SIZE));

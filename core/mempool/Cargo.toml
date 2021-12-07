@@ -17,6 +17,7 @@ rlp-derive = "0.1"
 
 protocol = { path = "../../protocol", package = "axon-protocol"}
 common-apm = { path = "../../common/apm" }
+common-crypto = { path = "../../common/crypto" }
 
 [dev-dependencies]
 chashmap = "2.2"

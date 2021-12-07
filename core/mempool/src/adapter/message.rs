@@ -88,13 +88,13 @@ where
     }
 }
 
-#[derive(Clone, Debug, RlpEncodable, RlpDecodable)]
+#[derive(Clone, Debug, Hash, RlpEncodable, RlpDecodable)]
 pub struct MsgPullTxs {
     pub height: Option<u64>,
     pub hashes: Vec<Hash>,
 }
 
-#[derive(Debug, RlpEncodable, RlpDecodable)]
+#[derive(Clone, Debug, RlpEncodable, RlpDecodable)]
 pub struct MsgPushTxs {
     pub sig_txs: Vec<SignedTransaction>,
 }

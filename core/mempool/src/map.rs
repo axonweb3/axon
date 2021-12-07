@@ -162,7 +162,7 @@ mod tests {
     use test::Bencher;
 
     use protocol::tokio::runtime::Runtime;
-    use protocol::types::{Bytes, Hash};
+    use protocol::types::{Bytes, Hash, Hasher};
 
     use crate::map::Map;
 
@@ -210,7 +210,7 @@ mod tests {
         let mut txs = Vec::with_capacity(size);
         for _ in 0..size {
             let tx: Vec<u8> = (0..10).map(|_| random::<u8>()).collect();
-            let tx = Hash::digest(Bytes::from(tx));
+            let tx = Hasher::digest(Bytes::from(tx));
             txs.push((tx.clone(), tx));
         }
         txs
