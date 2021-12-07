@@ -119,7 +119,7 @@ impl StorageAdapter for RocksAdapter {
         let size = val.len() as i64;
 
         db!(self.db, put_cf, column, key, val)?;
-        on_storage_put_cf(S::category(), inst.elapsed(), size);
+        on_storage_put_cf(S::category(), inst.elapsed(), size as f64);
 
         Ok(())
     }

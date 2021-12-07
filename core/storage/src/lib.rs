@@ -566,7 +566,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
     }
 
     async fn get_latest_proof(&self, _ctx: Context) -> ProtocolResult<Proof> {
-        let proof = ensure_get!(self, LATEST_PROOF_KEY.clone(), LatestProofSchema);
+        let proof = ensure_get!(self, *LATEST_PROOF_KEY, LatestProofSchema);
         Ok(proof)
     }
 }

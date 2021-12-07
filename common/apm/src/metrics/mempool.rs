@@ -1,6 +1,6 @@
 use crate::metrics::{
     auto_flush_from, exponential_buckets, make_auto_flush_static_metric, register_counter_vec,
-    register_histogram_vec, register_int_gauge, HistogramVec, IntCounterVec, IntGauge,
+    register_histogram_vec, register_int_gauge, CounterVec, HistogramVec, IntGauge,
 };
 
 use lazy_static::lazy_static;
@@ -17,11 +17,11 @@ make_auto_flush_static_metric! {
         failure,
     }
 
-    pub struct MempoolCounterVec: LocalIntCounter {
+    pub struct MempoolCounterVec: LocalCounter {
         "type" => MempoolKind,
     }
 
-    pub struct MempoolResultCounterVec: LocalIntCounter {
+    pub struct MempoolResultCounterVec: LocalCounter {
         "type" => MempoolKind,
         "result" => MempoolOpResult,
     }
@@ -40,10 +40,10 @@ make_auto_flush_static_metric! {
 }
 
 lazy_static! {
-    pub static ref MEMPOOL_COUNTER_VEC: IntCounterVec =
+    pub static ref MEMPOOL_COUNTER_VEC: CounterVec =
         register_counter_vec!("muta_mempool_counter", "Counter in mempool", &["type"])
             .expect("failed init mempool counter vec");
-    pub static ref MEMPOOL_RESULT_COUNTER_VEC: IntCounterVec = register_counter_vec!(
+    pub static ref MEMPOOL_RESULT_COUNTER_VEC: CounterVec = register_counter_vec!(
         "muta_mempool_result_counter",
         "Result counter in mempool",
         &["type", "result"]

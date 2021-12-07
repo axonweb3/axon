@@ -1,6 +1,6 @@
 use crate::metrics::{
     auto_flush_from, exponential_buckets, make_auto_flush_static_metric, register_counter_vec,
-    register_histogram_vec, HistogramVec, IntCounterVec,
+    register_histogram_vec, CounterVec, HistogramVec,
 };
 
 use lazy_static::lazy_static;
@@ -16,11 +16,11 @@ make_auto_flush_static_metric! {
         failure,
     }
 
-    pub struct RequestCounterVec: LocalIntCounter {
+    pub struct RequestCounterVec: LocalCounter {
         "type" => RequestKind,
     }
 
-    pub struct RequestResultCounterVec: LocalIntCounter {
+    pub struct RequestResultCounterVec: LocalCounter {
         "type" => RequestKind,
         "result" => SendTransactionResult,
     }
@@ -31,12 +31,12 @@ make_auto_flush_static_metric! {
 }
 
 lazy_static! {
-    pub static ref API_REQUEST_COUNTER_VEC: IntCounterVec =
+    pub static ref API_REQUEST_COUNTER_VEC: CounterVec =
         register_counter_vec!("muta_api_request_total", "Total number of request", &[
             "type"
         ])
         .expect("request total");
-    pub static ref API_REQUEST_RESULT_COUNTER_VEC: IntCounterVec = register_counter_vec!(
+    pub static ref API_REQUEST_RESULT_COUNTER_VEC: CounterVec = register_counter_vec!(
         "muta_api_request_result_total",
         "Total number of request result",
         &["type", "result"]

@@ -5,7 +5,7 @@ use protocol::traits::StorageCategory;
 
 use crate::metrics::{
     auto_flush_from, duration_to_sec, make_auto_flush_static_metric, register_counter_vec,
-    register_counter_vec, CounterVec, IntCounterVec,
+    CounterVec, IntCounterVec,
 };
 
 make_auto_flush_static_metric! {
@@ -23,7 +23,7 @@ make_auto_flush_static_metric! {
     "cf" => COLUMN_FAMILY_TYPES
   }
 
-  pub struct StoragePutCfBytesVec: LocalIntCounter {
+  pub struct StoragePutCfBytesVec: LocalCounter {
     "cf" => COLUMN_FAMILY_TYPES
   }
 
@@ -31,7 +31,7 @@ make_auto_flush_static_metric! {
     "cf" => COLUMN_FAMILY_TYPES
   }
 
-  pub struct StorageGetCfTotalVec: LocalIntCounter {
+  pub struct StorageGetCfTotalVec: LocalCounter {
     "cf" => COLUMN_FAMILY_TYPES
   }
 }
@@ -43,7 +43,7 @@ lazy_static! {
         &["cf"]
     )
     .unwrap();
-    pub static ref STORAGE_PUT_CF_BYTES_COUNTER_VEC: IntCounterVec = register_counter_vec!(
+    pub static ref STORAGE_PUT_CF_BYTES_COUNTER_VEC: CounterVec = register_counter_vec!(
         "muta_storage_put_cf_bytes",
         "Storage total insert bytes",
         &["cf"]
@@ -55,7 +55,7 @@ lazy_static! {
         &["cf"]
     )
     .unwrap();
-    pub static ref STORAGE_GET_CF_COUNTER_VEC: IntCounterVec = register_counter_vec!(
+    pub static ref STORAGE_GET_CF_COUNTER_VEC: CounterVec = register_counter_vec!(
         "muta_storage_get_cf_total",
         "Storage total get_cf keys number",
         &["cf"]
@@ -74,21 +74,21 @@ lazy_static! {
         auto_flush_from!(STORAGE_GET_CF_COUNTER_VEC, StorageGetCfTotalVec);
 }
 
-pub fn on_storage_get_state(duration: Duration, keys: u64) {
+pub fn on_storage_get_state(duration: Duration, keys: f64) {
     let seconds = duration_to_sec(duration);
 
     STORAGE_GET_CF_TIME_USAGE.state.inc_by(seconds);
     STORAGE_GET_CF_COUNTER.state.inc_by(keys);
 }
 
-pub fn on_storage_put_state(duration: Duration, size: u64) {
+pub fn on_storage_put_state(duration: Duration, size: f64) {
     let seconds = duration_to_sec(duration);
 
     STORAGE_PUT_CF_TIME_USAGE.state.inc_by(seconds);
     STORAGE_PUT_CF_BYTES_COUNTER.state.inc_by(size);
 }
 
-pub fn on_storage_get_cf(sc: StorageCategory, duration: Duration, keys: u64) {
+pub fn on_storage_get_cf(sc: StorageCategory, duration: Duration, keys: f64) {
     let seconds = duration_to_sec(duration);
 
     match sc {
@@ -119,7 +119,7 @@ pub fn on_storage_get_cf(sc: StorageCategory, duration: Duration, keys: u64) {
     }
 }
 
-pub fn on_storage_put_cf(sc: StorageCategory, duration: Duration, size: u64) {
+pub fn on_storage_put_cf(sc: StorageCategory, duration: Duration, size: f64) {
     let seconds = duration_to_sec(duration);
 
     match sc {
