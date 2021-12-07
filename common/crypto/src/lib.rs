@@ -34,7 +34,7 @@ mod benches {
     use rand::{random, Rng, RngCore};
     use test::Bencher;
 
-    use protocol::types::{Bytes, Hash, Hasher, BytesMut};
+    use protocol::types::{Bytes, H256, Hasher, BytesMut};
 
     use super::*;
 

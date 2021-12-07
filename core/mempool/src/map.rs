@@ -170,14 +170,14 @@ mod tests {
 
     #[bench]
     fn bench_map_insert(b: &mut Bencher) {
-        let mut runtime = Runtime::new().unwrap();
+        let runtime = Runtime::new().unwrap();
 
         let txs = mock_txs(GEN_TX_SIZE);
 
         b.iter(move || {
             let cache = Map::new(GEN_TX_SIZE);
             txs.iter().for_each(|(hash, tx)| {
-                runtime.block_on(cache.insert(hash.clone(), tx.clone()));
+                runtime.block_on(cache.insert(*hash, tx));
             });
         });
     }
@@ -211,7 +211,7 @@ mod tests {
         for _ in 0..size {
             let tx: Vec<u8> = (0..10).map(|_| random::<u8>()).collect();
             let tx = Hasher::digest(Bytes::from(tx));
-            txs.push((tx.clone(), tx));
+            txs.push((tx, tx));
         }
         txs
     }

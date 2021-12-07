@@ -162,7 +162,7 @@ impl TxCache {
         let mut unknow_hashes = vec![];
 
         for tx_hash in tx_hashes.iter() {
-            if !self.contain(&tx_hash).await {
+            if !self.contain(tx_hash).await {
                 unknow_hashes.push(tx_hash.clone());
             }
         }
@@ -268,6 +268,7 @@ impl TxCache {
     }
 
     pub async fn check_reach_limit(&self, pool_size: usize) -> ProtocolResult<()> {
+        println!("{:?}", pool_size);
         if self.len().await >= pool_size {
             return Err(MemPoolError::ReachLimit { pool_size }.into());
         }
@@ -415,9 +416,7 @@ mod tests {
     use test::Bencher;
 
     use protocol::tokio;
-    use protocol::types::{
-        Address, Bytes, Hash, Hasher, UnverifiedTransaction, SignedTransaction,
-    };
+    use protocol::types::{Address, Bytes, Hash, Hasher, SignedTransaction, UnverifiedTransaction};
 
     use crate::map::Map;
     use crate::tx_cache::{TxCache, TxWrapper};
@@ -443,16 +442,17 @@ mod tests {
         vec
     }
 
-    fn mock_signed_tx(bytes: Vec<u8>) -> SignedTransaction {
-        let rand_hash = Hasher::digest(Bytes::from(bytes));
-        let chain_id = rand_hash.clone();
-        let nonce = rand_hash.clone();
-        let tx_hash = rand_hash;
-        let pubkey = {
-            let hex_str = "03380295981e77dcd0a3f50c1d58867e590f2837f03daf639d683ec5e995c02984";
-            Bytes::from(hex::decode(hex_str).unwrap())
-        };
-        let fake_sig = Hasher::digest(pubkey.clone()).as_bytes();
+    fn mock_signed_tx(_bytes: Vec<u8>) -> SignedTransaction {
+        // let rand_hash = Hasher::digest(Bytes::from(bytes));
+        // let chain_id = rand_hash.clone();
+        // let nonce = rand_hash.clone();
+        // let tx_hash = rand_hash;
+        // let pubkey = {
+        //     let hex_str =
+        // "03380295981e77dcd0a3f50c1d58867e590f2837f03daf639d683ec5e995c02984";
+        //     Bytes::from(hex::decode(hex_str).unwrap())
+        // };
+        // let fake_sig = Hasher::digest(pubkey.clone()).as_bytes();
 
         todo!()
     }
@@ -512,12 +512,14 @@ mod tests {
 
         let tx_wrapper_0 = TxWrapper::new(tx.clone());
         tx_wrapper_0.set_removed();
-        map.insert(tx.transaction.hash.clone(), Arc::new(tx_wrapper_0)).await;
+        map.insert(tx.transaction.hash, Arc::new(tx_wrapper_0))
+            .await;
         let shared_tx_0 = map.get(&tx.transaction.hash).await.unwrap();
         assert!(shared_tx_0.is_removed());
 
         let tx_wrapper_1 = TxWrapper::new(tx.clone());
-        map.insert(tx.transaction.hash.clone(), Arc::new(tx_wrapper_1)).await;
+        map.insert(tx.transaction.hash, Arc::new(tx_wrapper_1))
+            .await;
         let shared_tx_1 = map.get(&tx.transaction.hash).await.unwrap();
         assert!(shared_tx_1.is_removed());
     }
@@ -531,7 +533,7 @@ mod tests {
 
     #[bench]
     fn bench_insert(b: &mut Bencher) {
-        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+        let runtime = tokio::runtime::Runtime::new().unwrap();
 
         let txs = gen_signed_txs(TX_NUM);
         b.iter(|| {
@@ -544,12 +546,12 @@ mod tests {
 
     #[bench]
     fn bench_flush(b: &mut Bencher) {
-        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+        let runtime = tokio::runtime::Runtime::new().unwrap();
 
         let txs = gen_signed_txs(TX_NUM);
         let tx_hashes: Vec<Hash> = txs
             .iter()
-            .map(|signed_tx| signed_tx.transaction.hash.clone())
+            .map(|signed_tx| signed_tx.transaction.hash)
             .collect();
         b.iter(|| {
             let tx_cache = Arc::new(TxCache::new(POOL_SIZE));
@@ -564,13 +566,13 @@ mod tests {
 
     #[bench]
     fn bench_flush_insert(b: &mut Bencher) {
-        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+        let runtime = tokio::runtime::Runtime::new().unwrap();
 
         let txs_base = gen_signed_txs(TX_NUM / 2);
         let txs_insert = gen_signed_txs(TX_NUM / 2);
         let txs_flush: Vec<Hash> = txs_base
             .iter()
-            .map(|signed_tx| signed_tx.transaction.hash.clone())
+            .map(|signed_tx| signed_tx.transaction.hash)
             .collect();
         b.iter(|| {
             let tx_cache = Arc::new(TxCache::new(POOL_SIZE));
@@ -588,7 +590,7 @@ mod tests {
 
     #[bench]
     fn bench_package(b: &mut Bencher) {
-        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+        let runtime = tokio::runtime::Runtime::new().unwrap();
 
         let txs = gen_signed_txs(TX_NUM);
         let tx_cache = Arc::new(TxCache::new(POOL_SIZE));
@@ -606,7 +608,7 @@ mod tests {
 
     #[bench]
     fn bench_package_insert(b: &mut Bencher) {
-        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+        let runtime = tokio::runtime::Runtime::new().unwrap();
 
         let txs = gen_signed_txs(TX_NUM / 2);
         let txs_insert = gen_signed_txs(TX_NUM / 2);

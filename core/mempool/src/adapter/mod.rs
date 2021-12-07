@@ -2,13 +2,7 @@ use super::TxContext;
 
 pub mod message;
 
-use std::{
-    error::Error,
-    marker::PhantomData,
-    sync::atomic::{AtomicU64, Ordering},
-    sync::Arc,
-    time::Duration,
-};
+use std::{error::Error, marker::PhantomData, sync::Arc, time::Duration};
 
 use futures::{
     channel::mpsc::{
@@ -30,7 +24,7 @@ use protocol::{
         Context, Gossip, MemPoolAdapter, MessageCodec, PeerTrust, Priority, Rpc, Storage,
         TrustFeedback,
     },
-    types::{Address, Bytes, Hash, SignedTransaction, UnverifiedTransaction},
+    types::{Address, Bytes, Hash, SignedTransaction, UnverifiedTransaction, U256},
     Display, ProtocolError, ProtocolErrorKind, ProtocolResult,
 };
 
@@ -136,18 +130,19 @@ impl IntervalTxsBroadcaster {
 }
 
 pub struct DefaultMemPoolAdapter<C, N, S, DB> {
-    network:         N,
-    storage:         Arc<S>,
-    trie_db:         Arc<DB>,
+    network: N,
+    storage: Arc<S>,
+    trie_db: Arc<DB>,
 
-    timeout_gap:  AtomicU64,
-    cycles_limit: AtomicU64,
-    max_tx_size:  AtomicU64,
+    timeout_gap: u64,
+    gas_limit:   U256,
+    max_tx_size: usize,
+    chain_id:    u64,
 
     stx_tx: UnboundedSender<SignedTransaction>,
     err_rx: Mutex<UnboundedReceiver<ProtocolError>>,
 
-    pin_c:  PhantomData<C>,
+    pin_c: PhantomData<C>,
 }
 
 impl<C, N, S, DB> DefaultMemPoolAdapter<C, N, S, DB>
@@ -161,6 +156,10 @@ where
         network: N,
         storage: Arc<S>,
         trie_db: Arc<DB>,
+        chain_id: u64,
+        timeout_gap: u64,
+        gas_limit: U256,
+        max_tx_size: usize,
         broadcast_txs_size: usize,
         broadcast_txs_interval: u64,
     ) -> Self {
@@ -186,9 +185,10 @@ where
             storage,
             trie_db,
 
-            timeout_gap: AtomicU64::new(0),
-            cycles_limit: AtomicU64::new(0),
-            max_tx_size: AtomicU64::new(0),
+            timeout_gap,
+            gas_limit,
+            max_tx_size,
+            chain_id,
 
             stx_tx,
             err_rx: Mutex::new(err_rx),
@@ -255,53 +255,44 @@ where
 
     async fn check_transaction(&self, ctx: Context, stx: &SignedTransaction) -> ProtocolResult<()> {
         let fixed_bytes = stx.transaction.unsigned.encode()?;
-        let size = fixed_bytes.len() as u64;
         let tx_hash = stx.transaction.hash.clone();
 
         // check tx size
-        let max_tx_size = self.max_tx_size.load(Ordering::SeqCst);
-        if size > max_tx_size {
+        if fixed_bytes.len() > self.max_tx_size {
             if ctx.is_network_origin_txs() {
                 self.network.report(
                     ctx.clone(),
-                    TrustFeedback::Bad(format!(
-                        "Mempool exceed size limit of tx {:?}",
-                        tx_hash
-                    )),
+                    TrustFeedback::Bad(format!("Mempool exceed size limit of tx {:?}", tx_hash)),
                 );
             }
             return Err(MemPoolError::ExceedSizeLimit {
                 tx_hash,
-                max_tx_size,
-                size,
+                max_tx_size: self.max_tx_size,
+                size: fixed_bytes.len(),
             }
             .into());
         }
 
         // check cycle limit
-        let cycles_limit_config = self.cycles_limit.load(Ordering::SeqCst);
-        let cycles_limit_tx = stx.raw.cycles_limit;
-        if cycles_limit_tx > cycles_limit_config {
+        let gas_limit_tx = stx.transaction.unsigned.gas_limit;
+        if gas_limit_tx > self.gas_limit {
             if ctx.is_network_origin_txs() {
                 self.network.report(
                     ctx.clone(),
-                    TrustFeedback::Bad(format!(
-                        "Mempool exceed cycle limit of tx {:?}",
-                        tx_hash
-                    )),
+                    TrustFeedback::Bad(format!("Mempool exceed cycle limit of tx {:?}", tx_hash)),
                 );
             }
             return Err(MemPoolError::ExceedCyclesLimit {
                 tx_hash,
-                cycles_limit_tx,
-                cycles_limit_config,
+                gas_limit_tx,
+                gas_limit_config: self.gas_limit,
             }
             .into());
         }
 
         // Verify chain id
         let latest_header = self.storage.get_latest_block_header(ctx.clone()).await?;
-        if latest_header.chain_id != stx.raw.chain_id {
+        if self.chain_id != stx.transaction.chain_id.unwrap_or_default() {
             if ctx.is_network_origin_txs() {
                 self.network.report(
                     ctx.clone(),
@@ -316,9 +307,7 @@ where
         }
 
         // Verify timeout
-        let latest_height = latest_header.height;
-        let timeout_gap = self.timeout_gap.load(Ordering::SeqCst);
-
+        let latest_height = latest_header.number;
         // if stx.raw.timeout > latest_height + timeout_gap {
         //     let invalid_timeout = MemPoolError::InvalidTimeout {
         //         tx_hash: tx_hash.clone(),
@@ -351,7 +340,7 @@ where
     }
 
     async fn get_latest_height(&self, ctx: Context) -> ProtocolResult<u64> {
-        let height = self.storage.get_latest_block_header(ctx).await?.height;
+        let height = self.storage.get_latest_block_header(ctx).await?.number;
         Ok(height)
     }
 
@@ -376,12 +365,6 @@ where
         if ctx.is_network_origin_txs() {
             self.network.report(ctx, TrustFeedback::Good);
         }
-    }
-
-    fn set_args(&self, timeout_gap: u64, cycles_limit: u64, max_tx_size: u64) {
-        self.timeout_gap.store(timeout_gap, Ordering::Relaxed);
-        self.cycles_limit.store(cycles_limit, Ordering::Relaxed);
-        self.max_tx_size.store(max_tx_size, Ordering::Relaxed);
     }
 }
 
