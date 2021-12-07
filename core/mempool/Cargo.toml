@@ -6,5 +6,18 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+cita_trie = "2.0"
+crossbeam-queue = "0.3"
+futures = { version = "0.3", features = [ "async-await" ] }
+hex = "0.4"
+log = "0.4"
+rand = "0.7"
+rlp = "0.5"
+rlp-derive = "0.1"
 
 protocol = { path = "../../protocol", package = "axon-protocol"}
+common-apm = { path = "../../common/apm" }
+
+[dev-dependencies]
+chashmap = "2.2"
+parking_lot = "0.11"

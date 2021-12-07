@@ -7,7 +7,8 @@ pub mod types;
 use std::error::Error;
 
 pub use async_trait::async_trait;
-use derive_more::{Constructor, Display};
+pub use derive_more::{Constructor, Display};
+pub use tokio;
 
 #[derive(Debug, Clone)]
 pub enum ProtocolErrorKind {
