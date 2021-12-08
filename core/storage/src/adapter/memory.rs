@@ -3,17 +3,14 @@ use std::error::Error;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use async_trait::async_trait;
-use derive_more::{Display, From};
 use parking_lot::RwLock;
 
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{
     IntoIteratorByRef, StorageAdapter, StorageBatchModify, StorageIterator, StorageSchema,
 };
-
 use protocol::types::Bytes;
-use protocol::{ProtocolError, ProtocolErrorKind, ProtocolResult};
+use protocol::{async_trait, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 type Category = HashMap<Vec<u8>, Vec<u8>>;
 
@@ -50,8 +47,7 @@ impl<'a, S: StorageSchema> Iterator for MemoryIterator<'a, S> {
         let kv_decode = |(k_bytes, v_bytes): (&Vec<u8>, &Vec<u8>)| -> ProtocolResult<_> {
             let k_bytes = Bytes::copy_from_slice(k_bytes.as_ref());
             let key = <_>::decode(k_bytes)?;
-
-            let v_bytes = Bytes::copy_from_slice(&v_bytes.as_ref());
+            let v_bytes = Bytes::copy_from_slice(v_bytes.as_ref());
             let val = <_>::decode(v_bytes)?;
 
             Ok((key, val))

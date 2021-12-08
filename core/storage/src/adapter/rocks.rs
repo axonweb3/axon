@@ -5,10 +5,7 @@ use std::path::Path;
 use std::sync::Arc;
 use std::time::Instant;
 
-use derive_more::{Display, From};
 use rocksdb::{ColumnFamily, DBIterator, Options, WriteBatch, DB};
-
-use async_trait::async_trait;
 
 use common_apm::metrics::storage::on_storage_put_cf;
 use protocol::codec::ProtocolCodec;
@@ -16,9 +13,8 @@ use protocol::traits::{
     IntoIteratorByRef, StorageAdapter, StorageBatchModify, StorageCategory, StorageIterator,
     StorageSchema,
 };
-
 use protocol::types::Bytes;
-use protocol::{ProtocolError, ProtocolErrorKind, ProtocolResult};
+use protocol::{async_trait, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 #[derive(Debug)]
 pub struct RocksAdapter {
@@ -69,7 +65,7 @@ impl<'a, S: StorageSchema> Iterator for RocksIterator<'a, S> {
             let k_bytes = Bytes::copy_from_slice(k_bytes.as_ref());
             let key = <_>::decode(k_bytes)?;
 
-            let v_bytes = Bytes::copy_from_slice(&v_bytes.as_ref());
+            let v_bytes = Bytes::copy_from_slice(v_bytes.as_ref());
             let val = <_>::decode(v_bytes)?;
 
             Ok((key, val))
@@ -199,7 +195,7 @@ impl StorageAdapter for RocksAdapter {
             }
         }
 
-        // on_storage_put_cf(S::category(), inst.elapsed(), insert_size as i64);
+        on_storage_put_cf(S::category(), inst.elapsed(), insert_size as f64);
 
         self.db.write(batch).map_err(RocksAdapterError::from)?;
         Ok(())
@@ -267,7 +263,7 @@ fn get_column<S: StorageSchema>(db: &DB) -> Result<&ColumnFamily, RocksAdapterEr
 
     let column = db
         .cf_handle(category)
-        .ok_or_else(|| RocksAdapterError::CategoryNotFound(category))?;
+        .ok_or(RocksAdapterError::CategoryNotFound(category))?;
 
     Ok(column)
 }

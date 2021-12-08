@@ -28,8 +28,8 @@ fn test_adapter_remove() {
 
 fn adapter_insert_test(db: impl StorageAdapter) {
     let tx_hash = Hasher::digest(get_random_bytes(10));
-    let tx_key = CommonHashKey::new(1, tx_hash.clone());
-    let stx = mock_signed_tx(tx_hash.clone());
+    let tx_key = CommonHashKey::new(1, tx_hash);
+    let stx = mock_signed_tx(tx_hash);
 
     exec!(db.insert::<TransactionSchema>(tx_key.clone(), stx.clone()));
     let stx = exec!(db.get::<TransactionSchema>(tx_key)).unwrap();
@@ -44,7 +44,7 @@ fn adapter_batch_modify_test(db: impl StorageAdapter) {
 
     for _ in 0..10 {
         let tx_hash = Hasher::digest(get_random_bytes(10));
-        keys.push(CommonHashKey::new(1, tx_hash.clone()));
+        keys.push(CommonHashKey::new(1, tx_hash));
         let stx = mock_signed_tx(tx_hash);
         stxs.push(stx.clone());
         inserts.push(StorageBatchModify::Insert::<TransactionSchema>(stx));
@@ -63,7 +63,7 @@ fn adapter_batch_modify_test(db: impl StorageAdapter) {
 
 fn adapter_remove_test(db: impl StorageAdapter) {
     let tx_hash = Hasher::digest(get_random_bytes(10));
-    let tx_key = CommonHashKey::new(1, tx_hash.clone());
+    let tx_key = CommonHashKey::new(1, tx_hash);
     let is_exist = exec!(db.contains::<TransactionSchema>(tx_key.clone()));
     assert!(!is_exist);
 

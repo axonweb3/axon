@@ -9,6 +9,7 @@ macro_rules! exec {
 mod adapter;
 mod storage;
 
+use protocol::codec::ProtocolCodec;
 use rand::random;
 
 use protocol::types::Bytes;
@@ -16,7 +17,8 @@ use protocol::types::{
     Block, Hash, Hasher, Header, Proof, Receipt, SignatureComponents, SignedTransaction,
     Transaction, TransactionAction, UnverifiedTransaction,
 };
-const ADDRESS_STR: &str = "0xCAB8EEA4799C21379C20EF5BAA2CC8AF1BEC475B";
+
+const _ADDRESS_STR: &str = "0xCAB8EEA4799C21379C20EF5BAA2CC8AF1BEC475B";
 
 fn mock_signed_tx(tx_hash: Hash) -> SignedTransaction {
     // let nonce = Hasher::digest(Bytes::from("XXXX"));
@@ -59,8 +61,8 @@ fn mock_receipt(_tx_hash: Hash) -> Receipt {
     }
 }
 
-fn mock_block(height: u64, block_hash: Hash) -> Block {
-    let nonce = Hasher::digest(Bytes::from("XXXX"));
+fn mock_block(height: u64, _block_hash: Hash) -> Block {
+    let _nonce = Hasher::digest(Bytes::from("XXXX"));
     let header = Header {
         parent_hash:       Default::default(),
         uncles_hash:       Default::default(),

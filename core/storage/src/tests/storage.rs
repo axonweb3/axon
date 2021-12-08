@@ -35,17 +35,16 @@ fn test_storage_receipts_insert() {
     let mut receipts = Vec::new();
     let mut hashes = Vec::new();
 
-    for _ in 0..10 {
-        let tx_hash = Hasher::digest(get_random_bytes(10));
-        hashes.push(tx_hash.clone());
-        let receipt = mock_receipt(tx_hash.clone());
+    for _ in 0..1 {
+        hashes.push(Hasher::digest(get_random_bytes(10)));
+        let receipt = mock_receipt(Hasher::digest(get_random_bytes(10)));
         receipts.push(receipt);
     }
 
     exec!(storage.insert_receipts(Context::new(), height, hashes.clone(), receipts.clone()));
     let receipts_2 = exec!(storage.get_receipts(Context::new(), height, hashes));
 
-    for i in 0..10 {
+    for i in 0..1 {
         assert_eq!(
             Some(receipts.get(i).unwrap()),
             receipts_2.get(i).unwrap().as_ref()
@@ -63,8 +62,8 @@ fn test_storage_transactions_insert() {
 
     for _ in 0..10 {
         let tx_hash = Hasher::digest(get_random_bytes(10));
-        hashes.push(tx_hash.clone());
-        let transaction = mock_signed_tx(tx_hash.clone());
+        hashes.push(tx_hash);
+        let transaction = mock_signed_tx(tx_hash);
         transactions.push(transaction);
     }
 

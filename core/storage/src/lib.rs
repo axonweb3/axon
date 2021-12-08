@@ -9,16 +9,11 @@ pub mod adapter;
 use std::collections::{HashMap, HashSet};
 use std::convert::From;
 use std::error::Error;
-// use std::fmt::{Display, Formatter};
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Instant;
 
-use async_trait::async_trait;
-use derive_more::{Display, From};
-use lazy_static::lazy_static;
-
-// use common_apm::metrics::storage::on_storage_get_cf;
+use common_apm::metrics::storage::on_storage_get_cf;
 // use common_apm::muta_apm;
 use protocol::codec::ProtocolCodec;
 use protocol::tokio::{self, sync::RwLock};
@@ -26,12 +21,14 @@ use protocol::traits::{
     CommonStorage, Context, Storage, StorageAdapter, StorageBatchModify, StorageCategory,
     StorageSchema,
 };
-use protocol::types::{Block, Bytes, Hash, Hasher, Header, Proof, Receipt, SignedTransaction};
-use protocol::{ProtocolError, ProtocolErrorKind, ProtocolResult};
+use protocol::types::{
+    Block, Bytes, DBBytes, Hash, Hasher, Header, Proof, Receipt, SignedTransaction,
+};
+use protocol::{async_trait, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 const BATCH_VALUE_DECODE_NUMBER: usize = 1000;
 
-lazy_static! {
+lazy_static::lazy_static! {
     pub static ref LATEST_BLOCK_KEY: Hash = Hasher::digest(Bytes::from("latest_hash"));
     pub static ref LATEST_PROOF_KEY: Hash = Hasher::digest(Bytes::from("latest_proof"));
     pub static ref OVERLORD_WAL_KEY: Hash = Hasher::digest(Bytes::from("overlord_wal"));
@@ -74,7 +71,7 @@ macro_rules! batch_insert {
     ($self_: ident, $block_height:expr, $hashes: expr, $vec: expr, $schema: ident) => {
         let heights = $vec
             .iter()
-            .map(|item| StorageBatchModify::Insert($block_height))
+            .map(|_| StorageBatchModify::Insert($block_height))
             .collect::<Vec<_>>();
 
         let (keys, batch_stxs): (Vec<_>, Vec<_>) = $vec
@@ -199,8 +196,8 @@ impl ProtocolCodec for CommonPrefix {
         Ok(Bytes::copy_from_slice(&self.block_height))
     }
 
-    fn decode(bytes: Bytes) -> ProtocolResult<Self> {
-        Ok(CommonPrefix::from(&bytes[..8]))
+    fn decode<B: AsRef<[u8]>>(bytes: B) -> ProtocolResult<Self> {
+        Ok(CommonPrefix::from(&bytes.as_ref()[..8]))
     }
 }
 
@@ -234,11 +231,12 @@ impl ProtocolCodec for CommonHashKey {
         ))
     }
 
-    fn decode(mut bytes: Bytes) -> ProtocolResult<Self> {
+    fn decode<B: AsRef<[u8]>>(bytes: B) -> ProtocolResult<Self> {
+        let mut bytes = bytes.as_ref().to_vec();
         debug_assert!(bytes.len() >= CommonPrefix::len());
 
         let prefix = CommonPrefix::from(&bytes[0..CommonPrefix::len()]);
-        let hash = Hasher::digest(bytes.split_off(CommonPrefix::len()));
+        let hash = Hash::from_slice(&bytes.split_off(CommonPrefix::len()));
 
         Ok(CommonHashKey { prefix, hash })
     }
@@ -246,7 +244,7 @@ impl ProtocolCodec for CommonHashKey {
 
 impl ToString for CommonHashKey {
     fn to_string(&self) -> String {
-        format!("{}:{}", self.prefix.height(), self.hash.to_string())
+        format!("{}:{}", self.prefix.height(), self.hash)
     }
 }
 
@@ -276,12 +274,12 @@ impl_storage_schema_for!(
 impl_storage_schema_for!(
     TransactionBytesSchema,
     CommonHashKey,
-    Bytes,
+    DBBytes,
     SignedTransaction
 );
 impl_storage_schema_for!(BlockSchema, BlockKey, Block, Block);
 impl_storage_schema_for!(ReceiptSchema, CommonHashKey, Receipt, Receipt);
-impl_storage_schema_for!(ReceiptBytesSchema, CommonHashKey, Bytes, Receipt);
+impl_storage_schema_for!(ReceiptBytesSchema, CommonHashKey, DBBytes, Receipt);
 impl_storage_schema_for!(HashHeightSchema, Hash, u64, HashHeight);
 impl_storage_schema_for!(LatestBlockSchema, Hash, Block, Block);
 impl_storage_schema_for!(LatestProofSchema, Hash, Proof, Block);
@@ -295,7 +293,7 @@ impl<Adapter: StorageAdapter> CommonStorage for ImplStorage<Adapter> {
             .insert::<BlockSchema>(BlockKey::new(block.header.number), block.clone())
             .await?;
         self.adapter
-            .insert::<LatestBlockSchema>(LATEST_BLOCK_KEY.clone(), block.clone())
+            .insert::<LatestBlockSchema>(*LATEST_BLOCK_KEY, block.clone())
             .await?;
 
         self.latest_block.write().await.replace(block);
@@ -307,7 +305,7 @@ impl<Adapter: StorageAdapter> CommonStorage for ImplStorage<Adapter> {
         self.adapter.get::<BlockSchema>(BlockKey::new(height)).await
     }
 
-    async fn get_block_header(&self, ctx: Context, height: u64) -> ProtocolResult<Option<Header>> {
+    async fn get_block_header(&self, _ctx: Context, height: u64) -> ProtocolResult<Option<Header>> {
         todo!()
     }
 
@@ -315,7 +313,7 @@ impl<Adapter: StorageAdapter> CommonStorage for ImplStorage<Adapter> {
         todo!()
     }
 
-    async fn remove_block(&self, ctx: Context, height: u64) -> ProtocolResult<()> {
+    async fn remove_block(&self, _ctx: Context, height: u64) -> ProtocolResult<()> {
         todo!()
     }
 
@@ -325,16 +323,16 @@ impl<Adapter: StorageAdapter> CommonStorage for ImplStorage<Adapter> {
         if let Some(block) = opt_block {
             Ok(block)
         } else {
-            let block = ensure_get!(self, LATEST_BLOCK_KEY.clone(), LatestBlockSchema);
+            let block = ensure_get!(self, *LATEST_BLOCK_KEY, LatestBlockSchema);
             Ok(block)
         }
     }
 
-    async fn set_latest_block(&self, ctx: Context, block: Block) -> ProtocolResult<()> {
+    async fn set_latest_block(&self, _ctx: Context, block: Block) -> ProtocolResult<()> {
         todo!()
     }
 
-    async fn get_latest_block_header(&self, ctx: Context) -> ProtocolResult<Header> {
+    async fn get_latest_block_header(&self, _ctx: Context) -> ProtocolResult<Header> {
         todo!()
     }
 }
@@ -344,7 +342,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
     // #[muta_apm::derive::tracing_span(kind = "storage")]
     async fn insert_transactions(
         &self,
-        ctx: Context,
+        _ctx: Context,
         block_height: u64,
         signed_txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<()> {
@@ -356,7 +354,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
     // #[muta_apm::derive::tracing_span(kind = "storage")]
     async fn get_transactions(
         &self,
-        ctx: Context,
+        _ctx: Context,
         block_height: u64,
         hashes: &[Hash],
     ) -> ProtocolResult<Vec<Option<SignedTransaction>>> {
@@ -372,11 +370,11 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
 
             let set = hashes.iter().collect::<HashSet<_>>();
             let mut count = hashes.len();
-            // on_storage_get_cf(
-            //     StorageCategory::SignedTransaction,
-            //     inst.elapsed(),
-            //     count as i64,
-            // );
+            on_storage_get_cf(
+                StorageCategory::SignedTransaction,
+                inst.elapsed(),
+                count as f64,
+            );
 
             while count > 0 {
                 let (key, stx_bytes) = match iter.next() {
@@ -401,7 +399,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
             if found.len() <= BATCH_VALUE_DECODE_NUMBER {
                 found
                     .drain(..)
-                    .map(|(k, v): (Hash, Bytes)| SignedTransaction::decode(v).map(|v| (k, v)))
+                    .map(|(k, v): (Hash, DBBytes)| SignedTransaction::decode(v).map(|v| (k, v)))
                     .collect::<ProtocolResult<Vec<_>>>()?
                     .into_iter()
                     .collect::<HashMap<_, _>>()
@@ -414,7 +412,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
                         // FIXME: cancel decode
                         tokio::spawn(async move {
                             vals.into_iter()
-                                .map(|(k, v): (Hash, Bytes)| <_>::decode(v).map(|v| (k, v)))
+                                .map(|(k, v): (Hash, DBBytes)| <_>::decode(v).map(|v| (k, v)))
                                 .collect::<ProtocolResult<Vec<_>>>()
                         })
                     })
@@ -431,18 +429,15 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
             }
         };
 
-        Ok(hashes
-            .into_iter()
-            .map(|h| found.remove(&h))
-            .collect::<Vec<_>>())
+        Ok(hashes.iter().map(|h| found.remove(h)).collect::<Vec<_>>())
     }
 
     async fn get_transaction_by_hash(
         &self,
-        ctx: Context,
+        _ctx: Context,
         hash: &Hash,
     ) -> ProtocolResult<Option<SignedTransaction>> {
-        if let Some(block_height) = get!(self, hash.clone(), HashHeightSchema)? {
+        if let Some(block_height) = get!(self, *hash, HashHeightSchema)? {
             get!(
                 self,
                 CommonHashKey::new(block_height, *hash),
@@ -456,7 +451,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
     // #[muta_apm::derive::tracing_span(kind = "storage")]
     async fn insert_receipts(
         &self,
-        ctx: Context,
+        _ctx: Context,
         block_height: u64,
         tx_hashes: Vec<Hash>,
         receipts: Vec<Receipt>,
@@ -471,7 +466,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         _ctx: Context,
         hash: Hash,
     ) -> ProtocolResult<Option<Receipt>> {
-        if let Some(block_height) = get!(self, hash.clone(), HashHeightSchema)? {
+        if let Some(block_height) = get!(self, hash, HashHeightSchema)? {
             get!(self, CommonHashKey::new(block_height, hash), ReceiptSchema)
         } else {
             Ok(None)
@@ -481,7 +476,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
     // #[muta_apm::derive::tracing_span(kind = "storage")]
     async fn get_receipts(
         &self,
-        ctx: Context,
+        _ctx: Context,
         block_height: u64,
         hashes: Vec<Hash>,
     ) -> ProtocolResult<Vec<Option<Receipt>>> {
@@ -489,7 +484,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         let mut found = Vec::with_capacity(hashes.len());
 
         {
-            // let inst = Instant::now();
+            let inst = Instant::now();
             let prepare_iter = self
                 .adapter
                 .prepare_iter::<ReceiptBytesSchema, _>(&key_prefix)?;
@@ -497,7 +492,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
 
             let set = hashes.iter().collect::<HashSet<_>>();
             let mut count = hashes.len();
-            // on_storage_get_cf(StorageCategory::Receipt, inst.elapsed(), count as i64);
+            on_storage_get_cf(StorageCategory::Receipt, inst.elapsed(), count as f64);
 
             while count > 0 {
                 let (key, stx_bytes) = match iter.next() {
@@ -522,7 +517,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
             if found.len() <= BATCH_VALUE_DECODE_NUMBER {
                 found
                     .drain(..)
-                    .map(|(k, v): (Hash, Bytes)| Receipt::decode(v).map(|v| (k, v)))
+                    .map(|(k, v): (Hash, DBBytes)| Receipt::decode(v).map(|v| (k, v)))
                     .collect::<ProtocolResult<Vec<_>>>()?
                     .into_iter()
                     .collect::<HashMap<_, _>>()
@@ -535,7 +530,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
                         // FIXME: cancel decode
                         tokio::spawn(async move {
                             vals.into_iter()
-                                .map(|(k, v): (Hash, Bytes)| <_>::decode(v).map(|v| (k, v)))
+                                .map(|(k, v): (Hash, DBBytes)| <_>::decode(v).map(|v| (k, v)))
                                 .collect::<ProtocolResult<Vec<_>>>()
                         })
                     })
@@ -560,7 +555,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
 
     async fn update_latest_proof(&self, _ctx: Context, proof: Proof) -> ProtocolResult<()> {
         self.adapter
-            .insert::<LatestProofSchema>(LATEST_PROOF_KEY.clone(), proof)
+            .insert::<LatestProofSchema>(*LATEST_PROOF_KEY, proof)
             .await?;
         Ok(())
     }
