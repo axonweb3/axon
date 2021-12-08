@@ -10,11 +10,10 @@ use overlord::{DurationConfig, Overlord, OverlordHandler};
 use common_apm::muta_apm;
 
 use protocol::traits::{Consensus, ConsensusAdapter, NodeInfo};
-use protocol::types::Validator;
+use protocol::types::{Pill, Validator};
 use protocol::{async_trait, ProtocolResult};
 
 use crate::engine::ConsensusEngine;
-use crate::fixed_types::FixedPill;
 use crate::status::StatusAgent;
 use crate::util::OverlordCrypto;
 use crate::wal::{ConsensusWal, SignedTxsWAL};
@@ -23,18 +22,16 @@ use crate::{ConsensusError, ConsensusType};
 /// Provide consensus
 pub struct OverlordConsensus<Adapter: ConsensusAdapter + 'static> {
     /// Overlord consensus protocol instance.
-    inner: Arc<
-        Overlord<FixedPill, ConsensusEngine<Adapter>, OverlordCrypto, ConsensusEngine<Adapter>>,
-    >,
+    inner: Arc<Overlord<Pill, ConsensusEngine<Adapter>, OverlordCrypto, ConsensusEngine<Adapter>>>,
     /// An overlord consensus protocol handler.
-    handler: OverlordHandler<FixedPill>,
+    handler: OverlordHandler<Pill>,
 }
 
 #[async_trait]
 impl<Adapter: ConsensusAdapter + 'static> Consensus for OverlordConsensus<Adapter> {
     // #[muta_apm::derive::tracing_span(kind = "consensus")]
     async fn set_proposal(&self, ctx: Context, proposal: Vec<u8>) -> ProtocolResult<()> {
-        let signed_proposal = SignedProposal::<FixedPill>::decode(&proposal)
+        let signed_proposal = SignedProposal::<Pill>::decode(&proposal)
             .map_err(|_| ConsensusError::DecodeErr(ConsensusType::SignedProposal))?;
 
         let msg = OverlordMsg::SignedProposal(signed_proposal);
@@ -147,7 +144,7 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
         }
     }
 
-    pub fn get_overlord_handler(&self) -> OverlordHandler<FixedPill> {
+    pub fn get_overlord_handler(&self) -> OverlordHandler<Pill> {
         self.handler.clone()
     }
 

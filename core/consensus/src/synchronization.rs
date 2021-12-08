@@ -1,18 +1,16 @@
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use async_trait::async_trait;
 use futures::lock::Mutex;
-use futures_timer::Delay;
 
 use common_apm::muta_apm;
 
-use protocol::fixed_codec::FixedCodec;
+use protocol::codec::ProtocolCodec;
 use protocol::traits::{
     Context, ExecutorParams, ExecutorResp, Synchronization, SynchronizationAdapter,
 };
 use protocol::types::{Block, Hash, Proof, Receipt, SignedTransaction};
-use protocol::ProtocolResult;
+use protocol::{ProtocolResult, async_trait, tokio::time::sleep};
 
 use crate::engine::generate_new_crypto_map;
 use crate::status::{ExecutedInfo, StatusAgent};
@@ -133,7 +131,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
                     .broadcast_height(Context::new(), current_height)
                     .await?;
             }
-            Delay::new(Duration::from_millis(POLLING_BROADCAST)).await;
+            sleep(Duration::from_millis(POLLING_BROADCAST)).await;
         }
     }
 
@@ -444,7 +442,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             let current_status = self.status.to_inner();
 
             if current_status.exec_height != current_status.latest_committed_height {
-                Delay::new(Duration::from_millis(WAIT_EXECUTION)).await;
+                sleep(Duration::from_millis(WAIT_EXECUTION)).await;
             } else {
                 break;
             }
@@ -469,7 +467,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
 
         if current_height == remote_height - 1 {
             let status = self.status.to_inner();
-            Delay::new(Duration::from_millis(status.consensus_interval)).await;
+            sleep(Duration::from_millis(status.consensus_interval)).await;
 
             current_height = self.status.to_inner().latest_committed_height;
             if current_height == remote_height {

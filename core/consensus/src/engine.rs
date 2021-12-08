@@ -24,7 +24,6 @@ use protocol::types::{
 };
 use protocol::{async_trait, tokio::time::sleep, ProtocolError, ProtocolResult};
 
-use crate::fixed_types::FixedPill;
 use crate::message::{
     END_GOSSIP_AGGREGATED_VOTE, END_GOSSIP_SIGNED_CHOKE, END_GOSSIP_SIGNED_PROPOSAL,
     END_GOSSIP_SIGNED_VOTE,
@@ -56,7 +55,7 @@ pub struct ConsensusEngine<Adapter> {
 }
 
 #[async_trait]
-impl<Adapter: ConsensusAdapter + 'static> Engine<FixedPill> for ConsensusEngine<Adapter> {
+impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapter> {
     // #[muta_apm::derive::tracing_span(
     //     kind = "consensus.engine",
     //     logs = "{'next_height': 'next_height'}"
@@ -65,7 +64,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<FixedPill> for ConsensusEngine<
         &self,
         ctx: Context,
         next_height: u64,
-    ) -> Result<(FixedPill, Bytes), Box<dyn Error + Send>> {
+    ) -> Result<(Pill, Bytes), Box<dyn Error + Send>> {
         let current_consensus_status = self.status_agent.to_inner();
 
         if current_consensus_status.latest_committed_height
@@ -103,7 +102,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<FixedPill> for ConsensusEngine<
         let order_root = Merkle::from_hashes(ordered_tx_hashes.clone()).get_root_hash();
         let state_root = current_consensus_status.get_latest_state_root();
 
-        let header = BlockHeader {
+        let header = Header {
             chain_id: self.node_info.chain_id.clone(),
             prev_hash: current_consensus_status.current_hash,
             height: next_height,
@@ -137,7 +136,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<FixedPill> for ConsensusEngine<
             block,
             propose_hashes,
         };
-        let fixed_pill = FixedPill {
+        let fixed_pill = Pill {
             inner: pill.clone(),
         };
         let hash = Hash::digest(pill.block.header.encode_fixed()?).as_bytes();
@@ -158,7 +157,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<FixedPill> for ConsensusEngine<
         ctx: Context,
         next_height: u64,
         hash: Bytes,
-        block: FixedPill,
+        block: Pill,
     ) -> Result<(), Box<dyn Error + Send>> {
         let time = Instant::now();
 
@@ -230,7 +229,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<FixedPill> for ConsensusEngine<
         &self,
         ctx: Context,
         current_height: u64,
-        commit: Commit<FixedPill>,
+        commit: Commit<Pill>,
     ) -> Result<Status, Box<dyn Error + Send>> {
         let lock = self.lock.try_lock();
         if lock.is_none() {
@@ -269,7 +268,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<FixedPill> for ConsensusEngine<
 
         // Storage save the latest proof.
         let proof = Proof {
-            height: commit.proof.height,
+            number: commit.proof.height,
             round: commit.proof.round,
             block_hash: block_hash.clone(),
             signature,
@@ -366,7 +365,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<FixedPill> for ConsensusEngine<
     async fn broadcast_to_other(
         &self,
         ctx: Context,
-        msg: OverlordMsg<FixedPill>,
+        msg: OverlordMsg<Pill>,
     ) -> Result<(), Box<dyn Error + Send>> {
         let (end, msg) = match msg {
             OverlordMsg::SignedProposal(sp) => {
@@ -402,7 +401,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<FixedPill> for ConsensusEngine<
         &self,
         ctx: Context,
         pub_key: Bytes,
-        msg: OverlordMsg<FixedPill>,
+        msg: OverlordMsg<Pill>,
     ) -> Result<(), Box<dyn Error + Send>> {
         match msg {
             OverlordMsg::SignedVote(sv) => {
