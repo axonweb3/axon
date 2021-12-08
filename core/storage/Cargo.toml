@@ -9,6 +9,7 @@ edition = "2021"
 common-apm = { path = "../../common/apm" }
 protocol = { path = "../../protocol", package = "axon-protocol"}
 
+arc-swap="1.4"
 futures = "0.3"
 hex = "0.4"
 lazy_static = "1.4"

@@ -13,10 +13,12 @@ use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Instant;
 
+use arc_swap::ArcSwap;
+
 use common_apm::metrics::storage::on_storage_get_cf;
 // use common_apm::muta_apm;
+
 use protocol::codec::ProtocolCodec;
-use protocol::tokio::{self, sync::RwLock};
 use protocol::traits::{
     CommonStorage, Context, Storage, StorageAdapter, StorageBatchModify, StorageCategory,
     StorageSchema,
@@ -24,7 +26,9 @@ use protocol::traits::{
 use protocol::types::{
     Block, Bytes, DBBytes, Hash, Hasher, Header, Proof, Receipt, SignedTransaction,
 };
-use protocol::{async_trait, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
+use protocol::{
+    async_trait, tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
+};
 
 const BATCH_VALUE_DECODE_NUMBER: usize = 1000;
 
@@ -127,16 +131,15 @@ macro_rules! impl_storage_schema_for {
 
 #[derive(Debug)]
 pub struct ImplStorage<Adapter> {
-    adapter: Arc<Adapter>,
-
-    latest_block: RwLock<Option<Block>>,
+    adapter:      Arc<Adapter>,
+    latest_block: ArcSwap<Option<Block>>,
 }
 
 impl<Adapter: StorageAdapter> ImplStorage<Adapter> {
     pub fn new(adapter: Arc<Adapter>) -> Self {
         Self {
             adapter,
-            latest_block: RwLock::new(None),
+            latest_block: ArcSwap::from(Arc::new(None)),
         }
     }
 }
@@ -278,6 +281,7 @@ impl_storage_schema_for!(
     SignedTransaction
 );
 impl_storage_schema_for!(BlockSchema, BlockKey, Block, Block);
+impl_storage_schema_for!(BlockHeaderSchema, BlockKey, Header, BlockHeader);
 impl_storage_schema_for!(ReceiptSchema, CommonHashKey, Receipt, Receipt);
 impl_storage_schema_for!(ReceiptBytesSchema, CommonHashKey, DBBytes, Receipt);
 impl_storage_schema_for!(HashHeightSchema, Hash, u64, HashHeight);
@@ -288,15 +292,10 @@ impl_storage_schema_for!(OverlordWalSchema, Hash, Bytes, Wal);
 #[async_trait]
 impl<Adapter: StorageAdapter> CommonStorage for ImplStorage<Adapter> {
     // #[muta_apm::derive::tracing_span(kind = "storage")]
-    async fn insert_block(&self, _ctx: Context, block: Block) -> ProtocolResult<()> {
-        self.adapter
-            .insert::<BlockSchema>(BlockKey::new(block.header.number), block.clone())
-            .await?;
-        self.adapter
-            .insert::<LatestBlockSchema>(*LATEST_BLOCK_KEY, block.clone())
-            .await?;
+    async fn insert_block(&self, ctx: Context, block: Block) -> ProtocolResult<()> {
+        self.set_block(ctx.clone(), block.clone()).await?;
 
-        self.latest_block.write().await.replace(block);
+        self.set_latest_block(ctx, block).await?;
 
         Ok(())
     }
@@ -305,22 +304,36 @@ impl<Adapter: StorageAdapter> CommonStorage for ImplStorage<Adapter> {
         self.adapter.get::<BlockSchema>(BlockKey::new(height)).await
     }
 
-    async fn get_block_header(&self, _ctx: Context, height: u64) -> ProtocolResult<Option<Header>> {
-        todo!()
+    async fn get_block_header(&self, ctx: Context, height: u64) -> ProtocolResult<Option<Header>> {
+        let opt_header = self
+            .adapter
+            .get::<BlockHeaderSchema>(BlockKey::new(height))
+            .await?;
+        if opt_header.is_some() {
+            return Ok(opt_header);
+        }
+
+        Ok(self.get_block(ctx, height).await?.map(|b| b.header))
     }
 
     async fn set_block(&self, _ctx: Context, block: Block) -> ProtocolResult<()> {
-        todo!()
+        self.adapter
+            .insert::<BlockSchema>(BlockKey::new(block.header.number), block.clone())
+            .await?;
+        self.adapter
+            .insert::<BlockHeaderSchema>(BlockKey::new(block.header.number), block.header.clone())
+            .await?;
+        Ok(())
     }
 
     async fn remove_block(&self, _ctx: Context, height: u64) -> ProtocolResult<()> {
-        todo!()
+        self.adapter
+            .remove::<BlockSchema>(BlockKey::new(height))
+            .await
     }
 
     async fn get_latest_block(&self, _ctx: Context) -> ProtocolResult<Block> {
-        let opt_block = { self.latest_block.read().await.clone() };
-
-        if let Some(block) = opt_block {
+        if let Some(block) = self.latest_block.load().as_ref().clone() {
             Ok(block)
         } else {
             let block = ensure_get!(self, *LATEST_BLOCK_KEY, LatestBlockSchema);
@@ -329,11 +342,28 @@ impl<Adapter: StorageAdapter> CommonStorage for ImplStorage<Adapter> {
     }
 
     async fn set_latest_block(&self, _ctx: Context, block: Block) -> ProtocolResult<()> {
-        todo!()
+        self.adapter
+            .insert::<LatestBlockSchema>(*LATEST_BLOCK_KEY, block.clone())
+            .await?;
+
+        self.latest_block.store(Arc::new(Some(block)));
+
+        Ok(())
     }
 
     async fn get_latest_block_header(&self, _ctx: Context) -> ProtocolResult<Header> {
-        todo!()
+        let opt_header = {
+            let guard = self.latest_block.load();
+            let opt_block = guard.as_ref();
+            opt_block.as_ref().map(|b| b.header.clone())
+        };
+
+        if let Some(header) = opt_header {
+            Ok(header)
+        } else {
+            let block = ensure_get!(self, *LATEST_BLOCK_KEY, LatestBlockSchema);
+            Ok(block.header)
+        }
     }
 }
 

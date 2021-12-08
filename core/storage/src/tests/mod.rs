@@ -9,7 +9,6 @@ macro_rules! exec {
 mod adapter;
 mod storage;
 
-use protocol::codec::ProtocolCodec;
 use rand::random;
 
 use protocol::types::Bytes;
