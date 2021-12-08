@@ -33,6 +33,7 @@ members = [
 
     "core/api",
     "core/cli",
+    "core/ckb-client",
     "core/consensus",
     "core/executor",
     "core/mempool",
