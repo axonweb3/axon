@@ -67,7 +67,7 @@
 // key"))         } else {
 //             let mut seed = [0u8; 32];
 //             OsRng.fill_bytes(&mut seed);
-//             Hash::digest(BytesMut::from(seed.as_ref()).freeze()).as_bytes()
+//             Hasher::digest(BytesMut::from(seed.as_ref()).freeze()).as_bytes()
 //         };
 //         let keypair =
 // SecioKeyPair::secp256k1_raw_key(seckey.as_ref()).expect("secp256k1 keypair");

@@ -1,7 +1,7 @@
 use crate::metrics::{
-    auto_flush_from, exponential_buckets, make_auto_flush_static_metric, register_histogram,
-    register_histogram_vec, register_int_counter, register_int_counter_vec, register_int_gauge,
-    Histogram, HistogramVec, IntCounter, IntCounterVec, IntGauge,
+    auto_flush_from, exponential_buckets, make_auto_flush_static_metric, register_counter_vec,
+    register_histogram, register_histogram_vec, register_int_counter, register_int_gauge,
+    CounterVec, Histogram, HistogramVec, IntCounter, IntGauge,
 };
 
 use lazy_static::lazy_static;
@@ -16,7 +16,7 @@ make_auto_flush_static_metric! {
         failure,
     }
 
-    pub struct ConsensusResultCounterVec: LocalIntCounter {
+    pub struct ConsensusResultCounterVec: LocalCounter {
         "type" => ConsensusResultKind,
         "result" => ConsensusResult,
     }
@@ -41,7 +41,7 @@ make_auto_flush_static_metric! {
 }
 
 lazy_static! {
-    pub static ref CONSENSUS_RESULT_COUNTER_VEC: IntCounterVec = register_int_counter_vec!(
+    pub static ref CONSENSUS_RESULT_COUNTER_VEC: CounterVec = register_counter_vec!(
         "muta_concensus_result",
         "Total number of consensus result",
         &["type", "result"]

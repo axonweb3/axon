@@ -13,6 +13,15 @@ lazy_static::lazy_static! {
 
 pub type Hash = H256;
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct DBBytes(pub Bytes);
+
+impl AsRef<[u8]> for DBBytes {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_ref()
+    }
+}
+
 pub struct Hasher;
 
 impl Hasher {
