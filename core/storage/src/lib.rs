@@ -489,7 +489,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         let mut found = Vec::with_capacity(hashes.len());
 
         {
-            let inst = Instant::now();
+            // let inst = Instant::now();
             let prepare_iter = self
                 .adapter
                 .prepare_iter::<ReceiptBytesSchema, _>(&key_prefix)?;

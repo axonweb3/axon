@@ -19,7 +19,7 @@ use protocol::types::{
 const ADDRESS_STR: &str = "0xCAB8EEA4799C21379C20EF5BAA2CC8AF1BEC475B";
 
 fn mock_signed_tx(tx_hash: Hash) -> SignedTransaction {
-    let nonce = Hasher::digest(Bytes::from("XXXX"));
+    // let nonce = Hasher::digest(Bytes::from("XXXX"));
 
     SignedTransaction {
         transaction: UnverifiedTransaction {
@@ -43,14 +43,14 @@ fn mock_signed_tx(tx_hash: Hash) -> SignedTransaction {
                 s:          Default::default(),
             },
             chain_id:  None,
-            hash:      Default::default(),
+            hash:      tx_hash,
         },
         sender:      Default::default(),
         public:      None,
     }
 }
 
-fn mock_receipt(tx_hash: Hash) -> Receipt {
+fn mock_receipt(_tx_hash: Hash) -> Receipt {
     Receipt {
         state_root: Default::default(),
         used_gas:   Default::default(),
@@ -71,7 +71,7 @@ fn mock_block(height: u64, block_hash: Hash) -> Block {
         log_bloom:         Default::default(),
         difficulty:        Default::default(),
         timestamp:         0,
-        number:            0,
+        number:            height,
         gas_used:          Default::default(),
         gas_limit:         Default::default(),
         extra_data:        Default::default(),

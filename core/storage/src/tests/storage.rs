@@ -42,7 +42,7 @@ fn test_storage_receipts_insert() {
         receipts.push(receipt);
     }
 
-    exec!(storage.insert_receipts(Context::new(), height, receipts.clone()));
+    exec!(storage.insert_receipts(Context::new(), height, hashes.clone(), receipts.clone()));
     let receipts_2 = exec!(storage.get_receipts(Context::new(), height, hashes));
 
     for i in 0..10 {
@@ -122,8 +122,11 @@ fn bench_insert_10000_receipts(b: &mut Bencher) {
         .map(|_| mock_receipt(Hasher::digest(get_random_bytes(10))))
         .collect::<Vec<_>>();
 
+
     b.iter(move || {
-        exec!(storage.insert_receipts(Context::new(), height, receipts.clone()));
+        exec!(storage.insert_receipts(Context::new(), height, (0..10000)
+        .map(|_| Hasher::digest(get_random_bytes(10)))
+        .collect::<Vec<_>>(), receipts.clone()));
     })
 }
 
@@ -137,7 +140,14 @@ fn bench_insert_20000_receipts(b: &mut Bencher) {
         .collect::<Vec<_>>();
 
     b.iter(move || {
-        exec!(storage.insert_receipts(Context::new(), height, receipts.clone()));
+        exec!(storage.insert_receipts(
+            Context::new(),
+            height,
+            (0..20000)
+                .map(|_| Hasher::digest(get_random_bytes(10)))
+                .collect::<Vec<_>>(),
+            receipts.clone()
+        ));
     })
 }
 
@@ -151,7 +161,14 @@ fn bench_insert_40000_receipts(b: &mut Bencher) {
         .collect::<Vec<_>>();
 
     b.iter(move || {
-        exec!(storage.insert_receipts(Context::new(), height, receipts.clone()));
+        exec!(storage.insert_receipts(
+            Context::new(),
+            height,
+            (0..40000)
+                .map(|_| Hasher::digest(get_random_bytes(10)))
+                .collect::<Vec<_>>(),
+            receipts.clone()
+        ));
     })
 }
 
@@ -165,7 +182,14 @@ fn bench_insert_80000_receipts(b: &mut Bencher) {
         .collect::<Vec<_>>();
 
     b.iter(move || {
-        exec!(storage.insert_receipts(Context::new(), height, receipts.clone()));
+        exec!(storage.insert_receipts(
+            Context::new(),
+            height,
+            (0..80000)
+                .map(|_| Hasher::digest(get_random_bytes(10)))
+                .collect::<Vec<_>>(),
+            receipts.clone()
+        ));
     })
 }
 #[bench]

@@ -5,7 +5,7 @@ use protocol::traits::StorageCategory;
 
 use crate::metrics::{
     auto_flush_from, duration_to_sec, make_auto_flush_static_metric, register_counter_vec,
-    CounterVec, IntCounterVec,
+    CounterVec,
 };
 
 make_auto_flush_static_metric! {
