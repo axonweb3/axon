@@ -5,6 +5,9 @@ mod mempool;
 mod network;
 mod storage;
 
+pub use consensus::{
+    CommonConsensusAdapter, Consensus, ConsensusAdapter, NodeInfo, SynchronizationAdapter,
+};
 pub use creep::{Cloneable, Context};
 pub use executor::{ApplyBackend, Backend, Executor};
 pub use mempool::{MemPool, MemPoolAdapter, MixedTxHashes};

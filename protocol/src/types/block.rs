@@ -44,3 +44,9 @@ pub struct Validator {
     pub propose_weight: u32,
     pub vote_weight:    u32,
 }
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Pill {
+    pub block:          Block,
+    pub propose_hashes: Vec<Hash>,
+}

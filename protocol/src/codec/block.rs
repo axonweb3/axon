@@ -1,7 +1,8 @@
 use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
 use crate::types::{
-    Address, Block, Bloom, Bytes, Header, Proof, UnverifiedTransaction, Validator, H256, H64, U256,
+    Address, Block, Bloom, Bytes, Hash, Header, Pill, Proof, UnverifiedTransaction, Validator,
+    H256, H64, U256,
 };
 
 impl Encodable for Header {
@@ -154,6 +155,31 @@ impl Decodable for Validator {
                     pub_key,
                     propose_weight,
                     vote_weight,
+                })
+            }
+            _ => Err(DecoderError::RlpExpectedToBeList),
+        }
+    }
+}
+
+impl Encodable for Pill {
+    fn rlp_append(&self, s: &mut RlpStream) {
+        s.begin_list(2)
+            .append(&self.block)
+            .append_list(&self.propose_hashes);
+    }
+}
+
+impl Decodable for Pill {
+    fn decode(r: &Rlp) -> Result<Self, DecoderError> {
+        match r.prototype()? {
+            Prototype::List(2) => {
+                let block: Block = r.val_at(0)?;
+                let propose_hashes: Vec<Hash> = r.list_at(1)?;
+
+                Ok(Pill {
+                    block,
+                    propose_hashes,
                 })
             }
             _ => Err(DecoderError::RlpExpectedToBeList),
