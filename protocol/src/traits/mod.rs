@@ -6,7 +6,7 @@ mod network;
 mod storage;
 
 pub use creep::{Cloneable, Context};
-pub use executor::{BatchExecuteResult, ExecuteResult, Executor};
+pub use executor::{ExecuteResult, Executor};
 pub use mempool::{MemPool, MemPoolAdapter, MixedTxHashes};
 pub use network::{Gossip, MessageCodec, MessageHandler, PeerTrust, Priority, Rpc, TrustFeedback};
 pub use storage::{
