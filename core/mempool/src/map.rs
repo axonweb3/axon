@@ -157,10 +157,10 @@ mod tests {
 
     use std::collections::HashMap;
     use std::sync::{Arc, RwLock};
-
-    use chashmap::CHashMap;
-    use rand::random;
     use test::Bencher;
+
+    use dashmap::DashMap;
+    use rand::random;
 
     use protocol::tokio::runtime::Runtime;
     use protocol::types::{Bytes, Hash, Hasher};
@@ -200,7 +200,7 @@ mod tests {
         let txs = mock_txs(GEN_TX_SIZE);
 
         b.iter(move || {
-            let cache = CHashMap::new();
+            let cache = DashMap::new();
             txs.iter().for_each(|(hash, tx)| {
                 cache.insert(hash, tx);
             });

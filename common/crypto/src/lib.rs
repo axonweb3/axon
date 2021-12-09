@@ -7,7 +7,9 @@ pub use ophelia::{
 };
 pub use ophelia_bls_amcl::{BlsCommonReference, BlsPrivateKey, BlsPublicKey, BlsSignature};
 pub use ophelia_secp256k1::{
-    Secp256k1, Secp256k1PrivateKey, Secp256k1PublicKey, Secp256k1Signature,
+    Secp256k1, Secp256k1PrivateKey, Secp256k1PublicKey, Secp256k1Recoverable,
+    Secp256k1RecoverablePrivateKey, Secp256k1RecoverablePublicKey, Secp256k1RecoverableSignature,
+    Secp256k1Signature,
 };
 
 #[rustfmt::skip]

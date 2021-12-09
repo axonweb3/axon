@@ -47,7 +47,7 @@ fn mock_signed_tx(tx_hash: Hash) -> SignedTransaction {
             hash:      tx_hash,
         },
         sender:      Default::default(),
-        public:      None,
+        public:      Default::default(),
     }
 }
 
@@ -79,12 +79,12 @@ fn mock_block(height: u64, _block_hash: Hash) -> Block {
         mixed_hash:        None,
         nonce:             Default::default(),
         base_fee_per_gas:  None,
+        proof:             Proof::default(),
     };
 
     Block {
         header,
         transactions: vec![],
-        uncles: vec![],
     }
 }
 

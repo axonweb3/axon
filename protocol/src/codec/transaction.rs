@@ -2,15 +2,15 @@ use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
 use crate::types::{
     Address, Public, SignatureComponents, SignedTransaction, Transaction, UnverifiedTransaction,
-    H256, U256,
+    H256,
 };
 
 impl Encodable for SignatureComponents {
     fn rlp_append(&self, s: &mut RlpStream) {
         s.begin_list(3)
-            .append(&self.standard_v)
             .append(&self.r)
-            .append(&self.s);
+            .append(&self.s)
+            .append(&self.standard_v);
     }
 }
 
@@ -18,9 +18,9 @@ impl Decodable for SignatureComponents {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
             Prototype::List(3) => {
-                let standard_v: u8 = r.val_at(0)?;
-                let r_: U256 = r.val_at(1)?;
-                let s: U256 = r.val_at(2)?;
+                let r_: H256 = r.val_at(0)?;
+                let s: H256 = r.val_at(1)?;
+                let standard_v: u8 = r.val_at(2)?;
 
                 Ok(SignatureComponents {
                     standard_v,
@@ -79,7 +79,7 @@ impl Decodable for SignedTransaction {
             Prototype::List(3) => {
                 let transaction: UnverifiedTransaction = r.val_at(0)?;
                 let sender: Address = r.val_at(1)?;
-                let public: Option<Public> = r.val_at(2)?;
+                let public: Public = r.val_at(2)?;
 
                 Ok(SignedTransaction {
                     transaction,
@@ -122,8 +122,8 @@ mod tests {
     fn mock_sig_component() -> SignatureComponents {
         SignatureComponents {
             standard_v: random::<u8>(),
-            r:          U256::one(),
-            s:          U256::one(),
+            r:          H256::default(),
+            s:          H256::default(),
         }
     }
 
@@ -144,12 +144,12 @@ mod tests {
                 mock_unverfied_tx(None)
             },
             sender:      Address::default(),
-            public:      Some(Public::default()),
+            public:      Public::default(),
         }
     }
 
     #[test]
-    fn test() {
+    fn test_signed_tx_codec() {
         let origin = mock_signed_tx(true);
         let encode = rlp::encode(&origin).freeze().to_vec();
         let decode: SignedTransaction = rlp::decode(&encode).unwrap();

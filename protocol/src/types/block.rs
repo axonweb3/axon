@@ -6,7 +6,6 @@ pub type BlockNumber = u64;
 pub struct Block {
     pub header:       Header,
     pub transactions: Vec<UnverifiedTransaction>,
-    pub uncles:       Vec<Header>,
 }
 
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
@@ -27,9 +26,10 @@ pub struct Header {
     pub mixed_hash:        Option<H256>,
     pub nonce:             H64,
     pub base_fee_per_gas:  Option<U256>,
+    pub proof:             Proof,
 }
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+#[derive(Default, Clone, Debug, Hash, PartialEq, Eq)]
 pub struct Proof {
     pub number:     u64,
     pub round:      u64,

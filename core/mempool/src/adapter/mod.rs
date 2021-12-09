@@ -14,14 +14,14 @@ use futures::{
 };
 use log::{debug, error};
 
-use common_crypto::Crypto;
+use common_crypto::{Crypto, Secp256k1Recoverable};
 use protocol::{
     async_trait,
     codec::ProtocolCodec,
     tokio,
     tokio::time::sleep,
     traits::{Context, Gossip, MemPoolAdapter, PeerTrust, Priority, Rpc, Storage, TrustFeedback},
-    types::{Hash, SignedTransaction, U256},
+    types::{recover_intact_pub_key, Hash, SignedTransaction, U256},
     Display, ProtocolError, ProtocolErrorKind, ProtocolResult,
 };
 
@@ -258,7 +258,7 @@ where
         if fixed_bytes.len() > self.max_tx_size {
             if ctx.is_network_origin_txs() {
                 self.network.report(
-                    ctx.clone(),
+                    ctx,
                     TrustFeedback::Bad(format!("Mempool exceed size limit of tx {:?}", tx_hash)),
                 );
             }
@@ -270,12 +270,12 @@ where
             .into());
         }
 
-        // check cycle limit
+        // check gas limit
         let gas_limit_tx = stx.transaction.unsigned.gas_limit;
         if gas_limit_tx > self.gas_limit {
             if ctx.is_network_origin_txs() {
                 self.network.report(
-                    ctx.clone(),
+                    ctx,
                     TrustFeedback::Bad(format!("Mempool exceed cycle limit of tx {:?}", tx_hash)),
                 );
             }
@@ -288,11 +288,10 @@ where
         }
 
         // Verify chain id
-        let latest_header = self.storage.get_latest_block_header(ctx.clone()).await?;
         if self.chain_id != stx.transaction.chain_id.unwrap_or_default() {
             if ctx.is_network_origin_txs() {
                 self.network.report(
-                    ctx.clone(),
+                    ctx,
                     TrustFeedback::Worse(format!("Mempool wrong chain of tx {:?}", tx_hash)),
                 );
             }
@@ -301,24 +300,13 @@ where
             return Err(wrong_chain_id.into());
         }
 
-        // Verify timeout
-        let _latest_height = latest_header.number;
-        // if stx.raw.timeout > latest_height + timeout_gap {
-        //     let invalid_timeout = MemPoolError::InvalidTimeout {
-        //         tx_hash: tx_hash.clone(),
-        //     };
-
-        //     return Err(invalid_timeout.into());
-        // }
-
-        // if stx.raw.timeout < latest_height {
-        //     let timeout = MemPoolError::Timeout {
-        //         tx_hash: stx.tx_hash.clone(),
-        //         timeout: stx.raw.timeout,
-        //     };
-
-        //     return Err(timeout.into());
-        // }
+        // Verify signature
+        Secp256k1Recoverable::verify_signature(
+            stx.transaction.hash.as_bytes(),
+            stx.transaction.signature.as_bytes().as_ref(),
+            recover_intact_pub_key(&stx.public).as_bytes(),
+        )
+        .map_err(|err| AdapterError::VerifySignature(err.to_string()))?;
 
         Ok(())
     }
@@ -367,6 +355,9 @@ pub enum AdapterError {
 
     #[display(fmt = "adapter: internal error")]
     Internal,
+
+    #[display(fmt = "adapter: verify signature error {:?}", _0)]
+    VerifySignature(String),
 }
 
 impl Error for AdapterError {}
