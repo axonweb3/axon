@@ -38,7 +38,7 @@ use crate::BlockProofField::{BitMap, HashMismatch, HeightMismatch, Signature, We
 use crate::{BlockHeaderField, BlockProofField, ConsensusError};
 
 pub struct OverlordConsensusAdapter<
-    EF: ExecutorFactory<DB, S, Mapping>,
+    EF: ExecutorFactory<DB, S>,
     M: MemPool,
     N: Rpc + PeerTrust + Gossip + Network + 'static,
     S: Storage,
@@ -59,7 +59,7 @@ pub struct OverlordConsensusAdapter<
 impl<EF, M, N, S, DB> ConsensusAdapter
     for OverlordConsensusAdapter<EF, M, N, S, DB>
 where
-    EF: ExecutorFactory<DB, S, Mapping>,
+    EF: ExecutorFactory<DB, S>,
     M: MemPool + 'static,
     N: Rpc + PeerTrust + Gossip + Network + 'static,
     S: Storage + 'static,
@@ -200,7 +200,7 @@ where
 impl<EF, M, N, S, DB> SynchronizationAdapter
     for OverlordConsensusAdapter<EF, M, N, S, DB>
 where
-    EF: ExecutorFactory<DB, S, Mapping>,
+    EF: ExecutorFactory<DB, S>,
     M: MemPool + 'static,
     N: Rpc + PeerTrust + Gossip + Network + 'static,
     S: Storage + 'static,
@@ -236,27 +236,6 @@ where
             )
             .map_err(|e| ConsensusError::OverlordErr(Box::new(e)))?;
         Ok(())
-    }
-
-    // #[muta_apm::derive::tracing_span(kind = "consensus.adapter", logs = "{'txs_len': 'txs.len()'}")]
-    fn sync_exec(
-        &self,
-        ctx: Context,
-        params: &ExecutorParams,
-        txs: &[SignedTransaction],
-    ) -> ProtocolResult<ExecutorResp> {
-        let mut executor = EF::from_root(
-            params.state_root.clone(),
-            Arc::clone(&self.trie_db),
-            Arc::clone(&self.storage),
-            Arc::clone(&self.service_mapping),
-        )?;
-        let inst = Instant::now();
-        let resp = executor.exec(ctx, params, txs)?;
-        common_apm::metrics::consensus::CONSENSUS_TIME_HISTOGRAM_VEC_STATIC
-            .exec
-            .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
-        Ok(resp)
     }
 
     /// Pull some blocks from other nodes from `begin` to `end`.

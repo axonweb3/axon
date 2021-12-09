@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use common_merkle::Merkle;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{Context, ExecutorResp};
-use protocol::types::{Block, Hash, MerkleRoot, Metadata, Proof, Validator};
+use protocol::types::{Block, Hash, MerkleRoot, Proof, Validator};
 use protocol::Display;
 
 use crate::util::check_list_roots;

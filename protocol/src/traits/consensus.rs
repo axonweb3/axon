@@ -56,13 +56,6 @@ pub trait SynchronizationAdapter: CommonConsensusAdapter + Send + Sync {
         validators: Vec<Validator>,
     ) -> ProtocolResult<()>;
 
-    // fn sync_exec(
-    //     &self,
-    //     ctx: Context,
-    //     params: &ExecutorParams,
-    //     txs: &[SignedTransaction],
-    // ) -> ProtocolResult<ExecutorResp>;
-
     /// Pull some blocks from other nodes from `begin` to `end`.
     async fn get_block_from_remote(&self, ctx: Context, height: u64) -> ProtocolResult<Block>;
 
