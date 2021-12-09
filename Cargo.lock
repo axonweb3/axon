@@ -505,7 +505,12 @@ dependencies = [
 name = "core-executor"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "axon-protocol",
+ "ethereum",
+ "evm",
+ "futures",
+ "hex",
 ]
 
 [[package]]
