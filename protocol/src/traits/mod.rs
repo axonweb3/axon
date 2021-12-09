@@ -11,6 +11,7 @@ pub use consensus::{
     CommonConsensusAdapter, Consensus, ConsensusAdapter, MessageTarget, NodeInfo, Synchronization,
     SynchronizationAdapter,
 };
+pub use ckb_client::CkbClient;
 pub use creep::{Cloneable, Context};
 pub use executor::{ApplyBackend, Backend, Executor, ExecutorAdapter};
 pub use mempool::{MemPool, MemPoolAdapter};
