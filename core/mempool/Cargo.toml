@@ -12,6 +12,7 @@ futures = { version = "0.3", features = [ "async-await" ] }
 hex = "0.4"
 log = "0.4"
 rand = "0.7"
+rayon = "1.5"
 rlp = "0.5"
 rlp-derive = "0.1"
 
@@ -20,5 +21,5 @@ common-apm = { path = "../../common/apm" }
 common-crypto = { path = "../../common/crypto" }
 
 [dev-dependencies]
-chashmap = "2.2"
+dashmap = "4.0"
 parking_lot = "0.11"

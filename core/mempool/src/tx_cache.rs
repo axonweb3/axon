@@ -265,7 +265,6 @@ impl TxCache {
     }
 
     pub async fn check_reach_limit(&self, pool_size: usize) -> ProtocolResult<()> {
-        println!("{:?}", pool_size);
         if self.len().await >= pool_size {
             return Err(MemPoolError::ReachLimit { pool_size }.into());
         }
@@ -408,14 +407,17 @@ mod tests {
     extern crate test;
 
     use std::sync::Arc;
-
     use test::Bencher;
 
+    use rand::random;
+
     use protocol::tokio;
-    use protocol::types::{Hash, SignedTransaction};
+    use protocol::types::{
+        Address, Bytes, Hash, Public, SignatureComponents, SignedTransaction, Transaction,
+        TransactionAction, UnverifiedTransaction, H256, U256,
+    };
 
     use crate::map::Map;
-    use crate::tests::mock_signed_tx;
     use crate::tx_cache::{TxCache, TxWrapper};
 
     const POOL_SIZE: usize = 1000;
@@ -426,10 +428,60 @@ mod tests {
     const CURRENT_H: u64 = 100;
     const TIMEOUT: u64 = 150;
 
+    fn rand_bytes(len: usize) -> Bytes {
+        Bytes::from((0..len).map(|_| random::<u8>()).collect::<Vec<_>>())
+    }
+
+    fn mock_transaction() -> Transaction {
+        Transaction {
+            chain_id:                 random::<u64>(),
+            nonce:                    U256::one(),
+            gas_limit:                U256::one(),
+            max_priority_fee_per_gas: U256::one(),
+            max_fee_per_gas:          U256::one(),
+            action:                   TransactionAction::Create,
+            value:                    U256::one(),
+            input:                    rand_bytes(32).to_vec(),
+            access_list:              vec![],
+            odd_y_parity:             true,
+            r:                        H256::default(),
+            s:                        H256::default(),
+        }
+    }
+
+    fn mock_unverfied_tx(chain_id: Option<u64>) -> UnverifiedTransaction {
+        UnverifiedTransaction {
+            unsigned: mock_transaction(),
+            chain_id,
+            hash: H256::from_slice(&rand_bytes(32)),
+            signature: mock_sig_component(),
+        }
+    }
+
+    fn mock_sig_component() -> SignatureComponents {
+        SignatureComponents {
+            standard_v: random::<u8>(),
+            r:          H256::default(),
+            s:          H256::default(),
+        }
+    }
+
+    fn mock_signed_tx(has_chain_id: bool) -> SignedTransaction {
+        SignedTransaction {
+            transaction: if has_chain_id {
+                mock_unverfied_tx(Some(random::<u64>()))
+            } else {
+                mock_unverfied_tx(None)
+            },
+            sender:      Address::default(),
+            public:      Public::default(),
+        }
+    }
+
     fn gen_signed_txs(n: usize) -> Vec<SignedTransaction> {
         let mut vec = Vec::new();
         for _ in 0..n {
-            vec.push(mock_signed_tx());
+            vec.push(mock_signed_tx(true));
         }
         vec
     }

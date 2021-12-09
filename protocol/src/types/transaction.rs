@@ -3,7 +3,7 @@ pub use ethereum::{
     TransactionAction, TransactionRecoveryId, TransactionSignature,
 };
 
-use crate::types::{Address, Bytes, Public, H256, U256};
+use crate::types::{Address, Bytes, BytesMut, Hasher, Public, H256, H520};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct UnverifiedTransaction {
@@ -15,25 +15,33 @@ pub struct UnverifiedTransaction {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SignatureComponents {
-    pub r:          U256,
-    pub s:          U256,
+    pub r:          H256,
+    pub s:          H256,
     pub standard_v: u8,
+}
+
+impl From<Bytes> for SignatureComponents {
+    fn from(bytes: Bytes) -> Self {
+        debug_assert!(bytes.len() == 65);
+        SignatureComponents {
+            r:          H256::from_slice(&bytes[0..32]),
+            s:          H256::from_slice(&bytes[32..64]),
+            standard_v: *bytes.as_ref().to_vec().last().unwrap(),
+        }
+    }
 }
 
 impl From<SignatureComponents> for Bytes {
     fn from(sc: SignatureComponents) -> Self {
-        let mut r_bytes = Vec::new();
-        let mut s_bytes = Vec::new();
-        sc.r.to_big_endian(&mut r_bytes);
-        sc.s.to_big_endian(&mut s_bytes);
-        r_bytes.append(&mut s_bytes);
-        r_bytes.push(sc.standard_v);
-        Bytes::from(r_bytes)
+        let mut bytes = BytesMut::from(sc.r.as_bytes());
+        bytes.extend_from_slice(sc.s.as_bytes());
+        bytes.extend_from_slice(&[sc.standard_v]);
+        bytes.freeze()
     }
 }
 
 impl SignatureComponents {
-    fn as_bytes(&self) -> Bytes {
+    pub fn as_bytes(&self) -> Bytes {
         self.clone().into()
     }
 }
@@ -42,5 +50,18 @@ impl SignatureComponents {
 pub struct SignedTransaction {
     pub transaction: UnverifiedTransaction,
     pub sender:      Address,
-    pub public:      Option<Public>,
+    pub public:      Public,
+}
+
+pub fn public_to_address(public: &Public) -> Address {
+    let hash = Hasher::digest(public);
+    let mut ret = Address::zero();
+    ret.as_bytes_mut().copy_from_slice(&hash[12..]);
+    ret
+}
+
+pub fn recover_intact_pub_key(public: &Public) -> H520 {
+    let mut inner = vec![4u8];
+    inner.extend_from_slice(public.as_bytes());
+    H520::from_slice(&inner[0..65])
 }

@@ -18,8 +18,8 @@ impl Decodable for SignatureComponents {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
             Prototype::List(3) => {
-                let r_: U256 = r.val_at(0)?;
-                let s: U256 = r.val_at(1)?;
+                let r_: H256 = r.val_at(0)?;
+                let s: H256 = r.val_at(1)?;
                 let standard_v: u8 = r.val_at(2)?;
 
                 Ok(SignatureComponents {
@@ -79,7 +79,7 @@ impl Decodable for SignedTransaction {
             Prototype::List(3) => {
                 let transaction: UnverifiedTransaction = r.val_at(0)?;
                 let sender: Address = r.val_at(1)?;
-                let public: Option<Public> = r.val_at(2)?;
+                let public: Public = r.val_at(2)?;
 
                 Ok(SignedTransaction {
                     transaction,
@@ -122,8 +122,8 @@ mod tests {
     fn mock_sig_component() -> SignatureComponents {
         SignatureComponents {
             standard_v: random::<u8>(),
-            r:          U256::one(),
-            s:          U256::one(),
+            r:          H256::default(),
+            s:          H256::default(),
         }
     }
 
@@ -144,7 +144,7 @@ mod tests {
                 mock_unverfied_tx(None)
             },
             sender:      Address::default(),
-            public:      Some(Public::default()),
+            public:      Public::default(),
         }
     }
 

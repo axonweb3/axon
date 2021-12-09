@@ -1,5 +1,5 @@
 pub use ethereum_types::{
-    Address, Bloom, Public, Secret, Signature, H128, H160, H256, H512, H64, U128, U256, U512,
+    Address, Bloom, Public, Secret, Signature, H128, H160, H256, H512, H520, H64, U128, U256, U512,
 };
 
 use bytes::Bytes;
