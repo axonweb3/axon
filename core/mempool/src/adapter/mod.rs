@@ -258,7 +258,7 @@ where
         if fixed_bytes.len() > self.max_tx_size {
             if ctx.is_network_origin_txs() {
                 self.network.report(
-                    ctx.clone(),
+                    ctx,
                     TrustFeedback::Bad(format!("Mempool exceed size limit of tx {:?}", tx_hash)),
                 );
             }
@@ -275,7 +275,7 @@ where
         if gas_limit_tx > self.gas_limit {
             if ctx.is_network_origin_txs() {
                 self.network.report(
-                    ctx.clone(),
+                    ctx,
                     TrustFeedback::Bad(format!("Mempool exceed cycle limit of tx {:?}", tx_hash)),
                 );
             }
@@ -291,7 +291,7 @@ where
         if self.chain_id != stx.transaction.chain_id.unwrap_or_default() {
             if ctx.is_network_origin_txs() {
                 self.network.report(
-                    ctx.clone(),
+                    ctx,
                     TrustFeedback::Worse(format!("Mempool wrong chain of tx {:?}", tx_hash)),
                 );
             }

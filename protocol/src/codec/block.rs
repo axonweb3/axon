@@ -30,7 +30,7 @@ impl Encodable for Header {
 impl Decodable for Header {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
-            Prototype::List(16) => {
+            Prototype::List(17) => {
                 let parent_hash: H256 = r.val_at(0)?;
                 let uncles_hash: H256 = r.val_at(1)?;
                 let author: Address = r.val_at(2)?;
@@ -158,5 +158,26 @@ impl Decodable for Validator {
             }
             _ => Err(DecoderError::RlpExpectedToBeList),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_block_codec() {
+        let block = Block::default();
+        let bytes = rlp::encode(&block);
+        let decode: Block = rlp::decode(bytes.as_ref()).unwrap();
+        assert_eq!(block, decode);
+    }
+
+    #[test]
+    fn test_header_codec() {
+        let header = Header::default();
+        let bytes = rlp::encode(&header);
+        let decode: Header = rlp::decode(bytes.as_ref()).unwrap();
+        assert_eq!(header, decode);
     }
 }

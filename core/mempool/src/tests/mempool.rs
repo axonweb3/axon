@@ -52,7 +52,7 @@ async fn test_insert() {
     // 1. insertion under pool size.
     insert!(normal(100, 100, 100));
 
-    // 3. invalid insertion
+    // 2. invalid insertion
     insert!(invalid(80, 10, 80));
 }
 

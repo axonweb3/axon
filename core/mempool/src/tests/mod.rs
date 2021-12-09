@@ -10,8 +10,7 @@ use rand::rngs::OsRng;
 
 use common_crypto::{
     Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey,
-    Secp256k1RecoverablePublicKey, Secp256k1RecoverableSignature, Signature, ToPublicKey,
-    UncompressedPublicKey,
+    Secp256k1RecoverablePublicKey, Signature, ToPublicKey, UncompressedPublicKey,
 };
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{Context, MemPool, MemPoolAdapter, MixedTxHashes};
@@ -156,13 +155,12 @@ async fn check_hash(tx: &SignedTransaction) -> ProtocolResult<()> {
 }
 
 fn check_sig(stx: &SignedTransaction) -> ProtocolResult<()> {
-    let res = Secp256k1Recoverable::verify_signature(
+    Secp256k1Recoverable::verify_signature(
         stx.transaction.hash.as_bytes(),
         stx.transaction.signature.as_bytes().as_ref(),
         recover_intact_pub_key(&stx.public).as_bytes(),
-    );
-    println!("{:?}", res);
-    res.map_err(|err| AdapterError::VerifySignature(err.to_string()))?;
+    )
+    .map_err(|err| AdapterError::VerifySignature(err.to_string()))?;
     Ok(())
 }
 
@@ -287,7 +285,9 @@ fn mock_signed_tx(
     let tx_hash = Hasher::digest(raw_bytes);
 
     let signature = if valid {
-        Secp256k1Recoverable::sign_message(&tx_hash.as_bytes(), &priv_key.to_bytes()).unwrap().to_bytes()
+        Secp256k1Recoverable::sign_message(tx_hash.as_bytes(), &priv_key.to_bytes())
+            .unwrap()
+            .to_bytes()
     } else {
         Bytes::copy_from_slice([0u8; 65].as_ref())
     };

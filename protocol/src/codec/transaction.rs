@@ -2,7 +2,7 @@ use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
 use crate::types::{
     Address, Public, SignatureComponents, SignedTransaction, Transaction, UnverifiedTransaction,
-    H256, U256,
+    H256,
 };
 
 impl Encodable for SignatureComponents {
