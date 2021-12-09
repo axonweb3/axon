@@ -6,7 +6,7 @@ use crate::types::{
 
 impl Encodable for Header {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(16)
+        s.begin_list(17)
             .append(&self.parent_hash)
             .append(&self.uncles_hash)
             .append(&self.author)
@@ -22,7 +22,8 @@ impl Encodable for Header {
             .append(&self.extra_data)
             .append(&self.mixed_hash)
             .append(&self.nonce)
-            .append(&self.base_fee_per_gas);
+            .append(&self.base_fee_per_gas)
+            .append(&self.proof);
     }
 }
 
@@ -46,6 +47,7 @@ impl Decodable for Header {
                 let mixed_hash: Option<H256> = r.val_at(13)?;
                 let nonce: H64 = r.val_at(14)?;
                 let base_fee_per_gas: Option<U256> = r.val_at(15)?;
+                let proof: Proof = r.val_at(16)?;
 
                 Ok(Header {
                     parent_hash,
@@ -64,37 +66,35 @@ impl Decodable for Header {
                     mixed_hash,
                     nonce,
                     base_fee_per_gas,
+                    proof,
                 })
             }
-            _ => Err(DecoderError::RlpInconsistentLengthAndData),
+            _ => Err(DecoderError::RlpExpectedToBeList),
         }
     }
 }
 
 impl Encodable for Block {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(3)
+        s.begin_list(2)
             .append(&self.header)
-            .append_list(&self.transactions)
-            .append_list(&self.uncles);
+            .append_list(&self.transactions);
     }
 }
 
 impl Decodable for Block {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
-            Prototype::List(3) => {
+            Prototype::List(2) => {
                 let header: Header = r.val_at(0)?;
                 let transactions: Vec<UnverifiedTransaction> = r.list_at(1)?;
-                let uncles: Vec<Header> = r.list_at(2)?;
 
                 Ok(Block {
                     header,
                     transactions,
-                    uncles,
                 })
             }
-            _ => Err(DecoderError::RlpInconsistentLengthAndData),
+            _ => Err(DecoderError::RlpExpectedToBeList),
         }
     }
 }
@@ -128,7 +128,7 @@ impl Decodable for Proof {
                     bitmap,
                 })
             }
-            _ => Err(DecoderError::RlpInconsistentLengthAndData),
+            _ => Err(DecoderError::RlpExpectedToBeList),
         }
     }
 }
@@ -156,7 +156,7 @@ impl Decodable for Validator {
                     vote_weight,
                 })
             }
-            _ => Err(DecoderError::RlpInconsistentLengthAndData),
+            _ => Err(DecoderError::RlpExpectedToBeList),
         }
     }
 }

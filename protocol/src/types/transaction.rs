@@ -4,6 +4,7 @@ pub use ethereum::{
 };
 
 use crate::types::{Address, Public, H256, U256};
+use common_crypto::Secp256k1Signature;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct UnverifiedTransaction {
@@ -15,9 +16,20 @@ pub struct UnverifiedTransaction {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SignatureComponents {
-    pub standard_v: u8,
     pub r:          U256,
     pub s:          U256,
+    pub standard_v: u8,
+}
+
+impl From<SignatureComponents> for Secp256k1Signature {
+    fn from(sc: SignatureComponents) -> Self {
+        let mut r_bytes = Vec::new();
+        let mut s_bytes = Vec::new();
+        sc.r.to_big_endian(&mut r_bytes);
+        sc.s.to_big_endian(&mut s_bytes);
+        r_bytes.append(&mut s_bytes);
+        Secp256k1Signature::try_from(r_bytes.as_ref()).unwrap()
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
