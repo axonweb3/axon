@@ -1,16 +1,19 @@
+use std::error::Error;
+
+use overlord::Codec;
 use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
 use crate::types::{
     Address, Block, Bloom, Bytes, Hash, Header, Pill, Proof, UnverifiedTransaction, Validator,
     H256, H64, U256,
 };
+use crate::{codec::error::CodecError, ProtocolError};
 
 impl Encodable for Header {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(17)
-            .append(&self.parent_hash)
-            .append(&self.uncles_hash)
-            .append(&self.author)
+        s.begin_list(16)
+            .append(&self.prev_hash)
+            .append(&self.proposer)
             .append(&self.state_root)
             .append(&self.transactions_root)
             .append(&self.receipts_root)
@@ -31,29 +34,27 @@ impl Encodable for Header {
 impl Decodable for Header {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
-            Prototype::List(17) => {
-                let parent_hash: H256 = r.val_at(0)?;
-                let uncles_hash: H256 = r.val_at(1)?;
-                let author: Address = r.val_at(2)?;
-                let state_root: H256 = r.val_at(3)?;
-                let transactions_root: H256 = r.val_at(4)?;
-                let receipts_root: H256 = r.val_at(5)?;
-                let log_bloom: Bloom = r.val_at(6)?;
-                let difficulty: U256 = r.val_at(7)?;
-                let timestamp: u64 = r.val_at(8)?;
-                let number: u64 = r.val_at(9)?;
-                let gas_used: U256 = r.val_at(10)?;
-                let gas_limit: U256 = r.val_at(11)?;
-                let extra_data: Bytes = r.val_at(12)?;
-                let mixed_hash: Option<H256> = r.val_at(13)?;
-                let nonce: H64 = r.val_at(14)?;
-                let base_fee_per_gas: Option<U256> = r.val_at(15)?;
-                let proof: Proof = r.val_at(16)?;
+            Prototype::List(16) => {
+                let prev_hash: H256 = r.val_at(0)?;
+                let proposer: Address = r.val_at(1)?;
+                let state_root: H256 = r.val_at(2)?;
+                let transactions_root: H256 = r.val_at(3)?;
+                let receipts_root: H256 = r.val_at(4)?;
+                let log_bloom: Bloom = r.val_at(5)?;
+                let difficulty: U256 = r.val_at(6)?;
+                let timestamp: u64 = r.val_at(7)?;
+                let number: u64 = r.val_at(8)?;
+                let gas_used: U256 = r.val_at(9)?;
+                let gas_limit: U256 = r.val_at(10)?;
+                let extra_data: Bytes = r.val_at(11)?;
+                let mixed_hash: Option<H256> = r.val_at(12)?;
+                let nonce: H64 = r.val_at(13)?;
+                let base_fee_per_gas: Option<U256> = r.val_at(14)?;
+                let proof: Proof = r.val_at(15)?;
 
                 Ok(Header {
-                    parent_hash,
-                    uncles_hash,
-                    author,
+                    prev_hash,
+                    proposer,
                     state_root,
                     transactions_root,
                     receipts_root,
@@ -184,6 +185,18 @@ impl Decodable for Pill {
             }
             _ => Err(DecoderError::RlpExpectedToBeList),
         }
+    }
+}
+
+impl Codec for Pill {
+    fn encode(&self) -> Result<Bytes, Box<dyn Error + Send>> {
+        Ok(rlp::encode(self).freeze())
+    }
+
+    fn decode(data: Bytes) -> Result<Self, Box<dyn Error + Send>> {
+        let ret: Pill = rlp::decode(data.as_ref())
+            .map_err(|e| ProtocolError::from(CodecError::Rlp(e.to_string())))?;
+        Ok(ret)
     }
 }
 

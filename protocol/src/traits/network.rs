@@ -3,11 +3,8 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use async_trait::async_trait;
-use bytes::Bytes;
-use derive_more::Display;
-
-use crate::{codec::ProtocolCodec, traits::Context, ProtocolResult};
+use crate::{async_trait, codec::ProtocolCodec, traits::Context, Display, ProtocolResult};
+use crate::types::{Bytes, SignedTransaction};
 
 #[derive(Clone, Debug, Copy)]
 pub enum Priority {

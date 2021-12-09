@@ -10,9 +10,8 @@ pub struct Block {
 
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct Header {
-    pub parent_hash:       H256,
-    pub uncles_hash:       H256,
-    pub author:            Address,
+    pub prev_hash:       H256,
+    pub proposer:            Address,
     pub state_root:        H256,
     pub transactions_root: H256,
     pub receipts_root:     H256,

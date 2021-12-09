@@ -6,6 +6,7 @@ pub use executor::{
 pub use primitive::*;
 pub use receipt::*;
 pub use transaction::*;
+pub use batch::*;
 
 pub mod block;
 pub mod executor;

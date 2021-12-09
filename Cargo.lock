@@ -169,6 +169,7 @@ dependencies = [
  "hasher",
  "hex",
  "lazy_static",
+ "overlord",
  "rand 0.7.3",
  "rlp 0.5.1",
  "tokio 1.14.0",
@@ -584,7 +585,7 @@ version = "0.1.0"
 dependencies = [
  "axon-protocol",
  "bit-vec",
- "cita_trie",
+ "cita_trie 2.0.0",
  "common-apm",
  "common-crypto",
  "common-logger",

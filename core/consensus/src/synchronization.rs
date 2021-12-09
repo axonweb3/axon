@@ -10,7 +10,7 @@ use protocol::traits::{
     Context, ExecutorParams, ExecutorResp, Synchronization, SynchronizationAdapter,
 };
 use protocol::types::{Block, Hash, Proof, Receipt, SignedTransaction};
-use protocol::{ProtocolResult, async_trait, tokio::time::sleep};
+use protocol::{async_trait, tokio::time::sleep, ProtocolResult};
 
 use crate::engine::generate_new_crypto_map;
 use crate::status::{ExecutedInfo, StatusAgent};

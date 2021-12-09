@@ -16,15 +16,15 @@ use core_network::{PeerId, PeerIdExt};
 use protocol::tokio::sync::mpsc::error::TrySendError;
 use protocol::tokio::sync::mpsc::{channel, Receiver, Sender};
 use protocol::traits::{
-    CommonConsensusAdapter, ConsensusAdapter, Context, ExecutorFactory, ExecutorParams,
-    ExecutorResp, Gossip, MemPool, MessageTarget, MixedTxHashes, Network, PeerTrust, Priority, Rpc,
-    Storage, SynchronizationAdapter,
+    BatchExecuteResult, CommonConsensusAdapter, ConsensusAdapter, Context, ExecuteResult, Executor,
+    Gossip, MemPool, MessageTarget, MixedTxHashes, Network, PeerTrust, Priority, Rpc, Storage,
+    SynchronizationAdapter,
 };
 use protocol::types::{
-    Address, Block, Bytes, Hash, Header, Hex, MerkleRoot, Proof, Receipt, SignedTransaction,
-    Transaction, Validator, BlockNumber, Pill
+    Address, Block, BlockNumber, Hasher, Bytes, Hash, Header, Hex, MerkleRoot, Pill, Proof, Receipt,
+    SignedTransaction, Transaction, Validator, BatchBlocks, BatchSignedTxs, public_to_address
 };
-use protocol::{codec::ProtocolCodec, ProtocolResult, async_trait};
+use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
 use crate::consensus::gen_overlord_status;
 use crate::message::{
@@ -38,7 +38,7 @@ use crate::BlockProofField::{BitMap, HashMismatch, HeightMismatch, Signature, We
 use crate::{BlockHeaderField, BlockProofField, ConsensusError};
 
 pub struct OverlordConsensusAdapter<
-    EF: ExecutorFactory<DB, S>,
+    EF: Executor,
     M: MemPool,
     N: Rpc + PeerTrust + Gossip + Network + 'static,
     S: Storage,
@@ -48,18 +48,15 @@ pub struct OverlordConsensusAdapter<
     mempool:          Arc<M>,
     storage:          Arc<S>,
     trie_db:          Arc<DB>,
+    executor:         Arc<EF>,
     overlord_handler: RwLock<Option<OverlordHandler<Pill>>>,
-
-    exec_queue:  Sender<ExecuteInfo>,
-    exec_demons: Option<ExecDemons<S, DB, EF>>,
-    crypto:      Arc<OverlordCrypto>,
+    crypto:           Arc<OverlordCrypto>,
 }
 
 #[async_trait]
-impl<EF, M, N, S, DB> ConsensusAdapter
-    for OverlordConsensusAdapter<EF, M, N, S, DB>
+impl<EF, M, N, S, DB> ConsensusAdapter for OverlordConsensusAdapter<EF, M, N, S, DB>
 where
-    EF: ExecutorFactory<DB, S>,
+    EF: Executor + 'static,
     M: MemPool + 'static,
     N: Rpc + PeerTrust + Gossip + Network + 'static,
     S: Storage + 'static,
@@ -81,7 +78,8 @@ where
         self.mempool.sync_propose_txs(ctx, txs).await
     }
 
-    // #[muta_apm::derive::tracing_span(kind = "consensus.adapter", logs = "{'txs_len': 'txs.len()'}")]
+    // #[muta_apm::derive::tracing_span(kind = "consensus.adapter", logs =
+    // "{'txs_len': 'txs.len()'}")]
     async fn get_full_txs(
         &self,
         ctx: Context,
@@ -119,69 +117,36 @@ where
     async fn execute(
         &self,
         ctx: Context,
-        chain_id: Hash,
         order_root: MerkleRoot,
         height: u64,
         cycles_price: u64,
         proposer: Address,
         block_hash: Hash,
         signed_txs: Vec<SignedTransaction>,
-        cycles_limit: u64,
-        timestamp: u64,
-    ) -> ProtocolResult<()> {
-        let exec_info = ExecuteInfo {
-            ctx,
-            height,
-            chain_id,
-            cycles_price,
-            block_hash,
-            signed_txs,
-            order_root,
-            proposer,
-            cycles_limit,
-            timestamp,
-        };
-
-        let mut tx = self.exec_queue.clone();
-        tx.try_send(exec_info).map_err(|e| match e {
-            TrySendError::Closed(_) => panic!("exec queue dropped!"),
-            _ => ConsensusError::ExecuteErr(e.to_string()),
-        })?;
-        Ok(())
-    }
-
-    // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
-    async fn get_last_validators(
-        &self,
-        ctx: Context,
-        height: u64,
-    ) -> ProtocolResult<Vec<Validator>> {
-        let header = self
-            .storage
-            .get_block_header(ctx, height)
-            .await?
-            .ok_or(ConsensusError::StorageItemNotFound)?;
-        Ok(header.validators)
+    ) -> ProtocolResult<BatchExecuteResult> {
+        let res = self.executor.batch_execute(signed_txs).await;
+        Ok(res)
     }
 
     /// Get the current height from storage.
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
-    async fn get_current_height(&self, ctx: Context) -> ProtocolResult<u64> {
+    async fn get_current_number(&self, ctx: Context) -> ProtocolResult<u64> {
         let header = self.storage.get_latest_block_header(ctx).await?;
-        Ok(header.height)
+        Ok(header.number)
     }
 
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
-    async fn pull_block(&self, ctx: Context, height: u64, end: &str) -> ProtocolResult<Block> {
-        log::debug!("consensus: send rpc pull block {}", height);
+    async fn pull_block(&self, ctx: Context, number: u64, end: &str) -> ProtocolResult<Block> {
+        log::debug!("consensus: send rpc pull block {}", number);
         let res = self
             .network
-            .call::<BlockNumber, Block>(ctx, end, height, Priority::High)
+            .call::<BlockNumber, Block>(ctx, end, number, Priority::High)
             .await?;
-        Ok(res.inner)
+        Ok(res)
     }
 
-    // #[muta_apm::derive::tracing_span(kind = "consensus.adapter", logs = "{'txs_len': 'txs.len()'}")]
+    // #[muta_apm::derive::tracing_span(kind = "consensus.adapter", logs =
+    // "{'txs_len': 'txs.len()'}")]
     async fn verify_txs(&self, ctx: Context, height: u64, txs: &[Hash]) -> ProtocolResult<()> {
         if let Err(e) = self
             .mempool
@@ -197,10 +162,9 @@ where
 }
 
 #[async_trait]
-impl<EF, M, N, S, DB> SynchronizationAdapter
-    for OverlordConsensusAdapter<EF, M, N, S, DB>
+impl<EF, M, N, S, DB> SynchronizationAdapter for OverlordConsensusAdapter<EF, M, N, S, DB>
 where
-    EF: ExecutorFactory<DB, S>,
+    EF: Executor + 'static,
     M: MemPool + 'static,
     N: Rpc + PeerTrust + Gossip + Network + 'static,
     S: Storage + 'static,
@@ -243,12 +207,7 @@ where
     async fn get_block_from_remote(&self, ctx: Context, height: u64) -> ProtocolResult<Block> {
         let res = self
             .network
-            .call::<BlockNumber, Block>(
-                ctx,
-                RPC_SYNC_PULL_BLOCK,
-                height,
-                Priority::High,
-            )
+            .call::<BlockNumber, Block>(ctx, RPC_SYNC_PULL_BLOCK, height, Priority::High)
             .await;
         match res {
             Ok(data) => {
@@ -256,7 +215,7 @@ where
                     .get_block_from_remote
                     .success
                     .inc();
-                Ok(data.inner)
+                Ok(data)
             }
             Err(err) => {
                 common_apm::metrics::consensus::CONSENSUS_RESULT_COUNTER_VEC_STATIC
@@ -282,14 +241,14 @@ where
     ) -> ProtocolResult<Vec<SignedTransaction>> {
         let res = self
             .network
-            .call::<PullTxsRequest, Vec<SignedTransaction>>(
+            .call::<PullTxsRequest, BatchSignedTxs>(
                 ctx,
                 RPC_SYNC_PULL_TXS,
                 PullTxsRequest::new(height, hashes.to_vec()),
                 Priority::High,
             )
             .await?;
-        Ok(res.inner)
+        Ok(res.inner())
     }
 
     /// Pull a proof of certain block from other nodes
@@ -297,22 +256,16 @@ where
     async fn get_proof_from_remote(&self, ctx: Context, height: u64) -> ProtocolResult<Proof> {
         let ret = self
             .network
-            .call::<BlockNumber, Proof>(
-                ctx.clone(),
-                RPC_SYNC_PULL_PROOF,
-                height,
-                Priority::High,
-            )
+            .call::<BlockNumber, Proof>(ctx.clone(), RPC_SYNC_PULL_PROOF, height, Priority::High)
             .await?;
-        Ok(ret.inner)
+        Ok(ret)
     }
 }
 
 #[async_trait]
-impl<EF, M, N, S, DB> CommonConsensusAdapter
-    for OverlordConsensusAdapter<EF, M, N, S, DB>
+impl<EF, M, N, S, DB> CommonConsensusAdapter for OverlordConsensusAdapter<EF, M, N, S, DB>
 where
-    EF: ExecutorFactory<DB, S>,
+    EF: Executor + 'static,
     M: MemPool + 'static,
     N: Rpc + PeerTrust + Gossip + Network + 'static,
     S: Storage + 'static,
@@ -390,11 +343,11 @@ where
             .ok_or_else(|| ConsensusError::StorageItemNotFound.into())
     }
 
-    /// Get the current height from storage.
+    /// Get the current number from storage.
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
-    async fn get_current_height(&self, ctx: Context) -> ProtocolResult<u64> {
+    async fn get_current_number(&self, ctx: Context) -> ProtocolResult<u64> {
         let header = self.storage.get_latest_block_header(ctx).await?;
-        Ok(header.height)
+        Ok(header.number)
     }
 
     // #[muta_apm::derive::tracing_span(
@@ -433,26 +386,21 @@ where
         self.network.tag_consensus(ctx, peer_ids_bytes)
     }
 
-    fn set_args(&self, _context: Context, timeout_gap: u64, cycles_limit: u64, max_tx_size: u64) {
-        self.mempool
-            .set_args(timeout_gap, cycles_limit, max_tx_size);
-    }
-
     /// this function verify all info in header except proof and roots
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
     async fn verify_block_header(&self, ctx: Context, block: &Block) -> ProtocolResult<()> {
         let previous_block_header = self
-            .get_block_header_by_height(ctx.clone(), block.header.height - 1)
+            .get_block_header_by_height(ctx.clone(), block.header.number - 1)
             .await
             .map_err(|e| {
                 log::error!(
                     "[consensus] verify_block_header, previous_block_header {} fails",
-                    block.header.height - 1,
+                    block.header.number - 1,
                 );
                 e
             })?;
 
-        let previous_block_hash = Hash::digest(previous_block_header.encode_fixed()?);
+        let previous_block_hash = Hasher::digest(previous_block_header.encode()?);
 
         if previous_block_hash != block.header.prev_hash {
             log::error!(
@@ -461,24 +409,24 @@ where
                 block.header.prev_hash
             );
             return Err(
-                ConsensusError::VerifyBlockHeader(block.header.height, PreviousBlockHash).into(),
+                ConsensusError::VerifyBlockHeader(block.header.number, PreviousBlockHash).into(),
             );
         }
 
         // the block 0 and 1 's proof is consensus-ed by community
-        if block.header.height > 1u64 && block.header.prev_hash != block.header.proof.block_hash {
+        if block.header.number > 1u64 && block.header.prev_hash != block.header.proof.block_hash {
             log::error!(
                 "[consensus] verify_block_header, verifying_block header : {:?}",
                 block.header
             );
-            return Err(ConsensusError::VerifyBlockHeader(block.header.height, ProofHash).into());
+            return Err(ConsensusError::VerifyBlockHeader(block.header.number, ProofHash).into());
         }
 
         // verify proposer and validators
         let previous_metadata = self.get_metadata(
             ctx,
             previous_block_header.state_root.clone(),
-            previous_block_header.height,
+            previous_block_header.number,
             previous_block_header.timestamp,
             previous_block_header.proposer,
         )?;
@@ -499,7 +447,7 @@ where
 
         // TODO: useless check
         // check proposer
-        if block.header.height != 0
+        if block.header.number != 0
             && !previous_metadata
                 .verifier_list
                 .iter()
@@ -510,12 +458,12 @@ where
                 block.header.proposer,
                 authority_map
             );
-            return Err(ConsensusError::VerifyBlockHeader(block.header.height, Proposer).into());
+            return Err(ConsensusError::VerifyBlockHeader(block.header.number, Proposer).into());
         }
 
         // check validators
         for validator in block.header.validators.iter() {
-            let validator_address = Address::from_pubkey_bytes(validator.pub_key.clone());
+            let validator_address = public_to_address(validator.pub_key.clone());
 
             if !authority_map.contains_key(&validator.pub_key) {
                 log::error!(
@@ -524,7 +472,7 @@ where
                     authority_map
                 );
                 return Err(ConsensusError::VerifyBlockHeader(
-                    block.header.height,
+                    block.header.number,
                     BlockHeaderField::Validator,
                 )
                 .into());
@@ -540,7 +488,7 @@ where
                         authority_map
                     );
                     return Err(ConsensusError::VerifyBlockHeader(
-                        block.header.height,
+                        block.header.number,
                         BlockHeaderField::Weight,
                     )
                     .into());
@@ -560,24 +508,24 @@ where
     ) -> ProtocolResult<()> {
         // the block 0 has no proof, which is consensus-ed by community, not by chain
 
-        if block_header.height == 0 {
+        if block_header.number == 0 {
             return Ok(());
         };
 
-        if block_header.height != proof.height {
+        if block_header.number != proof.number {
             log::error!(
                 "[consensus] verify_proof, block_header.height: {}, proof.height: {}",
-                block_header.height,
-                proof.height
+                block_header.number,
+                proof.number
             );
             return Err(ConsensusError::VerifyProof(
-                block_header.height,
-                HeightMismatch(block_header.height, proof.height),
+                block_header.number,
+                HeightMismatch(block_header.number, proof.number),
             )
             .into());
         }
 
-        let blockhash = Hash::digest(block_header.encode_fixed()?);
+        let blockhash = Hasher::digest(block_header.encode()?);
 
         if blockhash != proof.block_hash {
             log::error!(
@@ -585,16 +533,16 @@ where
                 blockhash,
                 proof.block_hash
             );
-            return Err(ConsensusError::VerifyProof(block_header.height, HashMismatch).into());
+            return Err(ConsensusError::VerifyProof(block_header.number, HashMismatch).into());
         }
 
         let previous_block_header = self
-            .get_block_header_by_height(ctx.clone(), block_header.height - 1)
+            .get_block_header_by_height(ctx.clone(), block_header.number - 1)
             .await
             .map_err(|e| {
                 log::error!(
                     "[consensus] verify_proof, previous_block {} fails",
-                    block_header.height - 1,
+                    block_header.number - 1,
                 );
                 e
             })?;
@@ -602,7 +550,7 @@ where
         let metadata = self.get_metadata(
             ctx.clone(),
             previous_block_header.state_root.clone(),
-            previous_block_header.height,
+            previous_block_header.number,
             previous_block_header.timestamp,
             previous_block_header.proposer,
         )?;
@@ -619,14 +567,14 @@ where
 
         let signed_voters = extract_voters(&mut authority_list, &proof.bitmap).map_err(|_| {
             log::error!("[consensus] extract_voters fails, bitmap error");
-            ConsensusError::VerifyProof(block_header.height, BitMap)
+            ConsensusError::VerifyProof(block_header.number, BitMap)
         })?;
 
         let vote = Vote {
-            height:     proof.height,
+            height:     proof.number,
             round:      proof.round,
             vote_type:  VoteType::Precommit,
-            block_hash: proof.block_hash.as_bytes(),
+            block_hash: Bytes::from(proof.block_hash.as_bytes()),
         };
 
         let weight_map = authority_list
@@ -635,7 +583,7 @@ where
             .collect::<HashMap<overlord::types::Address, u32>>();
         self.verify_proof_weight(
             ctx.clone(),
-            block_header.height,
+            block_header.number,
             weight_map,
             signed_voters.clone(),
         )?;
@@ -655,13 +603,13 @@ where
 
         self.verify_proof_signature(
             ctx.clone(),
-            block_header.height,
+            block_header.number,
             vote_hash.clone(),
             proof.signature.clone(),
             hex_pubkeys,
         ).map_err(|e| {
             log::error!("[consensus] verify_proof_signature error, height {}, vote: {:?}, vote_hash:{:?}, sig:{:?}, signed_voter:{:?}",
-            block_header.height,
+            block_header.number,
             vote,
             vote_hash,
             proof.signature,
@@ -744,7 +692,7 @@ where
 
 impl<EF, M, N, S, DB> OverlordConsensusAdapter<EF, M, N, S, DB>
 where
-    EF: ExecutorFactory<DB, S>,
+    EF: Executor + 'static,
     M: MemPool + 'static,
     N: Rpc + PeerTrust + Gossip + Network + 'static,
     S: Storage + 'static,
@@ -773,165 +721,13 @@ where
             storage,
             trie_db,
             overlord_handler: RwLock::new(None),
-            exec_queue,
-            exec_demons,
             crypto,
         };
 
         Ok(adapter)
     }
 
-    pub fn take_exec_demon(&mut self) -> ExecDemons<S, DB, EF> {
-        assert!(self.exec_demons.is_some());
-        self.exec_demons.take().unwrap()
-    }
-
     pub fn set_overlord_handler(&self, handler: OverlordHandler<Pill>) {
         *self.overlord_handler.write() = Some(handler)
-    }
-}
-
-#[derive(Debug)]
-pub struct ExecDemons<S, DB, EF> {
-    storage:         Arc<S>,
-    trie_db:         Arc<DB>,
-
-    pin_ef: PhantomData<EF>,
-    queue:  Receiver<ExecuteInfo>,
-    status: StatusAgent,
-}
-
-impl<S, DB, EF> ExecDemons<S, DB, EF>
-where
-    S: Storage,
-    DB: cita_trie::DB,
-    EF: ExecutorFactory<DB, S>,
-{
-    fn new(
-        storage: Arc<S>,
-        trie_db: Arc<DB>,
-        rx: Receiver<ExecuteInfo>,
-        status_agent: StatusAgent,
-    ) -> Self {
-        ExecDemons {
-            storage,
-            trie_db,
-            queue: rx,
-            pin_ef: PhantomData,
-            status: status_agent,
-        }
-    }
-
-    pub async fn run(mut self) {
-        loop {
-            let inst = Instant::now();
-            if let Err(e) = self.process().await {
-                log::error!("muta-consensus: executor demons error {:?}", e);
-            }
-            common_apm::metrics::consensus::CONSENSUS_TIME_HISTOGRAM_VEC_STATIC
-                .block
-                .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
-        }
-    }
-
-    async fn process(&mut self) -> ProtocolResult<()> {
-        if let Some(info) = self.queue.recv().await {
-            self.exec(info.ctx.clone(), info).await
-        } else {
-            Err(ConsensusError::Other("Queue disconnect".to_string()).into())
-        }
-    }
-
-    #[muta_apm::derive::tracing_span(
-        kind = "consensus.adapter",
-        logs = "{'height': 'info.height', 'txs_len': 'info.signed_txs.len()'}"
-    )]
-    async fn exec(&self, ctx: Context, info: ExecuteInfo) -> ProtocolResult<()> {
-        let height = info.height;
-        let txs = info.signed_txs;
-        let order_root = info.order_root;
-        let state_root = self.status.to_inner().get_latest_state_root();
-
-        let now = Instant::now();
-        let mut executor = EF::from_root(
-            state_root.clone(),
-            Arc::clone(&self.trie_db),
-            Arc::clone(&self.storage),
-            Arc::clone(&self.service_mapping),
-        )?;
-        let exec_params = ExecutorParams {
-            state_root: state_root.clone(),
-            height,
-            timestamp: info.timestamp,
-            cycles_limit: info.cycles_limit,
-            proposer: info.proposer,
-        };
-        let resp = executor.exec(ctx.clone(), &exec_params, &txs)?;
-        common_apm::metrics::consensus::CONSENSUS_TIME_HISTOGRAM_VEC_STATIC
-            .exec
-            .observe(common_apm::metrics::duration_to_sec(now.elapsed()));
-        log::info!(
-            "[consensus-adapter]: exec transactions cost {:?} transactions len {:?}",
-            now.elapsed(),
-            txs.len(),
-        );
-
-        let now = Instant::now();
-        self.save_receipts(info.ctx.clone(), height, resp.receipts.clone())
-            .await?;
-        log::info!(
-            "[consensus-adapter]: save receipts cost {:?} receipts len {:?}",
-            now.elapsed(),
-            resp.receipts.len(),
-        );
-        self.status.update_by_executed(gen_executed_info(
-            info.ctx.clone(),
-            resp,
-            height,
-            order_root,
-        ));
-
-        Ok(())
-    }
-
-    #[muta_apm::derive::tracing_span(
-        kind = "consensus.adapter",
-        logs = "{'receipts_len': 'receipts.len()'}"
-    )]
-    async fn save_receipts(
-        &self,
-        ctx: Context,
-        height: u64,
-        receipts: Vec<Receipt>,
-    ) -> ProtocolResult<()> {
-        self.storage.insert_receipts(ctx, height, receipts).await
-    }
-}
-
-fn gen_executed_info(
-    ctx: Context,
-    exec_resp: ExecutorResp,
-    height: u64,
-    order_root: MerkleRoot,
-) -> ExecutedInfo {
-    let cycles = exec_resp.all_cycles_used;
-
-    let receipt = Merkle::from_hashes(
-        exec_resp
-            .receipts
-            .iter()
-            .map(|r| Hash::digest(r.to_owned().encode_fixed().unwrap()))
-            .collect::<Vec<_>>(),
-    )
-    .get_root_hash()
-    .unwrap_or_else(Hash::from_empty);
-
-    ExecutedInfo {
-        ctx,
-        exec_height: height,
-        cycles_used: cycles,
-        receipt_root: receipt,
-        confirm_root: order_root,
-        state_root: exec_resp.state_root,
     }
 }
