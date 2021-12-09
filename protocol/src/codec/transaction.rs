@@ -8,9 +8,9 @@ use crate::types::{
 impl Encodable for SignatureComponents {
     fn rlp_append(&self, s: &mut RlpStream) {
         s.begin_list(3)
-            .append(&self.standard_v)
             .append(&self.r)
-            .append(&self.s);
+            .append(&self.s)
+            .append(&self.standard_v);
     }
 }
 
@@ -18,9 +18,9 @@ impl Decodable for SignatureComponents {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
             Prototype::List(3) => {
-                let standard_v: u8 = r.val_at(0)?;
-                let r_: U256 = r.val_at(1)?;
-                let s: U256 = r.val_at(2)?;
+                let r_: U256 = r.val_at(0)?;
+                let s: U256 = r.val_at(1)?;
+                let standard_v: u8 = r.val_at(2)?;
 
                 Ok(SignatureComponents {
                     standard_v,
@@ -149,7 +149,7 @@ mod tests {
     }
 
     #[test]
-    fn test() {
+    fn test_signed_tx_codec() {
         let origin = mock_signed_tx(true);
         let encode = rlp::encode(&origin).freeze().to_vec();
         let decode: SignedTransaction = rlp::decode(&encode).unwrap();
