@@ -4,7 +4,7 @@ pub mod trie_db;
 use std::sync::Arc;
 
 use cita_trie::DB as TrieDB;
-use evm::backend::{Apply, Basic, MemoryAccount};
+use evm::backend::{Apply, Basic};
 
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ApplyBackend, Backend};
@@ -108,11 +108,11 @@ impl<DB: TrieDB> Backend for ExecutorAdapter<DB> {
             Account::decode(raw.unwrap())
                 .and_then(|account| {
                     let storage_root = account.storage_root;
-                    MPTTrie::from_root(storage_root, Arc::clone(&self.db)).and_then(|trie| {
-                        Ok(match trie.get(index.as_bytes()) {
+                    MPTTrie::from_root(storage_root, Arc::clone(&self.db)).map(|trie| {
+                        match trie.get(index.as_bytes()) {
                             Ok(Some(res)) => H256::from_slice(res.as_ref()),
                             _ => H256::default(),
-                        })
+                        }
                     })
                 })
                 .unwrap_or_default()
@@ -142,12 +142,12 @@ impl<DB: TrieDB> ApplyBackend for ExecutorAdapter<DB> {
                     storage,
                     reset_storage,
                 } => {
-					let is_empty = self.apply(address, basic, code, storage, reset_storage);
-					if is_empty && delete_empty {
-						self.trie.remove(address.as_bytes()).unwrap();
-						self.trie.commit().unwrap();
-					}
-				}
+                    let is_empty = self.apply(address, basic, code, storage, reset_storage);
+                    if is_empty && delete_empty {
+                        self.trie.remove(address.as_bytes()).unwrap();
+                        self.trie.commit().unwrap();
+                    }
+                }
                 Apply::Delete { address } => {
                     let _ = self.trie.remove(address.as_bytes());
                 }

@@ -26,14 +26,10 @@ impl<DB: TrieDB> MPTTrie<DB> {
     }
 
     pub fn from_root(root: MerkleRoot, db: Arc<DB>) -> ProtocolResult<Self> {
-        let trie = PatriciaTrie::from(db, Arc::clone(&HASHER_INST), &root.as_bytes())
+        let trie = PatriciaTrie::from(db, Arc::clone(&HASHER_INST), root.as_bytes())
             .map_err(MPTTrieError::from)?;
 
         Ok(Self { root, trie })
-    }
-
-    pub fn root(&self) -> MerkleRoot {
-        self.root
     }
 
     pub fn get(&self, key: &[u8]) -> ProtocolResult<Option<Bytes>> {
@@ -67,7 +63,7 @@ impl<DB: TrieDB> MPTTrie<DB> {
         let root_bytes = self.trie.root().map_err(MPTTrieError::from)?;
         let root = MerkleRoot::from_slice(&root_bytes);
         self.root = root;
-        Ok(self.root.clone())
+        Ok(root)
     }
 }
 

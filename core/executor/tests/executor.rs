@@ -7,8 +7,8 @@ use evm::{ExitReason, ExitSucceed};
 use core_executor::EvmExecutor;
 use protocol::traits::Executor;
 use protocol::types::{
-    Public, SignatureComponents, SignedTransaction, Transaction, TransactionAction, UnverifiedTransaction,
-    H160, H256, U256,
+    Public, SignatureComponents, SignedTransaction, Transaction, TransactionAction,
+    UnverifiedTransaction, H160, H256, U256,
 };
 
 macro_rules! exec {

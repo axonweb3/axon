@@ -18,8 +18,3 @@ pub trait Executor: Send + Sync {
         tx: SignedTransaction,
     ) -> ExecResponse;
 }
-
-// #[async_trait]
-// pub trait ExecutorAdapter: Send + Sync {
-//     async fn
-// }

@@ -77,7 +77,7 @@ impl Decodable for ExecutorContext {
                     block_base_fee_per_gas,
                 })
             }
-            _ => return Err(DecoderError::RlpExpectedToBeList),
+            _ => Err(DecoderError::RlpExpectedToBeList),
         }
     }
 }
