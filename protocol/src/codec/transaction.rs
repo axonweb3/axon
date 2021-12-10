@@ -49,7 +49,7 @@ impl Decodable for UnverifiedTransaction {
             Prototype::List(4) => {
                 let unsigned: Transaction = r.val_at(0)?;
                 let signature: SignatureComponents = r.val_at(1)?;
-                let chain_id: Option<u64> = r.val_at(2)?;
+                let chain_id: u64 = r.val_at(2)?;
                 let hash: H256 = r.val_at(3)?;
 
                 Ok(UnverifiedTransaction {
@@ -127,22 +127,18 @@ mod tests {
         }
     }
 
-    fn mock_unverfied_tx(chain_id: Option<u64>) -> UnverifiedTransaction {
+    fn mock_unverfied_tx() -> UnverifiedTransaction {
         UnverifiedTransaction {
-            unsigned: mock_transaction(),
-            chain_id,
-            hash: H256::default(),
+            unsigned:  mock_transaction(),
+            chain_id:  random::<u64>(),
+            hash:      H256::default(),
             signature: mock_sig_component(),
         }
     }
 
-    fn mock_signed_tx(has_chain_id: bool) -> SignedTransaction {
+    fn mock_signed_tx() -> SignedTransaction {
         SignedTransaction {
-            transaction: if has_chain_id {
-                mock_unverfied_tx(Some(random::<u64>()))
-            } else {
-                mock_unverfied_tx(None)
-            },
+            transaction: mock_unverfied_tx(),
             sender:      Address::default(),
             public:      Public::default(),
         }
@@ -150,12 +146,7 @@ mod tests {
 
     #[test]
     fn test_signed_tx_codec() {
-        let origin = mock_signed_tx(true);
-        let encode = rlp::encode(&origin).freeze().to_vec();
-        let decode: SignedTransaction = rlp::decode(&encode).unwrap();
-        assert_eq!(origin, decode);
-
-        let origin = mock_signed_tx(false);
+        let origin = mock_signed_tx();
         let encode = rlp::encode(&origin).freeze().to_vec();
         let decode: SignedTransaction = rlp::decode(&encode).unwrap();
         assert_eq!(origin, decode);

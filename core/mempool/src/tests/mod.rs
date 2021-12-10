@@ -295,7 +295,7 @@ fn mock_signed_tx(
     let tx = UnverifiedTransaction {
         unsigned:  raw,
         signature: signature.into(),
-        chain_id:  None,
+        chain_id:  random::<u64>(),
         hash:      tx_hash,
     };
 

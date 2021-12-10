@@ -3,8 +3,8 @@ use evm::backend::{MemoryAccount, MemoryBackend, MemoryVicinity};
 use evm::{ExitReason, ExitSucceed};
 use protocol::traits::Executor as ExecutorT;
 use protocol::types::{
-    SignatureComponents, SignedTransaction, Transaction, TransactionAction, UnverifiedTransaction,
-    H160, H256, H512, U256,
+    Public, SignatureComponents, SignedTransaction, Transaction, TransactionAction, UnverifiedTransaction,
+    H160, H256, U256,
 };
 use std::collections::BTreeMap;
 use std::str::FromStr;
@@ -52,11 +52,11 @@ fn gen_tx(sender: H160, addr: H160, data: Vec<u8>) -> SignedTransaction {
                 r:          H256::default(),
                 s:          H256::default(),
             },
-            chain_id:  None,
+            chain_id:  0u64,
             hash:      H256::default(),
         },
         sender,
-        public: H512::default(),
+        public: Public::default(),
     }
 }
 

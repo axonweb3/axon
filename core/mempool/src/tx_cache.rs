@@ -449,11 +449,11 @@ mod tests {
         }
     }
 
-    fn mock_unverfied_tx(chain_id: Option<u64>) -> UnverifiedTransaction {
+    fn mock_unverfied_tx() -> UnverifiedTransaction {
         UnverifiedTransaction {
-            unsigned: mock_transaction(),
-            chain_id,
-            hash: H256::from_slice(&rand_bytes(32)),
+            unsigned:  mock_transaction(),
+            chain_id:  random::<u64>(),
+            hash:      H256::from_slice(&rand_bytes(32)),
             signature: mock_sig_component(),
         }
     }
@@ -466,13 +466,9 @@ mod tests {
         }
     }
 
-    fn mock_signed_tx(has_chain_id: bool) -> SignedTransaction {
+    fn mock_signed_tx() -> SignedTransaction {
         SignedTransaction {
-            transaction: if has_chain_id {
-                mock_unverfied_tx(Some(random::<u64>()))
-            } else {
-                mock_unverfied_tx(None)
-            },
+            transaction: mock_unverfied_tx(),
             sender:      Address::default(),
             public:      Public::default(),
         }
@@ -481,7 +477,7 @@ mod tests {
     fn gen_signed_txs(n: usize) -> Vec<SignedTransaction> {
         let mut vec = Vec::new();
         for _ in 0..n {
-            vec.push(mock_signed_tx(true));
+            vec.push(mock_signed_tx());
         }
         vec
     }
