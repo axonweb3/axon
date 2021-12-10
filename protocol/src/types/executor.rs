@@ -1,4 +1,13 @@
+pub use evm::{Config, ExitReason};
+
 use crate::types::{H256, U256};
+
+#[derive(Clone, Debug)]
+pub struct ExecResponse {
+    pub exit_reason: ExitReason,
+    pub ret:         Vec<u8>,
+    pub remain_gas:  u64,
+}
 
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct ExecutorContext {

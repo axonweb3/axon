@@ -1,7 +1,7 @@
 pub use address::*;
 pub use block::*;
 pub use bytes::{Buf, BufMut, Bytes, BytesMut};
-pub use executor::ExecutorContext;
+pub use executor::{Config, ExecResponse, ExecutorContext, ExitReason};
 pub use primitive::*;
 pub use receipt::*;
 pub use transaction::*;

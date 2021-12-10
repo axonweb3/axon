@@ -1,6 +1,37 @@
 use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
-use crate::types::{ExecutorContext, H256, U256};
+use crate::types::{ExecResponse, ExecutorContext, ExitReason, H256, U256};
+
+impl Encodable for ExecResponse {
+    fn rlp_append(&self, s: &mut RlpStream) {
+        let reason = bincode::serialize(&self.remain_gas).unwrap();
+        s.begin_list(3)
+            .append(&reason)
+            .append(&self.ret)
+            .append(&self.remain_gas);
+    }
+}
+
+impl Decodable for ExecResponse {
+    fn decode(r: &Rlp) -> Result<Self, DecoderError> {
+        match r.prototype()? {
+            Prototype::List(3) => {
+                let tmp: Vec<u8> = r.val_at(0)?;
+                let exit_reason: ExitReason = bincode::deserialize(&tmp)
+                    .map_err(|_| DecoderError::Custom("field exit reason"))?;
+                let ret: Vec<u8> = r.val_at(1)?;
+                let remain_gas: u64 = r.val_at(2)?;
+
+                Ok(ExecResponse {
+                    exit_reason,
+                    ret,
+                    remain_gas,
+                })
+            }
+            _ => Err(DecoderError::RlpExpectedToBeList),
+        }
+    }
+}
 
 impl Encodable for ExecutorContext {
     fn rlp_append(&self, s: &mut RlpStream) {
