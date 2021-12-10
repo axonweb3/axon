@@ -4,7 +4,7 @@ use evm::{ExitReason, ExitSucceed};
 use protocol::traits::Executor as ExecutorT;
 use protocol::types::{
     SignatureComponents, SignedTransaction, Transaction, TransactionAction, UnverifiedTransaction,
-    H160, H256, U256,
+    H160, H256, H512, U256,
 };
 use std::collections::BTreeMap;
 use std::str::FromStr;
@@ -49,14 +49,14 @@ fn gen_tx(sender: H160, addr: H160, data: Vec<u8>) -> SignedTransaction {
             },
             signature: SignatureComponents {
                 standard_v: 0,
-                r:          U256::default(),
-                s:          U256::default(),
+                r:          H256::default(),
+                s:          H256::default(),
             },
             chain_id:  None,
             hash:      H256::default(),
         },
         sender,
-        public: None,
+        public: H512::default(),
     }
 }
 
