@@ -441,6 +441,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "cita_trie"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fb28a34e8eacf55ec18164f344f9feafea9d03944d2c9834e2e10d4a4d08801b"
+dependencies = [
+ "hasher",
+ "parking_lot 0.11.2",
+ "rlp 0.5.1",
+]
+
+[[package]]
 name = "clang-sys"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -580,9 +591,17 @@ name = "core-executor"
 version = "0.1.0"
 dependencies = [
  "axon-protocol",
+ "cita_trie 3.0.0",
+ "common-apm",
+ "dashmap",
  "evm",
  "futures",
+ "hasher",
  "hex",
+ "lazy_static",
+ "log",
+ "rand 0.8.4",
+ "rocksdb",
 ]
 
 [[package]]
@@ -590,7 +609,7 @@ name = "core-mempool"
 version = "0.1.0"
 dependencies = [
  "axon-protocol",
- "cita_trie",
+ "cita_trie 2.0.0",
  "common-apm",
  "common-crypto",
  "crossbeam-queue",

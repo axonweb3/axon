@@ -6,10 +6,18 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-futures = "0.3"
+cita_trie = "3.0"
+dashmap = "4.0"
 evm = "0.33.0"
+futures = "0.3"
+hasher = "0.1"
+lazy_static = "1.4"
+log = "0.4"
+rand = { version = "0.8", features = ["small_rng"] }
+rocksdb = "0.17"
 
 protocol = { path = "../../protocol", package = "axon-protocol"}
+common-apm = { path = "../../common/apm" }
 
 [dev-dependencies]
-hex = "*"
+hex = "0.4"

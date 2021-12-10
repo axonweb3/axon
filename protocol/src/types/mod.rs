@@ -1,7 +1,8 @@
-pub use address::*;
 pub use block::*;
 pub use bytes::{Buf, BufMut, Bytes, BytesMut};
-pub use executor::{Config, ExecResponse, ExecutorContext, ExitReason};
+pub use executor::{
+    AccessList, AccessListItem, Account, Config, ExecResponse, ExecutorContext, ExitReason,
+};
 pub use primitive::*;
 pub use receipt::*;
 pub use transaction::*;
@@ -10,10 +11,6 @@ pub mod block;
 pub mod executor;
 pub mod primitive;
 pub mod transaction;
-
-pub mod address {
-    pub use ethereum::{AccessList, AccessListItem, Account};
-}
 
 pub mod receipt {
     pub use ethereum::{Log, Receipt};

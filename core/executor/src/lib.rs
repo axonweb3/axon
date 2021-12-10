@@ -1,3 +1,5 @@
+#![feature(test)]
+
 use std::collections::BTreeMap;
 
 use evm::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadata};
@@ -7,6 +9,8 @@ pub use protocol::traits::{ApplyBackend, Backend, Executor};
 use protocol::types::{
     Address, Config, ExecResponse, SignedTransaction, TransactionAction, H256, U256,
 };
+
+pub mod adapter;
 
 #[derive(Default)]
 pub struct EvmExecutor;

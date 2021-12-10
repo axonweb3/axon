@@ -1,6 +1,6 @@
 use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
-use crate::types::{ExecResponse, ExecutorContext, ExitReason, H256, U256};
+use crate::types::{ExecResponse, ExecutorContext, ExitReason, H160, H256, U256};
 
 impl Encodable for ExecResponse {
     fn rlp_append(&self, s: &mut RlpStream) {
@@ -55,11 +55,11 @@ impl Decodable for ExecutorContext {
             Prototype::List(10) => {
                 let block_number: U256 = r.val_at(0)?;
                 let block_hash: H256 = r.val_at(1)?;
-                let block_coinbase: U256 = r.val_at(2)?;
+                let block_coinbase: H160 = r.val_at(2)?;
                 let block_timestamp: U256 = r.val_at(3)?;
                 let chain_id: U256 = r.val_at(4)?;
                 let difficulty: U256 = r.val_at(5)?;
-                let origin: H256 = r.val_at(6)?;
+                let origin: H160 = r.val_at(6)?;
                 let gas_price: U256 = r.val_at(7)?;
                 let block_gas_limit: U256 = r.val_at(8)?;
                 let block_base_fee_per_gas: U256 = r.val_at(9)?;
