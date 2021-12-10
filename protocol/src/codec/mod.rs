@@ -1,5 +1,6 @@
 pub mod block;
 pub mod error;
+pub mod executor;
 pub mod transaction;
 
 use rlp::{Decodable, Encodable};

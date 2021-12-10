@@ -1,13 +1,15 @@
-use core_executor::Executor;
-use evm::backend::{MemoryAccount, MemoryBackend, MemoryVicinity};
-use evm::{ExitReason, ExitSucceed};
-use protocol::traits::Executor as ExecutorT;
-use protocol::types::{
-    SignatureComponents, SignedTransaction, Transaction, TransactionAction, UnverifiedTransaction,
-    H160, H256, H512, U256,
-};
 use std::collections::BTreeMap;
 use std::str::FromStr;
+
+use evm::backend::{MemoryAccount, MemoryBackend, MemoryVicinity};
+use evm::{ExitReason, ExitSucceed};
+
+use core_executor::EvmExecutor;
+use protocol::traits::Executor;
+use protocol::types::{
+    Public, SignatureComponents, SignedTransaction, Transaction, TransactionAction,
+    UnverifiedTransaction, H160, H256, U256,
+};
 
 macro_rules! exec {
     ($func: expr) => {
@@ -52,11 +54,11 @@ fn gen_tx(sender: H160, addr: H160, data: Vec<u8>) -> SignedTransaction {
                 r:          H256::default(),
                 s:          H256::default(),
             },
-            chain_id:  None,
+            chain_id:  0u64,
             hash:      H256::default(),
         },
         sender,
-        public: H512::default(),
+        public: Public::default(),
     }
 }
 
@@ -84,13 +86,13 @@ fn test_ackermann31() {
 
     let vicinity = gen_vicinity();
     let mut backend = MemoryBackend::new(&vicinity, state);
-    let executor = Executor::new();
+    let executor = EvmExecutor::new();
     let tx = gen_tx(
         H160::from_str("0xf000000000000000000000000000000000000000").unwrap(),
         H160::from_str("0x1000000000000000000000000000000000000000").unwrap(),
         hex::decode("2839e92800000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000001").unwrap()
     );
-    let r = exec!(executor.execute(&mut backend, tx));
+    let r = exec!(executor.exec(&mut backend, tx));
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Returned));
     assert_eq!(r.ret, vec![
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -114,7 +116,7 @@ fn test_simplestorage() {
     let vicinity = gen_vicinity();
     let mut backend = MemoryBackend::new(&vicinity, state);
 
-    let executor = Executor::new();
+    let executor = EvmExecutor::new();
 
     // pragma solidity ^0.4.24;
     //
@@ -138,7 +140,7 @@ fn test_simplestorage() {
         hex::decode(simplestorage_create_code).unwrap(),
     );
     tx.transaction.unsigned.action = TransactionAction::Create;
-    let r = exec!(executor.execute(&mut backend, tx));
+    let r = exec!(executor.exec(&mut backend, tx));
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Returned));
     assert_eq!(r.ret, vec![]);
     assert_eq!(r.remain_gas, 18446744073709450374);
@@ -154,18 +156,18 @@ fn test_simplestorage() {
         hex::decode("60fe47b1000000000000000000000000000000000000000000000000000000000000002a")
             .unwrap(),
     );
-    let r = exec!(executor.execute(&mut backend, tx));
+    let r = exec!(executor.exec(&mut backend, tx));
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Stopped));
     assert_eq!(r.ret, vec![]);
     assert_eq!(r.remain_gas, 18446744073709508106);
 
-    // let's call SimpleStorage.get() by execute
+    // let's call SimpleStorage.get() by exec
     let tx = gen_tx(
         H160::from_str("0xf000000000000000000000000000000000000000").unwrap(),
         H160::from_str("0x1334d12e187d9aa97ea520fdd100c5d4f867ade0").unwrap(),
         hex::decode("6d4ce63c").unwrap(),
     );
-    let r = exec!(executor.execute(&mut backend, tx));
+    let r = exec!(executor.exec(&mut backend, tx));
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Returned));
     assert_eq!(r.ret, vec![
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

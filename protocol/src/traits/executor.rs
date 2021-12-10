@@ -1,13 +1,7 @@
-use crate::types::{Address, SignedTransaction};
 use async_trait::async_trait;
-use evm::backend::{ApplyBackend, Backend};
-use evm::ExitReason;
+pub use evm::backend::{ApplyBackend, Backend};
 
-pub struct ExecuteResult {
-    pub exit_reason: ExitReason,
-    pub ret:         Vec<u8>,
-    pub remain_gas:  u64,
-}
+use crate::types::{Address, ExecResponse, SignedTransaction};
 
 #[async_trait]
 pub trait Executor: Send + Sync {
@@ -16,11 +10,11 @@ pub trait Executor: Send + Sync {
         backend: &mut B,
         addr: Address,
         data: Vec<u8>,
-    ) -> ExecuteResult;
+    ) -> ExecResponse;
 
-    async fn execute<B: Backend + ApplyBackend + Send>(
+    async fn exec<B: Backend + ApplyBackend + Send>(
         &self,
         backend: &mut B,
         tx: SignedTransaction,
-    ) -> ExecuteResult;
+    ) -> ExecResponse;
 }

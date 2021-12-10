@@ -1,30 +1,35 @@
-use async_trait::async_trait;
-use ethereum::TransactionAction;
-use evm::backend::{ApplyBackend, Backend};
-use evm::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadata};
-use evm::Config;
-use protocol::traits::{ExecuteResult, Executor as ExecutorT};
-use protocol::types::{Address, SignedTransaction, H256, U256};
+#![feature(test)]
+
 use std::collections::BTreeMap;
 
-#[derive(Default)]
-pub struct Executor {}
+use evm::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadata};
 
-impl Executor {
+use protocol::async_trait;
+pub use protocol::traits::{ApplyBackend, Backend, Executor};
+use protocol::types::{
+    Address, Config, ExecResponse, SignedTransaction, TransactionAction, H256, U256,
+};
+
+pub mod adapter;
+
+#[derive(Default)]
+pub struct EvmExecutor;
+
+impl EvmExecutor {
     pub fn new() -> Self {
-        Self {}
+        EvmExecutor::default()
     }
 }
 
 #[async_trait]
-impl ExecutorT for Executor {
+impl Executor for EvmExecutor {
     // Used for query data API, this function will not modify the world state.
     async fn call<B: Backend + Send>(
         &self,
         backend: &mut B,
         addr: Address,
         data: Vec<u8>,
-    ) -> ExecuteResult {
+    ) -> ExecResponse {
         let config = Config::london();
         let metadata = StackSubstateMetadata::new(u64::MAX, &config);
         let state = MemoryStackState::new(metadata, backend);
@@ -38,7 +43,7 @@ impl ExecutorT for Executor {
             u64::MAX,
             Vec::new(),
         );
-        return ExecuteResult {
+        return ExecResponse {
             exit_reason,
             ret,
             remain_gas: 0,
@@ -46,11 +51,11 @@ impl ExecutorT for Executor {
     }
 
     // Function execute returns exit_reason, ret_data and remain_gas.
-    async fn execute<B: Backend + ApplyBackend + Send>(
+    async fn exec<B: Backend + ApplyBackend + Send>(
         &self,
         backend: &mut B,
         tx: SignedTransaction,
-    ) -> ExecuteResult {
+    ) -> ExecResponse {
         let config = Config::london();
         let metadata = StackSubstateMetadata::new(u64::MAX, &config);
         let state = MemoryStackState::new(metadata, backend);
@@ -95,7 +100,7 @@ impl ExecutorT for Executor {
             backend.apply(values, logs, true);
         }
 
-        ExecuteResult {
+        ExecResponse {
             exit_reason,
             ret,
             remain_gas: gas,

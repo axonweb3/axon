@@ -43,7 +43,7 @@ fn mock_signed_tx(tx_hash: Hash) -> SignedTransaction {
                 r:          Default::default(),
                 s:          Default::default(),
             },
-            chain_id:  None,
+            chain_id:  random::<u64>(),
             hash:      tx_hash,
         },
         sender:      Default::default(),

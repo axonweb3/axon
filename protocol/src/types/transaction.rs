@@ -9,7 +9,7 @@ use crate::types::{Address, Bytes, BytesMut, Hasher, Public, H256, H520};
 pub struct UnverifiedTransaction {
     pub unsigned:  Transaction,
     pub signature: SignatureComponents,
-    pub chain_id:  Option<u64>,
+    pub chain_id:  u64,
     pub hash:      H256,
 }
 
