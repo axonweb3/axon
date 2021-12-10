@@ -7,11 +7,11 @@ use std::time::{Duration, Instant};
 use futures::lock::Mutex;
 use json::JsonValue;
 use log::{error, info, warn};
-use rlp::{Encodable, Decodable};
 use overlord::error::ConsensusError as OverlordError;
 use overlord::types::{Commit, Node, OverlordMsg, Status, ViewChangeReason};
 use overlord::{Consensus as Engine, DurationConfig, Wal};
 use parking_lot::RwLock;
+use rlp::{Decodable, Encodable};
 
 use common_apm::muta_apm;
 use common_crypto::BlsPublicKey;
@@ -21,7 +21,8 @@ use common_merkle::Merkle;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo, TrustFeedback};
 use protocol::types::{
-    Address, Block, Bytes, Hash, Header, Hasher, MerkleRoot, Pill, Proof, SignedTransaction, Validator,
+    Address, Block, Bytes, Hash, Hasher, Header, MerkleRoot, Pill, Proof, SignedTransaction,
+    Validator,
 };
 use protocol::{async_trait, tokio, tokio::time::sleep, ProtocolError, ProtocolResult};
 
@@ -137,7 +138,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             block,
             propose_hashes,
         };
-        
+
         let hash = Hasher::digest(pill.block.header.encode()?);
         let mut set = self.exemption_hash.write();
         set.insert(hash.clone());
@@ -166,7 +167,11 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
 
         let order_hashes = block.get_ordered_hashes();
         let order_hashes_len = order_hashes.len();
-        let exemption = { self.exemption_hash.read().contains(&Hash::from_slice(hash.as_ref())) };
+        let exemption = {
+            self.exemption_hash
+                .read()
+                .contains(&Hash::from_slice(hash.as_ref()))
+        };
         let sync_tx_hashes = block.get_propose_hashes();
         let pill = block;
 
@@ -292,19 +297,18 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
         };
 
         // Execute transactions
-        
-            self.adapter
-                .execute(
-                    ctx.clone(),
-                    pill.block.header.order_root.clone(),
-                    current_number,
-                    pill.block.header.proposer.clone(),
-                    pill.block.header.timestamp,
-                    Hash::digest(pill.block.header.encode_fixed()?),
-                    signed_txs.clone(),
-                )
-                .await?;
-        
+
+        self.adapter
+            .execute(
+                ctx.clone(),
+                pill.block.header.order_root.clone(),
+                current_number,
+                pill.block.header.proposer.clone(),
+                pill.block.header.timestamp,
+                Hash::digest(pill.block.header.encode_fixed()?),
+                signed_txs.clone(),
+            )
+            .await?;
 
         let metadata = self.adapter.get_metadata(
             ctx.clone(),
@@ -464,8 +468,8 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
 
     // fn report_error(&self, ctx: Context, err: OverlordError) {
     //     match err {
-    //         OverlordError::CryptoErr(_) | OverlordError::AggregatedSignatureErr(_) => self
-    //             .adapter
+    //         OverlordError::CryptoErr(_) |
+    // OverlordError::AggregatedSignatureErr(_) => self             .adapter
     //             .report_bad(ctx, TrustFeedback::Worse(err.to_string())),
     //         _ => (),
     //     }

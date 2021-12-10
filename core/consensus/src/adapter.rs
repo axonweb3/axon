@@ -21,8 +21,9 @@ use protocol::traits::{
     SynchronizationAdapter,
 };
 use protocol::types::{
-    Address, Block, BlockNumber, Hasher, Bytes, Hash, Header, Hex, MerkleRoot, Pill, Proof, Receipt,
-    SignedTransaction, Transaction, Validator, BatchBlocks, BatchSignedTxs, public_to_address
+    public_to_address, Address, BatchBlocks, BatchSignedTxs, Block, BlockNumber, Bytes, Hash,
+    Hasher, Header, Hex, MerkleRoot, Pill, Proof, Receipt, SignedTransaction, Transaction,
+    Validator,
 };
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 

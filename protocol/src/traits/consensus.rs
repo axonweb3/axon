@@ -4,9 +4,10 @@ use async_trait::async_trait;
 use bytes::Bytes;
 use creep::Context;
 
-use crate::traits::{BatchExecuteResult, MixedTxHashes};
+use crate::traits::MixedTxHashes;
 use crate::types::{
-    Address, Block, Hash, Header, Hex, MerkleRoot, Proof, Receipt, SignedTransaction, Validator,
+    Address, Block, ExecResponse, Hash, Header, Hex, MerkleRoot, Proof, Receipt, SignedTransaction,
+    Validator,
 };
 use crate::ProtocolResult;
 
@@ -117,7 +118,7 @@ pub trait CommonConsensusAdapter: Send + Sync {
     fn tag_consensus(&self, ctx: Context, peer_ids: Vec<Bytes>) -> ProtocolResult<()>;
 
     // fn report_bad(&self, ctx: Context, feedback: TrustFeedback);
-    
+
     async fn verify_proof(
         &self,
         ctx: Context,
@@ -188,7 +189,7 @@ pub trait ConsensusAdapter: CommonConsensusAdapter + Send + Sync {
         proposer: Address,
         block_hash: Hash,
         signed_txs: Vec<SignedTransaction>,
-    ) -> ProtocolResult<BatchExecuteResult>;
+    ) -> ProtocolResult<ExecResponse>;
 
     /// Get the current height from storage.
     async fn get_current_number(&self, ctx: Context) -> ProtocolResult<u64>;

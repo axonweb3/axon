@@ -1,3 +1,4 @@
+pub use batch::*;
 pub use block::*;
 pub use bytes::{Buf, BufMut, Bytes, BytesMut};
 pub use executor::{
@@ -6,8 +7,8 @@ pub use executor::{
 pub use primitive::*;
 pub use receipt::*;
 pub use transaction::*;
-pub use batch::*;
 
+pub mod batch;
 pub mod block;
 pub mod executor;
 pub mod primitive;

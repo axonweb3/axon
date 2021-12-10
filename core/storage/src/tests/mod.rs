@@ -63,9 +63,8 @@ fn mock_receipt(_tx_hash: Hash) -> Receipt {
 fn mock_block(height: u64, _block_hash: Hash) -> Block {
     let _nonce = Hasher::digest(Bytes::from("XXXX"));
     let header = Header {
-        parent_hash:       Default::default(),
-        uncles_hash:       Default::default(),
-        author:            Default::default(),
+        prev_hash:         Default::default(),
+        proposer:          Default::default(),
         state_root:        Default::default(),
         transactions_root: Default::default(),
         receipts_root:     Default::default(),
