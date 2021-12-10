@@ -16,7 +16,7 @@ pub struct MPTTrie<DB: TrieDB> {
 }
 
 impl<DB: TrieDB> MPTTrie<DB> {
-    pub fn new(db: Arc<DB>) -> Self {
+    pub fn _new(db: Arc<DB>) -> Self {
         let trie = PatriciaTrie::new(db, Arc::clone(&HASHER_INST));
 
         Self {
