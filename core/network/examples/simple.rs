@@ -1,0 +1,131 @@
+use async_trait::async_trait;
+use core_network::{NetworkConfig, NetworkService, NetworkServiceHandle};
+use protocol::traits::Rpc;
+use protocol::{
+    traits::{Context, Gossip, MessageHandler, Priority, TrustFeedback},
+    types::Bytes,
+    ProtocolError,
+};
+
+use std::time::Duration;
+use tentacle::secio::SecioKeyPair;
+
+const RELEASE_CHANNEL: &str = "/gossip/cprd/cyperpunk7702_released";
+const SHOP_CASH_CHANNEL: &str = "/rpc_call/v3/steam";
+const SHOP_CHANNEL: &str = "/rpc_resp/v3/steam";
+
+struct TakeMyMoney {
+    shop: NetworkServiceHandle,
+}
+
+#[async_trait]
+impl MessageHandler for TakeMyMoney {
+    type Message = Bytes;
+
+    async fn process(&self, ctx: Context, msg: Self::Message) -> TrustFeedback {
+        let sell = async move {
+            println!("Rush to {:?}. Shut up, take my money", msg);
+
+            let copy: Bytes = self
+                .shop
+                .call(ctx, SHOP_CASH_CHANNEL, Bytes::from("2345"), Priority::High)
+                .await?;
+            println!("Got my copy {:?}", copy);
+
+            Ok::<(), ProtocolError>(())
+        };
+        match sell.await {
+            Ok(_) => TrustFeedback::Good,
+            Err(e) => {
+                println!("sell {}", e);
+                TrustFeedback::Bad("sell failed".to_owned())
+            }
+        }
+    }
+}
+
+struct Checkout {
+    dealer: NetworkServiceHandle,
+}
+
+#[async_trait]
+impl MessageHandler for Checkout {
+    type Message = Bytes;
+
+    async fn process(&self, ctx: Context, _msg: Self::Message) -> TrustFeedback {
+        match self
+            .dealer
+            .response(ctx, SHOP_CHANNEL, Ok(Bytes::from("1234")), Priority::High)
+            .await
+        {
+            Ok(_) => TrustFeedback::Good,
+            Err(e) => TrustFeedback::Bad(format!("send copy {}", e)),
+        }
+    }
+}
+
+#[tokio::main]
+async fn main() {
+    env_logger::init();
+
+    let bt_seckey_bytes = "8".repeat(32);
+    let bt_seckey = hex::encode(&bt_seckey_bytes);
+    let bt_keypair = SecioKeyPair::secp256k1_raw_key(bt_seckey_bytes).expect("keypair");
+    let peer_id = bt_keypair.peer_id().to_base58();
+
+    if std::env::args().nth(1) == Some("server".to_string()) {
+        log::info!("Starting server");
+
+        let bt_conf = NetworkConfig::new()
+            .listen_addr("/ip4/127.0.0.1/tcp/1337".parse().unwrap())
+            .secio_keypair(bt_seckey)
+            .expect("set keypair");
+        let mut bootstrap = NetworkService::new(bt_conf);
+        let handle = bootstrap.handle();
+
+        let check_out = Checkout {
+            dealer: handle.clone(),
+        };
+
+        bootstrap
+            .register_endpoint_handler(SHOP_CASH_CHANNEL, check_out)
+            .unwrap();
+        tokio::spawn(async { bootstrap.run().await });
+
+        tokio::time::sleep(Duration::from_secs(10)).await;
+
+        let ctx = Context::default();
+        handle
+            .broadcast(
+                ctx.clone(),
+                RELEASE_CHANNEL,
+                Bytes::from(""),
+                Priority::High,
+            )
+            .await
+            .unwrap();
+
+        tokio::time::sleep(Duration::from_secs(10)).await;
+    } else {
+        log::info!("Starting client");
+
+        let peer_conf = NetworkConfig::new()
+            .listen_addr("/ip4/127.0.0.1/tcp/1338".parse().unwrap())
+            .bootstraps(vec![format!("/ip4/127.0.0.1/tcp/1337/p2p/{}", peer_id)
+                .parse()
+                .unwrap()]);
+
+        let mut peer = NetworkService::new(peer_conf);
+        let handle = peer.handle();
+
+        let take_my_money = TakeMyMoney {
+            shop: handle.clone(),
+        };
+
+        peer.register_endpoint_handler(RELEASE_CHANNEL, take_my_money)
+            .unwrap();
+        peer.register_rpc_response(SHOP_CHANNEL).unwrap();
+
+        peer.run().await;
+    }
+}
