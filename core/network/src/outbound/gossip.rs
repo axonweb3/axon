@@ -9,7 +9,6 @@ use crate::endpoint::Endpoint;
 use crate::error::NetworkError;
 use crate::message::{Headers, NetworkMessage};
 use crate::peer_manager::PeerManager;
-use crate::protocols::{IDENTIFY_PROTOCOL_ID, TRANSMITTER_PROTOCOL_ID};
 use crate::traits::NetworkContext;
 
 #[derive(Clone)]
@@ -59,13 +58,21 @@ impl NetworkGossip {
             Priority::Normal => self
                 .transmitter
                 .clone()
-                .filter_broadcast(target_session, TRANSMITTER_PROTOCOL_ID.into(), data)
+                .filter_broadcast(
+                    target_session,
+                    crate::protocols::SupportProtocols::Transmitter.protocol_id(),
+                    data,
+                )
                 .await
                 .unwrap(),
             Priority::High => self
                 .transmitter
                 .clone()
-                .quick_filter_broadcast(target_session, TRANSMITTER_PROTOCOL_ID.into(), data)
+                .quick_filter_broadcast(
+                    target_session,
+                    crate::protocols::SupportProtocols::Transmitter.protocol_id(),
+                    data,
+                )
                 .await
                 .unwrap(),
         }
@@ -93,7 +100,12 @@ impl NetworkGossip {
             tokio::spawn(async move {
                 for addr in unconnected {
                     control
-                        .dial(addr, TargetProtocol::Single(IDENTIFY_PROTOCOL_ID.into()))
+                        .dial(
+                            addr,
+                            TargetProtocol::Single(
+                                crate::protocols::SupportProtocols::Identify.protocol_id(),
+                            ),
+                        )
                         .await
                         .unwrap()
                 }

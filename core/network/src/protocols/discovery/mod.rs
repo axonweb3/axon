@@ -309,7 +309,7 @@ impl AddressManager for DiscoveryAddressManager {
     fn register(&self, context: &ProtocolContextMutRef, _version: &str) {
         self.peer_manager.open_protocol(
             &extract_peer_id(&context.session.address).unwrap(),
-            crate::protocols::DISCOVERY_PROTOCOL_ID.into(),
+            crate::protocols::SupportProtocols::Discovery.protocol_id(),
         )
     }
 
@@ -317,7 +317,7 @@ impl AddressManager for DiscoveryAddressManager {
     fn unregister(&self, context: ProtocolContextMutRef) {
         self.peer_manager.close_protocol(
             &extract_peer_id(&context.session.address).unwrap(),
-            &crate::protocols::DISCOVERY_PROTOCOL_ID.into(),
+            &crate::protocols::SupportProtocols::Discovery.protocol_id(),
         )
     }
 

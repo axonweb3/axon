@@ -1,5 +1,4 @@
 use crate::{
-    compress::{compress, decompress},
     config::NetworkConfig,
     endpoint::{Endpoint, EndpointScheme},
     error::NetworkError,
@@ -7,8 +6,7 @@ use crate::{
     peer_manager::{PeerInfo, PeerManager},
     protocols::{
         DiscoveryAddressManager, DiscoveryProtocol, IdentifyProtocol, PingHandler,
-        TransmitterProtocol, DISCOVERY_PROTOCOL_ID, IDENTIFY_PROTOCOL_ID, PING_PROTOCOL_ID,
-        TRANSMITTER_PROTOCOL_ID,
+        SupportProtocols, TransmitterProtocol,
     },
     reactor::MessageRouter,
 };
@@ -25,18 +23,15 @@ use protocol::{
 use std::{sync::Arc, time::Duration};
 use tentacle::service::TargetProtocol;
 use tentacle::{
-    builder::{MetaBuilder, ServiceBuilder},
+    builder::ServiceBuilder,
     context::ServiceContext,
     secio::PeerId,
-    service::{
-        BlockingFlag, ProtocolHandle, Service, ServiceAsyncControl, ServiceError, ServiceEvent,
-    },
+    service::{ProtocolHandle, Service, ServiceAsyncControl, ServiceError, ServiceEvent},
     traits::ServiceHandle,
     utils::extract_peer_id,
     yamux::Config as YamuxConfig,
 };
 use tokio::time::Instant;
-use tokio_util::codec::length_delimited;
 
 #[derive(Clone)]
 pub struct NetworkServiceHandle {
@@ -120,94 +115,38 @@ impl NetworkService {
         };
         let message_router = MessageRouter::new();
 
-        let block_flag = {
-            let mut f = BlockingFlag::default();
-            f.disable_all();
-            f
-        };
-
         let mut protocol_meta = Vec::new();
-        let max_frame_length = config.max_frame_length;
 
         let ping_peer_manager = peer_manager.clone();
         let ping_handle =
             PingHandler::new(config.ping_interval, config.ping_timeout, ping_peer_manager);
-        let ping = MetaBuilder::new()
-            .flag(block_flag)
-            .id(PING_PROTOCOL_ID.into())
-            .name(move |_| "/axon/ping".to_string())
-            .codec(move || {
-                Box::new(
-                    length_delimited::Builder::new()
-                        .max_frame_length(max_frame_length)
-                        .new_codec(),
-                )
-            })
-            .service_handle(move || ProtocolHandle::Callback(Box::new(ping_handle)))
-            .build();
+        let ping = SupportProtocols::Ping
+            .build_meta_with_service_handle(|| ProtocolHandle::Callback(Box::new(ping_handle)));
         protocol_meta.push(ping);
 
         let identify_peer_manager = peer_manager.clone();
-        let identify = MetaBuilder::new()
-            .flag(block_flag)
-            .id(IDENTIFY_PROTOCOL_ID.into())
-            .name(move |_| "/axon/identify".to_string())
-            .codec(move || {
-                Box::new(
-                    length_delimited::Builder::new()
-                        .max_frame_length(max_frame_length)
-                        .new_codec(),
-                )
-            })
-            .service_handle(move || {
-                ProtocolHandle::Callback(Box::new(IdentifyProtocol::new(identify_peer_manager)))
-            })
-            .build();
+        let identify = SupportProtocols::Identify.build_meta_with_service_handle(move || {
+            ProtocolHandle::Callback(Box::new(IdentifyProtocol::new(identify_peer_manager)))
+        });
         protocol_meta.push(identify);
 
         let discovery_peer_manager = DiscoveryAddressManager::new(peer_manager.clone());
-        let discovery = MetaBuilder::new()
-            .flag(block_flag)
-            .id(DISCOVERY_PROTOCOL_ID.into())
-            .name(move |_| "/axon/discovery".to_string())
-            .codec(move || {
-                Box::new(
-                    length_delimited::Builder::new()
-                        .max_frame_length(max_frame_length)
-                        .new_codec(),
-                )
-            })
-            .service_handle(move || {
-                ProtocolHandle::Callback(Box::new(DiscoveryProtocol::new(
-                    discovery_peer_manager,
-                    None,
-                )))
-            })
-            .build();
+        let discovery = SupportProtocols::Discovery.build_meta_with_service_handle(move || {
+            ProtocolHandle::Callback(Box::new(DiscoveryProtocol::new(
+                discovery_peer_manager,
+                None,
+            )))
+        });
         protocol_meta.push(discovery);
 
         let transmitter_peer_manager = peer_manager.clone();
         let transmitter_router = message_router.clone();
-        let transmitter = MetaBuilder::new()
-            .flag(block_flag)
-            .id(TRANSMITTER_PROTOCOL_ID.into())
-            .name(move |_| "/axon/transmitter".to_string())
-            .before_send(compress)
-            .before_receive(|| Some(Box::new(decompress)))
-            .codec(move || {
-                Box::new(
-                    length_delimited::Builder::new()
-                        .max_frame_length(max_frame_length)
-                        .new_codec(),
-                )
-            })
-            .service_handle(move || {
-                ProtocolHandle::Callback(Box::new(TransmitterProtocol::new(
-                    transmitter_router,
-                    transmitter_peer_manager,
-                )))
-            })
-            .build();
+        let transmitter = SupportProtocols::Transmitter.build_meta_with_service_handle(move || {
+            ProtocolHandle::Callback(Box::new(TransmitterProtocol::new(
+                transmitter_router,
+                transmitter_peer_manager,
+            )))
+        });
         protocol_meta.push(transmitter);
 
         let mut service_builder = ServiceBuilder::new();
@@ -302,7 +241,9 @@ impl NetworkService {
             self.net
                 .dial(
                     addr.clone(),
-                    TargetProtocol::Single(IDENTIFY_PROTOCOL_ID.into()),
+                    TargetProtocol::Single(
+                        crate::protocols::SupportProtocols::Identify.protocol_id(),
+                    ),
                 )
                 .await
                 .unwrap();
@@ -316,7 +257,7 @@ impl NetworkService {
                 _ = interval.tick() => {
                     for addr in self.peer_mgr_handle.unconnected_bootstraps() {
                         control
-                            .dial(addr, TargetProtocol::Single(IDENTIFY_PROTOCOL_ID.into()))
+                            .dial(addr, TargetProtocol::Single(crate::protocols::SupportProtocols::Identify.protocol_id()))
                             .await
                             .unwrap();
                     }

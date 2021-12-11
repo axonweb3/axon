@@ -144,7 +144,7 @@ impl ServiceProtocol for PingHandler {
         debug!("connected sessions are: {:?}", self.connected_session_ids);
         self.peer_manager.open_protocol(
             &extract_peer_id(&session.address).unwrap(),
-            crate::protocols::PING_PROTOCOL_ID.into(),
+            crate::protocols::SupportProtocols::Ping.protocol_id(),
         )
     }
 
@@ -158,7 +158,7 @@ impl ServiceProtocol for PingHandler {
         );
         self.peer_manager.close_protocol(
             &extract_peer_id(&session.address).unwrap(),
-            &crate::protocols::PING_PROTOCOL_ID.into(),
+            &crate::protocols::SupportProtocols::Ping.protocol_id(),
         )
     }
 

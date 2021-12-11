@@ -59,9 +59,13 @@ pub struct PeerManager {
 impl PeerManager {
     pub fn new(config: Arc<NetworkConfig>) -> Self {
         let bootstraps = {
-            let mut b = HashMap::with_capacity(config.bootstraps.len());
+            let mut b = HashMap::with_capacity(config.bootstraps.len().saturating_sub(1));
+            let id = config.secio_keypair.peer_id();
             for addr in config.bootstraps.iter() {
-                b.insert(extract_peer_id(addr).unwrap(), addr.clone());
+                let o_id = extract_peer_id(addr).unwrap();
+                if id != o_id {
+                    b.insert(o_id, addr.clone());
+                }
             }
             Arc::new(b)
         };

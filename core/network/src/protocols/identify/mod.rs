@@ -212,7 +212,7 @@ impl ServiceProtocol for IdentifyProtocol {
 
         self.peer_manager.open_protocol(
             &extract_peer_id(&session.address).unwrap(),
-            crate::protocols::IDENTIFY_PROTOCOL_ID.into(),
+            crate::protocols::SupportProtocols::Identify.protocol_id(),
         );
 
         let remote_info = RemoteInfo::new(session.clone(), Duration::from_secs(DEFAULT_TIMEOUT));
@@ -256,7 +256,7 @@ impl ServiceProtocol for IdentifyProtocol {
         trace!("IdentifyProtocol disconnected from {:?}", info.peer_id);
         self.peer_manager.close_protocol(
             &extract_peer_id(&context.session.address).unwrap(),
-            &crate::protocols::IDENTIFY_PROTOCOL_ID.into(),
+            &crate::protocols::SupportProtocols::Identify.protocol_id(),
         );
     }
 
