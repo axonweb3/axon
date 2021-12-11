@@ -51,8 +51,9 @@ fn mock_signed_tx(tx_hash: Hash) -> SignedTransaction {
     }
 }
 
-fn mock_receipt(_tx_hash: Hash) -> Receipt {
+fn mock_receipt(hash: Hash) -> Receipt {
     Receipt {
+        tx_hash:    hash,
         state_root: Default::default(),
         used_gas:   Default::default(),
         logs_bloom: Default::default(),

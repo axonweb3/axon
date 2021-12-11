@@ -30,8 +30,8 @@ use crate::message::{
     END_GOSSIP_AGGREGATED_VOTE, END_GOSSIP_SIGNED_CHOKE, END_GOSSIP_SIGNED_PROPOSAL,
     END_GOSSIP_SIGNED_VOTE,
 };
-use crate::status::StatusAgent;
-use crate::util::{check_list_roots, digest_signed_transactions, time_now, OverlordCrypto};
+use crate::status::CurrentStatus;
+use crate::util::{time_now, OverlordCrypto};
 use crate::wal::{ConsensusWal, SignedTxsWAL};
 use crate::ConsensusError;
 
@@ -42,7 +42,7 @@ const RETRY_CHECK_ROOT_INTERVAL: u64 = 100; // 100ms
 /// validator is for create new block, and authority is for build overlord
 /// status.
 pub struct ConsensusEngine<Adapter> {
-    status_agent:   StatusAgent,
+    status:         CurrentStatus,
     node_info:      NodeInfo,
     exemption_hash: RwLock<HashSet<Hash>>,
 
@@ -67,59 +67,39 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
         ctx: Context,
         next_number: u64,
     ) -> Result<(Pill, Bytes), Box<dyn Error + Send>> {
-        let current_consensus_status = self.status_agent.to_inner();
-
-        if current_consensus_status.latest_committed_number
-            != current_consensus_status.current_proof.number
-        {
-            error!("[consensus] get_block for {}, error, current_consensus_status.current_number {} != current_consensus_status.current_proof.number, proof :{:?}",
-            current_consensus_status.latest_committed_number,
-            current_consensus_status.current_proof.number,
-            current_consensus_status.current_proof)
-        }
-
-        let (ordered_tx_hashes, propose_hashes) = self
+        let (tx_hashes, propose_hashes) = self
             .adapter
             .get_txs_from_mempool(
                 ctx.clone(),
                 next_number,
-                current_consensus_status.cycles_limit,
-                current_consensus_status.tx_num_limit,
+                self.status.gas_limit.as_u64(),
+                10000,
             )
             .await?
             .clap();
-        let signed_txs = self
-            .adapter
-            .get_full_txs(ctx.clone(), &ordered_tx_hashes)
-            .await?;
-        let order_signed_transactions_hash = digest_signed_transactions(&signed_txs)?;
-
-        if current_consensus_status.latest_committed_number != next_number - 1 {
-            return Err(ProtocolError::from(ConsensusError::MissingBlockHeader(
-                current_consensus_status.latest_committed_number,
-            ))
-            .into());
-        }
-
-        let order_root = Merkle::from_hashes(ordered_tx_hashes.clone()).get_root_hash();
-        let state_root = current_consensus_status.get_latest_state_root();
+        let signed_txs = self.adapter.get_full_txs(ctx.clone(), &tx_hashes).await?;
+        let order_root = Merkle::from_hashes(tx_hashes.clone())
+            .get_root_hash()
+            .unwrap_or_default();
 
         let header = Header {
-            chain_id: self.node_info.chain_id.clone(),
-            prev_hash: current_consensus_status.current_hash,
-            number: next_number,
-            exec_number: current_consensus_status.exec_number,
-            timestamp: time_now(),
-            order_root: order_root.unwrap_or_else(Hash::from_empty),
-            order_signed_transactions_hash,
-            confirm_root: current_consensus_status.list_confirm_root,
-            state_root,
-            receipt_root: current_consensus_status.list_receipt_root.clone(),
-            cycles_used: current_consensus_status.list_cycles_used,
-            proposer: self.node_info.self_address.clone(),
-            proof: current_consensus_status.current_proof.clone(),
-            validator_version: 0u64,
-            validators: current_consensus_status.validators.clone(),
+            prev_hash:         self.status.prev_hash,
+            proposer:          self.node_info.self_address,
+            state_root:        self.status.state_root,
+            transactions_root: order_root,
+            receipts_root:     self.status.receipts_root,
+            log_bloom:         self.status.log_bloom,
+            difficulty:        Default::default(),
+            timestamp:         time_now(),
+            number:            next_number,
+            gas_used:          self.status.gas_used,
+            gas_limit:         self.status.gas_limit,
+            extra_data:        Default::default(),
+            mixed_hash:        None,
+            nonce:             Default::default(),
+            base_fee_per_gas:  self.status.base_fee_per_gas,
+            proof:             self.status.proof,
+            chain_id:          self.node_info.chain_id.to_low_u64_be(),
         };
 
         if header.number != header.proof.number + 1 {
@@ -129,10 +109,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             );
         }
 
-        let block = Block {
-            header,
-            ordered_tx_hashes,
-        };
+        let block = Block { header, tx_hashes };
 
         let pill = Pill {
             block,
@@ -162,17 +139,17 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
         let time = Instant::now();
 
         if block.block.header.number != block.block.header.proof.number + 1 {
-            error!("[consensus-engine]: check_block for overlord receives a proposal, error, block number {}, block {:?}", block.inner.block.header.number,block.inner.block);
+            error!("[consensus-engine]: check_block for overlord receives a proposal, error, block number {}, block {:?}", block.block.header.number,block.block);
         }
 
-        let order_hashes = block.get_ordered_hashes();
-        let order_hashes_len = order_hashes.len();
+        let tx_hashes = block.block.tx_hashes;
+        let tx_hashes_len = tx_hashes.len();
         let exemption = {
             self.exemption_hash
                 .read()
                 .contains(&Hash::from_slice(hash.as_ref()))
         };
-        let sync_tx_hashes = block.get_propose_hashes();
+        let sync_tx_hashes = block.propose_hashes;
         let pill = block;
 
         gauge_txs_len(&pill);
@@ -200,23 +177,20 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             Instant::now() - time
         );
         let time = Instant::now();
-        let txs = self.adapter.get_full_txs(ctx, &order_hashes).await?;
+        let txs = self.adapter.get_full_txs(ctx, &tx_hashes).await?;
 
         info!(
             "[consensus-engine]: get txs cost {:?}",
             Instant::now() - time
         );
         let time = Instant::now();
-        self.txs_wal.save(
-            next_number,
-            pill.block.header.order_signed_transactions_hash,
-            txs,
-        )?;
+        self.txs_wal
+            .save(next_number, pill.block.header.transactions_root, txs)?;
 
         info!(
-            "[consensus-engine]: write wal cost {:?} order_hashes_len {:?}",
+            "[consensus-engine]: write wal cost {:?} tx_hashes_len {:?}",
             time.elapsed(),
-            order_hashes_len
+            tx_hashes_len
         );
         Ok(())
     }
@@ -265,16 +239,16 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
         }
 
         let pill = commit.content;
-        let block_hash = Hash::from_bytes(commit.proof.block_hash.clone())?;
+        let block_hash = Hash::from_slice(commit.proof.block_hash.as_ref());
         let signature = commit.proof.signature.signature.clone();
         let bitmap = commit.proof.signature.address_bitmap.clone();
-        let txs_len = pill.block.ordered_tx_hashes.len();
+        let txs_len = pill.block.tx_hashes.len();
 
         // Storage save the latest proof.
         let proof = Proof {
-            number: commit.proof.number,
+            number: commit.proof.height,
             round: commit.proof.round,
-            block_hash: block_hash.clone(),
+            block_hash,
             signature,
             bitmap,
         };
@@ -292,20 +266,17 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             Ok(txs) => txs,
             Err(_) => self.txs_wal.load(
                 current_number,
-                pill.block.header.order_signed_transactions_hash.clone(),
+                pill.block.header.transactions_root,
             )?,
         };
 
         // Execute transactions
 
-        self.adapter
-            .execute(
+        let resp = self.adapter
+            .exec(
                 ctx.clone(),
-                pill.block.header.order_root.clone(),
-                current_number,
-                pill.block.header.proposer.clone(),
-                pill.block.header.timestamp,
-                Hash::digest(pill.block.header.encode_fixed()?),
+                Hasher::digest(pill.block.header.encode()?),
+                &pill.block.header,
                 signed_txs.clone(),
             )
             .await?;
@@ -333,23 +304,12 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
         self.adapter
             .broadcast_number(ctx.clone(), current_number)
             .await?;
-        self.txs_wal.remove(block_exec_number)?;
+        self.txs_wal.remove(current_number.saturating_sub(2))?;
 
         let mut set = self.exemption_hash.write();
         set.clear();
 
-        let current_consensus_status = self.status_agent.to_inner();
-        let status = Status {
-            number:         current_number + 1,
-            interval:       Some(current_consensus_status.consensus_interval),
-            timer_config:   Some(DurationConfig {
-                propose_ratio:   current_consensus_status.propose_ratio,
-                prevote_ratio:   current_consensus_status.prevote_ratio,
-                precommit_ratio: current_consensus_status.precommit_ratio,
-                brake_ratio:     current_consensus_status.brake_ratio,
-            }),
-            authority_list: covert_to_overlord_authority(&current_consensus_status.validators),
-        };
+        
 
         self.metric_commit(current_number, txs_len);
 
@@ -466,14 +426,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
         Ok(old_validators)
     }
 
-    // fn report_error(&self, ctx: Context, err: OverlordError) {
-    //     match err {
-    //         OverlordError::CryptoErr(_) |
-    // OverlordError::AggregatedSignatureErr(_) => self             .adapter
-    //             .report_bad(ctx, TrustFeedback::Worse(err.to_string())),
-    //         _ => (),
-    //     }
-    // }
+    fn report_error(&self, _ctx: Context, _err: OverlordError) {}
 
     fn report_view_change(&self, cx: Context, number: u64, round: u64, reason: ViewChangeReason) {
         let view_change_reason = match reason {
@@ -511,7 +464,6 @@ impl<Adapter: ConsensusAdapter + 'static> Wal for ConsensusEngine<Adapter> {
 
 impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
     pub fn new(
-        status_agent: StatusAgent,
         node_info: NodeInfo,
         wal: Arc<SignedTxsWAL>,
         adapter: Arc<Adapter>,
@@ -520,7 +472,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         consensus_wal: Arc<ConsensusWal>,
     ) -> Self {
         Self {
-            status_agent,
+            status: CurrentStatus::default(),
             node_info,
             exemption_hash: RwLock::new(HashSet::new()),
             txs_wal: wal,
@@ -537,29 +489,19 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
     pub async fn exec(
         &self,
         ctx: Context,
-        order_root: MerkleRoot,
-        number: u64,
-        proposer: Address,
-        timestamp: u64,
-        block_hash: Hash,
+        state_root: MerkleRoot,
+        header: &Header,
         txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<()> {
-        let status = self.status_agent.to_inner();
-
         self.adapter
-            .execute(
+            .exec(
                 ctx,
-                self.node_info.chain_id.clone(),
-                order_root,
-                number,
-                status.cycles_price,
-                proposer,
-                block_hash,
+                state_root,
+                header,
                 txs,
-                status.cycles_limit,
-                timestamp,
             )
-            .await
+            .await?;
+        Ok(())
     }
 
     async fn inner_check_block(&self, ctx: Context, block: &Block) -> ProtocolResult<()> {
@@ -610,7 +552,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
                 })?;
 
         self.adapter
-            .verify_txs(ctx.clone(), block.header.number, &block.ordered_tx_hashes)
+            .verify_txs(ctx.clone(), block.header.number, &block.tx_hashes)
             .await
             .map_err(|e| {
                 error!("[consensus] check_block, verify_txs error",);
@@ -636,58 +578,44 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
 
         let signed_txs = self
             .adapter
-            .get_full_txs(ctx.clone(), &block.ordered_tx_hashes)
+            .get_full_txs(ctx.clone(), &block.tx_hashes)
             .await?;
         self.check_order_transactions(ctx.clone(), &block, &signed_txs)
     }
 
     #[muta_apm::derive::tracing_span(kind = "consensus.engine")]
     fn check_block_roots(&self, ctx: Context, block: &Header) -> ProtocolResult<()> {
-        let status = self.status_agent.to_inner();
-
-        // check previous hash
-        if status.current_hash != block.prev_hash {
+        if self.status.prev_hash != block.prev_hash {
             return Err(ConsensusError::InvalidPrevhash {
-                expect: status.current_hash,
+                expect: self.status.prev_hash,
                 actual: block.prev_hash.clone(),
             }
             .into());
         }
 
         // check state root
-        if status.latest_committed_state_root != block.state_root
-            && !status.list_state_root.contains(&block.state_root)
-        {
+        if self.status.state_root != block.state_root {
             warn!(
-                "invalid status list_state_root, latest {:?}, current list {:?}, block {:?}",
-                status.latest_committed_state_root, status.list_state_root, block.state_root
-            );
-            return Err(ConsensusError::InvalidStatusVec.into());
-        }
-
-        // check confirm root
-        if !check_list_roots(&status.list_confirm_root, &block.confirm_root) {
-            error!(
-                "current list confirm root {:?}, block confirm root {:?}",
-                status.list_confirm_root, block.confirm_root
+                "invalid status list_state_root, latest {:?}, block {:?}",
+                self.status.state_root, block.state_root
             );
             return Err(ConsensusError::InvalidStatusVec.into());
         }
 
         // check receipt root
-        if !check_list_roots(&status.list_receipt_root, &block.receipt_root) {
+        if self.status.receipts_root != block.receipts_root {
             error!(
                 "current list receipt root {:?}, block receipt root {:?}",
-                status.list_receipt_root, block.receipt_root
+                self.status.receipts_root, block.receipts_root
             );
             return Err(ConsensusError::InvalidStatusVec.into());
         }
 
         // check cycles used
-        if !check_list_roots(&status.list_cycles_used, &block.cycles_used) {
+        if self.status.gas_used != block.gas_used {
             error!(
                 "current list cycles used {:?}, block cycles used {:?}",
-                status.list_cycles_used, block.cycles_used
+                self.status.gas_used, block.gas_used
             );
             return Err(ConsensusError::InvalidStatusVec.into());
         }
@@ -705,22 +633,14 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         block: &Block,
         signed_txs: &[SignedTransaction],
     ) -> ProtocolResult<()> {
-        let order_root = Merkle::from_hashes(block.ordered_tx_hashes.clone())
+        let order_root = Merkle::from_hashes(block.tx_hashes.clone())
             .get_root_hash()
-            .unwrap_or_else(Hash::from_empty);
-        if order_root != block.header.order_root {
+            .unwrap_or_default();
+
+        if order_root != block.header.transactions_root {
             return Err(ConsensusError::InvalidOrderRoot {
                 expect: order_root,
-                actual: block.header.order_root.clone(),
-            }
-            .into());
-        }
-
-        let order_signed_transactions_hash = digest_signed_transactions(signed_txs)?;
-        if order_signed_transactions_hash != block.header.order_signed_transactions_hash {
-            return Err(ConsensusError::InvalidOrderSignedTransactionsHash {
-                expect: order_signed_transactions_hash,
-                actual: block.header.order_signed_transactions_hash.clone(),
+                actual: block.header.transactions_root,
             }
             .into());
         }
@@ -800,7 +720,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
 
     fn metric_commit(&self, current_height: u64, txs_len: usize) {
         common_apm::metrics::consensus::ENGINE_HEIGHT_GAUGE.set((current_height + 1) as i64);
-        common_apm::metrics::consensus::ENGINE_COMMITED_TX_COUNTER.inc_by(txs_len);
+        common_apm::metrics::consensus::ENGINE_COMMITED_TX_COUNTER.inc_by(txs_len as u64);
 
         let now = time_now();
         let last_commit_time = *(self.last_commit_time.read());
@@ -808,11 +728,6 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         common_apm::metrics::consensus::ENGINE_CONSENSUS_COST_TIME.observe(elapsed / 1e3);
         let mut last_commit_time = self.last_commit_time.write();
         *last_commit_time = now;
-    }
-
-    #[cfg(test)]
-    pub fn get_current_status(&self) -> crate::status::CurrentConsensusStatus {
-        self.status_agent.to_inner()
     }
 }
 
@@ -868,8 +783,7 @@ fn validate_timestamp(
 }
 
 fn gauge_txs_len(pill: &Pill) {
-    common_apm::metrics::consensus::ENGINE_ORDER_TX_GAUGE
-        .set(pill.block.ordered_tx_hashes.len() as i64);
+    common_apm::metrics::consensus::ENGINE_ORDER_TX_GAUGE.set(pill.block.tx_hashes.len() as i64);
     common_apm::metrics::consensus::ENGINE_SYNC_TX_GAUGE.set(pill.propose_hashes.len() as i64);
 }
 

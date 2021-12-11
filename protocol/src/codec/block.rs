@@ -4,8 +4,7 @@ use overlord::Codec;
 use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
 use crate::types::{
-    Address, Block, Bloom, Bytes, Hash, Header, Pill, Proof, UnverifiedTransaction, Validator,
-    H256, H64, U256,
+    Address, Block, Bloom, Bytes, Hash, Header, Pill, Proof, Validator, H256, H64, U256,
 };
 use crate::{codec::error::CodecError, ProtocolError};
 
@@ -83,7 +82,7 @@ impl Encodable for Block {
     fn rlp_append(&self, s: &mut RlpStream) {
         s.begin_list(2)
             .append(&self.header)
-            .append_list(&self.transactions);
+            .append_list(&self.tx_hashes);
     }
 }
 
@@ -92,12 +91,9 @@ impl Decodable for Block {
         match r.prototype()? {
             Prototype::List(2) => {
                 let header: Header = r.val_at(0)?;
-                let transactions: Vec<UnverifiedTransaction> = r.list_at(1)?;
+                let tx_hashes: Vec<Hash> = r.list_at(1)?;
 
-                Ok(Block {
-                    header,
-                    transactions,
-                })
+                Ok(Block { header, tx_hashes })
             }
             _ => Err(DecoderError::RlpExpectedToBeList),
         }

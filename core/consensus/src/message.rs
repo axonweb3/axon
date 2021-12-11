@@ -4,14 +4,13 @@ use futures::TryFutureExt;
 use log::warn;
 use overlord::types::{AggregatedVote, SignedChoke, SignedProposal, SignedVote};
 use overlord::Codec;
-use protocol::codec::ProtocolCodec;
 use rlp::Encodable;
-use serde::{Deserialize, Serialize};
 
 use common_apm::muta_apm;
 use protocol::traits::{
     Consensus, Context, MessageHandler, Priority, Rpc, Storage, Synchronization, TrustFeedback,
 };
+use protocol::types::BatchSignedTxs;
 use protocol::{async_trait, types::BlockNumber, ProtocolError};
 
 use core_storage::StorageError;
@@ -30,50 +29,66 @@ pub const BROADCAST_HEIGHT: &str = "/gossip/consensus/broadcast_height";
 pub const RPC_SYNC_PULL_PROOF: &str = "/rpc_call/consensus/sync_pull_proof";
 pub const RPC_RESP_SYNC_PULL_PROOF: &str = "/rpc_resp/consensus/sync_pull_proof";
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct Proposal(pub Vec<u8>);
+macro_rules! overlord_message {
+    ($msg_name: ident, $overlord_type_name: ident) => {
+        #[derive(Clone, Debug, PartialEq, Eq)]
+        pub struct $msg_name(pub protocol::types::Bytes);
 
-impl<C: Codec> From<SignedProposal<C>> for Proposal {
-    fn from(proposal: SignedProposal<C>) -> Self {
-        Proposal(proposal.rlp_bytes())
-    }
+        impl From<$overlord_type_name> for $msg_name {
+            fn from(overlord_ty: $overlord_type_name) -> Self {
+                Self(overlord_ty.rlp_bytes().freeze())
+            }
+        }
+
+        impl protocol::codec::ProtocolCodec for $msg_name {
+            fn encode(&self) -> protocol::ProtocolResult<protocol::types::Bytes> {
+                Ok(self.0.clone())
+            }
+
+            fn decode<B: AsRef<[u8]>>(bytes: B) -> protocol::ProtocolResult<Self> {
+                Ok(Self(protocol::types::Bytes::from(bytes.as_ref().to_vec())))
+            }
+        }
+
+        impl $msg_name {
+            pub fn to_vec(&self) -> Vec<u8> {
+                self.0.to_vec()
+            }
+        }
+    };
+
+    ($msg_name: ident, $overlord_type_name: ident, $other_type: ident) => {
+        #[derive(Clone, Debug, PartialEq, Eq)]
+        pub struct $msg_name(pub protocol::types::Bytes);
+
+        impl<$other_type: Codec> From<$overlord_type_name<$other_type>> for $msg_name {
+            fn from(overlord_ty: $overlord_type_name<$other_type>) -> Self {
+                Self(overlord_ty.rlp_bytes().freeze())
+            }
+        }
+
+        impl protocol::codec::ProtocolCodec for $msg_name {
+            fn encode(&self) -> protocol::ProtocolResult<protocol::types::Bytes> {
+                Ok(self.0.clone())
+            }
+
+            fn decode<B: AsRef<[u8]>>(bytes: B) -> protocol::ProtocolResult<Self> {
+                Ok(Self(protocol::types::Bytes::from(bytes.as_ref().to_vec())))
+            }
+        }
+
+        impl $msg_name {
+            pub fn to_vec(&self) -> Vec<u8> {
+                self.0.to_vec()
+            }
+        }
+    };
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct Vote(pub Vec<u8>);
-
-impl From<SignedVote> for Vote {
-    fn from(vote: SignedVote) -> Self {
-        Vote(vote.rlp_bytes())
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct QC(pub Vec<u8>);
-
-impl From<AggregatedVote> for QC {
-    fn from(aggregated_vote: AggregatedVote) -> Self {
-        QC(aggregated_vote.rlp_bytes())
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct RichHeight(pub Vec<u8>);
-
-impl From<BlockNumber> for RichHeight {
-    fn from(id: BlockNumber) -> Self {
-        RichHeight(id.encode().unwrap())
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct Choke(pub Vec<u8>);
-
-impl From<SignedChoke> for Choke {
-    fn from(signed_choke: SignedChoke) -> Self {
-        Choke(signed_choke.rlp_bytes())
-    }
-}
+overlord_message!(Proposal, SignedProposal, C);
+overlord_message!(Vote, SignedVote);
+overlord_message!(QC, AggregatedVote);
+overlord_message!(Choke, SignedChoke);
 
 pub struct ProposalMessageHandler<C> {
     consensus: Arc<C>,
@@ -89,9 +104,10 @@ impl<C: Consensus + 'static> ProposalMessageHandler<C> {
 impl<C: Consensus + 'static> MessageHandler for ProposalMessageHandler<C> {
     type Message = Proposal;
 
-    #[muta_apm::derive::tracing_span(name = "handle_proposal", kind = "consensus.message")]
+    // #[muta_apm::derive::tracing_span(name = "handle_proposal", kind =
+    // "consensus.message")]
     async fn process(&self, ctx: Context, msg: Self::Message) -> TrustFeedback {
-        if let Err(e) = self.consensus.set_proposal(ctx, msg.0).await {
+        if let Err(e) = self.consensus.set_proposal(ctx, msg.to_vec()).await {
             warn!("set proposal {}", e);
             return TrustFeedback::Worse(e.to_string());
         }
@@ -116,7 +132,7 @@ impl<C: Consensus + 'static> MessageHandler for VoteMessageHandler<C> {
 
     #[muta_apm::derive::tracing_span(name = "handle_vote", kind = "consensus.message")]
     async fn process(&self, ctx: Context, msg: Self::Message) -> TrustFeedback {
-        if let Err(e) = self.consensus.set_vote(ctx, msg.0).await {
+        if let Err(e) = self.consensus.set_vote(ctx, msg.to_vec()).await {
             warn!("set vote {}", e);
             return TrustFeedback::Worse(e.to_string());
         }
@@ -141,7 +157,7 @@ impl<C: Consensus + 'static> MessageHandler for QCMessageHandler<C> {
 
     #[muta_apm::derive::tracing_span(name = "handle_qc", kind = "consensus.message")]
     async fn process(&self, ctx: Context, msg: Self::Message) -> TrustFeedback {
-        if let Err(e) = self.consensus.set_qc(ctx, msg.0).await {
+        if let Err(e) = self.consensus.set_qc(ctx, msg.to_vec()).await {
             warn!("set qc {}", e);
             return TrustFeedback::Worse(e.to_string());
         }
@@ -166,7 +182,7 @@ impl<C: Consensus + 'static> MessageHandler for ChokeMessageHandler<C> {
 
     #[muta_apm::derive::tracing_span(name = "handle_choke", kind = "consensus.message")]
     async fn process(&self, ctx: Context, msg: Self::Message) -> TrustFeedback {
-        if let Err(e) = self.consensus.set_choke(ctx, msg.0).await {
+        if let Err(e) = self.consensus.set_choke(ctx, msg.to_vec()).await {
             warn!("set choke {}", e);
             return TrustFeedback::Worse(e.to_string());
         }
@@ -187,7 +203,7 @@ impl<Sy: Synchronization + 'static> RemoteHeightMessageHandler<Sy> {
 
 #[async_trait]
 impl<Sy: Synchronization + 'static> MessageHandler for RemoteHeightMessageHandler<Sy> {
-    type Message = u64;
+    type Message = BlockNumber;
 
     #[muta_apm::derive::tracing_span(name = "handle_remote_height", kind = "consensus.message")]
     async fn process(&self, ctx: Context, remote_height: Self::Message) -> TrustFeedback {
@@ -231,8 +247,7 @@ impl<R: Rpc + 'static, S: Storage + 'static> MessageHandler for PullBlockRpcHand
 
     #[muta_apm::derive::tracing_span(name = "pull_block_rpc", kind = "consensus.message")]
     async fn process(&self, ctx: Context, msg: BlockNumber) -> TrustFeedback {
-        let id = msg.inner;
-        let ret = match self.storage.get_block(ctx.clone(), id).await {
+        let ret = match self.storage.get_block(ctx.clone(), msg).await {
             Ok(Some(block)) => Ok(block),
             Ok(None) => Err(StorageError::GetNone.into()),
             Err(e) => Err(e),
@@ -267,20 +282,19 @@ impl<R: Rpc + 'static, S: Storage + 'static> MessageHandler for PullProofRpcHand
     type Message = BlockNumber;
 
     #[muta_apm::derive::tracing_span(name = "pull_proof_rpc", kind = "consensus.message")]
-    async fn process(&self, ctx: Context, height: BlockNumber) -> TrustFeedback {
-        let height = height.inner;
+    async fn process(&self, ctx: Context, msg: BlockNumber) -> TrustFeedback {
         let latest_proof = self.storage.get_latest_proof(ctx.clone()).await;
 
         let ret = match latest_proof {
-            Ok(latest_proof) => match height {
-                height if height < latest_proof.height => {
-                    match self.storage.get_block_header(ctx.clone(), height + 1).await {
+            Ok(latest_proof) => match msg {
+                number if number < latest_proof.number => {
+                    match self.storage.get_block_header(ctx.clone(), number + 1).await {
                         Ok(Some(next_header)) => Ok(next_header.proof),
                         Ok(None) => Err(StorageError::GetNone.into()),
                         Err(_) => Err(StorageError::GetNone.into()),
                     }
                 }
-                height if height == latest_proof.height => Ok(latest_proof),
+                number if number == latest_proof.number => Ok(latest_proof),
                 _ => Err(StorageError::GetNone.into()),
             },
             Err(_) => Err(StorageError::GetNone.into()),
@@ -315,7 +329,8 @@ where
 impl<R: Rpc + 'static, S: Storage + 'static> MessageHandler for PullTxsRpcHandler<R, S> {
     type Message = PullTxsRequest;
 
-    #[muta_apm::derive::tracing_span(name = "pull_txs_rpc", kind = "consensus.message")]
+    // #[muta_apm::derive::tracing_span(name = "pull_txs_rpc", kind =
+    // "consensus.message")]
     async fn process(&self, ctx: Context, msg: PullTxsRequest) -> TrustFeedback {
         let PullTxsRequest { height, inner } = msg;
 
@@ -324,9 +339,11 @@ impl<R: Rpc + 'static, S: Storage + 'static> MessageHandler for PullTxsRpcHandle
             .get_transactions(ctx.clone(), height, &inner)
             .await
             .map(|txs| {
-                txs.into_iter()
-                    .filter_map(|opt_tx| opt_tx)
-                    .collect::<Vec<_>>()
+                BatchSignedTxs(
+                    txs.into_iter()
+                        .filter_map(|opt_tx| opt_tx)
+                        .collect::<Vec<_>>(),
+                )
             });
 
         self.rpc

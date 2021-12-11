@@ -6,8 +6,8 @@ use creep::Context;
 
 use crate::traits::MixedTxHashes;
 use crate::types::{
-    Address, Block, ExecResponse, Hash, Header, Hex, MerkleRoot, Proof, Receipt, SignedTransaction,
-    Validator,
+    Address, Block, BlockNumber, ExecResponse, Hash, Header, Hex, MerkleRoot, Proof, Receipt,
+    SignedTransaction, Validator,
 };
 use crate::ProtocolResult;
 
@@ -99,9 +99,9 @@ pub trait CommonConsensusAdapter: Send + Sync {
     async fn flush_mempool(&self, ctx: Context, ordered_tx_hashes: &[Hash]) -> ProtocolResult<()>;
 
     /// Get a block corresponding to the given height.
-    async fn get_block_by_height(&self, ctx: Context, height: u64) -> ProtocolResult<Block>;
+    async fn get_block_by_number(&self, ctx: Context, height: u64) -> ProtocolResult<Block>;
 
-    async fn get_block_header_by_height(&self, ctx: Context, height: u64)
+    async fn get_block_header_by_number(&self, ctx: Context, height: u64)
         -> ProtocolResult<Header>;
 
     /// Get the current height from storage.
@@ -113,11 +113,9 @@ pub trait CommonConsensusAdapter: Send + Sync {
         tx_hashes: &[Hash],
     ) -> ProtocolResult<Vec<SignedTransaction>>;
 
-    async fn broadcast_height(&self, ctx: Context, height: u64) -> ProtocolResult<()>;
+    async fn broadcast_number(&self, ctx: Context, height: u64) -> ProtocolResult<()>;
 
     fn tag_consensus(&self, ctx: Context, peer_ids: Vec<Bytes>) -> ProtocolResult<()>;
-
-    // fn report_bad(&self, ctx: Context, feedback: TrustFeedback);
 
     async fn verify_proof(
         &self,
@@ -179,7 +177,7 @@ pub trait ConsensusAdapter: CommonConsensusAdapter + Send + Sync {
     ) -> ProtocolResult<()>;
 
     /// Execute some transactions.
-    async fn execute(
+    async fn exec(
         &self,
         ctx: Context,
         block_hash: Hash,

@@ -11,10 +11,9 @@ use common_crypto::{
     BlsCommonReference, BlsPrivateKey, BlsPublicKey, BlsSignature, BlsSignatureVerify, HashValue,
     PrivateKey, Signature,
 };
-use protocol::codec::ProtocolCodec;
 use protocol::traits::Context;
 use protocol::types::{
-    Address, BufMut, Bytes, BytesMut, Hash, Hasher, Hex, MerkleRoot, SignedTransaction,
+    Address, Bytes, Hash, Hasher, Hex, MerkleRoot, SignedTransaction,
 };
 use protocol::{ProtocolError, ProtocolResult};
 
@@ -174,29 +173,6 @@ pub struct ExecuteInfo {
     pub cycles_limit: u64,
 }
 
-pub fn check_list_roots<T: Eq>(cache_roots: &[T], block_roots: &[T]) -> bool {
-    block_roots.len() <= cache_roots.len()
-        && cache_roots
-            .iter()
-            .zip(block_roots.iter())
-            .all(|(c_root, e_root)| c_root == e_root)
-}
-
-pub fn digest_signed_transactions(signed_txs: &[SignedTransaction]) -> ProtocolResult<Hash> {
-    if signed_txs.is_empty() {
-        return Ok(Hash::default());
-    }
-
-    let mut list_bytes = BytesMut::new();
-
-    for signed_tx in signed_txs.iter() {
-        let bytes = signed_tx.encode()?;
-        list_bytes.put(bytes);
-    }
-
-    Ok(Hasher::digest(list_bytes))
-}
-
 pub fn convert_hex_to_bls_pubkeys(hex: Hex) -> ProtocolResult<BlsPublicKey> {
     let hex_pubkey = hex::decode(hex.as_string_trim0x())
         .map_err(|e| ConsensusError::Other(format!("from hex error {:?}", e)))?;
@@ -265,20 +241,6 @@ mod tests {
         pub_keys.reverse();
         let pk_2 = BlsPublicKey::aggregate(pub_keys);
         assert_eq!(pk_1, pk_2);
-    }
-
-    #[test]
-    fn test_zip_roots() {
-        let roots_1 = vec![1, 2, 3, 4, 5];
-        let roots_2 = vec![1, 2, 3];
-        let roots_3 = vec![];
-        let roots_4 = vec![1, 2];
-        let roots_5 = vec![3, 4, 5, 6, 8];
-
-        assert!(check_list_roots(&roots_1, &roots_2));
-        assert!(!check_list_roots(&roots_3, &roots_2));
-        assert!(!check_list_roots(&roots_4, &roots_2));
-        assert!(!check_list_roots(&roots_5, &roots_2));
     }
 
     #[test]

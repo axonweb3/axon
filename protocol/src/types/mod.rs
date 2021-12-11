@@ -12,11 +12,8 @@ pub mod batch;
 pub mod block;
 pub mod executor;
 pub mod primitive;
+pub mod receipt;
 pub mod transaction;
-
-pub mod receipt {
-    pub use ethereum::{Log, Receipt};
-}
 
 use std::error::Error;
 

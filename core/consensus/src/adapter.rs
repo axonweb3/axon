@@ -10,7 +10,7 @@ use parking_lot::{Mutex, RwLock};
 
 use common_apm::muta_apm;
 use common_merkle::Merkle;
-use core_executor::adapter::ExecutorAdapter;
+use core_executor::{adapter::ExecutorAdapter, EvmExecutor};
 use core_network::{PeerId, PeerIdExt};
 
 use protocol::tokio::sync::mpsc::{channel, Receiver, Sender};
@@ -47,9 +47,10 @@ pub struct OverlordConsensusAdapter<
     mempool:          Arc<M>,
     storage:          Arc<S>,
     trie_db:          Arc<DB>,
-    executor:         Arc<EF>,
     overlord_handler: RwLock<Option<OverlordHandler<Pill>>>,
     crypto:           Arc<OverlordCrypto>,
+
+    pin_ef: PhantomData<EF>,
 }
 
 #[async_trait]
@@ -143,7 +144,7 @@ where
                 base_ctx.lock().gas_price = stx.transaction.unsigned.max_fee_per_gas;
             }
 
-            let res = self.executor.exec(&mut backend, stx).await;
+            let res = EvmExecutor::default().exec(&mut backend, stx).await;
         }
 
         Ok(ret)
@@ -443,15 +444,6 @@ where
             return Err(ConsensusError::VerifyBlockHeader(block.header.number, ProofHash).into());
         }
 
-        // verify proposer and validators
-        let previous_metadata = self.get_metadata(
-            ctx,
-            previous_block_header.state_root.clone(),
-            previous_block_header.number,
-            previous_block_header.timestamp,
-            previous_block_header.proposer,
-        )?;
-
         let authority_map = previous_metadata
             .verifier_list
             .iter()
@@ -728,24 +720,15 @@ where
         crypto: Arc<OverlordCrypto>,
         gap: usize,
     ) -> ProtocolResult<Self> {
-        let (exec_queue, rx) = channel(gap);
-        let exec_demons = Some(ExecDemons::new(
-            Arc::clone(&storage),
-            Arc::clone(&trie_db),
-            rx,
-            status_agent,
-        ));
-
-        let adapter = OverlordConsensusAdapter {
+        Ok(OverlordConsensusAdapter {
             network,
             mempool,
             storage,
             trie_db,
             overlord_handler: RwLock::new(None),
             crypto,
-        };
-
-        Ok(adapter)
+            pin_ef: PhantomData,
+        })
     }
 
     pub fn set_overlord_handler(&self, handler: OverlordHandler<Pill>) {

@@ -24,7 +24,7 @@ use protocol::traits::{
     StorageSchema,
 };
 use protocol::types::{
-    Block, Bytes, DBBytes, Hash, Hasher, Header, Proof, Receipt, SignedTransaction,
+    Block, BlockNumber, Bytes, DBBytes, Hash, Hasher, Header, Proof, Receipt, SignedTransaction,
 };
 use protocol::{
     async_trait, tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
@@ -40,12 +40,12 @@ lazy_static::lazy_static! {
 
 // FIXME: https://github.com/facebook/rocksdb/wiki/Transactions
 macro_rules! batch_insert {
-    ($self_: ident, $block_height:expr, $vec: expr, $schema: ident) => {
+    ($self_: ident, $block_height:expr, $vec: expr, $hash_path: item, $schema: ident) => {
         let (hashes, heights) = $vec
             .iter()
             .map(|item| {
                 (
-                    item.transaction.hash.clone(),
+                    item.$hash_path.clone(),
                     StorageBatchModify::Insert($block_height),
                 )
             })
@@ -55,7 +55,7 @@ macro_rules! batch_insert {
             .into_iter()
             .map(|item| {
                 (
-                    CommonHashKey::new($block_height, item.transaction.hash.clone()),
+                    CommonHashKey::new($block_height, item.$hash_path.clone()),
                     StorageBatchModify::Insert(item),
                 )
             })
@@ -69,34 +69,6 @@ macro_rules! batch_insert {
         $self_
             .adapter
             .batch_modify::<HashHeightSchema>(hashes, heights)
-            .await?;
-    };
-
-    ($self_: ident, $block_height:expr, $hashes: expr, $vec: expr, $schema: ident) => {
-        let heights = $vec
-            .iter()
-            .map(|_| StorageBatchModify::Insert($block_height))
-            .collect::<Vec<_>>();
-
-        let (keys, batch_stxs): (Vec<_>, Vec<_>) = $vec
-            .iter()
-            .zip($hashes.iter())
-            .map(|(item, hash)| {
-                (
-                    CommonHashKey::new($block_height, hash.clone()),
-                    StorageBatchModify::Insert(item.clone()),
-                )
-            })
-            .unzip();
-
-        $self_
-            .adapter
-            .batch_modify::<$schema>(keys, batch_stxs)
-            .await?;
-
-        $self_
-            .adapter
-            .batch_modify::<HashHeightSchema>($hashes, heights)
             .await?;
     };
 }
@@ -141,6 +113,73 @@ impl<Adapter: StorageAdapter> ImplStorage<Adapter> {
             adapter,
             latest_block: ArcSwap::from(Arc::new(None)),
         }
+    }
+
+    async fn batch_insert_stxs(
+        &self,
+        stxs: Vec<SignedTransaction>,
+        block_number: BlockNumber,
+    ) -> ProtocolResult<()> {
+        let (hashes, heights) = stxs
+            .iter()
+            .map(|item| {
+                (
+                    item.transaction.hash,
+                    StorageBatchModify::Insert(block_number),
+                )
+            })
+            .unzip();
+
+        let (keys, batch_stxs): (Vec<_>, Vec<_>) = stxs
+            .into_iter()
+            .map(|item| {
+                (
+                    CommonHashKey::new(block_number, item.transaction.hash),
+                    StorageBatchModify::Insert(item),
+                )
+            })
+            .unzip();
+
+        self.adapter
+            .batch_modify::<TransactionSchema>(keys, batch_stxs)
+            .await?;
+
+        self.adapter
+            .batch_modify::<HashHeightSchema>(hashes, heights)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn batch_insert_receipts(
+        &self,
+        receipts: Vec<Receipt>,
+        block_number: BlockNumber,
+    ) -> ProtocolResult<()> {
+        let (hashes, heights) = receipts
+            .iter()
+            .map(|item| (item.tx_hash, StorageBatchModify::Insert(block_number)))
+            .unzip();
+
+        let (keys, batch_stxs): (Vec<_>, Vec<_>) = receipts
+            .into_iter()
+            .map(|item| {
+                (
+                    CommonHashKey::new(block_number, item.tx_hash),
+                    StorageBatchModify::Insert(item),
+                )
+            })
+            .unzip();
+
+        self.adapter
+            .batch_modify::<ReceiptSchema>(keys, batch_stxs)
+            .await?;
+
+        self.adapter
+            .batch_modify::<HashHeightSchema>(hashes, heights)
+            .await?;
+
+        Ok(())
     }
 }
 
@@ -376,7 +415,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         block_height: u64,
         signed_txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<()> {
-        batch_insert!(self, block_height, signed_txs, TransactionSchema);
+        self.batch_insert_stxs(signed_txs, block_height).await?;
 
         Ok(())
     }
@@ -483,10 +522,9 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         &self,
         _ctx: Context,
         block_height: u64,
-        tx_hashes: Vec<Hash>,
         receipts: Vec<Receipt>,
     ) -> ProtocolResult<()> {
-        batch_insert!(self, block_height, tx_hashes, receipts, ReceiptSchema);
+        self.batch_insert_receipts(receipts, block_height).await?;
 
         Ok(())
     }
