@@ -6,24 +6,22 @@ use std::time::Instant;
 
 use overlord::types::{Node, OverlordMsg, Vote, VoteType};
 use overlord::{extract_voters, Crypto, OverlordHandler};
-use parking_lot::RwLock;
+use parking_lot::{Mutex, RwLock};
 
 use common_apm::muta_apm;
 use common_merkle::Merkle;
-
+use core_executor::adapter::ExecutorAdapter;
 use core_network::{PeerId, PeerIdExt};
 
-use protocol::tokio::sync::mpsc::error::TrySendError;
 use protocol::tokio::sync::mpsc::{channel, Receiver, Sender};
 use protocol::traits::{
-    BatchExecuteResult, CommonConsensusAdapter, ConsensusAdapter, Context, ExecuteResult, Executor,
-    Gossip, MemPool, MessageTarget, MixedTxHashes, Network, PeerTrust, Priority, Rpc, Storage,
-    SynchronizationAdapter,
+    CommonConsensusAdapter, ConsensusAdapter, Context, Executor, Gossip, MemPool, MessageTarget,
+    MixedTxHashes, Network, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
 };
 use protocol::types::{
-    public_to_address, Address, BatchBlocks, BatchSignedTxs, Block, BlockNumber, Bytes, Hash,
-    Hasher, Header, Hex, MerkleRoot, Pill, Proof, Receipt, SignedTransaction, Transaction,
-    Validator,
+    public_to_address, Address, BatchBlocks, BatchSignedTxs, Block, BlockNumber, Bytes,
+    ExecResponse, ExecutorContext, ExitReason, Hash, Hasher, Header, Hex, MerkleRoot, Pill, Proof,
+    Receipt, SignedTransaction, Transaction, Validator,
 };
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
@@ -118,15 +116,37 @@ where
     async fn execute(
         &self,
         ctx: Context,
-        order_root: MerkleRoot,
-        height: u64,
-        cycles_price: u64,
-        proposer: Address,
-        block_hash: Hash,
+        header_hash: Hash,
+        header: &Header,
         signed_txs: Vec<SignedTransaction>,
-    ) -> ProtocolResult<BatchExecuteResult> {
-        let res = self.executor.batch_execute(signed_txs).await;
-        Ok(res)
+    ) -> ProtocolResult<Vec<ExecResponse>> {
+        let ret = Vec::new();
+
+        let base_ctx = Arc::new(Mutex::new(ExecutorContext {
+            block_number:           header.number.into(),
+            block_hash:             header_hash,
+            block_coinbase:         header.proposer.into(),
+            block_timestamp:        header.timestamp.into(),
+            chain_id:               header.chain_id.into(),
+            difficulty:             Default::default(),
+            origin:                 header.proposer.into(),
+            gas_price:              Default::default(),
+            block_gas_limit:        header.gas_limit,
+            block_base_fee_per_gas: header.base_fee_per_gas.unwrap_or_default(),
+        }));
+
+        let mut backend =
+            ExecutorAdapter::new(header.state_root, Arc::clone(&self.trie_db), base_ctx)?;
+
+        for stx in signed_txs.into_iter() {
+            {
+                base_ctx.lock().gas_price = stx.transaction.unsigned.max_fee_per_gas;
+            }
+
+            let res = self.executor.exec(&mut backend, stx).await;
+        }
+
+        Ok(ret)
     }
 
     /// Get the current height from storage.

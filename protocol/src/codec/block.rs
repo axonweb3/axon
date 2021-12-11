@@ -11,7 +11,7 @@ use crate::{codec::error::CodecError, ProtocolError};
 
 impl Encodable for Header {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(16)
+        s.begin_list(17)
             .append(&self.prev_hash)
             .append(&self.proposer)
             .append(&self.state_root)
@@ -27,14 +27,15 @@ impl Encodable for Header {
             .append(&self.mixed_hash)
             .append(&self.nonce)
             .append(&self.base_fee_per_gas)
-            .append(&self.proof);
+            .append(&self.proof)
+            .append(&self.chain_id);
     }
 }
 
 impl Decodable for Header {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
-            Prototype::List(16) => {
+            Prototype::List(17) => {
                 let prev_hash: H256 = r.val_at(0)?;
                 let proposer: Address = r.val_at(1)?;
                 let state_root: H256 = r.val_at(2)?;
@@ -51,6 +52,7 @@ impl Decodable for Header {
                 let nonce: H64 = r.val_at(13)?;
                 let base_fee_per_gas: Option<U256> = r.val_at(14)?;
                 let proof: Proof = r.val_at(15)?;
+                let chain_id: u64 = r.val_at(16)?;
 
                 Ok(Header {
                     prev_hash,
@@ -69,6 +71,7 @@ impl Decodable for Header {
                     nonce,
                     base_fee_per_gas,
                     proof,
+                    chain_id,
                 })
             }
             _ => Err(DecoderError::RlpExpectedToBeList),

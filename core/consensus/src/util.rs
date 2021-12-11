@@ -13,7 +13,7 @@ use common_crypto::{
 };
 use protocol::codec::ProtocolCodec;
 use protocol::traits::Context;
-use protocol::types::{Address, Bytes, BytesMut, Hash, Hex, MerkleRoot, SignedTransaction};
+use protocol::types::{Address, Hasher, Bytes, BufMut, BytesMut, Hash, Hex, MerkleRoot, SignedTransaction};
 use protocol::{ProtocolError, ProtocolResult};
 
 pub fn time_now() -> u64 {
@@ -31,7 +31,7 @@ pub struct OverlordCrypto {
 
 impl Crypto for OverlordCrypto {
     fn hash(&self, msg: Bytes) -> Bytes {
-        Hash::digest(msg).as_bytes()
+        Bytes::from(Hasher::digest(msg).as_bytes().to_vec())
     }
 
     fn sign(&self, hash: Bytes) -> Result<Bytes, Box<dyn Error + Send>> {
@@ -182,17 +182,17 @@ pub fn check_list_roots<T: Eq>(cache_roots: &[T], block_roots: &[T]) -> bool {
 
 pub fn digest_signed_transactions(signed_txs: &[SignedTransaction]) -> ProtocolResult<Hash> {
     if signed_txs.is_empty() {
-        return Ok(Hash::from_empty());
+        return Ok(Hash::default());
     }
 
     let mut list_bytes = BytesMut::new();
 
     for signed_tx in signed_txs.iter() {
-        let bytes = signed_tx.encode_fixed()?;
+        let bytes = signed_tx.encode()?;
         list_bytes.put(bytes);
     }
 
-    Ok(Hash::digest(list_bytes.freeze()))
+    Ok(Hasher::digest(list_bytes))
 }
 
 pub fn convert_hex_to_bls_pubkeys(hex: Hex) -> ProtocolResult<BlsPublicKey> {
@@ -223,7 +223,7 @@ mod tests {
             hex::decode("040709f204e3ec5b8bdd9f2bb6edc9cb1704fc1e4952661ba7532ea8e37f3b159b8d41987ee6707d32bdf494e2deb00b7f049a4670a5ce1ad8e429fcacc5bbc69cb03b71a7f1d831d0b47dda5e62642d420ff0a545950cb1db19d42fe04e2c91d2").unwrap(),
         ];
 
-        let msg = Hash::digest(Bytes::from("muta-consensus"));
+        let msg = Hasher::digest(Bytes::from("muta-consensus"));
         let hash = HashValue::try_from(msg.as_bytes().as_ref()).unwrap();
         let mut sigs_and_pub_keys = Vec::new();
         for i in 0..3 {

@@ -79,6 +79,7 @@ fn mock_block(height: u64, _block_hash: Hash) -> Block {
         nonce:             Default::default(),
         base_fee_per_gas:  None,
         proof:             Proof::default(),
+        chain_id:          random::<u64>(),
     };
 
     Block {

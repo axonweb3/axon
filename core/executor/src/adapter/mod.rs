@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use cita_trie::DB as TrieDB;
 use evm::backend::{Apply, Basic};
+use parking_lot::Mutex;
 
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ApplyBackend, Backend};
@@ -14,60 +15,62 @@ use protocol::ProtocolResult;
 use trie::MPTTrie;
 
 pub struct ExecutorAdapter<DB: TrieDB> {
-    trie:     MPTTrie<DB>,
+    trie:     Arc<Mutex<MPTTrie<DB>>>,
     db:       Arc<DB>,
-    exec_ctx: ExecutorContext,
+    exec_ctx: Arc<Mutex<ExecutorContext>>,
 }
 
 impl<DB: TrieDB> Backend for ExecutorAdapter<DB> {
     fn gas_price(&self) -> U256 {
-        self.exec_ctx.gas_price
+        self.exec_ctx.lock().gas_price
     }
 
     fn origin(&self) -> H160 {
-        self.exec_ctx.origin
+        self.exec_ctx.lock().origin
     }
 
     fn block_number(&self) -> U256 {
-        self.exec_ctx.block_number
+        self.exec_ctx.lock().block_number
     }
 
     fn block_hash(&self, _number: U256) -> H256 {
-        self.exec_ctx.block_hash
+        self.exec_ctx.lock().block_hash
     }
 
     fn block_coinbase(&self) -> H160 {
-        self.exec_ctx.block_coinbase
+        self.exec_ctx.lock().block_coinbase
     }
 
     fn block_timestamp(&self) -> U256 {
-        self.exec_ctx.block_timestamp
+        self.exec_ctx.lock().block_timestamp
     }
 
     fn block_difficulty(&self) -> U256 {
-        self.exec_ctx.difficulty
+        self.exec_ctx.lock().difficulty
     }
 
     fn block_gas_limit(&self) -> U256 {
-        self.exec_ctx.block_gas_limit
+        self.exec_ctx.lock().block_gas_limit
     }
 
     fn block_base_fee_per_gas(&self) -> U256 {
-        self.exec_ctx.block_base_fee_per_gas
+        self.exec_ctx.lock().block_base_fee_per_gas
     }
 
     fn chain_id(&self) -> U256 {
-        self.exec_ctx.chain_id
+        self.exec_ctx.lock().chain_id
     }
 
     fn exists(&self, address: H160) -> bool {
         self.trie
+            .lock()
             .contains(&Bytes::from(address.as_bytes().to_vec()))
             .unwrap_or_default()
     }
 
     fn basic(&self, address: H160) -> Basic {
         self.trie
+            .lock()
             .get(address.as_bytes())
             .map(|raw| {
                 if raw.is_none() {
@@ -86,6 +89,7 @@ impl<DB: TrieDB> Backend for ExecutorAdapter<DB> {
 
     fn code(&self, address: H160) -> Vec<u8> {
         self.trie
+            .lock()
             .get(address.as_bytes())
             .map(|raw| {
                 if raw.is_none() {
@@ -100,7 +104,7 @@ impl<DB: TrieDB> Backend for ExecutorAdapter<DB> {
     }
 
     fn storage(&self, address: H160, index: H256) -> H256 {
-        if let Ok(raw) = self.trie.get(address.as_bytes()) {
+        if let Ok(raw) = self.trie.lock().get(address.as_bytes()) {
             if raw.is_none() {
                 return H256::default();
             }
@@ -144,12 +148,13 @@ impl<DB: TrieDB> ApplyBackend for ExecutorAdapter<DB> {
                 } => {
                     let is_empty = self.apply(address, basic, code, storage, reset_storage);
                     if is_empty && delete_empty {
-                        self.trie.remove(address.as_bytes()).unwrap();
-                        self.trie.commit().unwrap();
+                        let mut trie = self.trie.lock();
+                        trie.remove(address.as_bytes()).unwrap();
+                        trie.commit().unwrap();
                     }
                 }
                 Apply::Delete { address } => {
-                    let _ = self.trie.remove(address.as_bytes());
+                    let _ = self.trie.lock().remove(address.as_bytes());
                 }
             }
         }
@@ -160,9 +165,9 @@ impl<DB: TrieDB> ExecutorAdapter<DB> {
     pub fn new(
         state_root: MerkleRoot,
         db: Arc<DB>,
-        exec_ctx: ExecutorContext,
+        exec_ctx: Arc<Mutex<ExecutorContext>>,
     ) -> ProtocolResult<Self> {
-        let trie = MPTTrie::from_root(state_root, Arc::clone(&db))?;
+        let trie = Arc::new(Mutex::new(MPTTrie::from_root(state_root, Arc::clone(&db))?));
 
         Ok(ExecutorAdapter { trie, db, exec_ctx })
     }
@@ -175,7 +180,7 @@ impl<DB: TrieDB> ExecutorAdapter<DB> {
         storage: I,
         reset_storage: bool,
     ) -> bool {
-        let old_account = match self.trie.get(address.as_bytes()) {
+        let old_account = match self.trie.lock().get(address.as_bytes()) {
             Ok(Some(raw)) => Account::decode(raw).unwrap(),
             _ => Account {
                 nonce:        Default::default(),
@@ -209,8 +214,11 @@ impl<DB: TrieDB> ExecutorAdapter<DB> {
         };
 
         let raw = new_account.encode().unwrap();
-        self.trie.insert(address.as_bytes(), raw.as_ref()).unwrap();
-        self.trie.commit().unwrap();
+        {
+            let mut trie = self.trie.lock();
+            trie.insert(address.as_bytes(), raw.as_ref()).unwrap();
+            trie.commit().unwrap();
+        }
 
         new_account.balance == U256::zero()
             && new_account.nonce == U256::zero()

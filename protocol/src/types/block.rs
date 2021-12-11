@@ -26,6 +26,7 @@ pub struct Header {
     pub nonce:             H64,
     pub base_fee_per_gas:  Option<U256>,
     pub proof:             Proof,
+    pub chain_id:          u64,
 }
 
 #[derive(Default, Clone, Debug, Hash, PartialEq, Eq)]

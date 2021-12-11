@@ -6,7 +6,7 @@ mod network;
 mod storage;
 
 pub use consensus::{
-    CommonConsensusAdapter, Consensus, ConsensusAdapter, NodeInfo, Synchronization,
+    CommonConsensusAdapter, Consensus, ConsensusAdapter, MessageTarget, NodeInfo, Synchronization,
     SynchronizationAdapter,
 };
 pub use creep::{Cloneable, Context};

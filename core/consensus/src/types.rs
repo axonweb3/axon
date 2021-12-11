@@ -1,8 +1,7 @@
-use overlord::Codec;
 use rlp_derive::{RlpDecodable, RlpEncodable};
 
-use protocol::codec::{ProtocolCodec, ProtocolListCodec};
-use protocol::types::{Block, Bytes, Hash, SignedTransaction};
+use protocol::codec::ProtocolCodec;
+use protocol::types::{BatchSignedTxs, Block, Bytes, Hash};
 use protocol::{traits::MessageCodec, ProtocolResult};
 
 use crate::{ConsensusError, ConsensusType};
@@ -16,25 +15,25 @@ pub enum ConsensusRpcRequest {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ConsensusRpcResponse {
     PullBlocks(Box<Block>),
-    PullTxs(Box<Vec<SignedTransaction>>),
+    PullTxs(Box<BatchSignedTxs>),
 }
 
 impl MessageCodec for ConsensusRpcResponse {
     fn encode_msg(&mut self) -> ProtocolResult<Bytes> {
         let bytes = match self {
             ConsensusRpcResponse::PullBlocks(ep) => {
-                let mut tmp = ep.as_ref().encode()?.as_mut();
+                let mut tmp = ep.as_ref().encode()?.to_vec();
                 tmp.extend_from_slice(b"a");
                 tmp
             }
 
             ConsensusRpcResponse::PullTxs(txs) => {
-                let mut tmp = txs.encode_list()?.as_mut();
+                let mut tmp = txs.encode_msg()?.to_vec();
                 tmp.extend_from_slice(b"b");
                 tmp
             }
         };
-        Ok(bytes.freeze())
+        Ok(Bytes::from(bytes))
     }
 
     fn decode_msg(mut bytes: Bytes) -> ProtocolResult<Self> {
@@ -43,12 +42,12 @@ impl MessageCodec for ConsensusRpcResponse {
 
         match flag.as_ref() {
             b"a" => {
-                let res = Block::decode_fixed(bytes)?;
+                let res = Block::decode(bytes)?;
                 Ok(ConsensusRpcResponse::PullBlocks(Box::new(res)))
             }
 
             b"b" => {
-                let res = Vec::<SignedTransaction>::decode_list(&bytes)
+                let res = BatchSignedTxs::decode_msg(bytes)
                     .map_err(|_| ConsensusError::DecodeErr(ConsensusType::RpcPullTxs))?;
                 Ok(ConsensusRpcResponse::PullTxs(Box::new(res)))
             }

@@ -3,7 +3,7 @@ use crate::types::{Block, Bytes, SignedTransaction};
 macro_rules! batch_msg_type {
     ($name: ident, $ty: ident) => {
         #[derive(Clone, Debug, PartialEq, Eq)]
-        pub struct $name(Vec<$ty>);
+        pub struct $name(pub Vec<$ty>);
 
         impl crate::traits::MessageCodec for $name {
             fn encode_msg(&mut self) -> crate::ProtocolResult<Bytes> {
@@ -18,6 +18,16 @@ macro_rules! batch_msg_type {
                 Ok(Self(inner))
             }
         }
+
+        // impl crate::codec::ProtocolCodec for $name {
+        //     fn encode(&self) -> crate::ProtocolResult<Bytes> {
+        //         self.encode_msg()
+        //     }
+
+        //     fn decode<B: AsRef<[u8]>>(bytes: B) -> crate::ProtocolResult<Self> {
+        //         Self::decode_msg(bytes)
+        //     }
+        // }
 
         impl $name {
             pub fn inner(self) -> Vec<$ty> {

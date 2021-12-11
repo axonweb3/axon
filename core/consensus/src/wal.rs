@@ -7,8 +7,8 @@ use std::time::SystemTime;
 use creep::Context;
 
 use common_apm::muta_apm;
-use protocol::codec::ProtocolListCodec;
-use protocol::types::{BufMut, Bytes, BytesMut, Hash, SignedTransaction};
+use protocol::traits::MessageCodec;
+use protocol::types::{BufMut, Bytes, BytesMut, Hash, SignedTransaction, Hasher, BatchSignedTxs};
 use protocol::ProtocolResult;
 
 use crate::ConsensusError;
@@ -41,7 +41,7 @@ impl SignedTxsWAL {
             fs::create_dir(&wal_path).map_err(ConsensusError::WALErr)?;
         }
 
-        wal_path.push(ordered_signed_transactions_hash.as_hex());
+        wal_path.push(ordered_signed_transactions_hash.to_string());
         wal_path.set_extension("txt");
 
         let mut wal_file = match fs::OpenOptions::new()
@@ -61,7 +61,7 @@ impl SignedTxsWAL {
         };
 
         wal_file
-            .write_all(txs.encode_list().as_ref())
+            .write_all(BatchSignedTxs(txs).encode_msg()?.as_ref())
             .map_err(ConsensusError::WALErr)?;
         Ok(())
     }
@@ -93,7 +93,7 @@ impl SignedTxsWAL {
     ) -> ProtocolResult<Vec<SignedTransaction>> {
         let mut file_path = self.path.clone();
         file_path.push(height.to_string());
-        file_path.push(ordered_signed_transactions_hash.as_hex());
+        file_path.push(ordered_signed_transactions_hash.to_string());
         file_path.set_extension("txt");
 
         self.recover_stxs(file_path)
@@ -147,8 +147,8 @@ impl SignedTxsWAL {
         let _ = file
             .read_to_end(&mut read_buf)
             .map_err(ConsensusError::WALErr)?;
-        let txs = Vec::<SignedTransaction>::decode_sync(Bytes::from(read_buf))?;
-        Ok(txs.inner)
+        let txs = BatchSignedTxs::decode_msg(Bytes::from(read_buf))?;
+        Ok(txs.inner())
     }
 }
 
@@ -177,7 +177,7 @@ impl ConsensusWal {
         }
 
         // 2nd, write info into file
-        let check_sum = Hash::digest(info.clone());
+        let check_sum = Hasher::digest(info.clone());
 
         let mut content = BytesMut::new();
         content.put(check_sum.as_bytes());
@@ -294,7 +294,7 @@ impl ConsensusWal {
 
             let content = info.split_off(Hash::default().as_bytes().len());
 
-            if info == Hash::digest(content.clone()).as_bytes() {
+            if info == Hasher::digest(&content).as_bytes() {
                 break Some(content);
             } else {
                 index += 1;
@@ -337,7 +337,7 @@ mod tests {
     use rand::random;
     use test::Bencher;
 
-    use protocol::types::{Address, Bytes, Hash, Transaction, SignedTransaction};
+    use protocol::types::{TransactionAction, SignatureComponents, UnverifiedTransaction, Bytes, Hash, Transaction, SignedTransaction};
 
     use super::*;
 
@@ -346,40 +346,39 @@ mod tests {
     static FULL_CONSENSUS_PATH: &str = "./free-space/wal/consensus";
 
     fn mock_hash() -> Hash {
-        Hash::digest(get_random_bytes(10))
+        Hasher::digest(get_random_bytes(10))
     }
+    
 
-    fn mock_address() -> Address {
-        let hash = mock_hash();
-        Address::from_hash(hash).unwrap()
-    }
-
-    fn mock_raw_tx() -> RawTransaction {
-        RawTransaction {
-            chain_id:     mock_hash(),
-            nonce:        mock_hash(),
-            timeout:      100,
-            cycles_price: 1,
-            cycles_limit: 100,
-            request:      mock_transaction_request(),
-            sender: mock_address(),
-        }
-    }
-
-    pub fn mock_transaction_request() -> TransactionRequest {
-        TransactionRequest {
-            service_name: "mock-service".to_owned(),
-            method:       "mock-method".to_owned(),
-            payload:      "mock-payload".to_owned(),
-        }
-    }
-
-    pub fn mock_sign_tx() -> SignedTransaction {
+    fn mock_sign_tx() -> SignedTransaction {
+        // let nonce = Hasher::digest(Bytes::from("XXXX"));
+    
         SignedTransaction {
-            raw:       mock_raw_tx(),
-            tx_hash:   mock_hash(),
-            pubkey:    Default::default(),
-            signature: Default::default(),
+            transaction: UnverifiedTransaction {
+                unsigned:  Transaction {
+                    chain_id:                 random::<u64>(),
+                    nonce:                    Default::default(),
+                    max_priority_fee_per_gas: Default::default(),
+                    max_fee_per_gas:          Default::default(),
+                    gas_limit:                Default::default(),
+                    action:                   TransactionAction::Create,
+                    value:                    Default::default(),
+                    input:                    vec![],
+                    access_list:              vec![],
+                    odd_y_parity:             false,
+                    r:                        Default::default(),
+                    s:                        Default::default(),
+                },
+                signature: SignatureComponents {
+                    standard_v: 0,
+                    r:          Default::default(),
+                    s:          Default::default(),
+                },
+                chain_id:  random::<u64>(),
+                hash:      mock_hash(),
+            },
+            sender:      Default::default(),
+            public:      Default::default(),
         }
     }
 
@@ -398,14 +397,14 @@ mod tests {
 
         let wal = SignedTxsWAL::new(FULL_TXS_PATH.to_string());
         let txs_01 = mock_wal_txs(100);
-        let hash_01 = Hash::digest(Bytes::from(rlp::encode_list(&txs_01)));
+        let hash_01 = Hasher::digest(rlp::encode_list(&txs_01));
         wal.save(1u64, hash_01.clone(), txs_01.clone()).unwrap();
         let txs_02 = mock_wal_txs(100);
-        let hash_02 = Hash::digest(Bytes::from(rlp::encode_list(&txs_02)));
+        let hash_02 = Hasher::digest(rlp::encode_list(&txs_02));
         wal.save(3u64, hash_02.clone(), txs_02.clone()).unwrap();
 
         let txs_03 = mock_wal_txs(100);
-        let hash_03 = Hash::digest(Bytes::from(rlp::encode_list(&txs_03)));
+        let hash_03 = Hasher::digest(rlp::encode_list(&txs_03));
         wal.save(3u64, hash_03, txs_03.clone()).unwrap();
 
         let res = wal.load_by_height(3);
@@ -489,9 +488,9 @@ mod tests {
     #[test]
     fn test_wal_txs_codec() {
         for _ in 0..10 {
-            let txs = FixedSignedTxs::new(mock_wal_txs(100));
+            let txs = BatchSignedTxs(mock_wal_txs(100));
             assert_eq!(
-                FixedSignedTxs::decode_sync(txs.encode_sync().unwrap()).unwrap(),
+                BatchSignedTxs::decode_msg(txs.encode_msg().unwrap()).unwrap(),
                 txs
             );
         }
@@ -507,19 +506,10 @@ mod tests {
     }
 
     #[bench]
-    fn bench_txs_prost_encode(b: &mut Bencher) {
-        let txs = FixedSignedTxs::new(mock_wal_txs(20000));
-
-        b.iter(move || {
-            let _ = txs.encode_sync();
-        });
-    }
-
-    #[bench]
     fn bench_save_wal_1000_txs(b: &mut Bencher) {
         let wal = SignedTxsWAL::new(FULL_TXS_PATH.to_string());
         let txs = mock_wal_txs(1000);
-        let txs_hash = Hash::digest(Bytes::from(rlp::encode_list(&txs)));
+        let txs_hash = Hasher::digest(Bytes::from(rlp::encode_list(&txs)));
 
         b.iter(move || {
             wal.save(1u64, txs_hash.clone(), txs.clone()).unwrap();
@@ -530,7 +520,7 @@ mod tests {
     fn bench_save_wal_2000_txs(b: &mut Bencher) {
         let wal = SignedTxsWAL::new(FULL_TXS_PATH.to_string());
         let txs = mock_wal_txs(2000);
-        let txs_hash = Hash::digest(Bytes::from(rlp::encode_list(&txs)));
+        let txs_hash = Hasher::digest(Bytes::from(rlp::encode_list(&txs)));
 
         b.iter(move || {
             wal.save(1u64, txs_hash.clone(), txs.clone()).unwrap();
@@ -541,7 +531,7 @@ mod tests {
     fn bench_save_wal_4000_txs(b: &mut Bencher) {
         let wal = SignedTxsWAL::new(FULL_TXS_PATH.to_string());
         let txs = mock_wal_txs(4000);
-        let txs_hash = Hash::digest(Bytes::from(rlp::encode_list(&txs)));
+        let txs_hash = Hasher::digest(Bytes::from(rlp::encode_list(&txs)));
 
         b.iter(move || {
             wal.save(1u64, txs_hash.clone(), txs.clone()).unwrap();
@@ -552,7 +542,7 @@ mod tests {
     fn bench_save_wal_8000_txs(b: &mut Bencher) {
         let wal = SignedTxsWAL::new(FULL_TXS_PATH.to_string());
         let txs = mock_wal_txs(8000);
-        let txs_hash = Hash::digest(Bytes::from(rlp::encode_list(&txs)));
+        let txs_hash = Hasher::digest(Bytes::from(rlp::encode_list(&txs)));
 
         b.iter(move || {
             wal.save(1u64, txs_hash.clone(), txs.clone()).unwrap();
@@ -563,7 +553,7 @@ mod tests {
     fn bench_save_wal_16000_txs(b: &mut Bencher) {
         let wal = SignedTxsWAL::new(FULL_TXS_PATH.to_string());
         let txs = mock_wal_txs(16000);
-        let txs_hash = Hash::digest(Bytes::from(rlp::encode_list(&txs)));
+        let txs_hash = Hasher::digest(Bytes::from(rlp::encode_list(&txs)));
 
         b.iter(move || {
             wal.save(1u64, txs_hash.clone(), txs.clone()).unwrap();

@@ -179,17 +179,13 @@ pub trait ConsensusAdapter: CommonConsensusAdapter + Send + Sync {
     ) -> ProtocolResult<()>;
 
     /// Execute some transactions.
-    #[allow(clippy::too_many_arguments)]
     async fn execute(
         &self,
         ctx: Context,
-        order_root: MerkleRoot,
-        number: u64,
-        cycles_price: u64,
-        proposer: Address,
         block_hash: Hash,
+        header: &Header,
         signed_txs: Vec<SignedTransaction>,
-    ) -> ProtocolResult<ExecResponse>;
+    ) -> ProtocolResult<Vec<ExecResponse>>;
 
     /// Get the current height from storage.
     async fn get_current_number(&self, ctx: Context) -> ProtocolResult<u64>;
