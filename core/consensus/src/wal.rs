@@ -8,7 +8,7 @@ use creep::Context;
 
 use common_apm::muta_apm;
 use protocol::traits::MessageCodec;
-use protocol::types::{BufMut, Bytes, BytesMut, Hash, SignedTransaction, Hasher, BatchSignedTxs};
+use protocol::types::{BatchSignedTxs, BufMut, Bytes, BytesMut, Hash, Hasher, SignedTransaction};
 use protocol::ProtocolResult;
 
 use crate::ConsensusError;

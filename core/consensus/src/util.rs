@@ -13,7 +13,9 @@ use common_crypto::{
 };
 use protocol::codec::ProtocolCodec;
 use protocol::traits::Context;
-use protocol::types::{Address, Hasher, Bytes, BufMut, BytesMut, Hash, Hex, MerkleRoot, SignedTransaction};
+use protocol::types::{
+    Address, BufMut, Bytes, BytesMut, Hash, Hasher, Hex, MerkleRoot, SignedTransaction,
+};
 use protocol::{ProtocolError, ProtocolResult};
 
 pub fn time_now() -> u64 {
