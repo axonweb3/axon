@@ -8,7 +8,6 @@ use protocol::ProtocolResult;
 use crate::endpoint::Endpoint;
 use crate::error::{ErrorKind, NetworkError};
 use crate::message::{Headers, NetworkMessage};
-use crate::protocols::TRANSMITTER_PROTOCOL_ID;
 use crate::reactor::MessageRouter;
 use crate::rpc::{RpcErrorMessage, RpcResponse, RpcResponseCode};
 use crate::traits::NetworkContext;
@@ -38,13 +37,21 @@ impl NetworkRpc {
             Priority::Normal => self
                 .transmitter
                 .clone()
-                .send_message_to(session_id, TRANSMITTER_PROTOCOL_ID.into(), data)
+                .send_message_to(
+                    session_id,
+                    crate::protocols::SupportProtocols::Transmitter.protocol_id(),
+                    data,
+                )
                 .await
                 .unwrap(),
             Priority::High => self
                 .transmitter
                 .clone()
-                .send_message_to(session_id, TRANSMITTER_PROTOCOL_ID.into(), data)
+                .send_message_to(
+                    session_id,
+                    crate::protocols::SupportProtocols::Transmitter.protocol_id(),
+                    data,
+                )
                 .await
                 .unwrap(),
         }

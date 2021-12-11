@@ -31,16 +31,18 @@ impl ServiceProtocol for TransmitterProtocol {
     fn init(&mut self, _context: &mut ProtocolContext) {}
 
     fn connected(&mut self, context: ProtocolContextMutRef, _version: &str) {
+        log::info!("{} open on {}", context.proto_id, context.session.id);
         self.peer_manager.open_protocol(
             &extract_peer_id(&context.session.address).unwrap(),
-            crate::protocols::TRANSMITTER_PROTOCOL_ID.into(),
+            crate::protocols::SupportProtocols::Transmitter.protocol_id(),
         )
     }
 
     fn disconnected(&mut self, context: ProtocolContextMutRef) {
+        log::info!("{} close on {}", context.proto_id, context.session.id);
         self.peer_manager.close_protocol(
             &extract_peer_id(&context.session.address).unwrap(),
-            &crate::protocols::TRANSMITTER_PROTOCOL_ID.into(),
+            &crate::protocols::SupportProtocols::Transmitter.protocol_id(),
         )
     }
 
