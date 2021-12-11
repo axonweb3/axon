@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use creep::Context;
-use futures::lock::Mutex;
 use overlord::types::{
     AggregatedVote, Node, OverlordMsg, SignedChoke, SignedProposal, SignedVote, Status,
 };
@@ -10,13 +9,15 @@ use overlord::{DurationConfig, Overlord, OverlordHandler};
 use common_apm::muta_apm;
 use protocol::traits::{Consensus, ConsensusAdapter, NodeInfo};
 use protocol::types::{Pill, Validator};
-use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
+use protocol::{
+    async_trait, codec::ProtocolCodec, tokio::sync::Mutex as AsyncMutex, ProtocolResult,
+};
 
-use crate::engine::ConsensusEngine;
-use crate::status::StatusAgent;
-use crate::util::OverlordCrypto;
 use crate::wal::{ConsensusWal, SignedTxsWAL};
-use crate::{ConsensusError, ConsensusType};
+use crate::{
+    engine::ConsensusEngine, util::OverlordCrypto, ConsensusError, ConsensusType,
+    METADATA_CONTROLER,
+};
 
 /// Provide consensus
 pub struct OverlordConsensus<Adapter: ConsensusAdapter + 'static> {
@@ -98,16 +99,14 @@ impl<Adapter: ConsensusAdapter + 'static> Consensus for OverlordConsensus<Adapte
 
 impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
     pub fn new(
-        status_agent: StatusAgent,
         node_info: NodeInfo,
         crypto: Arc<OverlordCrypto>,
         txs_wal: Arc<SignedTxsWAL>,
         adapter: Arc<Adapter>,
-        lock: Arc<Mutex<()>>,
+        lock: Arc<AsyncMutex<()>>,
         consensus_wal: Arc<ConsensusWal>,
     ) -> Self {
         let engine = Arc::new(ConsensusEngine::new(
-            status_agent.clone(),
             node_info.clone(),
             txs_wal,
             Arc::clone(&adapter),
@@ -115,23 +114,29 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
             lock,
             consensus_wal,
         ));
+        let status = engine.status();
+        let metadata = METADATA_CONTROLER.get().unwrap().current();
 
         let overlord = Overlord::new(node_info.self_pub_key, Arc::clone(&engine), crypto, engine);
         let overlord_handler = overlord.get_handler();
-        let status = status_agent.to_inner();
 
-        if status.latest_committed_height == 0 {
+        if status.last_number == 0 {
             overlord_handler
                 .send_msg(
                     Context::new(),
                     OverlordMsg::RichStatus(gen_overlord_status(
-                        status.latest_committed_height + 1,
-                        status.consensus_interval,
-                        status.propose_ratio,
-                        status.prevote_ratio,
-                        status.precommit_ratio,
-                        status.brake_ratio,
-                        status.validators,
+                        status.last_number + 1,
+                        metadata.interval,
+                        metadata.propose_ratio,
+                        metadata.prevote_ratio,
+                        metadata.precommit_ratio,
+                        metadata.brake_ratio,
+                        metadata
+                            .verifier_list
+                            .clone()
+                            .into_iter()
+                            .map(Into::into)
+                            .collect(),
                     )),
                 )
                 .unwrap();

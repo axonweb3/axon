@@ -29,12 +29,12 @@ use crate::consensus::gen_overlord_status;
 use crate::message::{
     BROADCAST_HEIGHT, RPC_SYNC_PULL_BLOCK, RPC_SYNC_PULL_PROOF, RPC_SYNC_PULL_TXS,
 };
-use crate::status::{ExecutedInfo, StatusAgent};
+use crate::status::{CurrentStatus, ExecutedInfo};
 use crate::types::PullTxsRequest;
 use crate::util::{convert_hex_to_bls_pubkeys, ExecuteInfo, OverlordCrypto};
 use crate::BlockHeaderField::{PreviousBlockHash, ProofHash, Proposer};
 use crate::BlockProofField::{BitMap, HashMismatch, HeightMismatch, Signature, WeightNotFound};
-use crate::{BlockHeaderField, BlockProofField, ConsensusError};
+use crate::{BlockHeaderField, BlockProofField, ConsensusError, METADATA_CONTROLER};
 
 pub struct OverlordConsensusAdapter<
     EF: Executor,
@@ -114,7 +114,7 @@ where
     }
 
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
-    async fn execute(
+    async fn exec(
         &self,
         ctx: Context,
         header_hash: Hash,
@@ -347,14 +347,14 @@ where
 
     /// Get a block corresponding to the given height.
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
-    async fn get_block_by_height(&self, ctx: Context, height: u64) -> ProtocolResult<Block> {
+    async fn get_block_by_number(&self, ctx: Context, height: u64) -> ProtocolResult<Block> {
         self.storage
             .get_block(ctx, height)
             .await?
             .ok_or_else(|| ConsensusError::StorageItemNotFound.into())
     }
 
-    async fn get_block_header_by_height(
+    async fn get_block_header_by_number(
         &self,
         ctx: Context,
         height: u64,
@@ -393,7 +393,7 @@ where
     }
 
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
-    async fn broadcast_height(&self, ctx: Context, height: u64) -> ProtocolResult<()> {
+    async fn broadcast_number(&self, ctx: Context, height: u64) -> ProtocolResult<()> {
         self.network
             .broadcast(ctx.clone(), BROADCAST_HEIGHT, height, Priority::High)
             .await
@@ -412,7 +412,7 @@ where
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
     async fn verify_block_header(&self, ctx: Context, block: &Block) -> ProtocolResult<()> {
         let previous_block_header = self
-            .get_block_header_by_height(ctx.clone(), block.header.number - 1)
+            .get_block_header_by_number(ctx.clone(), block.header.number - 1)
             .await
             .map_err(|e| {
                 log::error!(
@@ -444,71 +444,6 @@ where
             return Err(ConsensusError::VerifyBlockHeader(block.header.number, ProofHash).into());
         }
 
-        let authority_map = previous_metadata
-            .verifier_list
-            .iter()
-            .map(|v| {
-                let address = v.pub_key.decode();
-                let node = Node {
-                    address:        v.pub_key.decode(),
-                    propose_weight: v.propose_weight,
-                    vote_weight:    v.vote_weight,
-                };
-                (address, node)
-            })
-            .collect::<HashMap<_, _>>();
-
-        // TODO: useless check
-        // check proposer
-        if block.header.number != 0
-            && !previous_metadata
-                .verifier_list
-                .iter()
-                .any(|v| v.address == block.header.proposer)
-        {
-            log::error!(
-                "[consensus] verify_block_header, block.header.proposer: {:?}, authority_map: {:?}",
-                block.header.proposer,
-                authority_map
-            );
-            return Err(ConsensusError::VerifyBlockHeader(block.header.number, Proposer).into());
-        }
-
-        // check validators
-        for validator in block.header.validators.iter() {
-            let validator_address = public_to_address(validator.pub_key.clone());
-
-            if !authority_map.contains_key(&validator.pub_key) {
-                log::error!(
-                    "[consensus] verify_block_header, validator.address: {:?}, authority_map: {:?}",
-                    validator_address,
-                    authority_map
-                );
-                return Err(ConsensusError::VerifyBlockHeader(
-                    block.header.number,
-                    BlockHeaderField::Validator,
-                )
-                .into());
-            } else {
-                let node = authority_map.get(&validator.pub_key).unwrap();
-
-                if node.vote_weight != validator.vote_weight
-                    || node.propose_weight != validator.vote_weight
-                {
-                    log::error!(
-                        "[consensus] verify_block_header, validator.address: {:?}, authority_map: {:?}",
-                        validator_address,
-                        authority_map
-                    );
-                    return Err(ConsensusError::VerifyBlockHeader(
-                        block.header.number,
-                        BlockHeaderField::Weight,
-                    )
-                    .into());
-                }
-            }
-        }
-
         Ok(())
     }
 
@@ -517,10 +452,9 @@ where
         &self,
         ctx: Context,
         block_header: &Header,
-        proof: &Proof,
+        proof: Proof,
     ) -> ProtocolResult<()> {
         // the block 0 has no proof, which is consensus-ed by community, not by chain
-
         if block_header.number == 0 {
             return Ok(());
         };
@@ -550,7 +484,7 @@ where
         }
 
         let previous_block_header = self
-            .get_block_header_by_height(ctx.clone(), block_header.number - 1)
+            .get_block_header_by_number(ctx.clone(), block_header.number - 1)
             .await
             .map_err(|e| {
                 log::error!(
@@ -559,14 +493,17 @@ where
                 );
                 e
             })?;
+
         // the auth_list for the target should comes from previous height
-        let metadata = self.get_metadata(
-            ctx.clone(),
-            previous_block_header.state_root.clone(),
-            previous_block_header.number,
-            previous_block_header.timestamp,
-            previous_block_header.proposer,
-        )?;
+        let metadata = METADATA_CONTROLER.get().unwrap().current();
+
+        if !metadata.version.contains(block_header.number) {
+            return Err(ConsensusError::ConfusedMetadata(
+                metadata.version.start,
+                metadata.version.end,
+            )
+            .into());
+        }
 
         let mut authority_list = metadata
             .verifier_list
@@ -716,7 +653,6 @@ where
         mempool: Arc<M>,
         storage: Arc<S>,
         trie_db: Arc<DB>,
-        status_agent: StatusAgent,
         crypto: Arc<OverlordCrypto>,
         gap: usize,
     ) -> ProtocolResult<Self> {

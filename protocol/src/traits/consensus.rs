@@ -121,7 +121,7 @@ pub trait CommonConsensusAdapter: Send + Sync {
         &self,
         ctx: Context,
         block_header: &Header,
-        proof: &Proof,
+        proof: Proof,
     ) -> ProtocolResult<()>;
 
     async fn verify_block_header(&self, ctx: Context, block: &Block) -> ProtocolResult<()>;

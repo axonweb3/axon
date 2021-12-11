@@ -12,9 +12,7 @@ use common_crypto::{
     PrivateKey, Signature,
 };
 use protocol::traits::Context;
-use protocol::types::{
-    Address, Bytes, Hash, Hasher, Hex, MerkleRoot, SignedTransaction,
-};
+use protocol::types::{Address, Bytes, Hash, Hasher, Hex, MerkleRoot, SignedTransaction};
 use protocol::{ProtocolError, ProtocolResult};
 
 pub fn time_now() -> u64 {

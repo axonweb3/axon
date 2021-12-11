@@ -4,7 +4,7 @@ use std::error::Error;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use futures::lock::Mutex;
+use common_apm::prometheus::core::Atomic;
 use json::JsonValue;
 use log::{error, info, warn};
 use overlord::error::ConsensusError as OverlordError;
@@ -19,18 +19,21 @@ use common_logger::{json, log};
 use common_merkle::Merkle;
 
 use protocol::codec::ProtocolCodec;
-use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo, TrustFeedback};
+use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
-    Address, Block, Bytes, Hash, Hasher, Header, MerkleRoot, Pill, Proof, SignedTransaction,
-    Validator,
+    Address, Block, BlockNumber, Bytes, Hash, Hasher, Header, MerkleRoot, Metadata, Pill, Proof,
+    SignedTransaction, ValidatorExtend,
 };
-use protocol::{async_trait, tokio, tokio::time::sleep, ProtocolError, ProtocolResult};
+use protocol::{
+    async_trait, tokio, tokio::sync::Mutex as AsyncMutex, tokio::time::sleep, ProtocolError,
+    ProtocolResult,
+};
 
 use crate::message::{
     END_GOSSIP_AGGREGATED_VOTE, END_GOSSIP_SIGNED_CHOKE, END_GOSSIP_SIGNED_PROPOSAL,
     END_GOSSIP_SIGNED_VOTE,
 };
-use crate::status::CurrentStatus;
+use crate::status::{CurrentStatus, METADATA_CONTROLER};
 use crate::util::{time_now, OverlordCrypto};
 use crate::wal::{ConsensusWal, SignedTxsWAL};
 use crate::ConsensusError;
@@ -49,7 +52,7 @@ pub struct ConsensusEngine<Adapter> {
     adapter: Arc<Adapter>,
     txs_wal: Arc<SignedTxsWAL>,
     crypto:  Arc<OverlordCrypto>,
-    lock:    Arc<Mutex<()>>,
+    lock:    Arc<AsyncMutex<()>>,
 
     last_commit_time:             RwLock<u64>,
     consensus_wal:                Arc<ConsensusWal>,
@@ -210,35 +213,20 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
         commit: Commit<Pill>,
     ) -> Result<Status, Box<dyn Error + Send>> {
         let lock = self.lock.try_lock();
-        if lock.is_none() {
+        if lock.is_err() {
             return Err(ProtocolError::from(ConsensusError::LockInSync).into());
         }
 
-        let current_consensus_status = self.status_agent.to_inner();
-        if current_consensus_status.exec_number == current_number {
-            let status = Status {
-                height:         current_number + 1,
-                interval:       Some(current_consensus_status.consensus_interval),
-                timer_config:   Some(DurationConfig {
-                    propose_ratio:   current_consensus_status.propose_ratio,
-                    prevote_ratio:   current_consensus_status.prevote_ratio,
-                    precommit_ratio: current_consensus_status.precommit_ratio,
-                    brake_ratio:     current_consensus_status.brake_ratio,
-                }),
-                authority_list: covert_to_overlord_authority(&current_consensus_status.validators),
-            };
-            return Ok(status);
-        }
-
-        if current_number != current_consensus_status.latest_committed_number + 1 {
+        if current_number != self.status.last_number + 1 {
             return Err(ProtocolError::from(ConsensusError::OutdatedCommit(
                 current_number,
-                current_consensus_status.latest_committed_number,
+                self.status.last_number,
             ))
             .into());
         }
 
         let pill = commit.content;
+        let block = pill.block;
         let block_hash = Hash::from_slice(commit.proof.block_hash.as_ref());
         let signature = commit.proof.signature.signature.clone();
         let bitmap = commit.proof.signature.address_bitmap.clone();
@@ -257,37 +245,30 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
         self.adapter.save_proof(ctx.clone(), proof.clone()).await?;
 
         // Get full transactions from mempool. If is error, try get from wal.
-        let ordered_tx_hashes = pill.block.ordered_tx_hashes.clone();
         let signed_txs = match self
             .adapter
-            .get_full_txs(ctx.clone(), &ordered_tx_hashes)
+            .get_full_txs(ctx.clone(), &block.tx_hashes)
             .await
         {
             Ok(txs) => txs,
-            Err(_) => self.txs_wal.load(
-                current_number,
-                pill.block.header.transactions_root,
-            )?,
+            Err(_) => self
+                .txs_wal
+                .load(current_number, block.header.transactions_root)?,
         };
 
         // Execute transactions
 
-        let resp = self.adapter
+        let resp = self
+            .adapter
             .exec(
                 ctx.clone(),
                 Hasher::digest(pill.block.header.encode()?),
-                &pill.block.header,
+                &block.header,
                 signed_txs.clone(),
             )
             .await?;
 
-        let metadata = self.adapter.get_metadata(
-            ctx.clone(),
-            pill.block.header.state_root.clone(),
-            pill.block.header.number,
-            pill.block.header.timestamp,
-            pill.block.header.proposer.clone(),
-        )?;
+        let metadata = METADATA_CONTROLER.get().unwrap().current();
         info!(
             "[consensus]: validator of number {} is {:?}",
             current_number + 1,
@@ -298,7 +279,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             .await?;
 
         self.adapter
-            .flush_mempool(ctx.clone(), &ordered_tx_hashes)
+            .flush_mempool(ctx.clone(), &block.tx_hashes)
             .await?;
 
         self.adapter
@@ -309,7 +290,15 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
         let mut set = self.exemption_hash.write();
         set.clear();
 
-        
+        self.update_metadata(current_number + 1);
+        let metadata = METADATA_CONTROLER.get().unwrap().current();
+
+        let status = Status {
+            height:         current_number + 1,
+            interval:       Some(metadata.interval),
+            authority_list: convert_to_overlord_authority(&metadata.verifier_list),
+            timer_config:   Some(metadata.into()),
+        };
 
         self.metric_commit(current_number, txs_len);
 
@@ -389,10 +378,10 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
 
     /// This function is rarely used, so get the authority list from the
     /// RocksDB.
-    #[muta_apm::derive::tracing_span(
-        kind = "consensus.engine",
-        logs = "{'next_number': 'next_number'}"
-    )]
+    // #[muta_apm::derive::tracing_span(
+    //     kind = "consensus.engine",
+    //     logs = "{'next_number': 'next_number'}"
+    // )]
     async fn get_authority_list(
         &self,
         ctx: Context,
@@ -402,17 +391,13 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             return Ok(vec![]);
         }
 
-        let old_block_header = self
-            .adapter
-            .get_block_header_by_number(ctx.clone(), next_number - 1)
-            .await?;
-        let old_metadata = self.adapter.get_metadata(
-            ctx.clone(),
-            old_block_header.state_root.clone(),
-            old_block_header.timestamp,
-            old_block_header.number,
-            old_block_header.proposer,
-        )?;
+        let current_metadata = METADATA_CONTROLER.get().unwrap().current();
+        let old_metadata = if current_metadata.version.contains(next_number - 1) {
+            current_metadata
+        } else {
+            METADATA_CONTROLER.get().unwrap().previous()
+        };
+
         let mut old_validators = old_metadata
             .verifier_list
             .into_iter()
@@ -468,7 +453,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         wal: Arc<SignedTxsWAL>,
         adapter: Arc<Adapter>,
         crypto: Arc<OverlordCrypto>,
-        lock: Arc<Mutex<()>>,
+        lock: Arc<AsyncMutex<()>>,
         consensus_wal: Arc<ConsensusWal>,
     ) -> Self {
         Self {
@@ -485,6 +470,10 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         }
     }
 
+    pub fn status(&self) -> CurrentStatus {
+        self.status.clone()
+    }
+
     // #[muta_apm::derive::tracing_span(kind = "consensus.engine")]
     pub async fn exec(
         &self,
@@ -493,15 +482,12 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         header: &Header,
         txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<()> {
-        self.adapter
-            .exec(
-                ctx,
-                state_root,
-                header,
-                txs,
-            )
-            .await?;
+        self.adapter.exec(ctx, state_root, header, txs).await?;
         Ok(())
+    }
+
+    fn update_metadata(&self, block_number: BlockNumber) {
+        METADATA_CONTROLER.get().unwrap().update(block_number);
     }
 
     async fn inner_check_block(&self, ctx: Context, block: &Block) -> ProtocolResult<()> {
@@ -539,7 +525,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
                 .verify_proof(
                     ctx.clone(),
                     &previous_block_header,
-                    &block.header.proof,
+                    block.header.proof.clone(),
                 )
                 .await
                 .map_err(|e| {
@@ -686,27 +672,13 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             .collect();
         self.adapter.tag_consensus(Context::new(), pub_keys)?;
 
-        let block_hash = Hash::digest(block.header.encode_fixed()?);
+        let block_hash = Hasher::digest(block.header.encode()?);
 
         if block.header.number != proof.number {
             info!("[consensus] update_status for handle_commit, error, before update, block number {}, proof number:{}, proof : {:?}",
             block.header.number,
             proof.number,
             proof.clone());
-        }
-
-        self.status_agent
-            .update_by_committed(metadata.clone(), block, block_hash, proof);
-
-        let committed_status_agent = self.status_agent.to_inner();
-
-        if committed_status_agent.latest_committed_number
-            != committed_status_agent.current_proof.number
-        {
-            error!("[consensus] update_status for handle_commit, error, current_number {} != current_proof.number {}, proof :{:?}",
-            committed_status_agent.latest_committed_number,
-            committed_status_agent.current_proof.number,
-            committed_status_agent.current_proof)
         }
 
         self.update_overlord_crypto(metadata)?;
@@ -745,11 +717,11 @@ pub fn generate_new_crypto_map(metadata: Metadata) -> ProtocolResult<HashMap<Byt
     Ok(new_addr_pubkey_map)
 }
 
-fn covert_to_overlord_authority(validators: &[Validator]) -> Vec<Node> {
+fn convert_to_overlord_authority(validators: &[ValidatorExtend]) -> Vec<Node> {
     let mut authority = validators
         .iter()
         .map(|v| Node {
-            address:        v.pub_key.clone(),
+            address:        v.pub_key.decode(),
             propose_weight: v.propose_weight,
             vote_weight:    v.vote_weight,
         })

@@ -1,19 +1,66 @@
+use std::lazy::SyncOnceCell;
 use std::sync::Arc;
 
-use parking_lot::RwLock;
-use serde::{Deserialize, Serialize};
+use parking_lot::Mutex;
 
 use common_merkle::Merkle;
-use protocol::codec::ProtocolCodec;
 use protocol::traits::Context;
 use protocol::types::{
-    Block, Bloom, ExecResponse, Hash, Hasher, MerkleRoot, Proof, Validator, U256,
+    BlockNumber, Bloom, ExecResponse, Hash, Hasher, MerkleRoot, Metadata, Proof, U256,
 };
 use protocol::Display;
+
+pub static METADATA_CONTROLER: SyncOnceCell<MetadataController> = SyncOnceCell::new();
+
+#[derive(Default)]
+pub struct MetadataController {
+    current:  Arc<Mutex<Metadata>>,
+    previous: Arc<Mutex<Metadata>>,
+    next:     Arc<Mutex<Metadata>>,
+}
+
+impl MetadataController {
+    pub fn init(
+        current: Arc<Mutex<Metadata>>,
+        previous: Arc<Mutex<Metadata>>,
+        next: Arc<Mutex<Metadata>>,
+    ) -> Self {
+        MetadataController {
+            current,
+            previous,
+            next,
+        }
+    }
+
+    pub fn current(&self) -> Metadata {
+        self.current.lock().clone()
+    }
+
+    pub fn previous(&self) -> Metadata {
+        self.previous.lock().clone()
+    }
+
+    pub fn set_next(&self, next: Metadata) {
+        *self.next.lock() = next;
+    }
+
+    pub fn update(&self, number: BlockNumber) {
+        let current = self.current();
+
+        if current.version.contains(number) {
+            return;
+        }
+
+        let next = self.next.lock().clone();
+        *self.previous.lock() = current;
+        *self.current.lock() = next;
+    }
+}
 
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct CurrentStatus {
     pub prev_hash:        Hash,
+    pub last_number:      BlockNumber,
     pub state_root:       MerkleRoot,
     pub receipts_root:    MerkleRoot,
     pub log_bloom:        Bloom,
@@ -30,7 +77,7 @@ pub struct CurrentStatus {
     gas_used,
     state_root,
     receipts_root,
-    state_root,
+    state_root
 )]
 pub struct ExecutedInfo {
     pub ctx:           Context,
@@ -44,17 +91,20 @@ impl ExecutedInfo {
     pub fn new(ctx: Context, height: u64, state_root: MerkleRoot, resp: Vec<ExecResponse>) -> Self {
         let gas_sum = resp.iter().map(|r| r.remain_gas).sum();
 
-        let receipt =
-            Merkle::from_hashes(resp.iter().map(|r| Hasher::digest(r.ret)).collect::<Vec<_>>())
-                .get_root_hash()
-                .unwrap_or_default();
+        let receipt = Merkle::from_hashes(
+            resp.iter()
+                .map(|r| Hasher::digest(r.ret))
+                .collect::<Vec<_>>(),
+        )
+        .get_root_hash()
+        .unwrap_or_default();
 
         Self {
             ctx,
             exec_height: height,
             gas_used: gas_sum,
             receipts_root: receipt,
-            state_root: resp.state_root,
+            state_root,
         }
     }
 }

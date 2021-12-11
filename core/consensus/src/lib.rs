@@ -1,4 +1,4 @@
-#![feature(test)]
+#![feature(test, once_cell)]
 #![allow(
     clippy::type_complexity,
     clippy::suspicious_else_formatting,
@@ -26,6 +26,7 @@ use protocol::{Display, ProtocolError, ProtocolErrorKind};
 
 pub use crate::adapter::OverlordConsensusAdapter;
 pub use crate::consensus::OverlordConsensus;
+pub use crate::status::METADATA_CONTROLER;
 pub use crate::synchronization::{OverlordSynchronization, RichBlock};
 pub use crate::wal::{ConsensusWal, SignedTxsWAL};
 pub use overlord::{types::Node, DurationConfig};
@@ -162,6 +163,9 @@ pub enum ConsensusError {
 
     #[display(fmt = "no consensus wal file available")]
     ConsensusWalNoWalFile,
+
+    #[display(fmt = "Confused metadata range [{}, {})!", _0, _1)]
+    ConfusedMetadata(u64, u64),
 }
 
 #[derive(Debug, Display)]
