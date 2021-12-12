@@ -115,6 +115,8 @@ pub trait CommonConsensusAdapter: Send + Sync {
 
     async fn broadcast_number(&self, ctx: Context, height: u64) -> ProtocolResult<()>;
 
+    fn set_args(&self, context: Context, timeout_gap: u64, gas_limit: u64, max_tx_size: u64);
+
     fn tag_consensus(&self, ctx: Context, peer_ids: Vec<Bytes>) -> ProtocolResult<()>;
 
     async fn verify_proof(

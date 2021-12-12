@@ -98,6 +98,8 @@ impl MemPoolAdapter for HashMemPoolAdapter {
         Ok(vec![])
     }
 
+    fn set_args(&self, _context: Context, _timeout_gap: u64, _gas_limit: u64, _max_tx_size: u64) {}
+
     fn report_good(&self, _ctx: Context) {}
 }
 

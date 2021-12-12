@@ -85,7 +85,7 @@ fn mock_block(height: u64, _block_hash: Hash) -> Block {
 
     Block {
         header,
-        transactions: vec![],
+        tx_hashes: vec![],
     }
 }
 

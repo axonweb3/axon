@@ -661,7 +661,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         self.adapter.set_args(
             Context::new(),
             metadata.timeout_gap,
-            metadata.cycles_limit,
+            metadata.gas_limit,
             metadata.max_tx_size,
         );
 

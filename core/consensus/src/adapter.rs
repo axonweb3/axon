@@ -9,19 +9,16 @@ use overlord::{extract_voters, Crypto, OverlordHandler};
 use parking_lot::{Mutex, RwLock};
 
 use common_apm::muta_apm;
-use common_merkle::Merkle;
 use core_executor::{adapter::ExecutorAdapter, EvmExecutor};
 use core_network::{PeerId, PeerIdExt};
 
-use protocol::tokio::sync::mpsc::{channel, Receiver, Sender};
 use protocol::traits::{
     CommonConsensusAdapter, ConsensusAdapter, Context, Executor, Gossip, MemPool, MessageTarget,
     MixedTxHashes, Network, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
 };
-use protocol::types::{
-    public_to_address, Address, BatchBlocks, BatchSignedTxs, Block, BlockNumber, Bytes,
-    ExecResponse, ExecutorContext, ExitReason, Hash, Hasher, Header, Hex, MerkleRoot, Pill, Proof,
-    Receipt, SignedTransaction, Transaction, Validator,
+use protocol::types::{ BatchSignedTxs, Block, BlockNumber, Bytes,
+    ExecResponse, ExecutorContext, Hash, Hasher, Header, Hex, Pill, Proof,
+    Receipt, SignedTransaction, Validator,
 };
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
@@ -29,12 +26,11 @@ use crate::consensus::gen_overlord_status;
 use crate::message::{
     BROADCAST_HEIGHT, RPC_SYNC_PULL_BLOCK, RPC_SYNC_PULL_PROOF, RPC_SYNC_PULL_TXS,
 };
-use crate::status::{CurrentStatus, ExecutedInfo};
 use crate::types::PullTxsRequest;
-use crate::util::{convert_hex_to_bls_pubkeys, ExecuteInfo, OverlordCrypto};
-use crate::BlockHeaderField::{PreviousBlockHash, ProofHash, Proposer};
+use crate::util::{convert_hex_to_bls_pubkeys, OverlordCrypto};
+use crate::BlockHeaderField::{PreviousBlockHash, ProofHash};
 use crate::BlockProofField::{BitMap, HashMismatch, HeightMismatch, Signature, WeightNotFound};
-use crate::{BlockHeaderField, BlockProofField, ConsensusError, METADATA_CONTROLER};
+use crate::{BlockProofField, ConsensusError, METADATA_CONTROLER};
 
 pub struct OverlordConsensusAdapter<
     EF: Executor,
@@ -397,6 +393,11 @@ where
         self.network
             .broadcast(ctx.clone(), BROADCAST_HEIGHT, height, Priority::High)
             .await
+    }
+
+    fn set_args(&self, context: Context, timeout_gap: u64, gas_limit: u64, max_tx_size: u64) {
+        self.mempool
+            .set_args(context, timeout_gap, gas_limit, max_tx_size);
     }
 
     fn tag_consensus(&self, ctx: Context, pub_keys: Vec<Bytes>) -> ProtocolResult<()> {
