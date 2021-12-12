@@ -12,7 +12,7 @@ use protocol::{async_trait, tokio::time::sleep, ProtocolResult};
 
 use crate::engine::generate_new_crypto_map;
 use crate::status::{ExecutedInfo, StatusAgent, METADATA_CONTROLER};
-use crate::util::{OverlordCrypto, digest_signed_transactions};
+use crate::util::{digest_signed_transactions, OverlordCrypto};
 use crate::ConsensusError;
 
 const POLLING_BROADCAST: u64 = 2000;
@@ -243,20 +243,11 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
                     e
                 })?;
 
-            let signed_txs_hash =
-                digest_signed_transactions(&consenting_rich_block.txs);
-            if signed_txs_hash
-                != consenting_rich_block
-                    .block
-                    .header
-                    .signed_txs_hash
-            {
+            let signed_txs_hash = digest_signed_transactions(&consenting_rich_block.txs);
+            if signed_txs_hash != consenting_rich_block.block.header.signed_txs_hash {
                 return Err(ConsensusError::InvalidOrderSignedTransactionsHash {
                     expect: signed_txs_hash,
-                    actual: consenting_rich_block
-                        .block
-                        .header
-                        .signed_txs_hash,
+                    actual: consenting_rich_block.block.header.signed_txs_hash,
                 }
                 .into());
             }
@@ -304,7 +295,6 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             .await?;
         let block = &rich_block.block;
         let block_hash = Hasher::digest(block.header.encode()?);
-
 
         status_agent.update_by_committed(metadata, block.clone(), block_hash, proof);
 
@@ -422,7 +412,10 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         }
 
         if current_number == remote_number - 1 {
-            sleep(Duration::from_millis(METADATA_CONTROLER.get().unwrap().current().interval)).await;
+            sleep(Duration::from_millis(
+                METADATA_CONTROLER.get().unwrap().current().interval,
+            ))
+            .await;
 
             current_number = self.status.inner().last_number;
             if current_number == remote_number {
