@@ -26,9 +26,9 @@ impl AsRef<[u8]> for DBBytes {
 pub struct Hasher;
 
 impl Hasher {
-    pub fn digest<B: AsRef<[u8]>>(bytes: B) -> H256 {
+    pub fn digest<B: AsRef<[u8]>>(bytes: B) -> Hash {
         let hash = HASHER_INST.digest(bytes.as_ref());
-        let mut ret = H256::default();
+        let mut ret = Hash::default();
         ret.0.copy_from_slice(&hash[0..32]);
         ret
     }

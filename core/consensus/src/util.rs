@@ -15,6 +15,10 @@ use protocol::traits::Context;
 use protocol::types::{Address, Bytes, Hash, Hasher, Hex, MerkleRoot, SignedTransaction};
 use protocol::{ProtocolError, ProtocolResult};
 
+pub fn digest_signed_transactions(stxs: &[SignedTransaction]) -> Hash {
+    Hasher::digest(rlp::encode_list(stxs))
+}
+
 pub fn time_now() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)

@@ -14,6 +14,7 @@ pub struct Header {
     pub proposer:          Address,
     pub state_root:        MerkleRoot,
     pub transactions_root: MerkleRoot,
+    pub signed_txs_hash:   Hash,
     pub receipts_root:     MerkleRoot,
     pub log_bloom:         Bloom,
     pub difficulty:        U256,

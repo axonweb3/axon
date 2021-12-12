@@ -16,9 +16,9 @@ use protocol::traits::{
     CommonConsensusAdapter, ConsensusAdapter, Context, Executor, Gossip, MemPool, MessageTarget,
     MixedTxHashes, Network, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
 };
-use protocol::types::{ BatchSignedTxs, Block, BlockNumber, Bytes,
-    ExecResponse, ExecutorContext, Hash, Hasher, Header, Hex, Pill, Proof,
-    Receipt, SignedTransaction, Validator,
+use protocol::types::{
+    BatchSignedTxs, Block, BlockNumber, Bytes, ExecResponse, ExecutorContext, Hash, Hasher, Header,
+    Hex, Pill, Proof, Receipt, SignedTransaction, Validator,
 };
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 

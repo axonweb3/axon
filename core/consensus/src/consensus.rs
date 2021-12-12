@@ -15,8 +15,8 @@ use protocol::{
 
 use crate::wal::{ConsensusWal, SignedTxsWAL};
 use crate::{
-    engine::ConsensusEngine, util::OverlordCrypto, ConsensusError, ConsensusType,
-    METADATA_CONTROLER,
+    engine::ConsensusEngine, status::StatusAgent, util::OverlordCrypto, ConsensusError,
+    ConsensusType, METADATA_CONTROLER,
 };
 
 /// Provide consensus
@@ -99,6 +99,7 @@ impl<Adapter: ConsensusAdapter + 'static> Consensus for OverlordConsensus<Adapte
 
 impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
     pub fn new(
+        status: StatusAgent,
         node_info: NodeInfo,
         crypto: Arc<OverlordCrypto>,
         txs_wal: Arc<SignedTxsWAL>,
@@ -107,6 +108,7 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
         consensus_wal: Arc<ConsensusWal>,
     ) -> Self {
         let engine = Arc::new(ConsensusEngine::new(
+            status,
             node_info.clone(),
             txs_wal,
             Arc::clone(&adapter),

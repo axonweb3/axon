@@ -4,14 +4,13 @@ use std::error::Error;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use common_apm::prometheus::core::Atomic;
 use json::JsonValue;
 use log::{error, info, warn};
 use overlord::error::ConsensusError as OverlordError;
 use overlord::types::{Commit, Node, OverlordMsg, Status, ViewChangeReason};
 use overlord::{Consensus as Engine, DurationConfig, Wal};
 use parking_lot::RwLock;
-use rlp::{Decodable, Encodable};
+use rlp::Encodable;
 
 use common_apm::muta_apm;
 use common_crypto::BlsPublicKey;
@@ -21,7 +20,7 @@ use common_merkle::Merkle;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
-    Address, Block, BlockNumber, Bytes, Hash, Hasher, Header, MerkleRoot, Metadata, Pill, Proof,
+    Block, BlockNumber, Bytes, Hash, Hasher, Header, MerkleRoot, Metadata, Pill, Proof,
     SignedTransaction, ValidatorExtend,
 };
 use protocol::{
@@ -33,10 +32,10 @@ use crate::message::{
     END_GOSSIP_AGGREGATED_VOTE, END_GOSSIP_SIGNED_CHOKE, END_GOSSIP_SIGNED_PROPOSAL,
     END_GOSSIP_SIGNED_VOTE,
 };
-use crate::status::{CurrentStatus, METADATA_CONTROLER};
-use crate::util::{time_now, OverlordCrypto};
+use crate::status::{CurrentStatus, StatusAgent};
+use crate::util::{digest_signed_transactions, time_now, OverlordCrypto};
 use crate::wal::{ConsensusWal, SignedTxsWAL};
-use crate::ConsensusError;
+use crate::{ConsensusError, METADATA_CONTROLER};
 
 const RETRY_COMMIT_INTERVAL: u64 = 1000; // 1s
 const RETRY_CHECK_ROOT_LIMIT: u8 = 15;
@@ -45,7 +44,7 @@ const RETRY_CHECK_ROOT_INTERVAL: u64 = 100; // 100ms
 /// validator is for create new block, and authority is for build overlord
 /// status.
 pub struct ConsensusEngine<Adapter> {
-    status:         CurrentStatus,
+    status:         StatusAgent,
     node_info:      NodeInfo,
     exemption_hash: RwLock<HashSet<Hash>>,
 
@@ -70,14 +69,10 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
         ctx: Context,
         next_number: u64,
     ) -> Result<(Pill, Bytes), Box<dyn Error + Send>> {
+        let status = self.status.inner();
         let (tx_hashes, propose_hashes) = self
             .adapter
-            .get_txs_from_mempool(
-                ctx.clone(),
-                next_number,
-                self.status.gas_limit.as_u64(),
-                10000,
-            )
+            .get_txs_from_mempool(ctx.clone(), next_number, status.gas_limit.as_u64(), 10000)
             .await?
             .clap();
         let signed_txs = self.adapter.get_full_txs(ctx.clone(), &tx_hashes).await?;
@@ -86,22 +81,23 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             .unwrap_or_default();
 
         let header = Header {
-            prev_hash:         self.status.prev_hash,
+            prev_hash:         status.prev_hash,
             proposer:          self.node_info.self_address,
-            state_root:        self.status.state_root,
+            state_root:        status.state_root,
             transactions_root: order_root,
-            receipts_root:     self.status.receipts_root,
-            log_bloom:         self.status.log_bloom,
+            signed_txs_hash:   digest_signed_transactions(&signed_txs),
+            receipts_root:     status.receipts_root,
+            log_bloom:         status.log_bloom,
             difficulty:        Default::default(),
             timestamp:         time_now(),
             number:            next_number,
-            gas_used:          self.status.gas_used,
-            gas_limit:         self.status.gas_limit,
+            gas_used:          status.gas_used,
+            gas_limit:         status.gas_limit,
             extra_data:        Default::default(),
             mixed_hash:        None,
             nonce:             Default::default(),
-            base_fee_per_gas:  self.status.base_fee_per_gas,
-            proof:             self.status.proof,
+            base_fee_per_gas:  status.base_fee_per_gas,
+            proof:             status.proof,
             chain_id:          self.node_info.chain_id.to_low_u64_be(),
         };
 
@@ -217,10 +213,11 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             return Err(ProtocolError::from(ConsensusError::LockInSync).into());
         }
 
-        if current_number != self.status.last_number + 1 {
+        let status = self.status.inner();
+        if current_number != status.last_number + 1 {
             return Err(ProtocolError::from(ConsensusError::OutdatedCommit(
                 current_number,
-                self.status.last_number,
+                status.last_number,
             ))
             .into());
         }
@@ -449,6 +446,7 @@ impl<Adapter: ConsensusAdapter + 'static> Wal for ConsensusEngine<Adapter> {
 
 impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
     pub fn new(
+        status: StatusAgent,
         node_info: NodeInfo,
         wal: Arc<SignedTxsWAL>,
         adapter: Arc<Adapter>,
@@ -457,7 +455,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         consensus_wal: Arc<ConsensusWal>,
     ) -> Self {
         Self {
-            status: CurrentStatus::default(),
+            status,
             node_info,
             exemption_hash: RwLock::new(HashSet::new()),
             txs_wal: wal,
@@ -471,7 +469,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
     }
 
     pub fn status(&self) -> CurrentStatus {
-        self.status.clone()
+        self.status.inner()
     }
 
     // #[muta_apm::derive::tracing_span(kind = "consensus.engine")]
@@ -569,39 +567,40 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         self.check_order_transactions(ctx.clone(), &block, &signed_txs)
     }
 
-    #[muta_apm::derive::tracing_span(kind = "consensus.engine")]
+    // #[muta_apm::derive::tracing_span(kind = "consensus.engine")]
     fn check_block_roots(&self, ctx: Context, block: &Header) -> ProtocolResult<()> {
-        if self.status.prev_hash != block.prev_hash {
+        let status = self.status.inner();
+        if status.prev_hash != block.prev_hash {
             return Err(ConsensusError::InvalidPrevhash {
-                expect: self.status.prev_hash,
+                expect: status.prev_hash,
                 actual: block.prev_hash.clone(),
             }
             .into());
         }
 
         // check state root
-        if self.status.state_root != block.state_root {
+        if status.state_root != block.state_root {
             warn!(
                 "invalid status list_state_root, latest {:?}, block {:?}",
-                self.status.state_root, block.state_root
+                status.state_root, block.state_root
             );
             return Err(ConsensusError::InvalidStatusVec.into());
         }
 
         // check receipt root
-        if self.status.receipts_root != block.receipts_root {
+        if status.receipts_root != block.receipts_root {
             error!(
                 "current list receipt root {:?}, block receipt root {:?}",
-                self.status.receipts_root, block.receipts_root
+                status.receipts_root, block.receipts_root
             );
             return Err(ConsensusError::InvalidStatusVec.into());
         }
 
         // check cycles used
-        if self.status.gas_used != block.gas_used {
+        if status.gas_used != block.gas_used {
             error!(
                 "current list cycles used {:?}, block cycles used {:?}",
-                self.status.gas_used, block.gas_used
+                status.gas_used, block.gas_used
             );
             return Err(ConsensusError::InvalidStatusVec.into());
         }
@@ -609,10 +608,10 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         Ok(())
     }
 
-    #[muta_apm::derive::tracing_span(
-        kind = "consensus.engine",
-        logs = "{'txs_len': 'signed_txs.len()'}"
-    )]
+    // #[muta_apm::derive::tracing_span(
+    //     kind = "consensus.engine",
+    //     logs = "{'txs_len': 'signed_txs.len()'}"
+    // )]
     fn check_order_transactions(
         &self,
         ctx: Context,

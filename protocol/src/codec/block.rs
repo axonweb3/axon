@@ -4,17 +4,18 @@ use overlord::Codec;
 use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
 use crate::types::{
-    Address, Block, Bloom, Bytes, Hash, Header, Pill, Proof, Validator, H256, H64, U256,
+    Address, Block, Bloom, Bytes, Hash, Header, MerkleRoot, Pill, Proof, Validator, H256, H64, U256,
 };
 use crate::{codec::error::CodecError, ProtocolError};
 
 impl Encodable for Header {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(17)
+        s.begin_list(18)
             .append(&self.prev_hash)
             .append(&self.proposer)
             .append(&self.state_root)
             .append(&self.transactions_root)
+            .append(&self.signed_txs_hash)
             .append(&self.receipts_root)
             .append(&self.log_bloom)
             .append(&self.difficulty)
@@ -34,30 +35,32 @@ impl Encodable for Header {
 impl Decodable for Header {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
-            Prototype::List(17) => {
-                let prev_hash: H256 = r.val_at(0)?;
+            Prototype::List(18) => {
+                let prev_hash: Hash = r.val_at(0)?;
                 let proposer: Address = r.val_at(1)?;
-                let state_root: H256 = r.val_at(2)?;
-                let transactions_root: H256 = r.val_at(3)?;
-                let receipts_root: H256 = r.val_at(4)?;
-                let log_bloom: Bloom = r.val_at(5)?;
-                let difficulty: U256 = r.val_at(6)?;
-                let timestamp: u64 = r.val_at(7)?;
-                let number: u64 = r.val_at(8)?;
-                let gas_used: U256 = r.val_at(9)?;
-                let gas_limit: U256 = r.val_at(10)?;
-                let extra_data: Bytes = r.val_at(11)?;
-                let mixed_hash: Option<H256> = r.val_at(12)?;
-                let nonce: H64 = r.val_at(13)?;
-                let base_fee_per_gas: Option<U256> = r.val_at(14)?;
-                let proof: Proof = r.val_at(15)?;
-                let chain_id: u64 = r.val_at(16)?;
+                let state_root: MerkleRoot = r.val_at(2)?;
+                let transactions_root: MerkleRoot = r.val_at(3)?;
+                let signed_txs_hash: Hash = r.val_at(4)?;
+                let receipts_root: MerkleRoot = r.val_at(5)?;
+                let log_bloom: Bloom = r.val_at(6)?;
+                let difficulty: U256 = r.val_at(7)?;
+                let timestamp: u64 = r.val_at(8)?;
+                let number: u64 = r.val_at(9)?;
+                let gas_used: U256 = r.val_at(10)?;
+                let gas_limit: U256 = r.val_at(11)?;
+                let extra_data: Bytes = r.val_at(12)?;
+                let mixed_hash: Option<H256> = r.val_at(13)?;
+                let nonce: H64 = r.val_at(14)?;
+                let base_fee_per_gas: Option<U256> = r.val_at(15)?;
+                let proof: Proof = r.val_at(16)?;
+                let chain_id: u64 = r.val_at(17)?;
 
                 Ok(Header {
                     prev_hash,
                     proposer,
                     state_root,
                     transactions_root,
+                    signed_txs_hash,
                     receipts_root,
                     log_bloom,
                     difficulty,

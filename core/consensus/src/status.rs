@@ -57,6 +57,23 @@ impl MetadataController {
     }
 }
 
+#[derive(Clone)]
+pub struct StatusAgent(Arc<Mutex<CurrentStatus>>);
+
+impl StatusAgent {
+    pub fn new(status: CurrentStatus) -> Self {
+        StatusAgent(Arc::new(Mutex::new(status)))
+    }
+
+    pub fn inner(&self) -> CurrentStatus {
+        self.0.lock().clone()
+    }
+
+    pub fn swap(&self, new: CurrentStatus) {
+        *self.0.lock() = new;
+    }
+}
+
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct CurrentStatus {
     pub prev_hash:        Hash,
