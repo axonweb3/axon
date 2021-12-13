@@ -338,13 +338,7 @@ impl<R: Rpc + 'static, S: Storage + 'static> MessageHandler for PullTxsRpcHandle
             .storage
             .get_transactions(ctx.clone(), height, &inner)
             .await
-            .map(|txs| {
-                BatchSignedTxs(
-                    txs.into_iter()
-                        .filter_map(|opt_tx| opt_tx)
-                        .collect::<Vec<_>>(),
-                )
-            });
+            .map(|txs| BatchSignedTxs(txs.into_iter().flatten().collect::<Vec<_>>()));
 
         self.rpc
             .response(ctx, RPC_RESP_SYNC_PULL_TXS, ret, Priority::High)

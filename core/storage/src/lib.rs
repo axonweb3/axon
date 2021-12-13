@@ -40,8 +40,8 @@ lazy_static::lazy_static! {
 
 // // FIXME: https://github.com/facebook/rocksdb/wiki/Transactions
 // macro_rules! batch_insert {
-//     ($self_: ident, $block_height:expr, $vec: expr, $hash_path: item, $schema: ident) => {
-//         let (hashes, heights) = $vec
+//     ($self_: ident, $block_height:expr, $vec: expr, $hash_path: item,
+// $schema: ident) => {         let (hashes, heights) = $vec
 //             .iter()
 //             .map(|item| {
 //                 (
@@ -55,9 +55,9 @@ lazy_static::lazy_static! {
 //             .into_iter()
 //             .map(|item| {
 //                 (
-//                     CommonHashKey::new($block_height, item.$hash_path.clone()),
-//                     StorageBatchModify::Insert(item),
-//                 )
+//                     CommonHashKey::new($block_height,
+// item.$hash_path.clone()),
+// StorageBatchModify::Insert(item),                 )
 //             })
 //             .unzip();
 

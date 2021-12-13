@@ -109,11 +109,9 @@ impl SignedTxsWAL {
         };
 
         let mut ret = Vec::new();
-        for entry in dir {
-            if let Ok(file_dir) = entry {
-                if let Ok(mut stxs) = self.recover_stxs(file_dir.path()) {
-                    ret.append(&mut stxs);
-                }
+        for entry in dir.flatten() {
+            if let Ok(mut stxs) = self.recover_stxs(entry.path()) {
+                ret.append(&mut stxs);
             }
         }
         ret
@@ -398,10 +396,10 @@ mod tests {
         let wal = SignedTxsWAL::new(FULL_TXS_PATH.to_string());
         let txs_01 = mock_wal_txs(100);
         let hash_01 = Hasher::digest(rlp::encode_list(&txs_01));
-        wal.save(1u64, hash_01.clone(), txs_01.clone()).unwrap();
+        wal.save(1u64, hash_01, txs_01.clone()).unwrap();
         let txs_02 = mock_wal_txs(100);
         let hash_02 = Hasher::digest(rlp::encode_list(&txs_02));
-        wal.save(3u64, hash_02.clone(), txs_02.clone()).unwrap();
+        wal.save(3u64, hash_02, txs_02.clone()).unwrap();
 
         let txs_03 = mock_wal_txs(100);
         let hash_03 = Hasher::digest(rlp::encode_list(&txs_03));
@@ -414,8 +412,8 @@ mod tests {
             assert!(txs_02.contains(tx) || txs_03.contains(tx));
         }
 
-        assert_eq!(wal.load(1u64, hash_01.clone()).unwrap(), txs_01);
-        assert_eq!(wal.load(3u64, hash_02.clone()).unwrap(), txs_02);
+        assert_eq!(wal.load(1u64, hash_01).unwrap(), txs_01);
+        assert_eq!(wal.load(3u64, hash_02).unwrap(), txs_02);
 
         wal.remove(2u64).unwrap();
         assert!(wal.load(1u64, hash_01).is_err());
@@ -488,7 +486,7 @@ mod tests {
     #[test]
     fn test_wal_txs_codec() {
         for _ in 0..10 {
-            let txs = BatchSignedTxs(mock_wal_txs(100));
+            let mut txs = BatchSignedTxs(mock_wal_txs(100));
             assert_eq!(
                 BatchSignedTxs::decode_msg(txs.encode_msg().unwrap()).unwrap(),
                 txs
@@ -512,7 +510,7 @@ mod tests {
         let txs_hash = Hasher::digest(Bytes::from(rlp::encode_list(&txs)));
 
         b.iter(move || {
-            wal.save(1u64, txs_hash.clone(), txs.clone()).unwrap();
+            wal.save(1u64, txs_hash, txs.clone()).unwrap();
         })
     }
 
@@ -523,7 +521,7 @@ mod tests {
         let txs_hash = Hasher::digest(Bytes::from(rlp::encode_list(&txs)));
 
         b.iter(move || {
-            wal.save(1u64, txs_hash.clone(), txs.clone()).unwrap();
+            wal.save(1u64, txs_hash, txs.clone()).unwrap();
         })
     }
 
@@ -534,7 +532,7 @@ mod tests {
         let txs_hash = Hasher::digest(Bytes::from(rlp::encode_list(&txs)));
 
         b.iter(move || {
-            wal.save(1u64, txs_hash.clone(), txs.clone()).unwrap();
+            wal.save(1u64, txs_hash, txs.clone()).unwrap();
         })
     }
 
@@ -545,7 +543,7 @@ mod tests {
         let txs_hash = Hasher::digest(Bytes::from(rlp::encode_list(&txs)));
 
         b.iter(move || {
-            wal.save(1u64, txs_hash.clone(), txs.clone()).unwrap();
+            wal.save(1u64, txs_hash, txs.clone()).unwrap();
         })
     }
 
@@ -556,7 +554,7 @@ mod tests {
         let txs_hash = Hasher::digest(Bytes::from(rlp::encode_list(&txs)));
 
         b.iter(move || {
-            wal.save(1u64, txs_hash.clone(), txs.clone()).unwrap();
+            wal.save(1u64, txs_hash, txs.clone()).unwrap();
         })
     }
 }

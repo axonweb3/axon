@@ -99,7 +99,7 @@ impl ExecutedInfo {
 
         let receipt = Merkle::from_hashes(
             resp.iter()
-                .map(|r| Hasher::digest(r.ret))
+                .map(|r| Hasher::digest(&r.ret))
                 .collect::<Vec<_>>(),
         )
         .get_root_hash()

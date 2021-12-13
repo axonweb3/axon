@@ -4,8 +4,7 @@ use std::collections::BTreeMap;
 
 use evm::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadata};
 
-use protocol::async_trait;
-pub use protocol::traits::{ApplyBackend, Backend, Executor};
+use protocol::traits::{ApplyBackend, Backend, Executor};
 use protocol::types::{
     Address, Config, ExecResp, SignedTransaction, TransactionAction, H256, U256,
 };
@@ -21,15 +20,9 @@ impl EvmExecutor {
     }
 }
 
-#[async_trait]
 impl Executor for EvmExecutor {
     // Used for query data API, this function will not modify the world state.
-    async fn call<B: Backend + Send>(
-        &self,
-        backend: &mut B,
-        addr: Address,
-        data: Vec<u8>,
-    ) -> ExecResp {
+    fn call<B: Backend>(&self, backend: &mut B, addr: Address, data: Vec<u8>) -> ExecResp {
         let config = Config::london();
         let metadata = StackSubstateMetadata::new(u64::MAX, &config);
         let state = MemoryStackState::new(metadata, backend);
@@ -54,11 +47,7 @@ impl Executor for EvmExecutor {
     }
 
     // Function execute returns exit_reason, ret_data and remain_gas.
-    async fn exec<B: Backend + ApplyBackend + Send>(
-        &self,
-        backend: &mut B,
-        tx: SignedTransaction,
-    ) -> ExecResp {
+    fn exec<B: Backend + ApplyBackend>(&self, backend: &mut B, tx: SignedTransaction) -> ExecResp {
         let config = Config::london();
         let metadata = StackSubstateMetadata::new(u64::MAX, &config);
         let state = MemoryStackState::new(metadata, backend);

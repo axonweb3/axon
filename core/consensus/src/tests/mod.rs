@@ -1,70 +1,61 @@
 mod engine;
-mod status;
 mod synchronization;
 
 use rand::random;
 
-use protocol::types::{Address, Block, BlockHeader, Hash, Hex, MerkleRoot, Proof, Validator};
-use protocol::Bytes;
+use protocol::types::{
+    Address, Block, Bytes, Hash, Hasher, Header, Hex, MerkleRoot, Proof, Validator,
+};
 
-use crate::status::CurrentConsensusStatus;
+use crate::status::CurrentStatus;
 
 const HEIGHT_TEN: u64 = 10;
 
-fn mock_block_from_status(status: &CurrentConsensusStatus) -> Block {
-    let block_header = BlockHeader {
-        chain_id:                       mock_hash(),
-        height:                         status.latest_committed_height + 1,
-        exec_height:                    status.exec_height + 1,
-        prev_hash:                      status.current_hash.clone(),
-        timestamp:                      random::<u64>(),
-        order_root:                     mock_hash(),
-        order_signed_transactions_hash: mock_hash(),
-        confirm_root:                   vec![status.list_confirm_root.first().cloned().unwrap()],
-        state_root:                     status.list_state_root.first().cloned().unwrap(),
-        receipt_root:                   vec![status.list_receipt_root.first().cloned().unwrap()],
-        cycles_used:                    vec![*status.list_cycles_used.first().unwrap()],
-        proposer:                       mock_address(),
-        proof:                          mock_proof(status.latest_committed_height),
-        validator_version:              1,
-        validators:                     mock_validators(4),
+fn mock_block_from_status(status: &CurrentStatus) -> Block {
+    let block_header = Header {
+        chain_id:          0,
+        number:            status.last_number + 1,
+        prev_hash:         status.prev_hash,
+        timestamp:         random::<u64>(),
+        transactions_root: mock_hash(),
+        signed_txs_hash:   mock_hash(),
+        state_root:        status.state_root,
+        receipts_root:     status.receipts_root,
+        gas_used:          status.gas_used,
+        gas_limit:         status.gas_limit,
+        proposer:          mock_address(),
+        proof:             mock_proof(status.last_number),
+        log_bloom:         Default::default(),
+        difficulty:        Default::default(),
+        extra_data:        Default::default(),
+        mixed_hash:        Default::default(),
+        nonce:             Default::default(),
+        base_fee_per_gas:  Default::default(),
     };
 
     Block {
-        header:            block_header,
-        ordered_tx_hashes: vec![],
+        header:    block_header,
+        tx_hashes: vec![],
     }
 }
 
-fn mock_current_status(exec_lag: u64) -> CurrentConsensusStatus {
-    let state_roots = mock_roots(exec_lag);
-
-    CurrentConsensusStatus {
-        cycles_price:                random::<u64>(),
-        cycles_limit:                random::<u64>(),
-        latest_committed_height:     HEIGHT_TEN,
-        exec_height:                 HEIGHT_TEN - exec_lag,
-        current_hash:                mock_hash(),
-        latest_committed_state_root: state_roots.last().cloned().unwrap_or_else(mock_hash),
-        list_confirm_root:           mock_roots(exec_lag),
-        list_state_root:             state_roots,
-        list_receipt_root:           mock_roots(exec_lag),
-        list_cycles_used:            (0..exec_lag).map(|_| random::<u64>()).collect::<Vec<_>>(),
-        current_proof:               mock_proof(HEIGHT_TEN + exec_lag),
-        validators:                  mock_validators(4),
-        consensus_interval:          random::<u64>(),
-        propose_ratio:               random::<u64>(),
-        prevote_ratio:               random::<u64>(),
-        precommit_ratio:             random::<u64>(),
-        brake_ratio:                 random::<u64>(),
-        tx_num_limit:                random::<u64>(),
-        max_tx_size:                 random::<u64>(),
+fn mock_current_status() -> CurrentStatus {
+    CurrentStatus {
+        gas_used:         random::<u64>().into(),
+        gas_limit:        random::<u64>().into(),
+        log_bloom:        Default::default(),
+        base_fee_per_gas: Default::default(),
+        last_number:      HEIGHT_TEN,
+        prev_hash:        mock_hash(),
+        state_root:       mock_hash(),
+        receipts_root:    mock_hash(),
+        proof:            mock_proof(HEIGHT_TEN),
     }
 }
 
-fn mock_proof(proof_height: u64) -> Proof {
+fn mock_proof(proof_number: u64) -> Proof {
     Proof {
-        height:     proof_height,
+        number:     proof_number,
         round:      random::<u64>(),
         signature:  get_random_bytes(64),
         bitmap:     get_random_bytes(20),
@@ -72,17 +63,17 @@ fn mock_proof(proof_height: u64) -> Proof {
     }
 }
 
-fn mock_roots(len: u64) -> Vec<MerkleRoot> {
+fn _mock_roots(len: u64) -> Vec<MerkleRoot> {
     (0..len).map(|_| mock_hash()).collect::<Vec<_>>()
 }
 
 fn mock_hash() -> Hash {
-    Hash::digest(get_random_bytes(10))
+    Hasher::digest(get_random_bytes(10))
 }
 
 fn mock_address() -> Address {
     let hash = mock_hash();
-    Address::from_hash(hash).unwrap()
+    Address::from_slice(&hash.0[0..20])
 }
 
 fn get_random_bytes(len: usize) -> Bytes {
@@ -97,11 +88,11 @@ fn mock_pub_key() -> Hex {
     .unwrap()
 }
 
-fn mock_validators(len: usize) -> Vec<Validator> {
-    (0..len).map(|_| mock_validator()).collect::<Vec<_>>()
+fn _mock_validators(len: usize) -> Vec<Validator> {
+    (0..len).map(|_| _mock_validator()).collect::<Vec<_>>()
 }
 
-fn mock_validator() -> Validator {
+fn _mock_validator() -> Validator {
     Validator {
         pub_key:        mock_pub_key().decode(),
         propose_weight: random::<u32>(),

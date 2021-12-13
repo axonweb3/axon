@@ -9,12 +9,11 @@ use protocol::traits::{Context, Synchronization, SynchronizationAdapter};
 use protocol::types::{Block, Bloom, BloomInput, Hasher, Proof, Receipt, SignedTransaction};
 use protocol::{async_trait, tokio::time::sleep, ProtocolResult};
 
-use crate::status::{ExecutedInfo, StatusAgent, METADATA_CONTROLER, CurrentStatus};
-use crate::util::{digest_signed_transactions, OverlordCrypto};
+use crate::status::{CurrentStatus, ExecutedInfo, StatusAgent, METADATA_CONTROLER};
+use crate::util::{digest_signed_transactions};
 use crate::ConsensusError;
 
 const POLLING_BROADCAST: u64 = 2000;
-const WAIT_EXECUTION: u64 = 1000;
 const ONCE_SYNC_BLOCK_LIMIT: u64 = 50;
 
 #[derive(Clone, Debug)]
@@ -26,7 +25,6 @@ pub struct RichBlock {
 pub struct OverlordSynchronization<Adapter: SynchronizationAdapter> {
     adapter: Arc<Adapter>,
     status:  StatusAgent,
-    crypto:  Arc<OverlordCrypto>,
     lock:    Arc<Mutex<()>>,
     syncing: Mutex<()>,
 
@@ -92,6 +90,7 @@ impl<Adapter: SynchronizationAdapter> Synchronization for OverlordSynchronizatio
             sync_status.last_number,
         );
 
+        self.status.swap(sync_status);
         Ok(())
     }
 }
@@ -101,7 +100,6 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         sync_txs_chunk_size: usize,
         adapter: Arc<Adapter>,
         status: StatusAgent,
-        crypto: Arc<OverlordCrypto>,
         lock: Arc<Mutex<()>>,
     ) -> Self {
         let syncing = Mutex::new(());
@@ -109,7 +107,6 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         Self {
             adapter,
             status,
-            crypto,
             lock,
             syncing,
 
@@ -149,8 +146,6 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         let mut current_consented_number = current_number;
 
         while current_consented_number < remote_number {
-            let inst = Instant::now();
-
             let consenting_number = current_consented_number + 1;
             log::info!(
                 "[synchronization]: try syncing block, current_consented_number:{},syncing_number:{}",
@@ -299,10 +294,16 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         let block_hash = Hasher::digest(block.header.encode()?);
         let (new_state_root, resp) = self
             .adapter
-            .exec(ctx.clone(), block_hash, &block.header, rich_block.txs.clone())
+            .exec(
+                ctx.clone(),
+                block_hash,
+                &block.header,
+                rich_block.txs.clone(),
+            )
             .await?;
 
-        let receipts = rich_block.txs
+        let receipts = rich_block
+            .txs
             .iter()
             .zip(resp.iter())
             .map(|(tx, res)| Receipt {
@@ -313,10 +314,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
                 logs:       res.logs.clone(),
             })
             .collect::<Vec<_>>();
-        let logs = receipts
-            .iter()
-            .map(|r| r.logs_bloom.clone())
-            .collect::<Vec<_>>();
+        let logs = receipts.iter().map(|r| r.logs_bloom).collect::<Vec<_>>();
 
         let executed_info = ExecutedInfo::new(&resp);
         let block_hash = Hasher::digest(block.header.encode()?);
@@ -332,6 +330,8 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             base_fee_per_gas: None,
             proof:            proof.clone(),
         };
+
+        status_agent.swap(new_status);
 
         self.save_chain_data(
             ctx.clone(),
@@ -364,7 +364,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         for tx_hashes in block.tx_hashes.chunks(self.sync_txs_chunk_size) {
             let remote_txs = self
                 .adapter
-                .get_txs_from_remote(ctx.clone(), number, &tx_hashes)
+                .get_txs_from_remote(ctx.clone(), number, tx_hashes)
                 .await?;
 
             txs.extend(remote_txs);

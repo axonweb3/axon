@@ -34,3 +34,17 @@ impl Decodable for Receipt {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_receipt_codec() {
+        let block = Receipt::default();
+        let bytes = rlp::encode(&block);
+        let decode: Receipt = rlp::decode(bytes.as_ref()).unwrap();
+        assert_eq!(block, decode);
+    }
+
+}

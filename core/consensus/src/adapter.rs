@@ -343,46 +343,47 @@ where
             .iter()
             .map(|tx_hash| self.storage.get_transaction_by_hash(ctx.clone(), tx_hash))
             .collect::<Vec<_>>();
-        futures::future::try_join_all(futs).await.map(|txs| {
-            txs.into_iter()
-                .filter_map(|opt_tx| opt_tx)
-                .collect::<Vec<_>>()
-        })
+        futures::future::try_join_all(futs)
+            .await
+            .map(|txs| txs.into_iter().flatten().collect::<Vec<_>>())
     }
 
     #[allow(unused_braces)]
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
     async fn exec(
         &self,
-        ctx: Context,
+        _ctx: Context,
         header_hash: Hash,
         header: &Header,
         signed_txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<(MerkleRoot, Vec<ExecResp>)> {
-        let ret = Vec::new();
+        let mut ret = Vec::new();
         let base_ctx = Arc::new(Mutex::new(ExecutorContext {
             block_number:           header.number.into(),
             block_hash:             header_hash,
-            block_coinbase:         header.proposer.into(),
+            block_coinbase:         header.proposer,
             block_timestamp:        header.timestamp.into(),
             chain_id:               header.chain_id.into(),
             difficulty:             Default::default(),
-            origin:                 header.proposer.into(),
+            origin:                 header.proposer,
             gas_price:              Default::default(),
             block_gas_limit:        header.gas_limit,
             block_base_fee_per_gas: header.base_fee_per_gas.unwrap_or_default(),
             logs:                   Vec::new(),
         }));
 
-        let mut backend =
-            ExecutorAdapter::new(header.state_root, Arc::clone(&self.trie_db), base_ctx)?;
+        let mut backend = ExecutorAdapter::new(
+            header.state_root,
+            Arc::clone(&self.trie_db),
+            Arc::clone(&base_ctx),
+        )?;
 
         for stx in signed_txs.into_iter() {
             {
                 base_ctx.lock().gas_price = stx.transaction.unsigned.max_fee_per_gas;
             }
 
-            let mut tx_res = EvmExecutor::default().exec(&mut backend, stx).await;
+            let mut tx_res = EvmExecutor::default().exec(&mut backend, stx);
             tx_res.logs = { base_ctx.lock().logs.clone() };
             ret.push(tx_res);
         }
@@ -486,17 +487,6 @@ where
             return Err(ConsensusError::VerifyProof(block_header.number, HashMismatch).into());
         }
 
-        let previous_block_header = self
-            .get_block_header_by_number(ctx.clone(), block_header.number - 1)
-            .await
-            .map_err(|e| {
-                log::error!(
-                    "[consensus] verify_proof, previous_block {} fails",
-                    block_header.number - 1,
-                );
-                e
-            })?;
-
         // the auth_list for the target should comes from previous height
         let metadata = METADATA_CONTROLER.get().unwrap().current();
 
@@ -527,7 +517,7 @@ where
             height:     proof.number,
             round:      proof.round,
             vote_type:  VoteType::Precommit,
-            block_hash: Bytes::from(proof.block_hash.as_bytes()),
+            block_hash: Bytes::from(proof.block_hash.as_bytes().to_vec()),
         };
 
         let weight_map = authority_list
@@ -555,7 +545,7 @@ where
             .collect::<Vec<_>>();
 
         self.verify_proof_signature(
-            ctx.clone(),
+            ctx,
             block_header.number,
             vote_hash.clone(),
             proof.signature.clone(),
@@ -570,13 +560,14 @@ where
             );
             e
         })?;
+
         Ok(())
     }
 
-    #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
+    // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
     fn verify_proof_signature(
         &self,
-        ctx: Context,
+        _ctx: Context,
         block_height: u64,
         vote_hash: Bytes,
         aggregated_signature_bytes: Bytes,
@@ -657,7 +648,6 @@ where
         storage: Arc<S>,
         trie_db: Arc<DB>,
         crypto: Arc<OverlordCrypto>,
-        gap: usize,
     ) -> ProtocolResult<Self> {
         Ok(OverlordConsensusAdapter {
             network,

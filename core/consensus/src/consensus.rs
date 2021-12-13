@@ -133,12 +133,7 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
                         metadata.prevote_ratio,
                         metadata.precommit_ratio,
                         metadata.brake_ratio,
-                        metadata
-                            .verifier_list
-                            .clone()
-                            .into_iter()
-                            .map(Into::into)
-                            .collect(),
+                        metadata.verifier_list.into_iter().map(Into::into).collect(),
                     )),
                 )
                 .unwrap();

@@ -2,68 +2,45 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::sync::Arc;
 
-use async_trait::async_trait;
-use futures::lock::Mutex;
 use overlord::types::{AggregatedSignature, Commit, Proof as OverlordProof};
-use overlord::Consensus;
 
 use common_crypto::BlsPrivateKey;
-use protocol::fixed_codec::FixedCodec;
+use protocol::codec::ProtocolCodec;
 use protocol::traits::{
     CommonConsensusAdapter, ConsensusAdapter, Context, MessageTarget, MixedTxHashes, NodeInfo,
-    TrustFeedback,
 };
 use protocol::types::{
-    Address, Block, BlockHeader, Hash, Hex, MerkleRoot, Metadata, Pill, Proof, Receipt,
-    SignedTransaction, Validator,
+    Block, Bytes, ExecResp, Hash, Hasher, Header, Hex, MerkleRoot, Metadata, MetadataVersion, Pill,
+    Proof, Receipt, SignedTransaction,
 };
-use protocol::{Bytes, ProtocolResult};
+use protocol::{async_trait, tokio::sync::Mutex, ProtocolResult};
 
 use crate::engine::ConsensusEngine;
-use crate::fixed_types::FixedPill;
 use crate::status::StatusAgent;
 use crate::util::OverlordCrypto;
 use crate::wal::{ConsensusWal, SignedTxsWAL};
 
 use super::*;
 
-static FULL_TXS_PATH: &str = "./free-space/engine/txs";
-static FULL_CONSENSUS_PATH: &str = "./free-space/engine/consensus";
+static _FULL_TXS_PATH: &str = "./free-space/engine/txs";
+static _FULL_CONSENSUS_PATH: &str = "./free-space/engine/consensus";
 
-#[tokio::test]
-async fn test_repetitive_commit() {
-    let init_status = mock_current_status(1);
-    let engine = init_engine(init_status.clone());
-
-    let block = mock_block_from_status(&init_status);
-
-    let res = engine
-        .commit(Context::new(), 11, mock_commit(block.clone()))
-        .await;
-    assert!(res.is_ok());
-
-    let status = engine.get_current_status();
-
-    let res = engine
-        .commit(Context::new(), 11, mock_commit(block.clone()))
-        .await;
-    assert!(res.is_err());
-
-    assert_eq!(status, engine.get_current_status());
-}
-
-fn mock_commit(block: Block) -> Commit<FixedPill> {
+fn _mock_commit(block: Block) -> Commit<Pill> {
     let pill = Pill {
         block:          block.clone(),
         propose_hashes: vec![],
     };
     Commit {
         height:  11,
-        content: FixedPill { inner: pill },
+        content: pill,
         proof:   OverlordProof {
             height:     11,
             round:      0,
-            block_hash: Hash::digest(block.header.encode_fixed().unwrap()).as_bytes(),
+            block_hash: Bytes::from(
+                Hasher::digest(block.header.encode().unwrap())
+                    .as_bytes()
+                    .to_vec(),
+            ),
             signature:  AggregatedSignature {
                 signature:      get_random_bytes(32),
                 address_bitmap: get_random_bytes(10),
@@ -72,19 +49,19 @@ fn mock_commit(block: Block) -> Commit<FixedPill> {
     }
 }
 
-fn init_engine(init_status: CurrentConsensusStatus) -> ConsensusEngine<MockConsensusAdapter> {
+fn _init_engine(init_status: CurrentStatus) -> ConsensusEngine<MockConsensusAdapter> {
     ConsensusEngine::new(
         StatusAgent::new(init_status),
-        mock_node_info(),
-        Arc::new(SignedTxsWAL::new(FULL_TXS_PATH)),
+        _mock_node_info(),
+        Arc::new(SignedTxsWAL::new(_FULL_TXS_PATH)),
         Arc::new(MockConsensusAdapter {}),
-        Arc::new(init_crypto()),
+        Arc::new(_init_crypto()),
         Arc::new(Mutex::new(())),
-        Arc::new(ConsensusWal::new(FULL_CONSENSUS_PATH)),
+        Arc::new(ConsensusWal::new(_FULL_CONSENSUS_PATH)),
     )
 }
 
-fn init_crypto() -> OverlordCrypto {
+fn _init_crypto() -> OverlordCrypto {
     let mut priv_key = Vec::new();
     priv_key.extend_from_slice(&[0u8; 16]);
     let mut tmp =
@@ -100,7 +77,7 @@ fn init_crypto() -> OverlordCrypto {
     )
 }
 
-fn mock_node_info() -> NodeInfo {
+fn _mock_node_info() -> NodeInfo {
     NodeInfo {
         self_pub_key: mock_pub_key().decode(),
         chain_id:     mock_hash(),
@@ -108,22 +85,22 @@ fn mock_node_info() -> NodeInfo {
     }
 }
 
-fn mock_metadata() -> Metadata {
+fn _mock_metadata() -> Metadata {
     Metadata {
-        chain_id:           mock_hash(),
-        bech32_address_hrp: "muta".to_owned(),
-        common_ref:         Hex::from_string("0x703873635a6b51513451".to_string()).unwrap(),
-        timeout_gap:        20,
-        cycles_limit:       600000,
-        cycles_price:       1,
-        interval:           3000,
-        verifier_list:      vec![],
-        propose_ratio:      3,
-        prevote_ratio:      3,
-        precommit_ratio:    3,
-        brake_ratio:        3,
-        tx_num_limit:       3,
-        max_tx_size:        3000,
+        chain_id:        1u64.into(),
+        version:         MetadataVersion::new(0, 100000),
+        common_ref:      Hex::from_string("0x703873635a6b51513451".to_string()).unwrap(),
+        timeout_gap:     20,
+        gas_limit:       600000,
+        gas_price:       1,
+        interval:        3000,
+        verifier_list:   vec![],
+        propose_ratio:   3,
+        prevote_ratio:   3,
+        precommit_ratio: 3,
+        brake_ratio:     3,
+        tx_num_limit:    3,
+        max_tx_size:     3000,
     }
 }
 
@@ -142,7 +119,7 @@ impl CommonConsensusAdapter for MockConsensusAdapter {
     async fn save_signed_txs(
         &self,
         _ctx: Context,
-        _block_height: u64,
+        _block_number: u64,
         _signed_txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<()> {
         Ok(())
@@ -151,7 +128,7 @@ impl CommonConsensusAdapter for MockConsensusAdapter {
     async fn save_receipts(
         &self,
         _ctx: Context,
-        _height: u64,
+        _number: u64,
         _receipts: Vec<Receipt>,
     ) -> ProtocolResult<()> {
         Ok(())
@@ -165,19 +142,19 @@ impl CommonConsensusAdapter for MockConsensusAdapter {
         Ok(())
     }
 
-    async fn get_block_by_height(&self, _ctx: Context, _height: u64) -> ProtocolResult<Block> {
+    async fn get_block_by_number(&self, _ctx: Context, _number: u64) -> ProtocolResult<Block> {
         unimplemented!()
     }
 
-    async fn get_block_header_by_height(
+    async fn get_block_header_by_number(
         &self,
         _ctx: Context,
-        _height: u64,
-    ) -> ProtocolResult<BlockHeader> {
+        _number: u64,
+    ) -> ProtocolResult<Header> {
         unimplemented!()
     }
 
-    async fn get_current_height(&self, _ctx: Context) -> ProtocolResult<u64> {
+    async fn get_current_number(&self, _ctx: Context) -> ProtocolResult<u64> {
         Ok(10)
     }
 
@@ -193,31 +170,28 @@ impl CommonConsensusAdapter for MockConsensusAdapter {
         unimplemented!()
     }
 
+    async fn exec(
+        &self,
+        _ctx: Context,
+        _block_hash: Hash,
+        _header: &Header,
+        _signed_txs: Vec<SignedTransaction>,
+    ) -> ProtocolResult<(MerkleRoot, Vec<ExecResp>)> {
+        unimplemented!()
+    }
+
     async fn verify_proof(
         &self,
         _ctx: Context,
-        _block_header: &BlockHeader,
-        _proof: &Proof,
+        _block_header: &Header,
+        _proof: Proof,
     ) -> ProtocolResult<()> {
         Ok(())
     }
 
-    async fn broadcast_height(&self, _ctx: Context, _height: u64) -> ProtocolResult<()> {
+    async fn broadcast_number(&self, _ctx: Context, _number: u64) -> ProtocolResult<()> {
         Ok(())
     }
-
-    fn get_metadata(
-        &self,
-        _context: Context,
-        _state_root: MerkleRoot,
-        _height: u64,
-        _timestamp: u64,
-        _proposer: Address,
-    ) -> ProtocolResult<Metadata> {
-        Ok(mock_metadata())
-    }
-
-    fn report_bad(&self, _ctx: Context, _feedback: TrustFeedback) {}
 
     fn set_args(
         &self,
@@ -235,7 +209,7 @@ impl CommonConsensusAdapter for MockConsensusAdapter {
     fn verify_proof_signature(
         &self,
         _ctx: Context,
-        _block_height: u64,
+        _block_number: u64,
         _vote_hash: Bytes,
         _aggregated_signature_bytes: Bytes,
         _vote_pubkeys: Vec<Hex>,
@@ -246,7 +220,7 @@ impl CommonConsensusAdapter for MockConsensusAdapter {
     fn verify_proof_weight(
         &self,
         _ctx: Context,
-        _block_height: u64,
+        _block_number: u64,
         _weight_map: HashMap<Bytes, u32>,
         _signed_voters: Vec<Bytes>,
     ) -> ProtocolResult<()> {
@@ -259,7 +233,7 @@ impl ConsensusAdapter for MockConsensusAdapter {
     async fn get_txs_from_mempool(
         &self,
         _ctx: Context,
-        _height: u64,
+        _number: u64,
         _cycles_limit: u64,
         _tx_num_limit: u64,
     ) -> ProtocolResult<MixedTxHashes> {
@@ -288,39 +262,15 @@ impl ConsensusAdapter for MockConsensusAdapter {
         Ok(())
     }
 
-    async fn execute(
-        &self,
-        _ctx: Context,
-        _chain_id: Hash,
-        _order_root: MerkleRoot,
-        _height: u64,
-        _cycles_price: u64,
-        _proposer: Address,
-        _block_hash: Hash,
-        _signed_txs: Vec<SignedTransaction>,
-        _cycles_limit: u64,
-        _timestamp: u64,
-    ) -> ProtocolResult<()> {
-        Ok(())
-    }
-
-    async fn get_last_validators(
-        &self,
-        _ctx: Context,
-        _height: u64,
-    ) -> ProtocolResult<Vec<Validator>> {
+    async fn pull_block(&self, _ctx: Context, _number: u64, _end: &str) -> ProtocolResult<Block> {
         unimplemented!()
     }
 
-    async fn pull_block(&self, _ctx: Context, _height: u64, _end: &str) -> ProtocolResult<Block> {
-        unimplemented!()
-    }
-
-    async fn get_current_height(&self, _ctx: Context) -> ProtocolResult<u64> {
+    async fn get_current_number(&self, _ctx: Context) -> ProtocolResult<u64> {
         Ok(10)
     }
 
-    async fn verify_txs(&self, _ctx: Context, _height: u64, _txs: &[Hash]) -> ProtocolResult<()> {
+    async fn verify_txs(&self, _ctx: Context, _number: u64, _txs: &[Hash]) -> ProtocolResult<()> {
         Ok(())
     }
 }

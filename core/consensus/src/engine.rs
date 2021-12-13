@@ -37,7 +37,6 @@ use crate::util::{digest_signed_transactions, time_now, OverlordCrypto};
 use crate::wal::{ConsensusWal, SignedTxsWAL};
 use crate::{ConsensusError, METADATA_CONTROLER};
 
-const RETRY_COMMIT_INTERVAL: u64 = 1000; // 1s
 const RETRY_CHECK_ROOT_LIMIT: u8 = 15;
 const RETRY_CHECK_ROOT_INTERVAL: u64 = 100; // 100ms
 
@@ -117,9 +116,9 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
 
         let hash = Hasher::digest(pill.block.header.encode()?);
         let mut set = self.exemption_hash.write();
-        set.insert(hash.clone());
+        set.insert(hash);
 
-        Ok((pill, Bytes::from(hash.as_ref())))
+        Ok((pill, Bytes::from(hash.as_bytes().to_vec())))
     }
 
     // #[muta_apm::derive::tracing_span(
@@ -141,14 +140,14 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             error!("[consensus-engine]: check_block for overlord receives a proposal, error, block number {}, block {:?}", block.block.header.number,block.block);
         }
 
-        let tx_hashes = block.block.tx_hashes;
+        let tx_hashes = block.block.tx_hashes.clone();
         let tx_hashes_len = tx_hashes.len();
         let exemption = {
             self.exemption_hash
                 .read()
                 .contains(&Hash::from_slice(hash.as_ref()))
         };
-        let sync_tx_hashes = block.propose_hashes;
+        let sync_tx_hashes = block.propose_hashes.clone();
         let pill = block;
 
         gauge_txs_len(&pill);
@@ -227,7 +226,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
         let block_hash = Hash::from_slice(commit.proof.block_hash.as_ref());
         let signature = commit.proof.signature.signature.clone();
         let bitmap = commit.proof.signature.address_bitmap.clone();
-        let txs_len = pill.block.tx_hashes.len();
+        let txs_len = block.tx_hashes.len();
 
         // Storage save the latest proof.
         let proof = Proof {
@@ -254,12 +253,11 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
         };
 
         // Execute transactions
-
         let (new_state_root, resp) = self
             .adapter
             .exec(
                 ctx.clone(),
-                Hasher::digest(pill.block.header.encode()?),
+                Hasher::digest(block.header.encode()?),
                 &block.header,
                 signed_txs.clone(),
             )
@@ -272,7 +270,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             metadata.verifier_list
         );
 
-        self.update_status(new_state_root, resp, pill.block, proof, signed_txs)
+        self.update_status(new_state_root, resp, block.clone(), proof, signed_txs)
             .await?;
 
         self.adapter
@@ -381,7 +379,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
     // )]
     async fn get_authority_list(
         &self,
-        ctx: Context,
+        _ctx: Context,
         next_number: u64,
     ) -> Result<Vec<Node>, Box<dyn Error + Send>> {
         if next_number == 0 {
@@ -472,18 +470,6 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         self.status.inner()
     }
 
-    // #[muta_apm::derive::tracing_span(kind = "consensus.engine")]
-    pub async fn exec(
-        &self,
-        ctx: Context,
-        state_root: MerkleRoot,
-        header: &Header,
-        txs: Vec<SignedTransaction>,
-    ) -> ProtocolResult<()> {
-        self.adapter.exec(ctx, state_root, header, txs).await?;
-        Ok(())
-    }
-
     fn update_metadata(&self, block_number: BlockNumber) {
         METADATA_CONTROLER.get().unwrap().update(block_number);
     }
@@ -492,7 +478,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         let current_timestamp = time_now();
 
         self.adapter
-            .verify_block_header(ctx.clone(), &block)
+            .verify_block_header(ctx.clone(), block)
             .await
             .map_err(|e| {
                 error!(
@@ -564,16 +550,16 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             .adapter
             .get_full_txs(ctx.clone(), &block.tx_hashes)
             .await?;
-        self.check_order_transactions(ctx.clone(), &block, &signed_txs)
+        self.check_order_transactions(ctx.clone(), block, &signed_txs)
     }
 
     // #[muta_apm::derive::tracing_span(kind = "consensus.engine")]
-    fn check_block_roots(&self, ctx: Context, block: &Header) -> ProtocolResult<()> {
+    fn check_block_roots(&self, _ctx: Context, block: &Header) -> ProtocolResult<()> {
         let status = self.status.inner();
         if status.prev_hash != block.prev_hash {
             return Err(ConsensusError::InvalidPrevhash {
                 expect: status.prev_hash,
-                actual: block.prev_hash.clone(),
+                actual: block.prev_hash,
             }
             .into());
         }
@@ -614,13 +600,23 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
     // )]
     fn check_order_transactions(
         &self,
-        ctx: Context,
+        _ctx: Context,
         block: &Block,
         signed_txs: &[SignedTransaction],
     ) -> ProtocolResult<()> {
         let order_root = Merkle::from_hashes(block.tx_hashes.clone())
             .get_root_hash()
             .unwrap_or_default();
+
+        let stxs_hash = Hasher::digest(rlp::encode_list(signed_txs));
+
+        if stxs_hash != block.header.signed_txs_hash {
+            return Err(ConsensusError::InvalidOrderSignedTransactionsHash {
+                expect: stxs_hash,
+                actual: block.header.signed_txs_hash,
+            }
+            .into());
+        }
 
         if order_root != block.header.transactions_root {
             return Err(ConsensusError::InvalidOrderRoot {
@@ -661,10 +657,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
                 logs:       res.logs.clone(),
             })
             .collect::<Vec<_>>();
-        let logs = receipts
-            .iter()
-            .map(|r| r.logs_bloom.clone())
-            .collect::<Vec<_>>();
+        let logs = receipts.iter().map(|r| r.logs_bloom).collect::<Vec<_>>();
 
         // Save signed transactions
         self.adapter
@@ -803,12 +796,12 @@ mod tests {
     #[test]
     fn test_validate_timestamp() {
         // current 10, proposal 9, previous 8. true
-        assert_eq!(validate_timestamp(10, 9, 8), true);
+        assert!(validate_timestamp(10, 9, 8));
 
         // current 10, proposal 11, previous 8. true
-        assert_eq!(validate_timestamp(10, 11, 8), false);
+        assert!(!validate_timestamp(10, 11, 8));
 
         // current 10, proposal 9, previous 11. true
-        assert_eq!(validate_timestamp(10, 9, 11), false);
+        assert!(!validate_timestamp(10, 9, 11));
     }
 }

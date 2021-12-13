@@ -66,7 +66,7 @@ impl Crypto for OverlordCrypto {
             .map_err(|e| ProtocolError::from(ConsensusError::CryptoErr(Box::new(e))))?;
 
         signature
-            .verify(&hash, &pub_key, &self.common_ref)
+            .verify(&hash, pub_key, &self.common_ref)
             .map_err(|e| ProtocolError::from(ConsensusError::CryptoErr(Box::new(e))))?;
         Ok(())
     }
@@ -204,7 +204,7 @@ mod tests {
         ];
 
         let msg = Hasher::digest(Bytes::from("muta-consensus"));
-        let hash = HashValue::try_from(msg.as_bytes().as_ref()).unwrap();
+        let hash = HashValue::try_from(msg.as_bytes()).unwrap();
         let mut sigs_and_pub_keys = Vec::new();
         for i in 0..3 {
             let sig = BlsPrivateKey::try_from(private_keys[i].as_ref())

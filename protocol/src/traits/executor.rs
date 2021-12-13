@@ -1,20 +1,9 @@
-use async_trait::async_trait;
 pub use evm::backend::{ApplyBackend, Backend};
 
 use crate::types::{Address, ExecResp, SignedTransaction};
 
-#[async_trait]
 pub trait Executor: Send + Sync {
-    async fn call<B: Backend + Send>(
-        &self,
-        backend: &mut B,
-        addr: Address,
-        data: Vec<u8>,
-    ) -> ExecResp;
+    fn call<B: Backend>(&self, backend: &mut B, addr: Address, data: Vec<u8>) -> ExecResp;
 
-    async fn exec<B: Backend + ApplyBackend + Send>(
-        &self,
-        backend: &mut B,
-        tx: SignedTransaction,
-    ) -> ExecResp;
+    fn exec<B: Backend + ApplyBackend>(&self, backend: &mut B, tx: SignedTransaction) -> ExecResp;
 }
