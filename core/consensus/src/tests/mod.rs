@@ -23,7 +23,7 @@ fn _mock_block_from_status(status: &CurrentStatus) -> Block {
         receipts_root:     status.receipts_root,
         gas_used:          status.gas_used,
         gas_limit:         status.gas_limit,
-        proposer:          _mock_address(),
+        proposer:          _mock_address().0,
         proof:             _mock_proof(status.last_number),
         log_bloom:         Default::default(),
         difficulty:        Default::default(),

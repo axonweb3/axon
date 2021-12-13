@@ -1,4 +1,4 @@
-use crate::types::{Address, Bloom, Bytes, Hash, MerkleRoot, H64, U256};
+use crate::types::{H160, Bloom, Bytes, Hash, MerkleRoot, H64, U256};
 
 pub type BlockNumber = u64;
 
@@ -11,7 +11,7 @@ pub struct Block {
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct Header {
     pub prev_hash:         Hash,
-    pub proposer:          Address,
+    pub proposer:          H160,
     pub state_root:        MerkleRoot,
     pub transactions_root: MerkleRoot,
     pub signed_txs_hash:   Hash,
