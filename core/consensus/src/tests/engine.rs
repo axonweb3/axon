@@ -42,8 +42,8 @@ fn _mock_commit(block: Block) -> Commit<Pill> {
                     .to_vec(),
             ),
             signature:  AggregatedSignature {
-                signature:      get_random_bytes(32),
-                address_bitmap: get_random_bytes(10),
+                signature:      _get_random_bytes(32),
+                address_bitmap: _get_random_bytes(10),
             },
         },
     }
@@ -79,9 +79,9 @@ fn _init_crypto() -> OverlordCrypto {
 
 fn _mock_node_info() -> NodeInfo {
     NodeInfo {
-        self_pub_key: mock_pub_key().decode(),
-        chain_id:     mock_hash(),
-        self_address: mock_address(),
+        self_pub_key: _mock_pub_key().decode(),
+        chain_id:     _mock_hash(),
+        self_address: _mock_address(),
     }
 }
 
