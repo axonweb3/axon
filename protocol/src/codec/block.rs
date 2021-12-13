@@ -4,7 +4,7 @@ use overlord::Codec;
 use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
 use crate::types::{
-    H160, Block, Bloom, Bytes, Hash, Header, MerkleRoot, Pill, Proof, Validator, H256, H64, U256,
+    Block, Bloom, Bytes, Hash, Header, MerkleRoot, Pill, Proof, Validator, H160, H256, H64, U256,
 };
 use crate::{codec::error::CodecError, ProtocolError};
 

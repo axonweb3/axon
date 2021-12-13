@@ -1,8 +1,7 @@
 use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
 use crate::types::{
-    H160, Public, SignatureComponents, SignedTransaction, Transaction, UnverifiedTransaction,
-    H256,
+    Public, SignatureComponents, SignedTransaction, Transaction, UnverifiedTransaction, H160, H256,
 };
 
 impl Encodable for SignatureComponents {

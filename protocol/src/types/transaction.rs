@@ -3,7 +3,7 @@ pub use ethereum::{
     TransactionAction, TransactionRecoveryId, TransactionSignature,
 };
 
-use crate::types::{Address, H160, Bytes, BytesMut, Hasher, Public, H256, H520};
+use crate::types::{Address, Bytes, BytesMut, Hasher, Public, H160, H256, H520};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct UnverifiedTransaction {

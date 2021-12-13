@@ -1,4 +1,4 @@
-use crate::types::{H160, Bloom, Bytes, Hash, MerkleRoot, H64, U256};
+use crate::types::{Bloom, Bytes, Hash, MerkleRoot, H160, H64, U256};
 
 pub type BlockNumber = u64;
 

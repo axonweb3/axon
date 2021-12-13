@@ -30,7 +30,7 @@ use core_consensus::status::{CurrentStatus, StatusAgent};
 use core_consensus::util::OverlordCrypto;
 use core_consensus::{
     ConsensusWal, DurationConfig, Node, OverlordConsensus, OverlordConsensusAdapter,
-    OverlordSynchronization, RichBlock, SignedTxsWAL, METADATA_CONTROLER
+    OverlordSynchronization, RichBlock, SignedTxsWAL, METADATA_CONTROLER,
 };
 use core_executor::adapter::trie_db::RocksTrieDB;
 use core_mempool::{
@@ -43,7 +43,7 @@ use core_storage::{adapter::rocks::RocksAdapter, ImplStorage, StorageError};
 use protocol::tokio::signal::unix::{self as os_impl};
 use protocol::tokio::time::sleep;
 use protocol::traits::{CommonStorage, Context, MemPool, Network, NodeInfo, Storage};
-use protocol::types::{Address, Hasher, Block, Hash, Header, Metadata, Proof, Validator};
+use protocol::types::{Address, Block, Hash, Hasher, Header, Metadata, Proof, Validator};
 use protocol::{
     codec::ProtocolCodec, tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
 };
@@ -304,9 +304,7 @@ impl Axon {
         let my_pubkey = my_privkey.pub_key();
         let my_address = Address::from_pubkey_bytes(my_pubkey.to_uncompressed_bytes())?;
 
-        let metadata = Metadata {
-
-        };
+        let metadata = Metadata {};
 
         METADATA_CONTROLER.set(metadata).unwrap();
         let metadata = METADATA_CONTROLER.get().unwrap().current();
@@ -406,14 +404,13 @@ impl Axon {
 
         let crypto = Arc::new(OverlordCrypto::new(bls_priv_key, bls_pub_keys, common_ref));
 
-        let consensus_adapter =
-            OverlordConsensusAdapter::<_, _, _, _, _>::new(
-                Arc::new(network_service.handle()),
-                Arc::clone(&mempool),
-                Arc::clone(&storage),
-                Arc::clone(&trie_db),
-                status_agent.clone(),
-            )?;
+        let consensus_adapter = OverlordConsensusAdapter::<_, _, _, _, _>::new(
+            Arc::new(network_service.handle()),
+            Arc::clone(&mempool),
+            Arc::clone(&storage),
+            Arc::clone(&trie_db),
+            status_agent.clone(),
+        )?;
 
         let consensus_adapter = Arc::new(consensus_adapter);
 
@@ -448,7 +445,6 @@ impl Axon {
         network_service
             .handle()
             .tag_consensus(Context::new(), peer_ids)?;
-
 
         // register consensus
         network_service.register_endpoint_handler(
@@ -530,7 +526,6 @@ impl Axon {
             }
         });
 
-
         let ctrl_c_handler = tokio::task::spawn_local(async {
             #[cfg(windows)]
             let _ = tokio::signal::ctrl_c().await;
@@ -558,7 +553,7 @@ impl Axon {
             _ = ctrl_c_handler =>{ log::info!("ctrl + c is pressed, quit.") },
             _ = panic_receiver.recv() => { log::info!("child thraed panic, quit.")},
         };
-        
+
         Ok(())
     }
 

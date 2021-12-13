@@ -1,14 +1,14 @@
 use std::fmt;
 use std::str::FromStr;
 
-use ophelia::{PublicKey, UncompressedPublicKey};
-use ophelia_secp256k1::Secp256k1PublicKey;
 pub use ethereum_types::{
     Bloom, Public, Secret, Signature, H128, H160, H256, H512, H520, H64, U128, U256, U512,
 };
 use hasher::{Hasher as KeccakHasher, HasherKeccak};
+use ophelia::{PublicKey, UncompressedPublicKey};
+use ophelia_secp256k1::Secp256k1PublicKey;
 use overlord::DurationConfig;
-use serde::{Serialize, Deserialize, de};
+use serde::{de, Deserialize, Serialize};
 
 use crate::types::{BlockNumber, Bytes, TypesError};
 use crate::ProtocolResult;
@@ -191,15 +191,15 @@ impl Address {
 // impl fmt::Debug for Address {
 //     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 //         // NOTE: ADDRESS_HRP was verified in init_address_hrp fn
-//         bech32::encode_to_fmt(f, address_hrp().as_ref(), &self.0.to_base32()).unwrap()
-//     }
+//         bech32::encode_to_fmt(f, address_hrp().as_ref(),
+// &self.0.to_base32()).unwrap()     }
 // }
 
 // impl fmt::Display for Address {
 //     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 //         // NOTE: ADDRESS_HRP was verified in init_address_hrp fn
-//         bech32::encode_to_fmt(f, address_hrp().as_ref(), &self.0.to_base32()).unwrap()
-//     }
+//         bech32::encode_to_fmt(f, address_hrp().as_ref(),
+// &self.0.to_base32()).unwrap()     }
 // }
 
 #[derive(Default, Clone, Debug, Copy, PartialEq, Eq)]

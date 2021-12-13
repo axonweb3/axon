@@ -20,7 +20,7 @@ use common_merkle::Merkle;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
-    Block, BlockNumber, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, Header, MerkleRoot,
+    Block, BlockNumber, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, Header, Log, MerkleRoot,
     Metadata, Pill, Proof, Receipt, SignedTransaction, ValidatorExtend, U256,
 };
 use protocol::{
@@ -646,18 +646,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         let executed_info = ExecutedInfo::new(&resp);
         let block_number = block.header.number;
 
-        let receipts = txs
-            .iter()
-            .zip(resp.iter())
-            .map(|(tx, res)| Receipt {
-                tx_hash:    tx.transaction.hash,
-                state_root: block.header.state_root,
-                used_gas:   U256::from(res.gas_used),
-                logs_bloom: Bloom::from(BloomInput::Raw(rlp::encode_list(&res.logs).as_ref())),
-                logs:       res.logs.clone(),
-            })
-            .collect::<Vec<_>>();
-        let logs = receipts.iter().map(|r| r.logs_bloom).collect::<Vec<_>>();
+        let (receipts, logs) = generate_receipts_and_logs(block.header.state_root, &txs, &resp);
 
         // Save signed transactions
         self.adapter
@@ -671,6 +660,10 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
 
         self.adapter
             .save_receipts(Context::new(), block_number, receipts)
+            .await?;
+
+        self.adapter
+            .save_proof(Context::new(), block.header.proof.clone())
             .await?;
 
         let block_hash = Hasher::digest(block.header.encode()?);
@@ -782,6 +775,27 @@ fn validate_timestamp(
     }
 
     true
+}
+
+pub fn generate_receipts_and_logs(
+    state_root: MerkleRoot,
+    txs: &[SignedTransaction],
+    resp: &[ExecResp],
+) -> (Vec<Receipt>, Vec<Bloom>) {
+    let receipts = txs
+        .iter()
+        .zip(resp.iter())
+        .map(|(tx, res)| Receipt {
+            tx_hash: tx.transaction.hash,
+            state_root,
+            used_gas: U256::from(res.gas_used),
+            logs_bloom: Bloom::from(BloomInput::Raw(rlp::encode_list(&res.logs).as_ref())),
+            logs: res.logs.clone(),
+        })
+        .collect::<Vec<_>>();
+    let logs = receipts.iter().map(|r| r.logs_bloom).collect::<Vec<_>>();
+
+    (receipts, logs)
 }
 
 fn gauge_txs_len(pill: &Pill) {

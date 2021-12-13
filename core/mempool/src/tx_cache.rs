@@ -413,8 +413,8 @@ mod tests {
 
     use protocol::tokio;
     use protocol::types::{
-        H160, Bytes, Hash, Public, SignatureComponents, SignedTransaction, Transaction,
-        TransactionAction, UnverifiedTransaction, H256, U256,
+        Bytes, Hash, Public, SignatureComponents, SignedTransaction, Transaction,
+        TransactionAction, UnverifiedTransaction, H160, H256, U256,
     };
 
     use crate::map::Map;

@@ -7,7 +7,7 @@ use std::default::Default;
 use clap::App;
 use ophelia::{PublicKey, ToBlsPublicKey};
 use ophelia_bls_amcl::BlsPrivateKey;
-use protocol::types::{H160, Bytes, BytesMut, Hasher};
+use protocol::types::{Bytes, BytesMut, Hasher, H160};
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use rand::{rngs::OsRng, RngCore};

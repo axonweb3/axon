@@ -11,7 +11,7 @@ use protocol::{async_trait, tokio::time::sleep, ProtocolResult};
 
 use crate::status::{CurrentStatus, ExecutedInfo, StatusAgent, METADATA_CONTROLER};
 use crate::util::digest_signed_transactions;
-use crate::ConsensusError;
+use crate::{ConsensusError, engine::generate_receipts_and_logs};
 
 const POLLING_BROADCAST: u64 = 2000;
 const ONCE_SYNC_BLOCK_LIMIT: u64 = 50;
@@ -90,7 +90,8 @@ impl<Adapter: SynchronizationAdapter> Synchronization for OverlordSynchronizatio
             sync_status.last_number,
         );
 
-        self.status.swap(sync_status);
+        self.update_status(ctx, sync_status_agent)?;
+
         Ok(())
     }
 }
@@ -183,14 +184,14 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
                 );
                 e
             })?;
-
-            self.update_status(ctx.clone(), sync_status_agent.clone())?;
+            
             current_consented_number += 1;
 
             common_apm::metrics::consensus::ENGINE_SYNC_BLOCK_COUNTER.inc_by(1u64);
             common_apm::metrics::consensus::ENGINE_SYNC_BLOCK_HISTOGRAM
                 .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
         }
+
         Ok(())
     }
 
@@ -302,23 +303,11 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             )
             .await?;
 
-        let receipts = rich_block
-            .txs
-            .iter()
-            .zip(resp.iter())
-            .map(|(tx, res)| Receipt {
-                tx_hash:    tx.transaction.hash,
-                state_root: block.header.state_root,
-                used_gas:   res.gas_used.into(),
-                logs_bloom: Bloom::from(BloomInput::Raw(rlp::encode_list(&res.logs).as_ref())),
-                logs:       res.logs.clone(),
-            })
-            .collect::<Vec<_>>();
-        let logs = receipts.iter().map(|r| r.logs_bloom).collect::<Vec<_>>();
-
+        let (receipts, logs) = generate_receipts_and_logs(block.header.state_root, &rich_block.txs, &resp);
         let executed_info = ExecutedInfo::new(&resp);
         let block_hash = Hasher::digest(block.header.encode()?);
         let metadata = METADATA_CONTROLER.get().unwrap().current();
+
         let new_status = CurrentStatus {
             prev_hash:        block_hash,
             last_number:      block.header.number + 1,

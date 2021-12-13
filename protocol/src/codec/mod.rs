@@ -4,9 +4,9 @@ pub mod executor;
 pub mod receipt;
 pub mod transaction;
 
-use rlp::{DecoderError, Decodable, Encodable, Rlp, RlpStream};
+use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 
-use crate::types::{Bytes, DBBytes, H160, Address,};
+use crate::types::{Address, Bytes, DBBytes, H160};
 use crate::ProtocolResult;
 
 pub trait ProtocolCodec: Sized + Send {
@@ -45,6 +45,6 @@ impl Encodable for Address {
 impl Decodable for Address {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         let inner: H160 = r.val_at(0)?;
-        Ok(Address(inner)) 
+        Ok(Address(inner))
     }
 }
