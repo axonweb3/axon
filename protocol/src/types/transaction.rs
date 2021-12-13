@@ -3,7 +3,7 @@ pub use ethereum::{
     TransactionAction, TransactionRecoveryId, TransactionSignature,
 };
 
-use crate::types::{Address, Bytes, BytesMut, Hasher, Public, H256, H520};
+use crate::types::{Address, H160, Bytes, BytesMut, Hasher, Public, H256, H520};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct UnverifiedTransaction {
@@ -49,13 +49,13 @@ impl SignatureComponents {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SignedTransaction {
     pub transaction: UnverifiedTransaction,
-    pub sender:      Address,
+    pub sender:      H160,
     pub public:      Public,
 }
 
-pub fn public_to_address(public: &Public) -> Address {
+pub fn public_to_address(public: &Public) -> H160 {
     let hash = Hasher::digest(public);
-    let mut ret = Address::zero();
+    let mut ret = H160::zero();
     ret.as_bytes_mut().copy_from_slice(&hash[12..]);
     ret
 }

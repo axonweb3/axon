@@ -19,7 +19,7 @@ pub enum MessageTarget {
 
 #[derive(Debug, Clone)]
 pub struct NodeInfo {
-    pub chain_id:     Hash,
+    pub chain_id:     u64,
     pub self_pub_key: Bytes,
     pub self_address: Address,
 }

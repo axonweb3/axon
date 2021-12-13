@@ -81,7 +81,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
 
         let header = Header {
             prev_hash:         status.prev_hash,
-            proposer:          self.node_info.self_address,
+            proposer:          self.node_info.self_address.clone(),
             state_root:        status.state_root,
             transactions_root: order_root,
             signed_txs_hash:   digest_signed_transactions(&signed_txs),
@@ -97,7 +97,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             nonce:             Default::default(),
             base_fee_per_gas:  status.base_fee_per_gas,
             proof:             status.proof,
-            chain_id:          self.node_info.chain_id.to_low_u64_be(),
+            chain_id:          self.node_info.chain_id,
         };
 
         if header.number != header.proof.number + 1 {

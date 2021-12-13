@@ -73,7 +73,7 @@ fn _mock_hash() -> Hash {
 
 fn _mock_address() -> Address {
     let hash = _mock_hash();
-    Address::from_slice(&hash.0[0..20])
+    Address::from_hash(hash)
 }
 
 fn _get_random_bytes(len: usize) -> Bytes {

@@ -7,7 +7,7 @@ use evm::{ExitReason, ExitSucceed};
 use core_executor::EvmExecutor;
 use protocol::traits::Executor;
 use protocol::types::{
-    Public, SignatureComponents, SignedTransaction, Transaction, TransactionAction,
+    Address, Public, SignatureComponents, SignedTransaction, Transaction, TransactionAction,
     UnverifiedTransaction, H160, H256, U256,
 };
 
@@ -178,7 +178,7 @@ fn test_simplestorage() {
     // let's call SimpleStorage.get() by call
     let r = exec!(executor.call(
         &mut backend,
-        H160::from_str("0x1334d12e187d9aa97ea520fdd100c5d4f867ade0").unwrap(),
+        Address(H160::from_str("0x1334d12e187d9aa97ea520fdd100c5d4f867ade0").unwrap()),
         hex::decode("6d4ce63c").unwrap(),
     ));
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Returned));

@@ -80,7 +80,7 @@ fn _init_crypto() -> OverlordCrypto {
 fn _mock_node_info() -> NodeInfo {
     NodeInfo {
         self_pub_key: _mock_pub_key().decode(),
-        chain_id:     _mock_hash(),
+        chain_id:     0,
         self_address: _mock_address(),
     }
 }

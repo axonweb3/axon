@@ -29,8 +29,8 @@ impl Executor for EvmExecutor {
         let precompiles = BTreeMap::new();
         let mut executor = StackExecutor::new_with_precompiles(state, &config, &precompiles);
         let (exit_reason, ret) = executor.transact_call(
-            Address::default(),
-            addr,
+            Address::default().0,
+            addr.0,
             U256::default(),
             data,
             u64::MAX,

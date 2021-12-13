@@ -7,7 +7,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+reqwest = "0.11"
 serde = { version = "1.0", features = ["derive"] }
+stringreader = "0.1"
 toml = "0.5"
 
 core-consensus = { path = "../../core/consensus" }

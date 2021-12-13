@@ -361,11 +361,11 @@ where
         let base_ctx = Arc::new(Mutex::new(ExecutorContext {
             block_number:           header.number.into(),
             block_hash:             header_hash,
-            block_coinbase:         header.proposer,
+            block_coinbase:         header.proposer.0,
             block_timestamp:        header.timestamp.into(),
             chain_id:               header.chain_id.into(),
             difficulty:             Default::default(),
-            origin:                 header.proposer,
+            origin:                 header.proposer.0,
             gas_price:              Default::default(),
             block_gas_limit:        header.gas_limit,
             block_base_fee_per_gas: header.base_fee_per_gas.unwrap_or_default(),
