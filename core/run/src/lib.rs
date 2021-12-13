@@ -29,21 +29,21 @@ use core_consensus::status::{CurrentStatus, StatusAgent};
 use core_consensus::{engine::generate_receipts_and_logs, util::OverlordCrypto};
 use core_consensus::{
     ConsensusWal, DurationConfig, Node, OverlordConsensus, OverlordConsensusAdapter,
-    OverlordSynchronization, RichBlock, SignedTxsWAL, METADATA_CONTROLER,
+    OverlordSynchronization, SignedTxsWAL, METADATA_CONTROLER,
 };
 use core_executor::adapter::{trie_db::RocksTrieDB, ExecutorAdapter};
 use core_executor::EvmExecutor;
 use core_mempool::{
-    DefaultMemPoolAdapter, HashMemPool, MsgPushTxs, NewTxsHandler, PullTxsHandler,
+    DefaultMemPoolAdapter, HashMemPool, NewTxsHandler, PullTxsHandler,
     END_GOSSIP_NEW_TXS, RPC_PULL_TXS, RPC_RESP_PULL_TXS, RPC_RESP_PULL_TXS_SYNC,
 };
 use core_network::{NetworkConfig, NetworkService, PeerId, PeerIdExt};
-use core_storage::{adapter::rocks::RocksAdapter, ImplStorage, StorageError};
+use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 #[cfg(unix)]
 use protocol::tokio::signal::unix::{self as os_impl};
 use protocol::tokio::{sync::Mutex as AsyncMutex, time::sleep};
 use protocol::traits::{CommonStorage, Context, Executor, MemPool, NodeInfo, Storage};
-use protocol::types::{Address, Block, Genesis, Hash, Hasher, Metadata, Proof, Validator};
+use protocol::types::{Address, Genesis, Hash, Hasher, Metadata, Validator};
 use protocol::{
     codec::ProtocolCodec, tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
 };
@@ -277,7 +277,7 @@ impl Axon {
         // set args in mempool
         mempool.set_args(
             metadata.timeout_gap,
-            metadata.cycles_limit,
+            metadata.gas_limit,
             metadata.max_tx_size,
         );
 
@@ -308,12 +308,12 @@ impl Axon {
             .collect();
 
         let node_info = NodeInfo {
-            chain_id:     self.genesis.header.chain_id,
+            chain_id:     self.genesis.block.header.chain_id,
             self_address: my_address.clone(),
             self_pub_key: my_pubkey.to_bytes(),
         };
         let current_header = &current_block.header;
-        let block_hash = Hasher::digest(current_block.header.encode?);
+        let block_hash = Hasher::digest(current_block.header.encode()?);
         let current_number = current_block.header.number;
         let proof = if let Ok(temp) = storage.get_latest_proof(Context::new()).await {
             temp
@@ -343,7 +343,7 @@ impl Axon {
             tx_num_limit:                metadata.tx_num_limit,
         };
 
-        let consensus_interval = current_consensus_status.consensus_interval;
+        let consensus_interval = metadata.interval;
         let status_agent = StatusAgent::new(current_consensus_status);
 
         let mut bls_pub_keys = HashMap::new();
@@ -379,7 +379,7 @@ impl Axon {
 
         let consensus_adapter = Arc::new(consensus_adapter);
 
-        let lock = Arc::new(Mutex::new(()));
+        let lock = Arc::new(AsyncMutex::new(()));
 
         let overlord_consensus = Arc::new(OverlordConsensus::new(
             status_agent.clone(),

@@ -1,5 +1,4 @@
 use std::fmt;
-use std::str::FromStr;
 
 pub use ethereum_types::{
     Bloom, Public, Secret, Signature, H128, H160, H256, H512, H520, H64, U128, U256, U512,
@@ -42,7 +41,7 @@ impl Hasher {
     }
 }
 
-#[derive(Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Hex(String);
 
 impl Hex {
@@ -71,6 +70,48 @@ impl Hex {
 impl Default for Hex {
     fn default() -> Self {
         Hex::from_string("0x1".to_owned()).expect("Hex must start with 0x")
+    }
+}
+
+impl Serialize for Hex {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::ser::Serializer,
+    {
+        serializer.serialize_str(&self.0)
+    }
+}
+
+struct HexVisitor;
+
+impl<'de> de::Visitor<'de> for HexVisitor {
+    type Value = Hex;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("Expect a hex string")
+    }
+
+    fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Hex::from_string(v).map_err(|e| de::Error::custom(e.to_string()))
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Hex::from_string(v.to_owned()).map_err(|e| de::Error::custom(e.to_string()))
+    }
+}
+
+impl<'de> Deserialize<'de> for Hex {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        deserializer.deserialize_string(HexVisitor)
     }
 }
 
@@ -202,7 +243,7 @@ impl Address {
 // &self.0.to_base32()).unwrap()     }
 // }
 
-#[derive(Default, Clone, Debug, Copy, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Default, Clone, Debug, Copy, PartialEq, Eq)]
 pub struct MetadataVersion {
     pub start: BlockNumber,
     pub end:   BlockNumber,
@@ -218,7 +259,7 @@ impl MetadataVersion {
     }
 }
 
-#[derive(Default, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq)]
 pub struct Metadata {
     pub chain_id:        U256,
     pub version:         MetadataVersion,
@@ -254,11 +295,11 @@ pub struct Validator {
     pub vote_weight:    u32,
 }
 
-#[derive(Clone, PartialEq, Eq, Default)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Default)]
 pub struct ValidatorExtend {
     pub bls_pub_key:    Hex,
     pub pub_key:        Hex,
-    pub address:        Address,
+    pub address:        H160,
     pub propose_weight: u32,
     pub vote_weight:    u32,
 }
