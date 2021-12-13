@@ -46,5 +46,4 @@ mod tests {
         let decode: Receipt = rlp::decode(bytes.as_ref()).unwrap();
         assert_eq!(block, decode);
     }
-
 }

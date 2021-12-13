@@ -10,7 +10,7 @@ use protocol::types::{Block, Bloom, BloomInput, Hasher, Proof, Receipt, SignedTr
 use protocol::{async_trait, tokio::time::sleep, ProtocolResult};
 
 use crate::status::{CurrentStatus, ExecutedInfo, StatusAgent, METADATA_CONTROLER};
-use crate::util::{digest_signed_transactions};
+use crate::util::digest_signed_transactions;
 use crate::ConsensusError;
 
 const POLLING_BROADCAST: u64 = 2000;
