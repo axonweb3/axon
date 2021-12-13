@@ -20,7 +20,7 @@ use common_merkle::Merkle;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
-    Block, BlockNumber, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, Header, Log, MerkleRoot,
+    Block, BlockNumber, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, Header, MerkleRoot,
     Metadata, Pill, Proof, Receipt, SignedTransaction, ValidatorExtend, U256,
 };
 use protocol::{

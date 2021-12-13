@@ -1,14 +1,16 @@
-use crate::types::{Bloom, Bytes, Hash, MerkleRoot, H160, H64, U256};
+use serde::{Deserialize, Serialize};
+
+use crate::types::{Bloom, Bytes, Hash, MerkleRoot, SignedTransaction, H160, H64, U256};
 
 pub type BlockNumber = u64;
 
-#[derive(Default, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq)]
 pub struct Block {
     pub header:    Header,
     pub tx_hashes: Vec<Hash>,
 }
 
-#[derive(Default, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq)]
 pub struct Header {
     pub prev_hash:         Hash,
     pub proposer:          H160,
@@ -30,7 +32,7 @@ pub struct Header {
     pub chain_id:          u64,
 }
 
-#[derive(Default, Clone, Debug, Hash, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, PartialEq, Eq)]
 pub struct Proof {
     pub number:     u64,
     pub round:      u64,
@@ -43,4 +45,10 @@ pub struct Proof {
 pub struct Pill {
     pub block:          Block,
     pub propose_hashes: Vec<Hash>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct Genesis {
+    pub block:    Block,
+    pub rich_txs: Vec<SignedTransaction>,
 }

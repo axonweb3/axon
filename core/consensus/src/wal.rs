@@ -31,12 +31,12 @@ impl SignedTxsWAL {
 
     pub fn save(
         &self,
-        height: u64,
+        number: u64,
         ordered_signed_transactions_hash: Hash,
         txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<()> {
         let mut wal_path = self.path.clone();
-        wal_path.push(height.to_string());
+        wal_path.push(number.to_string());
         if !wal_path.exists() {
             fs::create_dir(&wal_path).map_err(ConsensusError::WALErr)?;
         }
@@ -66,7 +66,7 @@ impl SignedTxsWAL {
         Ok(())
     }
 
-    pub fn available_height(&self) -> ProtocolResult<Vec<u64>> {
+    pub fn available_number(&self) -> ProtocolResult<Vec<u64>> {
         let dir_path = self.path.clone();
         let mut availables = vec![];
         for item in fs::read_dir(dir_path).map_err(ConsensusError::WALErr)? {
@@ -80,28 +80,28 @@ impl SignedTxsWAL {
     }
 
     pub fn remove_all(&self) -> ProtocolResult<()> {
-        for height in self.available_height()? {
-            self.remove(height)?
+        for number in self.available_number()? {
+            self.remove(number)?
         }
         Ok(())
     }
 
     pub fn load(
         &self,
-        height: u64,
+        number: u64,
         ordered_signed_transactions_hash: Hash,
     ) -> ProtocolResult<Vec<SignedTransaction>> {
         let mut file_path = self.path.clone();
-        file_path.push(height.to_string());
+        file_path.push(number.to_string());
         file_path.push(ordered_signed_transactions_hash.to_string());
         file_path.set_extension("txt");
 
         self.recover_stxs(file_path)
     }
 
-    pub fn load_by_height(&self, height: u64) -> Vec<SignedTransaction> {
+    pub fn load_by_number(&self, number: u64) -> Vec<SignedTransaction> {
         let mut dir = self.path.clone();
-        dir.push(height.to_string());
+        dir.push(number.to_string());
         let dir = if let Ok(res) = fs::read_dir(dir) {
             res
         } else {
@@ -117,7 +117,7 @@ impl SignedTxsWAL {
         ret
     }
 
-    pub fn remove(&self, committed_height: u64) -> ProtocolResult<()> {
+    pub fn remove(&self, committed_number: u64) -> ProtocolResult<()> {
         for entry in fs::read_dir(&self.path).map_err(ConsensusError::WALErr)? {
             let folder = entry.map_err(ConsensusError::WALErr)?.path();
             let folder_name = folder
@@ -128,11 +128,11 @@ impl SignedTxsWAL {
             let folder_name = folder_name.into_string().map_err(|err| {
                 ConsensusError::Other(format!("transfer os string to string error {:?}", err))
             })?;
-            let height = folder_name.parse::<u64>().map_err(|err| {
+            let number = folder_name.parse::<u64>().map_err(|err| {
                 ConsensusError::Other(format!("parse folder name {:?} error {:?}", folder, err))
             })?;
 
-            if height <= committed_height {
+            if number <= committed_number {
                 fs::remove_dir_all(folder).map_err(ConsensusError::WALErr)?;
             }
         }
@@ -405,7 +405,7 @@ mod tests {
         let hash_03 = Hasher::digest(rlp::encode_list(&txs_03));
         wal.save(3u64, hash_03, txs_03.clone()).unwrap();
 
-        let res = wal.load_by_height(3);
+        let res = wal.load_by_number(3);
         assert_eq!(res.len(), 200);
 
         for tx in res.iter() {

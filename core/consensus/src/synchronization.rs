@@ -1,17 +1,16 @@
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use futures::lock::Mutex;
-
 // use common_apm::muta_apm;
 use protocol::codec::ProtocolCodec;
+use protocol::tokio::{sync::Mutex, time::sleep};
 use protocol::traits::{Context, Synchronization, SynchronizationAdapter};
 use protocol::types::{Block, Bloom, BloomInput, Hasher, Proof, Receipt, SignedTransaction};
-use protocol::{async_trait, tokio::time::sleep, ProtocolResult};
+use protocol::{async_trait, ProtocolResult};
 
 use crate::status::{CurrentStatus, ExecutedInfo, StatusAgent, METADATA_CONTROLER};
 use crate::util::digest_signed_transactions;
-use crate::{ConsensusError, engine::generate_receipts_and_logs};
+use crate::{engine::generate_receipts_and_logs, ConsensusError};
 
 const POLLING_BROADCAST: u64 = 2000;
 const ONCE_SYNC_BLOCK_LIMIT: u64 = 50;
@@ -39,7 +38,7 @@ impl<Adapter: SynchronizationAdapter> Synchronization for OverlordSynchronizatio
     // )]
     async fn receive_remote_block(&self, ctx: Context, remote_number: u64) -> ProtocolResult<()> {
         let syncing_lock = self.syncing.try_lock();
-        if syncing_lock.is_none() {
+        if syncing_lock.is_err() {
             return Ok(());
         }
         if !self.need_sync(ctx.clone(), remote_number).await? {
@@ -48,7 +47,7 @@ impl<Adapter: SynchronizationAdapter> Synchronization for OverlordSynchronizatio
 
         // Lock the consensus engine, block commit process.
         let commit_lock = self.lock.try_lock();
-        if commit_lock.is_none() {
+        if commit_lock.is_err() {
             return Ok(());
         }
 
@@ -184,7 +183,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
                 );
                 e
             })?;
-            
+
             current_consented_number += 1;
 
             common_apm::metrics::consensus::ENGINE_SYNC_BLOCK_COUNTER.inc_by(1u64);
@@ -303,7 +302,8 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             )
             .await?;
 
-        let (receipts, logs) = generate_receipts_and_logs(block.header.state_root, &rich_block.txs, &resp);
+        let (receipts, logs) =
+            generate_receipts_and_logs(block.header.state_root, &rich_block.txs, &resp);
         let executed_info = ExecutedInfo::new(&resp);
         let block_hash = Hasher::digest(block.header.encode()?);
         let metadata = METADATA_CONTROLER.get().unwrap().current();

@@ -2,10 +2,11 @@ pub use ethereum::{
     EIP1559Transaction as Transaction, EIP1559TransactionMessage as TransactionMessage,
     TransactionAction, TransactionRecoveryId, TransactionSignature,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::types::{Address, Bytes, BytesMut, Hasher, Public, H160, H256, H520};
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct UnverifiedTransaction {
     pub unsigned:  Transaction,
     pub signature: SignatureComponents,
@@ -13,7 +14,7 @@ pub struct UnverifiedTransaction {
     pub hash:      H256,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct SignatureComponents {
     pub r:          H256,
     pub s:          H256,
@@ -46,7 +47,7 @@ impl SignatureComponents {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct SignedTransaction {
     pub transaction: UnverifiedTransaction,
     pub sender:      H160,

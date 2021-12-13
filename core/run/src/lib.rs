@@ -9,8 +9,7 @@ use std::thread;
 use std::time::Duration;
 
 use backtrace::Backtrace;
-use futures::stream::StreamExt;
-use futures::{future, lock::Mutex};
+use parking_lot::Mutex;
 
 use common_apm::muta_apm;
 use common_config_parser::types::Config;
@@ -32,7 +31,8 @@ use core_consensus::{
     ConsensusWal, DurationConfig, Node, OverlordConsensus, OverlordConsensusAdapter,
     OverlordSynchronization, RichBlock, SignedTxsWAL, METADATA_CONTROLER,
 };
-use core_executor::adapter::trie_db::RocksTrieDB;
+use core_executor::adapter::{trie_db::RocksTrieDB, ExecutorAdapter};
+use core_executor::EvmExecutor;
 use core_mempool::{
     DefaultMemPoolAdapter, HashMemPool, MsgPushTxs, NewTxsHandler, PullTxsHandler,
     END_GOSSIP_NEW_TXS, RPC_PULL_TXS, RPC_RESP_PULL_TXS, RPC_RESP_PULL_TXS_SYNC,
@@ -41,9 +41,9 @@ use core_network::{NetworkConfig, NetworkService, PeerId, PeerIdExt};
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage, StorageError};
 #[cfg(unix)]
 use protocol::tokio::signal::unix::{self as os_impl};
-use protocol::tokio::time::sleep;
-use protocol::traits::{CommonStorage, Context, MemPool, Network, NodeInfo, Storage};
-use protocol::types::{Address, Block, Hash, Hasher, Header, Metadata, Proof, Validator};
+use protocol::tokio::{sync::Mutex as AsyncMutex, time::sleep};
+use protocol::traits::{CommonStorage, Context, Executor, MemPool, NodeInfo, Storage};
+use protocol::types::{Address, Block, Genesis, Hash, Hasher, Metadata, Proof, Validator};
 use protocol::{
     codec::ProtocolCodec, tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
 };
@@ -51,11 +51,11 @@ use protocol::{
 #[derive(Debug)]
 pub struct Axon {
     config:  Config,
-    genesis: Block,
+    genesis: Genesis,
 }
 
 impl Axon {
-    pub fn new(config: Config, genesis: Block) -> Axon {
+    pub fn new(config: Config, genesis: Genesis) -> Axon {
         Axon { config, genesis }
     }
 
@@ -81,17 +81,8 @@ impl Axon {
         Ok(())
     }
 
-    pub async fn create_genesis(&self) -> ProtocolResult<Block> {
+    pub async fn create_genesis(&self) -> ProtocolResult<()> {
         log::info!("Genesis data: {:?}", self.genesis);
-
-        let metadata_payload = self.genesis.get_payload("metadata");
-
-        let hrp = Metadata::get_hrp_from_json(metadata_payload.to_string());
-
-        // Set bech32 address hrp
-        if !protocol::address_hrp_inited() {
-            protocol::init_address_hrp(hrp.into());
-        }
 
         // Init Block db
         let path_block = self.config.data_path_for_block();
@@ -102,9 +93,9 @@ impl Axon {
         let storage = Arc::new(ImplStorage::new(rocks_adapter));
 
         match storage.get_latest_block(Context::new()).await {
-            Ok(genesis_block) => {
+            Ok(_) => {
                 log::info!("The Genesis block has been initialized.");
-                return Ok(genesis_block);
+                return Ok(());
             }
             Err(e) => {
                 if !e.to_string().contains("GetNone") {
@@ -121,66 +112,24 @@ impl Axon {
             self.config.executor.triedb_cache_size,
         )?);
 
-        let metadata: Metadata = serde_json::from_str(self.genesis.get_payload("metadata"))
-            .expect("Decode metadata failed!");
+        // Init executor
+        let executor = EvmExecutor::default();
+        let mut backend = ExecutorAdapter::new(
+            self.genesis.block.header.state_root,
+            trie_db,
+            Arc::new(Mutex::new(self.genesis.block.header.clone().into())),
+        );
+        let (state_root, resp) = executor.exec(&mut backend, self.genesis.rich_txs);
 
-        let validators: Vec<Validator> = metadata
-            .verifier_list
-            .iter()
-            .map(|v| Validator {
-                pub_key:        v.pub_key.decode(),
-                propose_weight: v.propose_weight,
-                vote_weight:    v.vote_weight,
-            })
-            .collect();
-
-        // Init genesis
-        let genesis_state_root = ServiceExecutor::create_genesis(
-            self.genesis.services.clone(),
-            Arc::clone(&trie_db),
-            Arc::clone(&storage),
-            Arc::clone(&self.service_mapping),
-        )?;
-
-        // Build genesis block.
-        let proposer = Address::from_hash(Hash::digest(protocol::address_hrp().as_str()))?;
-        let genesis_block_header = BlockHeader {
-            chain_id: metadata.chain_id.clone(),
-            number: 0,
-            exec_number: 0,
-            prev_hash: Hash::from_empty(),
-            timestamp: self.genesis.timestamp,
-            order_root: Hash::from_empty(),
-            order_signed_transactions_hash: Hash::from_empty(),
-            confirm_root: vec![],
-            state_root: genesis_state_root,
-            receipt_root: vec![],
-            cycles_used: vec![],
-            proposer,
-            proof: Proof {
-                number:     0,
-                round:      0,
-                block_hash: Hash::from_empty(),
-                signature:  Bytes::new(),
-                bitmap:     Bytes::new(),
-            },
-            validator_version: 0,
-            validators,
-        };
-        let latest_proof = genesis_block_header.proof.clone();
-        let genesis_block = Block {
-            header:            genesis_block_header,
-            ordered_tx_hashes: vec![],
-        };
         storage
-            .insert_block(Context::new(), genesis_block.clone())
+            .insert_block(Context::new(), self.genesis.block.clone())
             .await?;
         storage
-            .update_latest_proof(Context::new(), latest_proof)
+            .update_latest_proof(Context::new(), self.genesis.header.proof)
             .await?;
 
-        log::info!("The genesis block is created {:?}", genesis_block);
-        Ok(genesis_block)
+        log::info!("The genesis block is created {:?}", self.genesis);
+        Ok(())
     }
 
     pub async fn start(self) -> ProtocolResult<()> {
@@ -270,9 +219,9 @@ impl Axon {
         let mempool_adapter = DefaultMemPoolAdapter::<Secp256k1, _, _>::new(
             network_service.handle(),
             Arc::clone(&storage),
-            self.genesis.header.chain_id,
+            self.genesis.block.header.chain_id,
             config.mempool.timeout_gap,
-            self.genesis.header.gas_limit.as_u64(),
+            self.genesis.block.header.gas_limit.as_u64(),
             config.mempool.pool_size as usize,
             config.mempool.broadcast_txs_size,
             config.mempool.broadcast_txs_interval,
@@ -409,7 +358,7 @@ impl Axon {
             Arc::clone(&mempool),
             Arc::clone(&storage),
             Arc::clone(&trie_db),
-            status_agent.clone(),
+            Arc::clone(&crypto),
         )?;
 
         let consensus_adapter = Arc::new(consensus_adapter);
@@ -432,7 +381,6 @@ impl Axon {
             config.consensus.sync_txs_chunk_size,
             consensus_adapter,
             status_agent.clone(),
-            crypto,
             lock,
         ));
 
@@ -442,9 +390,9 @@ impl Axon {
             .map(|v| PeerId::from_pubkey_bytes(v.pub_key.decode()).map(PeerIdExt::into_bytes_ext))
             .collect::<Result<Vec<_>, _>>()?;
 
-        network_service
-            .handle()
-            .tag_consensus(Context::new(), peer_ids)?;
+        // network_service
+        //     .handle()
+        //     .tag_consensus(Context::new(), peer_ids)?;
 
         // register consensus
         network_service.register_endpoint_handler(

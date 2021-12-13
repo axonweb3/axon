@@ -13,7 +13,7 @@ use core_network::{PeerId, PeerIdExt};
 
 use protocol::traits::{
     CommonConsensusAdapter, ConsensusAdapter, Context, Executor, Gossip, MemPool, MessageTarget,
-    MixedTxHashes, Network, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
+    MixedTxHashes, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
 };
 use protocol::types::{
     BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, ExecutorContext, Hash, Hasher, Header,
@@ -34,7 +34,7 @@ use crate::{BlockProofField, ConsensusError, METADATA_CONTROLER};
 pub struct OverlordConsensusAdapter<
     EF: Executor,
     M: MemPool,
-    N: Rpc + PeerTrust + Gossip + Network + 'static,
+    N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage,
     DB: cita_trie::DB,
 > {
@@ -53,7 +53,7 @@ impl<EF, M, N, S, DB> ConsensusAdapter for OverlordConsensusAdapter<EF, M, N, S,
 where
     EF: Executor + 'static,
     M: MemPool + 'static,
-    N: Rpc + PeerTrust + Gossip + Network + 'static,
+    N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
     DB: cita_trie::DB + 'static,
 {
@@ -146,7 +146,7 @@ impl<EF, M, N, S, DB> SynchronizationAdapter for OverlordConsensusAdapter<EF, M,
 where
     EF: Executor + 'static,
     M: MemPool + 'static,
-    N: Rpc + PeerTrust + Gossip + Network + 'static,
+    N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
     DB: cita_trie::DB + 'static,
 {
@@ -247,7 +247,7 @@ impl<EF, M, N, S, DB> CommonConsensusAdapter for OverlordConsensusAdapter<EF, M,
 where
     EF: Executor + 'static,
     M: MemPool + 'static,
-    N: Rpc + PeerTrust + Gossip + Network + 'static,
+    N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
     DB: cita_trie::DB + 'static,
 {
@@ -353,24 +353,12 @@ where
     async fn exec(
         &self,
         _ctx: Context,
-        header_hash: Hash,
+        _block_hash: Hash,
         header: &Header,
         signed_txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<(MerkleRoot, Vec<ExecResp>)> {
         let mut ret = Vec::new();
-        let base_ctx = Arc::new(Mutex::new(ExecutorContext {
-            block_number:           header.number.into(),
-            block_hash:             header_hash,
-            block_coinbase:         header.proposer,
-            block_timestamp:        header.timestamp.into(),
-            chain_id:               header.chain_id.into(),
-            difficulty:             Default::default(),
-            origin:                 header.proposer,
-            gas_price:              Default::default(),
-            block_gas_limit:        header.gas_limit,
-            block_base_fee_per_gas: header.base_fee_per_gas.unwrap_or_default(),
-            logs:                   Vec::new(),
-        }));
+        let base_ctx = Arc::new(Mutex::new(header.clone().into()));
 
         let mut backend = ExecutorAdapter::new(
             header.state_root,
@@ -403,13 +391,14 @@ where
             .set_args(context, timeout_gap, gas_limit, max_tx_size);
     }
 
-    fn tag_consensus(&self, ctx: Context, pub_keys: Vec<Bytes>) -> ProtocolResult<()> {
-        let peer_ids_bytes = pub_keys
-            .iter()
-            .map(|pk| PeerId::from_pubkey_bytes(pk).map(PeerIdExt::into_bytes_ext))
-            .collect::<Result<_, _>>()?;
+    fn tag_consensus(&self, _ctx: Context, _pub_keys: Vec<Bytes>) -> ProtocolResult<()> {
+        // let _peer_ids_bytes = pub_keys
+        //     .iter()
+        //     .map(|pk| PeerId::from_pubkey_bytes(pk).map(PeerIdExt::into_bytes_ext))
+        //     .collect::<Result<_, _>>()?;
 
-        self.network.tag_consensus(ctx, peer_ids_bytes)
+        // self.network.tag_consensus(ctx, peer_ids_bytes)
+        Ok(())
     }
 
     /// this function verify all info in header except proof and roots
@@ -638,7 +627,7 @@ impl<EF, M, N, S, DB> OverlordConsensusAdapter<EF, M, N, S, DB>
 where
     EF: Executor + 'static,
     M: MemPool + 'static,
-    N: Rpc + PeerTrust + Gossip + Network + 'static,
+    N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
     DB: cita_trie::DB + 'static,
 {
