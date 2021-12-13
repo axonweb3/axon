@@ -7,7 +7,7 @@ use evm::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadat
 use protocol::async_trait;
 pub use protocol::traits::{ApplyBackend, Backend, Executor};
 use protocol::types::{
-    Address, Config, ExecResponse, SignedTransaction, TransactionAction, H256, U256,
+    Address, Config, ExecResp, SignedTransaction, TransactionAction, H256, U256,
 };
 
 pub mod adapter;
@@ -29,7 +29,7 @@ impl Executor for EvmExecutor {
         backend: &mut B,
         addr: Address,
         data: Vec<u8>,
-    ) -> ExecResponse {
+    ) -> ExecResp {
         let config = Config::london();
         let metadata = StackSubstateMetadata::new(u64::MAX, &config);
         let state = MemoryStackState::new(metadata, backend);
@@ -43,11 +43,14 @@ impl Executor for EvmExecutor {
             u64::MAX,
             Vec::new(),
         );
-        return ExecResponse {
+
+        ExecResp {
             exit_reason,
             ret,
             remain_gas: 0,
-        };
+            gas_used: 0,
+            logs: vec![],
+        }
     }
 
     // Function execute returns exit_reason, ret_data and remain_gas.
@@ -55,7 +58,7 @@ impl Executor for EvmExecutor {
         &self,
         backend: &mut B,
         tx: SignedTransaction,
-    ) -> ExecResponse {
+    ) -> ExecResp {
         let config = Config::london();
         let metadata = StackSubstateMetadata::new(u64::MAX, &config);
         let state = MemoryStackState::new(metadata, backend);
@@ -93,17 +96,20 @@ impl Executor for EvmExecutor {
                 (exit_reason, Vec::new())
             }
         };
-        let gas = executor.gas();
+        let remain_gas = executor.gas();
+        let gas_used = executor.used_gas();
 
         if exit_reason.is_succeed() {
             let (values, logs) = executor.into_state().deconstruct();
             backend.apply(values, logs, true);
         }
 
-        ExecResponse {
+        ExecResp {
             exit_reason,
             ret,
-            remain_gas: gas,
+            remain_gas,
+            gas_used,
+            logs: vec![],
         }
     }
 }

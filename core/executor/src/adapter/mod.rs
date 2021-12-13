@@ -131,7 +131,7 @@ impl<DB: TrieDB> Backend for ExecutorAdapter<DB> {
 }
 
 impl<DB: TrieDB> ApplyBackend for ExecutorAdapter<DB> {
-    fn apply<A, I, L>(&mut self, values: A, _logs: L, delete_empty: bool)
+    fn apply<A, I, L>(&mut self, values: A, logs: L, delete_empty: bool)
     where
         A: IntoIterator<Item = Apply<I>>,
         I: IntoIterator<Item = (H256, H256)>,
@@ -158,6 +158,11 @@ impl<DB: TrieDB> ApplyBackend for ExecutorAdapter<DB> {
                 }
             }
         }
+
+        let logs = logs.into_iter().collect::<Vec<_>>();
+        let p = &mut self.exec_ctx.lock().logs;
+        p.clear();
+        *p = logs;
     }
 }
 

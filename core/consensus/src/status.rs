@@ -6,7 +6,7 @@ use parking_lot::Mutex;
 use common_merkle::Merkle;
 use protocol::traits::Context;
 use protocol::types::{
-    BlockNumber, Bloom, ExecResponse, Hash, Hasher, MerkleRoot, Metadata, Proof, U256,
+    BlockNumber, Bloom, ExecResp, Hash, Hasher, MerkleRoot, Metadata, Proof, U256,
 };
 use protocol::Display;
 
@@ -88,28 +88,19 @@ pub struct CurrentStatus {
 }
 
 #[derive(Clone, Debug, Display)]
-#[display(
-    fmt = "exec height {}, cycles used {}, state root {:?}, receipt root {:?}, confirm root {:?}",
-    exec_height,
-    gas_used,
-    state_root,
-    receipts_root,
-    state_root
-)]
+#[display(fmt = "cycles used {},  receipt root {:?}", gas_used, receipts_root)]
 pub struct ExecutedInfo {
-    pub ctx:           Context,
-    pub exec_height:   u64,
     pub gas_used:      u64,
-    pub state_root:    MerkleRoot,
     pub receipts_root: MerkleRoot,
 }
 
 impl ExecutedInfo {
-    pub fn new(ctx: Context, height: u64, state_root: MerkleRoot, resp: Vec<ExecResponse>) -> Self {
-        let gas_sum = resp.iter().map(|r| r.remain_gas).sum();
+    pub fn new(resp: &[ExecResp]) -> Self {
+        let gas_sum = resp.iter().map(|r| r.gas_used).sum();
 
         let receipt = Merkle::from_hashes(
-            resp.iter()
+            resp.txs_resp
+                .iter()
                 .map(|r| Hasher::digest(r.ret))
                 .collect::<Vec<_>>(),
         )
@@ -117,11 +108,8 @@ impl ExecutedInfo {
         .unwrap_or_default();
 
         Self {
-            ctx,
-            exec_height: height,
-            gas_used: gas_sum,
+            gas_used:      gas_sum,
             receipts_root: receipt,
-            state_root,
         }
     }
 }

@@ -17,7 +17,7 @@ use protocol::traits::{
     MixedTxHashes, Network, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
 };
 use protocol::types::{
-    BatchSignedTxs, Block, BlockNumber, Bytes, ExecResponse, ExecutorContext, Hash, Hasher, Header,
+    BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, ExecutorContext, Hash, Hasher, Header,
     Hex, Pill, Proof, Receipt, SignedTransaction, Validator,
 };
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
@@ -358,9 +358,8 @@ where
         header_hash: Hash,
         header: &Header,
         signed_txs: Vec<SignedTransaction>,
-    ) -> ProtocolResult<Vec<ExecResponse>> {
+    ) -> ProtocolResult<BlockExecResp> {
         let ret = Vec::new();
-
         let base_ctx = Arc::new(Mutex::new(ExecutorContext {
             block_number:           header.number.into(),
             block_hash:             header_hash,
@@ -372,6 +371,7 @@ where
             gas_price:              Default::default(),
             block_gas_limit:        header.gas_limit,
             block_base_fee_per_gas: header.base_fee_per_gas.unwrap_or_default(),
+            logs:                   Vec::new(),
         }));
 
         let mut backend =
@@ -382,7 +382,9 @@ where
                 base_ctx.lock().gas_price = stx.transaction.unsigned.max_fee_per_gas;
             }
 
-            let res = EvmExecutor::default().exec(&mut backend, stx).await;
+            let mut tx_res = EvmExecutor::default().exec(&mut backend, stx).await;
+            tx_res.logs = { base_ctx.lock().logs.clone() };
+            res.push(tx_res);
         }
 
         Ok(ret)

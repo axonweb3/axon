@@ -6,7 +6,7 @@ use creep::Context;
 
 use crate::traits::MixedTxHashes;
 use crate::types::{
-    Address, Block, BlockNumber, ExecResponse, Hash, Header, Hex, MerkleRoot, Proof, Receipt,
+    Address, Block, BlockNumber, ExecResp, Hash, Header, Hex, MerkleRoot, Proof, Receipt,
     SignedTransaction, Validator,
 };
 use crate::ProtocolResult;
@@ -120,7 +120,7 @@ pub trait CommonConsensusAdapter: Send + Sync {
         block_hash: Hash,
         header: &Header,
         signed_txs: Vec<SignedTransaction>,
-    ) -> ProtocolResult<Vec<ExecResponse>>;
+    ) -> ProtocolResult<Vec<ExecResp>>;
 
     async fn broadcast_number(&self, ctx: Context, height: u64) -> ProtocolResult<()>;
 

@@ -171,86 +171,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
                     e
                 })?;
 
-            let consenting_proof: Proof = self
-                .adapter
-                .get_proof_from_remote(ctx.clone(), consenting_number)
-                .await
-                .map_err(|e| {
-                    log::error!(
-                        "[synchronization]: get_proof_from_remote error, number: {:?}",
-                        consenting_number
-                    );
-                    e
-                })?;
-
-            self.adapter
-                .verify_block_header(ctx.clone(), &consenting_rich_block.block)
-                .await
-                .map_err(|e| {
-                    log::error!(
-                        "[synchronization]: verify_block_header error, block header: {:?}",
-                        consenting_rich_block.block.header
-                    );
-                    e
-                })?;
-
-            // verify syncing proof
-            self.adapter
-                .verify_proof(
-                    ctx.clone(),
-                    &consenting_rich_block.block.header,
-                    consenting_proof.clone(),
-                )
-                .await
-                .map_err(|e| {
-                    log::error!(
-                        "[synchronization]: verify_proof error, syncing block header: {:?}, proof: {:?}",
-                        consenting_rich_block.block.header,
-                        consenting_proof,
-                    );
-                    e
-                })?;
-
-            // verify previous proof
-            let previous_block_header = self
-                .adapter
-                .get_block_header_by_number(
-                    ctx.clone(),
-                    consenting_rich_block.block.header.number - 1,
-                )
-                .await
-                .map_err(|e| {
-                    log::error!(
-                        "[synchronization] get previous block {} error",
-                        consenting_rich_block.block.header.number - 1
-                    );
-                    e
-                })?;
-
-            self.adapter
-                .verify_proof(
-                    ctx.clone(),
-                    &previous_block_header,
-                    consenting_rich_block.block.header.proof.clone(),
-                )
-                .await
-                .map_err(|e| {
-                    log::error!(
-                        "[synchronization]: verify_proof error, previous block header: {:?}, proof: {:?}",
-                        previous_block_header,
-                        consenting_rich_block.block.header.proof
-                    );
-                    e
-                })?;
-
-            let signed_txs_hash = digest_signed_transactions(&consenting_rich_block.txs);
-            if signed_txs_hash != consenting_rich_block.block.header.signed_txs_hash {
-                return Err(ConsensusError::InvalidOrderSignedTransactionsHash {
-                    expect: signed_txs_hash,
-                    actual: consenting_rich_block.block.header.signed_txs_hash,
-                }
-                .into());
-            }
+            let consenting_proof = self.verify_block(&ctx, &consenting_rich_block).await?;
 
             let inst = Instant::now();
             self.commit_block(
@@ -278,6 +199,90 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         Ok(())
     }
 
+    async fn verify_block(
+        &self,
+        ctx: Context,
+        consenting_rich_block: &RichBlock,
+    ) -> ProtocolResult<Proof> {
+        let consenting_number = consenting_rich_block.block.header.number;
+        let consenting_proof: Proof = self
+            .adapter
+            .get_proof_from_remote(ctx.clone(), consenting_number)
+            .await
+            .map_err(|e| {
+                log::error!(
+                    "[synchronization]: get_proof_from_remote error, number: {:?}",
+                    consenting_number
+                );
+                e
+            })?;
+
+        self.adapter
+            .verify_block_header(ctx.clone(), &consenting_rich_block.block)
+            .await
+            .map_err(|e| {
+                *log::error!(
+                    "[synchronization]: verify_block_header error, block header: {:?}",
+                    consenting_rich_block.block.header
+                );
+                e
+            })?;
+        self.adapter
+            .verify_proof(
+                ctx.clone(),
+                &consenting_rich_block.block.header,
+                consenting_proof.clone(),
+            )
+            .await
+            .map_err(|e| {
+                *log::error!(
+                    "[synchronization]: verify_proof error, syncing block header: {:?}, proof: {:?}",
+                    consenting_rich_block.block.header,
+                    consenting_proof,
+                );
+                e
+            })?;
+
+        let previous_block_header = self
+            .adapter
+            .get_block_header_by_number(ctx.clone(), consenting_rich_block.block.header.number - 1)
+            .await
+            .map_err(|e| {
+                *log::error!(
+                    "[synchronization] get previous block {} error",
+                    consenting_rich_block.block.header.number - 1
+                );
+                e
+            })?;
+
+        self.adapter
+            .verify_proof(
+                ctx.clone(),
+                &previous_block_header,
+                consenting_rich_block.block.header.proof.clone(),
+            )
+            .await
+            .map_err(|e| {
+                *log::error!(
+                    "[synchronization]: verify_proof error, previous block header: {:?}, proof: {:?}",
+                    previous_block_header,
+                    consenting_rich_block.block.header.proof
+                );
+                e
+            })?;
+
+        let signed_txs_hash = digest_signed_transactions(&consenting_rich_block.txs);
+        if signed_txs_hash != consenting_rich_block.block.header.signed_txs_hash {
+            return Err(ConsensusError::InvalidOrderSignedTransactionsHash {
+                expect: signed_txs_hash,
+                actual: consenting_rich_block.block.header.signed_txs_hash,
+            }
+            .into());
+        }
+
+        Ok(consenting_proof)
+    }
+
     async fn init_status_agent(&self) -> ProtocolResult<StatusAgent> {
         Ok(StatusAgent::new(self.status.inner()))
     }
@@ -290,11 +295,12 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         proof: Proof,
         status_agent: StatusAgent,
     ) -> ProtocolResult<()> {
-        let executor_resp = self
-            .exec_block(ctx.clone(), rich_block.clone(), status_agent.clone())
-            .await?;
         let block = &rich_block.block;
         let block_hash = Hasher::digest(block.header.encode()?);
+        let executor_resp = self
+            .adapter
+            .exec(ctx, block_hash, &block.header, rich_block.txs.clone())
+            .await?;
 
         status_agent.update_by_committed(metadata, block.clone(), block_hash, proof);
 
@@ -338,14 +344,16 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         Ok(RichBlock { block, txs })
     }
 
-    #[muta_apm::derive::tracing_span(kind = "consensus.sync", logs = "{'number': 'number'}")]
+    // #[muta_apm::derive::tracing_span(kind = "consensus.sync", logs = "{'number':
+    // 'number'}")]
     async fn get_block_from_remote(&self, ctx: Context, number: u64) -> ProtocolResult<Block> {
         self.adapter
             .get_block_from_remote(ctx.clone(), number)
             .await
     }
 
-    #[muta_apm::derive::tracing_span(kind = "consensus.sync", logs = "{'txs_len': 'txs.len()'}")]
+    // #[muta_apm::derive::tracing_span(kind = "consensus.sync", logs = "{'txs_len':
+    // 'txs.len()'}")]
     async fn save_chain_data(
         &self,
         ctx: Context,
@@ -366,36 +374,36 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         Ok(())
     }
 
-    // #[muta_apm::derive::tracing_span(kind = "consensus.sync")]
-    pub async fn exec_block(
-        &self,
-        ctx: Context,
-        rich_block: RichBlock,
-        status_agent: StatusAgent,
-    ) -> ProtocolResult<ExecutorResp> {
-        let current_status = status_agent.to_inner();
-        let cycles_limit = current_status.cycles_limit;
+    // // #[muta_apm::derive::tracing_span(kind = "consensus.sync")]
+    // pub async fn exec_block(
+    //     &self,
+    //     ctx: Context,
+    //     rich_block: RichBlock,
+    //     status_agent: StatusAgent,
+    // ) -> ProtocolResult<ExecutorResp> {
+    //     let current_status = status_agent.to_inner();
+    //     let cycles_limit = current_status.cycles_limit;
 
-        let exec_params = ExecutorParams {
-            state_root: current_status.get_latest_state_root(),
-            number: rich_block.block.header.number,
-            timestamp: rich_block.block.header.timestamp,
-            cycles_limit,
-            proposer: rich_block.block.header.proposer,
-        };
-        let resp = self
-            .adapter
-            .sync_exec(ctx.clone(), &exec_params, &rich_block.txs)?;
+    //     let exec_params = ExecutorParams {
+    //         state_root: current_status.get_latest_state_root(),
+    //         number: rich_block.block.header.number,
+    //         timestamp: rich_block.block.header.timestamp,
+    //         cycles_limit,
+    //         proposer: rich_block.block.header.proposer,
+    //     };
+    //     let resp = self
+    //         .adapter
+    //         .sync_exec(ctx.clone(), &exec_params, &rich_block.txs)?;
 
-        status_agent.update_by_executed(ExecutedInfo::new(
-            ctx,
-            rich_block.block.header.number,
-            rich_block.block.header.order_root,
-            resp.clone(),
-        ));
+    //     status_agent.update_by_executed(ExecutedInfo::new(
+    //         ctx,
+    //         rich_block.block.header.number,
+    //         rich_block.block.header.order_root,
+    //         resp.clone(),
+    //     ));
 
-        Ok(resp)
-    }
+    //     Ok(resp)
+    // }
 
     // #[muta_apm::derive::tracing_span(
     //     kind = "consensus.sync",

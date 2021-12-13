@@ -20,7 +20,7 @@ use common_merkle::Merkle;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
-    Block, BlockNumber, Bytes, Hash, Hasher, Header, MerkleRoot, Metadata, Pill, Proof,
+    Block, BlockNumber, Bytes, ExecResp, Hash, Hasher, Header, MerkleRoot, Metadata, Pill, Proof,
     SignedTransaction, ValidatorExtend,
 };
 use protocol::{
@@ -32,7 +32,7 @@ use crate::message::{
     END_GOSSIP_AGGREGATED_VOTE, END_GOSSIP_SIGNED_CHOKE, END_GOSSIP_SIGNED_PROPOSAL,
     END_GOSSIP_SIGNED_VOTE,
 };
-use crate::status::{CurrentStatus, StatusAgent};
+use crate::status::{CurrentStatus, ExecutedInfo, StatusAgent};
 use crate::util::{digest_signed_transactions, time_now, OverlordCrypto};
 use crate::wal::{ConsensusWal, SignedTxsWAL};
 use crate::{ConsensusError, METADATA_CONTROLER};
@@ -272,7 +272,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             metadata.verifier_list
         );
 
-        self.update_status(metadata, pill.block, proof, signed_txs)
+        self.update_status(resp, pill.block, proof, signed_txs)
             .await?;
 
         self.adapter
@@ -641,19 +641,26 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
     /// 5. Save the receipt.
     pub async fn update_status(
         &self,
-        metadata: Metadata,
+        resp: Vec<ExecResp>,
         block: Block,
         proof: Proof,
         txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<()> {
+        let executed_info = ExecutedInfo::new(&resp);
+        let block_number = block.header.number;
+
         // Save signed transactions
         self.adapter
-            .save_signed_txs(Context::new(), block.header.number, txs)
+            .save_signed_txs(Context::new(), block_number, txs)
             .await?;
 
         // Save the block.
         self.adapter
             .save_block(Context::new(), block.clone())
+            .await?;
+
+        self.adapter
+            .save_receipts(Context::new(), block_number, receipts)
             .await?;
 
         // update timeout_gap of mempool

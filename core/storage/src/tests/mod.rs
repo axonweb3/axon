@@ -68,6 +68,7 @@ fn mock_block(height: u64, _block_hash: Hash) -> Block {
         proposer:          Default::default(),
         state_root:        Default::default(),
         transactions_root: Default::default(),
+        signed_txs_hash:   Default::default(),
         receipts_root:     Default::default(),
         log_bloom:         Default::default(),
         difficulty:        Default::default(),
