@@ -51,8 +51,9 @@ fn mock_signed_tx(tx_hash: Hash) -> SignedTransaction {
     }
 }
 
-fn mock_receipt(_tx_hash: Hash) -> Receipt {
+fn mock_receipt(hash: Hash) -> Receipt {
     Receipt {
+        tx_hash:    hash,
         state_root: Default::default(),
         used_gas:   Default::default(),
         logs_bloom: Default::default(),
@@ -63,11 +64,11 @@ fn mock_receipt(_tx_hash: Hash) -> Receipt {
 fn mock_block(height: u64, _block_hash: Hash) -> Block {
     let _nonce = Hasher::digest(Bytes::from("XXXX"));
     let header = Header {
-        parent_hash:       Default::default(),
-        uncles_hash:       Default::default(),
-        author:            Default::default(),
+        prev_hash:         Default::default(),
+        proposer:          Default::default(),
         state_root:        Default::default(),
         transactions_root: Default::default(),
+        signed_txs_hash:   Default::default(),
         receipts_root:     Default::default(),
         log_bloom:         Default::default(),
         difficulty:        Default::default(),
@@ -80,11 +81,12 @@ fn mock_block(height: u64, _block_hash: Hash) -> Block {
         nonce:             Default::default(),
         base_fee_per_gas:  None,
         proof:             Proof::default(),
+        chain_id:          random::<u64>(),
     };
 
     Block {
         header,
-        transactions: vec![],
+        tx_hashes: vec![],
     }
 }
 

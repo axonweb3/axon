@@ -1,21 +1,21 @@
-use crate::types::{Address, Bloom, Bytes, Hash, UnverifiedTransaction, H256, H64, U256};
+use crate::types::{Address, Bloom, Bytes, Hash, MerkleRoot, H64, U256};
 
 pub type BlockNumber = u64;
 
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct Block {
-    pub header:       Header,
-    pub transactions: Vec<UnverifiedTransaction>,
+    pub header:    Header,
+    pub tx_hashes: Vec<Hash>,
 }
 
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct Header {
-    pub parent_hash:       H256,
-    pub uncles_hash:       H256,
-    pub author:            Address,
-    pub state_root:        H256,
-    pub transactions_root: H256,
-    pub receipts_root:     H256,
+    pub prev_hash:         Hash,
+    pub proposer:          Address,
+    pub state_root:        MerkleRoot,
+    pub transactions_root: MerkleRoot,
+    pub signed_txs_hash:   Hash,
+    pub receipts_root:     MerkleRoot,
     pub log_bloom:         Bloom,
     pub difficulty:        U256,
     pub timestamp:         u64,
@@ -23,10 +23,11 @@ pub struct Header {
     pub gas_used:          U256,
     pub gas_limit:         U256,
     pub extra_data:        Bytes,
-    pub mixed_hash:        Option<H256>,
+    pub mixed_hash:        Option<Hash>,
     pub nonce:             H64,
     pub base_fee_per_gas:  Option<U256>,
     pub proof:             Proof,
+    pub chain_id:          u64,
 }
 
 #[derive(Default, Clone, Debug, Hash, PartialEq, Eq)]
@@ -39,8 +40,7 @@ pub struct Proof {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Validator {
-    pub pub_key:        Bytes,
-    pub propose_weight: u32,
-    pub vote_weight:    u32,
+pub struct Pill {
+    pub block:          Block,
+    pub propose_hashes: Vec<Hash>,
 }

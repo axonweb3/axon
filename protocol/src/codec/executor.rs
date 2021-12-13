@@ -1,31 +1,37 @@
 use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
-use crate::types::{ExecResponse, ExecutorContext, ExitReason, H160, H256, U256};
+use crate::types::{ExecResp, ExecutorContext, ExitReason, Log, H160, H256, U256};
 
-impl Encodable for ExecResponse {
+impl Encodable for ExecResp {
     fn rlp_append(&self, s: &mut RlpStream) {
         let reason = bincode::serialize(&self.remain_gas).unwrap();
-        s.begin_list(3)
+        s.begin_list(5)
             .append(&reason)
             .append(&self.ret)
-            .append(&self.remain_gas);
+            .append(&self.gas_used)
+            .append(&self.remain_gas)
+            .append_list(&self.logs);
     }
 }
 
-impl Decodable for ExecResponse {
+impl Decodable for ExecResp {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
-            Prototype::List(3) => {
+            Prototype::List(5) => {
                 let tmp: Vec<u8> = r.val_at(0)?;
                 let exit_reason: ExitReason = bincode::deserialize(&tmp)
                     .map_err(|_| DecoderError::Custom("field exit reason"))?;
                 let ret: Vec<u8> = r.val_at(1)?;
-                let remain_gas: u64 = r.val_at(2)?;
+                let gas_used: u64 = r.val_at(2)?;
+                let remain_gas: u64 = r.val_at(3)?;
+                let logs: Vec<Log> = r.list_at(4)?;
 
-                Ok(ExecResponse {
+                Ok(ExecResp {
                     exit_reason,
                     ret,
+                    gas_used,
                     remain_gas,
+                    logs,
                 })
             }
             _ => Err(DecoderError::RlpExpectedToBeList),
@@ -35,7 +41,7 @@ impl Decodable for ExecResponse {
 
 impl Encodable for ExecutorContext {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(10)
+        s.begin_list(11)
             .append(&self.block_number)
             .append(&self.block_hash)
             .append(&self.block_coinbase)
@@ -45,7 +51,8 @@ impl Encodable for ExecutorContext {
             .append(&self.origin)
             .append(&self.gas_price)
             .append(&self.block_gas_limit)
-            .append(&self.block_base_fee_per_gas);
+            .append(&self.block_base_fee_per_gas)
+            .append_list(&self.logs);
     }
 }
 
@@ -63,6 +70,7 @@ impl Decodable for ExecutorContext {
                 let gas_price: U256 = r.val_at(7)?;
                 let block_gas_limit: U256 = r.val_at(8)?;
                 let block_base_fee_per_gas: U256 = r.val_at(9)?;
+                let logs: Vec<Log> = r.list_at(10)?;
 
                 Ok(ExecutorContext {
                     block_number,
@@ -75,6 +83,7 @@ impl Decodable for ExecutorContext {
                     gas_price,
                     block_gas_limit,
                     block_base_fee_per_gas,
+                    logs,
                 })
             }
             _ => Err(DecoderError::RlpExpectedToBeList),

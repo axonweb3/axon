@@ -1,16 +1,10 @@
 use std::{
-    error::Error,
     fmt::Debug,
     hash::{Hash, Hasher},
 };
 
-use async_trait::async_trait;
-use bytes::Bytes;
-use derive_more::Display;
-
-use crate::{
-    codec::ProtocolCodec, traits::Context, ProtocolError, ProtocolErrorKind, ProtocolResult,
-};
+use crate::types::Bytes;
+use crate::{async_trait, codec::ProtocolCodec, traits::Context, Display, ProtocolResult};
 
 #[derive(Clone, Debug, Copy)]
 pub enum Priority {
@@ -89,18 +83,6 @@ pub trait MessageCodec: Sized + Send + Debug + 'static {
     fn encode_msg(&mut self) -> ProtocolResult<Bytes>;
 
     fn decode_msg(bytes: Bytes) -> ProtocolResult<Self>;
-}
-
-#[derive(Debug, Display)]
-#[display(fmt = "cannot serde encode or decode: {}", _0)]
-struct SerdeError(Box<dyn Error + Send>);
-
-impl Error for SerdeError {}
-
-impl From<SerdeError> for ProtocolError {
-    fn from(err: SerdeError) -> ProtocolError {
-        ProtocolError::new(ProtocolErrorKind::Network, Box::new(err))
-    }
 }
 
 impl<T: ProtocolCodec + Debug + 'static> MessageCodec for T {

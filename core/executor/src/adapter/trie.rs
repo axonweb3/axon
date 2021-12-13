@@ -11,8 +11,8 @@ lazy_static::lazy_static! {
 }
 
 pub struct MPTTrie<DB: TrieDB> {
-    root: MerkleRoot,
-    trie: PatriciaTrie<DB, HasherKeccak>,
+    pub root: MerkleRoot,
+    trie:     PatriciaTrie<DB, HasherKeccak>,
 }
 
 impl<DB: TrieDB> MPTTrie<DB> {

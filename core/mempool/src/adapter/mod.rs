@@ -2,6 +2,7 @@ use super::TxContext;
 
 pub mod message;
 
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::{error::Error, marker::PhantomData, sync::Arc, time::Duration};
 
 use futures::{
@@ -21,7 +22,7 @@ use protocol::{
     tokio,
     tokio::time::sleep,
     traits::{Context, Gossip, MemPoolAdapter, PeerTrust, Priority, Rpc, Storage, TrustFeedback},
-    types::{recover_intact_pub_key, Hash, SignedTransaction, U256},
+    types::{recover_intact_pub_key, Hash, SignedTransaction},
     Display, ProtocolError, ProtocolErrorKind, ProtocolResult,
 };
 
@@ -126,15 +127,14 @@ impl IntervalTxsBroadcaster {
     }
 }
 
-pub struct DefaultMemPoolAdapter<C, N, S, DB> {
-    network:  N,
-    storage:  Arc<S>,
-    _trie_db: Arc<DB>,
+pub struct DefaultMemPoolAdapter<C, N, S> {
+    network: N,
+    storage: Arc<S>,
 
-    _timeout_gap: u64,
-    gas_limit:    U256,
-    max_tx_size:  usize,
-    chain_id:     u64,
+    timeout_gap: AtomicU64,
+    gas_limit:   AtomicU64,
+    max_tx_size: AtomicUsize,
+    chain_id:    u64,
 
     stx_tx: UnboundedSender<SignedTransaction>,
     err_rx: Mutex<UnboundedReceiver<ProtocolError>>,
@@ -142,20 +142,18 @@ pub struct DefaultMemPoolAdapter<C, N, S, DB> {
     pin_c: PhantomData<C>,
 }
 
-impl<C, N, S, DB> DefaultMemPoolAdapter<C, N, S, DB>
+impl<C, N, S> DefaultMemPoolAdapter<C, N, S>
 where
     C: Crypto,
     N: Rpc + PeerTrust + Gossip + Clone + Unpin + 'static,
     S: Storage,
-    DB: cita_trie::DB + 'static,
 {
     pub fn new(
         network: N,
         storage: Arc<S>,
-        _trie_db: Arc<DB>,
         chain_id: u64,
-        _timeout_gap: u64,
-        gas_limit: U256,
+        timeout_gap: u64,
+        gas_limit: u64,
         max_tx_size: usize,
         broadcast_txs_size: usize,
         broadcast_txs_interval: u64,
@@ -180,11 +178,10 @@ where
         DefaultMemPoolAdapter {
             network,
             storage,
-            _trie_db,
 
-            _timeout_gap,
-            gas_limit,
-            max_tx_size,
+            timeout_gap: AtomicU64::new(timeout_gap),
+            gas_limit: AtomicU64::new(gas_limit),
+            max_tx_size: AtomicUsize::new(max_tx_size),
             chain_id,
 
             stx_tx,
@@ -196,12 +193,11 @@ where
 }
 
 #[async_trait]
-impl<C, N, S, DB> MemPoolAdapter for DefaultMemPoolAdapter<C, N, S, DB>
+impl<C, N, S> MemPoolAdapter for DefaultMemPoolAdapter<C, N, S>
 where
     C: Crypto + Send + Sync + 'static,
     N: Rpc + PeerTrust + Gossip + Clone + Unpin + 'static,
     S: Storage + 'static,
-    DB: cita_trie::DB + 'static,
 {
     // #[muta_apm::derive::tracing_span(
     //     kind = "mempool.adapter",
@@ -255,7 +251,7 @@ where
         let tx_hash = stx.transaction.hash;
 
         // check tx size
-        if fixed_bytes.len() > self.max_tx_size {
+        if fixed_bytes.len() > self.max_tx_size.load(Ordering::SeqCst) {
             if ctx.is_network_origin_txs() {
                 self.network.report(
                     ctx,
@@ -264,7 +260,7 @@ where
             }
             return Err(MemPoolError::ExceedSizeLimit {
                 tx_hash,
-                max_tx_size: self.max_tx_size,
+                max_tx_size: self.max_tx_size.load(Ordering::SeqCst),
                 size: fixed_bytes.len(),
             }
             .into());
@@ -272,7 +268,7 @@ where
 
         // check gas limit
         let gas_limit_tx = stx.transaction.unsigned.gas_limit;
-        if gas_limit_tx > self.gas_limit {
+        if gas_limit_tx.as_u64() > self.gas_limit.load(Ordering::SeqCst) {
             if ctx.is_network_origin_txs() {
                 self.network.report(
                     ctx,
@@ -281,8 +277,8 @@ where
             }
             return Err(MemPoolError::ExceedCyclesLimit {
                 tx_hash,
-                gas_limit_tx,
-                gas_limit_config: self.gas_limit,
+                gas_limit_tx: gas_limit_tx.as_u64(),
+                gas_limit_config: self.gas_limit.load(Ordering::SeqCst),
             }
             .into());
         }
@@ -339,6 +335,13 @@ where
                 .collect::<Vec<_>>();
             futures::future::try_join_all(futs).await
         }
+    }
+
+    fn set_args(&self, _context: Context, timeout_gap: u64, cycles_limit: u64, max_tx_size: u64) {
+        self.timeout_gap.store(timeout_gap, Ordering::Relaxed);
+        self.gas_limit.store(cycles_limit, Ordering::Relaxed);
+        self.max_tx_size
+            .store(max_tx_size as usize, Ordering::Relaxed);
     }
 
     fn report_good(&self, ctx: Context) {

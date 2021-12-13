@@ -25,7 +25,7 @@ use futures::future::try_join_all;
 
 use protocol::tokio::{self, sync::RwLock};
 use protocol::traits::{Context, MemPool, MemPoolAdapter, MixedTxHashes};
-use protocol::types::{Hash, SignedTransaction, U256};
+use protocol::types::{Hash, SignedTransaction};
 use protocol::{async_trait, Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 use crate::context::TxContext;
@@ -363,6 +363,12 @@ where
         }
         Ok(())
     }
+
+    fn set_args(&self, context: Context, timeout_gap: u64, gas_limit: u64, max_tx_size: u64) {
+        self.adapter
+            .set_args(context, timeout_gap, gas_limit, max_tx_size);
+        self.timeout_gap.store(timeout_gap, Ordering::Relaxed);
+    }
 }
 
 fn check_dup_order_hashes(order_tx_hashes: &[Hash]) -> ProtocolResult<()> {
@@ -406,8 +412,8 @@ pub enum MemPoolError {
     )]
     ExceedCyclesLimit {
         tx_hash:          Hash,
-        gas_limit_config: U256,
-        gas_limit_tx:     U256,
+        gas_limit_config: u64,
+        gas_limit_tx:     u64,
     },
 
     #[display(fmt = "Tx: {:?} inserts failed", tx_hash)]

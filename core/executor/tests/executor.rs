@@ -13,7 +13,7 @@ use protocol::types::{
 
 macro_rules! exec {
     ($func: expr) => {
-        futures::executor::block_on(async { $func.await })
+        futures::executor::block_on(async { $func })
     };
 }
 

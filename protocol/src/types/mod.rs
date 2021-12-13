@@ -1,20 +1,19 @@
+pub use batch::*;
 pub use block::*;
 pub use bytes::{Buf, BufMut, Bytes, BytesMut};
 pub use executor::{
-    AccessList, AccessListItem, Account, Config, ExecResponse, ExecutorContext, ExitReason,
+    AccessList, AccessListItem, Account, Config, ExecResp, ExecutorContext, ExitReason,
 };
 pub use primitive::*;
 pub use receipt::*;
 pub use transaction::*;
 
+pub mod batch;
 pub mod block;
 pub mod executor;
 pub mod primitive;
+pub mod receipt;
 pub mod transaction;
-
-pub mod receipt {
-    pub use ethereum::{Log, Receipt};
-}
 
 use std::error::Error;
 

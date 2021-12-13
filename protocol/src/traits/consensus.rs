@@ -4,10 +4,12 @@ use async_trait::async_trait;
 use bytes::Bytes;
 use creep::Context;
 
+use crate::traits::MixedTxHashes;
 use crate::types::{
-    Address, Block, Hash, Header, Hex, MerkleRoot, Proof, Receipt, SignedTransaction, Validator,
+    Address, Block, BlockNumber, ExecResp, Hash, Header, Hex, MerkleRoot, Proof, Receipt,
+    SignedTransaction, Validator,
 };
-use crate::{traits::mempool::MixedTxHashes, ProtocolResult};
+use crate::ProtocolResult;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum MessageTarget {
@@ -56,26 +58,27 @@ pub trait SynchronizationAdapter: CommonConsensusAdapter + Send + Sync {
         validators: Vec<Validator>,
     ) -> ProtocolResult<()>;
 
-    // fn sync_exec(
-    //     &self,
-    //     ctx: Context,
-    //     params: &ExecutorParams,
-    //     txs: &[SignedTransaction],
-    // ) -> ProtocolResult<ExecutorResp>;
-
     /// Pull some blocks from other nodes from `begin` to `end`.
-    async fn get_block_from_remote(&self, ctx: Context, height: u64) -> ProtocolResult<Block>;
+    async fn get_block_from_remote(
+        &self,
+        ctx: Context,
+        number: BlockNumber,
+    ) -> ProtocolResult<Block>;
 
     /// Pull signed transactions corresponding to the given hashes from other
     /// nodes.
     async fn get_txs_from_remote(
         &self,
         ctx: Context,
-        height: u64,
+        number: BlockNumber,
         hashes: &[Hash],
     ) -> ProtocolResult<Vec<SignedTransaction>>;
 
-    async fn get_proof_from_remote(&self, ctx: Context, height: u64) -> ProtocolResult<Proof>;
+    async fn get_proof_from_remote(
+        &self,
+        ctx: Context,
+        number: BlockNumber,
+    ) -> ProtocolResult<Proof>;
 }
 
 #[async_trait]
@@ -104,13 +107,13 @@ pub trait CommonConsensusAdapter: Send + Sync {
     async fn flush_mempool(&self, ctx: Context, ordered_tx_hashes: &[Hash]) -> ProtocolResult<()>;
 
     /// Get a block corresponding to the given height.
-    async fn get_block_by_height(&self, ctx: Context, height: u64) -> ProtocolResult<Block>;
+    async fn get_block_by_number(&self, ctx: Context, height: u64) -> ProtocolResult<Block>;
 
-    async fn get_block_header_by_height(&self, ctx: Context, height: u64)
+    async fn get_block_header_by_number(&self, ctx: Context, height: u64)
         -> ProtocolResult<Header>;
 
     /// Get the current height from storage.
-    async fn get_current_height(&self, ctx: Context) -> ProtocolResult<u64>;
+    async fn get_current_number(&self, ctx: Context) -> ProtocolResult<u64>;
 
     async fn get_txs_from_storage(
         &self,
@@ -118,19 +121,26 @@ pub trait CommonConsensusAdapter: Send + Sync {
         tx_hashes: &[Hash],
     ) -> ProtocolResult<Vec<SignedTransaction>>;
 
-    async fn broadcast_height(&self, ctx: Context, height: u64) -> ProtocolResult<()>;
+    /// Execute some transactions.
+    async fn exec(
+        &self,
+        ctx: Context,
+        block_hash: Hash,
+        header: &Header,
+        signed_txs: Vec<SignedTransaction>,
+    ) -> ProtocolResult<(MerkleRoot, Vec<ExecResp>)>;
+
+    async fn broadcast_number(&self, ctx: Context, height: u64) -> ProtocolResult<()>;
+
+    fn set_args(&self, context: Context, timeout_gap: u64, gas_limit: u64, max_tx_size: u64);
 
     fn tag_consensus(&self, ctx: Context, peer_ids: Vec<Bytes>) -> ProtocolResult<()>;
-
-    // fn report_bad(&self, ctx: Context, feedback: TrustFeedback);
-
-    fn set_args(&self, context: Context, timeout_gap: u64, cycles_limit: u64, max_tx_size: u64);
 
     async fn verify_proof(
         &self,
         ctx: Context,
         block_header: &Header,
-        proof: &Proof,
+        proof: Proof,
     ) -> ProtocolResult<()>;
 
     async fn verify_block_header(&self, ctx: Context, block: &Block) -> ProtocolResult<()>;
@@ -185,34 +195,11 @@ pub trait ConsensusAdapter: CommonConsensusAdapter + Send + Sync {
         target: MessageTarget,
     ) -> ProtocolResult<()>;
 
-    /// Execute some transactions.
-    #[allow(clippy::too_many_arguments)]
-    async fn execute(
-        &self,
-        ctx: Context,
-        chain_id: Hash,
-        order_root: MerkleRoot,
-        height: u64,
-        cycles_price: u64,
-        proposer: Address,
-        block_hash: Hash,
-        signed_txs: Vec<SignedTransaction>,
-        cycles_limit: u64,
-        timestamp: u64,
-    ) -> ProtocolResult<()>;
-
-    /// Get the validator list of the given last block.
-    async fn get_last_validators(
-        &self,
-        ctx: Context,
-        height: u64,
-    ) -> ProtocolResult<Vec<Validator>>;
-
     /// Get the current height from storage.
-    async fn get_current_height(&self, ctx: Context) -> ProtocolResult<u64>;
+    async fn get_current_number(&self, ctx: Context) -> ProtocolResult<u64>;
 
     /// Pull some blocks from other nodes from `begin` to `end`.
-    async fn pull_block(&self, ctx: Context, height: u64, end: &str) -> ProtocolResult<Block>;
+    async fn pull_block(&self, ctx: Context, number: u64, end: &str) -> ProtocolResult<Block>;
 
-    async fn verify_txs(&self, ctx: Context, height: u64, txs: &[Hash]) -> ProtocolResult<()>;
+    async fn verify_txs(&self, ctx: Context, number: u64, txs: &[Hash]) -> ProtocolResult<()>;
 }
