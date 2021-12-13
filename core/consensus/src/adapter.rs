@@ -109,43 +109,6 @@ where
         }
     }
 
-    // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
-    async fn exec(
-        &self,
-        ctx: Context,
-        header_hash: Hash,
-        header: &Header,
-        signed_txs: Vec<SignedTransaction>,
-    ) -> ProtocolResult<Vec<ExecResponse>> {
-        let ret = Vec::new();
-
-        let base_ctx = Arc::new(Mutex::new(ExecutorContext {
-            block_number:           header.number.into(),
-            block_hash:             header_hash,
-            block_coinbase:         header.proposer.into(),
-            block_timestamp:        header.timestamp.into(),
-            chain_id:               header.chain_id.into(),
-            difficulty:             Default::default(),
-            origin:                 header.proposer.into(),
-            gas_price:              Default::default(),
-            block_gas_limit:        header.gas_limit,
-            block_base_fee_per_gas: header.base_fee_per_gas.unwrap_or_default(),
-        }));
-
-        let mut backend =
-            ExecutorAdapter::new(header.state_root, Arc::clone(&self.trie_db), base_ctx)?;
-
-        for stx in signed_txs.into_iter() {
-            {
-                base_ctx.lock().gas_price = stx.transaction.unsigned.max_fee_per_gas;
-            }
-
-            let res = EvmExecutor::default().exec(&mut backend, stx).await;
-        }
-
-        Ok(ret)
-    }
-
     /// Get the current height from storage.
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
     async fn get_current_number(&self, ctx: Context) -> ProtocolResult<u64> {
@@ -386,6 +349,43 @@ where
                 .filter_map(|opt_tx| opt_tx)
                 .collect::<Vec<_>>()
         })
+    }
+
+    // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
+    async fn exec(
+        &self,
+        ctx: Context,
+        header_hash: Hash,
+        header: &Header,
+        signed_txs: Vec<SignedTransaction>,
+    ) -> ProtocolResult<Vec<ExecResponse>> {
+        let ret = Vec::new();
+
+        let base_ctx = Arc::new(Mutex::new(ExecutorContext {
+            block_number:           header.number.into(),
+            block_hash:             header_hash,
+            block_coinbase:         header.proposer.into(),
+            block_timestamp:        header.timestamp.into(),
+            chain_id:               header.chain_id.into(),
+            difficulty:             Default::default(),
+            origin:                 header.proposer.into(),
+            gas_price:              Default::default(),
+            block_gas_limit:        header.gas_limit,
+            block_base_fee_per_gas: header.base_fee_per_gas.unwrap_or_default(),
+        }));
+
+        let mut backend =
+            ExecutorAdapter::new(header.state_root, Arc::clone(&self.trie_db), base_ctx)?;
+
+        for stx in signed_txs.into_iter() {
+            {
+                base_ctx.lock().gas_price = stx.transaction.unsigned.max_fee_per_gas;
+            }
+
+            let res = EvmExecutor::default().exec(&mut backend, stx).await;
+        }
+
+        Ok(ret)
     }
 
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]

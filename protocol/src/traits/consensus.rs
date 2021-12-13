@@ -113,6 +113,15 @@ pub trait CommonConsensusAdapter: Send + Sync {
         tx_hashes: &[Hash],
     ) -> ProtocolResult<Vec<SignedTransaction>>;
 
+    /// Execute some transactions.
+    async fn exec(
+        &self,
+        ctx: Context,
+        block_hash: Hash,
+        header: &Header,
+        signed_txs: Vec<SignedTransaction>,
+    ) -> ProtocolResult<Vec<ExecResponse>>;
+
     async fn broadcast_number(&self, ctx: Context, height: u64) -> ProtocolResult<()>;
 
     fn set_args(&self, context: Context, timeout_gap: u64, gas_limit: u64, max_tx_size: u64);
@@ -177,15 +186,6 @@ pub trait ConsensusAdapter: CommonConsensusAdapter + Send + Sync {
         end: &str,
         target: MessageTarget,
     ) -> ProtocolResult<()>;
-
-    /// Execute some transactions.
-    async fn exec(
-        &self,
-        ctx: Context,
-        block_hash: Hash,
-        header: &Header,
-        signed_txs: Vec<SignedTransaction>,
-    ) -> ProtocolResult<Vec<ExecResponse>>;
 
     /// Get the current height from storage.
     async fn get_current_number(&self, ctx: Context) -> ProtocolResult<u64>;
