@@ -4,7 +4,6 @@ use std::sync::Arc;
 use parking_lot::Mutex;
 
 use common_merkle::Merkle;
-use protocol::traits::Context;
 use protocol::types::{
     BlockNumber, Bloom, ExecResp, Hash, Hasher, MerkleRoot, Metadata, Proof, U256,
 };
@@ -99,8 +98,7 @@ impl ExecutedInfo {
         let gas_sum = resp.iter().map(|r| r.gas_used).sum();
 
         let receipt = Merkle::from_hashes(
-            resp.txs_resp
-                .iter()
+            resp.iter()
                 .map(|r| Hasher::digest(r.ret))
                 .collect::<Vec<_>>(),
         )

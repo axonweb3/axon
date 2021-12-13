@@ -1,5 +1,6 @@
 use crate::types::{Bloom, Hash, MerkleRoot, H256, U256};
 pub use ethereum::Log;
+pub use ethereum_types::BloomInput;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Receipt {

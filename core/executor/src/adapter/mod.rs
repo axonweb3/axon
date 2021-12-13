@@ -177,6 +177,10 @@ impl<DB: TrieDB> ExecutorAdapter<DB> {
         Ok(ExecutorAdapter { trie, db, exec_ctx })
     }
 
+    pub fn root(&self) -> MerkleRoot {
+        self.trie.lock().root
+    }
+
     fn apply<I: IntoIterator<Item = (H256, H256)>>(
         &mut self,
         address: H160,

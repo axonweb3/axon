@@ -8,11 +8,11 @@ use json::JsonValue;
 use log::{error, info, warn};
 use overlord::error::ConsensusError as OverlordError;
 use overlord::types::{Commit, Node, OverlordMsg, Status, ViewChangeReason};
-use overlord::{Consensus as Engine, DurationConfig, Wal};
+use overlord::{Consensus as Engine, Wal};
 use parking_lot::RwLock;
 use rlp::Encodable;
 
-use common_apm::muta_apm;
+// use common_apm::muta_apm;
 use common_crypto::BlsPublicKey;
 use common_logger::{json, log};
 use common_merkle::Merkle;
@@ -20,8 +20,8 @@ use common_merkle::Merkle;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
-    Block, BlockNumber, Bytes, ExecResp, Hash, Hasher, Header, MerkleRoot, Metadata, Pill, Proof,
-    SignedTransaction, ValidatorExtend,
+    Block, BlockNumber, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, Header, MerkleRoot,
+    Metadata, Pill, Proof, Receipt, SignedTransaction, ValidatorExtend, U256,
 };
 use protocol::{
     async_trait, tokio, tokio::sync::Mutex as AsyncMutex, tokio::time::sleep, ProtocolError,
@@ -255,7 +255,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
 
         // Execute transactions
 
-        let resp = self
+        let (new_state_root, resp) = self
             .adapter
             .exec(
                 ctx.clone(),
@@ -272,7 +272,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             metadata.verifier_list
         );
 
-        self.update_status(resp, pill.block, proof, signed_txs)
+        self.update_status(new_state_root, resp, pill.block, proof, signed_txs)
             .await?;
 
         self.adapter
@@ -641,6 +641,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
     /// 5. Save the receipt.
     pub async fn update_status(
         &self,
+        new_state_root: MerkleRoot,
         resp: Vec<ExecResp>,
         block: Block,
         proof: Proof,
@@ -648,6 +649,22 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
     ) -> ProtocolResult<()> {
         let executed_info = ExecutedInfo::new(&resp);
         let block_number = block.header.number;
+
+        let receipts = txs
+            .iter()
+            .zip(resp.iter())
+            .map(|(tx, res)| Receipt {
+                tx_hash:    tx.transaction.hash,
+                state_root: block.header.state_root,
+                used_gas:   U256::from(res.gas_used),
+                logs_bloom: Bloom::from(BloomInput::Raw(rlp::encode_list(&res.logs).as_ref())),
+                logs:       res.logs.clone(),
+            })
+            .collect::<Vec<_>>();
+        let logs = receipts
+            .iter()
+            .map(|r| r.logs_bloom.clone())
+            .collect::<Vec<_>>();
 
         // Save signed transactions
         self.adapter
@@ -663,6 +680,22 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             .save_receipts(Context::new(), block_number, receipts)
             .await?;
 
+        let block_hash = Hasher::digest(block.header.encode()?);
+        let metadata = METADATA_CONTROLER.get().unwrap().current();
+        let new_status = CurrentStatus {
+            prev_hash:        block_hash,
+            last_number:      block_number + 1,
+            state_root:       new_state_root,
+            receipts_root:    executed_info.receipts_root,
+            log_bloom:        Bloom::from(BloomInput::Raw(rlp::encode_list(&logs).as_ref())),
+            gas_limit:        metadata.gas_limit.into(),
+            gas_used:         executed_info.gas_used.into(),
+            base_fee_per_gas: None,
+            proof:            proof.clone(),
+        };
+
+        self.status.swap(new_status);
+
         // update timeout_gap of mempool
         self.adapter.set_args(
             Context::new(),
@@ -677,8 +710,6 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             .map(|v| v.pub_key.decode())
             .collect();
         self.adapter.tag_consensus(Context::new(), pub_keys)?;
-
-        let block_hash = Hasher::digest(block.header.encode()?);
 
         if block.header.number != proof.number {
             info!("[consensus] update_status for handle_commit, error, before update, block number {}, proof number:{}, proof : {:?}",

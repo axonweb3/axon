@@ -59,18 +59,18 @@ pub trait SynchronizationAdapter: CommonConsensusAdapter + Send + Sync {
     ) -> ProtocolResult<()>;
 
     /// Pull some blocks from other nodes from `begin` to `end`.
-    async fn get_block_from_remote(&self, ctx: Context, height: u64) -> ProtocolResult<Block>;
+    async fn get_block_from_remote(&self, ctx: Context, number: BlockNumber) -> ProtocolResult<Block>;
 
     /// Pull signed transactions corresponding to the given hashes from other
     /// nodes.
     async fn get_txs_from_remote(
         &self,
         ctx: Context,
-        height: u64,
+        number: BlockNumber,
         hashes: &[Hash],
     ) -> ProtocolResult<Vec<SignedTransaction>>;
 
-    async fn get_proof_from_remote(&self, ctx: Context, height: u64) -> ProtocolResult<Proof>;
+    async fn get_proof_from_remote(&self, ctx: Context, number: BlockNumber) -> ProtocolResult<Proof>;
 }
 
 #[async_trait]
@@ -120,7 +120,7 @@ pub trait CommonConsensusAdapter: Send + Sync {
         block_hash: Hash,
         header: &Header,
         signed_txs: Vec<SignedTransaction>,
-    ) -> ProtocolResult<Vec<ExecResp>>;
+    ) -> ProtocolResult<(MerkleRoot, Vec<ExecResp>)>;
 
     async fn broadcast_number(&self, ctx: Context, height: u64) -> ProtocolResult<()>;
 

@@ -38,40 +38,40 @@ lazy_static::lazy_static! {
     pub static ref OVERLORD_WAL_KEY: Hash = Hasher::digest(Bytes::from("overlord_wal"));
 }
 
-// FIXME: https://github.com/facebook/rocksdb/wiki/Transactions
-macro_rules! batch_insert {
-    ($self_: ident, $block_height:expr, $vec: expr, $hash_path: item, $schema: ident) => {
-        let (hashes, heights) = $vec
-            .iter()
-            .map(|item| {
-                (
-                    item.$hash_path.clone(),
-                    StorageBatchModify::Insert($block_height),
-                )
-            })
-            .unzip();
+// // FIXME: https://github.com/facebook/rocksdb/wiki/Transactions
+// macro_rules! batch_insert {
+//     ($self_: ident, $block_height:expr, $vec: expr, $hash_path: item, $schema: ident) => {
+//         let (hashes, heights) = $vec
+//             .iter()
+//             .map(|item| {
+//                 (
+//                     item.$hash_path.clone(),
+//                     StorageBatchModify::Insert($block_height),
+//                 )
+//             })
+//             .unzip();
 
-        let (keys, batch_stxs): (Vec<_>, Vec<_>) = $vec
-            .into_iter()
-            .map(|item| {
-                (
-                    CommonHashKey::new($block_height, item.$hash_path.clone()),
-                    StorageBatchModify::Insert(item),
-                )
-            })
-            .unzip();
+//         let (keys, batch_stxs): (Vec<_>, Vec<_>) = $vec
+//             .into_iter()
+//             .map(|item| {
+//                 (
+//                     CommonHashKey::new($block_height, item.$hash_path.clone()),
+//                     StorageBatchModify::Insert(item),
+//                 )
+//             })
+//             .unzip();
 
-        $self_
-            .adapter
-            .batch_modify::<$schema>(keys, batch_stxs)
-            .await?;
+//         $self_
+//             .adapter
+//             .batch_modify::<$schema>(keys, batch_stxs)
+//             .await?;
 
-        $self_
-            .adapter
-            .batch_modify::<HashHeightSchema>(hashes, heights)
-            .await?;
-    };
-}
+//         $self_
+//             .adapter
+//             .batch_modify::<HashHeightSchema>(hashes, heights)
+//             .await?;
+//     };
+// }
 
 macro_rules! get {
     ($self_: ident, $key: expr, $schema: ident) => {{

@@ -2,7 +2,6 @@ use std::boxed::Box;
 use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use std::time::Instant;
 
 use overlord::types::{Node, OverlordMsg, Vote, VoteType};
 use overlord::{extract_voters, Crypto, OverlordHandler};
@@ -18,7 +17,7 @@ use protocol::traits::{
 };
 use protocol::types::{
     BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, ExecutorContext, Hash, Hasher, Header,
-    Hex, Pill, Proof, Receipt, SignedTransaction, Validator,
+    Hex, MerkleRoot, Pill, Proof, Receipt, SignedTransaction, Validator,
 };
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
@@ -351,6 +350,7 @@ where
         })
     }
 
+    #[allow(unused_braces)]
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
     async fn exec(
         &self,
@@ -358,7 +358,7 @@ where
         header_hash: Hash,
         header: &Header,
         signed_txs: Vec<SignedTransaction>,
-    ) -> ProtocolResult<BlockExecResp> {
+    ) -> ProtocolResult<(MerkleRoot, Vec<ExecResp>)> {
         let ret = Vec::new();
         let base_ctx = Arc::new(Mutex::new(ExecutorContext {
             block_number:           header.number.into(),
@@ -384,10 +384,10 @@ where
 
             let mut tx_res = EvmExecutor::default().exec(&mut backend, stx).await;
             tx_res.logs = { base_ctx.lock().logs.clone() };
-            res.push(tx_res);
+            ret.push(tx_res);
         }
 
-        Ok(ret)
+        Ok((backend.root(), ret))
     }
 
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]

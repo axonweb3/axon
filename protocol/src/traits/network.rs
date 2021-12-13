@@ -3,7 +3,7 @@ use std::{
     hash::{Hash, Hasher},
 };
 
-use crate::types::{Bytes, SignedTransaction};
+use crate::types::{Bytes};
 use crate::{async_trait, codec::ProtocolCodec, traits::Context, Display, ProtocolResult};
 
 #[derive(Clone, Debug, Copy)]

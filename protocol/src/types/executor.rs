@@ -1,7 +1,7 @@
 pub use ethereum::{AccessList, AccessListItem, Account};
 pub use evm::{backend::Log, Config, ExitReason};
 
-use crate::types::{Hash, MerkleRoot, H160, H256, U256};
+use crate::types::{Hash, H160, U256};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ExecResp {

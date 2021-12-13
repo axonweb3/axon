@@ -3,15 +3,13 @@ use std::time::{Duration, Instant};
 
 use futures::lock::Mutex;
 
-use common_apm::muta_apm;
-
+// use common_apm::muta_apm;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{Context, Synchronization, SynchronizationAdapter};
-use protocol::types::{Block, Hash, Hasher, Proof, Receipt, SignedTransaction};
+use protocol::types::{Block, Bloom, BloomInput, Hasher, Proof, Receipt, SignedTransaction};
 use protocol::{async_trait, tokio::time::sleep, ProtocolResult};
 
-use crate::engine::generate_new_crypto_map;
-use crate::status::{ExecutedInfo, StatusAgent, METADATA_CONTROLER};
+use crate::status::{ExecutedInfo, StatusAgent, METADATA_CONTROLER, CurrentStatus};
 use crate::util::{digest_signed_transactions, OverlordCrypto};
 use crate::ConsensusError;
 
@@ -171,7 +169,9 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
                     e
                 })?;
 
-            let consenting_proof = self.verify_block(&ctx, &consenting_rich_block).await?;
+            let consenting_proof = self
+                .verify_block(ctx.clone(), &consenting_rich_block)
+                .await?;
 
             let inst = Instant::now();
             self.commit_block(
@@ -221,7 +221,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             .verify_block_header(ctx.clone(), &consenting_rich_block.block)
             .await
             .map_err(|e| {
-                *log::error!(
+                log::error!(
                     "[synchronization]: verify_block_header error, block header: {:?}",
                     consenting_rich_block.block.header
                 );
@@ -235,7 +235,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             )
             .await
             .map_err(|e| {
-                *log::error!(
+                log::error!(
                     "[synchronization]: verify_proof error, syncing block header: {:?}, proof: {:?}",
                     consenting_rich_block.block.header,
                     consenting_proof,
@@ -248,7 +248,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             .get_block_header_by_number(ctx.clone(), consenting_rich_block.block.header.number - 1)
             .await
             .map_err(|e| {
-                *log::error!(
+                log::error!(
                     "[synchronization] get previous block {} error",
                     consenting_rich_block.block.header.number - 1
                 );
@@ -263,7 +263,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             )
             .await
             .map_err(|e| {
-                *log::error!(
+                log::error!(
                     "[synchronization]: verify_proof error, previous block header: {:?}, proof: {:?}",
                     previous_block_header,
                     consenting_rich_block.block.header.proof
@@ -297,17 +297,46 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
     ) -> ProtocolResult<()> {
         let block = &rich_block.block;
         let block_hash = Hasher::digest(block.header.encode()?);
-        let executor_resp = self
+        let (new_state_root, resp) = self
             .adapter
-            .exec(ctx, block_hash, &block.header, rich_block.txs.clone())
+            .exec(ctx.clone(), block_hash, &block.header, rich_block.txs.clone())
             .await?;
 
-        status_agent.update_by_committed(metadata, block.clone(), block_hash, proof);
+        let receipts = rich_block.txs
+            .iter()
+            .zip(resp.iter())
+            .map(|(tx, res)| Receipt {
+                tx_hash:    tx.transaction.hash,
+                state_root: block.header.state_root,
+                used_gas:   res.gas_used.into(),
+                logs_bloom: Bloom::from(BloomInput::Raw(rlp::encode_list(&res.logs).as_ref())),
+                logs:       res.logs.clone(),
+            })
+            .collect::<Vec<_>>();
+        let logs = receipts
+            .iter()
+            .map(|r| r.logs_bloom.clone())
+            .collect::<Vec<_>>();
+
+        let executed_info = ExecutedInfo::new(&resp);
+        let block_hash = Hasher::digest(block.header.encode()?);
+        let metadata = METADATA_CONTROLER.get().unwrap().current();
+        let new_status = CurrentStatus {
+            prev_hash:        block_hash,
+            last_number:      block.header.number + 1,
+            state_root:       new_state_root,
+            receipts_root:    executed_info.receipts_root,
+            log_bloom:        Bloom::from(BloomInput::Raw(rlp::encode_list(&logs).as_ref())),
+            gas_limit:        metadata.gas_limit.into(),
+            gas_used:         executed_info.gas_used.into(),
+            base_fee_per_gas: None,
+            proof:            proof.clone(),
+        };
 
         self.save_chain_data(
             ctx.clone(),
             rich_block.txs.clone(),
-            executor_resp.receipts.clone(),
+            receipts,
             rich_block.block.clone(),
         )
         .await?;

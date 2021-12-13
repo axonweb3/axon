@@ -25,7 +25,7 @@ use futures::future::try_join_all;
 
 use protocol::tokio::{self, sync::RwLock};
 use protocol::traits::{Context, MemPool, MemPoolAdapter, MixedTxHashes};
-use protocol::types::{Hash, SignedTransaction, U256};
+use protocol::types::{Hash, SignedTransaction};
 use protocol::{async_trait, Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 use crate::context::TxContext;
