@@ -7,7 +7,7 @@
 
 pub mod adapter;
 pub mod consensus;
-mod engine;
+pub mod engine;
 pub mod message;
 pub mod status;
 pub mod synchronization;

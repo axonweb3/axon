@@ -629,6 +629,7 @@ dependencies = [
  "axon-protocol",
  "cita_trie 3.0.0",
  "common-apm",
+ "common-merkle",
  "dashmap",
  "evm",
  "futures",

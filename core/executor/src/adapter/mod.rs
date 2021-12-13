@@ -8,7 +8,7 @@ use evm::backend::{Apply, Basic};
 use parking_lot::Mutex;
 
 use protocol::codec::ProtocolCodec;
-use protocol::traits::{ApplyBackend, Backend};
+use protocol::traits::{ApplyBackend, Backend, ExecutorAdapter as Adapter};
 use protocol::types::{Account, Bytes, ExecutorContext, Hasher, Log, MerkleRoot, H160, H256, U256};
 use protocol::ProtocolResult;
 
@@ -18,6 +18,16 @@ pub struct ExecutorAdapter<DB: TrieDB> {
     trie:     Arc<Mutex<MPTTrie<DB>>>,
     db:       Arc<DB>,
     exec_ctx: Arc<Mutex<ExecutorContext>>,
+}
+
+impl<DB: TrieDB> Adapter for ExecutorAdapter<DB> {
+    fn get_logs(&self) -> Vec<Log> {
+        self.exec_ctx.lock().logs.clone()
+    }
+
+    fn state_root(&self) -> MerkleRoot {
+        self.trie.lock().root
+    }
 }
 
 impl<DB: TrieDB> Backend for ExecutorAdapter<DB> {

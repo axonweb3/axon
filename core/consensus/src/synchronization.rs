@@ -8,7 +8,7 @@ use protocol::traits::{Context, Synchronization, SynchronizationAdapter};
 use protocol::types::{Block, Bloom, BloomInput, Hasher, Proof, Receipt, SignedTransaction};
 use protocol::{async_trait, ProtocolResult};
 
-use crate::status::{CurrentStatus, ExecutedInfo, StatusAgent, METADATA_CONTROLER};
+use crate::status::{CurrentStatus, StatusAgent, METADATA_CONTROLER};
 use crate::util::digest_signed_transactions;
 use crate::{engine::generate_receipts_and_logs, ConsensusError};
 
@@ -292,7 +292,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
     ) -> ProtocolResult<()> {
         let block = &rich_block.block;
         let block_hash = Hasher::digest(block.header.encode()?);
-        let (new_state_root, resp) = self
+        let resp = self
             .adapter
             .exec(
                 ctx.clone(),
@@ -304,18 +304,17 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
 
         let (receipts, logs) =
             generate_receipts_and_logs(block.header.state_root, &rich_block.txs, &resp);
-        let executed_info = ExecutedInfo::new(&resp);
         let block_hash = Hasher::digest(block.header.encode()?);
         let metadata = METADATA_CONTROLER.get().unwrap().current();
 
         let new_status = CurrentStatus {
             prev_hash:        block_hash,
             last_number:      block.header.number + 1,
-            state_root:       new_state_root,
-            receipts_root:    executed_info.receipts_root,
+            state_root:       resp.state_root,
+            receipts_root:    resp.receipt_root,
             log_bloom:        Bloom::from(BloomInput::Raw(rlp::encode_list(&logs).as_ref())),
             gas_limit:        metadata.gas_limit.into(),
-            gas_used:         executed_info.gas_used.into(),
+            gas_used:         resp.gas_used.into(),
             base_fee_per_gas: None,
             proof:            proof.clone(),
         };

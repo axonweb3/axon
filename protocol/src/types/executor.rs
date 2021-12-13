@@ -2,10 +2,18 @@ pub use ethereum::{AccessList, AccessListItem, Account};
 pub use evm::{backend::Log, Config, ExitReason};
 
 use crate::codec::ProtocolCodec;
-use crate::types::{Hash, Hasher, Header, H160, U256};
+use crate::types::{Hash, Hasher, Header, MerkleRoot, H160, U256};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ExecResp {
+    pub state_root:   MerkleRoot,
+    pub receipt_root: MerkleRoot,
+    pub gas_used:     u64,
+    pub tx_resp:      Vec<TxResp>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TxResp {
     pub exit_reason: ExitReason,
     pub ret:         Vec<u8>,
     pub gas_used:    u64,

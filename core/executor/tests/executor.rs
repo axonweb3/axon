@@ -92,7 +92,7 @@ fn test_ackermann31() {
         H160::from_str("0x1000000000000000000000000000000000000000").unwrap(),
         hex::decode("2839e92800000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000001").unwrap()
     );
-    let r = exec!(executor.exec(&mut backend, tx));
+    let r = exec!(executor.inner_exec(&mut backend, tx));
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Returned));
     assert_eq!(r.ret, vec![
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -140,7 +140,7 @@ fn test_simplestorage() {
         hex::decode(simplestorage_create_code).unwrap(),
     );
     tx.transaction.unsigned.action = TransactionAction::Create;
-    let r = exec!(executor.exec(&mut backend, tx));
+    let r = exec!(executor.inner_exec(&mut backend, tx));
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Returned));
     assert_eq!(r.ret, vec![]);
     assert_eq!(r.remain_gas, 18446744073709450374);
@@ -156,7 +156,7 @@ fn test_simplestorage() {
         hex::decode("60fe47b1000000000000000000000000000000000000000000000000000000000000002a")
             .unwrap(),
     );
-    let r = exec!(executor.exec(&mut backend, tx));
+    let r = exec!(executor.inner_exec(&mut backend, tx));
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Stopped));
     assert_eq!(r.ret, vec![]);
     assert_eq!(r.remain_gas, 18446744073709508106);
@@ -167,7 +167,7 @@ fn test_simplestorage() {
         H160::from_str("0x1334d12e187d9aa97ea520fdd100c5d4f867ade0").unwrap(),
         hex::decode("6d4ce63c").unwrap(),
     );
-    let r = exec!(executor.exec(&mut backend, tx));
+    let r = exec!(executor.inner_exec(&mut backend, tx));
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Returned));
     assert_eq!(r.ret, vec![
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

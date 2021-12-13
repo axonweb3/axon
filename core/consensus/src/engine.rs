@@ -32,7 +32,7 @@ use crate::message::{
     END_GOSSIP_AGGREGATED_VOTE, END_GOSSIP_SIGNED_CHOKE, END_GOSSIP_SIGNED_PROPOSAL,
     END_GOSSIP_SIGNED_VOTE,
 };
-use crate::status::{CurrentStatus, ExecutedInfo, StatusAgent};
+use crate::status::{CurrentStatus, StatusAgent};
 use crate::util::{digest_signed_transactions, time_now, OverlordCrypto};
 use crate::wal::{ConsensusWal, SignedTxsWAL};
 use crate::{ConsensusError, METADATA_CONTROLER};
@@ -253,7 +253,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
         };
 
         // Execute transactions
-        let (new_state_root, resp) = self
+        let resp = self
             .adapter
             .exec(
                 ctx.clone(),
@@ -270,7 +270,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             metadata.verifier_list
         );
 
-        self.update_status(new_state_root, resp, block.clone(), proof, signed_txs)
+        self.update_status(resp, block.clone(), proof, signed_txs)
             .await?;
 
         self.adapter
@@ -637,13 +637,11 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
     /// 5. Save the receipt.
     pub async fn update_status(
         &self,
-        new_state_root: MerkleRoot,
-        resp: Vec<ExecResp>,
+        resp: ExecResp,
         block: Block,
         proof: Proof,
         txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<()> {
-        let executed_info = ExecutedInfo::new(&resp);
         let block_number = block.header.number;
 
         let (receipts, logs) = generate_receipts_and_logs(block.header.state_root, &txs, &resp);
@@ -671,11 +669,11 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         let new_status = CurrentStatus {
             prev_hash:        block_hash,
             last_number:      block_number + 1,
-            state_root:       new_state_root,
-            receipts_root:    executed_info.receipts_root,
+            state_root:       resp.state_root,
+            receipts_root:    resp.receipt_root,
             log_bloom:        Bloom::from(BloomInput::Raw(rlp::encode_list(&logs).as_ref())),
             gas_limit:        metadata.gas_limit.into(),
-            gas_used:         executed_info.gas_used.into(),
+            gas_used:         resp.gas_used.into(),
             base_fee_per_gas: None,
             proof:            proof.clone(),
         };
@@ -780,11 +778,11 @@ fn validate_timestamp(
 pub fn generate_receipts_and_logs(
     state_root: MerkleRoot,
     txs: &[SignedTransaction],
-    resp: &[ExecResp],
+    resp: &ExecResp,
 ) -> (Vec<Receipt>, Vec<Bloom>) {
     let receipts = txs
         .iter()
-        .zip(resp.iter())
+        .zip(resp.tx_resp.iter())
         .map(|(tx, res)| Receipt {
             tx_hash: tx.transaction.hash,
             state_root,

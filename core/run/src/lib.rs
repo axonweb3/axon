@@ -26,7 +26,7 @@ use core_consensus::message::{
     RPC_SYNC_PULL_TXS,
 };
 use core_consensus::status::{CurrentStatus, StatusAgent};
-use core_consensus::util::OverlordCrypto;
+use core_consensus::{engine::generate_receipts_and_logs, util::OverlordCrypto};
 use core_consensus::{
     ConsensusWal, DurationConfig, Node, OverlordConsensus, OverlordConsensusAdapter,
     OverlordSynchronization, RichBlock, SignedTxsWAL, METADATA_CONTROLER,
@@ -118,14 +118,30 @@ impl Axon {
             self.genesis.block.header.state_root,
             trie_db,
             Arc::new(Mutex::new(self.genesis.block.header.clone().into())),
+        )?;
+        let resp = executor.exec(&mut backend, self.genesis.rich_txs.clone());
+
+        let (receipts, _logs) = generate_receipts_and_logs(
+            self.genesis.block.header.state_root,
+            &self.genesis.rich_txs,
+            &resp,
         );
-        let (state_root, resp) = executor.exec(&mut backend, self.genesis.rich_txs);
 
         storage
-            .insert_block(Context::new(), self.genesis.block.clone())
+            .update_latest_proof(Context::new(), self.genesis.block.header.proof.clone())
             .await?;
         storage
-            .update_latest_proof(Context::new(), self.genesis.header.proof)
+            .insert_transactions(
+                Context::new(),
+                self.genesis.block.header.number,
+                self.genesis.rich_txs.clone(),
+            )
+            .await?;
+        storage
+            .insert_receipts(Context::new(), self.genesis.block.header.number, receipts)
+            .await?;
+        storage
+            .insert_block(Context::new(), self.genesis.block.clone())
             .await?;
 
         log::info!("The genesis block is created {:?}", self.genesis);

@@ -1,8 +1,8 @@
 use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
-use crate::types::{ExecResp, ExecutorContext, ExitReason, Log, H160, H256, U256};
+use crate::types::{ExecutorContext, ExitReason, Log, TxResp, H160, H256, U256};
 
-impl Encodable for ExecResp {
+impl Encodable for TxResp {
     fn rlp_append(&self, s: &mut RlpStream) {
         let reason = bincode::serialize(&self.remain_gas).unwrap();
         s.begin_list(5)
@@ -14,7 +14,7 @@ impl Encodable for ExecResp {
     }
 }
 
-impl Decodable for ExecResp {
+impl Decodable for TxResp {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
             Prototype::List(5) => {
@@ -26,7 +26,7 @@ impl Decodable for ExecResp {
                 let remain_gas: u64 = r.val_at(3)?;
                 let logs: Vec<Log> = r.list_at(4)?;
 
-                Ok(ExecResp {
+                Ok(TxResp {
                     exit_reason,
                     ret,
                     gas_used,

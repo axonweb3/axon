@@ -128,7 +128,7 @@ pub trait CommonConsensusAdapter: Send + Sync {
         block_hash: Hash,
         header: &Header,
         signed_txs: Vec<SignedTransaction>,
-    ) -> ProtocolResult<(MerkleRoot, Vec<ExecResp>)>;
+    ) -> ProtocolResult<ExecResp>;
 
     async fn broadcast_number(&self, ctx: Context, height: u64) -> ProtocolResult<()>;
 

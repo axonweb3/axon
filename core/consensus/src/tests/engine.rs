@@ -176,7 +176,7 @@ impl CommonConsensusAdapter for MockConsensusAdapter {
         _block_hash: Hash,
         _header: &Header,
         _signed_txs: Vec<SignedTransaction>,
-    ) -> ProtocolResult<(MerkleRoot, Vec<ExecResp>)> {
+    ) -> ProtocolResult<ExecResp> {
         unimplemented!()
     }
 

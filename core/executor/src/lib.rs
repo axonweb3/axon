@@ -4,9 +4,10 @@ use std::collections::BTreeMap;
 
 use evm::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadata};
 
-use protocol::traits::{ApplyBackend, Backend, Executor};
+use common_merkle::Merkle;
+use protocol::traits::{ApplyBackend, Backend, Executor, ExecutorAdapter as Adapter};
 use protocol::types::{
-    Address, Config, ExecResp, SignedTransaction, TransactionAction, H256, U256,
+    Address, Config, ExecResp, Hasher, SignedTransaction, TransactionAction, TxResp, H256, U256,
 };
 
 pub mod adapter;
@@ -22,7 +23,7 @@ impl EvmExecutor {
 
 impl Executor for EvmExecutor {
     // Used for query data API, this function will not modify the world state.
-    fn call<B: Backend>(&self, backend: &mut B, addr: Address, data: Vec<u8>) -> ExecResp {
+    fn call<B: Backend>(&self, backend: &mut B, addr: Address, data: Vec<u8>) -> TxResp {
         let config = Config::london();
         let metadata = StackSubstateMetadata::new(u64::MAX, &config);
         let state = MemoryStackState::new(metadata, backend);
@@ -37,7 +38,7 @@ impl Executor for EvmExecutor {
             Vec::new(),
         );
 
-        ExecResp {
+        TxResp {
             exit_reason,
             ret,
             remain_gas: 0,
@@ -47,13 +48,40 @@ impl Executor for EvmExecutor {
     }
 
     // Function execute returns exit_reason, ret_data and remain_gas.
-    fn exec<B: Backend + ApplyBackend>(&self, backend: &mut B, tx: SignedTransaction) -> ExecResp {
+    fn exec<B: Backend + ApplyBackend + Adapter>(
+        &self,
+        backend: &mut B,
+        txs: Vec<SignedTransaction>,
+    ) -> ExecResp {
+        let mut res = Vec::new();
+        for tx in txs.into_iter() {
+            let mut r = self.inner_exec(backend, tx);
+            r.logs = backend.get_logs();
+            res.push(r);
+        }
+
+        ExecResp {
+            state_root:   backend.state_root(),
+            receipt_root: Merkle::from_hashes(res.iter().map(|r| Hasher::digest(&r.ret)).collect())
+                .get_root_hash()
+                .unwrap_or_default(),
+            gas_used:     res.iter().map(|r| r.gas_used).sum(),
+            tx_resp:      res,
+        }
+    }
+}
+
+impl EvmExecutor {
+    pub fn inner_exec<B: Backend + ApplyBackend>(
+        &self,
+        backend: &mut B,
+        tx: SignedTransaction,
+    ) -> TxResp {
         let config = Config::london();
         let metadata = StackSubstateMetadata::new(u64::MAX, &config);
         let state = MemoryStackState::new(metadata, backend);
         let precompiles = BTreeMap::new();
         let mut executor = StackExecutor::new_with_precompiles(state, &config, &precompiles);
-
         let (exit_reason, ret) = match tx.transaction.unsigned.action {
             TransactionAction::Call(addr) => executor.transact_call(
                 tx.sender,
@@ -93,7 +121,7 @@ impl Executor for EvmExecutor {
             backend.apply(values, logs, true);
         }
 
-        ExecResp {
+        TxResp {
             exit_reason,
             ret,
             remain_gas,

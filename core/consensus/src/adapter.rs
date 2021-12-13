@@ -356,27 +356,15 @@ where
         _block_hash: Hash,
         header: &Header,
         signed_txs: Vec<SignedTransaction>,
-    ) -> ProtocolResult<(MerkleRoot, Vec<ExecResp>)> {
-        let mut ret = Vec::new();
+    ) -> ProtocolResult<ExecResp> {
         let base_ctx = Arc::new(Mutex::new(header.clone().into()));
-
         let mut backend = ExecutorAdapter::new(
             header.state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&base_ctx),
         )?;
 
-        for stx in signed_txs.into_iter() {
-            {
-                base_ctx.lock().gas_price = stx.transaction.unsigned.max_fee_per_gas;
-            }
-
-            let mut tx_res = EvmExecutor::default().exec(&mut backend, stx);
-            tx_res.logs = { base_ctx.lock().logs.clone() };
-            ret.push(tx_res);
-        }
-
-        Ok((backend.root(), ret))
+        Ok(EvmExecutor::default().exec(&mut backend, signed_txs))
     }
 
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
