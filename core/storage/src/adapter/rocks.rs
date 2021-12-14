@@ -30,6 +30,7 @@ impl RocksAdapter {
 
         let categories = [
             map_category(StorageCategory::Block),
+            map_category(StorageCategory::BlockHeader),
             map_category(StorageCategory::Receipt),
             map_category(StorageCategory::SignedTransaction),
             map_category(StorageCategory::Wal),

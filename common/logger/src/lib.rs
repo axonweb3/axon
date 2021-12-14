@@ -57,19 +57,19 @@ pub fn init<S: ::std::hash::BuildHasher>(
         )))
         .build();
 
-    let muta_roller_pat = log_path.join("{date}.muta.{timestamp}.log");
+    let axon_roller_pat = log_path.join("{date}.axon.{timestamp}.log");
     let metrics_roller_pat = log_path.join("{date}.metrics.{timestamp}.log");
 
     let file_appender = {
         let size_trigger = SizeTrigger::new(file_size_limit);
         let roller = DateFixedWindowRoller::builder()
-            .build(&muta_roller_pat.to_string_lossy())
+            .build(&axon_roller_pat.to_string_lossy())
             .unwrap();
         let policy = CompoundPolicy::new(Box::new(size_trigger), Box::new(roller));
 
         RollingFileAppender::builder()
             .encoder(Box::new(JsonEncoder::new()))
-            .build(log_path.join("muta.log"), Box::new(policy))
+            .build(log_path.join("axon.log"), Box::new(policy))
             .unwrap()
     };
 

@@ -351,7 +351,7 @@ where
         signed_txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<ExecResp> {
         let base_ctx = Arc::new(Mutex::new(header.clone().into()));
-        let mut backend = ExecutorAdapter::new(
+        let mut backend = ExecutorAdapter::from_root(
             header.state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&base_ctx),

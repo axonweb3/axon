@@ -117,10 +117,12 @@ impl Axon {
         // Init executor
         let executor = EvmExecutor::default();
         let mut backend = ExecutorAdapter::new(
-            self.genesis.block.header.state_root,
             trie_db,
             Arc::new(Mutex::new(self.genesis.block.header.clone().into())),
         )?;
+
+        log::info!("Execute the genesis");
+
         let resp = executor.exec(&mut backend, self.genesis.rich_txs.clone());
 
         let (receipts, _logs) = generate_receipts_and_logs(
@@ -316,11 +318,18 @@ impl Axon {
 
         // Init executor
         let executor = EvmExecutor::default();
-        let mut backend = ExecutorAdapter::new(
-            current_header.state_root,
-            Arc::clone(&trie_db),
-            Arc::new(Mutex::new(current_header.clone().into())),
-        )?;
+        let mut backend = if current_header.state_root == Default::default() {
+            ExecutorAdapter::new(
+                Arc::clone(&trie_db),
+                Arc::new(Mutex::new(current_header.clone().into())),
+            )
+        } else {
+            ExecutorAdapter::from_root(
+                current_header.state_root,
+                Arc::clone(&trie_db),
+                Arc::new(Mutex::new(current_header.clone().into())),
+            )
+        }?;
         let resp = executor.exec(&mut backend, current_stxs.clone());
 
         let (_receipts, logs) = generate_receipts_and_logs(

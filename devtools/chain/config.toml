@@ -18,7 +18,7 @@ max_payload_size = 1048576
 
 
 [network]
-listening_address = "/ip4/127.0.0.1/tcp/10000/"
+listening_address = "/ip4/127.0.0.1/tcp/10000"
 rpc_timeout = 10
 
 [consensus]
@@ -26,9 +26,10 @@ overlord_gap = 5
 sync_txs_chunk_size = 5000
 
 [[network.bootstraps]]
-multi_addr = "/ip4/127.0.0.1/tcp/10000/p2p/QmTEJkB5QKWsEq37huryZZfVvqBKb54sHnKn9TQcA6j3n9"
+multi_address = "/ip4/127.0.0.1/tcp/10000/p2p/QmTEJkB5QKWsEq37huryZZfVvqBKb54sHnKn9TQcA6j3n9"
 
 [mempool]
+timeout_gap = 20
 pool_size = 20000
 broadcast_txs_size = 200
 broadcast_txs_interval = 200

@@ -177,7 +177,12 @@ impl<DB: TrieDB> ApplyBackend for ExecutorAdapter<DB> {
 }
 
 impl<DB: TrieDB> ExecutorAdapter<DB> {
-    pub fn new(
+    pub fn new(db: Arc<DB>, exec_ctx: Arc<Mutex<ExecutorContext>>) -> ProtocolResult<Self> {
+        let trie = Arc::new(Mutex::new(MPTTrie::new(Arc::clone(&db))));
+        Ok(ExecutorAdapter { trie, db, exec_ctx })
+    }
+
+    pub fn from_root(
         state_root: MerkleRoot,
         db: Arc<DB>,
         exec_ctx: Arc<Mutex<ExecutorContext>>,
