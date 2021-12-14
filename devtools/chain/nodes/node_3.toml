@@ -4,11 +4,8 @@ privkey = "0xd77ca0ba1c280bbd62409af4aec68560c913a1a8794d33317e8344969eb43265"
 # db config
 data_path = "./devtools/chain/data/node_3"
 
-[graphql]
-listening_address = "127.0.0.1:8000"
-graphql_uri = "/graphql"
-graphiql_uri = "/graphiql"
-workers = 0 # if 0, uses number of available logical cpu as threads count.
+[rpc]
+listening_address = "127.0.0.1:8003"
 maxconn = 25000
 max_payload_size = 1048576
 # enable_dump_profile = false

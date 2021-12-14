@@ -6,6 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-jsonrpsee = "0.6"
+jsonrpsee = { version = "0.6", features = ["http-server", "macros"] }
 
 protocol = { path = "../../protocol", package = "axon-protocol"}
+common-config-parser = { path = "../../common/config-parser" }

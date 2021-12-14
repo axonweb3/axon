@@ -10,17 +10,12 @@ use core_mempool::{DEFAULT_BROADCAST_TXS_INTERVAL, DEFAULT_BROADCAST_TXS_SIZE};
 use protocol::types::Hex;
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct ConfigGraphQL {
+pub struct ConfigApi {
     pub listening_address:   SocketAddr,
-    pub graphql_uri:         String,
-    pub graphiql_uri:        String,
-    #[serde(default)]
-    pub workers:             usize,
     #[serde(default)]
     pub maxconn:             usize,
     #[serde(default)]
     pub max_payload_size:    usize,
-    pub tls:                 Option<ConfigGraphQLTLS>,
     pub enable_dump_profile: Option<bool>,
 }
 
@@ -152,7 +147,7 @@ pub struct Config {
     // db config
     pub data_path: PathBuf,
 
-    pub graphql:   ConfigGraphQL,
+    pub rpc:       ConfigApi,
     pub network:   ConfigNetwork,
     pub mempool:   ConfigMempool,
     pub executor:  ConfigExecutor,

@@ -17,6 +17,7 @@ use common_crypto::{
     BlsCommonReference, BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey,
     ToPublicKey, UncompressedPublicKey,
 };
+use core_api::run_http_server;
 use core_consensus::message::{
     ChokeMessageHandler, ProposalMessageHandler, PullBlockRpcHandler, PullProofRpcHandler,
     PullTxsRpcHandler, QCMessageHandler, RemoteHeightMessageHandler, VoteMessageHandler,
@@ -473,6 +474,13 @@ impl Axon {
 
         // Run network
         tokio::spawn(network_service.run());
+
+        // Run rpc
+        tokio::spawn(run_http_server(
+            self.config.rpc.clone(),
+            Arc::clone(&mempool),
+            Arc::clone(&storage),
+        ));
 
         // Run sync
         tokio::spawn(async move {

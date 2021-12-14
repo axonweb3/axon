@@ -5,6 +5,7 @@ mod mempool;
 mod network;
 mod storage;
 
+pub use api::APIAdapter;
 pub use consensus::{
     CommonConsensusAdapter, Consensus, ConsensusAdapter, MessageTarget, NodeInfo, Synchronization,
     SynchronizationAdapter,
