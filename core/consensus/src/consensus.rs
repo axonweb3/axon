@@ -226,13 +226,13 @@ impl<T: overlord::Codec> OverlordMsgExt for OverlordMsg<T> {
     }
 }
 
-#[muta_apm::derive::tracing_span(
-    kind = "consensus",
-    logs = "{
-    'height': 'msg.get_height()',
-    'round': 'msg.get_round()'
-}"
-)]
+// #[muta_apm::derive::tracing_span(
+//     kind = "consensus",
+//     logs = "{
+//     'height': 'msg.get_height()',
+//     'round': 'msg.get_round()'
+// }"
+// )]
 pub fn tracing_overlord_message<T: overlord::Codec>(ctx: Context, msg: &OverlordMsg<T>) {
     let _ = msg;
 }

@@ -180,7 +180,7 @@ impl<C: Consensus + 'static> ChokeMessageHandler<C> {
 impl<C: Consensus + 'static> MessageHandler for ChokeMessageHandler<C> {
     type Message = Choke;
 
-    #[muta_apm::derive::tracing_span(name = "handle_choke", kind = "consensus.message")]
+    // #[muta_apm::derive::tracing_span(name = "handle_choke", kind = "consensus.message")]
     async fn process(&self, ctx: Context, msg: Self::Message) -> TrustFeedback {
         if let Err(e) = self.consensus.set_choke(ctx, msg.to_vec()).await {
             warn!("set choke {}", e);

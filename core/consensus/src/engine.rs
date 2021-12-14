@@ -668,7 +668,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         let metadata = METADATA_CONTROLER.get().unwrap().current();
         let new_status = CurrentStatus {
             prev_hash:        block_hash,
-            last_number:      block_number + 1,
+            last_number:      block_number,
             state_root:       resp.state_root,
             receipts_root:    resp.receipt_root,
             log_bloom:        Bloom::from(BloomInput::Raw(rlp::encode_list(&logs).as_ref())),

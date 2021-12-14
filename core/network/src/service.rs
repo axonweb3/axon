@@ -237,8 +237,11 @@ impl NetworkService {
             .listen(self.config.default_listen.clone())
             .await
             .unwrap();
+
+        let mut control: ServiceAsyncControl = self.net.control().clone().into();
+
         for addr in self.config.bootstraps.iter() {
-            self.net
+            control
                 .dial(
                     addr.clone(),
                     TargetProtocol::Single(
@@ -248,7 +251,6 @@ impl NetworkService {
                 .await
                 .unwrap();
         }
-        let mut control: ServiceAsyncControl = self.net.control().clone().into();
 
         let mut interval = tokio::time::interval_at(Instant::now(), Duration::from_secs(10));
         loop {

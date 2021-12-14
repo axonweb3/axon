@@ -309,7 +309,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
 
         let new_status = CurrentStatus {
             prev_hash:        block_hash,
-            last_number:      block.header.number + 1,
+            last_number:      block.header.number,
             state_root:       resp.state_root,
             receipts_root:    resp.receipt_root,
             log_bloom:        Bloom::from(BloomInput::Raw(rlp::encode_list(&logs).as_ref())),

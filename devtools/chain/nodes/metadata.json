@@ -1,0 +1,48 @@
+{
+  "chain_id": "0x0",
+  "version": {
+    "start": 0,
+    "end": 1000000000
+  },
+  "common_ref": "0x6c747758636859487038",
+  "timeout_gap": 1000,
+  "gas_limit": 4294967295,
+  "gas_price": 1,
+  "interval": 3000,
+  "verifier_list": [
+    {
+      "bls_pub_key": "0x0410c31f5b5fff318cd17424b0c172fa066dbd2c674490b02e3938f843d9f64f249d7fbe0cf375de1efbff06fe7d63cabf08100298f31eb5a2fe1ea423bdba574935cf1054ed366b1a3e57d8ae371f8330f6c4f3bac3afb85b9c3c1fd2f4f5a7f5",
+      "pub_key": "0x03b7438411b08223093308efdd3cc5a30a7f2783ea26a54b880ff9032234420fa6",
+      "address": "0x03b7438411b08223093308efdd3cc5a30a7f2783",
+      "propose_weight": 1,
+      "vote_weight": 1
+    },
+    {
+      "bls_pub_key": "0x04176df039c09d3ee5a3fc888bf9ef5d792cbfdeba7a3217baa5d8aebd8f41441786a9ac82a2eb4735c58077c800cb4b3a0ee3aba5e93cef8650e89fcee8342fadc3e1272a9b870ce5df68636371d6b5697bd2c12d6c92a382e042bdd2fa48ee52",
+      "pub_key": "0x033d84aa1a4d317d11bb05efa3670a544aa2ee97e6c19c22ad5102950ce28aeb5d",
+      "address": "0x033d84aa1a4d317d11bb05efa3670a544aa2ee97",
+      "propose_weight": 1,
+      "vote_weight": 1
+    },
+    {
+      "bls_pub_key": "0x040144fa0474634ebfb7291b79d75dc83f89c5e64ac7586fafa71c51eb1b7363f9cfd2e70352c7c86e7e6a275442489e930805fd0d1183a9bb677ed97e5d73101d565ed5ecf6ea6bc89f14bf7f73272b651d0f0356945d5bd1db0b15e369c298c6",
+      "pub_key": "0x02ef0cb0d7bc6c18b4bea1f5908d9106522b35ab3c399369605d4242525bda7e60",
+      "address": "0x03620056af241828833f73a8d9077245f80a2e02",
+      "propose_weight": 1,
+      "vote_weight": 1
+    },
+    {
+      "bls_pub_key": "0x041570ccbba2472a3b17f9f9d77d0761f1b6696e66cad420cdb73885cb1f300f0b181437f4c0dc0e7400c58189b313b6ae1862f858b637735584c372186b0f9946fa1bf6f354dc579bbf950dd3b5ef1afcc552835bfeca00b4593e4e31a9ed086f",
+      "pub_key": "0x03e75273966b9dd07bd0d4ea2e4f87ac84b95bebf005cb9c776c7b14b44e01013a",
+      "address": "0x03e75273966b9dd07bd0d4ea2e4f87ac84b95beb",
+      "propose_weight": 1,
+      "vote_weight": 1
+    }
+  ],
+  "propose_ratio": 15,
+  "prevote_ratio": 10,
+  "precommit_ratio": 10,
+  "brake_ratio": 10,
+  "tx_num_limit": 20000,
+  "max_tx_size": 1024
+}
