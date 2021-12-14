@@ -130,7 +130,7 @@ impl Serialize for Address {
     where
         S: serde::ser::Serializer,
     {
-        serializer.serialize_bytes(&self.0.as_bytes())
+        serializer.serialize_bytes(self.0.as_bytes())
     }
 }
 

@@ -1,6 +1,5 @@
 use std::boxed::Box;
 use std::collections::HashMap;
-use std::marker::PhantomData;
 use std::sync::Arc;
 
 use overlord::types::{Node, OverlordMsg, Vote, VoteType};
@@ -16,8 +15,8 @@ use protocol::traits::{
     MixedTxHashes, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
 };
 use protocol::types::{
-    BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, ExecutorContext, Hash, Hasher, Header,
-    Hex, MerkleRoot, Pill, Proof, Receipt, SignedTransaction, Validator,
+    BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Hasher, Header,
+    Hex, Pill, Proof, Receipt, SignedTransaction, Validator,
 };
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
@@ -32,7 +31,6 @@ use crate::BlockProofField::{BitMap, HashMismatch, HeightMismatch, Signature, We
 use crate::{BlockProofField, ConsensusError, METADATA_CONTROLER};
 
 pub struct OverlordConsensusAdapter<
-    EF: Executor,
     M: MemPool,
     N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage,
@@ -44,14 +42,11 @@ pub struct OverlordConsensusAdapter<
     trie_db:          Arc<DB>,
     overlord_handler: RwLock<Option<OverlordHandler<Pill>>>,
     crypto:           Arc<OverlordCrypto>,
-
-    pin_ef: PhantomData<EF>,
 }
 
 #[async_trait]
-impl<EF, M, N, S, DB> ConsensusAdapter for OverlordConsensusAdapter<EF, M, N, S, DB>
+impl<M, N, S, DB> ConsensusAdapter for OverlordConsensusAdapter<M, N, S, DB>
 where
-    EF: Executor + 'static,
     M: MemPool + 'static,
     N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
@@ -142,9 +137,8 @@ where
 }
 
 #[async_trait]
-impl<EF, M, N, S, DB> SynchronizationAdapter for OverlordConsensusAdapter<EF, M, N, S, DB>
+impl<M, N, S, DB> SynchronizationAdapter for OverlordConsensusAdapter<M, N, S, DB>
 where
-    EF: Executor + 'static,
     M: MemPool + 'static,
     N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
@@ -243,9 +237,8 @@ where
 }
 
 #[async_trait]
-impl<EF, M, N, S, DB> CommonConsensusAdapter for OverlordConsensusAdapter<EF, M, N, S, DB>
+impl<M, N, S, DB> CommonConsensusAdapter for OverlordConsensusAdapter<M, N, S, DB>
 where
-    EF: Executor + 'static,
     M: MemPool + 'static,
     N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
@@ -611,9 +604,8 @@ where
     }
 }
 
-impl<EF, M, N, S, DB> OverlordConsensusAdapter<EF, M, N, S, DB>
+impl<M, N, S, DB> OverlordConsensusAdapter<M, N, S, DB>
 where
-    EF: Executor + 'static,
     M: MemPool + 'static,
     N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
@@ -633,7 +625,6 @@ where
             trie_db,
             overlord_handler: RwLock::new(None),
             crypto,
-            pin_ef: PhantomData,
         })
     }
 

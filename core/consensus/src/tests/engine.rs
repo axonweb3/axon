@@ -10,7 +10,7 @@ use protocol::traits::{
     CommonConsensusAdapter, ConsensusAdapter, Context, MessageTarget, MixedTxHashes, NodeInfo,
 };
 use protocol::types::{
-    Block, Bytes, ExecResp, Hash, Hasher, Header, Hex, MerkleRoot, Metadata, MetadataVersion, Pill,
+    Block, Bytes, ExecResp, Hash, Hasher, Header, Hex, Metadata, MetadataVersion, Pill,
     Proof, Receipt, SignedTransaction,
 };
 use protocol::{async_trait, tokio::sync::Mutex, ProtocolResult};

@@ -4,7 +4,7 @@ pub use ethereum::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::types::{Address, Bytes, BytesMut, Hasher, Public, H160, H256, H520};
+use crate::types::{Bytes, BytesMut, Hasher, Public, H160, H256, H520};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct UnverifiedTransaction {

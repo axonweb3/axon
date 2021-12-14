@@ -25,7 +25,7 @@ use core_consensus::message::{
     RPC_RESP_SYNC_PULL_PROOF, RPC_RESP_SYNC_PULL_TXS, RPC_SYNC_PULL_BLOCK, RPC_SYNC_PULL_PROOF,
     RPC_SYNC_PULL_TXS,
 };
-use core_consensus::status::{CurrentStatus, StatusAgent};
+use core_consensus::status::{CurrentStatus, MetadataController, StatusAgent};
 use core_consensus::{engine::generate_receipts_and_logs, util::OverlordCrypto};
 use core_consensus::{
     ConsensusWal, DurationConfig, Node, OverlordConsensus, OverlordConsensusAdapter,
@@ -34,29 +34,32 @@ use core_consensus::{
 use core_executor::adapter::{trie_db::RocksTrieDB, ExecutorAdapter};
 use core_executor::EvmExecutor;
 use core_mempool::{
-    DefaultMemPoolAdapter, HashMemPool, NewTxsHandler, PullTxsHandler,
-    END_GOSSIP_NEW_TXS, RPC_PULL_TXS, RPC_RESP_PULL_TXS, RPC_RESP_PULL_TXS_SYNC,
+    DefaultMemPoolAdapter, HashMemPool, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
+    RPC_PULL_TXS, RPC_RESP_PULL_TXS, RPC_RESP_PULL_TXS_SYNC,
 };
-use core_network::{NetworkConfig, NetworkService, PeerId, PeerIdExt};
+use core_network::{NetworkConfig, NetworkService};
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 #[cfg(unix)]
 use protocol::tokio::signal::unix::{self as os_impl};
 use protocol::tokio::{sync::Mutex as AsyncMutex, time::sleep};
 use protocol::traits::{CommonStorage, Context, Executor, MemPool, NodeInfo, Storage};
-use protocol::types::{Address, Genesis, Hash, Hasher, Metadata, Validator};
-use protocol::{
-    codec::ProtocolCodec, tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
-};
+use protocol::types::{Address, Bloom, BloomInput, Genesis, Metadata, Validator};
+use protocol::{tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 #[derive(Debug)]
 pub struct Axon {
-    config:  Config,
-    genesis: Genesis,
+    config:   Config,
+    genesis:  Genesis,
+    metadata: Metadata,
 }
 
 impl Axon {
-    pub fn new(config: Config, genesis: Genesis) -> Axon {
-        Axon { config, genesis }
+    pub fn new(config: Config, genesis: Genesis, metadata: Metadata) -> Axon {
+        Axon {
+            config,
+            genesis,
+            metadata,
+        }
     }
 
     pub fn run(self) -> ProtocolResult<()> {
@@ -70,11 +73,10 @@ impl Axon {
             log::info!("muta_apm start");
         }
 
-        let mut rt = tokio::runtime::Runtime::new().expect("new tokio runtime");
+        let rt = tokio::runtime::Runtime::new().expect("new tokio runtime");
         let local = tokio::task::LocalSet::new();
-        local.block_on(&mut rt, async move {
+        local.block_on(&rt, async move {
             self.create_genesis().await?;
-
             self.start().await
         })?;
 
@@ -150,7 +152,7 @@ impl Axon {
 
     pub async fn start(self) -> ProtocolResult<()> {
         log::info!("node starts");
-        let config = self.config;
+        let config = self.config.clone();
         // Init Block db
         let path_block = config.data_path_for_block();
         log::info!("Data path for block: {:?}", path_block);
@@ -184,23 +186,14 @@ impl Axon {
 
         let network_privkey = config.privkey.as_string_trim0x();
 
-        let mut bootstrap_pairs = vec![];
-        if let Some(bootstrap) = &config.network.bootstraps {
-            for bootstrap in bootstrap.iter() {
-                bootstrap_pairs.push((bootstrap.peer_id.to_owned(), bootstrap.address.to_owned()));
-            }
-        }
-
-        let allowlist = config.network.allowlist.clone().unwrap_or_default();
+        // let allowlist = config.network.allowlist.clone().unwrap_or_default();
         let network_config = network_config
-            .bootstraps(bootstrap_pairs)
+            .bootstraps(self.config.network.bootstraps.clone().unwrap_or_default().iter().map(|addr| addr.multi_address.clone()).collect())
             // .allowlist(allowlist)?
+            .listen_addr(self.config.network.listening_address.clone())
             .secio_keypair(network_privkey)?;
 
         let mut network_service = NetworkService::new(network_config);
-        network_service
-            .listen(config.network.listening_address)
-            .await?;
 
         // Init trie db
         let path_state = config.data_path_for_state();
@@ -246,7 +239,7 @@ impl Axon {
             HashMemPool::new(
                 config.mempool.pool_size as usize,
                 mempool_adapter,
-                current_stxs,
+                current_stxs.clone(),
             )
             .await,
         );
@@ -269,13 +262,19 @@ impl Axon {
         let my_pubkey = my_privkey.pub_key();
         let my_address = Address::from_pubkey_bytes(my_pubkey.to_uncompressed_bytes())?;
 
-        let metadata = Metadata {};
+        METADATA_CONTROLER
+            .set(MetadataController::init(
+                Arc::new(Mutex::new(self.metadata.clone())),
+                Arc::new(Mutex::new(self.metadata.clone())),
+                Arc::new(Mutex::new(self.metadata.clone())),
+            ))
+            .unwrap();
 
-        METADATA_CONTROLER.set(metadata).unwrap();
         let metadata = METADATA_CONTROLER.get().unwrap().current();
 
         // set args in mempool
         mempool.set_args(
+            Context::new(),
             metadata.timeout_gap,
             metadata.gas_limit,
             metadata.max_tx_size,
@@ -313,34 +312,33 @@ impl Axon {
             self_pub_key: my_pubkey.to_bytes(),
         };
         let current_header = &current_block.header;
-        let block_hash = Hasher::digest(current_block.header.encode()?);
         let current_number = current_block.header.number;
-        let proof = if let Ok(temp) = storage.get_latest_proof(Context::new()).await {
-            temp
-        } else {
-            current_header.proof.clone()
-        };
+
+        // Init executor
+        let executor = EvmExecutor::default();
+        let mut backend = ExecutorAdapter::new(
+            current_header.state_root,
+            Arc::clone(&trie_db),
+            Arc::new(Mutex::new(current_header.clone().into())),
+        )?;
+        let resp = executor.exec(&mut backend, current_stxs.clone());
+
+        let (_receipts, logs) = generate_receipts_and_logs(
+            self.genesis.block.header.state_root,
+            &self.genesis.rich_txs,
+            &resp,
+        );
 
         let current_consensus_status = CurrentStatus {
-            cycles_price:                metadata.cycles_price,
-            cycles_limit:                metadata.cycles_limit,
-            latest_committed_number:     current_block.header.number,
-            exec_number:                 current_block.header.exec_number,
-            current_hash:                block_hash,
-            latest_committed_state_root: current_header.state_root.clone(),
-            list_confirm_root:           vec![],
-            list_state_root:             vec![],
-            list_receipt_root:           vec![],
-            list_cycles_used:            vec![],
-            current_proof:               proof,
-            validators:                  validators.clone(),
-            consensus_interval:          metadata.interval,
-            propose_ratio:               metadata.propose_ratio,
-            prevote_ratio:               metadata.prevote_ratio,
-            precommit_ratio:             metadata.precommit_ratio,
-            brake_ratio:                 metadata.brake_ratio,
-            max_tx_size:                 metadata.max_tx_size,
-            tx_num_limit:                metadata.tx_num_limit,
+            prev_hash:        current_header.prev_hash,
+            last_number:      current_header.number,
+            state_root:       resp.state_root,
+            receipts_root:    resp.receipt_root,
+            log_bloom:        Bloom::from(BloomInput::Raw(rlp::encode_list(&logs).as_ref())),
+            gas_used:         resp.gas_used.into(),
+            gas_limit:        metadata.gas_limit.into(),
+            base_fee_per_gas: None,
+            proof:            current_header.proof.clone(),
         };
 
         let consensus_interval = metadata.interval;
@@ -369,7 +367,7 @@ impl Axon {
 
         let crypto = Arc::new(OverlordCrypto::new(bls_priv_key, bls_pub_keys, common_ref));
 
-        let consensus_adapter = OverlordConsensusAdapter::<_, _, _, _, _>::new(
+        let consensus_adapter = OverlordConsensusAdapter::<_, _, _, _>::new(
             Arc::new(network_service.handle()),
             Arc::clone(&mempool),
             Arc::clone(&storage),
@@ -400,11 +398,11 @@ impl Axon {
             lock,
         ));
 
-        let peer_ids = metadata
-            .verifier_list
-            .iter()
-            .map(|v| PeerId::from_pubkey_bytes(v.pub_key.decode()).map(PeerIdExt::into_bytes_ext))
-            .collect::<Result<Vec<_>, _>>()?;
+        // let peer_ids = metadata
+        //     .verifier_list
+        //     .iter()
+        //     .map(|v| PeerId::from_pubkey_bytes(v.pub_key.decode()).map(PeerIdExt::into_bytes_ext))
+        //     .collect::<Result<Vec<_>, _>>()?;
 
         // network_service
         //     .handle()
@@ -450,7 +448,7 @@ impl Axon {
         network_service.register_rpc_response(RPC_RESP_SYNC_PULL_TXS)?;
 
         // Run network
-        tokio::spawn(network_service);
+        tokio::spawn(network_service.run());
 
         // Run sync
         tokio::spawn(async move {
@@ -508,7 +506,7 @@ impl Axon {
         let (panic_sender, mut panic_receiver) = tokio::sync::mpsc::channel::<()>(1);
 
         panic::set_hook(Box::new(move |info: &panic::PanicInfo| {
-            let mut panic_sender = panic_sender.clone();
+            let panic_sender = panic_sender.clone();
             Self::panic_log(info);
             panic_sender.try_send(()).expect("panic_receiver is droped");
         }));

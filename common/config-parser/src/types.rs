@@ -3,12 +3,13 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 
 use serde::Deserialize;
+use tentacle_multiaddr::MultiAddr;
 
 use core_consensus::{DEFAULT_OVERLORD_GAP, DEFAULT_SYNC_TXS_CHUNK_SIZE};
 use core_mempool::{DEFAULT_BROADCAST_TXS_INTERVAL, DEFAULT_BROADCAST_TXS_SIZE};
 use protocol::types::Hex;
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct ConfigGraphQL {
     pub listening_address:   SocketAddr,
     pub graphql_uri:         String,
@@ -23,13 +24,13 @@ pub struct ConfigGraphQL {
     pub enable_dump_profile: Option<bool>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct ConfigGraphQLTLS {
     pub private_key_file_path:       PathBuf,
     pub certificate_chain_file_path: PathBuf,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct ConfigNetwork {
     pub bootstraps:                 Option<Vec<ConfigNetworkBootstrap>>,
     pub allowlist:                  Option<Vec<String>>,
@@ -41,7 +42,7 @@ pub struct ConfigNetwork {
     pub max_connected_peers:        Option<usize>,
     pub same_ip_conn_limit:         Option<usize>,
     pub inbound_conn_limit:         Option<usize>,
-    pub listening_address:          SocketAddr,
+    pub listening_address:          MultiAddr,
     pub rpc_timeout:                Option<u64>,
     pub selfcheck_interval:         Option<u64>,
     pub send_buffer_size:           Option<usize>,
@@ -52,10 +53,9 @@ pub struct ConfigNetwork {
     pub ping_interval:              Option<u64>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct ConfigNetworkBootstrap {
-    pub peer_id: String,
-    pub address: String,
+    pub multi_address: MultiAddr,
 }
 
 fn default_overlord_gap() -> usize {
@@ -66,7 +66,7 @@ fn default_sync_txs_chunk_size() -> usize {
     DEFAULT_SYNC_TXS_CHUNK_SIZE
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct ConfigConsensus {
     #[serde(default = "default_overlord_gap")]
     pub overlord_gap:        usize,
@@ -82,7 +82,7 @@ fn default_broadcast_txs_interval() -> u64 {
     DEFAULT_BROADCAST_TXS_INTERVAL
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct ConfigMempool {
     pub pool_size:   u64,
     pub timeout_gap: u64,
@@ -93,13 +93,13 @@ pub struct ConfigMempool {
     pub broadcast_txs_interval: u64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct ConfigExecutor {
     pub light:             bool,
     pub triedb_cache_size: usize,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct ConfigRocksDB {
     pub max_open_files: i32,
 }
@@ -110,7 +110,7 @@ impl Default for ConfigRocksDB {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct ConfigLogger {
     pub filter:                     String,
     pub log_to_console:             bool,
@@ -138,14 +138,14 @@ impl Default for ConfigLogger {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct ConfigAPM {
     pub service_name:       String,
     pub tracing_address:    SocketAddr,
     pub tracing_batch_size: Option<usize>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Config {
     // crypto
     pub privkey:   Hex,

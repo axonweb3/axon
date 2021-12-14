@@ -44,7 +44,7 @@ impl From<Header> for ExecutorContext {
             block_coinbase:         h.proposer,
             block_timestamp:        h.timestamp.into(),
             chain_id:               h.chain_id.into(),
-            difficulty:             h.difficulty.into(),
+            difficulty:             h.difficulty,
             origin:                 h.proposer,
             gas_price:              Default::default(),
             block_gas_limit:        h.gas_limit,

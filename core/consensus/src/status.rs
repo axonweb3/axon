@@ -7,7 +7,7 @@ use protocol::types::{BlockNumber, Bloom, Hash, MerkleRoot, Metadata, Proof, U25
 
 pub static METADATA_CONTROLER: SyncOnceCell<MetadataController> = SyncOnceCell::new();
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct MetadataController {
     current:  Arc<Mutex<Metadata>>,
     previous: Arc<Mutex<Metadata>>,
