@@ -176,7 +176,9 @@ dependencies = [
  "rand 0.7.3",
  "rlp 0.5.1",
  "serde",
+ "serde_json",
  "tokio 1.14.0",
+ "toml",
 ]
 
 [[package]]
@@ -590,6 +592,11 @@ name = "core-cli"
 version = "0.1.0"
 dependencies = [
  "axon-protocol",
+ "clap",
+ "common-config-parser",
+ "core-run",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
