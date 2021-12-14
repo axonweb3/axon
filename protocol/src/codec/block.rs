@@ -4,7 +4,7 @@ use overlord::Codec;
 use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
 use crate::types::{
-    Address, Block, Bloom, Bytes, Hash, Header, MerkleRoot, Pill, Proof, Validator, H256, H64, U256,
+    Block, Bloom, Bytes, Hash, Header, MerkleRoot, Pill, Proof, Validator, H160, H256, H64, U256,
 };
 use crate::{codec::error::CodecError, ProtocolError};
 
@@ -37,7 +37,7 @@ impl Decodable for Header {
         match r.prototype()? {
             Prototype::List(18) => {
                 let prev_hash: Hash = r.val_at(0)?;
-                let proposer: Address = r.val_at(1)?;
+                let proposer: H160 = r.val_at(1)?;
                 let state_root: MerkleRoot = r.val_at(2)?;
                 let transactions_root: MerkleRoot = r.val_at(3)?;
                 let signed_txs_hash: Hash = r.val_at(4)?;

@@ -10,8 +10,8 @@ use protocol::traits::{
     CommonConsensusAdapter, ConsensusAdapter, Context, MessageTarget, MixedTxHashes, NodeInfo,
 };
 use protocol::types::{
-    Block, Bytes, ExecResp, Hash, Hasher, Header, Hex, MerkleRoot, Metadata, MetadataVersion, Pill,
-    Proof, Receipt, SignedTransaction,
+    Block, Bytes, ExecResp, Hash, Hasher, Header, Hex, Metadata, MetadataVersion, Pill, Proof,
+    Receipt, SignedTransaction,
 };
 use protocol::{async_trait, tokio::sync::Mutex, ProtocolResult};
 
@@ -80,7 +80,7 @@ fn _init_crypto() -> OverlordCrypto {
 fn _mock_node_info() -> NodeInfo {
     NodeInfo {
         self_pub_key: _mock_pub_key().decode(),
-        chain_id:     _mock_hash(),
+        chain_id:     0,
         self_address: _mock_address(),
     }
 }
@@ -176,7 +176,7 @@ impl CommonConsensusAdapter for MockConsensusAdapter {
         _block_hash: Hash,
         _header: &Header,
         _signed_txs: Vec<SignedTransaction>,
-    ) -> ProtocolResult<(MerkleRoot, Vec<ExecResp>)> {
+    ) -> ProtocolResult<ExecResp> {
         unimplemented!()
     }
 

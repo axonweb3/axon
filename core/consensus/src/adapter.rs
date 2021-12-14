@@ -1,6 +1,5 @@
 use std::boxed::Box;
 use std::collections::HashMap;
-use std::marker::PhantomData;
 use std::sync::Arc;
 
 use overlord::types::{Node, OverlordMsg, Vote, VoteType};
@@ -13,11 +12,11 @@ use core_network::{PeerId, PeerIdExt};
 
 use protocol::traits::{
     CommonConsensusAdapter, ConsensusAdapter, Context, Executor, Gossip, MemPool, MessageTarget,
-    MixedTxHashes, Network, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
+    MixedTxHashes, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
 };
 use protocol::types::{
-    BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, ExecutorContext, Hash, Hasher, Header,
-    Hex, MerkleRoot, Pill, Proof, Receipt, SignedTransaction, Validator,
+    BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Hasher, Header, Hex, Pill, Proof,
+    Receipt, SignedTransaction, Validator,
 };
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
@@ -32,9 +31,8 @@ use crate::BlockProofField::{BitMap, HashMismatch, HeightMismatch, Signature, We
 use crate::{BlockProofField, ConsensusError, METADATA_CONTROLER};
 
 pub struct OverlordConsensusAdapter<
-    EF: Executor,
     M: MemPool,
-    N: Rpc + PeerTrust + Gossip + Network + 'static,
+    N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage,
     DB: cita_trie::DB,
 > {
@@ -44,16 +42,13 @@ pub struct OverlordConsensusAdapter<
     trie_db:          Arc<DB>,
     overlord_handler: RwLock<Option<OverlordHandler<Pill>>>,
     crypto:           Arc<OverlordCrypto>,
-
-    pin_ef: PhantomData<EF>,
 }
 
 #[async_trait]
-impl<EF, M, N, S, DB> ConsensusAdapter for OverlordConsensusAdapter<EF, M, N, S, DB>
+impl<M, N, S, DB> ConsensusAdapter for OverlordConsensusAdapter<M, N, S, DB>
 where
-    EF: Executor + 'static,
     M: MemPool + 'static,
-    N: Rpc + PeerTrust + Gossip + Network + 'static,
+    N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
     DB: cita_trie::DB + 'static,
 {
@@ -142,11 +137,10 @@ where
 }
 
 #[async_trait]
-impl<EF, M, N, S, DB> SynchronizationAdapter for OverlordConsensusAdapter<EF, M, N, S, DB>
+impl<M, N, S, DB> SynchronizationAdapter for OverlordConsensusAdapter<M, N, S, DB>
 where
-    EF: Executor + 'static,
     M: MemPool + 'static,
-    N: Rpc + PeerTrust + Gossip + Network + 'static,
+    N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
     DB: cita_trie::DB + 'static,
 {
@@ -243,11 +237,10 @@ where
 }
 
 #[async_trait]
-impl<EF, M, N, S, DB> CommonConsensusAdapter for OverlordConsensusAdapter<EF, M, N, S, DB>
+impl<M, N, S, DB> CommonConsensusAdapter for OverlordConsensusAdapter<M, N, S, DB>
 where
-    EF: Executor + 'static,
     M: MemPool + 'static,
-    N: Rpc + PeerTrust + Gossip + Network + 'static,
+    N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
     DB: cita_trie::DB + 'static,
 {
@@ -353,42 +346,18 @@ where
     async fn exec(
         &self,
         _ctx: Context,
-        header_hash: Hash,
+        _block_hash: Hash,
         header: &Header,
         signed_txs: Vec<SignedTransaction>,
-    ) -> ProtocolResult<(MerkleRoot, Vec<ExecResp>)> {
-        let mut ret = Vec::new();
-        let base_ctx = Arc::new(Mutex::new(ExecutorContext {
-            block_number:           header.number.into(),
-            block_hash:             header_hash,
-            block_coinbase:         header.proposer,
-            block_timestamp:        header.timestamp.into(),
-            chain_id:               header.chain_id.into(),
-            difficulty:             Default::default(),
-            origin:                 header.proposer,
-            gas_price:              Default::default(),
-            block_gas_limit:        header.gas_limit,
-            block_base_fee_per_gas: header.base_fee_per_gas.unwrap_or_default(),
-            logs:                   Vec::new(),
-        }));
-
+    ) -> ProtocolResult<ExecResp> {
+        let base_ctx = Arc::new(Mutex::new(header.clone().into()));
         let mut backend = ExecutorAdapter::new(
             header.state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&base_ctx),
         )?;
 
-        for stx in signed_txs.into_iter() {
-            {
-                base_ctx.lock().gas_price = stx.transaction.unsigned.max_fee_per_gas;
-            }
-
-            let mut tx_res = EvmExecutor::default().exec(&mut backend, stx);
-            tx_res.logs = { base_ctx.lock().logs.clone() };
-            ret.push(tx_res);
-        }
-
-        Ok((backend.root(), ret))
+        Ok(EvmExecutor::default().exec(&mut backend, signed_txs))
     }
 
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
@@ -403,13 +372,14 @@ where
             .set_args(context, timeout_gap, gas_limit, max_tx_size);
     }
 
-    fn tag_consensus(&self, ctx: Context, pub_keys: Vec<Bytes>) -> ProtocolResult<()> {
-        let peer_ids_bytes = pub_keys
-            .iter()
-            .map(|pk| PeerId::from_pubkey_bytes(pk).map(PeerIdExt::into_bytes_ext))
-            .collect::<Result<_, _>>()?;
+    fn tag_consensus(&self, _ctx: Context, _pub_keys: Vec<Bytes>) -> ProtocolResult<()> {
+        // let _peer_ids_bytes = pub_keys
+        //     .iter()
+        //     .map(|pk| PeerId::from_pubkey_bytes(pk).map(PeerIdExt::into_bytes_ext))
+        //     .collect::<Result<_, _>>()?;
 
-        self.network.tag_consensus(ctx, peer_ids_bytes)
+        // self.network.tag_consensus(ctx, peer_ids_bytes)
+        Ok(())
     }
 
     /// this function verify all info in header except proof and roots
@@ -634,11 +604,10 @@ where
     }
 }
 
-impl<EF, M, N, S, DB> OverlordConsensusAdapter<EF, M, N, S, DB>
+impl<M, N, S, DB> OverlordConsensusAdapter<M, N, S, DB>
 where
-    EF: Executor + 'static,
     M: MemPool + 'static,
-    N: Rpc + PeerTrust + Gossip + Network + 'static,
+    N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
     DB: cita_trie::DB + 'static,
 {
@@ -656,7 +625,6 @@ where
             trie_db,
             overlord_handler: RwLock::new(None),
             crypto,
-            pin_ef: PhantomData,
         })
     }
 

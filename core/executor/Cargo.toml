@@ -19,6 +19,7 @@ parking_lot = "0.11"
 
 protocol = { path = "../../protocol", package = "axon-protocol"}
 common-apm = { path = "../../common/apm" }
+common-merkle = { path = "../../common/merkle" }
 
 [dev-dependencies]
 hex = "0.4"

@@ -32,7 +32,7 @@ use crate::message::{
     END_GOSSIP_AGGREGATED_VOTE, END_GOSSIP_SIGNED_CHOKE, END_GOSSIP_SIGNED_PROPOSAL,
     END_GOSSIP_SIGNED_VOTE,
 };
-use crate::status::{CurrentStatus, ExecutedInfo, StatusAgent};
+use crate::status::{CurrentStatus, StatusAgent};
 use crate::util::{digest_signed_transactions, time_now, OverlordCrypto};
 use crate::wal::{ConsensusWal, SignedTxsWAL};
 use crate::{ConsensusError, METADATA_CONTROLER};
@@ -81,7 +81,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
 
         let header = Header {
             prev_hash:         status.prev_hash,
-            proposer:          self.node_info.self_address,
+            proposer:          self.node_info.self_address.0,
             state_root:        status.state_root,
             transactions_root: order_root,
             signed_txs_hash:   digest_signed_transactions(&signed_txs),
@@ -97,7 +97,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             nonce:             Default::default(),
             base_fee_per_gas:  status.base_fee_per_gas,
             proof:             status.proof,
-            chain_id:          self.node_info.chain_id.to_low_u64_be(),
+            chain_id:          self.node_info.chain_id,
         };
 
         if header.number != header.proof.number + 1 {
@@ -253,7 +253,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
         };
 
         // Execute transactions
-        let (new_state_root, resp) = self
+        let resp = self
             .adapter
             .exec(
                 ctx.clone(),
@@ -270,7 +270,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             metadata.verifier_list
         );
 
-        self.update_status(new_state_root, resp, block.clone(), proof, signed_txs)
+        self.update_status(resp, block.clone(), proof, signed_txs)
             .await?;
 
         self.adapter
@@ -637,27 +637,14 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
     /// 5. Save the receipt.
     pub async fn update_status(
         &self,
-        new_state_root: MerkleRoot,
-        resp: Vec<ExecResp>,
+        resp: ExecResp,
         block: Block,
         proof: Proof,
         txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<()> {
-        let executed_info = ExecutedInfo::new(&resp);
         let block_number = block.header.number;
 
-        let receipts = txs
-            .iter()
-            .zip(resp.iter())
-            .map(|(tx, res)| Receipt {
-                tx_hash:    tx.transaction.hash,
-                state_root: block.header.state_root,
-                used_gas:   U256::from(res.gas_used),
-                logs_bloom: Bloom::from(BloomInput::Raw(rlp::encode_list(&res.logs).as_ref())),
-                logs:       res.logs.clone(),
-            })
-            .collect::<Vec<_>>();
-        let logs = receipts.iter().map(|r| r.logs_bloom).collect::<Vec<_>>();
+        let (receipts, logs) = generate_receipts_and_logs(block.header.state_root, &txs, &resp);
 
         // Save signed transactions
         self.adapter
@@ -673,16 +660,20 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             .save_receipts(Context::new(), block_number, receipts)
             .await?;
 
+        self.adapter
+            .save_proof(Context::new(), block.header.proof.clone())
+            .await?;
+
         let block_hash = Hasher::digest(block.header.encode()?);
         let metadata = METADATA_CONTROLER.get().unwrap().current();
         let new_status = CurrentStatus {
             prev_hash:        block_hash,
             last_number:      block_number + 1,
-            state_root:       new_state_root,
-            receipts_root:    executed_info.receipts_root,
+            state_root:       resp.state_root,
+            receipts_root:    resp.receipt_root,
             log_bloom:        Bloom::from(BloomInput::Raw(rlp::encode_list(&logs).as_ref())),
             gas_limit:        metadata.gas_limit.into(),
-            gas_used:         executed_info.gas_used.into(),
+            gas_used:         resp.gas_used.into(),
             base_fee_per_gas: None,
             proof:            proof.clone(),
         };
@@ -782,6 +773,27 @@ fn validate_timestamp(
     }
 
     true
+}
+
+pub fn generate_receipts_and_logs(
+    state_root: MerkleRoot,
+    txs: &[SignedTransaction],
+    resp: &ExecResp,
+) -> (Vec<Receipt>, Vec<Bloom>) {
+    let receipts = txs
+        .iter()
+        .zip(resp.tx_resp.iter())
+        .map(|(tx, res)| Receipt {
+            tx_hash: tx.transaction.hash,
+            state_root,
+            used_gas: U256::from(res.gas_used),
+            logs_bloom: Bloom::from(BloomInput::Raw(rlp::encode_list(&res.logs).as_ref())),
+            logs: res.logs.clone(),
+        })
+        .collect::<Vec<_>>();
+    let logs = receipts.iter().map(|r| r.logs_bloom).collect::<Vec<_>>();
+
+    (receipts, logs)
 }
 
 fn gauge_txs_len(pill: &Pill) {

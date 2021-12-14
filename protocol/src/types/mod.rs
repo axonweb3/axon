@@ -2,7 +2,7 @@ pub use batch::*;
 pub use block::*;
 pub use bytes::{Buf, BufMut, Bytes, BytesMut};
 pub use executor::{
-    AccessList, AccessListItem, Account, Config, ExecResp, ExecutorContext, ExitReason,
+    AccessList, AccessListItem, Account, Config, ExecResp, ExecutorContext, ExitReason, TxResp,
 };
 pub use primitive::*;
 pub use receipt::*;

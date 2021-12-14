@@ -1,17 +1,16 @@
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use futures::lock::Mutex;
-
 // use common_apm::muta_apm;
 use protocol::codec::ProtocolCodec;
+use protocol::tokio::{sync::Mutex, time::sleep};
 use protocol::traits::{Context, Synchronization, SynchronizationAdapter};
 use protocol::types::{Block, Bloom, BloomInput, Hasher, Proof, Receipt, SignedTransaction};
-use protocol::{async_trait, tokio::time::sleep, ProtocolResult};
+use protocol::{async_trait, ProtocolResult};
 
-use crate::status::{CurrentStatus, ExecutedInfo, StatusAgent, METADATA_CONTROLER};
+use crate::status::{CurrentStatus, StatusAgent, METADATA_CONTROLER};
 use crate::util::digest_signed_transactions;
-use crate::ConsensusError;
+use crate::{engine::generate_receipts_and_logs, ConsensusError};
 
 const POLLING_BROADCAST: u64 = 2000;
 const ONCE_SYNC_BLOCK_LIMIT: u64 = 50;
@@ -39,7 +38,7 @@ impl<Adapter: SynchronizationAdapter> Synchronization for OverlordSynchronizatio
     // )]
     async fn receive_remote_block(&self, ctx: Context, remote_number: u64) -> ProtocolResult<()> {
         let syncing_lock = self.syncing.try_lock();
-        if syncing_lock.is_none() {
+        if syncing_lock.is_err() {
             return Ok(());
         }
         if !self.need_sync(ctx.clone(), remote_number).await? {
@@ -48,7 +47,7 @@ impl<Adapter: SynchronizationAdapter> Synchronization for OverlordSynchronizatio
 
         // Lock the consensus engine, block commit process.
         let commit_lock = self.lock.try_lock();
-        if commit_lock.is_none() {
+        if commit_lock.is_err() {
             return Ok(());
         }
 
@@ -90,7 +89,8 @@ impl<Adapter: SynchronizationAdapter> Synchronization for OverlordSynchronizatio
             sync_status.last_number,
         );
 
-        self.status.swap(sync_status);
+        self.update_status(ctx, sync_status_agent)?;
+
         Ok(())
     }
 }
@@ -184,13 +184,13 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
                 e
             })?;
 
-            self.update_status(ctx.clone(), sync_status_agent.clone())?;
             current_consented_number += 1;
 
             common_apm::metrics::consensus::ENGINE_SYNC_BLOCK_COUNTER.inc_by(1u64);
             common_apm::metrics::consensus::ENGINE_SYNC_BLOCK_HISTOGRAM
                 .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
         }
+
         Ok(())
     }
 
@@ -292,7 +292,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
     ) -> ProtocolResult<()> {
         let block = &rich_block.block;
         let block_hash = Hasher::digest(block.header.encode()?);
-        let (new_state_root, resp) = self
+        let resp = self
             .adapter
             .exec(
                 ctx.clone(),
@@ -302,31 +302,19 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             )
             .await?;
 
-        let receipts = rich_block
-            .txs
-            .iter()
-            .zip(resp.iter())
-            .map(|(tx, res)| Receipt {
-                tx_hash:    tx.transaction.hash,
-                state_root: block.header.state_root,
-                used_gas:   res.gas_used.into(),
-                logs_bloom: Bloom::from(BloomInput::Raw(rlp::encode_list(&res.logs).as_ref())),
-                logs:       res.logs.clone(),
-            })
-            .collect::<Vec<_>>();
-        let logs = receipts.iter().map(|r| r.logs_bloom).collect::<Vec<_>>();
-
-        let executed_info = ExecutedInfo::new(&resp);
+        let (receipts, logs) =
+            generate_receipts_and_logs(block.header.state_root, &rich_block.txs, &resp);
         let block_hash = Hasher::digest(block.header.encode()?);
         let metadata = METADATA_CONTROLER.get().unwrap().current();
+
         let new_status = CurrentStatus {
             prev_hash:        block_hash,
             last_number:      block.header.number + 1,
-            state_root:       new_state_root,
-            receipts_root:    executed_info.receipts_root,
+            state_root:       resp.state_root,
+            receipts_root:    resp.receipt_root,
             log_bloom:        Bloom::from(BloomInput::Raw(rlp::encode_list(&logs).as_ref())),
             gas_limit:        metadata.gas_limit.into(),
-            gas_used:         executed_info.gas_used.into(),
+            gas_used:         resp.gas_used.into(),
             base_fee_per_gas: None,
             proof:            proof.clone(),
         };

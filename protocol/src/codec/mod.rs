@@ -4,9 +4,9 @@ pub mod executor;
 pub mod receipt;
 pub mod transaction;
 
-use rlp::{Decodable, Encodable};
+use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 
-use crate::types::{Bytes, DBBytes};
+use crate::types::{Address, Bytes, DBBytes, H160};
 use crate::ProtocolResult;
 
 pub trait ProtocolCodec: Sized + Send {
@@ -33,5 +33,18 @@ impl ProtocolCodec for DBBytes {
     fn decode<B: AsRef<[u8]>>(bytes: B) -> ProtocolResult<Self> {
         let inner = Bytes::copy_from_slice(bytes.as_ref());
         Ok(Self(inner))
+    }
+}
+
+impl Encodable for Address {
+    fn rlp_append(&self, s: &mut RlpStream) {
+        s.begin_list(1).append(&self.0);
+    }
+}
+
+impl Decodable for Address {
+    fn decode(r: &Rlp) -> Result<Self, DecoderError> {
+        let inner: H160 = r.val_at(0)?;
+        Ok(Address(inner))
     }
 }

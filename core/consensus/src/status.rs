@@ -3,15 +3,11 @@ use std::sync::Arc;
 
 use parking_lot::Mutex;
 
-use common_merkle::Merkle;
-use protocol::types::{
-    BlockNumber, Bloom, ExecResp, Hash, Hasher, MerkleRoot, Metadata, Proof, U256,
-};
-use protocol::Display;
+use protocol::types::{BlockNumber, Bloom, Hash, MerkleRoot, Metadata, Proof, U256};
 
 pub static METADATA_CONTROLER: SyncOnceCell<MetadataController> = SyncOnceCell::new();
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct MetadataController {
     current:  Arc<Mutex<Metadata>>,
     previous: Arc<Mutex<Metadata>>,
@@ -84,30 +80,4 @@ pub struct CurrentStatus {
     pub gas_limit:        U256,
     pub base_fee_per_gas: Option<U256>,
     pub proof:            Proof,
-}
-
-#[derive(Clone, Debug, Display)]
-#[display(fmt = "cycles used {},  receipt root {:?}", gas_used, receipts_root)]
-pub struct ExecutedInfo {
-    pub gas_used:      u64,
-    pub receipts_root: MerkleRoot,
-}
-
-impl ExecutedInfo {
-    pub fn new(resp: &[ExecResp]) -> Self {
-        let gas_sum = resp.iter().map(|r| r.gas_used).sum();
-
-        let receipt = Merkle::from_hashes(
-            resp.iter()
-                .map(|r| Hasher::digest(&r.ret))
-                .collect::<Vec<_>>(),
-        )
-        .get_root_hash()
-        .unwrap_or_default();
-
-        Self {
-            gas_used:      gas_sum,
-            receipts_root: receipt,
-        }
-    }
 }

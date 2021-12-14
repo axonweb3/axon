@@ -1,8 +1,7 @@
 use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
 use crate::types::{
-    Address, Public, SignatureComponents, SignedTransaction, Transaction, UnverifiedTransaction,
-    H256,
+    Public, SignatureComponents, SignedTransaction, Transaction, UnverifiedTransaction, H160, H256,
 };
 
 impl Encodable for SignatureComponents {
@@ -78,7 +77,7 @@ impl Decodable for SignedTransaction {
         match r.prototype()? {
             Prototype::List(3) => {
                 let transaction: UnverifiedTransaction = r.val_at(0)?;
-                let sender: Address = r.val_at(1)?;
+                let sender: H160 = r.val_at(1)?;
                 let public: Public = r.val_at(2)?;
 
                 Ok(SignedTransaction {
@@ -139,7 +138,7 @@ mod tests {
     fn mock_signed_tx() -> SignedTransaction {
         SignedTransaction {
             transaction: mock_unverfied_tx(),
-            sender:      Address::default(),
+            sender:      H160::default(),
             public:      Public::default(),
         }
     }

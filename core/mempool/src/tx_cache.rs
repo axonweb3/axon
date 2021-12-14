@@ -413,8 +413,8 @@ mod tests {
 
     use protocol::tokio;
     use protocol::types::{
-        Address, Bytes, Hash, Public, SignatureComponents, SignedTransaction, Transaction,
-        TransactionAction, UnverifiedTransaction, H256, U256,
+        Bytes, Hash, Public, SignatureComponents, SignedTransaction, Transaction,
+        TransactionAction, UnverifiedTransaction, H160, H256, U256,
     };
 
     use crate::map::Map;
@@ -469,7 +469,7 @@ mod tests {
     fn mock_signed_tx() -> SignedTransaction {
         SignedTransaction {
             transaction: mock_unverfied_tx(),
-            sender:      Address::default(),
+            sender:      H160::default(),
             public:      Public::default(),
         }
     }
