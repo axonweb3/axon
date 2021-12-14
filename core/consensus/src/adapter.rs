@@ -15,8 +15,8 @@ use protocol::traits::{
     MixedTxHashes, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
 };
 use protocol::types::{
-    BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Hasher, Header,
-    Hex, Pill, Proof, Receipt, SignedTransaction, Validator,
+    BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Hasher, Header, Hex, Pill, Proof,
+    Receipt, SignedTransaction, Validator,
 };
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 

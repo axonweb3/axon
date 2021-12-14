@@ -6,8 +6,8 @@ use creep::Context;
 
 use crate::traits::MixedTxHashes;
 use crate::types::{
-    Address, Block, BlockNumber, ExecResp, Hash, Header, Hex, Proof, Receipt,
-    SignedTransaction, Validator,
+    Address, Block, BlockNumber, ExecResp, Hash, Header, Hex, Proof, Receipt, SignedTransaction,
+    Validator,
 };
 use crate::ProtocolResult;
 

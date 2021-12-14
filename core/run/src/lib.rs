@@ -401,7 +401,8 @@ impl Axon {
         // let peer_ids = metadata
         //     .verifier_list
         //     .iter()
-        //     .map(|v| PeerId::from_pubkey_bytes(v.pub_key.decode()).map(PeerIdExt::into_bytes_ext))
+        //     .map(|v|
+        // PeerId::from_pubkey_bytes(v.pub_key.decode()).map(PeerIdExt::into_bytes_ext))
         //     .collect::<Result<Vec<_>, _>>()?;
 
         // network_service
