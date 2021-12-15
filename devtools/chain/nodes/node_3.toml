@@ -1,5 +1,5 @@
 # crypto
-privkey = "0xcf5a0e5dc99f579b20909cc0f2dfd09ecd50a48570a6381e748e9421df30e49c"
+privkey = "0xd77ca0ba1c280bbd62409af4aec68560c913a1a8794d33317e8344969eb43265"
 
 # db config
 data_path = "./devtools/chain/data/node_3"
@@ -26,16 +26,16 @@ overlord_gap = 5
 sync_txs_chunk_size = 5000
 
 [[network.bootstraps]]
-multi_address = "/ip4/127.0.0.1/tcp/10004/p2p/QmVBtiL1x7HVBduSnMGu3TzamZNKabQk2hMZwg4ephWnQ9"
+multi_address = "/ip4/127.0.0.1/tcp/10004/p2p/QmaLxxhQwFkTZwxYWxotmhB8ehqdnRTd4YocNwvt4hMY3p"
 
 [[network.bootstraps]]
-multi_address = "/ip4/127.0.0.1/tcp/10003/p2p/QmWbtw4PrPheTFe1qsyykECroJMYVe75VKz2CnvyqoRgNt"
+multi_address = "/ip4/127.0.0.1/tcp/10003/p2p/QmTFQhSMMkrxBYajoRqk3ZYdK8RwMufXgtoQ3XCbmws1Nq"
 
 [[network.bootstraps]]
-multi_address = "/ip4/127.0.0.1/tcp/10002/p2p/QmSHdghJyce54sqmuBWJNUUwxYu2HPmED4NDJHFTuVs7ng"
+multi_address = "/ip4/127.0.0.1/tcp/10002/p2p/QmaZDEmtzYF2tpas5ShYZQiismsByuB77d8tbvhhpavfp8"
 
 [[network.bootstraps]]
-multi_address = "/ip4/127.0.0.1/tcp/10001/p2p/QmQTuFXwu5tD9EGAXnTFWirQivrebxX7wDEwZPz76GB3zQ"
+multi_address = "/ip4/127.0.0.1/tcp/10001/p2p/QmW2m2iqnodYFHXcsvaxKNXSibBqsySPkyqxRm3tXRDVfK"
 
 [mempool]
 timeout_gap = 20

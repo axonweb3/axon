@@ -6,4 +6,4 @@ Address in genesis:
 
  Address                                       | Asset(MTT)    | PrivKey                                                              | Pubkey                                                                 |
  --------------------------------------------- | ------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
- `muta14e0lmgck835vm2dfm0w3ckv6svmez8fdgdl705` | `0x100000000` | `0x8dfbd3c689308d29c058cce163984a2ae8d5fc5191ce6b1e18bd1d7b95a8c632` | `0x03dbd1dbf3835efb4ec34a360ee671ee1d22425425368edfc5b9ffafc812e86200` |
+ `0x35e70c3f5a794a77efc2ec5ba964bffcc7fd2c0a` | `0x100000000` | `0x95500289866f83502cc1fb894ef5e2b840ca5f867cc9e84ab32fb8872b5dd36c` | `0x0300554dea8901b6b5f1f24f5b84b4f28e22cda8ec1dec6efd805cdcdd2d7d8858` |

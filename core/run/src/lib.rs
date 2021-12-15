@@ -31,7 +31,7 @@ use core_consensus::{
     ConsensusWal, DurationConfig, Node, OverlordConsensus, OverlordConsensusAdapter,
     OverlordSynchronization, SignedTxsWAL, METADATA_CONTROLER,
 };
-use core_executor::adapter::{trie_db::RocksTrieDB, ExecutorAdapter};
+use core_executor::adapter::{ExecutorAdapter, MPTTrie, RocksTrieDB};
 use core_executor::EvmExecutor;
 use core_mempool::{
     DefaultMemPoolAdapter, HashMemPool, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
@@ -43,16 +43,20 @@ use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::tokio::signal::unix::{self as os_impl};
 use protocol::tokio::{sync::Mutex as AsyncMutex, time::sleep};
 use protocol::traits::{CommonStorage, Context, Executor, MemPool, NodeInfo, Storage};
-use protocol::types::{Address, Bloom, BloomInput, Genesis, Hasher, Metadata, Validator};
+use protocol::types::{
+    Account, Address, Bloom, BloomInput, Genesis, Hasher, MerkleRoot, Metadata, Validator,
+    NIL_DATA, RLP_NULL,
+};
 use protocol::{
     codec::ProtocolCodec, tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
 };
 
 #[derive(Debug)]
 pub struct Axon {
-    config:   Config,
-    genesis:  Genesis,
-    metadata: Metadata,
+    config:     Config,
+    genesis:    Genesis,
+    metadata:   Metadata,
+    state_root: MerkleRoot,
 }
 
 impl Axon {
@@ -61,10 +65,11 @@ impl Axon {
             config,
             genesis,
             metadata,
+            state_root: MerkleRoot::default(),
         }
     }
 
-    pub fn run(self) -> ProtocolResult<()> {
+    pub fn run(mut self) -> ProtocolResult<()> {
         if let Some(apm_config) = &self.config.apm {
             muta_apm::global_tracer_register(
                 &apm_config.service_name,
@@ -85,7 +90,7 @@ impl Axon {
         Ok(())
     }
 
-    pub async fn create_genesis(&self) -> ProtocolResult<()> {
+    pub async fn create_genesis(&mut self) -> ProtocolResult<()> {
         log::info!("Genesis data: {:?}", self.genesis);
 
         // Init Block db
@@ -115,42 +120,34 @@ impl Axon {
             self.config.rocksdb.max_open_files,
             self.config.executor.triedb_cache_size,
         )?);
+        let mut mpt = MPTTrie::new(trie_db);
 
-        // Init executor
-        let executor = EvmExecutor::default();
-        let mut backend = ExecutorAdapter::new(
-            trie_db,
-            Arc::new(Mutex::new(self.genesis.block.header.clone().into())),
+        let distribute_address = Address::from_hex("0x35e70c3f5a794a77efc2ec5ba964bffcc7fd2c0a")?;
+        let distribute_account = Account {
+            nonce:        0u64.into(),
+            balance:      320000011u64.into(),
+            storage_root: RLP_NULL,
+            code_hash:    NIL_DATA,
+        };
+
+        mpt.insert(
+            distribute_address.as_slice(),
+            distribute_account.encode()?.as_ref(),
         )?;
 
-        log::info!("Execute the genesis");
+        self.state_root = mpt.commit()?;
 
-        let resp = executor.exec(&mut backend, self.genesis.rich_txs.clone());
-
-        let (receipts, _logs) = generate_receipts_and_logs(
-            self.genesis.block.header.state_root,
-            &self.genesis.rich_txs,
-            &resp,
-        );
+        log::info!("Execute the genesis distribute success");
 
         storage
             .update_latest_proof(Context::new(), self.genesis.block.header.proof.clone())
-            .await?;
-        storage
-            .insert_transactions(
-                Context::new(),
-                self.genesis.block.header.number,
-                self.genesis.rich_txs.clone(),
-            )
-            .await?;
-        storage
-            .insert_receipts(Context::new(), self.genesis.block.header.number, receipts)
             .await?;
         storage
             .insert_block(Context::new(), self.genesis.block.clone())
             .await?;
 
         log::info!("The genesis block is created {:?}", self.genesis);
+
         Ok(())
     }
 
@@ -229,9 +226,10 @@ impl Axon {
         );
 
         // Init mempool
-        let mempool_adapter = DefaultMemPoolAdapter::<Secp256k1, _, _>::new(
+        let mempool_adapter = DefaultMemPoolAdapter::<Secp256k1, _, _, _>::new(
             network_service.handle(),
             Arc::clone(&storage),
+            Arc::clone(&trie_db),
             self.genesis.block.header.chain_id,
             config.mempool.timeout_gap,
             self.genesis.block.header.gas_limit.as_u64(),
@@ -318,38 +316,52 @@ impl Axon {
         let current_header = &current_block.header;
         let current_number = current_block.header.number;
 
-        // Init executor
-        let executor = EvmExecutor::default();
-        let mut backend = if current_header.state_root == Default::default() {
-            ExecutorAdapter::new(
-                Arc::clone(&trie_db),
-                Arc::new(Mutex::new(current_header.clone().into())),
-            )
+        let current_consensus_status = if current_number == 0 {
+            CurrentStatus {
+                prev_hash:        Hasher::digest(current_header.encode()?),
+                last_number:      current_header.number,
+                state_root:       self.state_root,
+                receipts_root:    Default::default(),
+                log_bloom:        Default::default(),
+                gas_used:         0u64.into(),
+                gas_limit:        metadata.gas_limit.into(),
+                base_fee_per_gas: None,
+                proof:            current_header.proof.clone(),
+            }
         } else {
-            ExecutorAdapter::from_root(
-                current_header.state_root,
-                Arc::clone(&trie_db),
-                Arc::new(Mutex::new(current_header.clone().into())),
-            )
-        }?;
-        let resp = executor.exec(&mut backend, current_stxs.clone());
+            // Init executor
+            let executor = EvmExecutor::default();
+            let mut backend = if current_header.state_root == Default::default() {
+                ExecutorAdapter::new(
+                    Arc::clone(&trie_db),
+                    Arc::new(Mutex::new(current_header.clone().into())),
+                )
+            } else {
+                ExecutorAdapter::from_root(
+                    current_header.state_root,
+                    Arc::clone(&trie_db),
+                    Arc::new(Mutex::new(current_header.clone().into())),
+                )
+            }?;
+            let resp = executor.exec(&mut backend, current_stxs.clone());
 
-        let (_receipts, logs) = generate_receipts_and_logs(
-            self.genesis.block.header.state_root,
-            &self.genesis.rich_txs,
-            &resp,
-        );
+            let (_receipts, logs) = generate_receipts_and_logs(
+                self.genesis.block.header.state_root,
+                &self.genesis.rich_txs,
+                &resp,
+            );
 
-        let current_consensus_status = CurrentStatus {
-            prev_hash:        Hasher::digest(current_header.encode()?),
-            last_number:      current_header.number,
-            state_root:       resp.state_root,
-            receipts_root:    resp.receipt_root,
-            log_bloom:        Bloom::from(BloomInput::Raw(rlp::encode_list(&logs).as_ref())),
-            gas_used:         resp.gas_used.into(),
-            gas_limit:        metadata.gas_limit.into(),
-            base_fee_per_gas: None,
-            proof:            current_header.proof.clone(),
+            CurrentStatus {
+                prev_hash:        Hasher::digest(current_header.encode()?),
+                last_number:      current_header.number,
+                state_root:       resp.state_root,
+                receipts_root:    resp.receipt_root,
+                log_bloom:        Bloom::from(BloomInput::Raw(rlp::encode_list(&logs).as_ref())),
+                gas_used:         resp.gas_used.into(),
+                gas_limit:        metadata.gas_limit.into(),
+                base_fee_per_gas: None,
+                proof:            current_header.proof.clone(),
+            }
         };
 
         let consensus_interval = metadata.interval;

@@ -1,5 +1,5 @@
 mod trie;
-pub mod trie_db;
+mod trie_db;
 
 use std::sync::Arc;
 
@@ -9,10 +9,13 @@ use parking_lot::Mutex;
 
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ApplyBackend, Backend, ExecutorAdapter as Adapter};
-use protocol::types::{Account, Bytes, ExecutorContext, Hasher, Log, MerkleRoot, H160, H256, U256};
+use protocol::types::{
+    Account, Bytes, ExecutorContext, Hasher, Log, MerkleRoot, H160, H256, NIL_DATA, RLP_NULL, U256,
+};
 use protocol::ProtocolResult;
 
-use trie::MPTTrie;
+pub use trie::MPTTrie;
+pub use trie_db::RocksTrieDB;
 
 pub struct ExecutorAdapter<DB: TrieDB> {
     trie:     Arc<Mutex<MPTTrie<DB>>>,
@@ -27,6 +30,10 @@ impl<DB: TrieDB> Adapter for ExecutorAdapter<DB> {
 
     fn state_root(&self) -> MerkleRoot {
         self.trie.lock().root
+    }
+
+    fn get(&self, key: &[u8]) -> Option<Bytes> {
+        self.trie.lock().get(key).ok().flatten()
     }
 }
 
@@ -209,8 +216,8 @@ impl<DB: TrieDB> ExecutorAdapter<DB> {
             _ => Account {
                 nonce:        Default::default(),
                 balance:      Default::default(),
-                storage_root: Default::default(),
-                code_hash:    Default::default(),
+                storage_root: RLP_NULL,
+                code_hash:    NIL_DATA,
             },
         };
 
@@ -225,9 +232,10 @@ impl<DB: TrieDB> ExecutorAdapter<DB> {
             });
             storage_trie.commit().unwrap_or_default()
         };
+        let new_nonce = basic.nonce.as_u64() + 1;
 
         let new_account = Account {
-            nonce: basic.nonce,
+            nonce: new_nonce.into(),
             balance: basic.balance,
             code_hash: if let Some(c) = code {
                 Hasher::digest(c)

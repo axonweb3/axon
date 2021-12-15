@@ -410,11 +410,14 @@ pub enum MemPoolError {
         gas_limit_tx,
         gas_limit_config
     )]
-    ExceedCyclesLimit {
+    ExceedGasLimit {
         tx_hash:          Hash,
         gas_limit_config: u64,
         gas_limit_tx:     u64,
     },
+
+    #[display(fmt = "Tx nonce {} is invalid current nonce {}", tx_nonce, current)]
+    InvalidNonce { current: u64, tx_nonce: u64 },
 
     #[display(fmt = "Tx: {:?} inserts failed", tx_hash)]
     Insert { tx_hash: Hash },
