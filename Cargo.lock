@@ -176,7 +176,9 @@ dependencies = [
  "rand 0.7.3",
  "rlp 0.5.1",
  "serde",
+ "serde_json",
  "tokio 1.14.0",
+ "toml",
 ]
 
 [[package]]
@@ -523,6 +525,7 @@ dependencies = [
  "core-mempool",
  "reqwest",
  "serde",
+ "serde_json",
  "stringreader",
  "tentacle-multiaddr",
  "toml",
@@ -590,6 +593,12 @@ name = "core-cli"
 version = "0.1.0"
 dependencies = [
  "axon-protocol",
+ "clap",
+ "common-config-parser",
+ "common-logger",
+ "core-run",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -695,10 +704,10 @@ dependencies = [
  "parking_lot 0.11.2",
  "prost",
  "rand 0.7.3",
+ "rlp 0.5.1",
  "serde",
  "snap",
  "tentacle",
- "tokio 1.14.0",
  "tokio-util",
 ]
 
@@ -741,6 +750,7 @@ dependencies = [
  "futures",
  "hex",
  "lazy_static",
+ "log",
  "num-traits",
  "parking_lot 0.11.2",
  "rand 0.7.3",

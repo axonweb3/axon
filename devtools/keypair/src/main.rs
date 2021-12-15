@@ -48,10 +48,9 @@ pub fn main() {
             .take(10)
             .collect::<String>()
     } else {
-        String::from_utf8(hex::decode(common_ref_encoded).expect(
-            "common_ref should be a
-hex string",
-        ))
+        String::from_utf8(
+            hex::decode(common_ref_encoded).expect("common_ref should be a hex string"),
+        )
         .expect("common_ref should be a valid utf8 string")
     };
 
@@ -80,7 +79,7 @@ hex string",
         k.private_key = add_0x(hex::encode(seckey.as_ref()));
         k.public_key = add_0x(hex::encode(pubkey));
         k.peer_id = keypair.public_key().peer_id().to_base58();
-        k.address = address.to_string();
+        k.address = add_0x(hex::encode(address.as_bytes()));
 
         let priv_key =
             BlsPrivateKey::try_from([&[0u8; 16], seckey.as_ref()].concat().as_ref()).unwrap();

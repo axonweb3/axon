@@ -277,13 +277,11 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             .flush_mempool(ctx.clone(), &block.tx_hashes)
             .await?;
 
-        self.adapter
-            .broadcast_number(ctx.clone(), current_number)
-            .await?;
         self.txs_wal.remove(current_number.saturating_sub(2))?;
 
-        let mut set = self.exemption_hash.write();
-        set.clear();
+        {
+            self.exemption_hash.write().clear();
+        }
 
         self.update_metadata(current_number + 1);
         let metadata = METADATA_CONTROLER.get().unwrap().current();
@@ -294,6 +292,10 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             authority_list: convert_to_overlord_authority(&metadata.verifier_list),
             timer_config:   Some(metadata.into()),
         };
+
+        self.adapter
+            .broadcast_number(ctx.clone(), current_number)
+            .await?;
 
         self.metric_commit(current_number, txs_len);
 
@@ -664,11 +666,10 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             .save_proof(Context::new(), block.header.proof.clone())
             .await?;
 
-        let block_hash = Hasher::digest(block.header.encode()?);
         let metadata = METADATA_CONTROLER.get().unwrap().current();
         let new_status = CurrentStatus {
-            prev_hash:        block_hash,
-            last_number:      block_number + 1,
+            prev_hash:        Hasher::digest(block.header.encode()?),
+            last_number:      block_number,
             state_root:       resp.state_root,
             receipts_root:    resp.receipt_root,
             log_bloom:        Bloom::from(BloomInput::Raw(rlp::encode_list(&logs).as_ref())),

@@ -14,25 +14,39 @@ pub fn parse_reader<R: io::Read, T: de::DeserializeOwned>(r: &mut R) -> Result<T
     Ok(toml::from_slice(&buf)?)
 }
 
+pub fn parse_json<R: io::Read, T: de::DeserializeOwned>(r: &mut R) -> Result<T, ParseError> {
+    let mut buf = Vec::new();
+    r.read_to_end(&mut buf)?;
+    Ok(serde_json::from_slice(&buf)?)
+}
+
 /// Parse a config from file.
 ///
 /// Note: In most cases, function `parse` is better.
-pub fn parse_file<T: de::DeserializeOwned>(name: impl AsRef<Path>) -> Result<T, ParseError> {
+pub fn parse_file<T: de::DeserializeOwned>(
+    name: impl AsRef<Path>,
+    is_json: bool,
+) -> Result<T, ParseError> {
     let mut f = fs::File::open(name)?;
-    parse_reader(&mut f)
+    if is_json {
+        parse_json(&mut f)
+    } else {
+        parse_reader(&mut f)
+    }
 }
 
-/// If name is starts with "http", parse it by function `parse_http`, else
-/// `parse_file` in use.
-pub fn parse<T: de::DeserializeOwned>(name: &str) -> Result<T, ParseError> {
-    parse_file(name)
-}
+// /// If name is starts with "http", parse it by function `parse_http`, else
+// /// `parse_file` in use.
+// pub fn parse<T: de::DeserializeOwned>(name: &str) -> Result<T, ParseError> {
+//     parse_file(name)
+// }
 
 #[derive(Debug)]
 pub enum ParseError {
     IO(io::Error),
     Deserialize(toml::de::Error),
     Reqwest(reqwest::Error),
+    Json(serde_json::Error),
 }
 
 impl error::Error for ParseError {}
@@ -43,6 +57,7 @@ impl fmt::Display for ParseError {
             ParseError::IO(e) => return write!(f, "{}", e),
             ParseError::Deserialize(e) => return write!(f, "{}", e),
             ParseError::Reqwest(e) => return write!(f, "{}", e),
+            ParseError::Json(e) => return write!(f, "{}", e),
         }
     }
 }
@@ -50,6 +65,12 @@ impl fmt::Display for ParseError {
 impl From<io::Error> for ParseError {
     fn from(error: io::Error) -> ParseError {
         ParseError::IO(error)
+    }
+}
+
+impl From<serde_json::Error> for ParseError {
+    fn from(error: serde_json::Error) -> ParseError {
+        ParseError::Json(error)
     }
 }
 
@@ -92,7 +113,7 @@ mod tests {
     #[ignore]
     #[test]
     fn test_parse_file() {
-        let config: Config = parse_file("/tmp/config.toml").unwrap();
+        let config: Config = parse_file("/tmp/config.toml", false).unwrap();
         assert_eq!(config.global_string, Some(String::from("Best Food")));
         assert_eq!(config.global_int, Some(42));
     }

@@ -1,8 +1,8 @@
 # crypto
-privkey = "0x5ec982173d54d830b6789cbbbe43eaa2853a5ff752d1ebc1b266cf9790314f8a"
+privkey = "0x1863ca95e498ed90b402b4c29d371f5b69ae01cc13600e25ee1ecff2ba507dba"
 
 # db config
-data_path = "./devtools/chain/data"
+data_path = "./devtools/chain/data/node_1"
 
 [graphql]
 listening_address = "127.0.0.1:8000"
@@ -18,7 +18,7 @@ max_payload_size = 1048576
 
 
 [network]
-listening_address = "/ip4/127.0.0.1/tcp/10000"
+listening_address = "/ip4/127.0.0.1/tcp/10001"
 rpc_timeout = 10
 
 [consensus]
@@ -26,7 +26,16 @@ overlord_gap = 5
 sync_txs_chunk_size = 5000
 
 [[network.bootstraps]]
-multi_address = "/ip4/127.0.0.1/tcp/10000/p2p/QmTEJkB5QKWsEq37huryZZfVvqBKb54sHnKn9TQcA6j3n9"
+multi_address = "/ip4/127.0.0.1/tcp/10004/p2p/QmVBtiL1x7HVBduSnMGu3TzamZNKabQk2hMZwg4ephWnQ9"
+
+[[network.bootstraps]]
+multi_address = "/ip4/127.0.0.1/tcp/10003/p2p/QmWbtw4PrPheTFe1qsyykECroJMYVe75VKz2CnvyqoRgNt"
+
+[[network.bootstraps]]
+multi_address = "/ip4/127.0.0.1/tcp/10002/p2p/QmSHdghJyce54sqmuBWJNUUwxYu2HPmED4NDJHFTuVs7ng"
+
+[[network.bootstraps]]
+multi_address = "/ip4/127.0.0.1/tcp/10001/p2p/QmQTuFXwu5tD9EGAXnTFWirQivrebxX7wDEwZPz76GB3zQ"
 
 [mempool]
 timeout_gap = 20
@@ -42,7 +51,7 @@ triedb_cache_size = 2000
 filter = "info"
 log_to_console = true
 console_show_file_and_line = false
-log_path = "logs/"
+log_path = "logs/node_1/"
 log_to_file = true
 file_size_limit = 1073741824 # 1 GiB
 metrics = true

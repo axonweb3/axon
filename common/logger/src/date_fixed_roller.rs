@@ -36,8 +36,8 @@ impl DateFixedWindowRollerBuilder {
 /// value.
 ///
 /// For example:
-/// For pattern `log/{date}.muta.{timestamp}.log`, it will generate
-/// `log/2020-08-27.muta.83748392743.log`.
+/// For pattern `log/{date}.axon.{timestamp}.log`, it will generate
+/// `log/2020-08-27.axon.83748392743.log`.
 #[derive(Debug)]
 pub struct DateFixedWindowRoller {
     pattern: String,
@@ -114,7 +114,7 @@ mod tests {
     fn test_rotation() {
         let temp_dir = std::env::temp_dir();
         let pattern = format!(
-            "{}/{{date}}.muta.{{timestamp}}.log",
+            "{}/{{date}}.axon.{{timestamp}}.log",
             temp_dir.as_path().to_string_lossy()
         );
         let roller = DateFixedWindowRoller::builder().build(&pattern).unwrap();
@@ -136,7 +136,7 @@ mod tests {
         let mut log_data = vec![];
         let archived_log = {
             let mut temp_file = temp_dir;
-            temp_file.push(&format!("{}.muta.{}.log", &date, &timestamp));
+            temp_file.push(&format!("{}.axon.{}.log", &date, &timestamp));
             temp_file
         };
 

@@ -1,5 +1,7 @@
 # A simple config set for creating a new chain
 
+**The config files in this folder are only used for test!**
+
 Address in genesis:
 
  Address                                       | Asset(MTT)    | PrivKey                                                              | Pubkey                                                                 |

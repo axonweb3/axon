@@ -12,6 +12,7 @@ serde = { version = "1.0", features = ["derive"] }
 stringreader = "0.1"
 toml = "0.5"
 tentacle-multiaddr = "0.3"
+serde_json = "1.0"
 
 core-consensus = { path = "../../core/consensus" }
 core-mempool = { path = "../../core/mempool" }

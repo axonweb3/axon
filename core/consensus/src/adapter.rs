@@ -1,4 +1,3 @@
-use std::boxed::Box;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -56,7 +55,7 @@ where
     async fn get_txs_from_mempool(
         &self,
         ctx: Context,
-        _height: u64,
+        _number: u64,
         cycle_limit: u64,
         tx_num_limit: u64,
     ) -> ProtocolResult<MixedTxHashes> {
@@ -103,7 +102,7 @@ where
         }
     }
 
-    /// Get the current height from storage.
+    /// Get the current number from storage.
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
     async fn get_current_number(&self, ctx: Context) -> ProtocolResult<u64> {
         let header = self.storage.get_latest_block_header(ctx).await?;
@@ -122,14 +121,14 @@ where
 
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter", logs =
     // "{'txs_len': 'txs.len()'}")]
-    async fn verify_txs(&self, ctx: Context, height: u64, txs: &[Hash]) -> ProtocolResult<()> {
+    async fn verify_txs(&self, ctx: Context, number: u64, txs: &[Hash]) -> ProtocolResult<()> {
         if let Err(e) = self
             .mempool
-            .ensure_order_txs(ctx.clone(), Some(height), txs)
+            .ensure_order_txs(ctx.clone(), Some(number), txs)
             .await
         {
             log::error!("verify_txs error {:?}", e);
-            return Err(ConsensusError::VerifyTransaction(height).into());
+            return Err(ConsensusError::VerifyTransaction(number).into());
         }
 
         Ok(())
@@ -148,7 +147,7 @@ where
     fn update_status(
         &self,
         ctx: Context,
-        height: u64,
+        number: u64,
         consensus_interval: u64,
         propose_ratio: u64,
         prevote_ratio: u64,
@@ -163,7 +162,7 @@ where
             .send_msg(
                 ctx,
                 OverlordMsg::RichStatus(gen_overlord_status(
-                    height + 1,
+                    number + 1,
                     consensus_interval,
                     propose_ratio,
                     prevote_ratio,
@@ -178,10 +177,10 @@ where
 
     /// Pull some blocks from other nodes from `begin` to `end`.
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
-    async fn get_block_from_remote(&self, ctx: Context, height: u64) -> ProtocolResult<Block> {
+    async fn get_block_from_remote(&self, ctx: Context, number: u64) -> ProtocolResult<Block> {
         let res = self
             .network
-            .call::<BlockNumber, Block>(ctx, RPC_SYNC_PULL_BLOCK, height, Priority::High)
+            .call::<BlockNumber, Block>(ctx, RPC_SYNC_PULL_BLOCK, number, Priority::High)
             .await;
         match res {
             Ok(data) => {
@@ -210,7 +209,7 @@ where
     async fn get_txs_from_remote(
         &self,
         ctx: Context,
-        height: u64,
+        number: u64,
         hashes: &[Hash],
     ) -> ProtocolResult<Vec<SignedTransaction>> {
         let res = self
@@ -218,7 +217,7 @@ where
             .call::<PullTxsRequest, BatchSignedTxs>(
                 ctx,
                 RPC_SYNC_PULL_TXS,
-                PullTxsRequest::new(height, hashes.to_vec()),
+                PullTxsRequest::new(number, hashes.to_vec()),
                 Priority::High,
             )
             .await?;
@@ -226,11 +225,11 @@ where
     }
 
     /// Pull a proof of certain block from other nodes
-    #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
-    async fn get_proof_from_remote(&self, ctx: Context, height: u64) -> ProtocolResult<Proof> {
+    // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
+    async fn get_proof_from_remote(&self, ctx: Context, number: u64) -> ProtocolResult<Proof> {
         let ret = self
             .network
-            .call::<BlockNumber, Proof>(ctx.clone(), RPC_SYNC_PULL_PROOF, height, Priority::High)
+            .call::<BlockNumber, Proof>(ctx.clone(), RPC_SYNC_PULL_PROOF, number, Priority::High)
             .await?;
         Ok(ret)
     }
@@ -266,11 +265,11 @@ where
     async fn save_signed_txs(
         &self,
         ctx: Context,
-        block_height: u64,
+        block_number: u64,
         signed_txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<()> {
         self.storage
-            .insert_transactions(ctx, block_height, signed_txs)
+            .insert_transactions(ctx, block_number, signed_txs)
             .await
     }
 
@@ -281,10 +280,10 @@ where
     async fn save_receipts(
         &self,
         ctx: Context,
-        height: u64,
+        number: u64,
         receipts: Vec<Receipt>,
     ) -> ProtocolResult<()> {
-        self.storage.insert_receipts(ctx, height, receipts).await
+        self.storage.insert_receipts(ctx, number, receipts).await
     }
 
     /// Flush the given transactions in the mempool.
@@ -296,11 +295,11 @@ where
         self.mempool.flush(ctx, ordered_tx_hashes).await
     }
 
-    /// Get a block corresponding to the given height.
+    /// Get a block corresponding to the given number.
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
-    async fn get_block_by_number(&self, ctx: Context, height: u64) -> ProtocolResult<Block> {
+    async fn get_block_by_number(&self, ctx: Context, number: u64) -> ProtocolResult<Block> {
         self.storage
-            .get_block(ctx, height)
+            .get_block(ctx, number)
             .await?
             .ok_or_else(|| ConsensusError::StorageItemNotFound.into())
     }
@@ -308,10 +307,10 @@ where
     async fn get_block_header_by_number(
         &self,
         ctx: Context,
-        height: u64,
+        number: u64,
     ) -> ProtocolResult<Header> {
         self.storage
-            .get_block_header(ctx, height)
+            .get_block_header(ctx, number)
             .await?
             .ok_or_else(|| ConsensusError::StorageItemNotFound.into())
     }
@@ -351,19 +350,23 @@ where
         signed_txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<ExecResp> {
         let base_ctx = Arc::new(Mutex::new(header.clone().into()));
-        let mut backend = ExecutorAdapter::new(
-            header.state_root,
-            Arc::clone(&self.trie_db),
-            Arc::clone(&base_ctx),
-        )?;
+        let mut backend = if header.state_root == Default::default() {
+            ExecutorAdapter::new(Arc::clone(&self.trie_db), Arc::clone(&base_ctx))
+        } else {
+            ExecutorAdapter::from_root(
+                header.state_root,
+                Arc::clone(&self.trie_db),
+                Arc::clone(&base_ctx),
+            )
+        }?;
 
         Ok(EvmExecutor::default().exec(&mut backend, signed_txs))
     }
 
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
-    async fn broadcast_number(&self, ctx: Context, height: u64) -> ProtocolResult<()> {
+    async fn broadcast_number(&self, ctx: Context, number: u64) -> ProtocolResult<()> {
         self.network
-            .broadcast(ctx.clone(), BROADCAST_HEIGHT, height, Priority::High)
+            .broadcast(ctx.clone(), BROADCAST_HEIGHT, number, Priority::High)
             .await
     }
 
@@ -435,7 +438,7 @@ where
 
         if block_header.number != proof.number {
             log::error!(
-                "[consensus] verify_proof, block_header.height: {}, proof.height: {}",
+                "[consensus] verify_proof, block_header.number: {}, proof.number: {}",
                 block_header.number,
                 proof.number
             );
@@ -457,7 +460,7 @@ where
             return Err(ConsensusError::VerifyProof(block_header.number, HashMismatch).into());
         }
 
-        // the auth_list for the target should comes from previous height
+        // the auth_list for the target should comes from previous number
         let metadata = METADATA_CONTROLER.get().unwrap().current();
 
         if !metadata.version.contains(block_header.number) {
@@ -521,7 +524,7 @@ where
             proof.signature.clone(),
             hex_pubkeys,
         ).map_err(|e| {
-            log::error!("[consensus] verify_proof_signature error, height {}, vote: {:?}, vote_hash:{:?}, sig:{:?}, signed_voter:{:?}",
+            log::error!("[consensus] verify_proof_signature error, number {}, vote: {:?}, vote_hash:{:?}, sig:{:?}, signed_voter:{:?}",
             block_header.number,
             vote,
             vote_hash,
@@ -538,7 +541,7 @@ where
     fn verify_proof_signature(
         &self,
         _ctx: Context,
-        block_height: u64,
+        block_number: u64,
         vote_hash: Bytes,
         aggregated_signature_bytes: Bytes,
         vote_keys: Vec<Hex>,
@@ -552,7 +555,7 @@ where
             .inner_verify_aggregated_signature(vote_hash, pub_keys, aggregated_signature_bytes)
             .map_err(|e| {
                 log::error!("[consensus] verify_proof_signature error: {}", e);
-                ConsensusError::VerifyProof(block_height, Signature).into()
+                ConsensusError::VerifyProof(block_number, Signature).into()
             })
     }
 
@@ -560,7 +563,7 @@ where
     fn verify_proof_weight(
         &self,
         ctx: Context,
-        block_height: u64,
+        block_number: u64,
         weight_map: HashMap<Bytes, u32>,
         signed_voters: Vec<Bytes>,
     ) -> ProtocolResult<()> {
@@ -571,7 +574,7 @@ where
             if weight_map.contains_key(signed_voter_address.as_ref()) {
                 let weight = weight_map
                     .get(signed_voter_address.as_ref())
-                    .ok_or(ConsensusError::VerifyProof(block_height, WeightNotFound))
+                    .ok_or(ConsensusError::VerifyProof(block_number, WeightNotFound))
                     .map_err(|e| {
                         log::error!(
                             "[consensus] verify_proof_weight,signed_voter_address: {:?}",
@@ -586,7 +589,7 @@ where
                     signed_voter_address
                 );
                 return Err(
-                    ConsensusError::VerifyProof(block_height, BlockProofField::Validator).into(),
+                    ConsensusError::VerifyProof(block_number, BlockProofField::Validator).into(),
                 );
             }
         }
@@ -598,7 +601,7 @@ where
                 total_validator_weight
             );
 
-            return Err(ConsensusError::VerifyProof(block_height, BlockProofField::Weight).into());
+            return Err(ConsensusError::VerifyProof(block_number, BlockProofField::Weight).into());
         }
         Ok(())
     }

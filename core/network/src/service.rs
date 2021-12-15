@@ -14,7 +14,9 @@ use crate::{
 use async_trait::async_trait;
 use bytes::Bytes;
 use futures::StreamExt;
+use protocol::tokio::time::Instant;
 use protocol::{
+    tokio,
     traits::{
         Context, Gossip, MessageCodec, MessageHandler, PeerTrust, Priority, Rpc, TrustFeedback,
     },
@@ -31,7 +33,6 @@ use tentacle::{
     utils::extract_peer_id,
     yamux::Config as YamuxConfig,
 };
-use tokio::time::Instant;
 
 #[derive(Clone)]
 pub struct NetworkServiceHandle {
@@ -237,8 +238,11 @@ impl NetworkService {
             .listen(self.config.default_listen.clone())
             .await
             .unwrap();
+
+        let mut control: ServiceAsyncControl = self.net.control().clone().into();
+
         for addr in self.config.bootstraps.iter() {
-            self.net
+            control
                 .dial(
                     addr.clone(),
                     TargetProtocol::Single(
@@ -248,7 +252,6 @@ impl NetworkService {
                 .await
                 .unwrap();
         }
-        let mut control: ServiceAsyncControl = self.net.control().clone().into();
 
         let mut interval = tokio::time::interval_at(Instant::now(), Duration::from_secs(10));
         loop {
