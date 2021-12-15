@@ -389,6 +389,9 @@ mod tests {
     fn test_eip55() {
         let addr = "0x35e70c3f5a794a77efc2ec5ba964bffcc7fd2c0a";
         let eip55 = Address::from_hex(addr).unwrap();
-        assert_eq!(eip55.to_string(), "0x35E70C3F5A794A77Efc2Ec5bA964BFfcC7Fd2C0a");
+        assert_eq!(
+            eip55.to_string(),
+            "0x35E70C3F5A794A77Efc2Ec5bA964BFfcC7Fd2C0a"
+        );
     }
 }
