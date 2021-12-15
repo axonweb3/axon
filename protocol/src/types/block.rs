@@ -53,7 +53,7 @@ pub struct Genesis {
     pub rich_txs: Vec<SignedTransaction>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct RichBlock {
     pub block: Block,
     pub txs:   Vec<SignedTransaction>,
