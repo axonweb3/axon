@@ -1,0 +1,19 @@
+version: '3'
+
+services:
+  axon:
+    container_name: axom
+    build: .
+    restart: always
+    privileged: true
+    ports:
+      - 8432:5432
+    volumes:
+      - ./devtools:/app/devtools
+    networks:
+      - axon-net
+    command: ./axon -c=/app/devtools/chain/config.toml -g=/app/devtools/chain/genesis.json -m=/app/devtools/chain/metadata.json
+
+
+networks:
+  axon-net:
