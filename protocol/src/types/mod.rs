@@ -37,6 +37,9 @@ pub enum TypesError {
 
     #[display(fmt = "Invalid public key")]
     InvalidPublicKey,
+
+    #[display(fmt = "Invalid check sum")]
+    InvalidCheckSum,
 }
 
 impl Error for TypesError {}
