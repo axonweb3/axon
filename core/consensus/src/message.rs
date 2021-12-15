@@ -295,7 +295,6 @@ impl<R: Rpc + 'static, S: Storage + 'static> MessageHandler for PullProofRpcHand
         let ret = match latest_proof {
             Ok(latest_proof) => match msg {
                 number if number < latest_proof.number => {
-                    log::warn!("{}, {}", number, latest_proof.number);
                     match self.storage.get_block_header(ctx.clone(), number + 1).await {
                         Ok(Some(next_header)) => Ok(next_header.proof),
                         Ok(None) => Err(StorageError::GetNone.into()),
@@ -307,8 +306,6 @@ impl<R: Rpc + 'static, S: Storage + 'static> MessageHandler for PullProofRpcHand
             },
             Err(_) => Err(StorageError::GetNone.into()),
         };
-
-        log::warn!("proof: {:?}", ret);
 
         self.rpc
             .response(ctx, RPC_RESP_SYNC_PULL_PROOF, ret, Priority::High)

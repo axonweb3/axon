@@ -57,6 +57,7 @@ impl<Adapter: SynchronizationAdapter> Synchronization for OverlordSynchronizatio
             return Ok(());
         }
 
+        let remote_number = remote_number - 1;
         log::info!(
             "[synchronization]: sync start, remote block number {:?} current block number {:?}",
             remote_number,
@@ -164,10 +165,8 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
                     e
                 })?;
 
-            log::error!("{:?}", consenting_rich_block.block.header.number);
-
             let consenting_proof = self
-                .verify_block(ctx.clone(), &consenting_rich_block, remote_number)
+                .verify_block(ctx.clone(), &consenting_rich_block)
                 .await?;
 
             let inst = Instant::now();
@@ -200,23 +199,22 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         &self,
         ctx: Context,
         consenting_rich_block: &RichBlock,
-        remote_number: u64,
     ) -> ProtocolResult<Proof> {
         let consenting_number = consenting_rich_block.block.header.number;
-        if consenting_number != remote_number {
-            let consenting_proof: Proof = self
-                .adapter
-                .get_proof_from_remote(ctx.clone(), consenting_number)
-                .await
-                .map_err(|e| {
-                    log::error!(
-                        "[synchronization]: get_proof_from_remote error, number: {:?}",
-                        consenting_number
-                    );
-                    e
-                })?;
-                
-            self.adapter
+
+        let consenting_proof: Proof = self
+            .adapter
+            .get_proof_from_remote(ctx.clone(), consenting_number)
+            .await
+            .map_err(|e| {
+                log::error!(
+                    "[synchronization]: get_proof_from_remote error, number: {:?}",
+                    consenting_number
+                );
+                e
+            })?;
+
+        self.adapter
             .verify_proof(
                 ctx.clone(),
                 &consenting_rich_block.block.header,
@@ -231,7 +229,6 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
                 );
                 e
             })?;
-        }
 
         self.adapter
             .verify_block_header(ctx.clone(), &consenting_rich_block.block)
