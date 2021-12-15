@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{fmt, str::FromStr};
 
 pub use ethereum_types::{
     Bloom, Public, Secret, Signature, H128, H160, H256, H512, H520, H64, U128, U256, U512,
@@ -10,7 +10,7 @@ use overlord::DurationConfig;
 use serde::{de, Deserialize, Serialize};
 
 use crate::types::{BlockNumber, Bytes, TypesError};
-use crate::ProtocolResult;
+use crate::{ProtocolError, ProtocolResult};
 
 lazy_static::lazy_static! {
     static ref HASHER_INST: HasherKeccak = HasherKeccak::new();
@@ -125,7 +125,7 @@ impl<'de> Deserialize<'de> for Hex {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Address(pub H160);
 
 impl Default for Address {
@@ -221,37 +221,39 @@ impl Address {
         let bytes = Bytes::from(bytes);
         Self::from_bytes(bytes)
     }
+
+    pub fn eip55(&self) -> String {
+        self.to_string()
+    }
 }
 
-// impl FromStr for Address {
-//     type Err = TypesError;
+impl FromStr for Address {
+    type Err = ProtocolError;
 
-//     fn from_str(s: &str) -> Result<Self, Self::Err> {
-//         let (hrp, data) = bech32::decode(s).map_err(TypesError::from)?;
-//         if hrp != address_hrp() {
-//             return Err(TypesError::InvalidAddress {
-//                 address: s.to_owned(),
-//             });
-//         }
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if checksum(s) != s {
+            return Err(TypesError::InvalidCheckSum.into());
+        }
 
-//         let bytes = Vec::<u8>::from_base32(&data).map_err(TypesError::from)?;
-//         Ok(Address(Bytes::from(bytes)))
-//     }
-// }
+        Address::from_hex(&s.to_lowercase())
+    }
+}
 
-// impl fmt::Debug for Address {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         // NOTE: ADDRESS_HRP was verified in init_address_hrp fn
-//         bech32::encode_to_fmt(f, address_hrp().as_ref(),
-// &self.0.to_base32()).unwrap()     }
-// }
+impl fmt::Debug for Address {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let eip55 = checksum(&hex::encode(&self.0));
+        eip55.fmt(f)?;
+        Ok(())
+    }
+}
 
-// impl fmt::Display for Address {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         // NOTE: ADDRESS_HRP was verified in init_address_hrp fn
-//         bech32::encode_to_fmt(f, address_hrp().as_ref(),
-// &self.0.to_base32()).unwrap()     }
-// }
+impl fmt::Display for Address {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let eip55 = checksum(&hex::encode(&self.0));
+        eip55.fmt(f)?;
+        Ok(())
+    }
+}
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug, Copy, PartialEq, Eq)]
 pub struct MetadataVersion {
@@ -354,5 +356,39 @@ fn clean_0x(s: &str) -> ProtocolResult<&str> {
         Ok(&s[2..])
     } else {
         Err(TypesError::HexPrefix.into())
+    }
+}
+
+pub fn checksum(address: &str) -> String {
+    let address = address.trim_start_matches("0x").to_lowercase();
+    let address_hash = hex::encode(Hasher::digest(address.as_bytes()));
+
+    address
+        .char_indices()
+        .fold(String::from("0x"), |mut acc, (index, address_char)| {
+            // this cannot fail since it's Keccak256 hashed
+            let n = u16::from_str_radix(&address_hash[index..index + 1], 16).unwrap();
+
+            if n > 7 {
+                // make char uppercase if ith character is 9..f
+                acc.push_str(&address_char.to_uppercase().to_string())
+            } else {
+                // already lowercased
+                acc.push(address_char)
+            }
+
+            acc
+        })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_eip55() {
+        let addr = "0x35e70c3f5a794a77efc2ec5ba964bffcc7fd2c0a";
+        let addr = Address::from_hex(addr).unwrap();
+        println!("{}", addr)
     }
 }
