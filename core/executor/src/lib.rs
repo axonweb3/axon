@@ -5,9 +5,11 @@ use std::collections::BTreeMap;
 use evm::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadata};
 
 use common_merkle::Merkle;
+use protocol::codec::ProtocolCodec;
 use protocol::traits::{ApplyBackend, Backend, Executor, ExecutorAdapter as Adapter};
 use protocol::types::{
-    Address, Config, ExecResp, Hasher, SignedTransaction, TransactionAction, TxResp, H256, U256,
+    Account, Config, ExecResp, Hasher, SignedTransaction, TransactionAction, TxResp, H160, H256,
+    NIL_DATA, RLP_NULL, U256,
 };
 
 pub mod adapter;
@@ -23,15 +25,15 @@ impl EvmExecutor {
 
 impl Executor for EvmExecutor {
     // Used for query data API, this function will not modify the world state.
-    fn call<B: Backend>(&self, backend: &mut B, addr: Address, data: Vec<u8>) -> TxResp {
+    fn call<B: Backend>(&self, backend: &mut B, addr: H160, data: Vec<u8>) -> TxResp {
         let config = Config::london();
         let metadata = StackSubstateMetadata::new(u64::MAX, &config);
         let state = MemoryStackState::new(metadata, backend);
         let precompiles = BTreeMap::new();
         let mut executor = StackExecutor::new_with_precompiles(state, &config, &precompiles);
         let (exit_reason, ret) = executor.transact_call(
-            Address::default().0,
-            addr.0,
+            Default::default(),
+            addr,
             U256::default(),
             data,
             u64::MAX,
@@ -67,6 +69,18 @@ impl Executor for EvmExecutor {
                 .unwrap_or_default(),
             gas_used:     res.iter().map(|r| r.gas_used).sum(),
             tx_resp:      res,
+        }
+    }
+
+    fn get_account<B: Backend + Adapter>(&self, backend: &B, address: &H160) -> Account {
+        match backend.get(address.as_bytes()) {
+            Some(bytes) => Account::decode(bytes).unwrap(),
+            None => Account {
+                nonce:        Default::default(),
+                balance:      Default::default(),
+                storage_root: RLP_NULL,
+                code_hash:    NIL_DATA,
+            },
         }
     }
 }

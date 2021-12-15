@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-cita_trie = "2.0"
+cita_trie = "3.0"
 crossbeam-queue = "0.3"
 futures = { version = "0.3", features = [ "async-await" ] }
 hex = "0.4"
@@ -15,11 +15,13 @@ rand = "0.7"
 rayon = "1.5"
 rlp = "0.5"
 rlp-derive = "0.1"
+parking_lot = "0.11"
 
 protocol = { path = "../../protocol", package = "axon-protocol"}
 common-apm = { path = "../../common/apm" }
 common-crypto = { path = "../../common/crypto" }
+core-executor = { path = "../../core/executor" }
 
 [dev-dependencies]
-dashmap = "4.0"
+dashmap = "5.0"
 parking_lot = "0.11"

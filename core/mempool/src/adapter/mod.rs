@@ -9,22 +9,23 @@ use futures::{
     channel::mpsc::{
         channel, unbounded, Receiver, Sender, TrySendError, UnboundedReceiver, UnboundedSender,
     },
-    lock::Mutex,
     select,
     stream::StreamExt,
 };
 use log::{debug, error};
+use parking_lot::Mutex;
 
 use common_crypto::{Crypto, Secp256k1Recoverable};
-use protocol::{
-    async_trait,
-    codec::ProtocolCodec,
-    tokio,
-    tokio::time::sleep,
-    traits::{Context, Gossip, MemPoolAdapter, PeerTrust, Priority, Rpc, Storage, TrustFeedback},
-    types::{recover_intact_pub_key, Hash, SignedTransaction},
-    Display, ProtocolError, ProtocolErrorKind, ProtocolResult,
+use core_executor::{adapter::ExecutorAdapter, EvmExecutor};
+use protocol::traits::{
+    Context, Executor, Gossip, MemPoolAdapter, PeerTrust, Priority, Rpc, Storage, TrustFeedback,
 };
+use protocol::types::{recover_intact_pub_key, Hash, SignedTransaction, TransactionAction};
+use protocol::{
+    async_trait, codec::ProtocolCodec, Display, ProtocolError, ProtocolErrorKind, ProtocolResult,
+};
+
+use protocol::tokio::{self, time::sleep};
 
 use crate::adapter::message::{
     MsgNewTxs, MsgPullTxs, MsgPushTxs, END_GOSSIP_NEW_TXS, RPC_PULL_TXS,
@@ -127,9 +128,10 @@ impl IntervalTxsBroadcaster {
     }
 }
 
-pub struct DefaultMemPoolAdapter<C, N, S> {
+pub struct DefaultMemPoolAdapter<C, N, S, DB> {
     network: N,
     storage: Arc<S>,
+    trie_db: Arc<DB>,
 
     timeout_gap: AtomicU64,
     gas_limit:   AtomicU64,
@@ -142,15 +144,17 @@ pub struct DefaultMemPoolAdapter<C, N, S> {
     pin_c: PhantomData<C>,
 }
 
-impl<C, N, S> DefaultMemPoolAdapter<C, N, S>
+impl<C, N, S, DB> DefaultMemPoolAdapter<C, N, S, DB>
 where
     C: Crypto,
     N: Rpc + PeerTrust + Gossip + Clone + Unpin + 'static,
     S: Storage,
+    DB: cita_trie::DB + 'static,
 {
     pub fn new(
         network: N,
         storage: Arc<S>,
+        trie_db: Arc<DB>,
         chain_id: u64,
         timeout_gap: u64,
         gas_limit: u64,
@@ -178,6 +182,7 @@ where
         DefaultMemPoolAdapter {
             network,
             storage,
+            trie_db,
 
             timeout_gap: AtomicU64::new(timeout_gap),
             gas_limit: AtomicU64::new(gas_limit),
@@ -193,11 +198,12 @@ where
 }
 
 #[async_trait]
-impl<C, N, S> MemPoolAdapter for DefaultMemPoolAdapter<C, N, S>
+impl<C, N, S, DB> MemPoolAdapter for DefaultMemPoolAdapter<C, N, S, DB>
 where
     C: Crypto + Send + Sync + 'static,
     N: Rpc + PeerTrust + Gossip + Clone + Unpin + 'static,
     S: Storage + 'static,
+    DB: cita_trie::DB + 'static,
 {
     // #[muta_apm::derive::tracing_span(
     //     kind = "mempool.adapter",
@@ -241,8 +247,24 @@ where
     async fn check_authorization(
         &self,
         _ctx: Context,
-        _tx: Box<SignedTransaction>,
+        tx: Box<SignedTransaction>,
     ) -> ProtocolResult<()> {
+        let backend = ExecutorAdapter::new(
+            Arc::clone(&self.trie_db),
+            Arc::new(Mutex::new(Default::default())),
+        )?;
+
+        if let TransactionAction::Call(addr) = tx.transaction.unsigned.action {
+            let account = EvmExecutor::default().get_account(&backend, &addr);
+            if account.nonce >= tx.transaction.unsigned.nonce {
+                return Err(MemPoolError::InvalidNonce {
+                    current:  account.nonce.as_u64(),
+                    tx_nonce: tx.transaction.unsigned.nonce.as_u64(),
+                }
+                .into());
+            }
+        }
+
         Ok(())
     }
 
@@ -275,7 +297,7 @@ where
                     TrustFeedback::Bad(format!("Mempool exceed cycle limit of tx {:?}", tx_hash)),
                 );
             }
-            return Err(MemPoolError::ExceedCyclesLimit {
+            return Err(MemPoolError::ExceedGasLimit {
                 tx_hash,
                 gas_limit_tx: gas_limit_tx.as_u64(),
                 gas_limit_config: self.gas_limit.load(Ordering::SeqCst),

@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 cita_trie = "3.0"
-dashmap = "4.0"
+dashmap = "5.0"
 evm = "0.33.0"
 futures = "0.3"
 hasher = "0.1"

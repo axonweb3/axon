@@ -7,7 +7,7 @@ use std::default::Default;
 use clap::App;
 use ophelia::{PublicKey, ToBlsPublicKey};
 use ophelia_bls_amcl::BlsPrivateKey;
-use protocol::types::{Bytes, BytesMut, Hasher, H160};
+use protocol::types::{Address, Bytes, BytesMut, Hasher};
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 use rand::{rngs::OsRng, RngCore};
@@ -74,12 +74,12 @@ pub fn main() {
         };
         let keypair = SecioKeyPair::secp256k1_raw_key(seckey.as_ref()).expect("secp256k1 keypair");
         let pubkey = keypair.public_key().inner();
-        let address = H160::from_slice(&pubkey[0..20]);
+        let address = Address::from_pubkey_bytes(pubkey.clone()).unwrap();
 
         k.private_key = add_0x(hex::encode(seckey.as_ref()));
         k.public_key = add_0x(hex::encode(pubkey));
         k.peer_id = keypair.public_key().peer_id().to_base58();
-        k.address = add_0x(hex::encode(address.as_bytes()));
+        k.address = add_0x(hex::encode(address.as_slice()));
 
         let priv_key =
             BlsPrivateKey::try_from([&[0u8; 16], seckey.as_ref()].concat().as_ref()).unwrap();
