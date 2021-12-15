@@ -15,7 +15,7 @@ max_payload_size = 1048576
 
 
 [network]
-listening_address = "/ip4/127.0.0.1/tcp/10000"
+listening_address = "/ip4/0.0.0.0/tcp/8001"
 rpc_timeout = 10
 
 [consensus]
