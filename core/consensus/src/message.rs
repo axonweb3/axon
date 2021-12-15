@@ -46,7 +46,9 @@ macro_rules! overlord_message {
             }
 
             fn decode<B: AsRef<[u8]>>(bytes: B) -> protocol::ProtocolResult<Self> {
-                Ok(Self(protocol::types::Bytes::from(bytes.as_ref().to_vec())))
+                Ok(Self(rlp::decode(bytes.as_ref()).map_err(|_| {
+                    crate::ConsensusError::DecodeErr(crate::ConsensusType::SignedChoke)
+                })?))
             }
         }
 
@@ -73,7 +75,9 @@ macro_rules! overlord_message {
             }
 
             fn decode<B: AsRef<[u8]>>(bytes: B) -> protocol::ProtocolResult<Self> {
-                Ok(Self(protocol::types::Bytes::from(bytes.as_ref().to_vec())))
+                Ok(Self(rlp::decode(bytes.as_ref()).map_err(|_| {
+                    crate::ConsensusError::DecodeErr(crate::ConsensusType::SignedChoke)
+                })?))
             }
         }
 
@@ -155,7 +159,8 @@ impl<C: Consensus + 'static> QCMessageHandler<C> {
 impl<C: Consensus + 'static> MessageHandler for QCMessageHandler<C> {
     type Message = QC;
 
-    #[muta_apm::derive::tracing_span(name = "handle_qc", kind = "consensus.message")]
+    // #[muta_apm::derive::tracing_span(name = "handle_qc", kind =
+    // "consensus.message")]
     async fn process(&self, ctx: Context, msg: Self::Message) -> TrustFeedback {
         if let Err(e) = self.consensus.set_qc(ctx, msg.to_vec()).await {
             warn!("set qc {}", e);
@@ -180,7 +185,8 @@ impl<C: Consensus + 'static> ChokeMessageHandler<C> {
 impl<C: Consensus + 'static> MessageHandler for ChokeMessageHandler<C> {
     type Message = Choke;
 
-    // #[muta_apm::derive::tracing_span(name = "handle_choke", kind = "consensus.message")]
+    // #[muta_apm::derive::tracing_span(name = "handle_choke", kind =
+    // "consensus.message")]
     async fn process(&self, ctx: Context, msg: Self::Message) -> TrustFeedback {
         if let Err(e) = self.consensus.set_choke(ctx, msg.to_vec()).await {
             warn!("set choke {}", e);
@@ -281,13 +287,15 @@ where
 impl<R: Rpc + 'static, S: Storage + 'static> MessageHandler for PullProofRpcHandler<R, S> {
     type Message = BlockNumber;
 
-    #[muta_apm::derive::tracing_span(name = "pull_proof_rpc", kind = "consensus.message")]
+    // #[muta_apm::derive::tracing_span(name = "pull_proof_rpc", kind =
+    // "consensus.message")]
     async fn process(&self, ctx: Context, msg: BlockNumber) -> TrustFeedback {
         let latest_proof = self.storage.get_latest_proof(ctx.clone()).await;
 
         let ret = match latest_proof {
             Ok(latest_proof) => match msg {
                 number if number < latest_proof.number => {
+                    log::warn!("{}, {}", number, latest_proof.number);
                     match self.storage.get_block_header(ctx.clone(), number + 1).await {
                         Ok(Some(next_header)) => Ok(next_header.proof),
                         Ok(None) => Err(StorageError::GetNone.into()),
@@ -299,6 +307,8 @@ impl<R: Rpc + 'static, S: Storage + 'static> MessageHandler for PullProofRpcHand
             },
             Err(_) => Err(StorageError::GetNone.into()),
         };
+
+        log::warn!("proof: {:?}", ret);
 
         self.rpc
             .response(ctx, RPC_RESP_SYNC_PULL_PROOF, ret, Priority::High)

@@ -43,8 +43,10 @@ use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::tokio::signal::unix::{self as os_impl};
 use protocol::tokio::{sync::Mutex as AsyncMutex, time::sleep};
 use protocol::traits::{CommonStorage, Context, Executor, MemPool, NodeInfo, Storage};
-use protocol::types::{Address, Bloom, BloomInput, Genesis, Metadata, Validator};
-use protocol::{tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
+use protocol::types::{Address, Bloom, BloomInput, Genesis, Hasher, Metadata, Validator};
+use protocol::{
+    codec::ProtocolCodec, tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
+};
 
 #[derive(Debug)]
 pub struct Axon {
@@ -339,7 +341,7 @@ impl Axon {
         );
 
         let current_consensus_status = CurrentStatus {
-            prev_hash:        current_header.prev_hash,
+            prev_hash:        Hasher::digest(current_header.encode()?),
             last_number:      current_header.number,
             state_root:       resp.state_root,
             receipts_root:    resp.receipt_root,

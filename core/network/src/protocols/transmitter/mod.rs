@@ -1,6 +1,7 @@
 use tentacle::{
     bytes::Bytes,
     context::{ProtocolContext, ProtocolContextMutRef},
+    runtime::spawn,
     traits::ServiceProtocol,
     utils::extract_peer_id,
 };
@@ -58,7 +59,7 @@ impl ServiceProtocol for TransmitterProtocol {
 
         // let host = remote_peer.connected_addr.host.to_owned();
         let route_fut = self.router.route_message(remote_peer.clone(), recv_msg);
-        tokio::spawn(async move {
+        spawn(async move {
             // common_apm::metrics::network::NETWORK_RECEIVED_MESSAGE_IN_PROCESSING_GUAGE.
             // inc(); common_apm::metrics::network::
             // NETWORK_RECEIVED_IP_MESSAGE_IN_PROCESSING_GUAGE_VEC

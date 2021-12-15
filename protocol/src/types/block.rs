@@ -53,6 +53,12 @@ pub struct Genesis {
     pub rich_txs: Vec<SignedTransaction>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RichBlock {
+    pub block: Block,
+    pub txs:   Vec<SignedTransaction>,
+}
+
 #[cfg(test)]
 mod tests {
     use crate::types::{

@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use core_network::{NetworkConfig, NetworkService, NetworkServiceHandle};
 use protocol::traits::Rpc;
 use protocol::{
+    tokio,
     traits::{Context, Gossip, MessageHandler, Priority, TrustFeedback},
     types::Bytes,
     ProtocolError,

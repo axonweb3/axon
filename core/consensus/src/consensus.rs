@@ -233,6 +233,6 @@ impl<T: overlord::Codec> OverlordMsgExt for OverlordMsg<T> {
 //     'round': 'msg.get_round()'
 // }"
 // )]
-pub fn tracing_overlord_message<T: overlord::Codec>(ctx: Context, msg: &OverlordMsg<T>) {
+pub fn tracing_overlord_message<T: overlord::Codec>(_ctx: Context, msg: &OverlordMsg<T>) {
     let _ = msg;
 }

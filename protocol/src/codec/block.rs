@@ -204,6 +204,8 @@ impl Codec for Pill {
 
 #[cfg(test)]
 mod tests {
+    use crate::traits::MessageCodec;
+
     use super::*;
 
     #[test]
@@ -220,5 +222,13 @@ mod tests {
         let bytes = rlp::encode(&header);
         let decode: Header = rlp::decode(bytes.as_ref()).unwrap();
         assert_eq!(header, decode);
+    }
+
+    #[test]
+    fn test_proof_codec() {
+        let mut proof = Proof::default();
+        let bytes = proof.encode_msg().unwrap();
+        let decode: Proof = Proof::decode_msg(bytes).unwrap();
+        assert_eq!(proof, decode);
     }
 }

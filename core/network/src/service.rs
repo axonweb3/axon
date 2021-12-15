@@ -14,7 +14,9 @@ use crate::{
 use async_trait::async_trait;
 use bytes::Bytes;
 use futures::StreamExt;
+use protocol::tokio::time::Instant;
 use protocol::{
+    tokio,
     traits::{
         Context, Gossip, MessageCodec, MessageHandler, PeerTrust, Priority, Rpc, TrustFeedback,
     },
@@ -31,7 +33,6 @@ use tentacle::{
     utils::extract_peer_id,
     yamux::Config as YamuxConfig,
 };
-use tokio::time::Instant;
 
 #[derive(Clone)]
 pub struct NetworkServiceHandle {
