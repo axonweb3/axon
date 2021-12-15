@@ -1,35 +1,29 @@
-use derive_more::Display;
+use bytes::BufMut;
 use serde::{Deserialize, Serialize};
 
-use bytes::Bytes;
-
-#[derive(Debug, Deserialize, Serialize, Display)]
-#[repr(u8)]
-pub enum RpcResponseCode {
-    ServerError,
-    Other(u8),
-}
-
-#[derive(Debug, Deserialize, Serialize, Display)]
-#[display(fmt = "rpc err code {} msg {}", code, msg)]
-pub struct RpcErrorMessage {
-    pub code: RpcResponseCode,
-    pub msg:  String,
-}
-
-impl std::error::Error for RpcErrorMessage {}
+use protocol::types::{Bytes, BytesMut};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum RpcResponse {
     Success(Bytes),
-    Error(RpcErrorMessage),
+    Error(String),
 }
 
 impl RpcResponse {
     pub fn encode(&self) -> Bytes {
         match self {
-            RpcResponse::Success(b) => b.clone(),
-            RpcResponse::Error(_) => Bytes::new(),
+            RpcResponse::Success(bytes) => {
+                let mut b = BytesMut::with_capacity(bytes.len() + 1);
+                b.put_u8(0);
+                b.put(bytes.as_ref());
+                b.freeze()
+            }
+            RpcResponse::Error(e) => {
+                let mut b = BytesMut::with_capacity(e.len() + 1);
+                b.put_u8(1);
+                b.put(e.as_bytes());
+                b.freeze()
+            }
         }
     }
 }

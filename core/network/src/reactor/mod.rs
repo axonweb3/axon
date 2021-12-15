@@ -46,7 +46,7 @@ impl<M: MessageCodec, H: MessageHandler<Message = M>> Reactor for MessageReactor
         &self,
         context: RouterContext,
         endpoint: Endpoint,
-        network_message: NetworkMessage,
+        mut network_message: NetworkMessage,
     ) -> ProtocolResult<()> {
         let mut ctx = Context::new()
             .set_session_id(context.remote_peer.session_id)
@@ -62,13 +62,14 @@ impl<M: MessageCodec, H: MessageHandler<Message = M>> Reactor for MessageReactor
         // };
 
         let session_id = context.remote_peer.session_id;
-        let raw_context = Bytes::from(network_message.content);
         let _feedback = match endpoint.scheme() {
             EndpointScheme::Gossip => {
+                let raw_context = Bytes::from(network_message.content);
                 let content = M::decode_msg(raw_context)?;
                 self.msg_handler.process(ctx, content).await
             }
             EndpointScheme::RpcCall => {
+                let raw_context = Bytes::from(network_message.content);
                 let content = M::decode_msg(raw_context)?;
                 let rpc_endpoint = RpcEndpoint::try_from(endpoint)?;
 
@@ -76,7 +77,19 @@ impl<M: MessageCodec, H: MessageHandler<Message = M>> Reactor for MessageReactor
                 self.msg_handler.process(ctx, content).await
             }
             EndpointScheme::RpcResponse => {
-                let content = RpcResponse::Success(raw_context);
+                let content = {
+                    if !network_message.content.is_empty() {
+                        let raw = network_message.content.split_off(1);
+
+                        if network_message.content[0] == 0 {
+                            RpcResponse::Success(Bytes::from(raw))
+                        } else {
+                            RpcResponse::Error(String::from_utf8_lossy(&raw).to_string())
+                        }
+                    } else {
+                        RpcResponse::Error("empty message".to_string())
+                    }
+                };
                 let rpc_endpoint = RpcEndpoint::try_from(endpoint)?;
                 let rpc_id = rpc_endpoint.rpc_id().value();
 

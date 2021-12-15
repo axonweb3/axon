@@ -142,7 +142,7 @@ pub enum NetworkError {
     PartialRouteMessage { miss: Vec<Address> },
 
     #[display(fmt = "remote response {}", _0)]
-    RemoteResponse(Box<dyn Error + Send>),
+    RemoteResponse(String),
 
     #[display(fmt = "trust max history should be longer than {} secs", _0)]
     SmallTrustMaxHistory(u64),

@@ -9,7 +9,7 @@ use crate::endpoint::Endpoint;
 use crate::error::{ErrorKind, NetworkError};
 use crate::message::{Headers, NetworkMessage};
 use crate::reactor::MessageRouter;
-use crate::rpc::{RpcErrorMessage, RpcResponse, RpcResponseCode};
+use crate::rpc::RpcResponse;
 use crate::traits::NetworkContext;
 
 #[derive(Clone)]
@@ -127,7 +127,7 @@ impl Rpc for NetworkRpc {
 
                     Ok(R::decode_msg(v)?)
                 }
-                RpcResponse::Error(e) => Err(NetworkError::RemoteResponse(Box::new(e)).into()),
+                RpcResponse::Error(e) => Err(NetworkError::RemoteResponse(e).into()),
             },
             Ok(Err(_)) => Err(NetworkError::from(ErrorKind::RpcDropped(connected_addr)).into()),
             Err(_) => {
@@ -152,10 +152,7 @@ impl Rpc for NetworkRpc {
         let rid = cx.rpc_id()?;
         let resp = match ret.map_err(|e| e.to_string()) {
             Ok(mut m) => RpcResponse::Success(m.encode_msg()?),
-            Err(err_msg) => RpcResponse::Error(RpcErrorMessage {
-                code: RpcResponseCode::ServerError,
-                msg:  err_msg,
-            }),
+            Err(err_msg) => RpcResponse::Error(err_msg),
         };
 
         let encoded_resp = resp.encode();
