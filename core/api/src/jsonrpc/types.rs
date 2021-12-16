@@ -25,6 +25,7 @@ impl RichTransactionOrHash {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct Web3Block {
     pub number:            u64,
     pub hash:              Hash,
@@ -36,8 +37,8 @@ pub struct Web3Block {
     pub state_root:        Hash,
     pub receipts_root:     Hash,
     pub miner:             H160,
-    pub difficury:         u64,
-    pub total_difficulty:  u64,
+    pub difficury:         U256,
+    pub total_difficulty:  U256,
     pub extra_data:        Bytes,
     pub size:              u64,
     pub gas_limit:         U256,
@@ -61,8 +62,8 @@ impl From<Block> for Web3Block {
             state_root:        b.header.state_root,
             receipts_root:     b.header.receipts_root,
             miner:             b.header.proposer,
-            difficury:         b.header.difficulty.as_u64(),
-            total_difficulty:  b.header.difficulty.as_u64(),
+            difficury:         b.header.difficulty,
+            total_difficulty:  b.header.difficulty,
             extra_data:        b.header.extra_data,
             size:              encode.len() as u64,
             gas_limit:         b.header.gas_limit,
