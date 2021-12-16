@@ -62,9 +62,8 @@ fn test_storage_transactions_insert() {
     let mut hashes = Vec::new();
 
     for _ in 0..10 {
-        let tx_hash = Hasher::digest(get_random_bytes(10));
-        hashes.push(tx_hash);
-        let transaction = mock_signed_tx(tx_hash);
+        let transaction = mock_signed_tx();
+        hashes.push(transaction.transaction.hash);
         transactions.push(transaction);
     }
 
@@ -169,14 +168,13 @@ fn bench_insert_80000_receipts(b: &mut Bencher) {
         exec!(storage.insert_receipts(Context::new(), height, receipts.clone()));
     })
 }
+
 #[bench]
 fn bench_insert_10000_txs(b: &mut Bencher) {
     let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()));
     let height = 2077;
 
-    let txs = (0..10000)
-        .map(|_| mock_signed_tx(Hasher::digest(get_random_bytes(10))))
-        .collect::<Vec<_>>();
+    let txs = (0..10000).map(|_| mock_signed_tx()).collect::<Vec<_>>();
 
     b.iter(move || {
         exec!(storage.insert_transactions(Context::new(), height, txs.clone()));
@@ -188,9 +186,7 @@ fn bench_insert_20000_txs(b: &mut Bencher) {
     let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()));
     let height = 2077;
 
-    let txs = (0..20000)
-        .map(|_| mock_signed_tx(Hasher::digest(get_random_bytes(10))))
-        .collect::<Vec<_>>();
+    let txs = (0..20000).map(|_| mock_signed_tx()).collect::<Vec<_>>();
 
     b.iter(move || {
         exec!(storage.insert_transactions(Context::new(), height, txs.clone()));
@@ -202,9 +198,7 @@ fn bench_insert_40000_txs(b: &mut Bencher) {
     let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()));
     let height = 2077;
 
-    let txs = (0..40000)
-        .map(|_| mock_signed_tx(Hasher::digest(get_random_bytes(10))))
-        .collect::<Vec<_>>();
+    let txs = (0..40000).map(|_| mock_signed_tx()).collect::<Vec<_>>();
 
     b.iter(move || {
         exec!(storage.insert_transactions(Context::new(), height, txs.clone()));
@@ -216,9 +210,7 @@ fn bench_insert_80000_txs(b: &mut Bencher) {
     let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()));
     let height = 2077;
 
-    let txs = (0..80000)
-        .map(|_| mock_signed_tx(Hasher::digest(get_random_bytes(10))))
-        .collect::<Vec<_>>();
+    let txs = (0..80000).map(|_| mock_signed_tx()).collect::<Vec<_>>();
 
     b.iter(move || {
         exec!(storage.insert_transactions(Context::new(), height, txs.clone()));

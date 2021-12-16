@@ -16,7 +16,7 @@ use protocol::codec::ProtocolCodec;
 use protocol::traits::{Context, MemPool, MemPoolAdapter, MixedTxHashes};
 use protocol::types::{
     public_to_address, recover_intact_pub_key, Bytes, Hash, Hasher, Public, SignedTransaction,
-    Transaction, TransactionAction, UnverifiedTransaction, H256, U256,
+    Transaction, TransactionAction, UnverifiedTransaction, U256,
 };
 use protocol::{async_trait, tokio, ProtocolResult};
 
@@ -143,13 +143,13 @@ async fn new_mempool(
 }
 
 async fn check_hash(tx: &SignedTransaction) -> ProtocolResult<()> {
-    let raw = tx.transaction.unsigned.clone();
-    let raw_bytes = raw.encode()?;
-    let tx_hash = Hasher::digest(raw_bytes);
-    if tx_hash != tx.transaction.hash {
+    assert!(tx.transaction.signature.is_some());
+    let b = tx.transaction.encode()?;
+
+    if Hasher::digest(b) != tx.transaction.hash {
         return Err(MemPoolError::CheckHash {
             expect: tx.transaction.hash,
-            actual: tx_hash,
+            actual: tx.transaction.hash,
         }
         .into());
     }
@@ -158,8 +158,13 @@ async fn check_hash(tx: &SignedTransaction) -> ProtocolResult<()> {
 
 fn check_sig(stx: &SignedTransaction) -> ProtocolResult<()> {
     Secp256k1Recoverable::verify_signature(
-        stx.transaction.hash.as_bytes(),
-        stx.transaction.signature.as_bytes().as_ref(),
+        stx.transaction.signature_hash().as_bytes(),
+        stx.transaction
+            .signature
+            .clone()
+            .unwrap()
+            .as_bytes()
+            .as_ref(),
         recover_intact_pub_key(&stx.public).as_bytes(),
     )
     .map_err(|err| AdapterError::VerifySignature(err.to_string()))?;
@@ -261,18 +266,14 @@ async fn exec_get_full_txs(
 
 fn mock_transaction() -> Transaction {
     Transaction {
-        chain_id:                 random::<u64>(),
         nonce:                    U256::one(),
         gas_limit:                U256::one(),
         max_priority_fee_per_gas: U256::one(),
-        max_fee_per_gas:          U256::one(),
+        gas_price:                U256::one(),
         action:                   TransactionAction::Create,
         value:                    U256::one(),
-        input:                    random_bytes(32).to_vec(),
+        data:                     random_bytes(32).to_vec().into(),
         access_list:              vec![],
-        odd_y_parity:             true,
-        r:                        H256::default(),
-        s:                        H256::default(),
     }
 }
 
@@ -283,28 +284,27 @@ fn mock_signed_tx(
     valid: bool,
 ) -> SignedTransaction {
     let raw = mock_transaction();
-    let raw_bytes = raw.encode().unwrap();
-    let tx_hash = Hasher::digest(raw_bytes);
+    let mut tx = UnverifiedTransaction {
+        unsigned:  raw,
+        signature: None,
+        chain_id:  random::<u64>(),
+        hash:      Default::default(),
+    };
 
     let signature = if valid {
-        Secp256k1Recoverable::sign_message(tx_hash.as_bytes(), &priv_key.to_bytes())
+        Secp256k1Recoverable::sign_message(tx.signature_hash().as_bytes(), &priv_key.to_bytes())
             .unwrap()
             .to_bytes()
     } else {
         Bytes::copy_from_slice([0u8; 65].as_ref())
     };
 
-    let tx = UnverifiedTransaction {
-        unsigned:  raw,
-        signature: signature.into(),
-        chain_id:  random::<u64>(),
-        hash:      tx_hash,
-    };
+    tx.signature = Some(signature.into());
 
     let pub_key = Public::from_slice(&pub_key.to_uncompressed_bytes()[1..65]);
 
     SignedTransaction {
-        transaction: tx,
+        transaction: tx.hash(),
         sender:      public_to_address(&pub_key),
         public:      pub_key,
     }

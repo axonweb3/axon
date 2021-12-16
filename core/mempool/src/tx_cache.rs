@@ -434,18 +434,14 @@ mod tests {
 
     fn mock_transaction() -> Transaction {
         Transaction {
-            chain_id:                 random::<u64>(),
             nonce:                    U256::one(),
             gas_limit:                U256::one(),
             max_priority_fee_per_gas: U256::one(),
-            max_fee_per_gas:          U256::one(),
+            gas_price:                U256::one(),
             action:                   TransactionAction::Create,
             value:                    U256::one(),
-            input:                    rand_bytes(32).to_vec(),
+            data:                     rand_bytes(32).to_vec().into(),
             access_list:              vec![],
-            odd_y_parity:             true,
-            r:                        H256::default(),
-            s:                        H256::default(),
         }
     }
 
@@ -454,7 +450,7 @@ mod tests {
             unsigned:  mock_transaction(),
             chain_id:  random::<u64>(),
             hash:      H256::from_slice(&rand_bytes(32)),
-            signature: mock_sig_component(),
+            signature: Some(mock_sig_component()),
         }
     }
 

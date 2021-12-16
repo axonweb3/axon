@@ -1,17 +1,59 @@
 pub use ethereum::{
-    EIP1559Transaction as Transaction, EIP1559TransactionMessage as TransactionMessage,
-    TransactionAction, TransactionRecoveryId, TransactionSignature,
+    AccessList, AccessListItem, EIP1559TransactionMessage as TransactionMessage, TransactionAction,
+    TransactionRecoveryId, TransactionSignature,
 };
+use rlp::Encodable;
 use serde::{Deserialize, Serialize};
 
-use crate::types::{Bytes, BytesMut, Hasher, Public, H160, H256, H520};
+use crate::types::{Bytes, BytesMut, Hash, Hasher, Public, H160, H256, H520, U256};
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct Transaction {
+    pub nonce:                    U256,
+    pub max_priority_fee_per_gas: U256,
+    pub gas_price:                U256,
+    pub gas_limit:                U256,
+    pub action:                   TransactionAction,
+    pub value:                    U256,
+    pub data:                     Bytes,
+    pub access_list:              AccessList,
+}
+
+impl Transaction {
+    pub fn encode(&self, chain_id: u64, signature: Option<SignatureComponents>) -> BytesMut {
+        let utx = UnverifiedTransaction {
+            unsigned: self.clone(),
+            chain_id,
+            signature,
+            hash: Default::default(),
+        };
+
+        utx.rlp_bytes()
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct UnverifiedTransaction {
     pub unsigned:  Transaction,
-    pub signature: SignatureComponents,
+    pub signature: Option<SignatureComponents>,
     pub chain_id:  u64,
     pub hash:      H256,
+}
+
+impl UnverifiedTransaction {
+    pub fn hash(mut self) -> Self {
+        let hash = Hasher::digest(&self.rlp_bytes());
+        self.hash = hash;
+        self
+    }
+
+    pub fn check_hash(&self) -> bool {
+        Hasher::digest(self.rlp_bytes()) == self.hash
+    }
+
+    pub fn signature_hash(&self) -> Hash {
+        Hasher::digest(self.unsigned.encode(self.chain_id, None))
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]

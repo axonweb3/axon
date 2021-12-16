@@ -19,33 +19,30 @@ use protocol::types::{
 
 const _ADDRESS_STR: &str = "0xCAB8EEA4799C21379C20EF5BAA2CC8AF1BEC475B";
 
-fn mock_signed_tx(tx_hash: Hash) -> SignedTransaction {
+fn mock_signed_tx() -> SignedTransaction {
     // let nonce = Hasher::digest(Bytes::from("XXXX"));
+    let utx = UnverifiedTransaction {
+        unsigned:  Transaction {
+            nonce:                    Default::default(),
+            max_priority_fee_per_gas: Default::default(),
+            gas_price:                Default::default(),
+            gas_limit:                Default::default(),
+            action:                   TransactionAction::Create,
+            value:                    Default::default(),
+            data:                     vec![].into(),
+            access_list:              vec![],
+        },
+        signature: Some(SignatureComponents {
+            standard_v: 0,
+            r:          Default::default(),
+            s:          Default::default(),
+        }),
+        chain_id:  random::<u64>(),
+        hash:      Default::default(),
+    };
 
     SignedTransaction {
-        transaction: UnverifiedTransaction {
-            unsigned:  Transaction {
-                chain_id:                 0,
-                nonce:                    Default::default(),
-                max_priority_fee_per_gas: Default::default(),
-                max_fee_per_gas:          Default::default(),
-                gas_limit:                Default::default(),
-                action:                   TransactionAction::Create,
-                value:                    Default::default(),
-                input:                    vec![],
-                access_list:              vec![],
-                odd_y_parity:             false,
-                r:                        Default::default(),
-                s:                        Default::default(),
-            },
-            signature: SignatureComponents {
-                standard_v: 0,
-                r:          Default::default(),
-                s:          Default::default(),
-            },
-            chain_id:  random::<u64>(),
-            hash:      tx_hash,
-        },
+        transaction: utx.hash(),
         sender:      Default::default(),
         public:      Default::default(),
     }

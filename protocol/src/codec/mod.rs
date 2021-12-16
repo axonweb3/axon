@@ -17,11 +17,12 @@ pub trait ProtocolCodec: Sized + Send {
 
 impl<T: Encodable + Decodable + Send> ProtocolCodec for T {
     fn encode(&self) -> ProtocolResult<Bytes> {
-        Ok(rlp::encode(self).freeze())
+        Ok(self.rlp_bytes().freeze())
     }
 
     fn decode<B: AsRef<[u8]>>(bytes: B) -> ProtocolResult<Self> {
-        rlp::decode(bytes.as_ref()).map_err(|e| error::CodecError::Rlp(e.to_string()).into())
+        Self::decode(&rlp::Rlp::new(bytes.as_ref()))
+            .map_err(|e| error::CodecError::Rlp(e.to_string()).into())
     }
 }
 

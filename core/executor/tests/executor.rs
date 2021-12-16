@@ -36,24 +36,20 @@ fn gen_tx(sender: H160, addr: H160, data: Vec<u8>) -> SignedTransaction {
     SignedTransaction {
         transaction: UnverifiedTransaction {
             unsigned:  Transaction {
-                chain_id:                 0,
                 nonce:                    U256::default(),
                 max_priority_fee_per_gas: U256::default(),
-                max_fee_per_gas:          U256::default(),
+                gas_price:                U256::default(),
                 gas_limit:                U256::from_str("0x1000000000").unwrap(),
                 action:                   TransactionAction::Call(addr),
                 value:                    U256::default(),
-                input:                    data,
+                data:                     data.into(),
                 access_list:              Vec::new(),
-                odd_y_parity:             false,
-                r:                        H256::default(),
-                s:                        H256::default(),
             },
-            signature: SignatureComponents {
+            signature: Some(SignatureComponents {
                 standard_v: 0,
                 r:          H256::default(),
                 s:          H256::default(),
-            },
+            }),
             chain_id:  0u64,
             hash:      H256::default(),
         },
