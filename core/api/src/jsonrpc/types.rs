@@ -105,7 +105,7 @@ impl<'a> Visitor<'a> for BlockIdVisitor {
             return Ok(BlockId::Num(number));
         }
 
-         Err(Error::custom("Invalid input"))
+        Err(Error::custom("Invalid input"))
     }
 
     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
