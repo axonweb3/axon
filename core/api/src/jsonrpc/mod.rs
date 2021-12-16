@@ -11,7 +11,7 @@ use protocol::traits::{MemPool, Storage};
 use protocol::types::{BlockNumber, Bytes, RichBlock, SignedTransaction, H160, H256, U256};
 
 use crate::adapter::DefaultAPIAdapter;
-use crate::jsonrpc::types::{BlockId, CallRequest, Index};
+use crate::jsonrpc::types::{BlockId, CallRequest};
 
 type RpcResult<T> = Result<T, Error>;
 

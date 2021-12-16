@@ -68,6 +68,7 @@ impl<'a> Visitor<'a> for BlockIdVisitor {
         write!(formatter, "a block number or 'latest' ")
     }
 
+    #[allow(clippy::never_loop)]
     fn visit_map<V>(self, mut visitor: V) -> Result<Self::Value, V::Error>
     where
         V: MapAccess<'a>,
@@ -81,8 +82,8 @@ impl<'a> Visitor<'a> for BlockIdVisitor {
                 Some(key) => match key.as_str() {
                     "blockNumber" => {
                         let value: String = visitor.next_value()?;
-                        if value.starts_with("0x") {
-                            let number = u64::from_str_radix(&value[2..], 16).map_err(|e| {
+                        if let Some(stripper) = value.strip_prefix("0x") {
+                            let number = u64::from_str_radix(stripper, 16).map_err(|e| {
                                 Error::custom(format!("Invalid block number: {}", e))
                             })?;
 
@@ -104,7 +105,7 @@ impl<'a> Visitor<'a> for BlockIdVisitor {
             return Ok(BlockId::Num(number));
         }
 
-        return Err(Error::custom("Invalid input"));
+         Err(Error::custom("Invalid input"))
     }
 
     fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
@@ -134,7 +135,7 @@ impl<'a> Visitor<'a> for BlockIdVisitor {
 pub struct Index(usize);
 
 impl Index {
-    pub fn value(&self) -> usize {
+    pub fn _value(&self) -> usize {
         self.0
     }
 }
