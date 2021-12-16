@@ -16,7 +16,7 @@ use log::{debug, error};
 use parking_lot::Mutex;
 
 use common_crypto::{Crypto, Secp256k1Recoverable};
-use core_executor::{adapter::ExecutorAdapter, EvmExecutor};
+use core_executor::{EVMExecutorAdapter, EvmExecutor};
 use protocol::traits::{
     Context, Executor, Gossip, MemPoolAdapter, PeerTrust, Priority, Rpc, Storage, TrustFeedback,
 };
@@ -249,7 +249,7 @@ where
         _ctx: Context,
         tx: Box<SignedTransaction>,
     ) -> ProtocolResult<()> {
-        let backend = ExecutorAdapter::new(
+        let backend = EVMExecutorAdapter::new(
             Arc::clone(&self.trie_db),
             Arc::new(Mutex::new(Default::default())),
         )?;

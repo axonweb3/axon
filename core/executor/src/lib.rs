@@ -12,6 +12,8 @@ use protocol::types::{
     NIL_DATA, RLP_NULL, U256,
 };
 
+pub use crate::adapter::{EVMExecutorAdapter, MPTTrie, RocksTrieDB};
+
 pub mod adapter;
 
 #[derive(Default)]

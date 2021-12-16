@@ -6,7 +6,7 @@ use overlord::{extract_voters, Crypto, OverlordHandler};
 use parking_lot::{Mutex, RwLock};
 
 use common_apm::muta_apm;
-use core_executor::{adapter::ExecutorAdapter, EvmExecutor};
+use core_executor::{EVMExecutorAdapter, EvmExecutor};
 use core_network::{PeerId, PeerIdExt};
 
 use protocol::traits::{
@@ -350,15 +350,11 @@ where
         signed_txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<ExecResp> {
         let base_ctx = Arc::new(Mutex::new(header.clone().into()));
-        let mut backend = if header.state_root == Default::default() {
-            ExecutorAdapter::new(Arc::clone(&self.trie_db), Arc::clone(&base_ctx))
-        } else {
-            ExecutorAdapter::from_root(
-                header.state_root,
-                Arc::clone(&self.trie_db),
-                Arc::clone(&base_ctx),
-            )
-        }?;
+        let mut backend = EVMExecutorAdapter::from_root(
+            header.state_root,
+            Arc::clone(&self.trie_db),
+            Arc::clone(&base_ctx),
+        )?;
 
         Ok(task::block_in_place(|| {
             EvmExecutor::default().exec(&mut backend, signed_txs)
