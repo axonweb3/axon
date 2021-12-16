@@ -473,7 +473,7 @@ impl Axon {
             Arc::clone(&storage),
             Arc::clone(&trie_db),
         );
-        tokio::spawn(run_http_server(self.config.rpc.clone(), api_adapter));
+        let _handle = run_http_server(self.config.rpc.clone(), api_adapter)?;
 
         // Run sync
         tokio::spawn(async move {
@@ -537,8 +537,8 @@ impl Axon {
         }));
 
         tokio::select! {
-            _ = ctrl_c_handler =>{ log::info!("ctrl + c is pressed, quit.") },
-            _ = panic_receiver.recv() => { log::info!("child thraed panic, quit.")},
+            _ = ctrl_c_handler => { log::info!("ctrl + c is pressed, quit.") },
+            _ = panic_receiver.recv() => { log::info!("child thraed panic, quit.") },
         };
 
         Ok(())

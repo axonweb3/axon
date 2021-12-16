@@ -1,17 +1,16 @@
 mod r#impl;
 mod types;
 
-use std::io;
-
 use jsonrpsee::http_server::{HttpServerBuilder, HttpServerHandle};
 use jsonrpsee::{proc_macros::rpc, types::Error};
 
 use common_config_parser::types::ConfigApi;
 use protocol::traits::{MemPool, Storage};
 use protocol::types::{BlockNumber, Bytes, RichBlock, SignedTransaction, H160, H256, U256};
+use protocol::ProtocolResult;
 
-use crate::adapter::DefaultAPIAdapter;
 use crate::jsonrpc::types::{BlockId, CallRequest};
+use crate::{adapter::DefaultAPIAdapter, APIError};
 
 type RpcResult<T> = Result<T, Error>;
 
@@ -46,10 +45,10 @@ pub trait AxonJsonRpc {
     async fn estimate_gas(&self, req: CallRequest, number: Option<BlockId>) -> RpcResult<U256>;
 }
 
-pub async fn run_http_server<M, S, DB>(
+pub fn run_http_server<M, S, DB>(
     config: ConfigApi,
     adapter: DefaultAPIAdapter<M, S, DB>,
-) -> Result<HttpServerHandle, io::Error>
+) -> ProtocolResult<HttpServerHandle>
 where
     M: MemPool + 'static,
     S: Storage + 'static,
@@ -58,12 +57,11 @@ where
     let server = HttpServerBuilder::new()
         .max_request_body_size(config.max_payload_size as u32)
         .build(config.listening_address)
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
-
-    let module = r#impl::JsonRpcImpl::new(adapter);
+        .map_err(|e| APIError::HttpServer(e.to_string()))?;
 
     let handle = server
-        .start(module.into_rpc())
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+        .start(r#impl::JsonRpcImpl::new(adapter).into_rpc())
+        .map_err(|e| APIError::HttpServer(e.to_string()))?;
+
     Ok(handle)
 }
