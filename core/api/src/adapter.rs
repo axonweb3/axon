@@ -40,12 +40,11 @@ where
             .get_block_by_number(Context::new(), number)
             .await?
             .ok_or_else(|| APIError::AdapterError(format!("Cannot get {:?} block", number)))?;
-        let state_root = block.header.state_root;
-        let exec_ctx = ExecutorContext::from(block.header);
+
         EVMExecutorAdapter::from_root(
-            state_root,
+            block.header.state_root,
             Arc::clone(&self.trie_db),
-            Arc::new(Mutex::new(exec_ctx)),
+            Arc::new(Mutex::new(ExecutorContext::from(block.header))),
         )
     }
 }

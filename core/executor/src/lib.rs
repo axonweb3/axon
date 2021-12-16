@@ -58,18 +58,23 @@ impl Executor for EvmExecutor {
         txs: Vec<SignedTransaction>,
     ) -> ExecResp {
         let mut res = Vec::new();
-        for tx in txs.into_iter() {
+        let mut hashes = Vec::new();
+        let mut gas_use = 0u64;
+
+        txs.into_iter().for_each(|tx| {
             let mut r = self.inner_exec(backend, tx);
             r.logs = backend.get_logs();
+            gas_use += r.gas_used;
+            hashes.push(Hasher::digest(&r.ret));
             res.push(r);
-        }
+        });
 
         ExecResp {
             state_root:   backend.state_root(),
-            receipt_root: Merkle::from_hashes(res.iter().map(|r| Hasher::digest(&r.ret)).collect())
+            receipt_root: Merkle::from_hashes(hashes)
                 .get_root_hash()
                 .unwrap_or_default(),
-            gas_used:     res.iter().map(|r| r.gas_used).sum(),
+            gas_used:     gas_use,
             tx_resp:      res,
         }
     }
@@ -108,8 +113,8 @@ impl EvmExecutor {
                 tx.transaction
                     .unsigned
                     .access_list
-                    .iter()
-                    .map(|x| (x.address, x.slots.clone()))
+                    .into_iter()
+                    .map(|x| (x.address, x.slots))
                     .collect(),
             ),
             TransactionAction::Create => {
@@ -122,8 +127,8 @@ impl EvmExecutor {
                     tx.transaction
                         .unsigned
                         .access_list
-                        .iter()
-                        .map(|x| (x.address, x.slots.clone()))
+                        .into_iter()
+                        .map(|x| (x.address, x.slots))
                         .collect(),
                 );
                 (exit_reason, Vec::new())

@@ -25,7 +25,9 @@ pub struct EVMExecutorAdapter<DB: TrieDB> {
 
 impl<DB: TrieDB> ExecutorAdapter for EVMExecutorAdapter<DB> {
     fn get_logs(&self) -> Vec<Log> {
-        self.exec_ctx.lock().logs.clone()
+        let mut ret = Vec::new();
+        ret.append(&mut self.exec_ctx.lock().logs);
+        ret
     }
 
     fn state_root(&self) -> MerkleRoot {
