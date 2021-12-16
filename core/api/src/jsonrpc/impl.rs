@@ -1,0 +1,126 @@
+use crate::adapter::DefaultAPIAdapter;
+use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
+
+use jsonrpsee::types::Error;
+
+use protocol::traits::{APIAdapter, Context, MemPool, Storage};
+use protocol::types::{BlockNumber, Bytes, RichBlock, SignedTransaction, H160, H256, U256};
+use protocol::{async_trait, codec::ProtocolCodec};
+
+use crate::jsonrpc::types::{BlockId, CallRequest};
+
+pub struct JsonRpcImpl<M, S, DB> {
+    adapter: DefaultAPIAdapter<M, S, DB>,
+}
+
+impl<M, S, DB> JsonRpcImpl<M, S, DB>
+where
+    M: MemPool + 'static,
+    S: Storage + 'static,
+    DB: cita_trie::DB + 'static,
+{
+    pub fn new(adapter: DefaultAPIAdapter<M, S, DB>) -> Self {
+        Self { adapter }
+    }
+}
+
+#[async_trait]
+impl<M, S, DB> AxonJsonRpcServer for JsonRpcImpl<M, S, DB>
+where
+    M: MemPool + 'static,
+    S: Storage + 'static,
+    DB: cita_trie::DB + 'static,
+{
+    /// Sends signed transaction, returning its hash.
+    async fn send_raw_transaction(&self, tx: Bytes) -> RpcResult<H256> {
+        let tx = SignedTransaction::decode(tx).map_err(|e| Error::Custom(e.to_string()))?;
+        let hash = tx.transaction.hash;
+        self.adapter
+            .insert_signed_txs(Context::new(), tx)
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+
+        Ok(hash)
+    }
+
+    /// Get transaction by its hash.
+    async fn get_transaction_by_hash(&self, hash: H256) -> RpcResult<SignedTransaction> {
+        let tx = self
+            .adapter
+            .get_transaction_by_hash(Context::new(), hash)
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+
+        tx.ok_or_else(|| Error::Custom("Can't find this transaction".to_string()))
+    }
+
+    async fn get_block_by_number(
+        &self,
+        number: BlockNumber,
+        _ignore: bool,
+    ) -> RpcResult<Option<RichBlock>> {
+        let block = self
+            .adapter
+            .get_block_by_number(Context::new(), Some(number))
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+
+        match block {
+            Some(b) => {
+                let mut txs = Vec::with_capacity(b.tx_hashes.len());
+                for hash in b.tx_hashes.iter() {
+                    let tx = self
+                        .adapter
+                        .get_transaction_by_hash(Context::new(), *hash)
+                        .await
+                        .map_err(|e| Error::Custom(e.to_string()))?
+                        .unwrap();
+                    txs.push(tx);
+                }
+
+                Ok(Some(RichBlock { block: b, txs }))
+            }
+            None => Ok(None),
+        }
+    }
+
+    async fn block_number(&self) -> RpcResult<BlockNumber> {
+        self.adapter
+            .get_latest_block(Context::new())
+            .await
+            .map(|b| b.header.number)
+            .map_err(|e| Error::Custom(e.to_string()))
+    }
+
+    async fn get_balance(&self, address: H160, number: Option<BlockId>) -> RpcResult<U256> {
+        let num = match number {
+            Some(BlockId::Num(n)) => Some(n),
+            _ => None,
+        };
+
+        let account = self
+            .adapter
+            .get_account(Context::new(), address, num)
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+
+        Ok(account.balance)
+    }
+
+    async fn chainid(&self) -> RpcResult<U256> {
+        self.adapter
+            .get_latest_block(Context::new())
+            .await
+            .map(|b| b.header.chain_id.into())
+            .map_err(|e| Error::Custom(e.to_string()))
+    }
+
+    async fn estimate_gas(&self, _req: CallRequest, number: Option<BlockId>) -> RpcResult<U256> {
+        let _num = match number {
+            Some(BlockId::Num(n)) => Some(n),
+            _ => None,
+        };
+
+        Ok(Default::default())
+    }
+}

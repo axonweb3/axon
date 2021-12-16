@@ -8,7 +8,7 @@ use evm::backend::{Apply, Basic};
 use parking_lot::Mutex;
 
 use protocol::codec::ProtocolCodec;
-use protocol::traits::{ApplyBackend, Backend, ExecutorAdapter as Adapter};
+use protocol::traits::{ApplyBackend, Backend, ExecutorAdapter};
 use protocol::types::{
     Account, Bytes, ExecutorContext, Hasher, Log, MerkleRoot, H160, H256, NIL_DATA, RLP_NULL, U256,
 };
@@ -17,13 +17,13 @@ use protocol::ProtocolResult;
 pub use trie::MPTTrie;
 pub use trie_db::RocksTrieDB;
 
-pub struct ExecutorAdapter<DB: TrieDB> {
+pub struct EVMExecutorAdapter<DB: TrieDB> {
     trie:     Arc<Mutex<MPTTrie<DB>>>,
     db:       Arc<DB>,
     exec_ctx: Arc<Mutex<ExecutorContext>>,
 }
 
-impl<DB: TrieDB> Adapter for ExecutorAdapter<DB> {
+impl<DB: TrieDB> ExecutorAdapter for EVMExecutorAdapter<DB> {
     fn get_logs(&self) -> Vec<Log> {
         self.exec_ctx.lock().logs.clone()
     }
@@ -37,7 +37,7 @@ impl<DB: TrieDB> Adapter for ExecutorAdapter<DB> {
     }
 }
 
-impl<DB: TrieDB> Backend for ExecutorAdapter<DB> {
+impl<DB: TrieDB> Backend for EVMExecutorAdapter<DB> {
     fn gas_price(&self) -> U256 {
         self.exec_ctx.lock().gas_price
     }
@@ -147,7 +147,7 @@ impl<DB: TrieDB> Backend for ExecutorAdapter<DB> {
     }
 }
 
-impl<DB: TrieDB> ApplyBackend for ExecutorAdapter<DB> {
+impl<DB: TrieDB> ApplyBackend for EVMExecutorAdapter<DB> {
     fn apply<A, I, L>(&mut self, values: A, logs: L, delete_empty: bool)
     where
         A: IntoIterator<Item = Apply<I>>,
@@ -183,10 +183,10 @@ impl<DB: TrieDB> ApplyBackend for ExecutorAdapter<DB> {
     }
 }
 
-impl<DB: TrieDB> ExecutorAdapter<DB> {
+impl<DB: TrieDB> EVMExecutorAdapter<DB> {
     pub fn new(db: Arc<DB>, exec_ctx: Arc<Mutex<ExecutorContext>>) -> ProtocolResult<Self> {
         let trie = Arc::new(Mutex::new(MPTTrie::new(Arc::clone(&db))));
-        Ok(ExecutorAdapter { trie, db, exec_ctx })
+        Ok(EVMExecutorAdapter { trie, db, exec_ctx })
     }
 
     pub fn from_root(
@@ -196,7 +196,7 @@ impl<DB: TrieDB> ExecutorAdapter<DB> {
     ) -> ProtocolResult<Self> {
         let trie = Arc::new(Mutex::new(MPTTrie::from_root(state_root, Arc::clone(&db))?));
 
-        Ok(ExecutorAdapter { trie, db, exec_ctx })
+        Ok(EVMExecutorAdapter { trie, db, exec_ctx })
     }
 
     pub fn root(&self) -> MerkleRoot {

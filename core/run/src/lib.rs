@@ -17,7 +17,7 @@ use common_crypto::{
     BlsCommonReference, BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey,
     ToPublicKey, UncompressedPublicKey,
 };
-use core_api::run_http_server;
+use core_api::{jsonrpc::run_http_server, DefaultAPIAdapter};
 use core_consensus::message::{
     ChokeMessageHandler, ProposalMessageHandler, PullBlockRpcHandler, PullProofRpcHandler,
     PullTxsRpcHandler, QCMessageHandler, RemoteHeightMessageHandler, VoteMessageHandler,
@@ -32,8 +32,7 @@ use core_consensus::{
     ConsensusWal, DurationConfig, Node, OverlordConsensus, OverlordConsensusAdapter,
     OverlordSynchronization, SignedTxsWAL, METADATA_CONTROLER,
 };
-use core_executor::adapter::{ExecutorAdapter, MPTTrie, RocksTrieDB};
-use core_executor::EvmExecutor;
+use core_executor::{EVMExecutorAdapter, EvmExecutor, MPTTrie, RocksTrieDB};
 use core_mempool::{
     DefaultMemPoolAdapter, HashMemPool, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
     RPC_PULL_TXS, RPC_RESP_PULL_TXS, RPC_RESP_PULL_TXS_SYNC,
@@ -332,18 +331,11 @@ impl Axon {
         } else {
             // Init executor
             let executor = EvmExecutor::default();
-            let mut backend = if current_header.state_root == Default::default() {
-                ExecutorAdapter::new(
-                    Arc::clone(&trie_db),
-                    Arc::new(Mutex::new(current_header.clone().into())),
-                )
-            } else {
-                ExecutorAdapter::from_root(
-                    current_header.state_root,
-                    Arc::clone(&trie_db),
-                    Arc::new(Mutex::new(current_header.clone().into())),
-                )
-            }?;
+            let mut backend = EVMExecutorAdapter::from_root(
+                current_header.state_root,
+                Arc::clone(&trie_db),
+                Arc::new(Mutex::new(current_header.clone().into())),
+            )?;
             let resp = executor.exec(&mut backend, current_stxs.clone());
 
             let (_receipts, logs) = generate_receipts_and_logs(
@@ -475,12 +467,13 @@ impl Axon {
         // Run network
         tokio::spawn(network_service.run());
 
-        // Run rpc
-        tokio::spawn(run_http_server(
-            self.config.rpc.clone(),
+        // Run API
+        let api_adapter = DefaultAPIAdapter::new(
             Arc::clone(&mempool),
             Arc::clone(&storage),
-        ));
+            Arc::clone(&trie_db),
+        );
+        tokio::spawn(run_http_server(self.config.rpc.clone(), api_adapter));
 
         // Run sync
         tokio::spawn(async move {
