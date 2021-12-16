@@ -84,6 +84,21 @@ where
         }
     }
 
+    async fn get_transaction_count(&self, address: H160, number: BlockId) -> RpcResult<U256> {
+        let num = match number {
+            BlockId::Num(n) => Some(n),
+            _ => None,
+        };
+
+        let account = self
+            .adapter
+            .get_account(Context::new(), address, num)
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+
+        Ok(account.nonce)
+    }
+
     async fn block_number(&self) -> RpcResult<BlockNumber> {
         self.adapter
             .get_latest_block(Context::new())

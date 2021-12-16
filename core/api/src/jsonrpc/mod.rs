@@ -35,6 +35,9 @@ pub trait AxonJsonRpc {
     #[method(name = "eth_block_number")]
     async fn block_number(&self) -> RpcResult<BlockNumber>;
 
+    #[method(name = "eth_getTransactionCount")]
+    async fn get_transaction_count(&self, address: H160, number: BlockId) -> RpcResult<U256>;
+
     #[method(name = "eth_getBalance")]
     async fn get_balance(&self, address: H160, number: Option<BlockId>) -> RpcResult<U256>;
 
