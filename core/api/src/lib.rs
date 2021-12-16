@@ -12,12 +12,15 @@ use protocol::{Display, ProtocolError, ProtocolErrorKind};
 pub enum APIError {
     #[display(fmt = "adapter error {:?}", _0)]
     AdapterError(String),
+
+    #[display(fmt = "http server error {:?}", _0)]
+    HttpServer(String),
 }
 
 impl Error for APIError {}
 
 impl From<APIError> for ProtocolError {
     fn from(error: APIError) -> ProtocolError {
-        ProtocolError::new(ProtocolErrorKind::Mempool, Box::new(error))
+        ProtocolError::new(ProtocolErrorKind::API, Box::new(error))
     }
 }
