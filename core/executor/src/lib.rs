@@ -101,7 +101,7 @@ impl EvmExecutor {
                 tx.sender,
                 addr,
                 tx.transaction.unsigned.value,
-                tx.transaction.unsigned.input,
+                tx.transaction.unsigned.data.to_vec(),
                 tx.transaction.unsigned.gas_limit.as_u64(),
                 tx.transaction
                     .unsigned
@@ -114,7 +114,7 @@ impl EvmExecutor {
                 let exit_reason = executor.transact_create2(
                     tx.sender,
                     tx.transaction.unsigned.value,
-                    tx.transaction.unsigned.input,
+                    tx.transaction.unsigned.data.to_vec(),
                     H256::default(),
                     tx.transaction.unsigned.gas_limit.as_u64(),
                     tx.transaction

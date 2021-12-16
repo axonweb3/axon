@@ -213,6 +213,17 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
         }
 
         let status = self.status.inner();
+        let metadata = METADATA_CONTROLER.get().unwrap().current();
+
+        if current_number == status.last_number {
+            return Ok(Status {
+                height:         current_number + 1,
+                interval:       Some(metadata.interval),
+                authority_list: convert_to_overlord_authority(&metadata.verifier_list),
+                timer_config:   Some(metadata.into()),
+            });
+        }
+
         if current_number != status.last_number + 1 {
             return Err(ProtocolError::from(ConsensusError::OutdatedCommit(
                 current_number,
@@ -263,7 +274,6 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             )
             .await?;
 
-        let metadata = METADATA_CONTROLER.get().unwrap().current();
         info!(
             "[consensus]: validator of number {} is {:?}",
             current_number + 1,

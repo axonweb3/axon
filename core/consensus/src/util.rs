@@ -223,7 +223,6 @@ mod tests {
         );
 
         let res = signature.verify(&hash, &aggregate_key, &"muta".into());
-        println!("{:?}", res);
         assert!(res.is_ok());
     }
 

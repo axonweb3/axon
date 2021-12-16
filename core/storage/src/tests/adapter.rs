@@ -1,9 +1,8 @@
 use protocol::traits::{StorageAdapter, StorageBatchModify};
-use protocol::types::Hasher;
 
 use crate::adapter::memory::MemoryAdapter;
 use crate::adapter::rocks::RocksAdapter;
-use crate::tests::{get_random_bytes, mock_signed_tx};
+use crate::tests::{mock_signed_tx};
 use crate::{CommonHashKey, TransactionSchema};
 
 #[test]
@@ -27,14 +26,12 @@ fn test_adapter_remove() {
 }
 
 fn adapter_insert_test(db: impl StorageAdapter) {
-    let tx_hash = Hasher::digest(get_random_bytes(10));
-    let tx_key = CommonHashKey::new(1, tx_hash);
-    let stx = mock_signed_tx(tx_hash);
-
+    let stx = mock_signed_tx();
+    let tx_key = CommonHashKey::new(1, stx.transaction.hash);
     exec!(db.insert::<TransactionSchema>(tx_key.clone(), stx.clone()));
     let stx = exec!(db.get::<TransactionSchema>(tx_key)).unwrap();
 
-    assert_eq!(tx_hash, stx.transaction.hash);
+    assert!(stx.transaction.check_hash());
 }
 
 fn adapter_batch_modify_test(db: impl StorageAdapter) {
@@ -43,9 +40,8 @@ fn adapter_batch_modify_test(db: impl StorageAdapter) {
     let mut inserts = Vec::new();
 
     for _ in 0..10 {
-        let tx_hash = Hasher::digest(get_random_bytes(10));
-        keys.push(CommonHashKey::new(1, tx_hash));
-        let stx = mock_signed_tx(tx_hash);
+        let stx = mock_signed_tx();
+        keys.push(CommonHashKey::new(1, stx.transaction.hash));
         stxs.push(stx.clone());
         inserts.push(StorageBatchModify::Insert::<TransactionSchema>(stx));
     }
@@ -62,12 +58,8 @@ fn adapter_batch_modify_test(db: impl StorageAdapter) {
 }
 
 fn adapter_remove_test(db: impl StorageAdapter) {
-    let tx_hash = Hasher::digest(get_random_bytes(10));
-    let tx_key = CommonHashKey::new(1, tx_hash);
-    let is_exist = exec!(db.contains::<TransactionSchema>(tx_key.clone()));
-    assert!(!is_exist);
-
-    let stx = &mock_signed_tx(tx_hash);
+    let stx = mock_signed_tx();
+    let tx_key = CommonHashKey::new(1, stx.transaction.hash);
     exec!(db.insert::<TransactionSchema>(tx_key.clone(), stx.clone()));
     let is_exist = exec!(db.contains::<TransactionSchema>(tx_key.clone()));
     assert!(is_exist);

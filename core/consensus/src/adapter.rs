@@ -17,7 +17,7 @@ use protocol::types::{
     BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Hasher, Header, Hex, Pill, Proof,
     Receipt, SignedTransaction, Validator,
 };
-use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
+use protocol::{async_trait, codec::ProtocolCodec, tokio::task, ProtocolResult};
 
 use crate::consensus::gen_overlord_status;
 use crate::message::{
@@ -360,7 +360,9 @@ where
             )
         }?;
 
-        Ok(EvmExecutor::default().exec(&mut backend, signed_txs))
+        Ok(task::block_in_place(|| {
+            EvmExecutor::default().exec(&mut backend, signed_txs)
+        }))
     }
 
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]

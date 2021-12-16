@@ -269,7 +269,11 @@ where
     }
 
     async fn check_transaction(&self, ctx: Context, stx: &SignedTransaction) -> ProtocolResult<()> {
-        let fixed_bytes = stx.transaction.unsigned.encode()?;
+        if stx.transaction.signature.is_none() {
+            return Err(AdapterError::VerifySignature("missing signature".to_string()).into());
+        }
+
+        let fixed_bytes = stx.transaction.encode()?;
         let tx_hash = stx.transaction.hash;
 
         // check tx size
@@ -320,8 +324,13 @@ where
 
         // Verify signature
         Secp256k1Recoverable::verify_signature(
-            stx.transaction.hash.as_bytes(),
-            stx.transaction.signature.as_bytes().as_ref(),
+            stx.transaction.signature_hash().as_bytes(),
+            stx.transaction
+                .signature
+                .clone()
+                .unwrap()
+                .as_bytes()
+                .as_ref(),
             recover_intact_pub_key(&stx.public).as_bytes(),
         )
         .map_err(|err| AdapterError::VerifySignature(err.to_string()))?;
