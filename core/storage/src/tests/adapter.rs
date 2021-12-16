@@ -2,7 +2,7 @@ use protocol::traits::{StorageAdapter, StorageBatchModify};
 
 use crate::adapter::memory::MemoryAdapter;
 use crate::adapter::rocks::RocksAdapter;
-use crate::tests::{mock_signed_tx};
+use crate::tests::mock_signed_tx;
 use crate::{CommonHashKey, TransactionSchema};
 
 #[test]
