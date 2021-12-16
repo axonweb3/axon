@@ -4,10 +4,10 @@ use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
 use jsonrpsee::types::Error;
 
 use protocol::traits::{APIAdapter, Context, MemPool, Storage};
-use protocol::types::{BlockNumber, Bytes, RichBlock, SignedTransaction, H160, H256, U256};
+use protocol::types::{BlockNumber, Bytes, SignedTransaction, H160, H256, U256};
 use protocol::{async_trait, codec::ProtocolCodec};
 
-use crate::jsonrpc::types::{BlockId, CallRequest};
+use crate::jsonrpc::types::{BlockId, CallRequest, RichTransactionOrHash, Web3Block};
 
 pub struct JsonRpcImpl<M, S, DB> {
     adapter: DefaultAPIAdapter<M, S, DB>,
@@ -56,29 +56,40 @@ where
 
     async fn get_block_by_number(
         &self,
-        number: BlockNumber,
-        _ignore: bool,
-    ) -> RpcResult<Option<RichBlock>> {
+        number: BlockId,
+        show_rich_tx: bool,
+    ) -> RpcResult<Option<Web3Block>> {
+        let num = match number {
+            BlockId::Num(n) => Some(n),
+            _ => None,
+        };
+
         let block = self
             .adapter
-            .get_block_by_number(Context::new(), Some(number))
+            .get_block_by_number(Context::new(), num)
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
         match block {
             Some(b) => {
-                let mut txs = Vec::with_capacity(b.tx_hashes.len());
-                for hash in b.tx_hashes.iter() {
-                    let tx = self
-                        .adapter
-                        .get_transaction_by_hash(Context::new(), *hash)
-                        .await
-                        .map_err(|e| Error::Custom(e.to_string()))?
-                        .unwrap();
-                    txs.push(tx);
+                let capacity = b.tx_hashes.len();
+                let mut ret = Web3Block::from(b);
+                if show_rich_tx {
+                    let mut txs = Vec::with_capacity(capacity);
+                    for tx in ret.transactions.iter() {
+                        let tx = self
+                            .adapter
+                            .get_transaction_by_hash(Context::new(), tx.get_hash())
+                            .await
+                            .map_err(|e| Error::Custom(e.to_string()))?
+                            .unwrap();
+                        txs.push(RichTransactionOrHash::Rich(tx));
+                    }
+
+                    ret.transactions = txs;
                 }
 
-                Ok(Some(RichBlock { block: b, txs }))
+                Ok(Some(ret))
             }
             None => Ok(None),
         }

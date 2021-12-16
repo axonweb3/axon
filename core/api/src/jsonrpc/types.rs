@@ -3,7 +3,80 @@ use std::fmt;
 use serde::de::{Error, MapAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use protocol::types::{AccessList, Bytes, H160, U256, U64};
+use protocol::codec::ProtocolCodec;
+use protocol::types::{
+    AccessList, Block, Bloom, Bytes, Hash, Hasher, SignedTransaction, H160, H64, U256, U64,
+};
+
+#[allow(clippy::large_enum_variant)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub enum RichTransactionOrHash {
+    Hash(Hash),
+    Rich(SignedTransaction),
+}
+
+impl RichTransactionOrHash {
+    pub fn get_hash(&self) -> Hash {
+        match self {
+            RichTransactionOrHash::Hash(hash) => *hash,
+            RichTransactionOrHash::Rich(stx) => stx.transaction.hash,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct Web3Block {
+    pub number:            u64,
+    pub hash:              Hash,
+    pub parent_hash:       Hash,
+    pub nonce:             H64,
+    pub sha3_uncles:       Hash,
+    pub logs_bloom:        Bloom,
+    pub transactions_root: Hash,
+    pub state_root:        Hash,
+    pub receipts_root:     Hash,
+    pub miner:             H160,
+    pub difficury:         u64,
+    pub total_difficulty:  u64,
+    pub extra_data:        Bytes,
+    pub size:              u64,
+    pub gas_limit:         U256,
+    pub gas_used:          U256,
+    pub timestamp:         u64,
+    pub transactions:      Vec<RichTransactionOrHash>,
+    pub uncles:            Vec<Hash>,
+}
+
+impl From<Block> for Web3Block {
+    fn from(b: Block) -> Self {
+        let encode = b.header.encode().unwrap();
+        Web3Block {
+            number:            b.header.number,
+            hash:              Hasher::digest(&encode),
+            parent_hash:       b.header.prev_hash,
+            nonce:             b.header.nonce,
+            sha3_uncles:       Default::default(),
+            logs_bloom:        b.header.log_bloom,
+            transactions_root: b.header.transactions_root,
+            state_root:        b.header.state_root,
+            receipts_root:     b.header.receipts_root,
+            miner:             b.header.proposer,
+            difficury:         b.header.difficulty.as_u64(),
+            total_difficulty:  b.header.difficulty.as_u64(),
+            extra_data:        b.header.extra_data,
+            size:              encode.len() as u64,
+            gas_limit:         b.header.gas_limit,
+            gas_used:          b.header.gas_used,
+            timestamp:         b.header.timestamp,
+            transactions:      b
+                .tx_hashes
+                .iter()
+                .map(|hash| RichTransactionOrHash::Hash(*hash))
+                .collect(),
+            uncles:            vec![],
+        }
+    }
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]

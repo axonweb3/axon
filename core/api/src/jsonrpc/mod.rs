@@ -6,10 +6,10 @@ use jsonrpsee::{proc_macros::rpc, types::Error};
 
 use common_config_parser::types::ConfigApi;
 use protocol::traits::{MemPool, Storage};
-use protocol::types::{BlockNumber, Bytes, RichBlock, SignedTransaction, H160, H256, U256};
+use protocol::types::{BlockNumber, Bytes, SignedTransaction, H160, H256, U256};
 use protocol::ProtocolResult;
 
-use crate::jsonrpc::types::{BlockId, CallRequest};
+use crate::jsonrpc::types::{BlockId, CallRequest, Web3Block};
 use crate::{adapter::DefaultAPIAdapter, APIError};
 
 type RpcResult<T> = Result<T, Error>;
@@ -28,9 +28,9 @@ pub trait AxonJsonRpc {
     #[method(name = "eth_getBlockByNumber")]
     async fn get_block_by_number(
         &self,
-        number: BlockNumber,
-        ignore: bool,
-    ) -> RpcResult<Option<RichBlock>>;
+        number: BlockId,
+        show_rich_tx: bool,
+    ) -> RpcResult<Option<Web3Block>>;
 
     #[method(name = "eth_block_number")]
     async fn block_number(&self) -> RpcResult<BlockNumber>;
