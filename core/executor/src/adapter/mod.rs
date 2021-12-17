@@ -107,6 +107,7 @@ impl<DB: TrieDB> Backend for EVMExecutorAdapter<DB> {
     }
 
     fn code(&self, address: H160) -> Vec<u8> {
+        // Fixme:
         self.trie
             .lock()
             .get(address.as_bytes())
@@ -131,12 +132,16 @@ impl<DB: TrieDB> Backend for EVMExecutorAdapter<DB> {
             Account::decode(raw.unwrap())
                 .and_then(|account| {
                     let storage_root = account.storage_root;
-                    MPTTrie::from_root(storage_root, Arc::clone(&self.db)).map(|trie| {
-                        match trie.get(index.as_bytes()) {
-                            Ok(Some(res)) => H256::from_slice(res.as_ref()),
-                            _ => H256::default(),
-                        }
-                    })
+                    if storage_root == RLP_NULL {
+                        Ok(H256::default())
+                    } else {
+                        MPTTrie::from_root(storage_root, Arc::clone(&self.db)).map(
+                            |trie| match trie.get(index.as_bytes()) {
+                                Ok(Some(res)) => H256::from_slice(res.as_ref()),
+                                _ => H256::default(),
+                            },
+                        )
+                    }
                 })
                 .unwrap_or_default()
         } else {
@@ -145,6 +150,7 @@ impl<DB: TrieDB> Backend for EVMExecutorAdapter<DB> {
     }
 
     fn original_storage(&self, address: H160, index: H256) -> Option<H256> {
+        // Fixme
         Some(self.storage(address, index))
     }
 }
@@ -235,12 +241,13 @@ impl<DB: TrieDB> EVMExecutorAdapter<DB> {
             storage.into_iter().for_each(|(k, v)| {
                 let _ = storage_trie.insert(k.as_bytes(), v.as_bytes());
             });
-            storage_trie.commit().unwrap_or_default()
+            storage_trie.commit().unwrap_or(RLP_NULL)
         };
-        let new_nonce = basic.nonce.as_u64() + 1;
+
+        log::error!("address {:?}, basic {:?}", address, basic);
 
         let new_account = Account {
-            nonce: new_nonce.into(),
+            nonce: basic.nonce,
             balance: basic.balance,
             code_hash: if let Some(c) = code {
                 Hasher::digest(c)
