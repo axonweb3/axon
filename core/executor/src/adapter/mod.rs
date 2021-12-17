@@ -121,8 +121,11 @@ impl<S: Storage, DB: TrieDB> Backend for EVMExecutorAdapter<S, DB> {
             return Vec::new();
         };
 
-        let res = tokio::runtime::Handle::current()
-            .block_on(self.storage.get_code_by_hash(Context::new(), &code_hash));
+        if code_hash == NIL_DATA {
+            return Vec::new();
+        }
+
+        let res = blocking_async!(self, storage, get_code_by_hash, Context::new(), &code_hash);
 
         res.unwrap().unwrap().to_vec()
     }
@@ -244,7 +247,7 @@ impl<S: Storage, DB: TrieDB> EVMExecutorAdapter<S, DB> {
                 nonce:        Default::default(),
                 balance:      Default::default(),
                 storage_root: RLP_NULL,
-                code_hash:    RLP_NULL,
+                code_hash:    NIL_DATA,
             },
         };
 
