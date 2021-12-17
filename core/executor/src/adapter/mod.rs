@@ -24,6 +24,10 @@ pub struct EVMExecutorAdapter<DB: TrieDB> {
 }
 
 impl<DB: TrieDB> ExecutorAdapter for EVMExecutorAdapter<DB> {
+    fn set_gas_price(&self, gas_price: U256) {
+        self.exec_ctx.lock().gas_price = gas_price;
+    }
+
     fn get_logs(&self) -> Vec<Log> {
         let mut ret = Vec::new();
         ret.append(&mut self.exec_ctx.lock().logs);
