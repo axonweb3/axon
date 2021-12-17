@@ -91,6 +91,19 @@ fn test_storage_latest_proof_insert() {
     assert_eq!(proof.block_hash, proof_2.block_hash);
 }
 
+#[test]
+fn test_storage_evm_code_insert() {
+    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()));
+
+    let code = get_random_bytes(1000);
+    let code_hash = Hasher::digest(&code);
+
+    exec!(storage.insert_code(Context::new(), code_hash, code.clone().into()));
+    let code_2 = exec!(storage.get_code_by_hash(Context::new(), &code_hash,));
+
+    assert_eq!(code, code_2.unwrap());
+}
+
 // #[test]
 // fn test_storage_wal_insert() {
 //     let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()));

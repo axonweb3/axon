@@ -115,22 +115,14 @@ impl<S: Storage, DB: TrieDB> Backend for EVMExecutorAdapter<S, DB> {
     }
 
     fn code(&self, address: H160) -> Vec<u8> {
-        let code_hash = self
-            .trie
-            .lock()
-            .get(address.as_bytes())
-            .map(|raw| {
-                if raw.is_none() {
-                    return Default::default();
-                }
-                Account::decode(raw.unwrap())
-                    .map_or_else(|_| Default::default(), |account| account.code_hash)
-            })
-            .unwrap_or_default();
+        let code_hash = if let Some(bytes) = self.trie.lock().get(address.as_bytes()).unwrap() {
+            Account::decode(bytes).unwrap().code_hash
+        } else {
+            return Vec::new();
+        };
 
-        let rt = tokio::runtime::Handle::current();
-
-        let res = rt.block_on(self.storage.get_code_by_hash(Context::new(), &code_hash));
+        let res = tokio::runtime::Handle::current()
+            .block_on(self.storage.get_code_by_hash(Context::new(), &code_hash));
 
         res.unwrap().unwrap().to_vec()
     }
@@ -252,7 +244,7 @@ impl<S: Storage, DB: TrieDB> EVMExecutorAdapter<S, DB> {
                 nonce:        Default::default(),
                 balance:      Default::default(),
                 storage_root: RLP_NULL,
-                code_hash:    NIL_DATA,
+                code_hash:    RLP_NULL,
             },
         };
 
