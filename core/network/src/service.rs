@@ -3,9 +3,9 @@ use crate::{
     endpoint::{Endpoint, EndpointScheme},
     error::NetworkError,
     outbound::{NetworkGossip, NetworkRpc},
-    peer_manager::{PeerInfo, PeerManager},
+    peer_manager::{AddrInfo, PeerInfo, PeerManager, PeerStore},
     protocols::{
-        DiscoveryAddressManager, DiscoveryProtocol, IdentifyProtocol, PingHandler,
+        DiscoveryAddressManager, DiscoveryProtocol, Feeler, IdentifyProtocol, PingHandler,
         SupportProtocols, TransmitterProtocol,
     },
     reactor::MessageRouter,
@@ -14,7 +14,7 @@ use crate::{
 use async_trait::async_trait;
 use bytes::Bytes;
 use futures::StreamExt;
-use protocol::tokio::time::Instant;
+use protocol::tokio::time::{Instant, MissedTickBehavior};
 use protocol::{
     tokio,
     traits::{
@@ -22,15 +22,20 @@ use protocol::{
     },
     ProtocolResult,
 };
+use rand::prelude::IteratorRandom;
 use std::{sync::Arc, time::Duration};
-use tentacle::service::TargetProtocol;
 use tentacle::{
     builder::ServiceBuilder,
     context::ServiceContext,
-    secio::PeerId,
-    service::{ProtocolHandle, Service, ServiceAsyncControl, ServiceError, ServiceEvent},
+    error::{DialerErrorKind, HandshakeErrorKind},
+    multiaddr::Multiaddr,
+    secio::{error::SecioError, PeerId},
+    service::{
+        ProtocolHandle, Service, ServiceAsyncControl, ServiceError, ServiceEvent, SessionType,
+        TargetProtocol,
+    },
     traits::ServiceHandle,
-    utils::extract_peer_id,
+    utils::{extract_peer_id, is_reachable, multiaddr_to_socketaddr},
     yamux::Config as YamuxConfig,
 };
 
@@ -38,7 +43,7 @@ use tentacle::{
 pub struct NetworkServiceHandle {
     gossip:     NetworkGossip,
     rpc:        NetworkRpc,
-    peer_state: PeerManager,
+    peer_state: Arc<PeerManager>,
 }
 
 #[async_trait]
@@ -103,35 +108,39 @@ pub struct NetworkService {
     rpc:    NetworkRpc,
 
     // Core service
-    peer_mgr_handle: PeerManager,
+    peer_mgr_handle: Arc<PeerManager>,
     net:             Service<ServiceHandler>,
+
+    control:            ServiceAsyncControl,
+    try_identify_count: u8,
 }
 
 impl NetworkService {
     pub fn new(config: NetworkConfig) -> Self {
         let config = Arc::new(config);
-        let peer_manager = PeerManager::new(Arc::clone(&config));
+        let peer_manager = Arc::new(PeerManager::new(Arc::clone(&config)));
         let service_handle = ServiceHandler {
-            peer_store: peer_manager.clone(),
+            peer_store: Arc::clone(&peer_manager),
+            config:     Arc::clone(&config),
         };
         let message_router = MessageRouter::new();
 
         let mut protocol_meta = Vec::new();
 
-        let ping_peer_manager = peer_manager.clone();
+        let ping_peer_manager = Arc::clone(&peer_manager);
         let ping_handle =
             PingHandler::new(config.ping_interval, config.ping_timeout, ping_peer_manager);
         let ping = SupportProtocols::Ping
             .build_meta_with_service_handle(|| ProtocolHandle::Callback(Box::new(ping_handle)));
         protocol_meta.push(ping);
 
-        let identify_peer_manager = peer_manager.clone();
+        let identify_peer_manager = Arc::clone(&peer_manager);
         let identify = SupportProtocols::Identify.build_meta_with_service_handle(move || {
             ProtocolHandle::Callback(Box::new(IdentifyProtocol::new(identify_peer_manager)))
         });
         protocol_meta.push(identify);
 
-        let discovery_peer_manager = DiscoveryAddressManager::new(peer_manager.clone());
+        let discovery_peer_manager = DiscoveryAddressManager::new(Arc::clone(&peer_manager));
         let discovery = SupportProtocols::Discovery.build_meta_with_service_handle(move || {
             ProtocolHandle::Callback(Box::new(DiscoveryProtocol::new(
                 discovery_peer_manager,
@@ -140,7 +149,7 @@ impl NetworkService {
         });
         protocol_meta.push(discovery);
 
-        let transmitter_peer_manager = peer_manager.clone();
+        let transmitter_peer_manager = Arc::clone(&peer_manager);
         let transmitter_router = message_router.clone();
         let transmitter = SupportProtocols::Transmitter.build_meta_with_service_handle(move || {
             ProtocolHandle::Callback(Box::new(TransmitterProtocol::new(
@@ -149,6 +158,12 @@ impl NetworkService {
             )))
         });
         protocol_meta.push(transmitter);
+
+        let feeler_peer_manager = Arc::clone(&peer_manager);
+        let feeler = SupportProtocols::Feeler.build_meta_with_service_handle(move || {
+            ProtocolHandle::Callback(Box::new(Feeler::new(feeler_peer_manager)))
+        });
+        protocol_meta.push(feeler);
 
         let mut service_builder = ServiceBuilder::new();
         let yamux_config = YamuxConfig {
@@ -174,7 +189,7 @@ impl NetworkService {
 
         let control: ServiceAsyncControl = service.control().clone().into();
 
-        let gossip = NetworkGossip::new(control.clone(), peer_manager.clone());
+        let gossip = NetworkGossip::new(control.clone(), Arc::clone(&peer_manager));
         let rpc = NetworkRpc::new(control, message_router);
 
         NetworkService {
@@ -182,7 +197,9 @@ impl NetworkService {
             gossip,
             rpc,
             peer_mgr_handle: peer_manager,
+            control: service.control().clone().into(),
             net: service,
+            try_identify_count: 0,
         }
     }
 
@@ -221,7 +238,7 @@ impl NetworkService {
         NetworkServiceHandle {
             gossip:     self.gossip.clone(),
             rpc:        self.rpc.clone(),
-            peer_state: self.peer_mgr_handle.clone(),
+            peer_state: Arc::clone(&self.peer_mgr_handle),
         }
     }
 
@@ -233,40 +250,175 @@ impl NetworkService {
         self.peer_mgr_handle.set_chain_id(chain_id);
     }
 
+    /// Dial just feeler protocol
+    pub async fn dial_feeler(&mut self, addr: Multiaddr) {
+        if self
+            .peer_mgr_handle
+            .with_registry_mut(|reg| reg.add_feeler(addr.clone()))
+        {
+            let _ignore = self
+                .control
+                .dial(
+                    addr.clone(),
+                    TargetProtocol::Single(SupportProtocols::Identify.protocol_id()),
+                )
+                .await;
+        }
+    }
+
+    /// Dial just identify protocol
+    pub async fn dial_identify(&mut self, addr: Multiaddr) {
+        if self
+            .peer_mgr_handle
+            .with_registry_mut(|reg| reg.dialing.insert(addr.clone()))
+        {
+            let _ignore = self
+                .control
+                .dial(
+                    addr.clone(),
+                    TargetProtocol::Single(SupportProtocols::Identify.protocol_id()),
+                )
+                .await;
+        }
+    }
+
+    async fn try_dial_observed_addr(&mut self) {
+        let addr = {
+            let addrs = self.peer_mgr_handle.public_addrs.read();
+            if addrs.is_empty() {
+                return;
+            }
+            // random get addr
+            addrs.iter().choose(&mut rand::thread_rng()).cloned()
+        };
+
+        if let Some(addr) = addr {
+            self.dial_identify(addr).await;
+        }
+    }
+
+    async fn try_dial_fleer(&mut self) {
+        let now_ms = faketime::unix_time_as_millis();
+        let attempt_peers = self.peer_mgr_handle.with_peer_store_mut(|peer_store| {
+            let paddrs = peer_store.fetch_addrs_to_feeler(10);
+            for paddr in paddrs.iter() {
+                // mark addr as tried
+                if let Some(paddr) = peer_store.mut_addr_manager().get_mut(&paddr.addr) {
+                    paddr.mark_tried(now_ms);
+                }
+            }
+            paddrs
+        });
+
+        log::trace!(
+            "feeler dial count={}, attempt_peers: {:?}",
+            attempt_peers.len(),
+            attempt_peers,
+        );
+
+        for addr in attempt_peers.into_iter().map(|info| info.addr) {
+            self.dial_feeler(addr).await;
+        }
+    }
+
+    async fn try_dial_peers(&mut self) {
+        let status = self
+            .peer_mgr_handle
+            .with_registry(|reg| reg.connection_status());
+        let count = (self.config.max_connections - self.config.inbound_conn_limit)
+            .saturating_sub(status.inbound) as usize;
+        if count == 0 {
+            self.try_identify_count = 0;
+            return;
+        }
+        self.try_identify_count += 1;
+
+        let f = |peer_store: &mut PeerStore, number: usize, now_ms: u64| -> Vec<AddrInfo> {
+            let paddrs = peer_store.fetch_addrs_to_attempt(number);
+            for paddr in paddrs.iter() {
+                // mark addr as tried
+                if let Some(paddr) = peer_store.mut_addr_manager().get_mut(&paddr.addr) {
+                    paddr.mark_tried(now_ms);
+                }
+            }
+            paddrs
+        };
+
+        let peers: Box<dyn Iterator<Item = Multiaddr> + Send> = if self.try_identify_count > 3 {
+            self.try_identify_count = 0;
+            let bootnodes = self.peer_mgr_handle.unconnected_bootstraps();
+            let len = bootnodes.len();
+            if len < count {
+                let now_ms = faketime::unix_time_as_millis();
+                let attempt_peers = self
+                    .peer_mgr_handle
+                    .with_peer_store_mut(|peer_store| f(peer_store, count - len, now_ms));
+
+                Box::new(
+                    attempt_peers
+                        .into_iter()
+                        .map(|info| info.addr)
+                        .chain(bootnodes.into_iter()),
+                )
+            } else {
+                Box::new(
+                    bootnodes
+                        .into_iter()
+                        .choose_multiple(&mut rand::thread_rng(), count)
+                        .into_iter(),
+                )
+            }
+        } else {
+            let now_ms = faketime::unix_time_as_millis();
+            let attempt_peers = self
+                .peer_mgr_handle
+                .with_peer_store_mut(|peer_store| f(peer_store, count, now_ms));
+
+            log::trace!(
+                "identify dial count={}, attempt_peers: {:?}",
+                attempt_peers.len(),
+                attempt_peers,
+            );
+
+            Box::new(attempt_peers.into_iter().map(|info| info.addr))
+        };
+
+        for addr in peers {
+            self.dial_identify(addr).await;
+        }
+    }
+
     pub async fn run(mut self) {
         self.net
             .listen(self.config.default_listen.clone())
             .await
             .unwrap();
 
-        let mut control: ServiceAsyncControl = self.net.control().clone().into();
-
-        for addr in self.config.bootstraps.iter() {
-            control
-                .dial(
-                    addr.clone(),
-                    TargetProtocol::Single(
-                        crate::protocols::SupportProtocols::Identify.protocol_id(),
-                    ),
-                )
-                .await
-                .unwrap();
+        for addr in self.config.bootstraps.to_vec() {
+            self.dial_identify(addr).await;
         }
 
         let mut interval = tokio::time::interval_at(Instant::now(), Duration::from_secs(10));
+        let mut dump_interval =
+            tokio::time::interval_at(Instant::now(), Duration::from_secs(3600 * 24));
+
+        dump_interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
         loop {
             tokio::select! {
                 Some(_) = self.net.next() => {},
                 _ = interval.tick() => {
-                    for addr in self.peer_mgr_handle.unconnected_bootstraps() {
-                        control
-                            .dial(addr, TargetProtocol::Single(crate::protocols::SupportProtocols::Identify.protocol_id()))
-                            .await
-                            .unwrap();
-                    }
+                    self.try_dial_peers().await;
+                    self.try_dial_fleer().await;
+                    self.try_dial_observed_addr().await;
+                }
+                _ = dump_interval.tick() => {
+                    self.peer_mgr_handle.with_peer_store(|store|{
+                        let _ignore = store.dump_to_dir(self.config.peer_store_path.clone())
+                            .map_err(|e| log::info!("dump peer store error: {}", e));
+                    })
                 }
                 else => {
-                    let _ = control.shutdown().await;
+                    let _ = self.control.shutdown().await;
                     break
                 }
             }
@@ -275,19 +427,74 @@ impl NetworkService {
 }
 
 struct ServiceHandler {
-    peer_store: PeerManager,
+    peer_store: Arc<PeerManager>,
+    config:     Arc<NetworkConfig>,
 }
 
 impl ServiceHandle for ServiceHandler {
     fn handle_error(&mut self, _control: &mut ServiceContext, error: ServiceError) {
-        log::info!("p2p error: {:?}", error)
+        match error {
+            ServiceError::DialerError { address, error } => {
+                self.peer_store.with_registry_mut(|reg| {
+                    reg.remove_feeler(&address);
+                    reg.dialing.remove(&address)
+                });
+                let mut public_addrs = self.peer_store.public_addrs.write();
+                match error {
+                    DialerErrorKind::HandshakeError(HandshakeErrorKind::SecioError(
+                        SecioError::ConnectSelf,
+                    )) => {
+                        log::debug!("dial observed address success: {:?}", address);
+                        if let Some(ip) = multiaddr_to_socketaddr(&address) {
+                            if is_reachable(ip.ip()) {
+                                public_addrs.insert(address);
+                            }
+                        }
+                    }
+                    DialerErrorKind::IoError(e)
+                        if e.kind() == std::io::ErrorKind::AddrNotAvailable =>
+                    {
+                        log::warn!("DialerError({}) {}", address, e);
+                    }
+                    _ => {
+                        log::debug!("DialerError({}) {}", address, error);
+                    }
+                }
+            }
+            _ => log::info!("p2p error: {:?}", error),
+        }
     }
 
-    fn handle_event(&mut self, _control: &mut ServiceContext, event: ServiceEvent) {
+    fn handle_event(&mut self, control: &mut ServiceContext, event: ServiceEvent) {
         match event {
-            ServiceEvent::SessionOpen { session_context } => self.peer_store.register(
-                PeerInfo::new(session_context.address.clone(), session_context.id),
-            ),
+            ServiceEvent::SessionOpen { session_context } => {
+                let (con, status) = self.peer_store.with_registry_mut(|reg| {
+                    (
+                        reg.dialing.remove(&session_context.address),
+                        reg.connection_status(),
+                    )
+                });
+                if !con {
+                    return;
+                }
+                let disable = status.total + 1 > self.config.max_connections
+                    || match session_context.ty {
+                        SessionType::Inbound => status.inbound + 1 > self.config.inbound_conn_limit,
+                        SessionType::Outbound => {
+                            status.outbound + 1
+                                > self.config.max_connections - self.config.inbound_conn_limit
+                        }
+                    };
+                if disable
+                    && !self
+                        .peer_store
+                        .always_allow(&extract_peer_id(&session_context.address).unwrap())
+                {
+                    let _ignore = control.disconnect(session_context.id);
+                } else {
+                    self.peer_store.register(PeerInfo::new(session_context))
+                }
+            }
             ServiceEvent::SessionClose { session_context } => self
                 .peer_store
                 .unregister(&extract_peer_id(&session_context.address).unwrap()),

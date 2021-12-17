@@ -44,7 +44,7 @@ fn test_dup_order_hashes() {
         Hasher::digest(Bytes::from("test3")),
         Hasher::digest(Bytes::from("test4")),
     ];
-    assert!(!check_dup_order_hashes(&hashes).is_err());
+    assert!(check_dup_order_hashes(&hashes).is_ok());
 }
 
 #[tokio::test]

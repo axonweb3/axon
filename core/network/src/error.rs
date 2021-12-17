@@ -75,6 +75,12 @@ pub enum ErrorKind {
     #[display(fmt = "kind: untaggable {}", _0)]
     Untaggable(String),
 
+    #[display(fmt = "kind: PeerStore Eviction Failed")]
+    PeerStoreEvictionFailed,
+
+    #[display(fmt = "kind: PeerStore Serde Failed")]
+    PeerStoreSerde,
+
     #[display(fmt = "kind: internal {}", _0)]
     Internal(String),
 }
