@@ -35,6 +35,7 @@ impl RocksAdapter {
             map_category(StorageCategory::SignedTransaction),
             map_category(StorageCategory::Wal),
             map_category(StorageCategory::HashHeight),
+            map_category(StorageCategory::Code),
         ];
 
         let db = DB::open_cf(&opts, path, categories.iter()).map_err(RocksAdapterError::from)?;
