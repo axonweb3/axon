@@ -63,6 +63,7 @@ impl Executor for EvmExecutor {
 
         txs.into_iter().for_each(|tx| {
             log::error!("tx {:?}", tx);
+            log::error!("ctx {:?}", backend.get_ctx());
 
             backend.set_gas_price(tx.transaction.unsigned.gas_price);
             let mut r = self.inner_exec(backend, tx);

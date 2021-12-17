@@ -1,7 +1,8 @@
 pub use evm::backend::{ApplyBackend, Backend};
 
 use crate::types::{
-    Account, Bytes, ExecResp, Log, MerkleRoot, SignedTransaction, TxResp, H160, U256,
+    Account, Bytes, ExecResp, ExecutorContext, Log, MerkleRoot, SignedTransaction, TxResp, H160,
+    U256,
 };
 
 pub trait ExecutorAdapter {
@@ -12,6 +13,8 @@ pub trait ExecutorAdapter {
     fn state_root(&self) -> MerkleRoot;
 
     fn get(&self, key: &[u8]) -> Option<Bytes>;
+
+    fn get_ctx(&self) -> ExecutorContext;
 }
 
 pub trait Executor: Send + Sync {

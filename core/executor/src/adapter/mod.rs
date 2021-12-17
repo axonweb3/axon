@@ -24,6 +24,10 @@ pub struct EVMExecutorAdapter<DB: TrieDB> {
 }
 
 impl<DB: TrieDB> ExecutorAdapter for EVMExecutorAdapter<DB> {
+    fn get_ctx(&self) -> ExecutorContext {
+        self.exec_ctx.lock().clone()
+    }
+
     fn set_gas_price(&self, gas_price: U256) {
         self.exec_ctx.lock().gas_price = gas_price;
     }
