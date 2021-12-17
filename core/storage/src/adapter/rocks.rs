@@ -247,6 +247,7 @@ const C_SIGNED_TRANSACTIONS: &str = "c3";
 const C_RECEIPTS: &str = "c4";
 const C_WALS: &str = "c5";
 const C_HASH_HEIGHT_MAP: &str = "c6";
+const C_EVM_CODE_MAP: &str = "c7";
 
 fn map_category(c: StorageCategory) -> &'static str {
     match c {
@@ -256,6 +257,7 @@ fn map_category(c: StorageCategory) -> &'static str {
         StorageCategory::SignedTransaction => C_SIGNED_TRANSACTIONS,
         StorageCategory::Wal => C_WALS,
         StorageCategory::HashHeight => C_HASH_HEIGHT_MAP,
+        StorageCategory::Code => C_EVM_CODE_MAP,
     }
 }
 

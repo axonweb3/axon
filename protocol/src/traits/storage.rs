@@ -1,12 +1,9 @@
 use async_trait::async_trait;
 use derive_more::Display;
 
-use crate::codec::ProtocolCodec;
 use crate::traits::Context;
-use crate::types::block::{Block, Header, Proof};
-use crate::types::receipt::Receipt;
-use crate::types::{Hash, SignedTransaction};
-use crate::ProtocolResult;
+use crate::types::{Block, Bytes, Hash, Header, Proof, Receipt, SignedTransaction};
+use crate::{codec::ProtocolCodec, ProtocolResult};
 
 #[derive(Debug, Copy, Clone, Display)]
 pub enum StorageCategory {
@@ -16,6 +13,7 @@ pub enum StorageCategory {
     SignedTransaction,
     Wal,
     HashHeight,
+    Code,
 }
 
 pub type StorageIterator<'a, S> = Box<
@@ -81,6 +79,10 @@ pub trait Storage: CommonStorage {
         block_height: u64,
         receipts: Vec<Receipt>,
     ) -> ProtocolResult<()>;
+
+    async fn insert_code(&self, ctx: Context, code_hash: Hash, code: Bytes) -> ProtocolResult<()>;
+
+    async fn get_code_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>>;
 
     async fn get_receipt_by_hash(
         &self,

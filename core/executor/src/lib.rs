@@ -62,15 +62,12 @@ impl Executor for EvmExecutor {
         let mut gas_use = 0u64;
 
         txs.into_iter().for_each(|tx| {
-            log::error!("tx {:?}", tx);
-            log::error!("ctx {:?}", backend.get_ctx());
-
             backend.set_gas_price(tx.transaction.unsigned.gas_price);
             let mut r = self.inner_exec(backend, tx);
             r.logs = backend.get_logs();
             gas_use += r.gas_used;
 
-            log::error!("resp {:?}", r);
+            log::debug!("[exec] resp {:?}", r);
 
             hashes.push(Hasher::digest(&r.ret));
             res.push(r);

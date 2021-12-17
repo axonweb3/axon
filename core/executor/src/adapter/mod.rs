@@ -7,23 +7,23 @@ use cita_trie::DB as TrieDB;
 use evm::backend::{Apply, Basic};
 use parking_lot::Mutex;
 
-use protocol::codec::ProtocolCodec;
-use protocol::traits::{ApplyBackend, Backend, ExecutorAdapter};
+use protocol::traits::{ApplyBackend, Backend, Context, ExecutorAdapter, Storage};
 use protocol::types::{
     Account, Bytes, ExecutorContext, Hasher, Log, MerkleRoot, H160, H256, NIL_DATA, RLP_NULL, U256,
 };
-use protocol::ProtocolResult;
+use protocol::{codec::ProtocolCodec, tokio, ProtocolResult};
 
 pub use trie::MPTTrie;
 pub use trie_db::RocksTrieDB;
 
-pub struct EVMExecutorAdapter<DB: TrieDB> {
+pub struct EVMExecutorAdapter<S, DB: cita_trie::DB> {
     trie:     Arc<Mutex<MPTTrie<DB>>>,
     db:       Arc<DB>,
+    storage:  Arc<S>,
     exec_ctx: Arc<Mutex<ExecutorContext>>,
 }
 
-impl<DB: TrieDB> ExecutorAdapter for EVMExecutorAdapter<DB> {
+impl<S: Storage, DB: TrieDB> ExecutorAdapter for EVMExecutorAdapter<S, DB> {
     fn get_ctx(&self) -> ExecutorContext {
         self.exec_ctx.lock().clone()
     }
@@ -47,7 +47,7 @@ impl<DB: TrieDB> ExecutorAdapter for EVMExecutorAdapter<DB> {
     }
 }
 
-impl<DB: TrieDB> Backend for EVMExecutorAdapter<DB> {
+impl<S: Storage, DB: TrieDB> Backend for EVMExecutorAdapter<S, DB> {
     fn gas_price(&self) -> U256 {
         self.exec_ctx.lock().gas_price
     }
@@ -115,20 +115,24 @@ impl<DB: TrieDB> Backend for EVMExecutorAdapter<DB> {
     }
 
     fn code(&self, address: H160) -> Vec<u8> {
-        // Fixme:
-        self.trie
+        let code_hash = self
+            .trie
             .lock()
             .get(address.as_bytes())
             .map(|raw| {
                 if raw.is_none() {
-                    return Vec::new();
+                    return Default::default();
                 }
-                Account::decode(raw.unwrap()).map_or_else(
-                    |_| Default::default(),
-                    |account| account.code_hash.as_bytes().to_vec(),
-                )
+                Account::decode(raw.unwrap())
+                    .map_or_else(|_| Default::default(), |account| account.code_hash)
             })
-            .unwrap_or_default()
+            .unwrap_or_default();
+
+        let rt = tokio::runtime::Handle::current();
+
+        let res = rt.block_on(self.storage.get_code_by_hash(Context::new(), &code_hash));
+
+        res.unwrap().unwrap().to_vec()
     }
 
     fn storage(&self, address: H160, index: H256) -> H256 {
@@ -163,7 +167,7 @@ impl<DB: TrieDB> Backend for EVMExecutorAdapter<DB> {
     }
 }
 
-impl<DB: TrieDB> ApplyBackend for EVMExecutorAdapter<DB> {
+impl<S: Storage, DB: TrieDB> ApplyBackend for EVMExecutorAdapter<S, DB> {
     fn apply<A, I, L>(&mut self, values: A, logs: L, delete_empty: bool)
     where
         A: IntoIterator<Item = Apply<I>>,
@@ -199,20 +203,35 @@ impl<DB: TrieDB> ApplyBackend for EVMExecutorAdapter<DB> {
     }
 }
 
-impl<DB: TrieDB> EVMExecutorAdapter<DB> {
-    pub fn new(db: Arc<DB>, exec_ctx: Arc<Mutex<ExecutorContext>>) -> ProtocolResult<Self> {
+impl<S: Storage, DB: TrieDB> EVMExecutorAdapter<S, DB> {
+    pub fn new(
+        db: Arc<DB>,
+        storage: Arc<S>,
+        exec_ctx: Arc<Mutex<ExecutorContext>>,
+    ) -> ProtocolResult<Self> {
         let trie = Arc::new(Mutex::new(MPTTrie::new(Arc::clone(&db))));
-        Ok(EVMExecutorAdapter { trie, db, exec_ctx })
+        Ok(EVMExecutorAdapter {
+            trie,
+            db,
+            storage,
+            exec_ctx,
+        })
     }
 
     pub fn from_root(
         state_root: MerkleRoot,
         db: Arc<DB>,
+        storage: Arc<S>,
         exec_ctx: Arc<Mutex<ExecutorContext>>,
     ) -> ProtocolResult<Self> {
         let trie = Arc::new(Mutex::new(MPTTrie::from_root(state_root, Arc::clone(&db))?));
 
-        Ok(EVMExecutorAdapter { trie, db, exec_ctx })
+        Ok(EVMExecutorAdapter {
+            trie,
+            db,
+            storage,
+            exec_ctx,
+        })
     }
 
     pub fn root(&self) -> MerkleRoot {

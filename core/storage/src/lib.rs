@@ -327,6 +327,7 @@ impl_storage_schema_for!(HashHeightSchema, Hash, u64, HashHeight);
 impl_storage_schema_for!(LatestBlockSchema, Hash, Block, Block);
 impl_storage_schema_for!(LatestProofSchema, Hash, Proof, Block);
 impl_storage_schema_for!(OverlordWalSchema, Hash, Bytes, Wal);
+impl_storage_schema_for!(EvmCodeSchema, Hash, Bytes, Code);
 
 #[async_trait]
 impl<Adapter: StorageAdapter> CommonStorage for ImplStorage<Adapter> {
@@ -499,6 +500,14 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         };
 
         Ok(hashes.iter().map(|h| found.remove(h)).collect::<Vec<_>>())
+    }
+
+    async fn insert_code(&self, _ctx: Context, code_hash: Hash, code: Bytes) -> ProtocolResult<()> {
+        self.adapter.insert::<EvmCodeSchema>(code_hash, code).await
+    }
+
+    async fn get_code_by_hash(&self, _ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>> {
+        self.adapter.get::<EvmCodeSchema>(*hash).await
     }
 
     async fn get_transaction_by_hash(

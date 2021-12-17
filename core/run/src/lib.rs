@@ -327,6 +327,7 @@ impl Axon {
             let mut backend = EVMExecutorAdapter::from_root(
                 current_header.state_root,
                 Arc::clone(&trie_db),
+                Arc::clone(&storage),
                 Arc::new(Mutex::new(current_header.clone().into())),
             )?;
             let resp = executor.exec(&mut backend, current_stxs.clone());

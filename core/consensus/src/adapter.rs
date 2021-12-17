@@ -353,6 +353,7 @@ where
         let mut backend = EVMExecutorAdapter::from_root(
             header.state_root,
             Arc::clone(&self.trie_db),
+            Arc::clone(&self.storage),
             Arc::clone(&base_ctx),
         )?;
 
