@@ -224,10 +224,13 @@ impl<DB: TrieDB> EVMExecutorAdapter<DB> {
         };
 
         let storage_root = if reset_storage {
-            H256::default()
+            RLP_NULL
         } else {
-            let mut storage_trie =
-                MPTTrie::from_root(old_account.storage_root, Arc::clone(&self.db)).unwrap();
+            let mut storage_trie = if old_account.storage_root == RLP_NULL {
+                MPTTrie::new(Arc::clone(&self.db))
+            } else {
+                MPTTrie::from_root(old_account.storage_root, Arc::clone(&self.db)).unwrap()
+            };
 
             storage.into_iter().for_each(|(k, v)| {
                 let _ = storage_trie.insert(k.as_bytes(), v.as_bytes());

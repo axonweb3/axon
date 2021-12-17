@@ -256,6 +256,7 @@ where
         _ctx: Context,
         tx: Box<SignedTransaction>,
     ) -> ProtocolResult<()> {
+        log::error!("{:?}", **CURRENT_STATE_ROOT.load());
         let backend = EVMExecutorAdapter::from_root(
             **CURRENT_STATE_ROOT.load(),
             Arc::clone(&self.trie_db),
