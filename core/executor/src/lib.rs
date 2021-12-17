@@ -62,9 +62,14 @@ impl Executor for EvmExecutor {
         let mut gas_use = 0u64;
 
         txs.into_iter().for_each(|tx| {
+            log::error!("tx {:?}", tx);
+
             let mut r = self.inner_exec(backend, tx);
             r.logs = backend.get_logs();
             gas_use += r.gas_used;
+
+            log::error!("resp {:?}", r);
+
             hashes.push(Hasher::digest(&r.ret));
             res.push(r);
         });
