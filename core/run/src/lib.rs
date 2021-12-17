@@ -338,15 +338,18 @@ impl Axon {
                 Arc::new(Mutex::new(current_header.clone().into())),
             )?;
             let resp = executor.exec(&mut backend, current_stxs.clone());
+            let block_hash = Hasher::digest(current_header.encode()?);
 
             let (_receipts, logs) = generate_receipts_and_logs(
-                self.genesis.block.header.state_root,
-                &self.genesis.rich_txs,
+                current_header.number,
+                block_hash,
+                current_header.state_root,
+                &current_stxs,
                 &resp,
             );
 
             CurrentStatus {
-                prev_hash:        Hasher::digest(current_header.encode()?),
+                prev_hash:        block_hash,
                 last_number:      current_header.number,
                 state_root:       resp.state_root,
                 receipts_root:    resp.receipt_root,

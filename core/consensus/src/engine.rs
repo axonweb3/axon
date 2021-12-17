@@ -655,8 +655,15 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<()> {
         let block_number = block.header.number;
+        let block_hash = Hasher::digest(block.header.encode()?);
 
-        let (receipts, logs) = generate_receipts_and_logs(block.header.state_root, &txs, &resp);
+        let (receipts, logs) = generate_receipts_and_logs(
+            block_number,
+            block_hash,
+            block.header.state_root,
+            &txs,
+            &resp,
+        );
 
         // Save signed transactions
         self.adapter
@@ -678,7 +685,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
 
         let metadata = METADATA_CONTROLER.get().unwrap().current();
         let new_status = CurrentStatus {
-            prev_hash:        Hasher::digest(block.header.encode()?),
+            prev_hash:        block_hash,
             last_number:      block_number,
             state_root:       resp.state_root,
             receipts_root:    resp.receipt_root,
@@ -787,15 +794,21 @@ fn validate_timestamp(
 }
 
 pub fn generate_receipts_and_logs(
+    block_number: u64,
+    block_hash: Hash,
     state_root: MerkleRoot,
     txs: &[SignedTransaction],
     resp: &ExecResp,
 ) -> (Vec<Receipt>, Vec<Bloom>) {
     let receipts = txs
         .iter()
+        .enumerate()
         .zip(resp.tx_resp.iter())
-        .map(|(tx, res)| Receipt {
+        .map(|((idx, tx), res)| Receipt {
             tx_hash: tx.transaction.hash,
+            block_number,
+            block_hash,
+            tx_index: idx as u32,
             state_root,
             used_gas: U256::from(res.gas_used),
             logs_bloom: Bloom::from(BloomInput::Raw(rlp::encode_list(&res.logs).as_ref())),

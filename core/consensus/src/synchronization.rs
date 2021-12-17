@@ -305,8 +305,13 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             )
             .await?;
 
-        let (receipts, logs) =
-            generate_receipts_and_logs(block.header.state_root, &rich_block.txs, &resp);
+        let (receipts, logs) = generate_receipts_and_logs(
+            block.header.number,
+            block_hash,
+            block.header.state_root,
+            &rich_block.txs,
+            &resp,
+        );
         let metadata = METADATA_CONTROLER.get().unwrap().current();
 
         let new_status = CurrentStatus {

@@ -1,11 +1,14 @@
 use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
-use crate::types::{Bloom, Hash, Log, MerkleRoot, Receipt, U256};
+use crate::types::Receipt;
 
 impl Encodable for Receipt {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(5)
+        s.begin_list(8)
             .append(&self.tx_hash)
+            .append(&self.block_number)
+            .append(&self.block_hash)
+            .append(&self.tx_index)
             .append(&self.state_root)
             .append(&self.used_gas)
             .append(&self.logs_bloom)
@@ -16,20 +19,16 @@ impl Encodable for Receipt {
 impl Decodable for Receipt {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
-            Prototype::List(5) => {
-                let tx_hash: Hash = r.val_at(0)?;
-                let state_root: MerkleRoot = r.val_at(1)?;
-                let used_gas: U256 = r.val_at(2)?;
-                let logs_bloom: Bloom = r.val_at(3)?;
-                let logs: Vec<Log> = r.list_at(4)?;
-                Ok(Receipt {
-                    tx_hash,
-                    state_root,
-                    used_gas,
-                    logs_bloom,
-                    logs,
-                })
-            }
+            Prototype::List(8) => Ok(Receipt {
+                tx_hash:      r.val_at(0)?,
+                block_number: r.val_at(1)?,
+                block_hash:   r.val_at(2)?,
+                tx_index:     r.val_at(3)?,
+                state_root:   r.val_at(4)?,
+                used_gas:     r.val_at(5)?,
+                logs_bloom:   r.val_at(6)?,
+                logs:         r.list_at(7)?,
+            }),
             _ => Err(DecoderError::RlpExpectedToBeList),
         }
     }

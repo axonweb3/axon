@@ -5,14 +5,27 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use protocol::codec::ProtocolCodec;
 use protocol::types::{
-    AccessList, Block, Bloom, Bytes, Hash, Hasher, SignedTransaction, H160, H64, U256, U64,
+    AccessList, Block, Bloom, Bytes, Hash, Hasher, Receipt, SignedTransaction, TransactionAction,
+    H160, H64, U256, U64,
 };
 
 #[allow(clippy::large_enum_variant)]
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Deserialize, Clone, Debug, PartialEq, Eq)]
 pub enum RichTransactionOrHash {
     Hash(Hash),
     Rich(SignedTransaction),
+}
+
+impl Serialize for RichTransactionOrHash {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            RichTransactionOrHash::Hash(h) => h.serialize(serializer),
+            RichTransactionOrHash::Rich(stx) => stx.serialize(serializer),
+        }
+    }
 }
 
 impl RichTransactionOrHash {
@@ -44,7 +57,7 @@ pub struct Web3Block {
     pub size:              u64,
     pub gas_limit:         U256,
     pub gas_used:          U256,
-    pub timestamp:         u64,
+    pub timestamp:         U256,
     pub transactions:      Vec<RichTransactionOrHash>,
     pub uncles:            Vec<Hash>,
 }
@@ -69,13 +82,69 @@ impl From<Block> for Web3Block {
             size:              encode.len() as u64,
             gas_limit:         b.header.gas_limit,
             gas_used:          b.header.gas_used,
-            timestamp:         b.header.timestamp,
+            timestamp:         b.header.timestamp.into(),
             transactions:      b
                 .tx_hashes
                 .iter()
                 .map(|hash| RichTransactionOrHash::Hash(*hash))
                 .collect(),
             uncles:            vec![],
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct Web3Transaction {
+    pub hash:                     Hash,
+    pub nonce:                    U256,
+    pub block_hash:               Option<Hash>,
+    pub block_number:             Option<U256>,
+    pub transaction_index:        Option<U256>,
+    pub from:                     H160,
+    pub to:                       Option<H160>,
+    pub value:                    U256,
+    pub gas_price:                U256,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_fee_per_gas:          Option<U256>,
+    pub gas:                      U256,
+    pub input:                    Bytes,
+    pub v:                        U256,
+    pub r:                        U256,
+    pub s:                        U256,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub access_list:              Option<AccessList>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_priority_fee_per_gas: Option<U256>,
+}
+
+impl Web3Transaction {
+    pub fn new(stx: SignedTransaction, receipt: Receipt) -> Web3Transaction {
+        let signature = stx.transaction.signature.clone().unwrap();
+        Web3Transaction {
+            hash:                     stx.transaction.hash,
+            nonce:                    stx.transaction.unsigned.nonce,
+            block_hash:               Some(receipt.block_hash),
+            block_number:             Some(receipt.block_number.into()),
+            transaction_index:        Some(receipt.tx_index.into()),
+            from:                     stx.sender,
+            to:                       if let TransactionAction::Call(to) =
+                stx.transaction.unsigned.action
+            {
+                Some(to)
+            } else {
+                None
+            },
+            value:                    stx.transaction.unsigned.value,
+            gas_price:                stx.transaction.unsigned.gas_price,
+            max_fee_per_gas:          None,
+            gas:                      receipt.used_gas,
+            input:                    stx.transaction.unsigned.data,
+            v:                        signature.standard_v.into(),
+            r:                        signature.r.as_ref().into(),
+            s:                        signature.s.as_ref().into(),
+            access_list:              Some(stx.transaction.unsigned.access_list.clone()),
+            max_priority_fee_per_gas: Some(stx.transaction.unsigned.max_priority_fee_per_gas),
         }
     }
 }
