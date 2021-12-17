@@ -271,23 +271,33 @@ impl<S: Storage, DB: TrieDB> EVMExecutorAdapter<S, DB> {
             storage_trie.commit().unwrap_or(RLP_NULL)
         };
 
-        log::error!("address {:?}, basic {:?}", address, basic);
+        log::warn!("address {:?}, basic {:?}", address, basic);
 
-        let new_account = Account {
+        let mut new_account = Account {
             nonce: basic.nonce,
             balance: basic.balance,
-            code_hash: if let Some(c) = code {
-                Hasher::digest(c)
-            } else {
-                old_account.code_hash
-            },
+            code_hash: old_account.code_hash,
             storage_root,
         };
 
-        let raw = new_account.encode().unwrap();
+        if let Some(c) = code {
+            let new_code_hash = Hasher::digest(&c);
+            if new_code_hash != old_account.code_hash {
+                tokio::runtime::Handle::current()
+                    .block_on(
+                        self.storage
+                            .insert_code(Context::new(), new_code_hash, c.into()),
+                    )
+                    .unwrap();
+                new_account.code_hash = new_code_hash;
+            }
+        }
+
+        let bytes = new_account.encode().unwrap();
+
         {
             let mut trie = self.trie.lock();
-            trie.insert(address.as_bytes(), raw.as_ref()).unwrap();
+            trie.insert(address.as_bytes(), bytes.as_ref()).unwrap();
             trie.commit().unwrap();
         }
 
