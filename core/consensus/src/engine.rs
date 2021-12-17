@@ -701,6 +701,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         // update timeout_gap of mempool
         self.adapter.set_args(
             Context::new(),
+            resp.state_root,
             metadata.timeout_gap,
             metadata.gas_limit,
             metadata.max_tx_size,

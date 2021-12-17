@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use creep::Context;
 
-use crate::types::{Hash, SignedTransaction};
+use crate::types::{Hash, MerkleRoot, SignedTransaction};
 use crate::ProtocolResult;
 
 #[allow(dead_code)]
@@ -49,7 +49,14 @@ pub trait MemPool: Send + Sync {
         propose_tx_hashes: Vec<Hash>,
     ) -> ProtocolResult<()>;
 
-    fn set_args(&self, context: Context, timeout_gap: u64, gas_limit: u64, max_tx_size: u64);
+    fn set_args(
+        &self,
+        context: Context,
+        state_root: MerkleRoot,
+        timeout_gap: u64,
+        gas_limit: u64,
+        max_tx_size: u64,
+    );
 }
 
 #[async_trait]
@@ -82,7 +89,14 @@ pub trait MemPoolAdapter: Send + Sync {
         tx_hashes: &[Hash],
     ) -> ProtocolResult<Vec<Option<SignedTransaction>>>;
 
-    fn set_args(&self, context: Context, timeout_gap: u64, gas_limit: u64, max_tx_size: u64);
+    fn set_args(
+        &self,
+        context: Context,
+        state_root: MerkleRoot,
+        timeout_gap: u64,
+        gas_limit: u64,
+        max_tx_size: u64,
+    );
 
     fn report_good(&self, ctx: Context);
 }

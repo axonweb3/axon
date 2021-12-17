@@ -11,7 +11,7 @@ use protocol::traits::{
 };
 use protocol::types::{
     Block, Bytes, ExecResp, Hash, Hasher, Header, Hex, Metadata, MetadataVersion, Pill, Proof,
-    Receipt, SignedTransaction,
+    Receipt, SignedTransaction, H256,
 };
 use protocol::{async_trait, tokio::sync::Mutex, ProtocolResult};
 
@@ -196,6 +196,7 @@ impl CommonConsensusAdapter for MockConsensusAdapter {
     fn set_args(
         &self,
         _context: Context,
+        _state_root: H256,
         _timeout_gap: u64,
         _cycles_limit: u64,
         _max_tx_size: u64,

@@ -16,7 +16,7 @@ use protocol::codec::ProtocolCodec;
 use protocol::traits::{Context, MemPool, MemPoolAdapter, MixedTxHashes};
 use protocol::types::{
     public_to_address, recover_intact_pub_key, Bytes, Hash, Hasher, Public, SignedTransaction,
-    Transaction, TransactionAction, UnverifiedTransaction, U256,
+    Transaction, TransactionAction, UnverifiedTransaction, H256, U256,
 };
 use protocol::{async_trait, tokio, ProtocolResult};
 
@@ -98,7 +98,15 @@ impl MemPoolAdapter for HashMemPoolAdapter {
         Ok(vec![])
     }
 
-    fn set_args(&self, _context: Context, _timeout_gap: u64, _gas_limit: u64, _max_tx_size: u64) {}
+    fn set_args(
+        &self,
+        _context: Context,
+        _state_root: H256,
+        _timeout_gap: u64,
+        _gas_limit: u64,
+        _max_tx_size: u64,
+    ) {
+    }
 
     fn report_good(&self, _ctx: Context) {}
 }

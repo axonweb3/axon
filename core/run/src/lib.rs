@@ -275,14 +275,6 @@ impl Axon {
 
         let metadata = METADATA_CONTROLER.get().unwrap().current();
 
-        // set args in mempool
-        mempool.set_args(
-            Context::new(),
-            metadata.timeout_gap,
-            metadata.gas_limit,
-            metadata.max_tx_size,
-        );
-
         // register broadcast new transaction
         network_service.register_endpoint_handler(
             END_GOSSIP_NEW_TXS,
@@ -360,6 +352,15 @@ impl Axon {
                 proof:            current_header.proof.clone(),
             }
         };
+
+        // set args in mempool
+        mempool.set_args(
+            Context::new(),
+            current_consensus_status.state_root,
+            metadata.timeout_gap,
+            metadata.gas_limit,
+            metadata.max_tx_size,
+        );
 
         let consensus_interval = metadata.interval;
         let status_agent = StatusAgent::new(current_consensus_status);

@@ -6,8 +6,8 @@ use creep::Context;
 
 use crate::traits::MixedTxHashes;
 use crate::types::{
-    Address, Block, BlockNumber, ExecResp, Hash, Header, Hex, Proof, Receipt, SignedTransaction,
-    Validator,
+    Address, Block, BlockNumber, ExecResp, Hash, Header, Hex, MerkleRoot, Proof, Receipt,
+    SignedTransaction, Validator,
 };
 use crate::ProtocolResult;
 
@@ -132,7 +132,14 @@ pub trait CommonConsensusAdapter: Send + Sync {
 
     async fn broadcast_number(&self, ctx: Context, height: u64) -> ProtocolResult<()>;
 
-    fn set_args(&self, context: Context, timeout_gap: u64, gas_limit: u64, max_tx_size: u64);
+    fn set_args(
+        &self,
+        context: Context,
+        state_root: MerkleRoot,
+        timeout_gap: u64,
+        gas_limit: u64,
+        max_tx_size: u64,
+    );
 
     fn tag_consensus(&self, ctx: Context, peer_ids: Vec<Bytes>) -> ProtocolResult<()>;
 
