@@ -32,7 +32,7 @@ pub trait AxonJsonRpc {
         show_rich_tx: bool,
     ) -> RpcResult<Option<Web3Block>>;
 
-    #[method(name = "eth_block_number")]
+    #[method(name = "eth_blockNumber")]
     async fn block_number(&self) -> RpcResult<BlockNumber>;
 
     #[method(name = "eth_getTransactionCount")]

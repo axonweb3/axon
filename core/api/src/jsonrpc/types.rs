@@ -27,10 +27,11 @@ impl RichTransactionOrHash {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Web3Block {
-    pub number:            u64,
+    pub number:            U256,
     pub hash:              Hash,
     pub parent_hash:       Hash,
     pub nonce:             H64,
+    #[serde(rename = "sha3Uncles")]
     pub sha3_uncles:       Hash,
     pub logs_bloom:        Bloom,
     pub transactions_root: Hash,
@@ -52,7 +53,7 @@ impl From<Block> for Web3Block {
     fn from(b: Block) -> Self {
         let encode = b.header.encode().unwrap();
         Web3Block {
-            number:            b.header.number,
+            number:            b.header.number.into(),
             hash:              Hasher::digest(&encode),
             parent_hash:       b.header.prev_hash,
             nonce:             b.header.nonce,
