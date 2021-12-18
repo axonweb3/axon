@@ -264,12 +264,11 @@ impl Axon {
         let my_pubkey = my_privkey.pub_key();
         let my_address = Address::from_pubkey_bytes(my_pubkey.to_uncompressed_bytes())?;
 
-        METADATA_CONTROLER
-            .swap(Arc::new(MetadataController::init(
-                Arc::new(Mutex::new(self.metadata.clone())),
-                Arc::new(Mutex::new(self.metadata.clone())),
-                Arc::new(Mutex::new(self.metadata.clone())),
-            )));
+        METADATA_CONTROLER.swap(Arc::new(MetadataController::init(
+            Arc::new(Mutex::new(self.metadata.clone())),
+            Arc::new(Mutex::new(self.metadata.clone())),
+            Arc::new(Mutex::new(self.metadata.clone())),
+        )));
 
         let metadata = METADATA_CONTROLER.load().current();
 
