@@ -705,6 +705,7 @@ dependencies = [
 name = "core-consensus"
 version = "0.1.0"
 dependencies = [
+ "arc-swap 1.5.0",
  "axon-protocol",
  "bit-vec",
  "cita_trie",

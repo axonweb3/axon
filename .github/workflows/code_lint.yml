@@ -16,7 +16,7 @@ jobs:
           components: rustfmt, clippy
 
       - name: fmt
-        run: make fmt
+        run: make check-fmt
 
       - name: clippy
         run: make clippy && git diff --exit-code Cargo.lock

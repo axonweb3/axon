@@ -1,4 +1,4 @@
-#![feature(test, once_cell)]
+#![feature(test)]
 #![allow(
     clippy::type_complexity,
     clippy::suspicious_else_formatting,

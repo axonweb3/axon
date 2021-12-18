@@ -312,7 +312,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             &rich_block.txs,
             &resp,
         );
-        let metadata = METADATA_CONTROLER.get().unwrap().current();
+        let metadata = METADATA_CONTROLER.load().current();
 
         let new_status = CurrentStatus {
             prev_hash:        Hasher::digest(block.header.encode()?),
@@ -410,7 +410,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
 
         if current_number == remote_number - 1 {
             sleep(Duration::from_millis(
-                METADATA_CONTROLER.get().unwrap().current().interval,
+                METADATA_CONTROLER.load().current().interval,
             ))
             .await;
 
@@ -440,7 +440,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
     fn update_status(&self, ctx: Context, sync_status_agent: StatusAgent) -> ProtocolResult<()> {
         let sync_status = sync_status_agent.inner();
         self.status.swap(sync_status.clone());
-        let metadata = METADATA_CONTROLER.get().unwrap().current();
+        let metadata = METADATA_CONTROLER.load().current();
 
         self.adapter.update_status(
             ctx,

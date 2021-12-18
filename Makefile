@@ -37,8 +37,11 @@ build:
 prod-muta-chain:
 	${CARGO} build ${VERBOSE} --release --example muta-chain
 
+check-fmt:
+	cargo +nightly fmt ${VERBOSE} --all -- --check
+
 fmt:
-	cargo fmt ${VERBOSE} --all -- --check
+	cargo +nightly fmt ${VERBOSE} --all
 
 clippy:
 	${CARGO} clippy ${VERBOSE} --all --all-targets --all-features -- \

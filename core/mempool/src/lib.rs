@@ -1,4 +1,4 @@
-#![feature(async_closure, test)]
+#![feature(test)]
 #![allow(clippy::suspicious_else_formatting, clippy::mutable_key_type)]
 
 mod adapter;

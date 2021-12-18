@@ -1,11 +1,13 @@
-use std::lazy::SyncOnceCell;
 use std::sync::Arc;
 
+use arc_swap::ArcSwap;
 use parking_lot::Mutex;
 
 use protocol::types::{BlockNumber, Bloom, Hash, MerkleRoot, Metadata, Proof, U256};
 
-pub static METADATA_CONTROLER: SyncOnceCell<MetadataController> = SyncOnceCell::new();
+lazy_static::lazy_static! {
+    pub static ref METADATA_CONTROLER: ArcSwap<MetadataController> = ArcSwap::from_pointee(MetadataController::default());
+}
 
 #[derive(Default, Debug)]
 pub struct MetadataController {

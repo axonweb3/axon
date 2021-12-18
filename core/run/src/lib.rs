@@ -1,4 +1,3 @@
-#![feature(async_closure, once_cell)]
 #![allow(clippy::mutable_key_type)]
 
 use std::collections::HashMap;
@@ -266,14 +265,13 @@ impl Axon {
         let my_address = Address::from_pubkey_bytes(my_pubkey.to_uncompressed_bytes())?;
 
         METADATA_CONTROLER
-            .set(MetadataController::init(
+            .swap(Arc::new(MetadataController::init(
                 Arc::new(Mutex::new(self.metadata.clone())),
                 Arc::new(Mutex::new(self.metadata.clone())),
                 Arc::new(Mutex::new(self.metadata.clone())),
-            ))
-            .unwrap();
+            )));
 
-        let metadata = METADATA_CONTROLER.get().unwrap().current();
+        let metadata = METADATA_CONTROLER.load().current();
 
         // register broadcast new transaction
         network_service.register_endpoint_handler(

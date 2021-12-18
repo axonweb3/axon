@@ -467,7 +467,7 @@ where
         }
 
         // the auth_list for the target should comes from previous number
-        let metadata = METADATA_CONTROLER.get().unwrap().current();
+        let metadata = METADATA_CONTROLER.load().current();
 
         if !metadata.version.contains(block_header.number) {
             return Err(ConsensusError::ConfusedMetadata(
