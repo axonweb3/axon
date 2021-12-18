@@ -119,7 +119,7 @@ pub struct Web3Transaction {
 }
 
 impl Web3Transaction {
-    pub fn new(stx: SignedTransaction, receipt: Receipt) -> Web3Transaction {
+    pub fn _new(stx: SignedTransaction, receipt: Receipt) -> Web3Transaction {
         let signature = stx.transaction.signature.clone().unwrap();
         Web3Transaction {
             hash:                     stx.transaction.hash,

@@ -98,7 +98,7 @@ fn test_storage_evm_code_insert() {
     let code = get_random_bytes(1000);
     let code_hash = Hasher::digest(&code);
 
-    exec!(storage.insert_code(Context::new(), code_hash, code.clone().into()));
+    exec!(storage.insert_code(Context::new(), code_hash, code.clone()));
     let code_2 = exec!(storage.get_code_by_hash(Context::new(), &code_hash,));
 
     assert_eq!(code, code_2.unwrap());
