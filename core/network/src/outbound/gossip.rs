@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use bytes::Bytes;
 use protocol::traits::{Context, Gossip, MessageCodec, Priority};
 use protocol::{tokio, ProtocolResult};
+use std::sync::Arc;
 use tentacle::secio::PeerId;
 use tentacle::service::{ServiceAsyncControl, TargetProtocol, TargetSession};
 
@@ -14,11 +15,11 @@ use crate::traits::NetworkContext;
 #[derive(Clone)]
 pub struct NetworkGossip {
     transmitter:  ServiceAsyncControl,
-    peer_manager: PeerManager,
+    peer_manager: Arc<PeerManager>,
 }
 
 impl NetworkGossip {
-    pub fn new(transmitter: ServiceAsyncControl, peer_manager: PeerManager) -> Self {
+    pub fn new(transmitter: ServiceAsyncControl, peer_manager: Arc<PeerManager>) -> Self {
         NetworkGossip {
             transmitter,
             peer_manager,

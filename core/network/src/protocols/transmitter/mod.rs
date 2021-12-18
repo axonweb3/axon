@@ -11,16 +11,17 @@ use crate::{
     peer_manager::PeerManager,
     reactor::{MessageRouter, RemotePeer},
 };
+use std::sync::Arc;
 
 pub mod protocol;
 
 pub struct TransmitterProtocol {
     router:       MessageRouter,
-    peer_manager: PeerManager,
+    peer_manager: Arc<PeerManager>,
 }
 
 impl TransmitterProtocol {
-    pub fn new(router: MessageRouter, peer_manager: PeerManager) -> Self {
+    pub fn new(router: MessageRouter, peer_manager: Arc<PeerManager>) -> Self {
         TransmitterProtocol {
             router,
             peer_manager,

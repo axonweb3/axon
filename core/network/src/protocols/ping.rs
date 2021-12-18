@@ -3,6 +3,7 @@ use prost::{Message, Oneof};
 use std::{
     collections::{HashMap, HashSet},
     str,
+    sync::Arc,
     time::{Duration, Instant},
 };
 use tentacle::{
@@ -29,11 +30,15 @@ pub struct PingHandler {
     timeout:               Duration,
     connected_session_ids: HashMap<SessionId, PingStatus>,
     start_time:            Instant,
-    peer_manager:          PeerManager,
+    peer_manager:          Arc<PeerManager>,
 }
 
 impl PingHandler {
-    pub fn new(interval: Duration, timeout: Duration, peer_manager: PeerManager) -> PingHandler {
+    pub fn new(
+        interval: Duration,
+        timeout: Duration,
+        peer_manager: Arc<PeerManager>,
+    ) -> PingHandler {
         let now = Instant::now();
         PingHandler {
             interval,

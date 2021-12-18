@@ -4,6 +4,7 @@ mod state;
 
 use std::{
     collections::HashMap,
+    sync::Arc,
     time::{Duration, Instant},
 };
 
@@ -128,7 +129,7 @@ impl<M: AddressManager> ServiceProtocol for DiscoveryProtocol<M> {
 
                             // change client random outbound port to client listen port
                             debug!("listen port: {:?}", listen_port);
-                            if let Some(port) = listen_port.map(|a| a.listen_port()).flatten() {
+                            if let Some(port) = listen_port.and_then(|a| a.listen_port()) {
                                 state.remote_addr.update_port(port);
                                 state.addr_known.insert(state.remote_addr.to_inner());
                                 // add client listen address to manager
@@ -292,11 +293,11 @@ fn verify_nodes_message(nodes: &Nodes) -> Option<Misbehavior> {
 
 pub struct DiscoveryAddressManager {
     pub discovery_local_address: bool,
-    peer_manager:                PeerManager,
+    peer_manager:                Arc<PeerManager>,
 }
 
 impl DiscoveryAddressManager {
-    pub fn new(peer_manager: PeerManager) -> Self {
+    pub fn new(peer_manager: Arc<PeerManager>) -> Self {
         DiscoveryAddressManager {
             peer_manager,
             discovery_local_address: false,
@@ -343,6 +344,14 @@ impl AddressManager for DiscoveryAddressManager {
 
         for addr in addrs.into_iter().filter(|addr| self.is_valid_addr(addr)) {
             trace!("Add discovered address:{:?}", addr);
+            self.peer_manager.with_peer_store_mut(|peer_store| {
+                if let Err(err) = peer_store.add_addr(addr.clone()) {
+                    debug!(
+                        "Failed to add discoved address to peer_store {:?} {:?}",
+                        err, addr
+                    );
+                }
+            });
         }
     }
 
@@ -351,7 +360,20 @@ impl AddressManager for DiscoveryAddressManager {
         MisbehaveResult::Disconnect
     }
 
-    fn get_random(&mut self, _n: usize) -> Vec<Multiaddr> {
-        Vec::new()
+    fn get_random(&mut self, n: usize) -> Vec<Multiaddr> {
+        let fetch_random_addrs = self
+            .peer_manager
+            .with_peer_store_mut(|peer_store| peer_store.fetch_random_addrs(n));
+        let addrs = fetch_random_addrs
+            .into_iter()
+            .filter_map(|paddr| {
+                if !self.is_valid_addr(&paddr.addr) {
+                    return None;
+                }
+                Some(paddr.addr)
+            })
+            .collect();
+        trace!("discovery send random addrs: {:?}", addrs);
+        addrs
     }
 }

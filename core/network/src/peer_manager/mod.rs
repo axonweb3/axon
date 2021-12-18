@@ -7,53 +7,22 @@ use tentacle::{
     multiaddr::Multiaddr, secio::PeerId, utils::extract_peer_id, ProtocolId, SessionId,
 };
 
+pub use self::{
+    peer_store::{AddrInfo, PeerStore},
+    registry::{Online, PeerInfo},
+};
 use crate::config::NetworkConfig;
 
-pub struct PeerInfo {
-    addr:             Multiaddr,
-    session_id:       SessionId,
-    opened_protocols: HashSet<ProtocolId>,
-}
+mod peer_store;
+mod registry;
 
-impl PeerInfo {
-    pub fn new(addr: Multiaddr, id: SessionId) -> Self {
-        PeerInfo {
-            addr,
-            session_id: id,
-            opened_protocols: Default::default(),
-        }
-    }
-
-    fn insert_protocol(&mut self, id: ProtocolId) {
-        self.opened_protocols.insert(id);
-    }
-
-    fn remove_protocol(&mut self, id: &ProtocolId) {
-        self.opened_protocols.remove(id);
-    }
-}
-
-#[derive(Default)]
-struct Online {
-    peers: HashMap<PeerId, PeerInfo>,
-}
-
-#[derive(Default)]
-struct StorePeer {
-    addrs: HashSet<Multiaddr>,
-}
-
-#[derive(Default)]
-struct PeerStore {
-    list: HashMap<PeerId, StorePeer>,
-}
-
-#[derive(Clone)]
 pub struct PeerManager {
-    online:     Arc<RwLock<Online>>,
-    peer_store: Arc<RwLock<PeerStore>>,
-    bootstraps: Arc<HashMap<PeerId, Multiaddr>>,
-    chain_id:   Arc<Mutex<String>>,
+    online:           RwLock<Online>,
+    peer_store:       RwLock<PeerStore>,
+    bootstraps:       HashMap<PeerId, Multiaddr>,
+    chain_id:         Mutex<String>,
+    pub public_addrs: RwLock<HashSet<Multiaddr>>,
+    config:           Arc<NetworkConfig>,
 }
 
 impl PeerManager {
@@ -67,31 +36,42 @@ impl PeerManager {
                     b.insert(o_id, addr.clone());
                 }
             }
-            Arc::new(b)
+            b
         };
         PeerManager {
-            online: Arc::new(RwLock::new(Online::default())),
-            peer_store: Arc::new(RwLock::new(PeerStore::default())),
-            chain_id: Arc::new(Mutex::new(String::new())),
+            online: RwLock::new(Online::default()),
+            peer_store: RwLock::new(PeerStore::load_from_dir_or_default(
+                config.peer_store_path.clone(),
+            )),
+            chain_id: Mutex::new(String::new()),
             bootstraps,
+            public_addrs: RwLock::new(HashSet::new()),
+            config,
         }
     }
 
+    #[allow(clippy::mutable_key_type)]
     pub fn peers(&self, pid: Vec<PeerId>) -> (Vec<SessionId>, Vec<Multiaddr>) {
         let mut connected = Vec::new();
         let mut unconnected = Vec::new();
         let online = self.online.read();
-        let peer_store = self.peer_store.read();
+        let mut peer_store = self.peer_store.write();
 
         for id in pid {
             if let Some(info) = online.peers.get(&id) {
                 connected.push(info.session_id);
                 continue;
             }
-            if let Some(info) = peer_store.list.get(&id) {
-                if !info.addrs.is_empty() {
-                    unconnected.extend(info.addrs.clone().into_iter())
+            let list = peer_store.fetch_addr_by_peer_id(&id);
+
+            if !list.is_empty() {
+                let now_ms = faketime::unix_time_as_millis();
+                for addr in list.iter() {
+                    if let Some(paddr) = peer_store.mut_addr_manager().get_mut(addr) {
+                        paddr.mark_tried(now_ms);
+                    }
                 }
+                unconnected.extend(list.into_iter())
             }
         }
 
@@ -99,15 +79,19 @@ impl PeerManager {
     }
 
     pub fn register(&self, peer: PeerInfo) {
-        let mut online = self.online.write();
-        online
-            .peers
-            .insert(extract_peer_id(&peer.addr).unwrap(), peer);
+        let (addr, ty) = (peer.addr.clone(), peer.session_type);
+        self.with_registry_mut(|online| {
+            online
+                .peers
+                .insert(extract_peer_id(&peer.addr).unwrap(), peer)
+        });
+        self.with_peer_store_mut(|peer_store| peer_store.add_connected_peer(addr, ty));
     }
 
     pub fn unregister(&self, id: &PeerId) {
-        let mut online = self.online.write();
-        online.peers.remove(id);
+        if let Some(peer) = self.with_registry_mut(|online| online.peers.remove(id)) {
+            self.with_peer_store_mut(|peer_store| peer_store.remove_disconnected_peer(&peer.addr));
+        }
     }
 
     pub fn open_protocol(&self, id: &PeerId, pid: ProtocolId) {
@@ -132,6 +116,10 @@ impl PeerManager {
         self.chain_id.lock().clone()
     }
 
+    pub fn local_peer_id(&self) -> PeerId {
+        self.config.secio_keypair.peer_id()
+    }
+
     pub fn unconnected_bootstraps(&self) -> Vec<Multiaddr> {
         let online = self.online.read();
         let mut res = Vec::new();
@@ -142,5 +130,50 @@ impl PeerManager {
             }
         }
         res
+    }
+
+    pub fn with_registry<F, T>(&self, f: F) -> T
+    where
+        F: FnOnce(&Online) -> T,
+    {
+        f(&self.online.read())
+    }
+
+    pub fn with_registry_mut<F, T>(&self, f: F) -> T
+    where
+        F: FnOnce(&mut Online) -> T,
+    {
+        f(&mut self.online.write())
+    }
+
+    pub fn with_peer_store<F, T>(&self, f: F) -> T
+    where
+        F: FnOnce(&PeerStore) -> T,
+    {
+        f(&self.peer_store.read())
+    }
+
+    pub fn with_peer_store_mut<F, T>(&self, f: F) -> T
+    where
+        F: FnOnce(&mut PeerStore) -> T,
+    {
+        f(&mut self.peer_store.write())
+    }
+
+    pub fn always_allow(&self, peer_id: &PeerId) -> bool {
+        self.bootstraps.contains_key(peer_id)
+    }
+
+    pub fn local_listen_addrs(&self) -> Vec<Multiaddr> {
+        self.public_addrs.read().iter().cloned().collect()
+    }
+
+    pub(crate) fn public_addrs(&self, count: usize) -> Vec<Multiaddr> {
+        self.public_addrs
+            .read()
+            .iter()
+            .take(count)
+            .cloned()
+            .collect()
     }
 }

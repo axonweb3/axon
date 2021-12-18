@@ -1,10 +1,12 @@
 mod discovery;
+mod feeler;
 mod identify;
 mod ping;
 mod transmitter;
 
 pub use self::{
     discovery::{DiscoveryAddressManager, DiscoveryProtocol},
+    feeler::Feeler,
     identify::IdentifyProtocol,
     ping::PingHandler,
     transmitter::{protocol::ReceivedMessage, TransmitterProtocol},
@@ -23,6 +25,7 @@ pub enum SupportProtocols {
     Identify,
     Discovery,
     Transmitter,
+    Feeler,
 }
 
 impl SupportProtocols {
@@ -32,6 +35,7 @@ impl SupportProtocols {
             SupportProtocols::Identify => 2,
             SupportProtocols::Discovery => 3,
             SupportProtocols::Transmitter => 4,
+            SupportProtocols::Feeler => 5,
         }
         .into()
     }
@@ -42,6 +46,7 @@ impl SupportProtocols {
             SupportProtocols::Identify => "/axon/identify",
             SupportProtocols::Discovery => "/axon/discovery",
             SupportProtocols::Transmitter => "/axon/transmitter",
+            SupportProtocols::Feeler => "/axon/feeler",
         }
         .to_owned()
     }
@@ -52,6 +57,7 @@ impl SupportProtocols {
             SupportProtocols::Identify => vec!["1".to_owned()],
             SupportProtocols::Discovery => vec!["1".to_owned()],
             SupportProtocols::Transmitter => vec!["1".to_owned()],
+            SupportProtocols::Feeler => vec!["1".to_owned()],
         }
     }
 
@@ -61,6 +67,7 @@ impl SupportProtocols {
             SupportProtocols::Identify => 2 * 1024,
             SupportProtocols::Discovery => 512 * 1024,
             SupportProtocols::Transmitter => 4 * 1024 * 1024,
+            SupportProtocols::Feeler => 1024,
         }
     }
 

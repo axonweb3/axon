@@ -167,6 +167,7 @@ impl Axon {
         // Init network
         let network_config = NetworkConfig::new()
             .max_connections(config.network.max_connected_peers)?
+            .peer_store_dir(config.data_path.clone().join("peer_store"))
             // .same_ip_conn_limit(config.network.same_ip_conn_limit)
             // .inbound_conn_limit(config.network.inbound_conn_limit)?
             // .allowlist_only(config.network.allowlist_only)

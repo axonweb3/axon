@@ -799,14 +799,17 @@ dependencies = [
  "bytes 1.1.0",
  "derive_more",
  "env_logger 0.8.4",
+ "faketime",
  "futures",
  "hex",
+ "ipnetwork",
  "log",
  "parking_lot",
  "prost",
  "rand 0.7.3",
  "rlp",
  "serde",
+ "serde_json",
  "snap",
  "tentacle",
  "tokio-util",
@@ -1235,6 +1238,16 @@ name = "fake-simd"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e88a8acf291dafb59c2d96e8f59828f3838bb1a70398823ade51a84de6a6deed"
+
+[[package]]
+name = "faketime"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fdcfc2bfe63c760bba09679ed6cb3a001d409c5195b4490dced0dc0aa800582b"
+dependencies = [
+ "js-sys",
+ "tempfile",
+]
 
 [[package]]
 name = "faster-hex"
@@ -1726,6 +1739,15 @@ name = "ipnet"
 version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68f2d64f2edebec4ce84ad108148e67e1064789bee435edc5b60ad398714a3a9"
+
+[[package]]
+name = "ipnetwork"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4088d739b183546b239688ddbc79891831df421773df95e236daf7867866d355"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "itertools"

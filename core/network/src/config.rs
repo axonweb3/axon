@@ -36,10 +36,8 @@ pub const DEFAULT_PEER_TRUST_MAX_HISTORY_DURATION: Duration =
 const DEFAULT_PEER_FATAL_BAN_DURATION: Duration = Duration::from_secs(60 * 60); // 1 hour
 const DEFAULT_PEER_SOFT_BAN_DURATION: Duration = Duration::from_secs(60 * 10); // 10 minutes
 
-// Default peer data persistent path
-pub const DEFAULT_PEER_FILE_NAME: &str = "peers";
-pub const DEFAULT_PEER_FILE_EXT: &str = "dat";
-pub const DEFAULT_PEER_DAT_FILE: &str = "./peers.dat";
+// Default peer store persistent path
+pub const DEFAULT_PEER_DAT_FILE: &str = "./";
 
 pub const DEFAULT_PING_INTERVAL: u64 = 15;
 pub const DEFAULT_PING_TIMEOUT: u64 = 30;
@@ -66,7 +64,7 @@ pub struct NetworkConfig {
     pub allowlist:              Vec<PeerId>,
     pub allowlist_only:         bool,
     pub enable_save_restore:    bool,
-    pub peer_dat_file:          PathBuf,
+    pub peer_store_path:        PathBuf,
     pub peer_trust_interval:    Duration,
     pub peer_trust_max_history: Duration,
     pub peer_fatal_ban:         Duration,
@@ -111,7 +109,7 @@ impl NetworkConfig {
             allowlist:              Default::default(),
             allowlist_only:         false,
             enable_save_restore:    false,
-            peer_dat_file:          PathBuf::from(DEFAULT_PEER_DAT_FILE.to_owned()),
+            peer_store_path:        PathBuf::from(DEFAULT_PEER_DAT_FILE.to_owned()),
             peer_trust_interval:    DEFAULT_PEER_TRUST_INTERVAL_DURATION,
             peer_trust_max_history: DEFAULT_PEER_TRUST_MAX_HISTORY_DURATION,
             peer_fatal_ban:         DEFAULT_PEER_FATAL_BAN_DURATION,
@@ -207,6 +205,11 @@ impl NetworkConfig {
     pub fn discovery_sync_interval(mut self, interval: u64) -> Self {
         self.discovery_sync_interval = Duration::from_secs(interval);
 
+        self
+    }
+
+    pub fn peer_store_dir(mut self, path: PathBuf) -> Self {
+        self.peer_store_path = path;
         self
     }
 }
