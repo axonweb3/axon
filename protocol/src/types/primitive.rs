@@ -79,7 +79,7 @@ impl Hex {
 
 impl Default for Hex {
     fn default() -> Self {
-        Hex::from_string("0x1".to_owned()).expect("Hex must start with 0x")
+        Hex(String::from("0x0000000000000000"))
     }
 }
 
