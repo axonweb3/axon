@@ -1,4 +1,4 @@
-name: Code Lint
+name: Cargo Clippy
 on:
   push:
     branches:
@@ -14,9 +14,6 @@ jobs:
         with:
           profile: minimal
           components: rustfmt, clippy
-
-      - name: fmt
-        run: make fmt
 
       - name: clippy
         run: make clippy && git diff --exit-code Cargo.lock

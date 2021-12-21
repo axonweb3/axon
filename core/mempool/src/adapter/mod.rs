@@ -5,6 +5,7 @@ pub mod message;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::{error::Error, marker::PhantomData, sync::Arc, time::Duration};
 
+use arc_swap::ArcSwap;
 use futures::{
     channel::mpsc::{
         channel, unbounded, Receiver, Sender, TrySendError, UnboundedReceiver, UnboundedSender,
@@ -20,7 +21,9 @@ use core_executor::{EVMExecutorAdapter, EvmExecutor};
 use protocol::traits::{
     Context, Executor, Gossip, MemPoolAdapter, PeerTrust, Priority, Rpc, Storage, TrustFeedback,
 };
-use protocol::types::{recover_intact_pub_key, Hash, SignedTransaction, TransactionAction};
+use protocol::types::{
+    recover_intact_pub_key, Hash, MerkleRoot, SignedTransaction, TransactionAction,
+};
 use protocol::{
     async_trait, codec::ProtocolCodec, Display, ProtocolError, ProtocolErrorKind, ProtocolResult,
 };
@@ -34,6 +37,10 @@ use crate::MemPoolError;
 
 pub const DEFAULT_BROADCAST_TXS_SIZE: usize = 200;
 pub const DEFAULT_BROADCAST_TXS_INTERVAL: u64 = 200; // milliseconds
+
+lazy_static::lazy_static! {
+    static ref CURRENT_STATE_ROOT: ArcSwap<MerkleRoot> = ArcSwap::from_pointee(Default::default());
+}
 
 struct IntervalTxsBroadcaster;
 
@@ -249,8 +256,10 @@ where
         _ctx: Context,
         tx: Box<SignedTransaction>,
     ) -> ProtocolResult<()> {
-        let backend = EVMExecutorAdapter::new(
+        let backend = EVMExecutorAdapter::from_root(
+            **CURRENT_STATE_ROOT.load(),
             Arc::clone(&self.trie_db),
+            Arc::clone(&self.storage),
             Arc::new(Mutex::new(Default::default())),
         )?;
 
@@ -368,11 +377,19 @@ where
         }
     }
 
-    fn set_args(&self, _context: Context, timeout_gap: u64, cycles_limit: u64, max_tx_size: u64) {
+    fn set_args(
+        &self,
+        _context: Context,
+        state_root: MerkleRoot,
+        timeout_gap: u64,
+        cycles_limit: u64,
+        max_tx_size: u64,
+    ) {
         self.timeout_gap.store(timeout_gap, Ordering::Relaxed);
         self.gas_limit.store(cycles_limit, Ordering::Relaxed);
         self.max_tx_size
             .store(max_tx_size as usize, Ordering::Relaxed);
+        CURRENT_STATE_ROOT.swap(Arc::new(state_root));
     }
 
     fn report_good(&self, ctx: Context) {

@@ -1,13 +1,20 @@
 pub use evm::backend::{ApplyBackend, Backend};
 
-use crate::types::{Account, Bytes, ExecResp, Log, MerkleRoot, SignedTransaction, TxResp, H160};
+use crate::types::{
+    Account, Bytes, ExecResp, ExecutorContext, Log, MerkleRoot, SignedTransaction, TxResp, H160,
+    U256,
+};
 
 pub trait ExecutorAdapter {
+    fn set_gas_price(&self, gas_price: U256);
+
     fn get_logs(&self) -> Vec<Log>;
 
     fn state_root(&self) -> MerkleRoot;
 
     fn get(&self, key: &[u8]) -> Option<Bytes>;
+
+    fn get_ctx(&self) -> ExecutorContext;
 }
 
 pub trait Executor: Send + Sync {

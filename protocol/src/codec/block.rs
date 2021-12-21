@@ -3,9 +3,7 @@ use std::error::Error;
 use overlord::Codec;
 use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
-use crate::types::{
-    Block, Bloom, Bytes, Hash, Header, MerkleRoot, Pill, Proof, Validator, H160, H256, H64, U256,
-};
+use crate::types::{Block, Bytes, Header, Pill, Proof, Validator};
 use crate::{codec::error::CodecError, ProtocolError};
 
 impl Encodable for Header {
@@ -35,47 +33,26 @@ impl Encodable for Header {
 impl Decodable for Header {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
-            Prototype::List(18) => {
-                let prev_hash: Hash = r.val_at(0)?;
-                let proposer: H160 = r.val_at(1)?;
-                let state_root: MerkleRoot = r.val_at(2)?;
-                let transactions_root: MerkleRoot = r.val_at(3)?;
-                let signed_txs_hash: Hash = r.val_at(4)?;
-                let receipts_root: MerkleRoot = r.val_at(5)?;
-                let log_bloom: Bloom = r.val_at(6)?;
-                let difficulty: U256 = r.val_at(7)?;
-                let timestamp: u64 = r.val_at(8)?;
-                let number: u64 = r.val_at(9)?;
-                let gas_used: U256 = r.val_at(10)?;
-                let gas_limit: U256 = r.val_at(11)?;
-                let extra_data: Bytes = r.val_at(12)?;
-                let mixed_hash: Option<H256> = r.val_at(13)?;
-                let nonce: H64 = r.val_at(14)?;
-                let base_fee_per_gas: Option<U256> = r.val_at(15)?;
-                let proof: Proof = r.val_at(16)?;
-                let chain_id: u64 = r.val_at(17)?;
-
-                Ok(Header {
-                    prev_hash,
-                    proposer,
-                    state_root,
-                    transactions_root,
-                    signed_txs_hash,
-                    receipts_root,
-                    log_bloom,
-                    difficulty,
-                    timestamp,
-                    number,
-                    gas_used,
-                    gas_limit,
-                    extra_data,
-                    mixed_hash,
-                    nonce,
-                    base_fee_per_gas,
-                    proof,
-                    chain_id,
-                })
-            }
+            Prototype::List(18) => Ok(Header {
+                prev_hash:         r.val_at(0)?,
+                proposer:          r.val_at(1)?,
+                state_root:        r.val_at(2)?,
+                transactions_root: r.val_at(3)?,
+                signed_txs_hash:   r.val_at(4)?,
+                receipts_root:     r.val_at(5)?,
+                log_bloom:         r.val_at(6)?,
+                difficulty:        r.val_at(7)?,
+                timestamp:         r.val_at(8)?,
+                number:            r.val_at(9)?,
+                gas_used:          r.val_at(10)?,
+                gas_limit:         r.val_at(11)?,
+                extra_data:        r.val_at(12)?,
+                mixed_hash:        r.val_at(13)?,
+                nonce:             r.val_at(14)?,
+                base_fee_per_gas:  r.val_at(15)?,
+                proof:             r.val_at(16)?,
+                chain_id:          r.val_at(17)?,
+            }),
             _ => Err(DecoderError::RlpExpectedToBeList),
         }
     }
@@ -92,12 +69,10 @@ impl Encodable for Block {
 impl Decodable for Block {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
-            Prototype::List(2) => {
-                let header: Header = r.val_at(0)?;
-                let tx_hashes: Vec<Hash> = r.list_at(1)?;
-
-                Ok(Block { header, tx_hashes })
-            }
+            Prototype::List(2) => Ok(Block {
+                header:    r.val_at(0)?,
+                tx_hashes: r.list_at(1)?,
+            }),
             _ => Err(DecoderError::RlpExpectedToBeList),
         }
     }
@@ -117,21 +92,13 @@ impl Encodable for Proof {
 impl Decodable for Proof {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
-            Prototype::List(5) => {
-                let number: u64 = r.val_at(0)?;
-                let round: u64 = r.val_at(1)?;
-                let block_hash: H256 = r.val_at(2)?;
-                let signature: Bytes = r.val_at(3)?;
-                let bitmap: Bytes = r.val_at(4)?;
-
-                Ok(Proof {
-                    number,
-                    round,
-                    block_hash,
-                    signature,
-                    bitmap,
-                })
-            }
+            Prototype::List(5) => Ok(Proof {
+                number:     r.val_at(0)?,
+                round:      r.val_at(1)?,
+                block_hash: r.val_at(2)?,
+                signature:  r.val_at(3)?,
+                bitmap:     r.val_at(4)?,
+            }),
             _ => Err(DecoderError::RlpExpectedToBeList),
         }
     }
@@ -149,17 +116,11 @@ impl Encodable for Validator {
 impl Decodable for Validator {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
-            Prototype::List(3) => {
-                let pub_key: Bytes = r.val_at(0)?;
-                let propose_weight: u32 = r.val_at(1)?;
-                let vote_weight: u32 = r.val_at(2)?;
-
-                Ok(Validator {
-                    pub_key,
-                    propose_weight,
-                    vote_weight,
-                })
-            }
+            Prototype::List(3) => Ok(Validator {
+                pub_key:        r.val_at(0)?,
+                propose_weight: r.val_at(1)?,
+                vote_weight:    r.val_at(2)?,
+            }),
             _ => Err(DecoderError::RlpExpectedToBeList),
         }
     }
@@ -176,15 +137,10 @@ impl Encodable for Pill {
 impl Decodable for Pill {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
-            Prototype::List(2) => {
-                let block: Block = r.val_at(0)?;
-                let propose_hashes: Vec<Hash> = r.list_at(1)?;
-
-                Ok(Pill {
-                    block,
-                    propose_hashes,
-                })
-            }
+            Prototype::List(2) => Ok(Pill {
+                block:          r.val_at(0)?,
+                propose_hashes: r.list_at(1)?,
+            }),
             _ => Err(DecoderError::RlpExpectedToBeList),
         }
     }

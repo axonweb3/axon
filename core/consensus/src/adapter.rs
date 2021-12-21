@@ -14,8 +14,8 @@ use protocol::traits::{
     MixedTxHashes, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
 };
 use protocol::types::{
-    BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Hasher, Header, Hex, Pill, Proof,
-    Receipt, SignedTransaction, Validator,
+    BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Hasher, Header, Hex, MerkleRoot,
+    Pill, Proof, Receipt, SignedTransaction, Validator,
 };
 use protocol::{async_trait, codec::ProtocolCodec, tokio::task, ProtocolResult};
 
@@ -353,6 +353,7 @@ where
         let mut backend = EVMExecutorAdapter::from_root(
             header.state_root,
             Arc::clone(&self.trie_db),
+            Arc::clone(&self.storage),
             Arc::clone(&base_ctx),
         )?;
 
@@ -368,9 +369,16 @@ where
             .await
     }
 
-    fn set_args(&self, context: Context, timeout_gap: u64, gas_limit: u64, max_tx_size: u64) {
+    fn set_args(
+        &self,
+        context: Context,
+        state_root: MerkleRoot,
+        timeout_gap: u64,
+        gas_limit: u64,
+        max_tx_size: u64,
+    ) {
         self.mempool
-            .set_args(context, timeout_gap, gas_limit, max_tx_size);
+            .set_args(context, state_root, timeout_gap, gas_limit, max_tx_size);
     }
 
     fn tag_consensus(&self, _ctx: Context, _pub_keys: Vec<Bytes>) -> ProtocolResult<()> {
@@ -459,7 +467,7 @@ where
         }
 
         // the auth_list for the target should comes from previous number
-        let metadata = METADATA_CONTROLER.get().unwrap().current();
+        let metadata = METADATA_CONTROLER.load().current();
 
         if !metadata.version.contains(block_header.number) {
             return Err(ConsensusError::ConfusedMetadata(

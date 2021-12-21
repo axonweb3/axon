@@ -1,4 +1,3 @@
-#![feature(async_closure, once_cell)]
 #![allow(clippy::mutable_key_type)]
 
 use std::collections::HashMap;
@@ -265,23 +264,13 @@ impl Axon {
         let my_pubkey = my_privkey.pub_key();
         let my_address = Address::from_pubkey_bytes(my_pubkey.to_uncompressed_bytes())?;
 
-        METADATA_CONTROLER
-            .set(MetadataController::init(
-                Arc::new(Mutex::new(self.metadata.clone())),
-                Arc::new(Mutex::new(self.metadata.clone())),
-                Arc::new(Mutex::new(self.metadata.clone())),
-            ))
-            .unwrap();
+        METADATA_CONTROLER.swap(Arc::new(MetadataController::init(
+            Arc::new(Mutex::new(self.metadata.clone())),
+            Arc::new(Mutex::new(self.metadata.clone())),
+            Arc::new(Mutex::new(self.metadata.clone())),
+        )));
 
-        let metadata = METADATA_CONTROLER.get().unwrap().current();
-
-        // set args in mempool
-        mempool.set_args(
-            Context::new(),
-            metadata.timeout_gap,
-            metadata.gas_limit,
-            metadata.max_tx_size,
-        );
+        let metadata = METADATA_CONTROLER.load().current();
 
         // register broadcast new transaction
         network_service.register_endpoint_handler(
@@ -335,18 +324,22 @@ impl Axon {
             let mut backend = EVMExecutorAdapter::from_root(
                 current_header.state_root,
                 Arc::clone(&trie_db),
+                Arc::clone(&storage),
                 Arc::new(Mutex::new(current_header.clone().into())),
             )?;
             let resp = executor.exec(&mut backend, current_stxs.clone());
+            let block_hash = Hasher::digest(current_header.encode()?);
 
             let (_receipts, logs) = generate_receipts_and_logs(
-                self.genesis.block.header.state_root,
-                &self.genesis.rich_txs,
+                current_header.number,
+                block_hash,
+                current_header.state_root,
+                &current_stxs,
                 &resp,
             );
 
             CurrentStatus {
-                prev_hash:        Hasher::digest(current_header.encode()?),
+                prev_hash:        block_hash,
                 last_number:      current_header.number,
                 state_root:       resp.state_root,
                 receipts_root:    resp.receipt_root,
@@ -357,6 +350,15 @@ impl Axon {
                 proof:            current_header.proof.clone(),
             }
         };
+
+        // set args in mempool
+        mempool.set_args(
+            Context::new(),
+            current_consensus_status.state_root,
+            metadata.timeout_gap,
+            metadata.gas_limit,
+            metadata.max_tx_size,
+        );
 
         let consensus_interval = metadata.interval;
         let status_agent = StatusAgent::new(current_consensus_status);

@@ -117,7 +117,7 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
             consensus_wal,
         ));
         let status = engine.status();
-        let metadata = METADATA_CONTROLER.get().unwrap().current();
+        let metadata = METADATA_CONTROLER.load().current();
 
         let overlord = Overlord::new(node_info.self_pub_key, Arc::clone(&engine), crypto, engine);
         let overlord_handler = overlord.get_handler();

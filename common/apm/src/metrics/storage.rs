@@ -17,6 +17,7 @@ make_auto_flush_static_metric! {
     wal,
     hash_height,
     state,
+    code,
   }
 
   pub struct StoragePutCfTimeUsageVec: LocalCounter {
@@ -116,6 +117,7 @@ pub fn on_storage_get_cf(sc: StorageCategory, duration: Duration, keys: f64) {
             STORAGE_GET_CF_TIME_USAGE.hash_height.inc_by(seconds);
             STORAGE_GET_CF_COUNTER.hash_height.inc_by(keys);
         }
+        _ => (),
     }
 }
 
@@ -147,5 +149,6 @@ pub fn on_storage_put_cf(sc: StorageCategory, duration: Duration, size: f64) {
             STORAGE_PUT_CF_TIME_USAGE.hash_height.inc_by(seconds);
             STORAGE_PUT_CF_BYTES_COUNTER.hash_height.inc_by(size);
         }
+        _ => (),
     }
 }

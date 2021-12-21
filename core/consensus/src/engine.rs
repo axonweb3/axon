@@ -90,8 +90,8 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             difficulty:        Default::default(),
             timestamp:         time_now(),
             number:            next_number,
-            gas_used:          status.gas_used,
-            gas_limit:         status.gas_limit,
+            gas_used:          10_000_000_000u64.into(),
+            gas_limit:         100_000_000_000u64.into(),
             extra_data:        Default::default(),
             mixed_hash:        None,
             nonce:             Default::default(),
@@ -213,7 +213,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
         }
 
         let status = self.status.inner();
-        let metadata = METADATA_CONTROLER.get().unwrap().current();
+        let metadata = METADATA_CONTROLER.load().current();
 
         if current_number == status.last_number {
             return Ok(Status {
@@ -294,7 +294,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
         }
 
         self.update_metadata(current_number + 1);
-        let metadata = METADATA_CONTROLER.get().unwrap().current();
+        let metadata = METADATA_CONTROLER.load().current();
 
         let status = Status {
             height:         current_number + 1,
@@ -398,11 +398,11 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             return Ok(vec![]);
         }
 
-        let current_metadata = METADATA_CONTROLER.get().unwrap().current();
+        let current_metadata = METADATA_CONTROLER.load().current();
         let old_metadata = if current_metadata.version.contains(next_number - 1) {
             current_metadata
         } else {
-            METADATA_CONTROLER.get().unwrap().previous()
+            METADATA_CONTROLER.load().previous()
         };
 
         let mut old_validators = old_metadata
@@ -483,7 +483,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
     }
 
     fn update_metadata(&self, block_number: BlockNumber) {
-        METADATA_CONTROLER.get().unwrap().update(block_number);
+        METADATA_CONTROLER.load().update(block_number);
     }
 
     async fn inner_check_block(&self, ctx: Context, block: &Block) -> ProtocolResult<()> {
@@ -655,8 +655,15 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<()> {
         let block_number = block.header.number;
+        let block_hash = Hasher::digest(block.header.encode()?);
 
-        let (receipts, logs) = generate_receipts_and_logs(block.header.state_root, &txs, &resp);
+        let (receipts, logs) = generate_receipts_and_logs(
+            block_number,
+            block_hash,
+            block.header.state_root,
+            &txs,
+            &resp,
+        );
 
         // Save signed transactions
         self.adapter
@@ -676,9 +683,9 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             .save_proof(Context::new(), block.header.proof.clone())
             .await?;
 
-        let metadata = METADATA_CONTROLER.get().unwrap().current();
+        let metadata = METADATA_CONTROLER.load().current();
         let new_status = CurrentStatus {
-            prev_hash:        Hasher::digest(block.header.encode()?),
+            prev_hash:        block_hash,
             last_number:      block_number,
             state_root:       resp.state_root,
             receipts_root:    resp.receipt_root,
@@ -694,6 +701,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         // update timeout_gap of mempool
         self.adapter.set_args(
             Context::new(),
+            resp.state_root,
             metadata.timeout_gap,
             metadata.gas_limit,
             metadata.max_tx_size,
@@ -787,15 +795,21 @@ fn validate_timestamp(
 }
 
 pub fn generate_receipts_and_logs(
+    block_number: u64,
+    block_hash: Hash,
     state_root: MerkleRoot,
     txs: &[SignedTransaction],
     resp: &ExecResp,
 ) -> (Vec<Receipt>, Vec<Bloom>) {
     let receipts = txs
         .iter()
+        .enumerate()
         .zip(resp.tx_resp.iter())
-        .map(|(tx, res)| Receipt {
+        .map(|((idx, tx), res)| Receipt {
             tx_hash: tx.transaction.hash,
+            block_number,
+            block_hash,
+            tx_index: idx as u32,
             state_root,
             used_gas: U256::from(res.gas_used),
             logs_bloom: Bloom::from(BloomInput::Raw(rlp::encode_list(&res.logs).as_ref())),

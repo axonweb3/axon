@@ -1,4 +1,4 @@
-#![feature(async_closure, test)]
+#![feature(test)]
 #![allow(clippy::suspicious_else_formatting, clippy::mutable_key_type)]
 
 mod adapter;
@@ -25,7 +25,7 @@ use futures::future::try_join_all;
 
 use protocol::tokio::{self, sync::RwLock};
 use protocol::traits::{Context, MemPool, MemPoolAdapter, MixedTxHashes};
-use protocol::types::{Hash, SignedTransaction};
+use protocol::types::{Hash, SignedTransaction, H256};
 use protocol::{async_trait, Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 use crate::context::TxContext;
@@ -364,9 +364,16 @@ where
         Ok(())
     }
 
-    fn set_args(&self, context: Context, timeout_gap: u64, gas_limit: u64, max_tx_size: u64) {
+    fn set_args(
+        &self,
+        context: Context,
+        state_root: H256,
+        timeout_gap: u64,
+        gas_limit: u64,
+        max_tx_size: u64,
+    ) {
         self.adapter
-            .set_args(context, timeout_gap, gas_limit, max_tx_size);
+            .set_args(context, state_root, timeout_gap, gas_limit, max_tx_size);
         self.timeout_gap.store(timeout_gap, Ordering::Relaxed);
     }
 }

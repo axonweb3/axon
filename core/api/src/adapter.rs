@@ -35,7 +35,7 @@ where
     pub async fn evm_backend(
         &self,
         number: Option<BlockNumber>,
-    ) -> ProtocolResult<EVMExecutorAdapter<DB>> {
+    ) -> ProtocolResult<EVMExecutorAdapter<S, DB>> {
         let block = self
             .get_block_by_number(Context::new(), number)
             .await?
@@ -44,6 +44,7 @@ where
         EVMExecutorAdapter::from_root(
             block.header.state_root,
             Arc::clone(&self.trie_db),
+            Arc::clone(&self.storage),
             Arc::new(Mutex::new(ExecutorContext::from(block.header))),
         )
     }
