@@ -3,7 +3,6 @@ mod trie_db;
 
 use std::sync::Arc;
 
-use cita_trie::DB as TrieDB;
 use evm::backend::{Apply, Basic};
 use parking_lot::Mutex;
 
