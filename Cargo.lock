@@ -741,6 +741,7 @@ dependencies = [
  "cita_trie",
  "common-apm",
  "common-merkle",
+ "crossbeam-channel",
  "dashmap",
  "evm",
  "futures",

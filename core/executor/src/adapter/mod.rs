@@ -16,6 +16,22 @@ use protocol::{codec::ProtocolCodec, tokio, ProtocolResult};
 pub use trie::MPTTrie;
 pub use trie_db::RocksTrieDB;
 
+macro_rules! blocking_async {
+    ($self_: ident, $adapter: ident, $method: ident$ (, $args: expr)*) => {{
+        let (tx, rx) = crossbeam_channel::bounded(1);
+
+        let rt = protocol::tokio::runtime::Handle::current();
+        let adapter = Arc::clone(&$self_.$adapter);
+
+        rt.clone().spawn_blocking(move || {
+            let res = rt.block_on(adapter.$method( $($args,)* )).unwrap();
+            let _ = tx.send(res);
+        });
+
+        rx.recv()
+    }};
+}
+
 pub struct EVMExecutorAdapter<S, DB: cita_trie::DB> {
     trie:     Arc<Mutex<MPTTrie<DB>>>,
     db:       Arc<DB>,
@@ -23,7 +39,11 @@ pub struct EVMExecutorAdapter<S, DB: cita_trie::DB> {
     exec_ctx: Arc<Mutex<ExecutorContext>>,
 }
 
-impl<S: Storage, DB: TrieDB> ExecutorAdapter for EVMExecutorAdapter<S, DB> {
+impl<S, DB> ExecutorAdapter for EVMExecutorAdapter<S, DB>
+where
+    S: Storage + 'static,
+    DB: cita_trie::DB + 'static,
+{
     fn get_ctx(&self) -> ExecutorContext {
         self.exec_ctx.lock().clone()
     }
@@ -47,7 +67,11 @@ impl<S: Storage, DB: TrieDB> ExecutorAdapter for EVMExecutorAdapter<S, DB> {
     }
 }
 
-impl<S: Storage, DB: TrieDB> Backend for EVMExecutorAdapter<S, DB> {
+impl<S, DB> Backend for EVMExecutorAdapter<S, DB>
+where
+    S: Storage + 'static,
+    DB: cita_trie::DB + 'static,
+{
     fn gas_price(&self) -> U256 {
         self.exec_ctx.lock().gas_price
     }
@@ -162,7 +186,11 @@ impl<S: Storage, DB: TrieDB> Backend for EVMExecutorAdapter<S, DB> {
     }
 }
 
-impl<S: Storage, DB: TrieDB> ApplyBackend for EVMExecutorAdapter<S, DB> {
+impl<S, DB> ApplyBackend for EVMExecutorAdapter<S, DB>
+where
+    S: Storage + 'static,
+    DB: cita_trie::DB + 'static,
+{
     fn apply<A, I, L>(&mut self, values: A, logs: L, delete_empty: bool)
     where
         A: IntoIterator<Item = Apply<I>>,
@@ -198,7 +226,11 @@ impl<S: Storage, DB: TrieDB> ApplyBackend for EVMExecutorAdapter<S, DB> {
     }
 }
 
-impl<S: Storage, DB: TrieDB> EVMExecutorAdapter<S, DB> {
+impl<S, DB> EVMExecutorAdapter<S, DB>
+where
+    S: Storage + 'static,
+    DB: cita_trie::DB + 'static,
+{
     pub fn new(
         db: Arc<DB>,
         storage: Arc<S>,
