@@ -1,0 +1,19 @@
+name: Cargo Test
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          components: rustfmt, clippy
+
+      - name: clippy
+        run: make clippy && git diff --exit-code Cargo.lock
