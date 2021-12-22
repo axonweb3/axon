@@ -9,6 +9,7 @@ edition = "2021"
 arc-swap = "1.5"
 cita_trie = "3.0"
 crossbeam-queue = "0.3"
+dashmap = "5.0"
 futures = { version = "0.3", features = [ "async-await" ] }
 hex = "0.4"
 lazy_static = "1.4"

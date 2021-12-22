@@ -7,6 +7,7 @@ mod map;
 #[cfg(test)]
 mod tests;
 mod tx_cache;
+mod tx_map;
 
 pub use adapter::message::{
     MsgNewTxs, MsgPullTxs, MsgPushTxs, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
