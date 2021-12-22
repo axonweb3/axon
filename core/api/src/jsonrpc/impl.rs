@@ -3,11 +3,12 @@ use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
 
 use jsonrpsee::types::Error;
 
+use crate::jsonrpc::types::{
+    BlockId, CallRequest, RichTransactionOrHash, Web3Block, Web3TransactionReceipt,
+};
 use protocol::traits::{APIAdapter, Context, MemPool, Storage};
 use protocol::types::{BlockNumber, Bytes, SignedTransaction, H160, H256, U256};
 use protocol::{async_trait, codec::ProtocolCodec};
-
-use crate::jsonrpc::types::{BlockId, CallRequest, RichTransactionOrHash, Web3Block};
 
 pub struct JsonRpcImpl<M, S, DB> {
     adapter: DefaultAPIAdapter<M, S, DB>,
@@ -83,6 +84,7 @@ where
                             .await
                             .map_err(|e| Error::Custom(e.to_string()))?
                             .unwrap();
+
                         txs.push(RichTransactionOrHash::Rich(tx));
                     }
 
@@ -148,5 +150,51 @@ where
         };
 
         Ok(Default::default())
+    }
+
+    async fn net_work(&self) -> RpcResult<U256> {
+        self.chainid().await
+    }
+
+    async fn call(
+        &self,
+        _address: Option<H160>,
+        _to: H160,
+        _gas: Option<U256>,
+        _gas_price: Option<U256>,
+        _value: Option<U256>,
+        _data: Option<Bytes>,
+        _tag: Option<Bytes>,
+    ) -> RpcResult<Bytes> {
+        todo!();
+    }
+
+    async fn get_code(&self, _address: H160, _number: Option<U256>) -> RpcResult<Bytes> {
+        todo!();
+    }
+
+    async fn get_transaction_receipt(
+        &self,
+        _hash: H256,
+    ) -> RpcResult<Option<Web3TransactionReceipt>> {
+        let tx = self
+            .adapter
+            .get_transaction_by_hash(Context::new(), _hash)
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+
+        let rt = self
+            .adapter
+            .get_receipt_by_tx_hash(Context::new(), _hash)
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+
+        match tx {
+            Some(y) => rt.map_or_else(
+                move || Ok(None),
+                |v| Ok(Some(Web3TransactionReceipt::from(v, y))),
+            ),
+            None => Ok(None),
+        }
     }
 }

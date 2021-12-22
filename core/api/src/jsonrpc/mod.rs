@@ -9,7 +9,7 @@ use protocol::traits::{MemPool, Storage};
 use protocol::types::{BlockNumber, Bytes, SignedTransaction, H160, H256, U256};
 use protocol::ProtocolResult;
 
-use crate::jsonrpc::types::{BlockId, CallRequest, Web3Block};
+use crate::jsonrpc::types::{BlockId, CallRequest, Web3Block, Web3TransactionReceipt};
 use crate::{adapter::DefaultAPIAdapter, APIError};
 
 type RpcResult<T> = Result<T, Error>;
@@ -46,6 +46,29 @@ pub trait AxonJsonRpc {
 
     #[method(name = "eth_estimateGas")]
     async fn estimate_gas(&self, req: CallRequest, number: Option<BlockId>) -> RpcResult<U256>;
+    #[method(name = "net_version")]
+    async fn net_work(&self) -> RpcResult<U256>;
+
+    #[method(name = "eth_call")]
+    async fn call(
+        &self,
+        _address: Option<H160>,
+        _to: H160,
+        _gas: Option<U256>,
+        _gas_price: Option<U256>,
+        _value: Option<U256>,
+        _data: Option<Bytes>,
+        _tag: Option<Bytes>,
+    ) -> RpcResult<Bytes>;
+
+    #[method(name = "eth_getCode")]
+    async fn get_code(&self, _address: H160, _number: Option<U256>) -> RpcResult<Bytes>;
+
+    #[method(name = "eth_getTransactionReceipt")]
+    async fn get_transaction_receipt(
+        &self,
+        _hash: H256,
+    ) -> RpcResult<Option<Web3TransactionReceipt>>;
 }
 
 pub fn run_http_server<M, S, DB>(

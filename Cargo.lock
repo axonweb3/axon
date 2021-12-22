@@ -683,6 +683,7 @@ dependencies = [
  "cita_trie",
  "common-config-parser",
  "core-executor",
+ "ethereum",
  "jsonrpsee",
  "parking_lot",
  "serde",

@@ -3,10 +3,11 @@ use std::fmt;
 use serde::de::{Error, MapAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+pub use ethereum::Log;
 use protocol::codec::ProtocolCodec;
 use protocol::types::{
     AccessList, Block, Bloom, Bytes, Hash, Hasher, Receipt, SignedTransaction, TransactionAction,
-    H160, H64, U256, U64,
+    H160, H256, H64, U256, U64,
 };
 
 #[allow(clippy::large_enum_variant)]
@@ -33,6 +34,49 @@ impl RichTransactionOrHash {
         match self {
             RichTransactionOrHash::Hash(hash) => *hash,
             RichTransactionOrHash::Rich(stx) => stx.transaction.hash,
+        }
+    }
+}
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct Web3TransactionReceipt {
+    pub block_number:        u64,
+    pub block_hash:          H256,
+    pub contract_address:    Option<H160>,
+    pub cumulative_gas_used: U256,
+    pub effective_gas_price: U256,
+    pub from:                H160,
+    pub gas_used:            U256,
+    pub logs:                Vec<Log>,
+    pub logs_bloom:          Bloom,
+    pub status:              U256,
+    pub to:                  Option<H160>,
+    pub transaction_hash:    Hash,
+    pub transaction_index:   Option<U256>,
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
+    pub transaction_type:    Option<U64>,
+}
+impl Web3TransactionReceipt {
+    pub fn from(receipt: Receipt, tx: SignedTransaction) -> Web3TransactionReceipt {
+        Web3TransactionReceipt {
+            block_number:        receipt.block_number,
+            block_hash:          receipt.block_hash,
+            contract_address:    None,
+            cumulative_gas_used: receipt.used_gas,
+            effective_gas_price: receipt.used_gas,
+            from:                tx.sender,
+            gas_used:            receipt.used_gas,
+            logs:                receipt.logs,
+            logs_bloom:          receipt.logs_bloom,
+            status:              U256::zero(),
+            to:                  if let TransactionAction::Call(to) = tx.transaction.unsigned.action
+            {
+                Some(to)
+            } else {
+                None
+            },
+            transaction_hash:    tx.transaction.hash,
+            transaction_index:   Some(receipt.tx_index.into()),
+            transaction_type:    None,
         }
     }
 }
