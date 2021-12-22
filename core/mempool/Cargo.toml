@@ -8,13 +8,11 @@ edition = "2021"
 [dependencies]
 arc-swap = "1.5"
 cita_trie = "3.0"
-crossbeam-queue = "0.3"
 dashmap = "5.0"
 futures = { version = "0.3", features = [ "async-await" ] }
 hex = "0.4"
 lazy_static = "1.4"
 log = "0.4"
-rand = "0.7"
 rayon = "1.5"
 rlp = "0.5"
 rlp-derive = "0.1"
@@ -28,3 +26,4 @@ core-executor = { path = "../../core/executor" }
 [dev-dependencies]
 dashmap = "5.0"
 parking_lot = "0.11"
+rand = "0.7"

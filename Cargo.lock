@@ -780,7 +780,6 @@ dependencies = [
  "common-apm",
  "common-crypto",
  "core-executor",
- "crossbeam-queue",
  "dashmap",
  "futures",
  "hex",
@@ -916,16 +915,6 @@ dependencies = [
  "lazy_static",
  "memoffset",
  "scopeguard",
-]
-
-[[package]]
-name = "crossbeam-queue"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b10ddc024425c88c2ad148c1b0fd53f4c6d38db9697c9f1588381212fa657c9"
-dependencies = [
- "cfg-if 1.0.0",
- "crossbeam-utils",
 ]
 
 [[package]]
