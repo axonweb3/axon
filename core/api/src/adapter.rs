@@ -107,8 +107,6 @@ where
         self.storage.get_transaction_by_hash(ctx, &tx_hash).await
     }
 
-    
-
     async fn get_latest_block(&self, ctx: Context) -> ProtocolResult<Block> {
         self.storage.get_latest_block(ctx).await
     }
