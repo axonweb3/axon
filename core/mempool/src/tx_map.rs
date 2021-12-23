@@ -70,12 +70,12 @@ impl TxMap {
         if let Some(mut ref_kv) = self.sender_map.get_mut(&sender) {
             if ref_kv.value().transaction.unsigned.nonce < stx.transaction.unsigned.nonce {
                 let old_tx_hash = ref_kv.value().transaction.hash;
-                *ref_kv.value_mut() = stx.clone();
+                *ref_kv.value_mut() = Arc::clone(&stx);
                 self.hash_map.remove(&old_tx_hash);
                 self.hash_map.insert(stx.transaction.hash, stx);
             }
         } else {
-            self.sender_map.insert(stx.sender, stx.clone());
+            self.sender_map.insert(stx.sender, Arc::clone(&stx));
             self.hash_map.insert(stx.transaction.hash, stx);
         }
 
@@ -97,7 +97,7 @@ impl TxMap {
 
         let _lock = self.lock.write();
         for (idx, ref_kv) in self.hash_map.iter().enumerate() {
-            if (idx + 1) >= tx_num_limit {
+            if idx >= tx_num_limit {
                 break;
             }
 

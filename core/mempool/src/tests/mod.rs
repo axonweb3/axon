@@ -115,12 +115,12 @@ pub fn default_mock_txs(size: usize) -> Vec<SignedTransaction> {
     mock_txs(size, 0, TIMEOUT)
 }
 
-fn mock_txs(valid_size: usize, invalid_size: usize, _timeout: u64) -> Vec<SignedTransaction> {
+fn mock_txs(valid_size: usize, invalid_size: usize, timeout: u64) -> Vec<SignedTransaction> {
     (0..valid_size + invalid_size)
         .map(|i| {
             let priv_key = Secp256k1RecoverablePrivateKey::generate(&mut OsRng);
             let pub_key = priv_key.pub_key();
-            mock_signed_tx(&priv_key, &pub_key, _timeout, i < valid_size)
+            mock_signed_tx(&priv_key, &pub_key, timeout, i < valid_size)
         })
         .collect()
 }
