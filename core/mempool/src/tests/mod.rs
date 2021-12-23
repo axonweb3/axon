@@ -116,18 +116,13 @@ pub fn default_mock_txs(size: usize) -> Vec<SignedTransaction> {
 }
 
 fn mock_txs(valid_size: usize, invalid_size: usize, _timeout: u64) -> Vec<SignedTransaction> {
-    let mut vec = Vec::new();
-    let priv_key = Secp256k1RecoverablePrivateKey::generate(&mut OsRng);
-    let pub_key = priv_key.pub_key();
-    for i in 0..valid_size + invalid_size {
-        vec.push(mock_signed_tx(
-            &priv_key,
-            &pub_key,
-            _timeout,
-            i < valid_size,
-        ));
-    }
-    vec
+    (0..valid_size + invalid_size)
+        .map(|i| {
+            let priv_key = Secp256k1RecoverablePrivateKey::generate(&mut OsRng);
+            let pub_key = priv_key.pub_key();
+            mock_signed_tx(&priv_key, &pub_key, _timeout, i < valid_size)
+        })
+        .collect()
 }
 
 fn default_mempool_sync() -> HashMemPool<HashMemPoolAdapter> {
@@ -252,7 +247,7 @@ async fn exec_ensure_order_txs(
         .unwrap();
 }
 
-async fn exec_sync_propose_txs(
+async fn _exec_sync_propose_txs(
     require_hashes: Vec<Hash>,
     mempool: Arc<HashMemPool<HashMemPoolAdapter>>,
 ) {

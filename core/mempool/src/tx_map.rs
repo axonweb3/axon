@@ -58,7 +58,7 @@ impl TxMap {
         }
 
         let _lock = self.lock.read();
-        if self.sender_map.len() == self.capacity {
+        if self.sender_map.len() >= self.capacity {
             return Err(MemPoolError::ReachLimit {
                 pool_size: self.capacity,
             }
