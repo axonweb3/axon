@@ -8,8 +8,8 @@ use common_merkle::Merkle;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ApplyBackend, Backend, Executor, ExecutorAdapter as Adapter};
 use protocol::types::{
-    Account, Config, ExecResp, Hasher, SignedTransaction, TransactionAction, TxResp, H160, H256,
-    NIL_DATA, RLP_NULL, U256,
+    Account, Config, ExecResp, Hash, Hasher, SignedTransaction, TransactionAction, TxResp, H160,
+    H256, NIL_DATA, RLP_NULL, U256,
 };
 
 pub use crate::adapter::{EVMExecutorAdapter, MPTTrie, RocksTrieDB};
@@ -146,14 +146,10 @@ impl EvmExecutor {
             let (values, logs) = executor.into_state().deconstruct();
             backend.apply(values, logs, true);
             if tx.transaction.unsigned.action == TransactionAction::Create {
-                let mut encode = vec![0xff];
-                encode.extend_from_slice(tx.sender.as_bytes());
-                encode.extend_from_slice(H256::default().as_bytes());
-                encode.extend_from_slice(
-                    Hasher::digest(tx.transaction.unsigned.data.as_ref()).as_bytes(),
-                );
-
-                Some(Hasher::digest(encode))
+                Some(code_address(
+                    &tx.sender,
+                    &Hasher::digest(tx.transaction.unsigned.data.as_ref()),
+                ))
             } else {
                 None
             }
@@ -170,4 +166,13 @@ impl EvmExecutor {
             code_address,
         }
     }
+}
+
+pub fn code_address(sender: &H160, code_hash: &Hash) -> H256 {
+    let mut encode = vec![0xff];
+    encode.extend_from_slice(sender.as_bytes());
+    encode.extend_from_slice(H256::default().as_bytes());
+    encode.extend_from_slice(code_hash.as_bytes());
+
+    Hasher::digest(&encode)
 }
