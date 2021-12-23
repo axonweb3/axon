@@ -1,23 +1,24 @@
 use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
-use crate::types::{ExecutorContext, ExitReason, Log, TxResp, H160, H256, U256};
+use crate::types::{ExecutorContext, ExitReason, Hash, Log, TxResp, H160, H256, U256};
 
 impl Encodable for TxResp {
     fn rlp_append(&self, s: &mut RlpStream) {
         let reason = bincode::serialize(&self.remain_gas).unwrap();
-        s.begin_list(5)
+        s.begin_list(6)
             .append(&reason)
             .append(&self.ret)
             .append(&self.gas_used)
             .append(&self.remain_gas)
-            .append_list(&self.logs);
+            .append_list(&self.logs)
+            .append(&self.code_address);
     }
 }
 
 impl Decodable for TxResp {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
-            Prototype::List(5) => {
+            Prototype::List(6) => {
                 let tmp: Vec<u8> = r.val_at(0)?;
                 let exit_reason: ExitReason = bincode::deserialize(&tmp)
                     .map_err(|_| DecoderError::Custom("field exit reason"))?;
@@ -25,6 +26,7 @@ impl Decodable for TxResp {
                 let gas_used: u64 = r.val_at(2)?;
                 let remain_gas: u64 = r.val_at(3)?;
                 let logs: Vec<Log> = r.list_at(4)?;
+                let code_address: Option<Hash> = r.val_at(5)?;
 
                 Ok(TxResp {
                     exit_reason,
@@ -32,6 +34,7 @@ impl Decodable for TxResp {
                     gas_used,
                     remain_gas,
                     logs,
+                    code_address,
                 })
             }
             _ => Err(DecoderError::RlpExpectedToBeList),

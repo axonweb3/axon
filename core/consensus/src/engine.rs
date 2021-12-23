@@ -814,6 +814,7 @@ pub fn generate_receipts_and_logs(
             used_gas: U256::from(res.gas_used),
             logs_bloom: Bloom::from(BloomInput::Raw(rlp::encode_list(&res.logs).as_ref())),
             logs: res.logs.clone(),
+            code_address: res.code_address,
         })
         .collect::<Vec<_>>();
     let logs = receipts.iter().map(|r| r.logs_bloom).collect::<Vec<_>>();

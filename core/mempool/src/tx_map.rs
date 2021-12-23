@@ -92,16 +92,16 @@ impl TxMap {
     }
 
     pub fn package(&self, _gas_limit: u64, tx_num_limit: u64) -> MixedTxHashes {
-        let mut order_hashes = Vec::with_capacity(tx_num_limit as usize);
-        let mut count = 0;
+        let tx_num_limit = tx_num_limit as usize;
+        let mut order_hashes = Vec::with_capacity(tx_num_limit);
+
         let _lock = self.lock.write();
-        for ref_kv in self.hash_map.iter() {
-            if count == tx_num_limit {
+        for (idx, ref_kv) in self.hash_map.iter().enumerate() {
+            if (idx + 1) >= tx_num_limit {
                 break;
             }
 
             order_hashes.push(*ref_kv.key());
-            count += 1;
         }
 
         MixedTxHashes {

@@ -313,7 +313,7 @@ fn mock_signed_tx(
     }
 }
 
-fn check_order_consistant(mixed_tx_hashes: &MixedTxHashes, txs: &[SignedTransaction]) -> bool {
+fn _check_order_consistant(mixed_tx_hashes: &MixedTxHashes, txs: &[SignedTransaction]) -> bool {
     mixed_tx_hashes
         .order_tx_hashes
         .iter()

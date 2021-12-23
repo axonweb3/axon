@@ -48,6 +48,7 @@ impl Executor for EvmExecutor {
             remain_gas: 0,
             gas_used: 0,
             logs: vec![],
+            code_address: None,
         }
     }
 
@@ -134,16 +135,31 @@ impl EvmExecutor {
                         .map(|x| (x.address, x.slots))
                         .collect(),
                 );
+
                 (exit_reason, Vec::new())
             }
         };
         let remain_gas = executor.gas();
         let gas_used = executor.used_gas();
 
-        if exit_reason.is_succeed() {
+        let code_address = if exit_reason.is_succeed() {
             let (values, logs) = executor.into_state().deconstruct();
             backend.apply(values, logs, true);
-        }
+            if tx.transaction.unsigned.action == TransactionAction::Create {
+                let mut encode = vec![0xff];
+                encode.extend_from_slice(tx.sender.as_bytes());
+                encode.extend_from_slice(H256::default().as_bytes());
+                encode.extend_from_slice(
+                    Hasher::digest(tx.transaction.unsigned.data.as_ref()).as_bytes(),
+                );
+
+                Some(Hasher::digest(encode))
+            } else {
+                None
+            }
+        } else {
+            None
+        };
 
         TxResp {
             exit_reason,
@@ -151,6 +167,7 @@ impl EvmExecutor {
             remain_gas,
             gas_used,
             logs: vec![],
+            code_address,
         }
     }
 }

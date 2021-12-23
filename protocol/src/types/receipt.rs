@@ -12,4 +12,5 @@ pub struct Receipt {
     pub used_gas:     U256,
     pub logs_bloom:   Bloom,
     pub logs:         Vec<Log>,
+    pub code_address: Option<Hash>,
 }
