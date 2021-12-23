@@ -36,7 +36,7 @@ impl TxMap {
         })
     }
 
-    pub fn map_len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.hash_map.len()
     }
 

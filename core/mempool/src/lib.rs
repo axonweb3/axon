@@ -56,6 +56,10 @@ where
         mempool
     }
 
+    pub fn map_len(&self) -> usize {
+        self.map.len()
+    }
+
     pub fn get_adapter(&self) -> &Adapter {
         &self.adapter
     }
@@ -144,6 +148,11 @@ where
         );
         Ok(())
     }
+
+    #[cfg(test)]
+    pub fn get_tx_cache(&self) -> &TxMap {
+        &self.map
+    }
 }
 
 #[async_trait]
@@ -163,7 +172,7 @@ where
     ) -> ProtocolResult<MixedTxHashes> {
         log::info!(
             "[core_mempool]: {:?} txs in map while package",
-            self.map.map_len(),
+            self.map.len(),
         );
         let inst = Instant::now();
         let txs = self.map.package(gas_limit, tx_num_limit);

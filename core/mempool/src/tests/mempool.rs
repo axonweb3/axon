@@ -23,7 +23,7 @@ macro_rules! insert {
         for _ in 0..$repeat {
             concurrent_insert(txs.clone(), Arc::clone(&mempool)).await;
         }
-        assert_eq!(mempool.get_tx_cache().len().await, $output);
+        assert_eq!(mempool.get_tx_cache().len(), $output);
     };
 }
 
@@ -133,19 +133,13 @@ async fn test_flush() {
     // insert txs
     let txs = default_mock_txs(555);
     concurrent_insert(txs.clone(), Arc::clone(&mempool)).await;
-    assert_eq!(mempool.get_tx_cache().len().await, 555);
-
-    let callback_cache = mempool.get_callback_cache();
-    for tx in txs.iter() {
-        callback_cache.insert(tx.transaction.hash, tx.clone()).await;
-    }
-    assert_eq!(callback_cache.len().await, 555);
+    assert_eq!(mempool.get_tx_cache().len(), 555);
 
     // flush exist txs
     let (remove_txs, _) = txs.split_at(123);
     let remove_hashes: Vec<Hash> = remove_txs.iter().map(|tx| tx.transaction.hash).collect();
     exec_flush(remove_hashes, Arc::clone(&mempool)).await;
-    assert_eq!(mempool.get_tx_cache().len().await, 432);
+    assert_eq!(mempool.get_tx_cache().len(), 432);
     assert_eq!(mempool.get_tx_cache().queue_len(), 432);
     exec_package(Arc::clone(&mempool), CYCLE_LIMIT, TX_NUM_LIMIT).await;
     assert_eq!(mempool.get_tx_cache().queue_len(), 432);
@@ -155,8 +149,7 @@ async fn test_flush() {
     let txs = default_mock_txs(222);
     let remove_hashes: Vec<Hash> = txs.iter().map(|tx| tx.transaction.hash).collect();
     exec_flush(remove_hashes, Arc::clone(&mempool)).await;
-    assert_eq!(mempool.get_tx_cache().len().await, 432);
-    assert_eq!(mempool.get_tx_cache().queue_len(), 432);
+    assert_eq!(mempool.get_tx_cache().len(), 432);
 }
 
 macro_rules! ensure_order_txs {
@@ -171,7 +164,7 @@ macro_rules! ensure_order_txs {
         let tx_hashes: Vec<Hash> = txs.iter().map(|tx| tx.transaction.hash.clone()).collect();
         exec_ensure_order_txs(tx_hashes.clone(), Arc::clone(mempool)).await;
 
-        assert_eq!(mempool.get_callback_cache().len().await, $out_pool);
+        assert_eq!(mempool.map_len(), $out_pool);
 
         let fetch_txs = exec_get_full_txs(tx_hashes, Arc::clone(mempool)).await;
         assert_eq!(fetch_txs.len(), txs.len());
@@ -200,7 +193,7 @@ async fn test_sync_propose_txs() {
     let tx_hashes: Vec<Hash> = txs.iter().map(|tx| tx.transaction.hash).collect();
     exec_sync_propose_txs(tx_hashes, Arc::clone(mempool)).await;
 
-    assert_eq!(mempool.get_tx_cache().len().await, 50);
+    assert_eq!(mempool.get_tx_cache().len(), 50);
 }
 
 #[rustfmt::skip]
