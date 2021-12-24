@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::convert::TryFrom;
 use std::error::Error;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use json::JsonValue;
 use log::{error, info, warn};
@@ -24,8 +24,7 @@ use protocol::types::{
     Metadata, Pill, Proof, Receipt, SignedTransaction, ValidatorExtend, U256,
 };
 use protocol::{
-    async_trait, tokio, tokio::sync::Mutex as AsyncMutex, tokio::time::sleep, ProtocolError,
-    ProtocolResult,
+    async_trait, tokio, tokio::sync::Mutex as AsyncMutex, ProtocolError, ProtocolResult,
 };
 
 use crate::message::{
@@ -36,9 +35,6 @@ use crate::status::{CurrentStatus, StatusAgent};
 use crate::util::{digest_signed_transactions, time_now, OverlordCrypto};
 use crate::wal::{ConsensusWal, SignedTxsWAL};
 use crate::{ConsensusError, METADATA_CONTROLER};
-
-const RETRY_CHECK_ROOT_LIMIT: u8 = 15;
-const RETRY_CHECK_ROOT_INTERVAL: u64 = 100; // 100ms
 
 /// validator is for create new block, and authority is for build overlord
 /// status.
@@ -90,7 +86,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             difficulty:        Default::default(),
             timestamp:         time_now(),
             number:            next_number,
-            gas_used:          10_000_000_000u64.into(),
+            gas_used:          status.gas_used,
             gas_limit:         100_000_000_000u64.into(),
             extra_data:        Default::default(),
             mixed_hash:        None,
@@ -541,22 +537,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
                 e
             })?;
 
-        // If it is inconsistent with the state of the proposal, we will wait for a
-        // period of time.
-        let mut check_retry = 0;
-        loop {
-            match self.check_block_roots(ctx.clone(), &block.header) {
-                Ok(()) => break,
-                Err(e) => {
-                    if check_retry >= RETRY_CHECK_ROOT_LIMIT {
-                        return Err(e);
-                    }
-
-                    check_retry += 1;
-                }
-            }
-            sleep(Duration::from_millis(RETRY_CHECK_ROOT_INTERVAL)).await;
-        }
+        self.check_block_roots(ctx.clone(), &block.header)?;
 
         let signed_txs = self
             .adapter
@@ -597,7 +578,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         // check cycles used
         if status.gas_used != block.gas_used {
             error!(
-                "current list cycles used {:?}, block cycles used {:?}",
+                "current list gased used {:?}, block gased used {:?}",
                 status.gas_used, block.gas_used
             );
             return Err(ConsensusError::InvalidStatusVec.into());
