@@ -14,11 +14,12 @@ pub struct ExecResp {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TxResp {
-    pub exit_reason: ExitReason,
-    pub ret:         Vec<u8>,
-    pub gas_used:    u64,
-    pub remain_gas:  u64,
-    pub logs:        Vec<Log>,
+    pub exit_reason:  ExitReason,
+    pub ret:          Vec<u8>,
+    pub gas_used:     u64,
+    pub remain_gas:   u64,
+    pub logs:         Vec<Log>,
+    pub code_address: Option<Hash>,
 }
 
 #[derive(Default, Clone, Debug, PartialEq, Eq)]

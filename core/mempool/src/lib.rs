@@ -3,10 +3,9 @@
 
 mod adapter;
 mod context;
-mod map;
 #[cfg(test)]
 mod tests;
-mod tx_cache;
+mod tx_map;
 
 pub use adapter::message::{
     MsgNewTxs, MsgPullTxs, MsgPushTxs, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
@@ -17,41 +16,26 @@ pub use adapter::{DEFAULT_BROADCAST_TXS_INTERVAL, DEFAULT_BROADCAST_TXS_SIZE};
 
 use std::collections::HashSet;
 use std::error::Error;
-use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 
 use futures::future::try_join_all;
 
-use protocol::tokio::{self, sync::RwLock};
 use protocol::traits::{Context, MemPool, MemPoolAdapter, MixedTxHashes};
 use protocol::types::{Hash, SignedTransaction, H256};
-use protocol::{async_trait, Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
+use protocol::{async_trait, tokio, Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 use crate::context::TxContext;
-use crate::map::Map;
-use crate::tx_cache::TxCache;
+use crate::tx_map::TxMap;
 
-/// Memory pool for caching transactions.
-pub struct HashMemPool<Adapter: MemPoolAdapter> {
-    /// Pool size limit.
-    pool_size:      usize,
-    /// A system param limits the life time of an off-chain transaction.
-    timeout_gap:    AtomicU64,
-    /// A structure for caching new transactions and responsible transactions of
-    /// propose-sync.
-    tx_cache:       TxCache,
-    /// A structure for caching fresh transactions in order transaction hashes.
-    callback_cache: Arc<Map<SignedTransaction>>,
-    /// Supply necessary functions from outer modules.
-    adapter:        Arc<Adapter>,
-    /// exclusive flush_memory and insert_tx to avoid repeat txs insertion.
-    flush_lock:     RwLock<()>,
+pub struct HashMemPool<Adapter> {
+    map:     TxMap,
+    adapter: Arc<Adapter>,
 }
 
-impl<Adapter: 'static> HashMemPool<Adapter>
+impl<Adapter> HashMemPool<Adapter>
 where
-    Adapter: MemPoolAdapter,
+    Adapter: MemPoolAdapter + 'static,
 {
     pub async fn new(
         pool_size: usize,
@@ -59,12 +43,8 @@ where
         initial_txs: Vec<SignedTransaction>,
     ) -> Self {
         let mempool = HashMemPool {
-            pool_size,
-            timeout_gap: AtomicU64::new(0),
-            tx_cache: TxCache::new(pool_size * 2),
-            callback_cache: Arc::new(Map::new(pool_size)),
+            map:     TxMap::new(pool_size),
             adapter: Arc::new(adapter),
-            flush_lock: RwLock::new(()),
         };
 
         for tx in initial_txs.into_iter() {
@@ -76,12 +56,8 @@ where
         mempool
     }
 
-    pub fn get_tx_cache(&self) -> &TxCache {
-        &self.tx_cache
-    }
-
-    pub fn get_callback_cache(&self) -> &Map<SignedTransaction> {
-        &self.callback_cache
+    pub fn map_len(&self) -> usize {
+        self.map.len()
     }
 
     pub fn get_adapter(&self) -> &Adapter {
@@ -89,40 +65,35 @@ where
     }
 
     async fn show_unknown_txs(&self, tx_hashes: &[Hash]) -> Vec<Hash> {
-        let tx_hashes = self.tx_cache.show_unknown(tx_hashes).await;
-        let mut unknown_hashes = vec![];
-
-        for tx_hash in tx_hashes.into_iter() {
-            if !self.callback_cache.contains_key(&tx_hash).await {
-                unknown_hashes.push(tx_hash)
-            }
-        }
-
-        unknown_hashes
+        tx_hashes
+            .iter()
+            .filter_map(|hash| {
+                if self.map.contains(hash) {
+                    None
+                } else {
+                    Some(*hash)
+                }
+            })
+            .collect()
     }
 
-    async fn initial_insert(&self, ctx: Context, tx: SignedTransaction) -> ProtocolResult<()> {
-        let _lock = self.flush_lock.read().await;
-
-        self.tx_cache.check_exist(&tx.transaction.hash).await?;
+    async fn initial_insert(&self, ctx: Context, stx: SignedTransaction) -> ProtocolResult<()> {
         self.adapter
-            .check_storage_exist(ctx.clone(), &tx.transaction.hash)
+            .check_storage_exist(ctx.clone(), &stx.transaction.hash)
             .await?;
-        self.tx_cache.insert_propose_tx(tx).await
+        self.map.insert(stx)
     }
 
-    async fn insert_tx(
-        &self,
-        ctx: Context,
-        tx: SignedTransaction,
-        tx_type: TxType,
-    ) -> ProtocolResult<()> {
-        let _lock = self.flush_lock.read().await;
-
+    async fn insert_tx(&self, ctx: Context, tx: SignedTransaction) -> ProtocolResult<()> {
         let tx = Box::new(tx);
         let tx_hash = &tx.transaction.hash;
-        self.tx_cache.check_reach_limit(self.pool_size).await?;
-        self.tx_cache.check_exist(tx_hash).await?;
+        if self.map.reach_limit() {
+            return Err(MemPoolError::ReachLimit {
+                pool_size: self.map.pool_size(),
+            }
+            .into());
+        }
+
         self.adapter
             .check_authorization(ctx.clone(), tx.clone())
             .await?;
@@ -131,10 +102,7 @@ where
             .check_storage_exist(ctx.clone(), tx_hash)
             .await?;
 
-        match tx_type {
-            TxType::NewTx => self.tx_cache.insert_new_tx(*tx.clone()).await?,
-            TxType::ProposeTx => self.tx_cache.insert_propose_tx(*tx.clone()).await?,
-        }
+        self.map.insert(*tx.clone())?;
 
         if !ctx.is_network_origin_txs() {
             self.adapter.broadcast_tx(ctx, *tx).await?;
@@ -180,79 +148,56 @@ where
         );
         Ok(())
     }
+
+    #[cfg(test)]
+    pub fn get_tx_cache(&self) -> &TxMap {
+        &self.map
+    }
 }
 
 #[async_trait]
-impl<Adapter: 'static> MemPool for HashMemPool<Adapter>
+impl<Adapter> MemPool for HashMemPool<Adapter>
 where
-    Adapter: MemPoolAdapter,
+    Adapter: MemPoolAdapter + 'static,
 {
     async fn insert(&self, ctx: Context, tx: SignedTransaction) -> ProtocolResult<()> {
-        self.insert_tx(ctx, tx, TxType::NewTx).await
+        self.insert_tx(ctx, tx).await
     }
 
     async fn package(
         &self,
-        ctx: Context,
-        cycles_limit: u64,
+        _ctx: Context,
+        gas_limit: u64,
         tx_num_limit: u64,
     ) -> ProtocolResult<MixedTxHashes> {
-        let current_height = self.adapter.get_latest_height(ctx.clone()).await?;
         log::info!(
-            "[core_mempool]: {:?} txs in map and {:?} txs in queue while package",
-            self.tx_cache.len().await,
-            self.tx_cache.queue_len(),
+            "[core_mempool]: {:?} txs in map while package",
+            self.map.len(),
         );
         let inst = Instant::now();
-        let result = self
-            .tx_cache
-            .package(
-                cycles_limit,
-                tx_num_limit,
-                current_height,
-                current_height + self.timeout_gap.load(Ordering::Relaxed),
-            )
-            .await;
-        match result {
-            Ok(txs) => {
-                common_apm::metrics::mempool::MEMPOOL_PACKAGE_SIZE_VEC_STATIC
-                    .package
-                    .observe((txs.order_tx_hashes.len()) as f64);
-                common_apm::metrics::mempool::MEMPOOL_TIME_STATIC
-                    .package
-                    .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
-                Ok(txs)
-            }
-            Err(e) => {
-                common_apm::metrics::mempool::MEMPOOL_RESULT_COUNTER_STATIC
-                    .package
-                    .failure
-                    .inc();
-                Err(e)
-            }
-        }
+        let txs = self.map.package(gas_limit, tx_num_limit);
+
+        common_apm::metrics::mempool::MEMPOOL_PACKAGE_SIZE_VEC_STATIC
+            .package
+            .observe((txs.order_tx_hashes.len()) as f64);
+        common_apm::metrics::mempool::MEMPOOL_TIME_STATIC
+            .package
+            .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+        Ok(txs)
     }
 
-    async fn flush(&self, ctx: Context, tx_hashes: &[Hash]) -> ProtocolResult<()> {
-        let _lock = self.flush_lock.write().await;
-
-        let current_height = self.adapter.get_latest_height(ctx.clone()).await?;
+    async fn flush(&self, _ctx: Context, tx_hashes: &[Hash]) -> ProtocolResult<()> {
         log::info!(
             "[core_mempool]: flush mempool with {:?} tx_hashes",
             tx_hashes.len(),
         );
-        self.tx_cache
-            .flush(
-                tx_hashes,
-                current_height,
-                current_height + self.timeout_gap.load(Ordering::Relaxed),
-            )
-            .await;
-        self.callback_cache.clear().await;
+        self.map.remove_batch(tx_hashes);
 
         Ok(())
     }
 
+    // This method is used to handle fetch signed transactions rpc request from
+    // other nodes.
     async fn get_full_txs(
         &self,
         ctx: Context,
@@ -264,9 +209,7 @@ where
         let mut full_txs = Vec::with_capacity(len);
 
         for tx_hash in tx_hashes.iter() {
-            if let Some(tx) = self.tx_cache.get(tx_hash).await {
-                full_txs.push(tx);
-            } else if let Some(tx) = self.callback_cache.get(tx_hash).await {
+            if let Some(tx) = self.map.get_by_hash(tx_hash) {
                 full_txs.push(tx);
             } else {
                 missing_hashes.push(*tx_hash);
@@ -276,13 +219,13 @@ where
         // for push txs when local mempool is flushed, but the remote node still fetch
         // full block
         if !missing_hashes.is_empty() {
-            let txs = self
-                .adapter
-                .get_transactions_from_storage(ctx, height, &missing_hashes)
-                .await?;
-            let txs = txs.into_iter().flatten().collect::<Vec<_>>();
-
-            full_txs.extend(txs);
+            full_txs.extend(
+                self.adapter
+                    .get_transactions_from_storage(ctx, height, &missing_hashes)
+                    .await?
+                    .into_iter()
+                    .flatten(),
+            );
         }
 
         if full_txs.len() != len {
@@ -332,9 +275,7 @@ where
             self.verify_tx_in_parallel(ctx.clone(), tx_ptrs).await?;
 
             for signed_tx in txs.into_iter() {
-                self.callback_cache
-                    .insert(signed_tx.transaction.hash, *signed_tx)
-                    .await;
+                self.map.insert(*signed_tx)?;
             }
 
             self.adapter.report_good(ctx);
@@ -345,22 +286,9 @@ where
 
     async fn sync_propose_txs(
         &self,
-        ctx: Context,
-        propose_tx_hashes: Vec<Hash>,
+        _ctx: Context,
+        _propose_tx_hashes: Vec<Hash>,
     ) -> ProtocolResult<()> {
-        let unknown_hashes = self.show_unknown_txs(&propose_tx_hashes).await;
-        if !unknown_hashes.is_empty() {
-            let txs = self
-                .adapter
-                .pull_txs(ctx.clone(), None, unknown_hashes)
-                .await?;
-            // TODO: concurrently insert
-            for tx in txs.into_iter() {
-                // Should not handle error here, it is normal that transactions
-                // response here are exist in pool.
-                let _ = self.insert_tx(ctx.clone(), tx, TxType::ProposeTx).await;
-            }
-        }
         Ok(())
     }
 
@@ -374,7 +302,6 @@ where
     ) {
         self.adapter
             .set_args(context, state_root, timeout_gap, gas_limit, max_tx_size);
-        self.timeout_gap.store(timeout_gap, Ordering::Relaxed);
     }
 }
 
@@ -397,6 +324,7 @@ pub enum TxType {
     ProposeTx,
 }
 
+// Todo: change the error.
 #[derive(Debug, Display)]
 pub enum MemPoolError {
     #[display(
