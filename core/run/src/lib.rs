@@ -252,7 +252,7 @@ impl Axon {
             loop {
                 sleep(interval).await;
                 common_apm::metrics::mempool::MEMPOOL_LEN_GAUGE
-                    .set(monitor_mempool.get_tx_cache().len().await as i64);
+                    .set(monitor_mempool.map_len() as i64);
             }
         });
 

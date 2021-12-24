@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use derive_more::Display;
 
 use crate::traits::Context;
-use crate::types::{Block, Bytes, Hash, Header, Proof, Receipt, SignedTransaction};
+use crate::types::{Block, Bytes, Hash, Header, Proof, Receipt, SignedTransaction, H256};
 use crate::{codec::ProtocolCodec, ProtocolResult};
 
 #[derive(Debug, Copy, Clone, Display)]
@@ -80,9 +80,21 @@ pub trait Storage: CommonStorage {
         receipts: Vec<Receipt>,
     ) -> ProtocolResult<()>;
 
-    async fn insert_code(&self, ctx: Context, code_hash: Hash, code: Bytes) -> ProtocolResult<()>;
+    async fn insert_code(
+        &self,
+        ctx: Context,
+        code_address: H256,
+        code_hash: Hash,
+        code: Bytes,
+    ) -> ProtocolResult<()>;
 
     async fn get_code_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>>;
+
+    async fn get_code_by_address(
+        &self,
+        _ctx: Context,
+        address: &H256,
+    ) -> ProtocolResult<Option<Bytes>>;
 
     async fn get_receipt_by_hash(
         &self,

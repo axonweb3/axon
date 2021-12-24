@@ -1,6 +1,9 @@
 mod trie;
 mod trie_db;
 
+pub use trie::MPTTrie;
+pub use trie_db::RocksTrieDB;
+
 use std::sync::Arc;
 
 use evm::backend::{Apply, Basic};
@@ -10,10 +13,9 @@ use protocol::traits::{ApplyBackend, Backend, Context, ExecutorAdapter, Storage}
 use protocol::types::{
     Account, Bytes, ExecutorContext, Hasher, Log, MerkleRoot, H160, H256, NIL_DATA, RLP_NULL, U256,
 };
-use protocol::{codec::ProtocolCodec, tokio, ProtocolResult};
+use protocol::{codec::ProtocolCodec, ProtocolResult};
 
-pub use trie::MPTTrie;
-pub use trie_db::RocksTrieDB;
+use crate::code_address;
 
 macro_rules! blocking_async {
     ($self_: ident, $adapter: ident, $method: ident$ (, $args: expr)*) => {{
@@ -309,12 +311,18 @@ where
         if let Some(c) = code {
             let new_code_hash = Hasher::digest(&c);
             if new_code_hash != old_account.code_hash {
-                tokio::runtime::Handle::current()
-                    .block_on(
-                        self.storage
-                            .insert_code(Context::new(), new_code_hash, c.into()),
-                    )
-                    .unwrap();
+                let code_address = code_address(&address, &new_code_hash);
+
+                let _ = blocking_async!(
+                    self,
+                    storage,
+                    insert_code,
+                    Context::new(),
+                    code_address,
+                    new_code_hash,
+                    c.into()
+                );
+
                 new_account.code_hash = new_code_hash;
             }
         }

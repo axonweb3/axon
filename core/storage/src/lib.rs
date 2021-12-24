@@ -25,6 +25,7 @@ use protocol::traits::{
 };
 use protocol::types::{
     Block, BlockNumber, Bytes, DBBytes, Hash, Hasher, Header, Proof, Receipt, SignedTransaction,
+    H256,
 };
 use protocol::{
     async_trait, tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
@@ -328,6 +329,7 @@ impl_storage_schema_for!(LatestBlockSchema, Hash, Block, Block);
 impl_storage_schema_for!(LatestProofSchema, Hash, Proof, Block);
 impl_storage_schema_for!(OverlordWalSchema, Hash, Bytes, Wal);
 impl_storage_schema_for!(EvmCodeSchema, Hash, Bytes, Code);
+impl_storage_schema_for!(EvmCodeAddressSchema, Hash, Hash, Code);
 
 #[async_trait]
 impl<Adapter: StorageAdapter> CommonStorage for ImplStorage<Adapter> {
@@ -502,12 +504,37 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         Ok(hashes.iter().map(|h| found.remove(h)).collect::<Vec<_>>())
     }
 
-    async fn insert_code(&self, _ctx: Context, code_hash: Hash, code: Bytes) -> ProtocolResult<()> {
-        self.adapter.insert::<EvmCodeSchema>(code_hash, code).await
+    async fn insert_code(
+        &self,
+        _ctx: Context,
+        code_address: H256,
+        code_hash: Hash,
+        code: Bytes,
+    ) -> ProtocolResult<()> {
+        self.adapter
+            .insert::<EvmCodeSchema>(code_hash, code)
+            .await?;
+        self.adapter
+            .insert::<EvmCodeAddressSchema>(code_address, code_hash)
+            .await
     }
 
     async fn get_code_by_hash(&self, _ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>> {
         self.adapter.get::<EvmCodeSchema>(*hash).await
+    }
+
+    async fn get_code_by_address(
+        &self,
+        ctx: Context,
+        address: &H256,
+    ) -> ProtocolResult<Option<Bytes>> {
+        let code_hash = self.adapter.get::<EvmCodeAddressSchema>(*address).await?;
+
+        if let Some(hash) = code_hash {
+            self.get_code_by_hash(ctx, &hash).await
+        } else {
+            Ok(None)
+        }
     }
 
     async fn get_transaction_by_hash(
