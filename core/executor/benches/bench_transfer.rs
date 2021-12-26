@@ -131,7 +131,7 @@ fn mock_transaction(nonce: u64) -> SignedTransaction {
 }
 
 fn mock_txs(number: u64) -> Vec<SignedTransaction> {
-    (0..number).map(|i| mock_transaction(i)).collect()
+    (0..number).map(mock_transaction).collect()
 }
 
 fn criterion_100_txs(c: &mut Criterion) {
