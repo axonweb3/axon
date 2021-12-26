@@ -23,4 +23,12 @@ common-apm = { path = "../../common/apm" }
 common-merkle = { path = "../../common/merkle" }
 
 [dev-dependencies]
+criterion = "0.3"
 hex = "0.4"
+
+core-storage = { path = "../storage" }
+common-crypto = { path = "../../common/crypto" }
+
+[[bench]]
+name = "bench_transfer"
+harness = false
