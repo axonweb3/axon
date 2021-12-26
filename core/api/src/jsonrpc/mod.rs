@@ -2,7 +2,7 @@ mod r#impl;
 mod types;
 
 use jsonrpsee::http_server::{HttpServerBuilder, HttpServerHandle};
-use jsonrpsee::{proc_macros::rpc, types::Error};
+use jsonrpsee::{core::Error, proc_macros::rpc};
 
 use common_config_parser::types::ConfigApi;
 use protocol::traits::{MemPool, Storage};

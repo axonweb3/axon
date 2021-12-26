@@ -260,7 +260,7 @@ where
             **CURRENT_STATE_ROOT.load(),
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
-            Arc::new(Mutex::new(Default::default())),
+            Default::default(),
         )?;
 
         if let TransactionAction::Call(addr) = tx.transaction.unsigned.action {

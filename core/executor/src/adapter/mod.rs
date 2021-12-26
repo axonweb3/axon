@@ -7,7 +7,6 @@ pub use trie_db::RocksTrieDB;
 use std::sync::Arc;
 
 use evm::backend::{Apply, Basic};
-use parking_lot::Mutex;
 
 use protocol::traits::{ApplyBackend, Backend, Context, ExecutorAdapter, Storage};
 use protocol::types::{
@@ -34,10 +33,10 @@ macro_rules! blocking_async {
 }
 
 pub struct EVMExecutorAdapter<S, DB: cita_trie::DB> {
-    trie:     Arc<Mutex<MPTTrie<DB>>>,
-    db:       Arc<DB>,
+    exec_ctx: ExecutorContext,
+    trie:     MPTTrie<DB>,
     storage:  Arc<S>,
-    exec_ctx: Arc<Mutex<ExecutorContext>>,
+    db:       Arc<DB>,
 }
 
 impl<S, DB> ExecutorAdapter for EVMExecutorAdapter<S, DB>
@@ -46,25 +45,25 @@ where
     DB: cita_trie::DB + 'static,
 {
     fn get_ctx(&self) -> ExecutorContext {
-        self.exec_ctx.lock().clone()
+        self.exec_ctx.clone()
     }
 
-    fn set_gas_price(&self, gas_price: U256) {
-        self.exec_ctx.lock().gas_price = gas_price;
+    fn set_gas_price(&mut self, gas_price: U256) {
+        self.exec_ctx.gas_price = gas_price;
     }
 
-    fn get_logs(&self) -> Vec<Log> {
+    fn get_logs(&mut self) -> Vec<Log> {
         let mut ret = Vec::new();
-        ret.append(&mut self.exec_ctx.lock().logs);
+        ret.append(&mut self.exec_ctx.logs);
         ret
     }
 
     fn state_root(&self) -> MerkleRoot {
-        self.trie.lock().root
+        self.trie.root
     }
 
     fn get(&self, key: &[u8]) -> Option<Bytes> {
-        self.trie.lock().get(key).ok().flatten()
+        self.trie.get(key).ok().flatten()
     }
 }
 
@@ -74,55 +73,53 @@ where
     DB: cita_trie::DB + 'static,
 {
     fn gas_price(&self) -> U256 {
-        self.exec_ctx.lock().gas_price
+        self.exec_ctx.gas_price
     }
 
     fn origin(&self) -> H160 {
-        self.exec_ctx.lock().origin
+        self.exec_ctx.origin
     }
 
     fn block_number(&self) -> U256 {
-        self.exec_ctx.lock().block_number
+        self.exec_ctx.block_number
     }
 
     fn block_hash(&self, _number: U256) -> H256 {
-        self.exec_ctx.lock().block_hash
+        self.exec_ctx.block_hash
     }
 
     fn block_coinbase(&self) -> H160 {
-        self.exec_ctx.lock().block_coinbase
+        self.exec_ctx.block_coinbase
     }
 
     fn block_timestamp(&self) -> U256 {
-        self.exec_ctx.lock().block_timestamp
+        self.exec_ctx.block_timestamp
     }
 
     fn block_difficulty(&self) -> U256 {
-        self.exec_ctx.lock().difficulty
+        self.exec_ctx.difficulty
     }
 
     fn block_gas_limit(&self) -> U256 {
-        self.exec_ctx.lock().block_gas_limit
+        self.exec_ctx.block_gas_limit
     }
 
     fn block_base_fee_per_gas(&self) -> U256 {
-        self.exec_ctx.lock().block_base_fee_per_gas
+        self.exec_ctx.block_base_fee_per_gas
     }
 
     fn chain_id(&self) -> U256 {
-        self.exec_ctx.lock().chain_id
+        self.exec_ctx.chain_id
     }
 
     fn exists(&self, address: H160) -> bool {
         self.trie
-            .lock()
             .contains(&Bytes::from(address.as_bytes().to_vec()))
             .unwrap_or_default()
     }
 
     fn basic(&self, address: H160) -> Basic {
         self.trie
-            .lock()
             .get(address.as_bytes())
             .map(|raw| {
                 if raw.is_none() {
@@ -140,7 +137,7 @@ where
     }
 
     fn code(&self, address: H160) -> Vec<u8> {
-        let code_hash = if let Some(bytes) = self.trie.lock().get(address.as_bytes()).unwrap() {
+        let code_hash = if let Some(bytes) = self.trie.get(address.as_bytes()).unwrap() {
             Account::decode(bytes).unwrap().code_hash
         } else {
             return Vec::new();
@@ -156,7 +153,7 @@ where
     }
 
     fn storage(&self, address: H160, index: H256) -> H256 {
-        if let Ok(raw) = self.trie.lock().get(address.as_bytes()) {
+        if let Ok(raw) = self.trie.get(address.as_bytes()) {
             if raw.is_none() {
                 return H256::default();
             }
@@ -209,21 +206,17 @@ where
                 } => {
                     let is_empty = self.apply(address, basic, code, storage, reset_storage);
                     if is_empty && delete_empty {
-                        let mut trie = self.trie.lock();
-                        trie.remove(address.as_bytes()).unwrap();
-                        trie.commit().unwrap();
+                        self.trie.remove(address.as_bytes()).unwrap();
+                        self.trie.commit().unwrap();
                     }
                 }
                 Apply::Delete { address } => {
-                    let _ = self.trie.lock().remove(address.as_bytes());
+                    let _ = self.trie.remove(address.as_bytes());
                 }
             }
         }
 
-        let logs = logs.into_iter().collect::<Vec<_>>();
-        let p = &mut self.exec_ctx.lock().logs;
-        p.clear();
-        *p = logs;
+        self.exec_ctx.logs = logs.into_iter().collect::<Vec<_>>();
     }
 }
 
@@ -232,12 +225,8 @@ where
     S: Storage + 'static,
     DB: cita_trie::DB + 'static,
 {
-    pub fn new(
-        db: Arc<DB>,
-        storage: Arc<S>,
-        exec_ctx: Arc<Mutex<ExecutorContext>>,
-    ) -> ProtocolResult<Self> {
-        let trie = Arc::new(Mutex::new(MPTTrie::new(Arc::clone(&db))));
+    pub fn new(db: Arc<DB>, storage: Arc<S>, exec_ctx: ExecutorContext) -> ProtocolResult<Self> {
+        let trie = MPTTrie::new(Arc::clone(&db));
         Ok(EVMExecutorAdapter {
             trie,
             db,
@@ -250,9 +239,9 @@ where
         state_root: MerkleRoot,
         db: Arc<DB>,
         storage: Arc<S>,
-        exec_ctx: Arc<Mutex<ExecutorContext>>,
+        exec_ctx: ExecutorContext,
     ) -> ProtocolResult<Self> {
-        let trie = Arc::new(Mutex::new(MPTTrie::from_root(state_root, Arc::clone(&db))?));
+        let trie = MPTTrie::from_root(state_root, Arc::clone(&db))?;
 
         Ok(EVMExecutorAdapter {
             trie,
@@ -263,7 +252,7 @@ where
     }
 
     pub fn root(&self) -> MerkleRoot {
-        self.trie.lock().root
+        self.trie.root
     }
 
     fn apply<I: IntoIterator<Item = (H256, H256)>>(
@@ -274,7 +263,7 @@ where
         storage: I,
         reset_storage: bool,
     ) -> bool {
-        let old_account = match self.trie.lock().get(address.as_bytes()) {
+        let old_account = match self.trie.get(address.as_bytes()) {
             Ok(Some(raw)) => Account::decode(raw).unwrap(),
             _ => Account {
                 nonce:        Default::default(),
@@ -330,9 +319,10 @@ where
         let bytes = new_account.encode().unwrap();
 
         {
-            let mut trie = self.trie.lock();
-            trie.insert(address.as_bytes(), bytes.as_ref()).unwrap();
-            trie.commit().unwrap();
+            self.trie
+                .insert(address.as_bytes(), bytes.as_ref())
+                .unwrap();
+            self.trie.commit().unwrap();
         }
 
         new_account.balance == U256::zero()
