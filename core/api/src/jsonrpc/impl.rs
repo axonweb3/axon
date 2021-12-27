@@ -1,13 +1,14 @@
 use crate::adapter::DefaultAPIAdapter;
-use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
-
-use jsonrpsee::types::Error;
-
 use crate::jsonrpc::types::{
-    BlockId, CallRequest, RichTransactionOrHash, Web3Block, Web3TransactionReceipt,
+    BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3SendTrancationRequest,
+    Web3TransactionReceipt
 };
+use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
+use jsonrpsee::types::Error;
 use protocol::traits::{APIAdapter, Context, MemPool, Storage};
-use protocol::types::{BlockNumber, Bytes, SignedTransaction, H160, H256, U256};
+use protocol::types::{
+    Bytes, ExitReason, ExitSucceed, Hasher, SignedTransaction, H160, H256, U256
+};
 use protocol::{async_trait, codec::ProtocolCodec};
 
 pub struct JsonRpcImpl<M, S, DB> {
@@ -32,6 +33,17 @@ where
     S: Storage + 'static,
     DB: cita_trie::DB + 'static,
 {
+    async fn listening(&self) -> RpcResult<bool> {
+        Ok(true)
+    }
+
+    async fn accounts(&self) -> RpcResult<Option<Vec<String>>> {
+        let mut addresses: Vec<String> = vec![];
+        addresses.push("0x35e70c3f5a794a77efc2ec5ba964bffcc7fd2c0a".to_string());
+        Ok(Some(addresses))
+        // Ok(None)
+    }
+
     /// Sends signed transaction, returning its hash.
     async fn send_raw_transaction(&self, tx: Bytes) -> RpcResult<H256> {
         let tx = SignedTransaction::decode(tx).map_err(|e| Error::Custom(e.to_string()))?;
@@ -42,6 +54,18 @@ where
             .map_err(|e| Error::Custom(e.to_string()))?;
 
         Ok(hash)
+    }
+
+    async fn send_transaction(&self, tx: Web3SendTrancationRequest) -> RpcResult<Option<H256>> {
+        // let tx = SignedTransaction::decode(tx.data).map_err(|e|
+        // Error::Custom(e.to_string()))?;
+        let mut txx = tx.create_signedtransaction_by_web3sendtrancationrequest();
+        txx.transaction = txx.transaction.hash();
+        self.adapter
+            .insert_signed_txs(Context::new(), txx.clone())
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+        Ok(Some(txx.transaction.hash))
     }
 
     /// Get transaction by its hash.
@@ -112,11 +136,11 @@ where
         Ok(account.nonce)
     }
 
-    async fn block_number(&self) -> RpcResult<BlockNumber> {
+    async fn block_number(&self) -> RpcResult<U256> {
         self.adapter
             .get_latest_block(Context::new())
             .await
-            .map(|b| b.header.number)
+            .map(|b| U256::from(b.header.number))
             .map_err(|e| Error::Custom(e.to_string()))
     }
 
@@ -136,41 +160,105 @@ where
     }
 
     async fn chainid(&self) -> RpcResult<U256> {
-        self.adapter
-            .get_latest_block(Context::new())
-            .await
-            .map(|b| b.header.chain_id.into())
-            .map_err(|e| Error::Custom(e.to_string()))
+        Ok(U256::from("1389"))
+        //    self.adapter
+        //         .get_latest_block(Context::new())
+        //         .await
+        //         .map(|b| b.header.chain_id.into())
+        //         .map_err(|e| Error::Custom(e.to_string()))
     }
 
-    async fn estimate_gas(&self, _req: CallRequest, number: Option<BlockId>) -> RpcResult<U256> {
-        let _num = match number {
-            Some(BlockId::Num(n)) => Some(n),
-            _ => None,
-        };
-
-        Ok(Default::default())
+    async fn estimate_gas(&self, req: Web3CallRequest) -> RpcResult<Option<u64>> {
+        let gentx = req.create_signedtransaction_by_web3allrequest();
+        let rpx = self.adapter.evm_call(gentx).await;
+        if rpx.exit_reason != ExitReason::Succeed(ExitSucceed::Returned) {
+            Ok(None)
+        } else {
+            Ok(Some(rpx.gas_used))
+        }
     }
 
-    async fn net_work(&self) -> RpcResult<U256> {
+    async fn net_version(&self) -> RpcResult<U256> {
         self.chainid().await
     }
 
-    async fn call(
-        &self,
-        _address: Option<H160>,
-        _to: H160,
-        _gas: Option<U256>,
-        _gas_price: Option<U256>,
-        _value: Option<U256>,
-        _data: Option<Bytes>,
-        _tag: Option<Bytes>,
-    ) -> RpcResult<Bytes> {
-        todo!();
+    async fn call(&self, w3crequest: Web3CallRequest) -> RpcResult<Option<Vec<u8>>> {
+        let gentx = w3crequest.create_signedtransaction_by_web3allrequest();
+        let rpx = self.adapter.evm_call(gentx).await;
+        if rpx.exit_reason != ExitReason::Succeed(ExitSucceed::Returned) {
+            Ok(None)
+        } else {
+            Ok(Some(rpx.ret))
+        }
     }
 
-    async fn get_code(&self, _address: H160, _number: Option<U256>) -> RpcResult<Bytes> {
-        todo!();
+    async fn get_code(&self, address: H160, number: Option<u64>) -> RpcResult<Vec<u8>> {
+        let block;
+        let uncodestr = "0x0";
+        match number {
+            Some(num) => {
+                block = self
+                    .adapter
+                    .get_block_by_number(Context::new(), Some(num))
+                    .await
+                    .map_err(|e| Error::Custom(e.to_string()))?;
+            }
+            _ => {
+                block = Some(
+                    self.adapter
+                        .get_latest_block(Context::new())
+                        .await
+                        .map_err(|e| Error::Custom(e.to_string()))?,
+                )
+            }
+        };
+
+        let codebytes = match block {
+            Some(b) => {
+                let ret = Web3Block::from(b);
+                let mytruascations: Vec<RichTransactionOrHash> = ret
+                    .transactions
+                    .into_iter()
+                    .filter(|item| match item {
+                        RichTransactionOrHash::Hash(_) => false,
+                        RichTransactionOrHash::Rich(stx) => {
+                            if stx.sender == address {
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                    })
+                    .map(|v| v)
+                    .collect();
+                if mytruascations.len() <= 0 {
+                    uncodestr.as_bytes().to_vec()
+                } else {
+                    let mut data: Vec<Vec<u8>> = vec![];
+                    for tx in mytruascations {
+                        if let RichTransactionOrHash::Rich(st) = tx {
+                            let datahash = Hasher::digest(st.transaction.unsigned.data);
+                            let code = self
+                                .adapter
+                                .get_code_by_hash(Context::new(), &datahash)
+                                .await
+                                .map_err(|e| Error::Custom(e.to_string()))?;
+                            if let Some(c) = code {
+                                data.push(c.to_vec());
+                            } else {
+                                // vec![]//  data.push();
+                            }
+                        }
+                    }
+                    if data.len() <= 0 {
+                        data.push(uncodestr.as_bytes().to_vec());
+                    }
+                    data.get(0).unwrap().clone() // "0x0".as_bytes().to_vec()
+                }
+            }
+            None => uncodestr.as_bytes().to_vec(),
+        };
+        Ok(codebytes)
     }
 
     async fn get_transaction_receipt(
@@ -183,18 +271,22 @@ where
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
-        let rt = self
+        let rp = self
             .adapter
             .get_receipt_by_tx_hash(Context::new(), _hash)
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
         match tx {
-            Some(y) => rt.map_or_else(
+            Some(y) => rp.map_or_else(
                 move || Ok(None),
-                |v| Ok(Some(Web3TransactionReceipt::from(v, y))),
+                |v| Ok(Some(Web3TransactionReceipt::create_new(v, y))),
             ),
             None => Ok(None),
         }
+    }
+
+    async fn get_gas_price(&self) -> RpcResult<Option<U256>> {
+        Ok(Some(U256::one()))
     }
 }

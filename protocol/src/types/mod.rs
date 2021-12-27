@@ -1,13 +1,15 @@
 pub use batch::*;
 pub use block::*;
 pub use bytes::{Buf, BufMut, Bytes, BytesMut};
+pub use ethereum::Log;
+pub use evm::backend::*;
+pub use evm::ExitSucceed;
 pub use executor::{
     AccessList, AccessListItem, Account, Config, ExecResp, ExecutorContext, ExitReason, TxResp,
 };
 pub use primitive::*;
 pub use receipt::*;
 pub use transaction::*;
-
 pub mod batch;
 pub mod block;
 pub mod executor;
@@ -15,11 +17,9 @@ pub mod primitive;
 pub mod receipt;
 pub mod transaction;
 
-use std::error::Error;
-
-use derive_more::{Display, From};
-
 use crate::{ProtocolError, ProtocolErrorKind};
+use derive_more::{Display, From};
+use std::error::Error;
 
 #[derive(Debug, Display, From)]
 pub enum TypesError {

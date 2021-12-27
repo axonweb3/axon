@@ -1,14 +1,13 @@
 use std::fmt;
-
-use serde::de::{Error, MapAccess, Visitor};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
-pub use ethereum::Log;
+use std::str::FromStr;
 use protocol::codec::ProtocolCodec;
 use protocol::types::{
-    AccessList, Block, Bloom, Bytes, Hash, Hasher, Receipt, SignedTransaction, TransactionAction,
-    H160, H256, H64, U256, U64,
+    AccessList, Block, Bloom, Bytes, Hash, Hasher, Log, Public, Receipt, SignatureComponents,
+    SignedTransaction, Transaction, TransactionAction, UnverifiedTransaction, H160, H256, H64,
+    U256, U64,
 };
+use serde::de::{Error, MapAccess, Visitor};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -37,7 +36,100 @@ impl RichTransactionOrHash {
         }
     }
 }
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct Web3SendTrancationRequest {
+    pub data:     Option<Bytes>,
+    pub from:     Option<H160>,
+    pub to:       Option<H160>,
+    pub gas:      U256,
+    pub gasprice: U256,
+    pub value:    Option<U256>,
+}
+
+impl Web3SendTrancationRequest {
+    pub fn create_signedtransaction_by_web3sendtrancationrequest(&self) -> SignedTransaction {
+        SignedTransaction {
+            transaction: UnverifiedTransaction {
+                unsigned:  Transaction {
+                    nonce:                    U256::default(),
+                    max_priority_fee_per_gas: U256::default(),
+                    gas_price:                self.gasprice,
+                    gas_limit:                U256::from_str("0x1000000000").unwrap(),
+                    action:                   TransactionAction::Create,
+                    value:                    U256::default(),
+                    data:                     if let Some(dx) = &self.data {
+                        dx.clone()
+                    } else {
+                        Bytes::default()
+                    },
+                    access_list:              Vec::new(),
+                },
+                signature: Some(SignatureComponents {
+                    standard_v: 0,
+                    r:          H256::default(),
+                    s:          H256::default(),
+                }),
+                chain_id:  0x1389,
+                hash:      H256::default(),
+            },
+            sender:      if let Some(addr) = self.from {
+                addr
+            } else {
+                H160::default()
+            },
+            public:      Public::default(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct Web3CallRequest {
+    pub address: Option<H160>,
+    pub to:      H160,
+    pub data:    Option<Bytes>,
+}
+
+impl Web3CallRequest {
+    pub fn create_signedtransaction_by_web3allrequest(&self) -> SignedTransaction {
+        SignedTransaction {
+            transaction: UnverifiedTransaction {
+                unsigned:  Transaction {
+                    nonce:                    U256::default(),
+                    max_priority_fee_per_gas: U256::default(),
+                    gas_price:                U256::default(),
+                    gas_limit:                U256::from_str("0x1000000000").unwrap(),
+                    action:                   TransactionAction::Call(self.to),
+                    value:                    U256::default(),
+                    data:                     if let Some(dx) = &self.data {
+                        dx.clone()
+                    } else {
+                        Bytes::default()
+                    },
+                    access_list:              Vec::new(),
+                },
+                signature: Some(SignatureComponents {
+                    standard_v: 0,
+                    r:          H256::default(),
+                    s:          H256::default(),
+                }),
+                chain_id:  0u64,
+                hash:      H256::default(),
+            },
+            sender:      if let Some(addr) = self.address {
+                addr
+            } else {
+                H160::default()
+            },
+            public:      Public::default(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
 pub struct Web3TransactionReceipt {
     pub block_number:        u64,
     pub block_hash:          H256,
@@ -55,8 +147,9 @@ pub struct Web3TransactionReceipt {
     #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
     pub transaction_type:    Option<U64>,
 }
+
 impl Web3TransactionReceipt {
-    pub fn from(receipt: Receipt, tx: SignedTransaction) -> Web3TransactionReceipt {
+    pub fn create_new(receipt: Receipt, tx: SignedTransaction) -> Web3TransactionReceipt {
         Web3TransactionReceipt {
             block_number:        receipt.block_number,
             block_hash:          receipt.block_hash,
