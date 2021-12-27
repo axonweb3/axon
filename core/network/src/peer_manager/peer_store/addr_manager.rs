@@ -35,7 +35,11 @@ impl Manager {
                 }
             }
 
-            let peer_id = extract_peer_id(&addr_info.addr).expect("must have peer id");
+            let peer_id = if let Some(id) = extract_peer_id(&addr_info.addr) {
+                id
+            } else {
+                return;
+            };
 
             let id = self.next_id;
             self.addr_to_id.insert(key, id);
