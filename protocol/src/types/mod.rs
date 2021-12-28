@@ -19,6 +19,8 @@ use std::error::Error;
 
 use derive_more::{Display, From};
 
+use common_crypto::Error as CryptoError;
+
 use crate::{ProtocolError, ProtocolErrorKind};
 
 #[derive(Debug, Display, From)]
@@ -40,6 +42,12 @@ pub enum TypesError {
 
     #[display(fmt = "Invalid check sum")]
     InvalidCheckSum,
+
+    #[display(fmt = "Unsigned")]
+    Unsigned,
+
+    #[display(fmt = "Crypto error {:?}", _0)]
+    Crypto(CryptoError),
 }
 
 impl Error for TypesError {}

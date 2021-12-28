@@ -168,7 +168,7 @@ fn check_sig(stx: &SignedTransaction) -> ProtocolResult<()> {
             .unwrap()
             .as_bytes()
             .as_ref(),
-        recover_intact_pub_key(&stx.public).as_bytes(),
+        recover_intact_pub_key(&stx.public.unwrap()).as_bytes(),
     )
     .map_err(|err| AdapterError::VerifySignature(err.to_string()))?;
     Ok(())
@@ -309,7 +309,7 @@ fn mock_signed_tx(
     SignedTransaction {
         transaction: tx.hash(),
         sender:      public_to_address(&pub_key),
-        public:      pub_key,
+        public:      Some(pub_key),
     }
 }
 

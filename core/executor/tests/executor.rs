@@ -54,7 +54,7 @@ fn gen_tx(sender: H160, addr: H160, data: Vec<u8>) -> SignedTransaction {
             hash:      H256::default(),
         },
         sender,
-        public: Public::default(),
+        public: Some(Public::default()),
     }
 }
 
@@ -138,7 +138,7 @@ fn test_simplestorage() {
     tx.transaction.unsigned.action = TransactionAction::Create;
     let r = exec!(executor.inner_exec(&mut backend, tx));
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Returned));
-    assert_eq!(r.ret, vec![]);
+    assert!(r.ret.is_empty());
     assert_eq!(r.remain_gas, 18446744073709450374);
 
     // Thr created contract's address is
@@ -154,7 +154,7 @@ fn test_simplestorage() {
     );
     let r = exec!(executor.inner_exec(&mut backend, tx));
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Stopped));
-    assert_eq!(r.ret, vec![]);
+    assert!(r.ret.is_empty());
     assert_eq!(r.remain_gas, 18446744073709508106);
 
     // let's call SimpleStorage.get() by exec

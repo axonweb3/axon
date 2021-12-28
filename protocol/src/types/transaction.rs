@@ -5,7 +5,9 @@ pub use ethereum::{
 use rlp::Encodable;
 use serde::{Deserialize, Serialize};
 
-use crate::types::{Bytes, BytesMut, Hash, Hasher, Public, H160, H256, H520, U256};
+use common_crypto::secp256k1_recover;
+
+use crate::types::{Bytes, BytesMut, Hash, Hasher, Public, TypesError, H160, H256, H520, U256};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Transaction {
@@ -93,7 +95,32 @@ impl SignatureComponents {
 pub struct SignedTransaction {
     pub transaction: UnverifiedTransaction,
     pub sender:      H160,
-    pub public:      Public,
+    pub public:      Option<Public>,
+}
+
+impl TryFrom<UnverifiedTransaction> for SignedTransaction {
+    type Error = TypesError;
+
+    fn try_from(utx: UnverifiedTransaction) -> Result<Self, Self::Error> {
+        if utx.signature.is_none() {
+            return Err(TypesError::Unsigned);
+        }
+
+        let hash = utx.signature_hash();
+        let public = Public::from_slice(
+            &secp256k1_recover(
+                hash.as_bytes(),
+                utx.signature.clone().unwrap().as_bytes().as_ref(),
+            )?
+            .serialize_uncompressed()[1..65],
+        );
+
+        Ok(SignedTransaction {
+            transaction: utx,
+            sender:      public_to_address(&public),
+            public:      Some(public),
+        })
+    }
 }
 
 pub fn public_to_address(public: &Public) -> H160 {

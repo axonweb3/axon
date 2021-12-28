@@ -2,8 +2,8 @@ use bytes::BufMut;
 use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
 use crate::types::{
-    AccessList, AccessListItem, Bytes, BytesMut, Public, SignatureComponents, SignedTransaction,
-    Transaction, TransactionAction, UnverifiedTransaction, H160, H256, U256,
+    AccessList, AccessListItem, Bytes, BytesMut, SignatureComponents, SignedTransaction,
+    Transaction, TransactionAction, UnverifiedTransaction, H256, U256,
 };
 
 impl Encodable for SignatureComponents {
@@ -139,17 +139,11 @@ impl Encodable for SignedTransaction {
 impl Decodable for SignedTransaction {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
-            Prototype::List(3) => {
-                let transaction: UnverifiedTransaction = r.val_at(0)?;
-                let sender: H160 = r.val_at(1)?;
-                let public: Public = r.val_at(2)?;
-
-                Ok(SignedTransaction {
-                    transaction,
-                    sender,
-                    public,
-                })
-            }
+            Prototype::List(3) => Ok(SignedTransaction {
+                transaction: r.val_at(0)?,
+                sender:      r.val_at(1)?,
+                public:      r.val_at(2)?,
+            }),
             _ => Err(DecoderError::RlpInconsistentLengthAndData),
         }
     }
@@ -158,7 +152,7 @@ impl Decodable for SignedTransaction {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::{Bytes, TransactionAction, U256};
+    use crate::types::{Bytes, TransactionAction, H160, U256};
     use rand::random;
 
     fn rand_bytes(len: usize) -> Bytes {
@@ -200,7 +194,7 @@ mod tests {
         SignedTransaction {
             transaction: mock_unverfied_tx(),
             sender:      H160::default(),
-            public:      Public::default(),
+            public:      None,
         }
     }
 
