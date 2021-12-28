@@ -126,7 +126,7 @@ fn mock_transaction(nonce: u64) -> SignedTransaction {
     SignedTransaction {
         transaction: utx.hash(),
         sender:      public_to_address(&pub_key),
-        public:      pub_key,
+        public:      Some(pub_key),
     }
 }
 

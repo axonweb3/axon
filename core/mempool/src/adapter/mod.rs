@@ -326,12 +326,15 @@ where
                     TrustFeedback::Worse(format!("Mempool wrong chain of tx {:?}", tx_hash)),
                 );
             }
-            let wrong_chain_id = MemPoolError::WrongChain { tx_hash };
 
-            return Err(wrong_chain_id.into());
+            return Err(MemPoolError::WrongChain { tx_hash }.into());
         }
 
         // Verify signature
+        if stx.public.is_none() {
+            return Err(MemPoolError::MissingPublicKey.into());
+        }
+
         Secp256k1Recoverable::verify_signature(
             stx.transaction.signature_hash().as_bytes(),
             stx.transaction
@@ -340,7 +343,7 @@ where
                 .unwrap()
                 .as_bytes()
                 .as_ref(),
-            recover_intact_pub_key(&stx.public).as_bytes(),
+            recover_intact_pub_key(&stx.public.unwrap()).as_bytes(),
         )
         .map_err(|err| AdapterError::VerifySignature(err.to_string()))?;
 

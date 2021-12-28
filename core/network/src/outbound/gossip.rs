@@ -14,8 +14,8 @@ use crate::traits::NetworkContext;
 
 #[derive(Clone)]
 pub struct NetworkGossip {
-    transmitter:  ServiceAsyncControl,
-    peer_manager: Arc<PeerManager>,
+    pub(crate) transmitter:  ServiceAsyncControl,
+    pub(crate) peer_manager: Arc<PeerManager>,
 }
 
 impl NetworkGossip {

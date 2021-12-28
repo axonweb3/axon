@@ -399,6 +399,9 @@ pub enum MemPoolError {
     #[display(fmt = "Batch transaction validation failed")]
     VerifyBatchTransactions,
 
+    #[display(fmt = "Missing public key")]
+    MissingPublicKey,
+
     #[display(fmt = "Encode transaction to JSON failed")]
     EncodeJson,
 }

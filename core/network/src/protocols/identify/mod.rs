@@ -147,7 +147,7 @@ impl IdentifyProtocol {
 
     fn process_listens(
         &mut self,
-        _context: &mut ProtocolContextMutRef,
+        context: &mut ProtocolContextMutRef,
         listens: Vec<Multiaddr>,
     ) -> MisbehaveResult {
         if listens.len() > MAX_ADDRS {
@@ -165,12 +165,18 @@ impl IdentifyProtocol {
                 })
                 .collect::<Vec<_>>();
             self.peer_manager.with_peer_store_mut(|peer_store| {
-                    for addr in reachable_addrs {
+                    for addr in reachable_addrs.iter() {
                         if let Err(err) = peer_store.add_addr(addr.clone()) {
                             log::error!("IdentifyProtocol failed to add address to peer store, address: {}, error: {:?}", addr, err);
                         }
                     }
                 });
+            let peer_id = extract_peer_id(&context.session.address).unwrap();
+            self.peer_manager.with_registry_mut(|reg| {
+                if let Some(info) = reg.peers.get_mut(&peer_id) {
+                    info.listens = reachable_addrs;
+                }
+            });
             MisbehaveResult::Continue
         }
     }

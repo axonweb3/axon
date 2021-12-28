@@ -18,16 +18,17 @@ use protocol::tokio::time::{Instant, MissedTickBehavior};
 use protocol::{
     tokio,
     traits::{
-        Context, Gossip, MessageCodec, MessageHandler, PeerTrust, Priority, Rpc, TrustFeedback,
+        Context, Gossip, MessageCodec, MessageHandler, Network, PeerTag, PeerTrust, Priority, Rpc,
+        TrustFeedback,
     },
     ProtocolResult,
 };
 use rand::prelude::IteratorRandom;
-use std::{sync::Arc, time::Duration};
+use std::{collections::HashSet, sync::Arc, time::Duration};
 use tentacle::{
     builder::ServiceBuilder,
     context::ServiceContext,
-    error::{DialerErrorKind, HandshakeErrorKind},
+    error::{DialerErrorKind, HandshakeErrorKind, ProtocolHandleErrorKind},
     multiaddr::Multiaddr,
     secio::{error::SecioError, PeerId},
     service::{
@@ -41,9 +42,8 @@ use tentacle::{
 
 #[derive(Clone)]
 pub struct NetworkServiceHandle {
-    gossip:     NetworkGossip,
-    rpc:        NetworkRpc,
-    peer_state: Arc<PeerManager>,
+    gossip: NetworkGossip,
+    rpc:    NetworkRpc,
 }
 
 #[async_trait]
@@ -97,6 +97,70 @@ impl Rpc for NetworkServiceHandle {
 
 impl PeerTrust for NetworkServiceHandle {
     fn report(&self, _ctx: Context, _feedback: TrustFeedback) {}
+}
+
+impl Network for NetworkServiceHandle {
+    fn tag(&self, _ctx: Context, peer_id: Bytes, tag: PeerTag) -> ProtocolResult<()> {
+        let peer_id = PeerId::from_bytes(peer_id.as_ref().to_vec())
+            .map_err(|_| NetworkError::InvalidPeerId)?;
+
+        match tag {
+            PeerTag::Consensus => {
+                self.gossip
+                    .peer_manager
+                    .consensus_list
+                    .write()
+                    .insert(peer_id);
+            }
+            PeerTag::Ban { until } => {
+                if let Some(id) = self.gossip.peer_manager.ban_id(
+                    &peer_id,
+                    until,
+                    "ban from other module".to_string(),
+                ) {
+                    let mut sender = self.gossip.transmitter.clone();
+                    tokio::spawn(async move {
+                        let _ignore = sender.disconnect(id).await;
+                    });
+                }
+            }
+            _ => (),
+        }
+        Ok(())
+    }
+
+    fn untag(&self, _ctx: Context, peer_id: Bytes, tag: &PeerTag) -> ProtocolResult<()> {
+        let peer_id =
+            PeerId::from_bytes(peer_id.to_vec()).map_err(|_| NetworkError::InvalidPeerId)?;
+
+        if let PeerTag::Consensus = tag {
+            self.gossip
+                .peer_manager
+                .consensus_list
+                .write()
+                .remove(&peer_id);
+        }
+
+        Ok(())
+    }
+
+    fn tag_consensus(&self, _ctx: Context, peer_ids: Vec<Bytes>) -> ProtocolResult<()> {
+        let mut peer_ids: HashSet<PeerId> = {
+            let byteses = peer_ids.iter();
+            let maybe_ids = byteses.map(|bytes| {
+                PeerId::from_bytes(bytes.as_ref().to_vec()).map_err(|_| NetworkError::InvalidPeerId)
+            });
+
+            maybe_ids.collect::<Result<HashSet<_>, _>>()?
+        };
+
+        std::mem::swap(
+            &mut *self.gossip.peer_manager.consensus_list.write(),
+            &mut peer_ids,
+        );
+
+        Ok(())
+    }
 }
 
 pub struct NetworkService {
@@ -236,9 +300,8 @@ impl NetworkService {
 
     pub fn handle(&self) -> NetworkServiceHandle {
         NetworkServiceHandle {
-            gossip:     self.gossip.clone(),
-            rpc:        self.rpc.clone(),
-            peer_state: Arc::clone(&self.peer_mgr_handle),
+            gossip: self.gossip.clone(),
+            rpc:    self.rpc.clone(),
         }
     }
 
@@ -252,10 +315,13 @@ impl NetworkService {
 
     /// Dial just feeler protocol
     pub async fn dial_feeler(&mut self, addr: Multiaddr) {
-        if self
-            .peer_mgr_handle
-            .with_registry_mut(|reg| reg.add_feeler(addr.clone()))
-        {
+        let peer_id = extract_peer_id(&addr).unwrap();
+        let can_dial = self.peer_mgr_handle.with_registry_mut(|reg| {
+            !reg.peers.contains_key(&peer_id)
+                && !reg.dialing.contains(&addr)
+                && reg.add_feeler(addr.clone())
+        });
+        if can_dial {
             let _ignore = self
                 .control
                 .dial(
@@ -268,10 +334,13 @@ impl NetworkService {
 
     /// Dial just identify protocol
     pub async fn dial_identify(&mut self, addr: Multiaddr) {
-        if self
-            .peer_mgr_handle
-            .with_registry_mut(|reg| reg.dialing.insert(addr.clone()))
-        {
+        let peer_id = extract_peer_id(&addr).unwrap();
+        let can_dial = self.peer_mgr_handle.with_registry_mut(|reg| {
+            !reg.peers.contains_key(&peer_id)
+                && !reg.is_feeler(&addr)
+                && reg.dialing.insert(addr.clone())
+        });
+        if can_dial {
             let _ignore = self
                 .control
                 .dial(
@@ -297,7 +366,7 @@ impl NetworkService {
         }
     }
 
-    async fn try_dial_fleer(&mut self) {
+    async fn try_dial_feeler(&mut self) {
         let now_ms = faketime::unix_time_as_millis();
         let attempt_peers = self.peer_mgr_handle.with_peer_store_mut(|peer_store| {
             let paddrs = peer_store.fetch_addrs_to_feeler(10);
@@ -388,6 +457,14 @@ impl NetworkService {
         }
     }
 
+    async fn try_dial_consensus(&mut self) {
+        let addrs = self.peer_mgr_handle.unconnected_consensus_peer();
+
+        for addr in addrs {
+            self.dial_identify(addr).await;
+        }
+    }
+
     pub async fn run(mut self) {
         self.net
             .listen(self.config.default_listen.clone())
@@ -407,8 +484,9 @@ impl NetworkService {
             tokio::select! {
                 Some(_) = self.net.next() => {},
                 _ = interval.tick() => {
+                    self.try_dial_consensus().await;
                     self.try_dial_peers().await;
-                    self.try_dial_fleer().await;
+                    self.try_dial_feeler().await;
                     self.try_dial_observed_addr().await;
                 }
                 _ = dump_interval.tick() => {
@@ -432,7 +510,7 @@ struct ServiceHandler {
 }
 
 impl ServiceHandle for ServiceHandler {
-    fn handle_error(&mut self, _control: &mut ServiceContext, error: ServiceError) {
+    fn handle_error(&mut self, control: &mut ServiceContext, error: ServiceError) {
         match error {
             ServiceError::DialerError { address, error } => {
                 self.peer_store.with_registry_mut(|reg| {
@@ -461,7 +539,70 @@ impl ServiceHandle for ServiceHandler {
                     }
                 }
             }
-            _ => log::info!("p2p error: {:?}", error),
+            ServiceError::ProtocolError {
+                id,
+                proto_id,
+                error,
+            } => {
+                log::debug!("ProtocolError({}, {}) {}", id, proto_id, error);
+                let message = format!("ProtocolError id={}", proto_id);
+                // Ban because misbehave of remote peer
+                self.peer_store.ban_session_id(
+                    id,
+                    Duration::from_secs(300).as_millis() as u64,
+                    message,
+                );
+                let _ignore = control.disconnect(id);
+            }
+            ServiceError::SessionTimeout { session_context } => {
+                log::warn!(
+                    "SessionTimeout({}, {})",
+                    session_context.id,
+                    session_context.address,
+                );
+            }
+            ServiceError::MuxerError {
+                session_context,
+                error,
+            } => {
+                log::debug!(
+                    "MuxerError({}, {}), substream error {}, disconnect it",
+                    session_context.id,
+                    session_context.address,
+                    error,
+                );
+            }
+            ServiceError::ListenError { address, error } => {
+                log::warn!("ListenError: address={:?}, error={:?}", address, error);
+            }
+            ServiceError::ProtocolSelectError {
+                proto_name,
+                session_context,
+            } => {
+                log::debug!(
+                    "ProtocolSelectError: proto_name={:?}, session_id={}",
+                    proto_name,
+                    session_context.id,
+                );
+            }
+            ServiceError::SessionBlocked { session_context } => {
+                log::debug!("SessionBlocked: {}", session_context.id);
+            }
+            ServiceError::ProtocolHandleError { proto_id, error } => {
+                log::debug!("ProtocolHandleError: {:?}, proto_id: {}", error, proto_id);
+
+                if let ProtocolHandleErrorKind::AbnormallyClosed(opt_session_id) = error {
+                    if let Some(id) = opt_session_id {
+                        self.peer_store.ban_session_id(
+                            id,
+                            Duration::from_secs(300).as_millis() as u64,
+                            format!("protocol {} panic when process peer message", proto_id),
+                        );
+                    }
+                    log::warn!("ProtocolHandleError: {:?}, proto_id: {}", error, proto_id);
+                    std::process::exit(-1)
+                }
+            }
         }
     }
 
@@ -485,11 +626,8 @@ impl ServiceHandle for ServiceHandler {
                                 > self.config.max_connections - self.config.inbound_conn_limit
                         }
                     };
-                if disable
-                    && !self
-                        .peer_store
-                        .always_allow(&extract_peer_id(&session_context.address).unwrap())
-                {
+
+                if disable && !self.peer_store.always_allow(&session_context.address) {
                     let _ignore = control.disconnect(session_context.id);
                 } else {
                     self.peer_store.register(PeerInfo::new(session_context))

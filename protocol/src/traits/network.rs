@@ -47,11 +47,11 @@ impl PeerTag {
         PeerTag::Ban { until: 0 }
     }
 
-    pub fn custom<S: AsRef<str>>(s: S) -> Result<Self, ()> {
+    pub fn custom<S: AsRef<str>>(s: S) -> Option<Self> {
         let custom_str = s.as_ref();
         match custom_str {
-            "consensus" | "always_allow" | "ban" => Err(()),
-            _ => Ok(PeerTag::Custom(custom_str.to_owned())),
+            "consensus" | "always_allow" | "ban" => None,
+            _ => Some(PeerTag::Custom(custom_str.to_owned())),
         }
     }
 
