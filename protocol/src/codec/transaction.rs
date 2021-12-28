@@ -2,8 +2,8 @@ use bytes::BufMut;
 use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
 use crate::types::{
-    AccessList, AccessListItem, Bytes, BytesMut, Public, SignatureComponents, SignedTransaction,
-    Transaction, TransactionAction, UnverifiedTransaction, H160, H256, U256,
+    AccessList, AccessListItem, Bytes, BytesMut, SignatureComponents, SignedTransaction,
+    Transaction, TransactionAction, UnverifiedTransaction, H256, U256,
 };
 
 impl Encodable for SignatureComponents {
@@ -152,7 +152,7 @@ impl Decodable for SignedTransaction {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::{Bytes, TransactionAction, U256};
+    use crate::types::{Bytes, TransactionAction, H160, U256};
     use rand::random;
 
     fn rand_bytes(len: usize) -> Bytes {

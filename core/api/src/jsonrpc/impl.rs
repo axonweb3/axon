@@ -5,8 +5,7 @@ use jsonrpsee::core::Error;
 
 use protocol::traits::{APIAdapter, Context, MemPool, Storage};
 use protocol::types::{
-    public_to_address, BlockNumber, Bytes, SignedTransaction, UnverifiedTransaction, H160, H256,
-    U256,
+    BlockNumber, Bytes, SignedTransaction, UnverifiedTransaction, H160, H256, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec};
 
@@ -36,16 +35,12 @@ where
 {
     /// Sends signed transaction, returning its hash.
     async fn send_raw_transaction(&self, tx: Bytes) -> RpcResult<H256> {
-        let tx = UnverifiedTransaction::decode(&tx[1..])
+        let utx = UnverifiedTransaction::decode(&tx[1..])
             .map_err(|e| Error::Custom(e.to_string()))?
             .hash();
-        let stx = SignedTransaction {
-            transaction: tx,
-            sender:      Default::default(),
-            public:      public_to_address(),
-        };
+        let stx = SignedTransaction::try_from(utx).map_err(|e| Error::Custom(e.to_string()))?;
 
-        let hash = tx.hash;
+        let hash = stx.transaction.hash;
         self.adapter
             .insert_signed_txs(Context::new(), stx)
             .await
