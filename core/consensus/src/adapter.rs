@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use overlord::types::{Node, OverlordMsg, Vote, VoteType};
 use overlord::{extract_voters, Crypto, OverlordHandler};
-use parking_lot::{Mutex, RwLock};
+use parking_lot::RwLock;
 
 use common_apm::muta_apm;
 use core_executor::{EVMExecutorAdapter, EvmExecutor};
@@ -349,12 +349,11 @@ where
         header: &Header,
         signed_txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<ExecResp> {
-        let base_ctx = Arc::new(Mutex::new(header.clone().into()));
         let mut backend = EVMExecutorAdapter::from_root(
             header.state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
-            Arc::clone(&base_ctx),
+            header.clone().into(),
         )?;
 
         Ok(task::block_in_place(|| {

@@ -1,7 +1,5 @@
 use std::sync::Arc;
 
-use parking_lot::Mutex;
-
 use core_executor::EVMExecutorAdapter;
 use protocol::traits::{APIAdapter, Context, ExecutorAdapter, MemPool, Storage};
 use protocol::types::{
@@ -45,7 +43,7 @@ where
             block.header.state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
-            Arc::new(Mutex::new(ExecutorContext::from(block.header))),
+            ExecutorContext::from(block.header),
         )
     }
 }

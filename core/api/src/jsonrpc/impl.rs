@@ -1,7 +1,7 @@
 use crate::adapter::DefaultAPIAdapter;
 use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
 
-use jsonrpsee::types::Error;
+use jsonrpsee::core::Error;
 
 use crate::jsonrpc::types::{
     BlockId, CallRequest, RichTransactionOrHash, Web3Block, Web3TransactionReceipt,

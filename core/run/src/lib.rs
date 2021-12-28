@@ -325,7 +325,7 @@ impl Axon {
                 current_header.state_root,
                 Arc::clone(&trie_db),
                 Arc::clone(&storage),
-                Arc::new(Mutex::new(current_header.clone().into())),
+                current_header.clone().into(),
             )?;
             let resp = executor.exec(&mut backend, current_stxs.clone());
             let block_hash = Hasher::digest(current_header.encode()?);
