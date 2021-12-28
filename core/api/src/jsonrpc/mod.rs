@@ -13,7 +13,7 @@ use protocol::types::{Bytes, SignedTransaction, H160, H256, U256};
 use protocol::ProtocolResult;
 
 use crate::jsonrpc::types::{
-    BlockId, Web3Block, Web3CallRequest, Web3SendTrancationRequest, Web3TransactionReceipt,
+    BlockId, Web3Block, Web3CallRequest, Web3SendTrancationRequest, Web3TransactionReceipt, Web3EstimateRequst,
 };
 use crate::{adapter::DefaultAPIAdapter, APIError};
 
@@ -53,7 +53,7 @@ pub trait AxonJsonRpc {
     async fn chain_id(&self) -> RpcResult<U256>;
 
     #[method(name = "eth_estimateGas")]
-    async fn estimate_gas(&self, req: Web3CallRequest) -> RpcResult<Option<u64>>;
+    async fn estimate_gas(&self, req: Web3EstimateRequst) -> RpcResult<Option<U256>>;
     #[method(name = "net_version")]
     async fn net_version(&self) -> RpcResult<U256>;
 

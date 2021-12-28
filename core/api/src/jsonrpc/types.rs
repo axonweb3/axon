@@ -50,6 +50,53 @@ pub struct Web3SendTrancationRequest {
     pub value:    Option<U256>,
 }
 
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct Web3EstimateRequst {
+    pub from: Option<H160>,
+    pub value:      U256,
+    pub data:    Option<Bytes>,
+}
+
+impl Web3EstimateRequst {
+    pub fn create_signedtransaction_by_web3estimaterequst(&self) -> SignedTransaction {
+        SignedTransaction {
+            transaction: UnverifiedTransaction {
+                unsigned:  Transaction {
+                    nonce:                    U256::default(),
+                    max_priority_fee_per_gas: U256::default(),
+                    gas_price:                U256::default(),
+                    gas_limit:                U256::from_str("0x1000000000").unwrap(),
+                    action:                   TransactionAction::Call(H160::default()),
+                    value:                     self.value,
+                    data:                     if let Some(dx) = &self.data {
+                        dx.clone()
+                    } else {
+                        Bytes::default()
+                    },
+                    access_list:              Vec::new(),
+                },
+                signature: Some(SignatureComponents {
+                    standard_v: 0,
+                    r:          H256::default(),
+                    s:          H256::default(),
+                }),
+                chain_id:  0u64,
+                hash:      H256::default(),
+            },
+            sender:      if let Some(addr) = self.from {
+                addr
+            } else {
+                H160::default()
+            },
+            public:      Some(Public::default()),
+        }
+    }
+}
+
+
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Web3CallRequest {

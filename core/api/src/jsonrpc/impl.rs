@@ -9,7 +9,7 @@ use protocol::{async_trait, codec::ProtocolCodec};
 
 use crate::adapter::DefaultAPIAdapter;
 use crate::jsonrpc::types::{
-    BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3SendTrancationRequest,
+    BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3SendTrancationRequest,Web3EstimateRequst,
     Web3TransactionReceipt,
 };
 use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
@@ -250,14 +250,15 @@ where
         Ok(codebytes)
     }
 
-    async fn estimate_gas(&self, req: Web3CallRequest) -> RpcResult<Option<u64>> {
-        let gentx = req.create_signedtransaction_by_web3allrequest();
+    async fn estimate_gas(&self, req: Web3EstimateRequst) -> RpcResult<Option<U256>> {
+        let gentx = req.create_signedtransaction_by_web3estimaterequst();
         let rpx = self.adapter.evm_call(gentx).await;
-        if rpx.exit_reason != ExitReason::Succeed(ExitSucceed::Returned) {
-            Ok(None)
-        } else {
-            Ok(Some(rpx.gas_used))
-        }
+        Ok(Some(rpx.gas_used.into()))
+        // if rpx.exit_reason != ExitReason::Succeed(ExitSucceed::Stopped) {
+        //     Ok(None)
+        // } else {
+        //     Ok(Some(rpx.gas_used))
+        // }
     }
 
     async fn get_transaction_receipt(
