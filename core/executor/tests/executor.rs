@@ -54,7 +54,7 @@ fn gen_tx(sender: H160, addr: H160, data: Vec<u8>) -> SignedTransaction {
             hash:      H256::default(),
         },
         sender,
-        public: Public::default(),
+        public: Some(Public::default()),
     }
 }
 

@@ -139,17 +139,11 @@ impl Encodable for SignedTransaction {
 impl Decodable for SignedTransaction {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
-            Prototype::List(3) => {
-                let transaction: UnverifiedTransaction = r.val_at(0)?;
-                let sender: H160 = r.val_at(1)?;
-                let public: Public = r.val_at(2)?;
-
-                Ok(SignedTransaction {
-                    transaction,
-                    sender,
-                    public,
-                })
-            }
+            Prototype::List(3) => Ok(SignedTransaction {
+                transaction: r.val_at(0)?,
+                sender:      r.val_at(1)?,
+                public:      r.val_at(2)?,
+            }),
             _ => Err(DecoderError::RlpInconsistentLengthAndData),
         }
     }
@@ -200,7 +194,7 @@ mod tests {
         SignedTransaction {
             transaction: mock_unverfied_tx(),
             sender:      H160::default(),
-            public:      Public::default(),
+            public:      None,
         }
     }
 

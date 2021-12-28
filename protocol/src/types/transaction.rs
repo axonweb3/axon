@@ -93,7 +93,7 @@ impl SignatureComponents {
 pub struct SignedTransaction {
     pub transaction: UnverifiedTransaction,
     pub sender:      H160,
-    pub public:      Public,
+    pub public:      Option<Public>,
 }
 
 pub fn public_to_address(public: &Public) -> H160 {

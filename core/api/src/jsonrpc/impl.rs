@@ -4,7 +4,10 @@ use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
 use jsonrpsee::core::Error;
 
 use protocol::traits::{APIAdapter, Context, MemPool, Storage};
-use protocol::types::{BlockNumber, Bytes, SignedTransaction, H160, H256, U256};
+use protocol::types::{
+    public_to_address, BlockNumber, Bytes, SignedTransaction, UnverifiedTransaction, H160, H256,
+    U256,
+};
 use protocol::{async_trait, codec::ProtocolCodec};
 
 use crate::jsonrpc::types::{BlockId, CallRequest, RichTransactionOrHash, Web3Block};
@@ -33,10 +36,18 @@ where
 {
     /// Sends signed transaction, returning its hash.
     async fn send_raw_transaction(&self, tx: Bytes) -> RpcResult<H256> {
-        let tx = SignedTransaction::decode(tx).map_err(|e| Error::Custom(e.to_string()))?;
-        let hash = tx.transaction.hash;
+        let tx = UnverifiedTransaction::decode(&tx[1..])
+            .map_err(|e| Error::Custom(e.to_string()))?
+            .hash();
+        let stx = SignedTransaction {
+            transaction: tx,
+            sender:      Default::default(),
+            public:      public_to_address(),
+        };
+
+        let hash = tx.hash;
         self.adapter
-            .insert_signed_txs(Context::new(), tx)
+            .insert_signed_txs(Context::new(), stx)
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
