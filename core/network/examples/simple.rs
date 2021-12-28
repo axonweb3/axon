@@ -25,20 +25,20 @@ impl MessageHandler for TakeMyMoney {
 
     async fn process(&self, ctx: Context, msg: Self::Message) -> TrustFeedback {
         let sell = async move {
-            println!("Rush to {:?}. Shut up, take my money", msg);
+            log::info!("Rush to {:?}. Shut up, take my money", msg);
 
             let copy: Bytes = self
                 .shop
                 .call(ctx, SHOP_CASH_CHANNEL, Bytes::from("2345"), Priority::High)
                 .await?;
-            println!("Got my copy {:?}", copy);
+            log::info!("Got my copy {:?}", copy);
 
             Ok::<(), ProtocolError>(())
         };
         match sell.await {
             Ok(_) => TrustFeedback::Good,
             Err(e) => {
-                println!("sell {}", e);
+                log::error!("sell {}", e);
                 TrustFeedback::Bad("sell failed".to_owned())
             }
         }
@@ -91,22 +91,24 @@ async fn main() {
         bootstrap
             .register_endpoint_handler(SHOP_CASH_CHANNEL, check_out)
             .unwrap();
-        tokio::spawn(async { bootstrap.run().await });
+        tokio::spawn(async move {
+            loop {
+                tokio::time::sleep(Duration::from_secs(10)).await;
 
-        tokio::time::sleep(Duration::from_secs(10)).await;
+                let ctx = Context::default();
+                handle
+                    .broadcast(
+                        ctx.clone(),
+                        RELEASE_CHANNEL,
+                        Bytes::from(""),
+                        Priority::High,
+                    )
+                    .await
+                    .unwrap();
+            }
+        });
 
-        let ctx = Context::default();
-        handle
-            .broadcast(
-                ctx.clone(),
-                RELEASE_CHANNEL,
-                Bytes::from(""),
-                Priority::High,
-            )
-            .await
-            .unwrap();
-
-        tokio::time::sleep(Duration::from_secs(10)).await;
+        bootstrap.run().await
     } else {
         log::info!("Starting client");
 

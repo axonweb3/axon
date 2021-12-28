@@ -23,6 +23,8 @@ pub struct PeerManager {
     chain_id:         Mutex<String>,
     pub public_addrs: RwLock<HashSet<Multiaddr>>,
     config:           Arc<NetworkConfig>,
+
+    pub consensus_list: RwLock<HashSet<PeerId>>,
 }
 
 impl PeerManager {
@@ -47,6 +49,7 @@ impl PeerManager {
             bootstraps,
             public_addrs: RwLock::new(HashSet::new()),
             config,
+            consensus_list: RwLock::new(HashSet::new()),
         }
     }
 
@@ -78,6 +81,45 @@ impl PeerManager {
         (connected, unconnected)
     }
 
+    #[allow(clippy::mutable_key_type)]
+    pub fn unconnected_consensus_peer(&self) -> Vec<Multiaddr> {
+        let mut unconnected = Vec::new();
+        let online = self.online.read();
+        let mut peer_store = self.peer_store.write();
+
+        for id in self.consensus_list.read().iter() {
+            if online.peers.contains_key(id) {
+                continue;
+            }
+            let list = peer_store.fetch_addr_by_peer_id(id);
+            let now_ms = faketime::unix_time_as_millis();
+            for addr in list.iter() {
+                if let Some(paddr) = peer_store.mut_addr_manager().get_mut(addr) {
+                    paddr.mark_tried(now_ms);
+                }
+            }
+            unconnected.extend(list.into_iter())
+        }
+        unconnected
+    }
+
+    pub fn connected_consensus_peer(&self) -> Vec<Multiaddr> {
+        let online = self.online.read();
+        let mut list = Vec::new();
+
+        for id in self.consensus_list.read().iter() {
+            if let Some(info) = online.peers.get(id) {
+                if info.session_type.is_outbound() {
+                    list.push(info.addr.clone());
+                }
+
+                list.extend(info.listens.iter().cloned());
+            }
+        }
+
+        list
+    }
+
     pub fn register(&self, peer: PeerInfo) {
         let (addr, ty) = (peer.addr.clone(), peer.session_type);
         self.with_registry_mut(|online| {
@@ -89,7 +131,12 @@ impl PeerManager {
     }
 
     pub fn unregister(&self, id: &PeerId) {
-        if let Some(peer) = self.with_registry_mut(|online| online.peers.remove(id)) {
+        if let Some(peer) = self.with_registry_mut(|online| {
+            online.peers.remove(id).map(|info| {
+                online.remove_feeler(&info.addr);
+                info
+            })
+        }) {
             self.with_peer_store_mut(|peer_store| peer_store.remove_disconnected_peer(&peer.addr));
         }
     }
@@ -160,8 +207,11 @@ impl PeerManager {
         f(&mut self.peer_store.write())
     }
 
-    pub fn always_allow(&self, peer_id: &PeerId) -> bool {
-        self.bootstraps.contains_key(peer_id)
+    pub fn always_allow(&self, addr: &Multiaddr) -> bool {
+        let peer_id = extract_peer_id(addr).unwrap();
+        self.bootstraps.contains_key(&peer_id)
+            || self.consensus_list.read().contains(&peer_id)
+            || self.with_peer_store(|peer_store| !peer_store.is_addr_banned(addr))
     }
 
     pub fn local_listen_addrs(&self) -> Vec<Multiaddr> {
@@ -175,5 +225,28 @@ impl PeerManager {
             .take(count)
             .cloned()
             .collect()
+    }
+
+    pub fn ban_id(&self, peer_id: &PeerId, timeout: u64, ban_reason: String) -> Option<SessionId> {
+        if let Some(info) = self.online.read().peers.get(peer_id) {
+            self.peer_store
+                .write()
+                .ban_addr(&info.addr, timeout, ban_reason)
+        }
+        None
+    }
+
+    pub fn ban_session_id(&self, session_id: SessionId, timeout: u64, ban_reason: String) {
+        let addr = self.online.read().peers.values().find_map(|info| {
+            if info.session_id == session_id {
+                Some(info.addr.clone())
+            } else {
+                None
+            }
+        });
+
+        if let Some(addr) = addr {
+            self.peer_store.write().ban_addr(&addr, timeout, ban_reason)
+        }
     }
 }

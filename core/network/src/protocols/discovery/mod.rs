@@ -230,6 +230,7 @@ impl<M: AddressManager> ServiceProtocol for DiscoveryProtocol<M> {
                     .filter(|addr| addr_mgr.is_valid_addr(addr))
                     .cloned()
             })
+            .chain(addr_mgr.consensus_list().into_iter())
             .collect();
 
         if !announce_list.is_empty() {
@@ -375,5 +376,9 @@ impl AddressManager for DiscoveryAddressManager {
             .collect();
         trace!("discovery send random addrs: {:?}", addrs);
         addrs
+    }
+
+    fn consensus_list(&self) -> Vec<Multiaddr> {
+        self.peer_manager.connected_consensus_peer()
     }
 }
