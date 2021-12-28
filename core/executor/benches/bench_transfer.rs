@@ -44,7 +44,7 @@ impl BenchAdapter {
         let mut mpt = MPTTrie::new(Arc::clone(&self.trie_db));
         let distribute_account = Account {
             nonce:        0u64.into(),
-            balance:      320000011u64.into(),
+            balance:      32000001100000000000u128.into(),
             storage_root: RLP_NULL,
             code_hash:    NIL_DATA,
         };
