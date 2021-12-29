@@ -44,7 +44,7 @@ use protocol::tokio::{sync::Mutex as AsyncMutex, time::sleep};
 use protocol::traits::{CommonStorage, Context, Executor, MemPool, NodeInfo, Storage};
 use protocol::types::{
     Account, Address, Bloom, BloomInput, Genesis, Hasher, MerkleRoot, Metadata, Validator,
-    NIL_DATA, RLP_NULL, U256
+    NIL_DATA, RLP_NULL, U256,
 };
 use protocol::{
     codec::ProtocolCodec, tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
