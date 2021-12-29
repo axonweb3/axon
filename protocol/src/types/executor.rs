@@ -49,7 +49,7 @@ impl From<Header> for ExecutorContext {
             origin:                 h.proposer,
             gas_price:              Default::default(),
             block_gas_limit:        h.gas_limit,
-            block_base_fee_per_gas: h.base_fee_per_gas.unwrap_or_default(),
+            block_base_fee_per_gas: h.base_fee_per_gas,
             logs:                   Vec::new(),
         }
     }

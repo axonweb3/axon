@@ -80,6 +80,6 @@ pub struct CurrentStatus {
     pub log_bloom:        Bloom,
     pub gas_used:         U256,
     pub gas_limit:        U256,
-    pub base_fee_per_gas: Option<U256>,
+    pub base_fee_per_gas: U256,
     pub proof:            Proof,
 }
