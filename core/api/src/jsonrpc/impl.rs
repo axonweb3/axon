@@ -169,7 +169,7 @@ where
     }
 
     async fn chain_id(&self) -> RpcResult<U256> {
-        Ok(U256::from("1389"))
+        Ok(U256::from("539"))
         // self.adapter
         //     .get_latest_block(Context::new())
         //     .await
