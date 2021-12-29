@@ -57,7 +57,6 @@ impl<Adapter: SynchronizationAdapter> Synchronization for OverlordSynchronizatio
             return Ok(());
         }
 
-        let remote_number = remote_number - 1;
         log::info!(
             "[synchronization]: sync start, remote block number {:?} current block number {:?}",
             remote_number,

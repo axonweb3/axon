@@ -139,7 +139,7 @@ where
         Ok(account.balance)
     }
 
-    async fn chainid(&self) -> RpcResult<U256> {
+    async fn chain_id(&self) -> RpcResult<U256> {
         self.adapter
             .get_latest_block(Context::new())
             .await

@@ -42,7 +42,7 @@ pub trait AxonJsonRpc {
     async fn get_balance(&self, address: H160, number: Option<BlockId>) -> RpcResult<U256>;
 
     #[method(name = "eth_chainId")]
-    async fn chainid(&self) -> RpcResult<U256>;
+    async fn chain_id(&self) -> RpcResult<U256>;
 
     #[method(name = "eth_estimateGas")]
     async fn estimate_gas(&self, req: CallRequest, number: Option<BlockId>) -> RpcResult<U256>;
