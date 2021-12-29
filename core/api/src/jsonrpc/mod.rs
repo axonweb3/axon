@@ -13,7 +13,8 @@ use protocol::types::{Bytes, SignedTransaction, H160, H256, U256};
 use protocol::ProtocolResult;
 
 use crate::jsonrpc::types::{
-    BlockId, Web3Block, Web3CallRequest, Web3SendTrancationRequest, Web3TransactionReceipt, Web3EstimateRequst,
+    BlockId, Web3Block, Web3CallRequest, Web3EstimateRequst, Web3SendTrancationRequest,
+    Web3TransactionReceipt,
 };
 use crate::{adapter::DefaultAPIAdapter, APIError};
 
@@ -23,7 +24,7 @@ type RpcResult<T> = Result<T, Error>;
 pub trait AxonJsonRpc {
     /// Sends signed transaction, returning its hash.
     #[method(name = "eth_sendRawTransaction")]
-    async fn send_raw_transaction(&self, tx: Bytes) -> RpcResult<H256>;
+    async fn send_raw_transaction(&self, tx: String) -> RpcResult<H256>;
 
     #[method(name = "eth_sendTransaction")]
     async fn send_transaction(&self, tx: Web3SendTrancationRequest) -> RpcResult<Option<H256>>;
@@ -31,6 +32,9 @@ pub trait AxonJsonRpc {
     /// Get transaction by its hash.
     #[method(name = "eth_getTransactionByHash")]
     async fn get_transaction_by_hash(&self, hash: H256) -> RpcResult<SignedTransaction>;
+
+    // #[method(name = "eth_sign")]
+    // async fn sign(&self, address: H160, data: Bytes) -> RpcResult<Option<Vec<u8>>>;
 
     /// Returns block with given number.
     #[method(name = "eth_getBlockByNumber")]

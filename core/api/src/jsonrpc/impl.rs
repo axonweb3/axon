@@ -2,15 +2,15 @@ use jsonrpsee::types::Error;
 
 use protocol::traits::{APIAdapter, Context, MemPool, Storage};
 use protocol::types::{
-    Bytes, ExitReason, ExitSucceed, Hasher, SignedTransaction, UnverifiedTransaction, H160, H256,
-    U256,
+    Bytes, ExitReason, ExitSucceed, Hasher, Hex, SignedTransaction, UnverifiedTransaction, H160,
+    H256, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec};
 
 use crate::adapter::DefaultAPIAdapter;
 use crate::jsonrpc::types::{
-    BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3SendTrancationRequest,Web3EstimateRequst,
-    Web3TransactionReceipt,
+    BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3EstimateRequst,
+    Web3SendTrancationRequest, Web3TransactionReceipt,
 };
 use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
 
@@ -40,9 +40,18 @@ where
         Ok(true)
     }
 
+    // async fn sign(&self, address: H160, data: Bytes) -> RpcResult<Option<Vec<u8>>> {
+    //     todo!()
+    // }
+
     /// Sends signed transaction, returning its hash.
-    async fn send_raw_transaction(&self, tx: Bytes) -> RpcResult<H256> {
-        let utx = UnverifiedTransaction::decode(&tx[1..])
+    async fn send_raw_transaction(&self, tx: String) -> RpcResult<H256> {
+        println!("transaction：{:?}",&tx);
+        let txx = Hex::from_string(tx)
+            .map_err(|e| Error::Custom(e.to_string()))?
+            .decode();
+        // let txx=tx.as_bytes();
+        let utx = UnverifiedTransaction::decode(&txx[1..])
             .map_err(|e| Error::Custom(e.to_string()))?
             .hash();
         let stx = SignedTransaction::try_from(utx).map_err(|e| Error::Custom(e.to_string()))?;
@@ -132,8 +141,8 @@ where
             .get_account(Context::new(), address, num)
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
-
-        Ok(account.nonce)
+         //Ok(1.into())
+         Ok(account.nonce)
     }
 
     async fn block_number(&self) -> RpcResult<U256> {
@@ -160,11 +169,12 @@ where
     }
 
     async fn chain_id(&self) -> RpcResult<U256> {
-        self.adapter
-            .get_latest_block(Context::new())
-            .await
-            .map(|b| b.header.chain_id.into())
-            .map_err(|e| Error::Custom(e.to_string()))
+        Ok(U256::from("1389"))
+        // self.adapter
+        //     .get_latest_block(Context::new())
+        //     .await
+        //     .map(|b| b.header.chain_id.into())
+        //     .map_err(|e| Error::Custom(e.to_string()))
     }
 
     async fn net_version(&self) -> RpcResult<U256> {
@@ -253,7 +263,8 @@ where
     async fn estimate_gas(&self, req: Web3EstimateRequst) -> RpcResult<Option<U256>> {
         let gentx = req.create_signedtransaction_by_web3estimaterequst();
         let rpx = self.adapter.evm_call(gentx).await;
-        Ok(Some(rpx.gas_used.into()))
+        Ok(Some(U256::from(rpx.remain_gas)))
+        // Ok(Some(rpx.re.into()))
         // if rpx.exit_reason != ExitReason::Succeed(ExitSucceed::Stopped) {
         //     Ok(None)
         // } else {
@@ -287,6 +298,6 @@ where
     }
 
     async fn get_gas_price(&self) -> RpcResult<Option<U256>> {
-        Ok(Some(U256::one()))
+        Ok(Some(U256::from("8")))
     }
 }
