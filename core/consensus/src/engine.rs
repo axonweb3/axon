@@ -673,7 +673,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             log_bloom:        Bloom::from(BloomInput::Raw(rlp::encode_list(&logs).as_ref())),
             gas_limit:        metadata.gas_limit.into(),
             gas_used:         resp.gas_used.into(),
-            base_fee_per_gas: None,
+            base_fee_per_gas: block.header.base_fee_per_gas,
             proof:            proof.clone(),
         };
 

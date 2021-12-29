@@ -27,7 +27,7 @@ pub struct Header {
     pub extra_data:        Bytes,
     pub mixed_hash:        Option<Hash>,
     pub nonce:             H64,
-    pub base_fee_per_gas:  Option<U256>,
+    pub base_fee_per_gas:  U256,
     pub proof:             Proof,
     pub chain_id:          u64,
 }

@@ -58,7 +58,7 @@ pub struct Web3Block {
     pub difficulty:        U256,
     pub total_difficulty:  Option<U256>,
     pub seal_fields:       Vec<Bytes>,
-    pub base_fee_per_gas:  Option<U256>,
+    pub base_fee_per_gas:  U256,
     pub uncles:            Vec<H256>,
     pub transactions:      Vec<RichTransactionOrHash>,
     pub size:              Option<U256>,

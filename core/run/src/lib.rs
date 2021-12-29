@@ -44,7 +44,7 @@ use protocol::tokio::{sync::Mutex as AsyncMutex, time::sleep};
 use protocol::traits::{CommonStorage, Context, Executor, MemPool, NodeInfo, Storage};
 use protocol::types::{
     Account, Address, Bloom, BloomInput, Genesis, Hasher, MerkleRoot, Metadata, Validator,
-    NIL_DATA, RLP_NULL,
+    NIL_DATA, RLP_NULL, U256
 };
 use protocol::{
     codec::ProtocolCodec, tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
@@ -315,7 +315,7 @@ impl Axon {
                 log_bloom:        Default::default(),
                 gas_used:         0u64.into(),
                 gas_limit:        metadata.gas_limit.into(),
-                base_fee_per_gas: None,
+                base_fee_per_gas: U256::one(),
                 proof:            current_header.proof.clone(),
             }
         } else {
@@ -346,7 +346,7 @@ impl Axon {
                 log_bloom:        Bloom::from(BloomInput::Raw(rlp::encode_list(&logs).as_ref())),
                 gas_used:         resp.gas_used.into(),
                 gas_limit:        metadata.gas_limit.into(),
-                base_fee_per_gas: None,
+                base_fee_per_gas: current_header.base_fee_per_gas,
                 proof:            current_header.proof.clone(),
             }
         };
