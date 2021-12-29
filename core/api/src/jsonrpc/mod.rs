@@ -1,15 +1,21 @@
 mod r#impl;
 mod types;
 
-use jsonrpsee::http_server::{HttpServerBuilder, HttpServerHandle};
-use jsonrpsee::{core::Error, proc_macros::rpc};
+use jsonrpsee::{
+    http_server::{HttpServerBuilder, HttpServerHandle},
+    proc_macros::rpc,
+    types::Error,
+};
 
 use common_config_parser::types::ConfigApi;
 use protocol::traits::{MemPool, Storage};
-use protocol::types::{BlockNumber, Bytes, SignedTransaction, H160, H256, U256};
+use protocol::types::{Bytes, SignedTransaction, H160, H256, U256};
 use protocol::ProtocolResult;
 
-use crate::jsonrpc::types::{BlockId, CallRequest, Web3Block};
+use crate::jsonrpc::types::{
+    BlockId, Web3Block, Web3CallRequest, Web3EstimateRequst, Web3SendTrancationRequest,
+    Web3TransactionReceipt,
+};
 use crate::{adapter::DefaultAPIAdapter, APIError};
 
 type RpcResult<T> = Result<T, Error>;
@@ -18,11 +24,17 @@ type RpcResult<T> = Result<T, Error>;
 pub trait AxonJsonRpc {
     /// Sends signed transaction, returning its hash.
     #[method(name = "eth_sendRawTransaction")]
-    async fn send_raw_transaction(&self, tx: Bytes) -> RpcResult<H256>;
+    async fn send_raw_transaction(&self, tx: String) -> RpcResult<H256>;
+
+    #[method(name = "eth_sendTransaction")]
+    async fn send_transaction(&self, tx: Web3SendTrancationRequest) -> RpcResult<Option<H256>>;
 
     /// Get transaction by its hash.
     #[method(name = "eth_getTransactionByHash")]
     async fn get_transaction_by_hash(&self, hash: H256) -> RpcResult<SignedTransaction>;
+
+    // #[method(name = "eth_sign")]
+    // async fn sign(&self, address: H160, data: Bytes) -> RpcResult<Option<Vec<u8>>>;
 
     /// Returns block with given number.
     #[method(name = "eth_getBlockByNumber")]
@@ -33,7 +45,7 @@ pub trait AxonJsonRpc {
     ) -> RpcResult<Option<Web3Block>>;
 
     #[method(name = "eth_blockNumber")]
-    async fn block_number(&self) -> RpcResult<BlockNumber>;
+    async fn block_number(&self) -> RpcResult<U256>;
 
     #[method(name = "eth_getTransactionCount")]
     async fn get_transaction_count(&self, address: H160, number: BlockId) -> RpcResult<U256>;
@@ -45,7 +57,27 @@ pub trait AxonJsonRpc {
     async fn chain_id(&self) -> RpcResult<U256>;
 
     #[method(name = "eth_estimateGas")]
-    async fn estimate_gas(&self, req: CallRequest, number: Option<BlockId>) -> RpcResult<U256>;
+    async fn estimate_gas(&self, req: Web3EstimateRequst) -> RpcResult<Option<U256>>;
+    #[method(name = "net_version")]
+    async fn net_version(&self) -> RpcResult<U256>;
+
+    #[method(name = "eth_call")]
+    async fn call(&self, w3crequest: Web3CallRequest) -> RpcResult<Option<Vec<u8>>>;
+
+    #[method(name = "eth_getCode")]
+    async fn get_code(&self, address: H160, number: Option<u64>) -> RpcResult<Vec<u8>>;
+
+    #[method(name = "eth_getTransactionReceipt")]
+    async fn get_transaction_receipt(
+        &self,
+        _hash: H256,
+    ) -> RpcResult<Option<Web3TransactionReceipt>>;
+
+    #[method(name = "net_listening")]
+    async fn listening(&self) -> RpcResult<bool>;
+
+    #[method(name = "eth_gasPrice")]
+    async fn get_gas_price(&self) -> RpcResult<Option<U256>>;
 }
 
 pub fn run_http_server<M, S, DB>(

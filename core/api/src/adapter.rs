@@ -1,9 +1,11 @@
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use core_executor::EVMExecutorAdapter;
+use core_executor::{EVMExecutorAdapter, EvmExecutor};
 use protocol::traits::{APIAdapter, Context, ExecutorAdapter, MemPool, Storage};
 use protocol::types::{
-    Account, Block, BlockNumber, ExecutorContext, Hash, Header, Receipt, SignedTransaction, H160,
+    Account, Block, BlockNumber, Bytes, ExecutorContext, Hash, Header, MemoryAccount,
+    MemoryBackend, MemoryVicinity, Receipt, SignedTransaction, TxResp, H160, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
@@ -121,5 +123,37 @@ where
             .get(address.as_bytes())
             .ok_or_else(|| APIError::AdapterError(format!("Cannot get {:?} account", address)))?;
         Account::decode(bytes)
+    }
+
+    async fn evm_call(&self, ts: SignedTransaction) -> TxResp {
+        let mut state = BTreeMap::new();
+
+        state.insert(ts.sender, MemoryAccount {
+            nonce:   U256::one(),
+            balance: U256::max_value(),
+            storage: BTreeMap::new(),
+            code:    Vec::new(),
+        });
+        let mv = MemoryVicinity {
+            gas_price:              U256::zero(),
+            origin:                 H160::default(),
+            block_hashes:           Vec::new(),
+            block_number:           Default::default(),
+            block_coinbase:         Default::default(),
+            block_timestamp:        Default::default(),
+            block_difficulty:       Default::default(),
+            block_gas_limit:        Default::default(),
+            chain_id:               U256::one(),
+            block_base_fee_per_gas: U256::zero(),
+        };
+
+        let mut backend = MemoryBackend::new(&mv, state);
+        let executor = EvmExecutor::new();
+        let r = executor.inner_exec(&mut backend, ts);
+        r
+    }
+
+    async fn get_code_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>> {
+        self.storage.get_code_by_hash(ctx, hash).await
     }
 }

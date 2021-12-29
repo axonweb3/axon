@@ -1,12 +1,12 @@
 {
-  "chain_id": "0x0",
+  "chain_id": "0x1389",
   "version": {
     "start": 0,
     "end": 1000000000
   },
   "common_ref": "0x6c747758636859487038",
   "timeout_gap": 1000,
-  "gas_limit": 4294967295,
+  "gas_limit": 4294967295000,
   "gas_price": 1,
   "interval": 3000,
   "verifier_list": [
@@ -23,5 +23,5 @@
   "precommit_ratio": 10,
   "brake_ratio": 10,
   "tx_num_limit": 20000,
-  "max_tx_size": 1024
+  "max_tx_size": 4096
 }

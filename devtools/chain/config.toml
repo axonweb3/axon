@@ -27,7 +27,7 @@ multi_address = "/ip4/127.0.0.1/tcp/8001/p2p/QmcEhrEJhNdKzUHQDodYLuoiYpnhKFxoGTw
 
 [mempool]
 timeout_gap = 20
-pool_size = 20000
+pool_size = 20000000
 broadcast_txs_size = 200
 broadcast_txs_interval = 200
 

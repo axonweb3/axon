@@ -1,8 +1,9 @@
-use async_trait::async_trait;
-
 use crate::traits::Context;
-use crate::types::{Account, Block, BlockNumber, Hash, Header, Receipt, SignedTransaction, H160};
+use crate::types::{
+    Account, Block, BlockNumber, Bytes, Hash, Header, Receipt, SignedTransaction, TxResp, H160,
+};
 use crate::ProtocolResult;
+use async_trait::async_trait;
 
 #[async_trait]
 pub trait APIAdapter: Send + Sync {
@@ -44,4 +45,8 @@ pub trait APIAdapter: Send + Sync {
         address: H160,
         number: Option<BlockNumber>,
     ) -> ProtocolResult<Account>;
+
+    async fn evm_call(&self, ts: SignedTransaction) -> TxResp;
+
+    async fn get_code_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>>;
 }
