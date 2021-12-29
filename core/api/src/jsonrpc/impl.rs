@@ -2,7 +2,7 @@ use jsonrpsee::types::Error;
 
 use protocol::traits::{APIAdapter, Context, MemPool, Storage};
 use protocol::types::{
-    ExitReason, ExitSucceed, Hasher, Hex, SignedTransaction, UnverifiedTransaction, H160,
+    Bytes, ExitReason, ExitSucceed, Hasher, Hex, SignedTransaction, UnverifiedTransaction, H160,
     H256, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec};
