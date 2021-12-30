@@ -182,7 +182,7 @@ impl Web3SendTrancationRequest {
 pub struct Web3TransactionReceipt {
     pub block_number:        u64,
     pub block_hash:          H256,
-    pub contract_address:    Option<H160>,
+    pub contract_address:    Option<H256>,
     pub cumulative_gas_used: U256,
     pub effective_gas_price: U256,
     pub from:                H160,
@@ -202,14 +202,14 @@ impl Web3TransactionReceipt {
         Web3TransactionReceipt {
             block_number:        receipt.block_number,
             block_hash:          receipt.block_hash,
-            contract_address:    None,
+            contract_address:    receipt.code_address,
             cumulative_gas_used: receipt.used_gas,
             effective_gas_price: receipt.used_gas,
             from:                tx.sender,
             gas_used:            receipt.used_gas,
             logs:                receipt.logs,
             logs_bloom:          receipt.logs_bloom,
-            status:              U256::zero(),
+            status:              U256::one(),
             to:                  if let TransactionAction::Call(to) = tx.transaction.unsigned.action
             {
                 Some(to)

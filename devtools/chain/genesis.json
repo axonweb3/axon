@@ -16,7 +16,7 @@
       "extra_data": [],
       "mixed_hash": null,
       "nonce": "0x0000000000000000",
-      "base_fee_per_gas": null,
+      "base_fee_per_gas": "0x539",
       "proof": {
         "number": 0,
         "round": 0,
@@ -24,7 +24,7 @@
         "signature": [],
         "bitmap": []
       },
-      "chain_id": 1337
+      "chain_id":1337
     },
     "tx_hashes": []
   },

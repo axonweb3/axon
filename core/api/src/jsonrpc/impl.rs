@@ -2,6 +2,7 @@ use jsonrpsee::types::Error;
 
 use protocol::traits::{APIAdapter, Context, MemPool, Storage};
 use protocol::types::{
+    TransactionAction,
     ExitReason, ExitSucceed, Hasher, Hex, SignedTransaction, UnverifiedTransaction, H160,
     H256, U256,
 };
@@ -54,8 +55,8 @@ where
         let utx = UnverifiedTransaction::decode(&txx[1..])
             .map_err(|e| Error::Custom(e.to_string()))?
             .hash();
-        let stx = SignedTransaction::try_from(utx).map_err(|e| Error::Custom(e.to_string()))?;
-
+        let mut stx = SignedTransaction::try_from(utx).map_err(|e| Error::Custom(e.to_string()))?;
+        stx.transaction.unsigned.action= TransactionAction::Create;
         let hash = stx.transaction.hash;
         self.adapter
             .insert_signed_txs(Context::new(), stx)
