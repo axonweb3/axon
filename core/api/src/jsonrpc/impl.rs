@@ -37,6 +37,7 @@ where
 
         self.adapter
             .evm_call(Context::new(), req.from, req.data.to_vec(), mock_header)
+            .await
     }
 }
 
@@ -47,10 +48,6 @@ where
     S: Storage + 'static,
     DB: cita_trie::DB + 'static,
 {
-    async fn listening(&self) -> RpcResult<bool> {
-        Ok(true)
-    }
-
     async fn send_raw_transaction(&self, tx: Bytes) -> RpcResult<H256> {
         let utx = UnverifiedTransaction::decode(&tx[1..])
             .map_err(|e| Error::Custom(e.to_string()))?
@@ -131,15 +128,10 @@ where
             .ok_or_else(|| Error::Custom("Cannot get latest block header".to_string()))
     }
 
-    async fn get_balance(&self, address: H160, number: Option<BlockId>) -> RpcResult<U256> {
-        let num = match number {
-            Some(BlockId::Num(n)) => Some(n),
-            _ => None,
-        };
-
+    async fn get_balance(&self, address: H160, number: BlockId) -> RpcResult<U256> {
         let account = self
             .adapter
-            .get_account(Context::new(), address, num)
+            .get_account(Context::new(), address, number.into())
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
@@ -159,13 +151,13 @@ where
         self.chain_id().await
     }
 
-    async fn call(&self, req: Web3CallRequest) -> RpcResult<Vec<u8>> {
+    async fn call(&self, req: Web3CallRequest, number: BlockId) -> RpcResult<Bytes> {
         let resp = self
-            .call_evm(req, None)
+            .call_evm(req, number.into())
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
-        Ok(resp.ret)
+        Ok(Bytes::from(resp.ret))
     }
 
     async fn estimate_gas(&self, req: Web3CallRequest, number: Option<BlockId>) -> RpcResult<U256> {
@@ -182,22 +174,20 @@ where
         Ok(resp.gas_used.into())
     }
 
-    async fn get_code(&self, address: H160, number: BlockId) -> RpcResult<Vec<u8>> {
+    async fn get_code(&self, address: H160, number: BlockId) -> RpcResult<Bytes> {
         let account = self
             .adapter
             .get_account(Context::new(), address, number.into())
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
-        let code = self
-            .adapter
+
+        self.adapter
             .get_code_by_hash(Context::new(), &account.code_hash)
             .await
             .map_err(|e| Error::Custom(e.to_string()))?
             .ok_or_else(|| {
                 Error::Custom(format!("Cannot get code by hash {:?}", account.code_hash))
-            })?;
-
-        Ok(code.to_vec())
+            })
     }
 
     async fn get_transaction_receipt(&self, hash: H256) -> RpcResult<Option<Web3Receipt>> {
@@ -227,8 +217,12 @@ where
         }
     }
 
-    async fn get_gas_price(&self) -> RpcResult<Option<U256>> {
-        Ok(Some(U256::from(8u64)))
+    async fn gas_price(&self) -> RpcResult<U256> {
+        Ok(U256::from(8u64))
+    }
+
+    async fn listening(&self) -> RpcResult<bool> {
+        Ok(true)
     }
 }
 
