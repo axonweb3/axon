@@ -3,7 +3,6 @@ use std::str::FromStr;
 
 use evm::backend::{MemoryAccount, MemoryBackend, MemoryVicinity};
 
-use protocol::codec::ProtocolCodec;
 use protocol::traits::Executor;
 use protocol::types::{
     ExitReason, ExitSucceed, Public, SignatureComponents, SignedTransaction, Transaction,
