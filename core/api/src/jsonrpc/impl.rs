@@ -56,7 +56,7 @@ where
             .map_err(|e| Error::Custom(e.to_string()))?
             .hash();
         let mut stx = SignedTransaction::try_from(utx).map_err(|e| Error::Custom(e.to_string()))?;
-        stx.transaction.unsigned.action= TransactionAction::Create;
+        // stx.transaction.unsigned.action= TransactionAction::Create;
         let hash = stx.transaction.hash;
         self.adapter
             .insert_signed_txs(Context::new(), stx)
