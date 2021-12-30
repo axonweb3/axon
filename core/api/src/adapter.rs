@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use core_executor::EVMExecutorAdapter;
-use protocol::traits::{APIAdapter, Context, ExecutorAdapter, MemPool, Storage};
+use core_executor::{EVMExecutorAdapter, EvmExecutor};
+use protocol::traits::{APIAdapter, Context, Executor, ExecutorAdapter, MemPool, Storage};
 use protocol::types::{
     Account, Block, BlockNumber, Bytes, ExecutorContext, Hash, Header, Receipt, SignedTransaction,
     TxResp, H160,
@@ -38,7 +38,7 @@ where
         let block = self
             .get_block_by_number(Context::new(), number)
             .await?
-            .ok_or_else(|| APIError::AdapterError(format!("Cannot get {:?} block", number)))?;
+            .ok_or_else(|| APIError::Adapter(format!("Cannot get {:?} block", number)))?;
 
         EVMExecutorAdapter::from_root(
             block.header.state_root,
@@ -75,7 +75,7 @@ where
         }
     }
 
-    async fn get_block_header_by_height(
+    async fn get_block_header_by_number(
         &self,
         ctx: Context,
         number: Option<u64>,
@@ -128,10 +128,6 @@ where
             .await
     }
 
-    async fn get_latest_block(&self, ctx: Context) -> ProtocolResult<Block> {
-        self.storage.get_latest_block(ctx).await
-    }
-
     async fn get_account(
         &self,
         _ctx: Context,
@@ -142,12 +138,25 @@ where
             .evm_backend(number)
             .await?
             .get(address.as_bytes())
-            .ok_or_else(|| APIError::AdapterError(format!("Cannot get {:?} account", address)))?;
+            .ok_or_else(|| APIError::Adapter(format!("Cannot get {:?} account", address)))?;
         Account::decode(bytes)
     }
 
-    async fn evm_call(&self, _stx: SignedTransaction) -> TxResp {
-        todo!()
+    async fn evm_call(
+        &self,
+        _ctx: Context,
+        address: H160,
+        data: Vec<u8>,
+        mock_header: Header,
+    ) -> ProtocolResult<TxResp> {
+        let mut backend = EVMExecutorAdapter::from_root(
+            mock_header.state_root,
+            Arc::clone(&self.trie_db),
+            Arc::clone(&self.storage),
+            ExecutorContext::from(mock_header),
+        )?;
+
+        Ok(EvmExecutor::default().call(&mut backend, address, data))
     }
 
     async fn get_code_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>> {

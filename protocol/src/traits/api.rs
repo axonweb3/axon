@@ -19,7 +19,7 @@ pub trait APIAdapter: Send + Sync {
         height: Option<u64>,
     ) -> ProtocolResult<Option<Block>>;
 
-    async fn get_block_header_by_height(
+    async fn get_block_header_by_number(
         &self,
         ctx: Context,
         height: Option<u64>,
@@ -51,8 +51,6 @@ pub trait APIAdapter: Send + Sync {
         tx_hashes: &[Hash],
     ) -> ProtocolResult<Vec<Option<SignedTransaction>>>;
 
-    async fn get_latest_block(&self, ctx: Context) -> ProtocolResult<Block>;
-
     async fn get_account(
         &self,
         ctx: Context,
@@ -60,7 +58,13 @@ pub trait APIAdapter: Send + Sync {
         number: Option<BlockNumber>,
     ) -> ProtocolResult<Account>;
 
-    async fn evm_call(&self, ts: SignedTransaction) -> TxResp;
+    async fn evm_call(
+        &self,
+        ctx: Context,
+        address: H160,
+        data: Vec<u8>,
+        header: Header,
+    ) -> ProtocolResult<TxResp>;
 
     async fn get_code_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>>;
 }

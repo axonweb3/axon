@@ -2,16 +2,15 @@ use jsonrpsee::types::Error;
 
 use protocol::traits::{APIAdapter, Context, MemPool, Storage};
 use protocol::types::{
-    Bytes, ExitReason, ExitSucceed, Hasher, SignedTransaction, UnverifiedTransaction, H160, H256,
-    U256,
+    Bytes, Header, SignedTransaction, TxResp, UnverifiedTransaction, H160, H256, H64, U256,
 };
-use protocol::{async_trait, codec::ProtocolCodec};
+use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
-use crate::adapter::DefaultAPIAdapter;
-use crate::jsonrpc::types::{
-    BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3EstimateRequst, Web3Receipt,
+use crate::jsonrpc::web3_types::{
+    BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3Receipt,
 };
 use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
+use crate::{adapter::DefaultAPIAdapter, APIError};
 
 pub struct JsonRpcImpl<M, S, DB> {
     adapter: DefaultAPIAdapter<M, S, DB>,
@@ -25,6 +24,19 @@ where
 {
     pub fn new(adapter: DefaultAPIAdapter<M, S, DB>) -> Self {
         Self { adapter }
+    }
+
+    async fn call_evm(&self, req: Web3CallRequest, number: Option<u64>) -> ProtocolResult<TxResp> {
+        let latest_header = self
+            .adapter
+            .get_block_header_by_number(Context::new(), number)
+            .await?
+            .ok_or_else(|| APIError::Storage(format!("Cannot get {:?} header", number)))?;
+
+        let mock_header = mock_header_by_call_req(latest_header, &req);
+
+        self.adapter
+            .evm_call(Context::new(), req.from, req.data.to_vec(), mock_header)
     }
 }
 
@@ -68,14 +80,9 @@ where
         number: BlockId,
         show_rich_tx: bool,
     ) -> RpcResult<Option<Web3Block>> {
-        let num = match number {
-            BlockId::Num(n) => Some(n),
-            _ => None,
-        };
-
         let block = self
             .adapter
-            .get_block_by_number(Context::new(), num)
+            .get_block_by_number(Context::new(), number.into())
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
@@ -106,14 +113,9 @@ where
     }
 
     async fn get_transaction_count(&self, address: H160, number: BlockId) -> RpcResult<U256> {
-        let num = match number {
-            BlockId::Num(n) => Some(n),
-            _ => None,
-        };
-
         let account = self
             .adapter
-            .get_account(Context::new(), address, num)
+            .get_account(Context::new(), address, number.into())
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
@@ -122,10 +124,11 @@ where
 
     async fn block_number(&self) -> RpcResult<U256> {
         self.adapter
-            .get_latest_block(Context::new())
+            .get_block_header_by_number(Context::new(), None)
             .await
-            .map(|b| U256::from(b.header.number))
-            .map_err(|e| Error::Custom(e.to_string()))
+            .map_err(|e| Error::Custom(e.to_string()))?
+            .map(|h| U256::from(h.number))
+            .ok_or_else(|| Error::Custom("Cannot get latest block header".to_string()))
     }
 
     async fn get_balance(&self, address: H160, number: Option<BlockId>) -> RpcResult<U256> {
@@ -145,79 +148,56 @@ where
 
     async fn chain_id(&self) -> RpcResult<U256> {
         self.adapter
-            .get_latest_block(Context::new())
+            .get_block_header_by_number(Context::new(), None)
             .await
-            .map(|b| b.header.chain_id.into())
-            .map_err(|e| Error::Custom(e.to_string()))
+            .map_err(|e| Error::Custom(e.to_string()))?
+            .map(|h| U256::from(h.chain_id))
+            .ok_or_else(|| Error::Custom("Cannot get latest block header".to_string()))
     }
 
     async fn net_version(&self) -> RpcResult<U256> {
         self.chain_id().await
     }
 
-    async fn call(&self, w3crequest: Web3CallRequest) -> RpcResult<Option<Vec<u8>>> {
-        let gentx = w3crequest.create_signedtransaction_by_web3allrequest();
-        let rpx = self.adapter.evm_call(gentx).await;
-        if rpx.exit_reason != ExitReason::Succeed(ExitSucceed::Returned) {
-            Ok(None)
-        } else {
-            Ok(Some(rpx.ret))
-        }
+    async fn call(&self, req: Web3CallRequest) -> RpcResult<Vec<u8>> {
+        let resp = self
+            .call_evm(req, None)
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+
+        Ok(resp.ret)
     }
 
-    async fn get_code(&self, address: H160, number: Option<u64>) -> RpcResult<Vec<u8>> {
-        let block = self
-            .adapter
-            .get_block_by_number(Context::new(), number)
+    async fn estimate_gas(&self, req: Web3CallRequest, number: Option<BlockId>) -> RpcResult<U256> {
+        let num = match number {
+            Some(BlockId::Num(n)) => Some(n),
+            _ => None,
+        };
+
+        let resp = self
+            .call_evm(req, num)
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?
-            .ok_or_else(|| Error::Custom("Cannot get block".to_string()))?;
+            .map_err(|e| Error::Custom(e.to_string()))?;
 
-        let receipts = self
-            .adapter
-            .get_receipts_by_hashes(Context::new(), block.header.number, &block.tx_hashes)
-            .await
-            .map_err(|e| Error::Custom(e.to_string()))?
-            .into_iter()
-            .flatten()
-            .collect::<Vec<_>>();
-
-        if receipts.len() != block.tx_hashes.len() {
-            return Err(Error::Custom("Missing transaction".to_string()));
-        }
-
-        for receipt in receipts.iter() {
-            if receipt.sender == address && receipt.code_address.is_some() {
-                let stx = self
-                    .adapter
-                    .get_transaction_by_hash(Context::new(), receipt.tx_hash)
-                    .await
-                    .map_err(|e| Error::Custom(e.to_string()))?
-                    .ok_or_else(|| {
-                        Error::Custom(format!(
-                            "Cannot get transaction by hash {:?}",
-                            receipt.tx_hash
-                        ))
-                    })?;
-                return Ok(Hasher::digest(&stx.transaction.unsigned.data)
-                    .as_bytes()
-                    .to_vec());
-            }
-        }
-
-        Ok(Vec::new())
+        Ok(resp.gas_used.into())
     }
 
-    async fn estimate_gas(&self, req: Web3EstimateRequst) -> RpcResult<Option<U256>> {
-        let gentx = req.create_signedtransaction_by_web3estimaterequst();
-        let rpx = self.adapter.evm_call(gentx).await;
-        Ok(Some(U256::from(rpx.remain_gas)))
-        // Ok(Some(rpx.re.into()))
-        // if rpx.exit_reason != ExitReason::Succeed(ExitSucceed::Stopped) {
-        //     Ok(None)
-        // } else {
-        //     Ok(Some(rpx.gas_used))
-        // }
+    async fn get_code(&self, address: H160, number: BlockId) -> RpcResult<Vec<u8>> {
+        let account = self
+            .adapter
+            .get_account(Context::new(), address, number.into())
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+        let code = self
+            .adapter
+            .get_code_by_hash(Context::new(), &account.code_hash)
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?
+            .ok_or_else(|| {
+                Error::Custom(format!("Cannot get code by hash {:?}", account.code_hash))
+            })?;
+
+        Ok(code.to_vec())
     }
 
     async fn get_transaction_receipt(&self, hash: H256) -> RpcResult<Option<Web3Receipt>> {
@@ -249,5 +229,40 @@ where
 
     async fn get_gas_price(&self) -> RpcResult<Option<U256>> {
         Ok(Some(U256::from(8u64)))
+    }
+}
+
+fn mock_header_by_call_req(latest_header: Header, call_req: &Web3CallRequest) -> Header {
+    Header {
+        prev_hash:         latest_header.prev_hash,
+        proposer:          latest_header.proposer,
+        state_root:        latest_header.state_root,
+        transactions_root: Default::default(),
+        signed_txs_hash:   Default::default(),
+        receipts_root:     Default::default(),
+        log_bloom:         Default::default(),
+        difficulty:        latest_header.difficulty,
+        timestamp:         latest_header.timestamp,
+        number:            latest_header.number,
+        gas_used:          latest_header.gas_used,
+        gas_limit:         if let Some(gas_limit) = call_req.gas {
+            gas_limit
+        } else {
+            latest_header.gas_limit
+        },
+        extra_data:        Default::default(),
+        mixed_hash:        None,
+        nonce:             if let Some(nonce) = call_req.nonce {
+            H64::from_low_u64_le(nonce.as_u64())
+        } else {
+            latest_header.nonce
+        },
+        base_fee_per_gas:  if let Some(base_fee) = call_req.max_fee_per_gas {
+            base_fee
+        } else {
+            latest_header.base_fee_per_gas
+        },
+        proof:             latest_header.proof,
+        chain_id:          latest_header.chain_id,
     }
 }

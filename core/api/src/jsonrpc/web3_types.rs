@@ -1,14 +1,12 @@
 use std::fmt;
-use std::str::FromStr;
 
 use serde::de::{Error, MapAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use protocol::codec::ProtocolCodec;
 use protocol::types::{
-    AccessList, Block, Bloom, Bytes, Hash, Hasher, Log, Public, Receipt, SignatureComponents,
-    SignedTransaction, Transaction, TransactionAction, UnverifiedTransaction, H160, H256, U256,
-    U64,
+    AccessList, Block, Bloom, Bytes, Hash, Hasher, Log, Public, Receipt, SignedTransaction,
+    TransactionAction, H160, H256, U256, U64,
 };
 
 #[allow(clippy::large_enum_variant)]
@@ -35,94 +33,6 @@ impl RichTransactionOrHash {
         match self {
             RichTransactionOrHash::Hash(hash) => *hash,
             RichTransactionOrHash::Rich(stx) => stx.transaction.hash,
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct Web3EstimateRequst {
-    pub from:  Option<H160>,
-    pub value: U256,
-    pub data:  Option<Bytes>,
-}
-
-impl Web3EstimateRequst {
-    pub fn create_signedtransaction_by_web3estimaterequst(&self) -> SignedTransaction {
-        SignedTransaction {
-            transaction: UnverifiedTransaction {
-                unsigned:  Transaction {
-                    nonce:                    U256::default(),
-                    max_priority_fee_per_gas: U256::default(),
-                    gas_price:                U256::default(),
-                    gas_limit:                U256::from_str("0x1000000000").unwrap(),
-                    action:                   TransactionAction::Call(H160::default()),
-                    value:                    self.value,
-                    data:                     if let Some(dx) = &self.data {
-                        dx.clone()
-                    } else {
-                        Bytes::default()
-                    },
-                    access_list:              Vec::new(),
-                },
-                signature: Some(SignatureComponents {
-                    standard_v: 0,
-                    r:          H256::default(),
-                    s:          H256::default(),
-                }),
-                chain_id:  0u64,
-                hash:      H256::default(),
-            },
-            sender:      if let Some(addr) = self.from {
-                addr
-            } else {
-                H160::default()
-            },
-            public:      Some(Public::default()),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct Web3CallRequest {
-    pub address: Option<H160>,
-    pub to:      H160,
-    pub data:    Option<Bytes>,
-}
-
-impl Web3CallRequest {
-    pub fn create_signedtransaction_by_web3allrequest(&self) -> SignedTransaction {
-        SignedTransaction {
-            transaction: UnverifiedTransaction {
-                unsigned:  Transaction {
-                    nonce:                    U256::default(),
-                    max_priority_fee_per_gas: U256::default(),
-                    gas_price:                U256::default(),
-                    gas_limit:                U256::from_str("0x1000000000").unwrap(),
-                    action:                   TransactionAction::Call(self.to),
-                    value:                    U256::default(),
-                    data:                     if let Some(dx) = &self.data {
-                        dx.clone()
-                    } else {
-                        Bytes::default()
-                    },
-                    access_list:              Vec::new(),
-                },
-                signature: Some(SignatureComponents {
-                    standard_v: 0,
-                    r:          H256::default(),
-                    s:          H256::default(),
-                }),
-                chain_id:  0u64,
-                hash:      H256::default(),
-            },
-            sender:      if let Some(addr) = self.address {
-                addr
-            } else {
-                H160::default()
-            },
-            public:      Some(Public::default()),
         }
     }
 }
@@ -311,18 +221,18 @@ pub enum TransactionCondition {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
-pub struct CallRequest {
+pub struct Web3CallRequest {
     #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
     pub transaction_type:         Option<U64>,
-    pub from:                     Option<H160>,
-    pub to:                       Option<H160>,
+    pub from:                     H160,
+    pub to:                       H160,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub gas_price:                Option<U256>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_fee_per_gas:          Option<U256>,
     pub gas:                      Option<U256>,
     pub value:                    Option<U256>,
-    pub data:                     Option<Bytes>,
+    pub data:                     Bytes,
     pub nonce:                    Option<U256>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub access_list:              Option<AccessList>,
@@ -339,6 +249,15 @@ pub enum BlockId {
 impl Default for BlockId {
     fn default() -> Self {
         BlockId::Latest
+    }
+}
+
+impl From<BlockId> for Option<u64> {
+    fn from(id: BlockId) -> Self {
+        match id {
+            BlockId::Num(num) => Some(num),
+            BlockId::Latest => None,
+        }
     }
 }
 

@@ -1,5 +1,5 @@
 mod r#impl;
-mod types;
+mod web3_types;
 
 use jsonrpsee::{
     http_server::{HttpServerBuilder, HttpServerHandle},
@@ -12,7 +12,7 @@ use protocol::traits::{MemPool, Storage};
 use protocol::types::{Bytes, SignedTransaction, H160, H256, U256};
 use protocol::ProtocolResult;
 
-use crate::jsonrpc::types::{BlockId, Web3Block, Web3CallRequest, Web3EstimateRequst, Web3Receipt};
+use crate::jsonrpc::web3_types::{BlockId, Web3Block, Web3CallRequest, Web3Receipt};
 use crate::{adapter::DefaultAPIAdapter, APIError};
 
 type RpcResult<T> = Result<T, Error>;
@@ -48,16 +48,16 @@ pub trait AxonJsonRpc {
     async fn chain_id(&self) -> RpcResult<U256>;
 
     #[method(name = "eth_estimateGas")]
-    async fn estimate_gas(&self, req: Web3EstimateRequst) -> RpcResult<Option<U256>>;
+    async fn estimate_gas(&self, req: Web3CallRequest, number: Option<BlockId>) -> RpcResult<U256>;
 
     #[method(name = "net_version")]
     async fn net_version(&self) -> RpcResult<U256>;
 
     #[method(name = "eth_call")]
-    async fn call(&self, w3crequest: Web3CallRequest) -> RpcResult<Option<Vec<u8>>>;
+    async fn call(&self, req: Web3CallRequest) -> RpcResult<Vec<u8>>;
 
     #[method(name = "eth_getCode")]
-    async fn get_code(&self, address: H160, number: Option<u64>) -> RpcResult<Vec<u8>>;
+    async fn get_code(&self, address: H160, number: BlockId) -> RpcResult<Vec<u8>>;
 
     #[method(name = "eth_getTransactionReceipt")]
     async fn get_transaction_receipt(&self, hash: H256) -> RpcResult<Option<Web3Receipt>>;

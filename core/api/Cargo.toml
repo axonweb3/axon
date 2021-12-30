@@ -11,7 +11,6 @@ cita_trie = "3.0"
 # jsonrpsee = { version = "0.7", features = ["http-server", "macros"] }
 jsonrpsee = { git = "https://github.com/davidchild/jsonrpsee.git", branch = "jsonrpsee_cross",features = ["http-server", "macros"] }
 parking_lot = "0.11"
-ethereum = "0.10.0"
 log = "0.4"
 hex = "0.4"
 serde = { version = "1.0", features = ["derive"] }
