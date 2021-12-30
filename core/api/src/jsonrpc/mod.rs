@@ -64,6 +64,9 @@ pub trait AxonJsonRpc {
     #[method(name = "eth_call")]
     async fn call(&self, w3crequest: Web3CallRequest) -> RpcResult<Option<Vec<u8>>>;
 
+    #[method(name = "eth_accounts")]
+    async fn accounts(&self) -> RpcResult<Option<Vec<String>>>;
+
     #[method(name = "eth_getCode")]
     async fn get_code(&self, address: H160, number: Option<u64>) -> RpcResult<Vec<u8>>;
 

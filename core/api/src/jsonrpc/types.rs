@@ -46,7 +46,7 @@ pub struct Web3SendTrancationRequest {
     pub from:     Option<H160>,
     pub to:       Option<H160>,
     pub gas:      U256,
-    pub gasprice: U256,
+    pub gasprice: Option<U256>,
     pub value:    Option<U256>,
 }
 
@@ -148,7 +148,11 @@ impl Web3SendTrancationRequest {
                 unsigned:  Transaction {
                     nonce:                    U256::default(),
                     max_priority_fee_per_gas: U256::default(),
-                    gas_price:                self.gasprice,
+                    gas_price:                 if let Some(price) = self.gasprice {
+                        price
+                    } else {
+                        U256::one()
+                    },
                     gas_limit:                U256::from_str("0x1000000000").unwrap(),
                     action:                   TransactionAction::Create,
                     value:                    U256::default(),

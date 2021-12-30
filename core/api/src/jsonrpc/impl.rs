@@ -40,13 +40,13 @@ where
         Ok(true)
     }
 
-    // async fn sign(&self, address: H160, data: Bytes) -> RpcResult<Option<Vec<u8>>> {
-    //     todo!()
+    // async fn sign(&self, address: H160, data: Bytes) ->
+    // RpcResult<Option<Vec<u8>>> {     todo!()
     // }
 
     /// Sends signed transaction, returning its hash.
     async fn send_raw_transaction(&self, tx: String) -> RpcResult<H256> {
-        println!("transaction：{:?}",&tx);
+        println!("transaction：{:?}", &tx);
         let txx = Hex::from_string(tx)
             .map_err(|e| Error::Custom(e.to_string()))?
             .decode();
@@ -65,6 +65,13 @@ where
         Ok(hash)
     }
 
+    async fn accounts(&self) -> RpcResult<Option<Vec<String>>> {
+        let mut addresses: Vec<String> = vec![];
+        addresses.push("0x35e70c3f5a794a77efc2ec5ba964bffcc7fd2c0a".to_string());
+        Ok(Some(addresses))
+        // Ok(None)
+    }
+    
     async fn send_transaction(&self, tx: Web3SendTrancationRequest) -> RpcResult<Option<H256>> {
         // let tx = SignedTransaction::decode(tx.data).map_err(|e|
         // Error::Custom(e.to_string()))?;
@@ -141,8 +148,8 @@ where
             .get_account(Context::new(), address, num)
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
-         //Ok(1.into())
-         Ok(account.nonce)
+        // Ok(1.into())
+        Ok(account.nonce)
     }
 
     async fn block_number(&self) -> RpcResult<U256> {
@@ -169,7 +176,7 @@ where
     }
 
     async fn chain_id(&self) -> RpcResult<U256> {
-        Ok(U256::from("1389"))
+        Ok(U256::from("539"))
         // self.adapter
         //     .get_latest_block(Context::new())
         //     .await
