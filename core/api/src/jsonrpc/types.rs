@@ -150,25 +150,20 @@ pub struct Web3Receipt {
 }
 
 impl Web3Receipt {
-    pub fn new(receipt: Receipt, tx: SignedTransaction) -> Web3Receipt {
+    pub fn new(receipt: Receipt, stx: SignedTransaction) -> Web3Receipt {
         Web3Receipt {
             block_number:        receipt.block_number,
             block_hash:          receipt.block_hash,
             contract_address:    receipt.code_address,
             cumulative_gas_used: receipt.used_gas,
             effective_gas_price: receipt.used_gas,
-            from:                tx.sender,
+            from:                receipt.sender,
+            status:              receipt.status(),
             gas_used:            receipt.used_gas,
             logs:                receipt.logs,
             logs_bloom:          receipt.logs_bloom,
             state_root:          receipt.state_root,
-            status:              U256::one(),
-            to:                  if let TransactionAction::Call(to) = tx.transaction.unsigned.action
-            {
-                Some(to)
-            } else {
-                None
-            },
+            to:                  stx.get_to(),
             transaction_hash:    receipt.tx_hash,
             transaction_index:   Some(receipt.tx_index.into()),
             transaction_type:    None,

@@ -797,6 +797,7 @@ pub fn generate_receipts_and_logs(
             logs: res.logs.clone(),
             code_address: res.code_address,
             sender: tx.sender,
+            ret: res.exit_reason.clone(),
         })
         .collect::<Vec<_>>();
     let logs = receipts.iter().map(|r| r.logs_bloom).collect::<Vec<_>>();

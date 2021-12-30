@@ -123,6 +123,16 @@ impl TryFrom<UnverifiedTransaction> for SignedTransaction {
     }
 }
 
+impl SignedTransaction {
+    pub fn get_to(&self) -> Option<H160> {
+        if let TransactionAction::Call(to) = self.transaction.unsigned.action {
+            Some(to)
+        } else {
+            None
+        }
+    }
+}
+
 pub fn public_to_address(public: &Public) -> H160 {
     let hash = Hasher::digest(public);
     let mut ret = H160::zero();
