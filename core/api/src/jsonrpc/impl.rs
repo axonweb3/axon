@@ -27,13 +27,13 @@ where
     }
 
     async fn call_evm(&self, req: Web3CallRequest, number: Option<u64>) -> ProtocolResult<TxResp> {
-        let latest_header = self
+        let header = self
             .adapter
             .get_block_header_by_number(Context::new(), number)
             .await?
             .ok_or_else(|| APIError::Storage(format!("Cannot get {:?} header", number)))?;
 
-        let mock_header = mock_header_by_call_req(latest_header, &req);
+        let mock_header = mock_header_by_call_req(header, &req);
 
         self.adapter
             .evm_call(Context::new(), req.from, req.data.to_vec(), mock_header)
@@ -63,13 +63,13 @@ where
     }
 
     async fn get_transaction_by_hash(&self, hash: H256) -> RpcResult<SignedTransaction> {
-        let tx = self
+        let stx = self
             .adapter
             .get_transaction_by_hash(Context::new(), hash)
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
-        tx.ok_or_else(|| Error::Custom("Can't find this transaction".to_string()))
+        stx.ok_or_else(|| Error::Custom(format!("Cannot get transaction by hash {:?}", hash)))
     }
 
     async fn get_block_by_number(
