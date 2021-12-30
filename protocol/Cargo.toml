@@ -21,7 +21,6 @@ rlp = "0.5"
 ophelia-secp256k1 = "0.3"
 ophelia = "0.3"
 overlord = "0.3"
-parity-scale-codec = "2.3"
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1.14", features = ["full"] }
 

@@ -289,7 +289,6 @@ dependencies = [
  "ophelia",
  "ophelia-secp256k1",
  "overlord",
- "parity-scale-codec",
  "rand 0.7.3",
  "rlp",
  "serde",

@@ -1,7 +1,6 @@
-use parity_scale_codec::{Decode, Encode};
 use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
-use crate::types::{ExitReason, Receipt};
+use crate::types::Receipt;
 
 impl Encodable for Receipt {
     fn rlp_append(&self, s: &mut RlpStream) {
@@ -16,7 +15,7 @@ impl Encodable for Receipt {
             .append_list(&self.logs)
             .append(&self.code_address)
             .append(&self.sender)
-            .append(&self.ret.encode());
+            .append(&bincode::serialize(&self.ret).unwrap());
     }
 }
 
@@ -36,7 +35,7 @@ impl Decodable for Receipt {
                 sender:       r.val_at(9)?,
                 ret:          {
                     let raw: Vec<u8> = r.val_at(10)?;
-                    ExitReason::decode(&mut raw.as_slice())
+                    bincode::deserialize(raw.as_slice())
                         .map_err(|_| DecoderError::Custom("Decode exit reason"))?
                 },
             }),
