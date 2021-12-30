@@ -2,15 +2,14 @@ use jsonrpsee::types::Error;
 
 use protocol::traits::{APIAdapter, Context, MemPool, Storage};
 use protocol::types::{
-    Bytes, ExitReason, ExitSucceed, Hasher, SignedTransaction, TransactionAction,
-    UnverifiedTransaction, H160, H256, U256,
+    Bytes, ExitReason, ExitSucceed, Hasher, SignedTransaction, UnverifiedTransaction, H160, H256,
+    U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec};
 
 use crate::adapter::DefaultAPIAdapter;
 use crate::jsonrpc::types::{
     BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3EstimateRequst, Web3Receipt,
-    Web3SendTrancationRequest,
 };
 use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
 
@@ -180,7 +179,7 @@ where
             .await
             .map_err(|e| Error::Custom(e.to_string()))?
             .into_iter()
-            .filter_map(|r| r)
+            .flatten()
             .collect::<Vec<_>>();
 
         if receipts.len() != block.tx_hashes.len() {

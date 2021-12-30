@@ -4,12 +4,13 @@ use std::str::FromStr;
 use evm::backend::{MemoryAccount, MemoryBackend, MemoryVicinity};
 use evm::{ExitReason, ExitSucceed};
 
-use core_executor::EvmExecutor;
 use protocol::traits::Executor;
 use protocol::types::{
     Public, SignatureComponents, SignedTransaction, Transaction, TransactionAction,
     UnverifiedTransaction, H160, H256, U256,
 };
+
+use crate::EvmExecutor;
 
 macro_rules! exec {
     ($func: expr) => {

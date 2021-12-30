@@ -651,10 +651,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
             }
         };
 
-        Ok(hashes
-            .into_iter()
-            .map(|h| found.remove(&h))
-            .collect::<Vec<_>>())
+        Ok(hashes.iter().map(|h| found.remove(h)).collect::<Vec<_>>())
     }
 
     async fn update_latest_proof(&self, _ctx: Context, proof: Proof) -> ProtocolResult<()> {

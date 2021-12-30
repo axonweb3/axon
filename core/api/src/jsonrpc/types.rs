@@ -7,8 +7,8 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use protocol::codec::ProtocolCodec;
 use protocol::types::{
     AccessList, Block, Bloom, Bytes, Hash, Hasher, Log, Public, Receipt, SignatureComponents,
-    SignedTransaction, Transaction, TransactionAction, UnverifiedTransaction, H160, H256, H64,
-    U256, U64,
+    SignedTransaction, Transaction, TransactionAction, UnverifiedTransaction, H160, H256, U256,
+    U64,
 };
 
 #[allow(clippy::large_enum_variant)]
@@ -37,17 +37,6 @@ impl RichTransactionOrHash {
             RichTransactionOrHash::Rich(stx) => stx.transaction.hash,
         }
     }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct Web3SendTrancationRequest {
-    pub data:     Option<Bytes>,
-    pub from:     Option<H160>,
-    pub to:       Option<H160>,
-    pub gas:      U256,
-    pub gasprice: U256,
-    pub value:    Option<U256>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -129,42 +118,6 @@ impl Web3CallRequest {
                 hash:      H256::default(),
             },
             sender:      if let Some(addr) = self.address {
-                addr
-            } else {
-                H160::default()
-            },
-            public:      Some(Public::default()),
-        }
-    }
-}
-
-impl Web3SendTrancationRequest {
-    pub fn create_signedtransaction_by_web3sendtrancationrequest(&self) -> SignedTransaction {
-        SignedTransaction {
-            transaction: UnverifiedTransaction {
-                unsigned:  Transaction {
-                    nonce:                    U256::default(),
-                    max_priority_fee_per_gas: U256::default(),
-                    gas_price:                self.gasprice,
-                    gas_limit:                U256::from_str("0x1000000000").unwrap(),
-                    action:                   TransactionAction::Create,
-                    value:                    U256::default(),
-                    data:                     if let Some(dx) = &self.data {
-                        dx.clone()
-                    } else {
-                        Bytes::default()
-                    },
-                    access_list:              Vec::new(),
-                },
-                signature: Some(SignatureComponents {
-                    standard_v: 0,
-                    r:          H256::default(),
-                    s:          H256::default(),
-                }),
-                chain_id:  0x1389,
-                hash:      H256::default(),
-            },
-            sender:      if let Some(addr) = self.from {
                 addr
             } else {
                 H160::default()
