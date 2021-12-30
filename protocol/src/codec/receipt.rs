@@ -51,9 +51,9 @@ mod tests {
 
     #[test]
     fn test_receipt_codec() {
-        let block = Receipt::default();
-        let bytes = rlp::encode(&block);
+        let receipt = Receipt::default();
+        let bytes = rlp::encode(&receipt);
         let decode: Receipt = rlp::decode(bytes.as_ref()).unwrap();
-        assert_eq!(block, decode);
+        assert_eq!(receipt, decode);
     }
 }

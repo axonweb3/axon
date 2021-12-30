@@ -21,9 +21,17 @@ pub struct Receipt {
 impl Default for Receipt {
     fn default() -> Self {
         Receipt {
-            ret: ExitReason::Succeed(ExitSucceed::Stopped),
-            tx_hash: Default::default(),
-            ..Default::default()
+            tx_hash:      Default::default(),
+            block_number: Default::default(),
+            block_hash:   Default::default(),
+            tx_index:     Default::default(),
+            state_root:   Default::default(),
+            used_gas:     Default::default(),
+            logs_bloom:   Default::default(),
+            logs:         Default::default(),
+            code_address: Default::default(),
+            sender:       Default::default(),
+            ret:          ExitReason::Succeed(ExitSucceed::Stopped),
         }
     }
 }
