@@ -11,10 +11,13 @@ use protocol::{Display, ProtocolError, ProtocolErrorKind};
 #[derive(Debug, Display)]
 pub enum APIError {
     #[display(fmt = "adapter error {:?}", _0)]
-    AdapterError(String),
+    Adapter(String),
 
     #[display(fmt = "http server error {:?}", _0)]
     HttpServer(String),
+
+    #[display(fmt = "storage error {:?}", _0)]
+    Storage(String),
 }
 
 impl Error for APIError {}

@@ -1,12 +1,11 @@
 use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
-use crate::types::{ExecutorContext, ExitReason, Hash, Log, TxResp, H160, H256, U256};
+use crate::types::{ExecutorContext, Log, TxResp, H160, H256, U256};
 
 impl Encodable for TxResp {
     fn rlp_append(&self, s: &mut RlpStream) {
-        let reason = bincode::serialize(&self.remain_gas).unwrap();
         s.begin_list(6)
-            .append(&reason)
+            .append(&bincode::serialize(&self.exit_reason).unwrap())
             .append(&self.ret)
             .append(&self.gas_used)
             .append(&self.remain_gas)
@@ -18,25 +17,18 @@ impl Encodable for TxResp {
 impl Decodable for TxResp {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
-            Prototype::List(6) => {
-                let tmp: Vec<u8> = r.val_at(0)?;
-                let exit_reason: ExitReason = bincode::deserialize(&tmp)
-                    .map_err(|_| DecoderError::Custom("field exit reason"))?;
-                let ret: Vec<u8> = r.val_at(1)?;
-                let gas_used: u64 = r.val_at(2)?;
-                let remain_gas: u64 = r.val_at(3)?;
-                let logs: Vec<Log> = r.list_at(4)?;
-                let code_address: Option<Hash> = r.val_at(5)?;
-
-                Ok(TxResp {
-                    exit_reason,
-                    ret,
-                    gas_used,
-                    remain_gas,
-                    logs,
-                    code_address,
-                })
-            }
+            Prototype::List(6) => Ok(TxResp {
+                exit_reason:  {
+                    let tmp: Vec<u8> = r.val_at(0)?;
+                    bincode::deserialize(&tmp)
+                        .map_err(|_| DecoderError::Custom("field exit reason"))?
+                },
+                ret:          r.val_at(1)?,
+                gas_used:     r.val_at(2)?,
+                remain_gas:   r.val_at(3)?,
+                logs:         r.list_at(4)?,
+                code_address: r.val_at(5)?,
+            }),
             _ => Err(DecoderError::RlpExpectedToBeList),
         }
     }
@@ -62,7 +54,7 @@ impl Encodable for ExecutorContext {
 impl Decodable for ExecutorContext {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
-            Prototype::List(10) => {
+            Prototype::List(11) => {
                 let block_number: U256 = r.val_at(0)?;
                 let block_hash: H256 = r.val_at(1)?;
                 let block_coinbase: H160 = r.val_at(2)?;
@@ -91,5 +83,18 @@ impl Decodable for ExecutorContext {
             }
             _ => Err(DecoderError::RlpExpectedToBeList),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_exec_ctx_codec() {
+        let exec_ctx = ExecutorContext::default();
+        let bytes = rlp::encode(&exec_ctx);
+        let decode: ExecutorContext = rlp::decode(bytes.as_ref()).unwrap();
+        assert_eq!(exec_ctx, decode);
     }
 }

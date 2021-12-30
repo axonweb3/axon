@@ -1,5 +1,5 @@
 pub use ethereum::{AccessList, AccessListItem, Account};
-pub use evm::{backend::Log, Config, ExitReason};
+pub use evm::{backend::Log, Config, ExitError, ExitFatal, ExitReason, ExitRevert, ExitSucceed};
 
 use crate::codec::ProtocolCodec;
 use crate::types::{Hash, Hasher, Header, MerkleRoot, H160, U256};

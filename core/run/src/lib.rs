@@ -124,7 +124,7 @@ impl Axon {
         let distribute_address = Address::from_hex("0x35e70c3f5a794a77efc2ec5ba964bffcc7fd2c0a")?;
         let distribute_account = Account {
             nonce:        0u64.into(),
-            balance:      320000011u64.into(),
+            balance:      32000001100000000000u128.into(),
             storage_root: RLP_NULL,
             code_hash:    NIL_DATA,
         };

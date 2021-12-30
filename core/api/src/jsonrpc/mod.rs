@@ -1,15 +1,18 @@
 mod r#impl;
-mod types;
+mod web3_types;
 
-use jsonrpsee::http_server::{HttpServerBuilder, HttpServerHandle};
-use jsonrpsee::{core::Error, proc_macros::rpc};
+use jsonrpsee::{
+    http_server::{HttpServerBuilder, HttpServerHandle},
+    proc_macros::rpc,
+    types::Error,
+};
 
 use common_config_parser::types::ConfigApi;
 use protocol::traits::{MemPool, Storage};
-use protocol::types::{BlockNumber, Bytes, SignedTransaction, H160, H256, U256};
+use protocol::types::{Bytes, SignedTransaction, H160, H256, U256};
 use protocol::ProtocolResult;
 
-use crate::jsonrpc::types::{BlockId, CallRequest, Web3Block};
+use crate::jsonrpc::web3_types::{BlockId, Web3Block, Web3CallRequest, Web3Receipt};
 use crate::{adapter::DefaultAPIAdapter, APIError};
 
 type RpcResult<T> = Result<T, Error>;
@@ -33,19 +36,37 @@ pub trait AxonJsonRpc {
     ) -> RpcResult<Option<Web3Block>>;
 
     #[method(name = "eth_blockNumber")]
-    async fn block_number(&self) -> RpcResult<BlockNumber>;
+    async fn block_number(&self) -> RpcResult<U256>;
 
     #[method(name = "eth_getTransactionCount")]
     async fn get_transaction_count(&self, address: H160, number: BlockId) -> RpcResult<U256>;
 
     #[method(name = "eth_getBalance")]
-    async fn get_balance(&self, address: H160, number: Option<BlockId>) -> RpcResult<U256>;
+    async fn get_balance(&self, address: H160, number: BlockId) -> RpcResult<U256>;
+
+    #[method(name = "eth_call")]
+    async fn call(&self, req: Web3CallRequest, number: BlockId) -> RpcResult<Bytes>;
+
+    #[method(name = "eth_estimateGas")]
+    async fn estimate_gas(&self, req: Web3CallRequest, number: Option<BlockId>) -> RpcResult<U256>;
 
     #[method(name = "eth_chainId")]
     async fn chain_id(&self) -> RpcResult<U256>;
 
-    #[method(name = "eth_estimateGas")]
-    async fn estimate_gas(&self, req: CallRequest, number: Option<BlockId>) -> RpcResult<U256>;
+    #[method(name = "net_version")]
+    async fn net_version(&self) -> RpcResult<U256>;
+
+    #[method(name = "eth_getCode")]
+    async fn get_code(&self, address: H160, number: BlockId) -> RpcResult<Bytes>;
+
+    #[method(name = "eth_getTransactionReceipt")]
+    async fn get_transaction_receipt(&self, hash: H256) -> RpcResult<Option<Web3Receipt>>;
+
+    #[method(name = "net_listening")]
+    async fn listening(&self) -> RpcResult<bool>;
+
+    #[method(name = "eth_gasPrice")]
+    async fn gas_price(&self) -> RpcResult<U256>;
 }
 
 pub fn run_http_server<M, S, DB>(

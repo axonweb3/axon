@@ -43,7 +43,7 @@ fn test_storage_receipts_insert() {
     }
 
     exec!(storage.insert_receipts(Context::new(), height, receipts.clone()));
-    let receipts_2 = exec!(storage.get_receipts(Context::new(), height, hashes));
+    let receipts_2 = exec!(storage.get_receipts(Context::new(), height, &hashes));
 
     for i in 0..1 {
         assert_eq!(

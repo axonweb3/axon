@@ -1,8 +1,9 @@
-use async_trait::async_trait;
-
 use crate::traits::Context;
-use crate::types::{Account, Block, BlockNumber, Hash, Header, Receipt, SignedTransaction, H160};
+use crate::types::{
+    Account, Block, BlockNumber, Bytes, Hash, Header, Receipt, SignedTransaction, TxResp, H160,
+};
 use crate::ProtocolResult;
+use async_trait::async_trait;
 
 #[async_trait]
 pub trait APIAdapter: Send + Sync {
@@ -18,7 +19,7 @@ pub trait APIAdapter: Send + Sync {
         height: Option<u64>,
     ) -> ProtocolResult<Option<Block>>;
 
-    async fn get_block_header_by_height(
+    async fn get_block_header_by_number(
         &self,
         ctx: Context,
         height: Option<u64>,
@@ -30,13 +31,25 @@ pub trait APIAdapter: Send + Sync {
         tx_hash: Hash,
     ) -> ProtocolResult<Option<Receipt>>;
 
+    async fn get_receipts_by_hashes(
+        &self,
+        ctx: Context,
+        block_number: u64,
+        tx_hashes: &[Hash],
+    ) -> ProtocolResult<Vec<Option<Receipt>>>;
+
     async fn get_transaction_by_hash(
         &self,
         ctx: Context,
         tx_hash: Hash,
     ) -> ProtocolResult<Option<SignedTransaction>>;
 
-    async fn get_latest_block(&self, ctx: Context) -> ProtocolResult<Block>;
+    async fn get_transactions_by_hashes(
+        &self,
+        ctx: Context,
+        block_number: u64,
+        tx_hashes: &[Hash],
+    ) -> ProtocolResult<Vec<Option<SignedTransaction>>>;
 
     async fn get_account(
         &self,
@@ -44,4 +57,14 @@ pub trait APIAdapter: Send + Sync {
         address: H160,
         number: Option<BlockNumber>,
     ) -> ProtocolResult<Account>;
+
+    async fn evm_call(
+        &self,
+        ctx: Context,
+        address: H160,
+        data: Vec<u8>,
+        header: Header,
+    ) -> ProtocolResult<TxResp>;
+
+    async fn get_code_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>>;
 }

@@ -15,6 +15,8 @@ use protocol::types::{
 pub use crate::adapter::{EVMExecutorAdapter, MPTTrie, RocksTrieDB};
 
 pub mod adapter;
+#[cfg(test)]
+mod tests;
 
 #[derive(Default)]
 pub struct EvmExecutor;
@@ -97,7 +99,7 @@ impl Executor for EvmExecutor {
 }
 
 impl EvmExecutor {
-    pub fn inner_exec<B: Backend + ApplyBackend>(
+    fn inner_exec<B: Backend + ApplyBackend>(
         &self,
         backend: &mut B,
         tx: SignedTransaction,

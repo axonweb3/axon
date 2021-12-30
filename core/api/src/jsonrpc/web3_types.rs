@@ -5,7 +5,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use protocol::codec::ProtocolCodec;
 use protocol::types::{
-    AccessList, Block, Bloom, Bytes, Hash, Hasher, Public, Receipt, SignedTransaction,
+    AccessList, Block, Bloom, Bytes, Hash, Hasher, Log, Public, Receipt, SignedTransaction,
     TransactionAction, H160, H256, U256, U64,
 };
 
@@ -33,6 +33,50 @@ impl RichTransactionOrHash {
         match self {
             RichTransactionOrHash::Hash(hash) => *hash,
             RichTransactionOrHash::Rich(stx) => stx.transaction.hash,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct Web3Receipt {
+    pub block_number:        u64,
+    pub block_hash:          H256,
+    pub contract_address:    Option<H256>,
+    pub cumulative_gas_used: U256,
+    pub effective_gas_price: U256,
+    pub from:                H160,
+    pub gas_used:            U256,
+    pub logs:                Vec<Log>,
+    pub logs_bloom:          Bloom,
+    #[serde(rename = "root")]
+    pub state_root:          Hash,
+    pub status:              U256,
+    pub to:                  Option<H160>,
+    pub transaction_hash:    Hash,
+    pub transaction_index:   Option<U256>,
+    #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
+    pub transaction_type:    Option<U64>,
+}
+
+impl Web3Receipt {
+    pub fn new(receipt: Receipt, stx: SignedTransaction) -> Web3Receipt {
+        Web3Receipt {
+            block_number:        receipt.block_number,
+            block_hash:          receipt.block_hash,
+            contract_address:    receipt.code_address,
+            cumulative_gas_used: receipt.used_gas,
+            effective_gas_price: receipt.used_gas,
+            from:                receipt.sender,
+            status:              receipt.status(),
+            gas_used:            receipt.used_gas,
+            logs:                receipt.logs,
+            logs_bloom:          receipt.logs_bloom,
+            state_root:          receipt.state_root,
+            to:                  stx.get_to(),
+            transaction_hash:    receipt.tx_hash,
+            transaction_index:   Some(receipt.tx_index.into()),
+            transaction_type:    Some(0x02u64.into()),
         }
     }
 }
@@ -177,18 +221,18 @@ pub enum TransactionCondition {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
-pub struct CallRequest {
+pub struct Web3CallRequest {
     #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
     pub transaction_type:         Option<U64>,
-    pub from:                     Option<H160>,
-    pub to:                       Option<H160>,
+    pub from:                     H160,
+    pub to:                       H160,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub gas_price:                Option<U256>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_fee_per_gas:          Option<U256>,
     pub gas:                      Option<U256>,
     pub value:                    Option<U256>,
-    pub data:                     Option<Bytes>,
+    pub data:                     Bytes,
     pub nonce:                    Option<U256>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub access_list:              Option<AccessList>,
@@ -205,6 +249,15 @@ pub enum BlockId {
 impl Default for BlockId {
     fn default() -> Self {
         BlockId::Latest
+    }
+}
+
+impl From<BlockId> for Option<u64> {
+    fn from(id: BlockId) -> Self {
+        match id {
+            BlockId::Num(num) => Some(num),
+            BlockId::Latest => None,
+        }
     }
 }
 

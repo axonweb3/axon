@@ -2,20 +2,14 @@ use std::collections::BTreeMap;
 use std::str::FromStr;
 
 use evm::backend::{MemoryAccount, MemoryBackend, MemoryVicinity};
-use evm::{ExitReason, ExitSucceed};
 
-use core_executor::EvmExecutor;
 use protocol::traits::Executor;
 use protocol::types::{
-    Public, SignatureComponents, SignedTransaction, Transaction, TransactionAction,
-    UnverifiedTransaction, H160, H256, U256,
+    ExitReason, ExitSucceed, Public, SignatureComponents, SignedTransaction, Transaction,
+    TransactionAction, UnverifiedTransaction, H160, H256, U256,
 };
 
-macro_rules! exec {
-    ($func: expr) => {
-        futures::executor::block_on(async { $func })
-    };
-}
+use crate::EvmExecutor;
 
 fn gen_vicinity() -> MemoryVicinity {
     MemoryVicinity {
@@ -88,7 +82,7 @@ fn test_ackermann31() {
         H160::from_str("0x1000000000000000000000000000000000000000").unwrap(),
         hex::decode("2839e92800000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000001").unwrap()
     );
-    let r = exec!(executor.inner_exec(&mut backend, tx));
+    let r = executor.inner_exec(&mut backend, tx);
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Returned));
     assert_eq!(r.ret, vec![
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -136,7 +130,7 @@ fn test_simplestorage() {
         hex::decode(simplestorage_create_code).unwrap(),
     );
     tx.transaction.unsigned.action = TransactionAction::Create;
-    let r = exec!(executor.inner_exec(&mut backend, tx));
+    let r = executor.inner_exec(&mut backend, tx);
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Returned));
     assert!(r.ret.is_empty());
     assert_eq!(r.remain_gas, 18446744073709450374);
@@ -152,7 +146,7 @@ fn test_simplestorage() {
         hex::decode("60fe47b1000000000000000000000000000000000000000000000000000000000000002a")
             .unwrap(),
     );
-    let r = exec!(executor.inner_exec(&mut backend, tx));
+    let r = executor.inner_exec(&mut backend, tx);
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Stopped));
     assert!(r.ret.is_empty());
     assert_eq!(r.remain_gas, 18446744073709508106);
@@ -163,7 +157,7 @@ fn test_simplestorage() {
         H160::from_str("0x1334d12e187d9aa97ea520fdd100c5d4f867ade0").unwrap(),
         hex::decode("6d4ce63c").unwrap(),
     );
-    let r = exec!(executor.inner_exec(&mut backend, tx));
+    let r = executor.inner_exec(&mut backend, tx);
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Returned));
     assert_eq!(r.ret, vec![
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -172,11 +166,11 @@ fn test_simplestorage() {
     assert_eq!(r.remain_gas, 18446744073709528227);
 
     // let's call SimpleStorage.get() by call
-    let r = exec!(executor.call(
+    let r = executor.call(
         &mut backend,
         H160::from_str("0x1334d12e187d9aa97ea520fdd100c5d4f867ade0").unwrap(),
         hex::decode("6d4ce63c").unwrap(),
-    ));
+    );
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Returned));
     assert_eq!(r.ret, vec![
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

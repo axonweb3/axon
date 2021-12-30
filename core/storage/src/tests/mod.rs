@@ -13,8 +13,8 @@ use rand::random;
 
 use protocol::types::Bytes;
 use protocol::types::{
-    Block, Hash, Hasher, Header, Proof, Receipt, SignatureComponents, SignedTransaction,
-    Transaction, TransactionAction, UnverifiedTransaction,
+    Block, ExitReason, ExitSucceed, Hash, Hasher, Header, Proof, Receipt, SignatureComponents,
+    SignedTransaction, Transaction, TransactionAction, UnverifiedTransaction,
 };
 
 const _ADDRESS_STR: &str = "0xCAB8EEA4799C21379C20EF5BAA2CC8AF1BEC475B";
@@ -59,6 +59,8 @@ fn mock_receipt(hash: Hash) -> Receipt {
         logs_bloom:   Default::default(),
         logs:         vec![],
         code_address: None,
+        sender:       Default::default(),
+        ret:          ExitReason::Succeed(ExitSucceed::Stopped),
     }
 }
 
