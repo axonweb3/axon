@@ -796,6 +796,7 @@ pub fn generate_receipts_and_logs(
             logs_bloom: Bloom::from(BloomInput::Raw(rlp::encode_list(&res.logs).as_ref())),
             logs: res.logs.clone(),
             code_address: res.code_address,
+            sender: tx.sender,
         })
         .collect::<Vec<_>>();
     let logs = receipts.iter().map(|r| r.logs_bloom).collect::<Vec<_>>();

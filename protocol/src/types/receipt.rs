@@ -1,4 +1,4 @@
-use crate::types::{Bloom, Hash, MerkleRoot, U256};
+use crate::types::{Bloom, Hash, MerkleRoot, H160, U256};
 pub use ethereum::Log;
 pub use ethereum_types::BloomInput;
 
@@ -13,4 +13,5 @@ pub struct Receipt {
     pub logs_bloom:   Bloom,
     pub logs:         Vec<Log>,
     pub code_address: Option<Hash>,
+    pub sender:       H160,
 }

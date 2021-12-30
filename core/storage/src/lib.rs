@@ -582,7 +582,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         &self,
         _ctx: Context,
         block_height: u64,
-        hashes: Vec<Hash>,
+        hashes: &[Hash],
     ) -> ProtocolResult<Vec<Option<Receipt>>> {
         let key_prefix = CommonPrefix::new(block_height);
         let mut found = Vec::with_capacity(hashes.len());

@@ -50,13 +50,12 @@ pub struct Web3SendTrancationRequest {
     pub value:    Option<U256>,
 }
 
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Web3EstimateRequst {
-    pub from: Option<H160>,
-    pub value:      U256,
-    pub data:    Option<Bytes>,
+    pub from:  Option<H160>,
+    pub value: U256,
+    pub data:  Option<Bytes>,
 }
 
 impl Web3EstimateRequst {
@@ -69,7 +68,7 @@ impl Web3EstimateRequst {
                     gas_price:                U256::default(),
                     gas_limit:                U256::from_str("0x1000000000").unwrap(),
                     action:                   TransactionAction::Call(H160::default()),
-                    value:                     self.value,
+                    value:                    self.value,
                     data:                     if let Some(dx) = &self.data {
                         dx.clone()
                     } else {
@@ -94,8 +93,6 @@ impl Web3EstimateRequst {
         }
     }
 }
-
-
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -179,7 +176,7 @@ impl Web3SendTrancationRequest {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
-pub struct Web3TransactionReceipt {
+pub struct Web3Receipt {
     pub block_number:        u64,
     pub block_hash:          H256,
     pub contract_address:    Option<H256>,
@@ -189,6 +186,8 @@ pub struct Web3TransactionReceipt {
     pub gas_used:            U256,
     pub logs:                Vec<Log>,
     pub logs_bloom:          Bloom,
+    #[serde(rename = "root")]
+    pub state_root:          Hash,
     pub status:              U256,
     pub to:                  Option<H160>,
     pub transaction_hash:    Hash,
@@ -197,9 +196,9 @@ pub struct Web3TransactionReceipt {
     pub transaction_type:    Option<U64>,
 }
 
-impl Web3TransactionReceipt {
-    pub fn create_new(receipt: Receipt, tx: SignedTransaction) -> Web3TransactionReceipt {
-        Web3TransactionReceipt {
+impl Web3Receipt {
+    pub fn new(receipt: Receipt, tx: SignedTransaction) -> Web3Receipt {
+        Web3Receipt {
             block_number:        receipt.block_number,
             block_hash:          receipt.block_hash,
             contract_address:    receipt.code_address,
@@ -209,6 +208,7 @@ impl Web3TransactionReceipt {
             gas_used:            receipt.used_gas,
             logs:                receipt.logs,
             logs_bloom:          receipt.logs_bloom,
+            state_root:          receipt.state_root,
             status:              U256::one(),
             to:                  if let TransactionAction::Call(to) = tx.transaction.unsigned.action
             {
@@ -216,7 +216,7 @@ impl Web3TransactionReceipt {
             } else {
                 None
             },
-            transaction_hash:    tx.transaction.hash,
+            transaction_hash:    receipt.tx_hash,
             transaction_index:   Some(receipt.tx_index.into()),
             transaction_type:    None,
         }

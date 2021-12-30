@@ -106,7 +106,7 @@ pub trait Storage: CommonStorage {
         &self,
         ctx: Context,
         block_height: u64,
-        hashes: Vec<Hash>,
+        hashes: &[Hash],
     ) -> ProtocolResult<Vec<Option<Receipt>>>;
 
     async fn update_latest_proof(&self, ctx: Context, proof: Proof) -> ProtocolResult<()>;

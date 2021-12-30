@@ -59,6 +59,7 @@ fn mock_receipt(hash: Hash) -> Receipt {
         logs_bloom:   Default::default(),
         logs:         vec![],
         code_address: None,
+        sender:       Default::default(),
     }
 }
 

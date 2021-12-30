@@ -4,7 +4,7 @@ use crate::types::Receipt;
 
 impl Encodable for Receipt {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(9)
+        s.begin_list(10)
             .append(&self.tx_hash)
             .append(&self.block_number)
             .append(&self.block_hash)
@@ -13,14 +13,15 @@ impl Encodable for Receipt {
             .append(&self.used_gas)
             .append(&self.logs_bloom)
             .append_list(&self.logs)
-            .append(&self.code_address);
+            .append(&self.code_address)
+            .append(&self.sender);
     }
 }
 
 impl Decodable for Receipt {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
-            Prototype::List(9) => Ok(Receipt {
+            Prototype::List(10) => Ok(Receipt {
                 tx_hash:      r.val_at(0)?,
                 block_number: r.val_at(1)?,
                 block_hash:   r.val_at(2)?,
@@ -30,6 +31,7 @@ impl Decodable for Receipt {
                 logs_bloom:   r.val_at(6)?,
                 logs:         r.list_at(7)?,
                 code_address: r.val_at(8)?,
+                sender:       r.val_at(9)?,
             }),
             _ => Err(DecoderError::RlpExpectedToBeList),
         }

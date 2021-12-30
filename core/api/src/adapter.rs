@@ -99,12 +99,34 @@ where
         self.storage.get_receipt_by_hash(ctx, tx_hash).await
     }
 
+    async fn get_receipts_by_hashes(
+        &self,
+        ctx: Context,
+        block_number: u64,
+        tx_hashes: &[Hash],
+    ) -> ProtocolResult<Vec<Option<Receipt>>> {
+        self.storage
+            .get_receipts(ctx, block_number, tx_hashes)
+            .await
+    }
+
     async fn get_transaction_by_hash(
         &self,
         ctx: Context,
         tx_hash: Hash,
     ) -> ProtocolResult<Option<SignedTransaction>> {
         self.storage.get_transaction_by_hash(ctx, &tx_hash).await
+    }
+
+    async fn get_transactions_by_hashes(
+        &self,
+        ctx: Context,
+        block_number: u64,
+        tx_hashes: &[Hash],
+    ) -> ProtocolResult<Vec<Option<SignedTransaction>>> {
+        self.storage
+            .get_transactions(ctx, block_number, tx_hashes)
+            .await
     }
 
     async fn get_latest_block(&self, ctx: Context) -> ProtocolResult<Block> {
