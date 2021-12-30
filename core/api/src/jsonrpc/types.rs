@@ -166,7 +166,7 @@ impl Web3Receipt {
             to:                  stx.get_to(),
             transaction_hash:    receipt.tx_hash,
             transaction_index:   Some(receipt.tx_index.into()),
-            transaction_type:    None,
+            transaction_type:    Some(0x02u64.into()),
         }
     }
 }
