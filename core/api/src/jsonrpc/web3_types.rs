@@ -40,9 +40,9 @@ impl RichTransactionOrHash {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Web3Receipt {
-    pub block_number:        u64,
+    pub block_number:        U256,
     pub block_hash:          H256,
-    pub contract_address:    Option<H256>,
+    pub contract_address:    Option<H160>,
     pub cumulative_gas_used: U256,
     pub effective_gas_price: U256,
     pub from:                H160,
@@ -62,9 +62,9 @@ pub struct Web3Receipt {
 impl Web3Receipt {
     pub fn new(receipt: Receipt, stx: SignedTransaction) -> Web3Receipt {
         Web3Receipt {
-            block_number:        receipt.block_number,
+            block_number:        receipt.block_number.into(),
             block_hash:          receipt.block_hash,
-            contract_address:    receipt.code_address,
+            contract_address:    receipt.code_address.map(Into::into),
             cumulative_gas_used: receipt.used_gas,
             effective_gas_price: receipt.used_gas,
             from:                receipt.sender,

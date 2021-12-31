@@ -300,7 +300,7 @@ where
         if let Some(c) = code {
             let new_code_hash = Hasher::digest(&c);
             if new_code_hash != old_account.code_hash {
-                let code_address = code_address(&address, &new_code_hash);
+                let code_address = code_address(&address, &H256::default(), &new_code_hash);
 
                 let _ = blocking_async!(
                     self,

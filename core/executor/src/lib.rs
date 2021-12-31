@@ -150,6 +150,7 @@ impl EvmExecutor {
             if tx.transaction.unsigned.action == TransactionAction::Create {
                 Some(code_address(
                     &tx.sender,
+                    &H256::default(),
                     &Hasher::digest(tx.transaction.unsigned.data.as_ref()),
                 ))
             } else {
@@ -170,7 +171,7 @@ impl EvmExecutor {
     }
 }
 
-pub fn code_address(sender: &H160, code_hash: &Hash) -> H256 {
+pub fn code_address(sender: &H160, _salt: &H256, code_hash: &Hash) -> H256 {
     let mut encode = vec![0xff];
     encode.extend_from_slice(sender.as_bytes());
     encode.extend_from_slice(H256::default().as_bytes());
