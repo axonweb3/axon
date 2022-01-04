@@ -8,9 +8,10 @@ edition = "2021"
 [dependencies]
 arc-swap = "1.5"
 cita_trie = "3.0"
-dashmap = "5.0"
+dashmap = { version = "5.0", features = ["rayon"] }
 futures = { version = "0.3", features = [ "async-await" ] }
 hex = "0.4"
+indexmap = { version = "1.7", features = ["rayon"] }
 lazy_static = "1.4"
 log = "0.4"
 rayon = "1.5"
@@ -24,6 +25,6 @@ common-crypto = { path = "../../common/crypto" }
 core-executor = { path = "../../core/executor" }
 
 [dev-dependencies]
-dashmap = "5.0"
+criterion = { version = "0.3", features = ["async_tokio"] }
 parking_lot = "0.11"
 rand = "0.7"

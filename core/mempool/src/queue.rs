@@ -4,6 +4,7 @@ use protocol::types::U256;
 
 use crate::tx_map::TxPtr;
 
+#[derive(Clone)]
 pub struct SenderTxQueue(BTreeMap<U256, TxPtr>);
 
 impl SenderTxQueue {

@@ -820,9 +820,11 @@ dependencies = [
  "common-apm",
  "common-crypto",
  "core-executor",
+ "criterion",
  "dashmap",
  "futures",
  "hex",
+ "indexmap",
  "lazy_static",
  "log",
  "parking_lot",
@@ -933,6 +935,7 @@ dependencies = [
  "clap 2.34.0",
  "criterion-plot",
  "csv",
+ "futures",
  "itertools",
  "lazy_static",
  "num-traits",
@@ -945,6 +948,7 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "tinytemplate",
+ "tokio 1.15.0",
  "walkdir",
 ]
 
@@ -1097,6 +1101,7 @@ dependencies = [
  "cfg-if",
  "num_cpus",
  "parking_lot",
+ "rayon",
 ]
 
 [[package]]
@@ -1785,6 +1790,7 @@ checksum = "bc633605454125dec4b66843673f01c7df2b89479b32e0ed634e43a91cff62a5"
 dependencies = [
  "autocfg",
  "hashbrown",
+ "rayon",
  "serde",
 ]
 
