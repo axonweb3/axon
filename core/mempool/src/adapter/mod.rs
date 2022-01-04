@@ -282,6 +282,10 @@ where
             return Err(AdapterError::VerifySignature("missing signature".to_string()).into());
         }
 
+        if stx.public.is_none() {
+            return Err(AdapterError::VerifySignature("missing public key".to_string()).into());
+        }
+
         let fixed_bytes = stx.transaction.encode()?;
         let tx_hash = stx.transaction.hash;
 
@@ -326,15 +330,12 @@ where
                     TrustFeedback::Worse(format!("Mempool wrong chain of tx {:?}", tx_hash)),
                 );
             }
+            let wrong_chain_id = MemPoolError::WrongChain { tx_hash };
 
-            return Err(MemPoolError::WrongChain { tx_hash }.into());
+            return Err(wrong_chain_id.into());
         }
 
         // Verify signature
-        if stx.public.is_none() {
-            return Err(MemPoolError::MissingPublicKey.into());
-        }
-
         Secp256k1Recoverable::verify_signature(
             stx.transaction.signature_hash().as_bytes(),
             stx.transaction

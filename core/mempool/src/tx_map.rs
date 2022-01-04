@@ -2,16 +2,15 @@ use std::sync::Arc;
 
 use dashmap::DashMap;
 use parking_lot::RwLock;
+use rayon::prelude::*;
 
-use protocol::types::{Hash, SignedTransaction, H160};
+use protocol::types::{Hash, SignedTransaction, H160, U256};
 use protocol::{traits::MixedTxHashes, ProtocolResult};
 
-use crate::MemPoolError;
-
-pub type TxPtr = Arc<SignedTransaction>;
+use crate::{queue::SenderTxQueue, MemPoolError};
 
 pub struct TxMap {
-    sender_map: DashMap<H160, TxPtr>,
+    sender_map: DashMap<H160, SenderTxQueue>,
     hash_map:   DashMap<Hash, TxPtr>,
     capacity:   usize,
 
@@ -30,10 +29,7 @@ impl TxMap {
     }
 
     pub fn get_by_hash(&self, hash: &Hash) -> Option<SignedTransaction> {
-        self.hash_map.get(hash).map(|tx| {
-            let tx_ptr = Arc::clone(&tx);
-            unsafe { (&*Arc::into_raw(tx_ptr)).clone() }
-        })
+        self.hash_map.get(hash).map(|tx| tx.stx.clone())
     }
 
     pub fn len(&self) -> usize {
@@ -58,7 +54,7 @@ impl TxMap {
         }
 
         let _lock = self.lock.read();
-        if self.sender_map.len() >= self.capacity {
+        if self.hash_map.len() >= self.capacity {
             return Err(MemPoolError::ReachLimit {
                 pool_size: self.capacity,
             }
@@ -66,27 +62,45 @@ impl TxMap {
         }
 
         let sender = stx.sender;
-        let stx = Arc::new(stx);
-        if let Some(mut ref_kv) = self.sender_map.get_mut(&sender) {
-            if ref_kv.value().transaction.unsigned.nonce < stx.transaction.unsigned.nonce {
-                let old_tx_hash = ref_kv.value().transaction.hash;
-                *ref_kv.value_mut() = Arc::clone(&stx);
-                self.hash_map.remove(&old_tx_hash);
-                self.hash_map.insert(stx.transaction.hash, stx);
-            }
-        } else {
-            self.sender_map.insert(stx.sender, Arc::clone(&stx));
-            self.hash_map.insert(stx.transaction.hash, stx);
+        let tx_hash = stx.transaction.hash;
+        let tx_ptr = TxWrapper::from_pointee(stx);
+
+        if let Some(old_tx) = self
+            .sender_map
+            .entry(sender)
+            .or_insert_with(SenderTxQueue::new)
+            .insert(Arc::clone(&tx_ptr))
+        {
+            self.hash_map.remove(&old_tx.stx.transaction.hash);
         }
+
+        self.hash_map.insert(tx_hash, tx_ptr);
 
         Ok(())
     }
 
     pub fn remove_batch(&self, hashes: &[Hash]) {
         let _lock = self.lock.write();
-        hashes.iter().for_each(|hash| {
-            if let Some(tx) = self.hash_map.remove(hash) {
-                self.sender_map.remove(&tx.1.sender);
+
+        hashes.into_par_iter().for_each(|hash| {
+            if let Some(res) = self.hash_map.remove(hash) {
+                let sender = &res.1.stx.sender;
+
+                let residue = self
+                    .sender_map
+                    .get_mut(sender)
+                    .map(|mut queue| {
+                        queue
+                            .value_mut()
+                            .remove(&res.1.stx.transaction.unsigned.nonce);
+
+                        queue.len()
+                    })
+                    .unwrap_or_default();
+
+                if residue == 0 {
+                    self.sender_map.remove(sender);
+                }
             }
         });
     }
@@ -95,18 +109,72 @@ impl TxMap {
         let tx_num_limit = tx_num_limit as usize;
         let mut order_hashes = Vec::with_capacity(tx_num_limit);
 
+        let mut count = 0;
         let _lock = self.lock.write();
-        for (idx, ref_kv) in self.hash_map.iter().enumerate() {
-            if idx >= tx_num_limit {
+
+        loop {
+            if count >= tx_num_limit {
                 break;
             }
 
-            order_hashes.push(*ref_kv.key());
+            if let Some(hash) = self.select_tx() {
+                order_hashes.push(hash);
+                count += 1;
+            } else {
+                break;
+            }
         }
 
         MixedTxHashes {
             order_tx_hashes:   order_hashes,
             propose_tx_hashes: vec![],
         }
+    }
+
+    fn select_tx(&self) -> Option<Hash> {
+        if self.sender_map.is_empty() {
+            return None;
+        }
+
+        let res =
+            self.sender_map
+                .iter()
+                .fold((Hash::default(), U256::zero()), |(hash, fee), kv| {
+                    let first = kv.value().first();
+                    if first.max_priority_fee_per_gas > fee {
+                        (first.tx_hash, first.max_priority_fee_per_gas)
+                    } else {
+                        (hash, fee)
+                    }
+                });
+
+        Some(res.0)
+    }
+}
+
+pub type TxPtr = Arc<TxWrapper>;
+
+pub struct TxWrapper {
+    pub stx:                      SignedTransaction,
+    pub tx_hash:                  Hash,
+    pub max_priority_fee_per_gas: U256,
+}
+
+impl From<SignedTransaction> for TxWrapper {
+    fn from(stx: SignedTransaction) -> Self {
+        let max_priority_fee_per_gas = stx.transaction.unsigned.max_priority_fee_per_gas;
+        let tx_hash = stx.transaction.hash;
+
+        TxWrapper {
+            stx,
+            tx_hash,
+            max_priority_fee_per_gas,
+        }
+    }
+}
+
+impl TxWrapper {
+    pub fn from_pointee(stx: SignedTransaction) -> Arc<TxWrapper> {
+        Arc::new(stx.into())
     }
 }

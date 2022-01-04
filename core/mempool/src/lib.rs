@@ -1,8 +1,9 @@
-#![feature(test)]
+#![feature(test, map_first_last)]
 #![allow(clippy::suspicious_else_formatting, clippy::mutable_key_type)]
 
 mod adapter;
 mod context;
+mod queue;
 #[cfg(test)]
 mod tests;
 mod tx_map;
@@ -398,9 +399,6 @@ pub enum MemPoolError {
 
     #[display(fmt = "Batch transaction validation failed")]
     VerifyBatchTransactions,
-
-    #[display(fmt = "Missing public key")]
-    MissingPublicKey,
 
     #[display(fmt = "Encode transaction to JSON failed")]
     EncodeJson,
