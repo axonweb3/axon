@@ -120,7 +120,7 @@ fn mock_txs(valid_size: usize, invalid_size: usize, timeout: u64) -> Vec<SignedT
         .map(|i| {
             let priv_key = Secp256k1RecoverablePrivateKey::generate(&mut OsRng);
             let pub_key = priv_key.pub_key();
-            mock_signed_tx(&priv_key, &pub_key, timeout, i < valid_size)
+            mock_signed_tx(&priv_key, &pub_key, timeout, i as u64, i < valid_size)
         })
         .collect()
 }
@@ -267,9 +267,9 @@ async fn exec_get_full_txs(
         .unwrap()
 }
 
-fn mock_transaction() -> Transaction {
+fn mock_transaction(nonce: u64) -> Transaction {
     Transaction {
-        nonce:                    U256::one(),
+        nonce:                    nonce.into(),
         gas_limit:                U256::one(),
         max_priority_fee_per_gas: U256::one(),
         gas_price:                U256::one(),
@@ -284,9 +284,10 @@ fn mock_signed_tx(
     priv_key: &Secp256k1RecoverablePrivateKey,
     pub_key: &Secp256k1RecoverablePublicKey,
     _timeout: u64,
+    nonce: u64,
     valid: bool,
 ) -> SignedTransaction {
-    let raw = mock_transaction();
+    let raw = mock_transaction(nonce);
     let mut tx = UnverifiedTransaction {
         unsigned:  raw,
         signature: None,
