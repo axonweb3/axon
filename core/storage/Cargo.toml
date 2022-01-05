@@ -20,4 +20,3 @@ rocksdb = "0.17"
 num-traits = "0.2"
 rand = "0.7"
 hex = "0.4"
-tokio = { version = "0.2", features = ["macros", "rt-core", "rt-util", "signal", "time"]}
