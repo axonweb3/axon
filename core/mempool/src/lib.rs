@@ -3,10 +3,10 @@
 
 mod adapter;
 mod context;
-mod queue;
+mod pool;
 #[cfg(test)]
 mod tests;
-mod tx_map;
+mod tx_wrapper;
 
 pub use adapter::message::{
     MsgNewTxs, MsgPullTxs, MsgPushTxs, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
@@ -22,19 +22,19 @@ use std::time::Instant;
 
 use futures::future::try_join_all;
 
-use protocol::traits::{Context, MemPool, MemPoolAdapter, MixedTxHashes};
+use protocol::traits::{Context, MemPool, MemPoolAdapter};
 use protocol::types::{Hash, SignedTransaction, H256};
 use protocol::{async_trait, tokio, Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 use crate::context::TxContext;
-use crate::tx_map::TxMap;
+use crate::pool::PirorityPool;
 
-pub struct HashMemPool<Adapter> {
-    map:     TxMap,
+pub struct MemPoolImpl<Adapter> {
+    pool:    PirorityPool,
     adapter: Arc<Adapter>,
 }
 
-impl<Adapter> HashMemPool<Adapter>
+impl<Adapter> MemPoolImpl<Adapter>
 where
     Adapter: MemPoolAdapter + 'static,
 {
@@ -43,8 +43,8 @@ where
         adapter: Adapter,
         initial_txs: Vec<SignedTransaction>,
     ) -> Self {
-        let mempool = HashMemPool {
-            map:     TxMap::new(pool_size),
+        let mempool = MemPoolImpl {
+            pool:    PirorityPool::new(pool_size).await,
             adapter: Arc::new(adapter),
         };
 
@@ -57,8 +57,12 @@ where
         mempool
     }
 
-    pub fn map_len(&self) -> usize {
-        self.map.len()
+    pub fn len(&self) -> usize {
+        self.pool.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     pub fn get_adapter(&self) -> &Adapter {
@@ -69,7 +73,7 @@ where
         tx_hashes
             .iter()
             .filter_map(|hash| {
-                if self.map.contains(hash) {
+                if self.pool.contains(hash) {
                     None
                 } else {
                     Some(*hash)
@@ -82,15 +86,15 @@ where
         self.adapter
             .check_storage_exist(ctx.clone(), &stx.transaction.hash)
             .await?;
-        self.map.insert(stx)
+        self.pool.insert(stx)
     }
 
     async fn insert_tx(&self, ctx: Context, tx: SignedTransaction) -> ProtocolResult<()> {
         let tx = Box::new(tx);
         let tx_hash = &tx.transaction.hash;
-        if self.map.reach_limit() {
+        if self.pool.reach_limit() {
             return Err(MemPoolError::ReachLimit {
-                pool_size: self.map.pool_size(),
+                pool_size: self.pool.pool_size(),
             }
             .into());
         }
@@ -103,7 +107,7 @@ where
             .check_storage_exist(ctx.clone(), tx_hash)
             .await?;
 
-        self.map.insert(*tx.clone())?;
+        self.pool.insert(*tx.clone())?;
 
         if !ctx.is_network_origin_txs() {
             self.adapter.broadcast_tx(ctx, *tx).await?;
@@ -151,13 +155,13 @@ where
     }
 
     #[cfg(test)]
-    pub fn get_tx_cache(&self) -> &TxMap {
-        &self.map
+    pub fn get_tx_cache(&self) -> &PirorityPool {
+        &self.pool
     }
 }
 
 #[async_trait]
-impl<Adapter> MemPool for HashMemPool<Adapter>
+impl<Adapter> MemPool for MemPoolImpl<Adapter>
 where
     Adapter: MemPoolAdapter + 'static,
 {
@@ -170,17 +174,17 @@ where
         _ctx: Context,
         gas_limit: u64,
         tx_num_limit: u64,
-    ) -> ProtocolResult<MixedTxHashes> {
+    ) -> ProtocolResult<Vec<Hash>> {
         log::info!(
             "[core_mempool]: {:?} txs in map while package",
-            self.map.len(),
+            self.pool.len(),
         );
         let inst = Instant::now();
-        let txs = self.map.package(gas_limit, tx_num_limit);
+        let txs = self.pool.package(gas_limit, tx_num_limit as usize);
 
         common_apm::metrics::mempool::MEMPOOL_PACKAGE_SIZE_VEC_STATIC
             .package
-            .observe((txs.order_tx_hashes.len()) as f64);
+            .observe((txs.len()) as f64);
         common_apm::metrics::mempool::MEMPOOL_TIME_STATIC
             .package
             .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
@@ -192,9 +196,7 @@ where
             "[core_mempool]: flush mempool with {:?} tx_hashes",
             tx_hashes.len(),
         );
-        self.map.remove_batch(tx_hashes);
-
-        Ok(())
+        self.pool.flush(tx_hashes)
     }
 
     // This method is used to handle fetch signed transactions rpc request from
@@ -210,7 +212,7 @@ where
         let mut full_txs = Vec::with_capacity(len);
 
         for tx_hash in tx_hashes.iter() {
-            if let Some(tx) = self.map.get_by_hash(tx_hash) {
+            if let Some(tx) = self.pool.get_by_hash(tx_hash) {
                 full_txs.push(tx);
             } else {
                 missing_hashes.push(*tx_hash);
@@ -276,7 +278,7 @@ where
             self.verify_tx_in_parallel(ctx.clone(), tx_ptrs).await?;
 
             for signed_tx in txs.into_iter() {
-                self.map.insert(*signed_tx)?;
+                self.pool.insert(*signed_tx)?;
             }
 
             self.adapter.report_good(ctx);

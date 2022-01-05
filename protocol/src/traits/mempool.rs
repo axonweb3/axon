@@ -4,18 +4,6 @@ use creep::Context;
 use crate::types::{Hash, MerkleRoot, SignedTransaction};
 use crate::ProtocolResult;
 
-#[allow(dead_code)]
-pub struct MixedTxHashes {
-    pub order_tx_hashes:   Vec<Hash>,
-    pub propose_tx_hashes: Vec<Hash>,
-}
-
-impl MixedTxHashes {
-    pub fn clap(self) -> (Vec<Hash>, Vec<Hash>) {
-        (self.order_tx_hashes, self.propose_tx_hashes)
-    }
-}
-
 #[async_trait]
 pub trait MemPool: Send + Sync {
     async fn insert(&self, ctx: Context, tx: SignedTransaction) -> ProtocolResult<()>;
@@ -25,7 +13,7 @@ pub trait MemPool: Send + Sync {
         ctx: Context,
         cycles_limit: u64,
         tx_num_limit: u64,
-    ) -> ProtocolResult<MixedTxHashes>;
+    ) -> ProtocolResult<Vec<Hash>>;
 
     async fn flush(&self, ctx: Context, tx_hashes: &[Hash]) -> ProtocolResult<()>;
 

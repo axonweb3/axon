@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 arc-swap = "1.5"
 cita_trie = "3.0"
+crossbeam-queue = "0.3"
 dashmap = { version = "5.0", features = ["rayon"] }
 futures = { version = "0.3", features = [ "async-await" ] }
 hex = "0.4"

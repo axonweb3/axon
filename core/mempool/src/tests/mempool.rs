@@ -75,9 +75,8 @@ macro_rules! package {
             &Arc::new(new_mempool($insert * 10, $timeout_gap, CYCLE_LIMIT, MAX_TX_SIZE).await);
         let txs = mock_txs($insert, 0, $timeout);
         concurrent_insert(txs.clone(), Arc::clone(mempool)).await;
-        let mixed_tx_hashes = exec_package(Arc::clone(mempool), CYCLE_LIMIT, $tx_num_limit).await;
-        assert_eq!(mixed_tx_hashes.order_tx_hashes.len(), $expect_order);
-        assert_eq!(mixed_tx_hashes.propose_tx_hashes.len(), $expect_propose);
+        let tx_hashes = exec_package(Arc::clone(mempool), CYCLE_LIMIT, $tx_num_limit).await;
+        assert_eq!(tx_hashes.len(), $expect_order);
     };
 }
 
@@ -108,9 +107,9 @@ async fn test_flush() {
     let (remove_txs, _) = txs.split_at(123);
     let remove_hashes: Vec<Hash> = remove_txs.iter().map(|tx| tx.transaction.hash).collect();
     exec_flush(remove_hashes, Arc::clone(&mempool)).await;
-    assert_eq!(mempool.map_len(), 432);
+    assert_eq!(mempool.len(), 432);
     exec_package(Arc::clone(&mempool), CYCLE_LIMIT, TX_NUM_LIMIT).await;
-    assert_eq!(mempool.map_len(), 432);
+    assert_eq!(mempool.len(), 432);
 
     // flush absent txs
     let txs = default_mock_txs(222);

@@ -12,7 +12,7 @@ pub use consensus::{
 };
 pub use creep::{Cloneable, Context};
 pub use executor::{ApplyBackend, Backend, Executor, ExecutorAdapter};
-pub use mempool::{MemPool, MemPoolAdapter, MixedTxHashes};
+pub use mempool::{MemPool, MemPoolAdapter};
 pub use network::{
     Gossip, MessageCodec, MessageHandler, Network, PeerTag, PeerTrust, Priority, Rpc, TrustFeedback,
 };
