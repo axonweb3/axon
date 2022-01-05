@@ -140,7 +140,7 @@ where
         let code_hash = if let Some(bytes) = self.trie.get(address.as_bytes()).unwrap() {
             Account::decode(bytes).unwrap().code_hash
         } else {
-            return Vec::new();
+            return NIL_DATA;
         };
 
         if code_hash == NIL_DATA {
