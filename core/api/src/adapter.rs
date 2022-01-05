@@ -3,8 +3,8 @@ use std::sync::Arc;
 use core_executor::{EVMExecutorAdapter, EvmExecutor};
 use protocol::traits::{APIAdapter, Context, Executor, ExecutorAdapter, MemPool, Storage};
 use protocol::types::{
-    Account, Block, BlockNumber, Bytes, ExecutorContext, Hash, Header, Receipt, SignedTransaction,
-    TxResp, H160,
+    Account, Block, BlockNumber, Bytes, ExecutorContext, Hash, Header, Proposal, Receipt,
+    SignedTransaction, TxResp, H160,
 };
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
@@ -39,12 +39,14 @@ where
             .get_block_by_number(Context::new(), number)
             .await?
             .ok_or_else(|| APIError::Adapter(format!("Cannot get {:?} block", number)))?;
+        let state_root = block.header.state_root;
+        let proposal: Proposal = block.into();
 
         EVMExecutorAdapter::from_root(
-            block.header.state_root,
+            state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
-            ExecutorContext::from(block.header),
+            ExecutorContext::from(proposal),
         )
     }
 }
@@ -147,10 +149,11 @@ where
         _ctx: Context,
         address: H160,
         data: Vec<u8>,
-        mock_header: Header,
+        state_root: Hash,
+        mock_header: Proposal,
     ) -> ProtocolResult<TxResp> {
         let mut backend = EVMExecutorAdapter::from_root(
-            mock_header.state_root,
+            state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
             ExecutorContext::from(mock_header),

@@ -11,8 +11,6 @@ pub mod engine;
 pub mod message;
 pub mod status;
 pub mod synchronization;
-#[cfg(test)]
-mod tests;
 pub mod types;
 pub mod util;
 pub mod wal;
@@ -70,6 +68,22 @@ pub enum ConsensusError {
 
     #[display(fmt = "Check invalid order root, expect {:?} get {:?}", expect, actual)]
     InvalidOrderRoot {
+        expect: MerkleRoot,
+        actual: MerkleRoot,
+    },
+
+    #[display(fmt = "Check invalid state root, expect {:?} get {:?}", expect, actual)]
+    InvalidStateRoot {
+        expect: MerkleRoot,
+        actual: MerkleRoot,
+    },
+
+    #[display(
+        fmt = "Check invalid receipts root, expect {:?} get {:?}",
+        expect,
+        actual
+    )]
+    InvalidReceiptsRoot {
         expect: MerkleRoot,
         actual: MerkleRoot,
     },

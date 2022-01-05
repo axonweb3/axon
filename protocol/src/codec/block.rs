@@ -3,8 +3,64 @@ use std::error::Error;
 use overlord::Codec;
 use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
-use crate::types::{Block, Bytes, Header, Pill, Proof, Validator};
+use crate::types::{Block, Bytes, Header, Proof, Proposal, Validator};
 use crate::{codec::error::CodecError, ProtocolError};
+
+impl Encodable for Proposal {
+    fn rlp_append(&self, s: &mut RlpStream) {
+        s.begin_list(14)
+            .append(&self.prev_hash)
+            .append(&self.proposer)
+            .append(&self.transactions_root)
+            .append(&self.signed_txs_hash)
+            .append(&self.timestamp)
+            .append(&self.number)
+            .append(&self.gas_limit)
+            .append(&self.extra_data)
+            .append(&self.mixed_hash)
+            .append(&self.base_fee_per_gas)
+            .append(&self.proof)
+            .append(&self.last_checkpoint_block_hash)
+            .append(&self.chain_id)
+            .append_list(&self.tx_hashes);
+    }
+}
+
+impl Decodable for Proposal {
+    fn decode(r: &Rlp) -> Result<Self, DecoderError> {
+        match r.prototype()? {
+            Prototype::List(14) => Ok(Proposal {
+                prev_hash:                  r.val_at(0)?,
+                proposer:                   r.val_at(1)?,
+                transactions_root:          r.val_at(2)?,
+                signed_txs_hash:            r.val_at(3)?,
+                timestamp:                  r.val_at(4)?,
+                number:                     r.val_at(5)?,
+                gas_limit:                  r.val_at(6)?,
+                extra_data:                 r.val_at(7)?,
+                mixed_hash:                 r.val_at(8)?,
+                base_fee_per_gas:           r.val_at(9)?,
+                proof:                      r.val_at(10)?,
+                last_checkpoint_block_hash: r.val_at(11)?,
+                chain_id:                   r.val_at(12)?,
+                tx_hashes:                  r.list_at(13)?,
+            }),
+            _ => Err(DecoderError::RlpInconsistentLengthAndData),
+        }
+    }
+}
+
+impl Codec for Proposal {
+    fn encode(&self) -> Result<Bytes, Box<dyn Error + Send>> {
+        Ok(rlp::encode(self).freeze())
+    }
+
+    fn decode(data: Bytes) -> Result<Self, Box<dyn Error + Send>> {
+        let proposal: Proposal = rlp::decode(data.as_ref())
+            .map_err(|e| ProtocolError::from(CodecError::Rlp(e.to_string())))?;
+        Ok(proposal)
+    }
+}
 
 impl Encodable for Header {
     fn rlp_append(&self, s: &mut RlpStream) {
@@ -125,38 +181,6 @@ impl Decodable for Validator {
             }),
             _ => Err(DecoderError::RlpExpectedToBeList),
         }
-    }
-}
-
-impl Encodable for Pill {
-    fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(2)
-            .append(&self.block)
-            .append_list(&self.propose_hashes);
-    }
-}
-
-impl Decodable for Pill {
-    fn decode(r: &Rlp) -> Result<Self, DecoderError> {
-        match r.prototype()? {
-            Prototype::List(2) => Ok(Pill {
-                block:          r.val_at(0)?,
-                propose_hashes: r.list_at(1)?,
-            }),
-            _ => Err(DecoderError::RlpExpectedToBeList),
-        }
-    }
-}
-
-impl Codec for Pill {
-    fn encode(&self) -> Result<Bytes, Box<dyn Error + Send>> {
-        Ok(rlp::encode(self).freeze())
-    }
-
-    fn decode(data: Bytes) -> Result<Self, Box<dyn Error + Send>> {
-        let ret: Pill = rlp::decode(data.as_ref())
-            .map_err(|e| ProtocolError::from(CodecError::Rlp(e.to_string())))?;
-        Ok(ret)
     }
 }
 

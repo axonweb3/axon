@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use json::JsonValue;
-use log::{error, info, warn};
+use log::{error, info};
 use overlord::error::ConsensusError as OverlordError;
 use overlord::types::{Commit, Node, OverlordMsg, Status, ViewChangeReason};
 use overlord::{Consensus as Engine, Wal};
@@ -20,12 +20,10 @@ use common_merkle::Merkle;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
-    Block, BlockNumber, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, Header, MerkleRoot,
-    Metadata, Pill, Proof, Receipt, SignedTransaction, ValidatorExtend, U256,
+    Block, BlockNumber, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, MerkleRoot, Metadata,
+    Proof, Proposal, Receipt, SignedTransaction, ValidatorExtend, U256,
 };
-use protocol::{
-    async_trait, tokio, tokio::sync::Mutex as AsyncMutex, ProtocolError, ProtocolResult,
-};
+use protocol::{async_trait, tokio::sync::Mutex as AsyncMutex, ProtocolError, ProtocolResult};
 
 use crate::message::{
     END_GOSSIP_AGGREGATED_VOTE, END_GOSSIP_SIGNED_CHOKE, END_GOSSIP_SIGNED_PROPOSAL,
@@ -54,7 +52,7 @@ pub struct ConsensusEngine<Adapter> {
 }
 
 #[async_trait]
-impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapter> {
+impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<Adapter> {
     // #[muta_apm::derive::tracing_span(
     //     kind = "consensus.engine",
     //     logs = "{'next_number': 'next_number'}"
@@ -63,33 +61,27 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
         &self,
         ctx: Context,
         next_number: u64,
-    ) -> Result<(Pill, Bytes), Box<dyn Error + Send>> {
+    ) -> Result<(Proposal, Bytes), Box<dyn Error + Send>> {
         let status = self.status.inner();
-        let tx_hashes = self
+        let txs = self
             .adapter
             .get_txs_from_mempool(ctx.clone(), next_number, status.gas_limit.as_u64(), 10000)
             .await?;
-        let signed_txs = self.adapter.get_full_txs(ctx.clone(), &tx_hashes).await?;
-        let order_root = Merkle::from_hashes(tx_hashes.clone())
+        let signed_txs = self.adapter.get_full_txs(ctx.clone(), &txs).await?;
+        let order_root = Merkle::from_hashes(txs.clone())
             .get_root_hash()
             .unwrap_or_default();
 
-        let header = Header {
+        let proposal = Proposal {
             prev_hash:                  status.prev_hash,
             proposer:                   self.node_info.self_address.0,
-            state_root:                 status.state_root,
             transactions_root:          order_root,
             signed_txs_hash:            digest_signed_transactions(&signed_txs),
-            receipts_root:              status.receipts_root,
-            log_bloom:                  status.log_bloom,
-            difficulty:                 Default::default(),
             timestamp:                  time_now(),
             number:                     next_number,
-            gas_used:                   status.gas_used,
             gas_limit:                  100_000_000_000u64.into(),
             extra_data:                 Default::default(),
             mixed_hash:                 None,
-            nonce:                      Default::default(),
             base_fee_per_gas:           status.base_fee_per_gas,
             proof:                      status.proof,
             last_checkpoint_block_hash: METADATA_CONTROLER
@@ -97,27 +89,21 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
                 .current()
                 .last_checkpoint_block_hash,
             chain_id:                   self.node_info.chain_id,
+            tx_hashes:                  txs,
         };
 
-        if header.number != header.proof.number + 1 {
+        if proposal.number != proposal.proof.number + 1 {
             error!(
                 "[consensus] get_block for {}, proof error, proof number {} mismatch",
-                header.number, header.proof.number,
+                proposal.number, proposal.proof.number,
             );
         }
 
-        let block = Block { header, tx_hashes };
-
-        let pill = Pill {
-            block,
-            propose_hashes: vec![],
-        };
-
-        let hash = Hasher::digest(pill.block.header.encode()?);
+        let hash = Hasher::digest(proposal.encode()?);
         let mut set = self.exemption_hash.write();
         set.insert(hash);
 
-        Ok((pill, Bytes::from(hash.as_bytes().to_vec())))
+        Ok((proposal, Bytes::from(hash.as_bytes().to_vec())))
     }
 
     // #[muta_apm::derive::tracing_span(
@@ -131,42 +117,32 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
         ctx: Context,
         next_number: u64,
         hash: Bytes,
-        block: Pill,
+        proposal: Proposal,
     ) -> Result<(), Box<dyn Error + Send>> {
         let time = Instant::now();
 
-        if block.block.header.number != block.block.header.proof.number + 1 {
-            error!("[consensus-engine]: check_block for overlord receives a proposal, error, block number {}, block {:?}", block.block.header.number,block.block);
+        if proposal.number != proposal.proof.number + 1 {
+            error!("[consensus-engine]: check_block for overlord receives a proposal, error, block number {}, proposal {:?}", proposal.number, proposal);
         }
 
-        let tx_hashes = block.block.tx_hashes.clone();
+        let tx_hashes = proposal.tx_hashes.clone();
         let tx_hashes_len = tx_hashes.len();
         let exemption = {
             self.exemption_hash
                 .read()
                 .contains(&Hash::from_slice(hash.as_ref()))
         };
-        let sync_tx_hashes = block.propose_hashes.clone();
-        let pill = block;
 
-        gauge_txs_len(&pill);
+        gauge_txs_len(&proposal);
 
         // If the block is proposed by self, it does not need to check. Get full signed
         // transactions directly.
         if !exemption {
-            if let Err(e) = self.inner_check_block(ctx.clone(), &pill.block).await {
+            if let Err(e) = self.inner_check_block(ctx.clone(), &proposal).await {
                 let mut reason = self.last_check_block_fail_reason.write();
                 *reason = e.to_string();
                 return Err(e.into());
             }
-
-            let adapter = Arc::clone(&self.adapter);
-            let ctx_clone = ctx.clone();
-            tokio::spawn(async move {
-                if let Err(e) = sync_txs(ctx_clone, adapter, sync_tx_hashes).await {
-                    error!("Consensus sync block error {}", e);
-                }
-            });
         }
 
         info!(
@@ -182,7 +158,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
         );
         let time = Instant::now();
         self.txs_wal
-            .save(next_number, pill.block.header.transactions_root, txs)?;
+            .save(next_number, proposal.transactions_root, txs)?;
 
         info!(
             "[consensus-engine]: write wal cost {:?} tx_hashes_len {:?}",
@@ -204,7 +180,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
         &self,
         ctx: Context,
         current_number: u64,
-        commit: Commit<Pill>,
+        commit: Commit<Proposal>,
     ) -> Result<Status, Box<dyn Error + Send>> {
         let lock = self.lock.try_lock();
         if lock.is_err() {
@@ -231,12 +207,11 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             .into());
         }
 
-        let pill = commit.content;
-        let block = pill.block;
+        let proposal = commit.content;
         let block_hash = Hash::from_slice(commit.proof.block_hash.as_ref());
         let signature = commit.proof.signature.signature.clone();
         let bitmap = commit.proof.signature.address_bitmap.clone();
-        let txs_len = block.tx_hashes.len();
+        let txs_len = proposal.tx_hashes.len();
 
         // Storage save the latest proof.
         let proof = Proof {
@@ -253,22 +228,27 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
         // Get full transactions from mempool. If is error, try get from wal.
         let signed_txs = match self
             .adapter
-            .get_full_txs(ctx.clone(), &block.tx_hashes)
+            .get_full_txs(ctx.clone(), &proposal.tx_hashes)
             .await
         {
             Ok(txs) => txs,
             Err(_) => self
                 .txs_wal
-                .load(current_number, block.header.transactions_root)?,
+                .load(current_number, proposal.transactions_root)?,
         };
+
+        let last_block = self
+            .adapter
+            .get_block_by_number(ctx.clone(), proposal.number - 1)
+            .await?;
 
         // Execute transactions
         let resp = self
             .adapter
             .exec(
                 ctx.clone(),
-                Hasher::digest(block.header.encode()?),
-                &block.header,
+                last_block.header.state_root,
+                &proposal,
                 signed_txs.clone(),
             )
             .await?;
@@ -279,11 +259,11 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             metadata.verifier_list
         );
 
-        self.update_status(resp, block.clone(), proof, signed_txs)
+        self.update_status(resp, proposal.clone(), proof, signed_txs)
             .await?;
 
         self.adapter
-            .flush_mempool(ctx.clone(), &block.tx_hashes)
+            .flush_mempool(ctx.clone(), &proposal.tx_hashes)
             .await?;
 
         self.txs_wal.remove(current_number.saturating_sub(2))?;
@@ -316,7 +296,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
     async fn broadcast_to_other(
         &self,
         ctx: Context,
-        msg: OverlordMsg<Pill>,
+        msg: OverlordMsg<Proposal>,
     ) -> Result<(), Box<dyn Error + Send>> {
         let (end, msg) = match msg {
             OverlordMsg::SignedProposal(sp) => {
@@ -352,7 +332,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
         &self,
         ctx: Context,
         pub_key: Bytes,
-        msg: OverlordMsg<Pill>,
+        msg: OverlordMsg<Proposal>,
     ) -> Result<(), Box<dyn Error + Send>> {
         match msg {
             OverlordMsg::SignedVote(sv) => {
@@ -485,16 +465,16 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         METADATA_CONTROLER.load().update(block_number);
     }
 
-    async fn inner_check_block(&self, ctx: Context, block: &Block) -> ProtocolResult<()> {
+    async fn inner_check_block(&self, ctx: Context, proposal: &Proposal) -> ProtocolResult<()> {
         let current_timestamp = time_now();
 
         self.adapter
-            .verify_block_header(ctx.clone(), block)
+            .verify_block_header(ctx.clone(), proposal)
             .await
             .map_err(|e| {
                 error!(
-                    "[consensus] check_block, verify_block_header error, block header: {:?}",
-                    block.header
+                    "[consensus] check_block, verify_block_header error, proposal: {:?}",
+                    proposal
                 );
                 e
             })?;
@@ -504,13 +484,13 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         // sync and waste a delay of read
         let previous_block_header = self
             .adapter
-            .get_block_header_by_number(ctx.clone(), block.header.number - 1)
+            .get_block_header_by_number(ctx.clone(), proposal.number - 1)
             .await?;
 
         // verify block timestamp.
         if !validate_timestamp(
             current_timestamp,
-            block.header.timestamp,
+            proposal.timestamp,
             previous_block_header.timestamp,
         ) {
             return Err(ProtocolError::from(ConsensusError::InvalidTimestamp));
@@ -520,74 +500,31 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
                 .verify_proof(
                     ctx.clone(),
                     &previous_block_header,
-                    block.header.proof.clone(),
+                    proposal.proof.clone(),
                 )
                 .await
                 .map_err(|e| {
                     error!(
                         "[consensus] check_block, verify_proof error, previous block header: {:?}, proof: {:?}",
                         previous_block_header,
-                        block.header.proof
+                        proposal.proof
                     );
                     e
                 })?;
 
         self.adapter
-            .verify_txs(ctx.clone(), block.header.number, &block.tx_hashes)
+            .verify_txs(ctx.clone(), proposal.number, &proposal.tx_hashes)
             .await
             .map_err(|e| {
                 error!("[consensus] check_block, verify_txs error",);
                 e
             })?;
 
-        self.check_block_roots(ctx.clone(), &block.header)?;
-
         let signed_txs = self
             .adapter
-            .get_full_txs(ctx.clone(), &block.tx_hashes)
+            .get_full_txs(ctx.clone(), &proposal.tx_hashes)
             .await?;
-        self.check_order_transactions(ctx.clone(), block, &signed_txs)
-    }
-
-    // #[muta_apm::derive::tracing_span(kind = "consensus.engine")]
-    fn check_block_roots(&self, _ctx: Context, block: &Header) -> ProtocolResult<()> {
-        let status = self.status.inner();
-        if status.prev_hash != block.prev_hash {
-            return Err(ConsensusError::InvalidPrevhash {
-                expect: status.prev_hash,
-                actual: block.prev_hash,
-            }
-            .into());
-        }
-
-        // check state root
-        if status.state_root != block.state_root {
-            warn!(
-                "invalid status list_state_root, latest {:?}, block {:?}",
-                status.state_root, block.state_root
-            );
-            return Err(ConsensusError::InvalidStatusVec.into());
-        }
-
-        // check receipt root
-        if status.receipts_root != block.receipts_root {
-            error!(
-                "current list receipt root {:?}, block receipt root {:?}",
-                status.receipts_root, block.receipts_root
-            );
-            return Err(ConsensusError::InvalidStatusVec.into());
-        }
-
-        // check cycles used
-        if status.gas_used != block.gas_used {
-            error!(
-                "current list gased used {:?}, block gased used {:?}",
-                status.gas_used, block.gas_used
-            );
-            return Err(ConsensusError::InvalidStatusVec.into());
-        }
-
-        Ok(())
+        self.check_order_transactions(ctx.clone(), proposal, &signed_txs)
     }
 
     // #[muta_apm::derive::tracing_span(
@@ -597,27 +534,27 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
     fn check_order_transactions(
         &self,
         _ctx: Context,
-        block: &Block,
+        proposal: &Proposal,
         signed_txs: &[SignedTransaction],
     ) -> ProtocolResult<()> {
-        let order_root = Merkle::from_hashes(block.tx_hashes.clone())
+        let order_root = Merkle::from_hashes(proposal.tx_hashes.clone())
             .get_root_hash()
             .unwrap_or_default();
 
         let stxs_hash = Hasher::digest(rlp::encode_list(signed_txs));
 
-        if stxs_hash != block.header.signed_txs_hash {
+        if stxs_hash != proposal.signed_txs_hash {
             return Err(ConsensusError::InvalidOrderSignedTransactionsHash {
                 expect: stxs_hash,
-                actual: block.header.signed_txs_hash,
+                actual: proposal.signed_txs_hash,
             }
             .into());
         }
 
-        if order_root != block.header.transactions_root {
+        if order_root != proposal.transactions_root {
             return Err(ConsensusError::InvalidOrderRoot {
                 expect: order_root,
-                actual: block.header.transactions_root,
+                actual: proposal.transactions_root,
             }
             .into());
         }
@@ -634,14 +571,15 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
     pub async fn update_status(
         &self,
         resp: ExecResp,
-        block: Block,
+        proposal: Proposal,
         proof: Proof,
         txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<()> {
+        let block = Block::new(proposal, resp.clone());
         let block_number = block.header.number;
         let block_hash = Hasher::digest(block.header.encode()?);
 
-        let (receipts, logs) = generate_receipts_and_logs(
+        let (receipts, _logs) = generate_receipts_and_logs(
             block_number,
             block_hash,
             block.header.state_root,
@@ -671,11 +609,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         let new_status = CurrentStatus {
             prev_hash:        block_hash,
             last_number:      block_number,
-            state_root:       resp.state_root,
-            receipts_root:    resp.receipt_root,
-            log_bloom:        Bloom::from(BloomInput::Raw(rlp::encode_list(&logs).as_ref())),
             gas_limit:        metadata.gas_limit.into(),
-            gas_used:         resp.gas_used.into(),
             base_fee_per_gas: block.header.base_fee_per_gas,
             proof:            proof.clone(),
         };
@@ -754,14 +688,6 @@ fn convert_to_overlord_authority(validators: &[ValidatorExtend]) -> Vec<Node> {
     authority
 }
 
-async fn sync_txs<CA: ConsensusAdapter>(
-    ctx: Context,
-    adapter: Arc<CA>,
-    propose_hashes: Vec<Hash>,
-) -> ProtocolResult<()> {
-    adapter.sync_txs(ctx, propose_hashes).await
-}
-
 fn validate_timestamp(
     current_timestamp: u64,
     proposal_timestamp: u64,
@@ -808,9 +734,8 @@ pub fn generate_receipts_and_logs(
     (receipts, logs)
 }
 
-fn gauge_txs_len(pill: &Pill) {
-    common_apm::metrics::consensus::ENGINE_ORDER_TX_GAUGE.set(pill.block.tx_hashes.len() as i64);
-    common_apm::metrics::consensus::ENGINE_SYNC_TX_GAUGE.set(pill.propose_hashes.len() as i64);
+fn gauge_txs_len(proposal: &Proposal) {
+    common_apm::metrics::consensus::ENGINE_ORDER_TX_GAUGE.set(proposal.tx_hashes.len() as i64);
 }
 
 #[cfg(test)]

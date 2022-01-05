@@ -1,6 +1,7 @@
 use crate::traits::Context;
 use crate::types::{
-    Account, Block, BlockNumber, Bytes, Hash, Header, Receipt, SignedTransaction, TxResp, H160,
+    Account, Block, BlockNumber, Bytes, Hash, Header, Proposal, Receipt, SignedTransaction, TxResp,
+    H160,
 };
 use crate::ProtocolResult;
 use async_trait::async_trait;
@@ -63,7 +64,8 @@ pub trait APIAdapter: Send + Sync {
         ctx: Context,
         address: H160,
         data: Vec<u8>,
-        header: Header,
+        state_root: Hash,
+        proposal: Proposal,
     ) -> ProtocolResult<TxResp>;
 
     async fn get_code_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>>;

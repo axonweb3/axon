@@ -5,7 +5,7 @@ use bytes::Bytes;
 use creep::Context;
 
 use crate::types::{
-    Address, Block, BlockNumber, ExecResp, Hash, Header, Hex, MerkleRoot, Proof, Receipt,
+    Address, Block, BlockNumber, ExecResp, Hash, Header, Hex, MerkleRoot, Proof, Proposal, Receipt,
     SignedTransaction, Validator,
 };
 use crate::ProtocolResult;
@@ -124,8 +124,8 @@ pub trait CommonConsensusAdapter: Send + Sync {
     async fn exec(
         &self,
         ctx: Context,
-        block_hash: Hash,
-        header: &Header,
+        last_state_root: Hash,
+        proposal: &Proposal,
         signed_txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<ExecResp>;
 
@@ -149,7 +149,7 @@ pub trait CommonConsensusAdapter: Send + Sync {
         proof: Proof,
     ) -> ProtocolResult<()>;
 
-    async fn verify_block_header(&self, ctx: Context, block: &Block) -> ProtocolResult<()>;
+    async fn verify_block_header(&self, ctx: Context, block: &Proposal) -> ProtocolResult<()>;
 
     fn verify_proof_signature(
         &self,

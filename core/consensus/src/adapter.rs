@@ -15,7 +15,7 @@ use protocol::traits::{
 };
 use protocol::types::{
     BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Hasher, Header, Hex, MerkleRoot,
-    Pill, Proof, Receipt, SignedTransaction, Validator,
+    Proof, Proposal, Receipt, SignedTransaction, Validator,
 };
 use protocol::{async_trait, codec::ProtocolCodec, tokio::task, ProtocolResult};
 
@@ -39,7 +39,7 @@ pub struct OverlordConsensusAdapter<
     mempool:          Arc<M>,
     storage:          Arc<S>,
     trie_db:          Arc<DB>,
-    overlord_handler: RwLock<Option<OverlordHandler<Pill>>>,
+    overlord_handler: RwLock<Option<OverlordHandler<Proposal>>>,
     crypto:           Arc<OverlordCrypto>,
 }
 
@@ -345,15 +345,15 @@ where
     async fn exec(
         &self,
         _ctx: Context,
-        _block_hash: Hash,
-        header: &Header,
+        last_state_root: Hash,
+        proposal: &Proposal,
         signed_txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<ExecResp> {
         let mut backend = EVMExecutorAdapter::from_root(
-            header.state_root,
+            last_state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
-            header.clone().into(),
+            proposal.clone().into(),
         )?;
 
         Ok(task::block_in_place(|| {
@@ -392,38 +392,38 @@ where
 
     /// this function verify all info in header except proof and roots
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
-    async fn verify_block_header(&self, ctx: Context, block: &Block) -> ProtocolResult<()> {
+    async fn verify_block_header(&self, ctx: Context, proposal: &Proposal) -> ProtocolResult<()> {
         let previous_block_header = self
-            .get_block_header_by_number(ctx.clone(), block.header.number - 1)
+            .get_block_header_by_number(ctx.clone(), proposal.number - 1)
             .await
             .map_err(|e| {
                 log::error!(
                     "[consensus] verify_block_header, previous_block_header {} fails",
-                    block.header.number - 1,
+                    proposal.number - 1,
                 );
                 e
             })?;
 
         let previous_block_hash = Hasher::digest(previous_block_header.encode()?);
 
-        if previous_block_hash != block.header.prev_hash {
+        if previous_block_hash != proposal.prev_hash {
             log::error!(
                 "[consensus] verify_block_header, previous_block_hash: {:?}, block.header.prev_hash: {:?}",
                 previous_block_hash,
-                block.header.prev_hash
+                proposal.prev_hash
             );
             return Err(
-                ConsensusError::VerifyBlockHeader(block.header.number, PreviousBlockHash).into(),
+                ConsensusError::VerifyBlockHeader(proposal.number, PreviousBlockHash).into(),
             );
         }
 
         // the block 0 and 1 's proof is consensus-ed by community
-        if block.header.number > 1u64 && block.header.prev_hash != block.header.proof.block_hash {
+        if proposal.number > 1u64 && proposal.prev_hash != proposal.proof.block_hash {
             log::error!(
-                "[consensus] verify_block_header, verifying_block header : {:?}",
-                block.header
+                "[consensus] verify_block_header, verifying proposal: {:?}",
+                proposal
             );
-            return Err(ConsensusError::VerifyBlockHeader(block.header.number, ProofHash).into());
+            return Err(ConsensusError::VerifyBlockHeader(proposal.number, ProofHash).into());
         }
 
         Ok(())
@@ -636,7 +636,7 @@ where
         })
     }
 
-    pub fn set_overlord_handler(&self, handler: OverlordHandler<Pill>) {
+    pub fn set_overlord_handler(&self, handler: OverlordHandler<Proposal>) {
         *self.overlord_handler.write() = Some(handler)
     }
 }
