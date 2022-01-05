@@ -75,6 +75,7 @@ macro_rules! package {
             &Arc::new(new_mempool($insert * 10, $timeout_gap, CYCLE_LIMIT, MAX_TX_SIZE).await);
         let txs = mock_txs($insert, 0, $timeout);
         concurrent_insert(txs.clone(), Arc::clone(mempool)).await;
+        protocol::tokio::time::sleep(std::time::Duration::from_millis(100)).await;
         let tx_hashes = exec_package(Arc::clone(mempool), CYCLE_LIMIT, $tx_num_limit).await;
         assert_eq!(tx_hashes.len(), $expect_order);
     };
