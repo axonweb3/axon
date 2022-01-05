@@ -29,10 +29,10 @@ impl std::hash::Hash for Transaction {
         self.gas_limit.hash(state);
         self.value.hash(state);
         self.data.hash(state);
-        match self.action {
-            TransactionAction::Call(addr) => addr.hash(state),
-            _ => (),
-        };
+        if let TransactionAction::Call(addr) = self.action {
+            addr.hash(state);
+        }
+
         for access in self.access_list.iter() {
             access.address.hash(state);
         }
