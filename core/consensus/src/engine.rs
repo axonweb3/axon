@@ -76,24 +76,28 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             .unwrap_or_default();
 
         let header = Header {
-            prev_hash:         status.prev_hash,
-            proposer:          self.node_info.self_address.0,
-            state_root:        status.state_root,
-            transactions_root: order_root,
-            signed_txs_hash:   digest_signed_transactions(&signed_txs),
-            receipts_root:     status.receipts_root,
-            log_bloom:         status.log_bloom,
-            difficulty:        Default::default(),
-            timestamp:         time_now(),
-            number:            next_number,
-            gas_used:          status.gas_used,
-            gas_limit:         100_000_000_000u64.into(),
-            extra_data:        Default::default(),
-            mixed_hash:        None,
-            nonce:             Default::default(),
-            base_fee_per_gas:  status.base_fee_per_gas,
-            proof:             status.proof,
-            chain_id:          self.node_info.chain_id,
+            prev_hash:                  status.prev_hash,
+            proposer:                   self.node_info.self_address.0,
+            state_root:                 status.state_root,
+            transactions_root:          order_root,
+            signed_txs_hash:            digest_signed_transactions(&signed_txs),
+            receipts_root:              status.receipts_root,
+            log_bloom:                  status.log_bloom,
+            difficulty:                 Default::default(),
+            timestamp:                  time_now(),
+            number:                     next_number,
+            gas_used:                   status.gas_used,
+            gas_limit:                  100_000_000_000u64.into(),
+            extra_data:                 Default::default(),
+            mixed_hash:                 None,
+            nonce:                      Default::default(),
+            base_fee_per_gas:           status.base_fee_per_gas,
+            proof:                      status.proof,
+            last_checkpoint_block_hash: METADATA_CONTROLER
+                .load()
+                .current()
+                .last_checkpoint_block_hash,
+            chain_id:                   self.node_info.chain_id,
         };
 
         if header.number != header.proof.number + 1 {

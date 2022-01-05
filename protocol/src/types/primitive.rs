@@ -273,20 +273,22 @@ impl MetadataVersion {
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq)]
 pub struct Metadata {
-    pub chain_id:        U256,
-    pub version:         MetadataVersion,
-    pub common_ref:      Hex,
-    pub timeout_gap:     u64,
-    pub gas_limit:       u64,
-    pub gas_price:       u64,
-    pub interval:        u64,
-    pub verifier_list:   Vec<ValidatorExtend>,
-    pub propose_ratio:   u64,
-    pub prevote_ratio:   u64,
-    pub precommit_ratio: u64,
-    pub brake_ratio:     u64,
-    pub tx_num_limit:    u64,
-    pub max_tx_size:     u64,
+    pub chain_id:                   U256,
+    pub version:                    MetadataVersion,
+    pub common_ref:                 Hex,
+    pub timeout_gap:                u64,
+    pub gas_limit:                  u64,
+    pub gas_price:                  u64,
+    pub interval:                   u64,
+    pub verifier_list:              Vec<ValidatorExtend>,
+    pub propose_ratio:              u64,
+    pub prevote_ratio:              u64,
+    pub precommit_ratio:            u64,
+    pub brake_ratio:                u64,
+    pub tx_num_limit:               u64,
+    pub max_tx_size:                u64,
+    #[serde(default)]
+    pub last_checkpoint_block_hash: Hash,
 }
 
 impl From<Metadata> for DurationConfig {

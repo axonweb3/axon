@@ -8,7 +8,7 @@ use crate::{codec::error::CodecError, ProtocolError};
 
 impl Encodable for Header {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(18)
+        s.begin_list(19)
             .append(&self.prev_hash)
             .append(&self.proposer)
             .append(&self.state_root)
@@ -26,6 +26,7 @@ impl Encodable for Header {
             .append(&self.nonce)
             .append(&self.base_fee_per_gas)
             .append(&self.proof)
+            .append(&self.last_checkpoint_block_hash)
             .append(&self.chain_id);
     }
 }
@@ -33,25 +34,26 @@ impl Encodable for Header {
 impl Decodable for Header {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
-            Prototype::List(18) => Ok(Header {
-                prev_hash:         r.val_at(0)?,
-                proposer:          r.val_at(1)?,
-                state_root:        r.val_at(2)?,
-                transactions_root: r.val_at(3)?,
-                signed_txs_hash:   r.val_at(4)?,
-                receipts_root:     r.val_at(5)?,
-                log_bloom:         r.val_at(6)?,
-                difficulty:        r.val_at(7)?,
-                timestamp:         r.val_at(8)?,
-                number:            r.val_at(9)?,
-                gas_used:          r.val_at(10)?,
-                gas_limit:         r.val_at(11)?,
-                extra_data:        r.val_at(12)?,
-                mixed_hash:        r.val_at(13)?,
-                nonce:             r.val_at(14)?,
-                base_fee_per_gas:  r.val_at(15)?,
-                proof:             r.val_at(16)?,
-                chain_id:          r.val_at(17)?,
+            Prototype::List(19) => Ok(Header {
+                prev_hash:                  r.val_at(0)?,
+                proposer:                   r.val_at(1)?,
+                state_root:                 r.val_at(2)?,
+                transactions_root:          r.val_at(3)?,
+                signed_txs_hash:            r.val_at(4)?,
+                receipts_root:              r.val_at(5)?,
+                log_bloom:                  r.val_at(6)?,
+                difficulty:                 r.val_at(7)?,
+                timestamp:                  r.val_at(8)?,
+                number:                     r.val_at(9)?,
+                gas_used:                   r.val_at(10)?,
+                gas_limit:                  r.val_at(11)?,
+                extra_data:                 r.val_at(12)?,
+                mixed_hash:                 r.val_at(13)?,
+                nonce:                      r.val_at(14)?,
+                base_fee_per_gas:           r.val_at(15)?,
+                proof:                      r.val_at(16)?,
+                last_checkpoint_block_hash: r.val_at(17)?,
+                chain_id:                   r.val_at(18)?,
             }),
             _ => Err(DecoderError::RlpExpectedToBeList),
         }

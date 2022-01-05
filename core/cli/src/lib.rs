@@ -1,42 +1,42 @@
-use clap::{crate_version, App, Arg, ArgMatches, SubCommand};
+use clap::{crate_version, App, Arg, ArgMatches};
 
 use common_config_parser::{parse_file, types::Config};
 use core_run::Axon;
 use protocol::types::{Genesis, Metadata};
 
-pub struct AxonCli<'a> {
-    matches: ArgMatches<'a>,
+pub struct AxonCli {
+    matches: ArgMatches,
 }
 
-impl<'a> AxonCli<'a> {
+impl AxonCli {
     pub fn init() -> Self {
         let matches = App::new("axon")
             .version(crate_version!())
             .arg(
-                Arg::with_name("config_path")
-                    .short("c")
+                Arg::new("config_path")
+                    .short('c')
                     .long("config")
                     .help("Axon config path")
                     .required(true)
                     .takes_value(true),
             )
             .arg(
-                Arg::with_name("genesis_path")
-                    .short("g")
+                Arg::new("genesis_path")
+                    .short('g')
                     .long("genesis")
                     .help("Axon genesis path")
                     .required(true)
                     .takes_value(true),
             )
             .arg(
-                Arg::with_name("metadata_path")
-                    .short("m")
+                Arg::new("metadata_path")
+                    .short('m')
                     .long("metadata")
                     .help("Axon metadata path")
                     .required(true)
                     .takes_value(true),
             )
-            .subcommand(SubCommand::with_name("run").about("Run axon process"))
+            .subcommand(App::new("run").about("Run axon process"))
             .get_matches();
 
         AxonCli { matches }

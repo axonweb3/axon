@@ -87,20 +87,21 @@ fn _mock_node_info() -> NodeInfo {
 
 fn _mock_metadata() -> Metadata {
     Metadata {
-        chain_id:        1u64.into(),
-        version:         MetadataVersion::new(0, 100000),
-        common_ref:      Hex::from_string("0x703873635a6b51513451".to_string()).unwrap(),
-        timeout_gap:     20,
-        gas_limit:       600000,
-        gas_price:       1,
-        interval:        3000,
-        verifier_list:   vec![],
-        propose_ratio:   3,
-        prevote_ratio:   3,
-        precommit_ratio: 3,
-        brake_ratio:     3,
-        tx_num_limit:    3,
-        max_tx_size:     3000,
+        chain_id:                   1u64.into(),
+        version:                    MetadataVersion::new(0, 100000),
+        common_ref:                 Hex::from_string("0x703873635a6b51513451".to_string()).unwrap(),
+        timeout_gap:                20,
+        gas_limit:                  600000,
+        gas_price:                  1,
+        interval:                   3000,
+        verifier_list:              vec![],
+        propose_ratio:              3,
+        prevote_ratio:              3,
+        precommit_ratio:            3,
+        brake_ratio:                3,
+        tx_num_limit:               3,
+        max_tx_size:                3000,
+        last_checkpoint_block_hash: Default::default(),
     }
 }
 
