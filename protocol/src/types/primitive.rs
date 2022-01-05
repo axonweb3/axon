@@ -396,4 +396,12 @@ mod tests {
             "0x35E70C3F5A794A77Efc2Ec5bA964BFfcC7Fd2C0a"
         );
     }
+
+    #[test]
+    fn test_decode_metadata() {
+        let path = "../devtools/chain/metadata.json";
+        let raw = std::fs::read(path).unwrap();
+        let metadata: Metadata = serde_json::from_slice(&raw).unwrap();
+        println!("{:?}", metadata);
+    }
 }
