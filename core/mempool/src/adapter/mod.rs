@@ -6,6 +6,7 @@ use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::{error::Error, marker::PhantomData, sync::Arc, time::Duration};
 
 use arc_swap::ArcSwap;
+use dashmap::DashMap;
 use futures::{
     channel::mpsc::{
         channel, unbounded, Receiver, Sender, TrySendError, UnboundedReceiver, UnboundedSender,
@@ -22,7 +23,7 @@ use protocol::traits::{
     Context, Executor, Gossip, MemPoolAdapter, PeerTrust, Priority, Rpc, Storage, TrustFeedback,
 };
 use protocol::types::{
-    recover_intact_pub_key, Hash, MerkleRoot, SignedTransaction, TransactionAction,
+    recover_intact_pub_key, Hash, MerkleRoot, SignedTransaction, TransactionAction, H160, U256,
 };
 use protocol::{
     async_trait, codec::ProtocolCodec, Display, ProtocolError, ProtocolErrorKind, ProtocolResult,
@@ -140,6 +141,7 @@ pub struct DefaultMemPoolAdapter<C, N, S, DB> {
     storage: Arc<S>,
     trie_db: Arc<DB>,
 
+    addr_nonce:  DashMap<H160, U256>,
     timeout_gap: AtomicU64,
     gas_limit:   AtomicU64,
     max_tx_size: AtomicUsize,
@@ -191,6 +193,7 @@ where
             storage,
             trie_db,
 
+            addr_nonce: DashMap::new(),
             timeout_gap: AtomicU64::new(timeout_gap),
             gas_limit: AtomicU64::new(gas_limit),
             max_tx_size: AtomicUsize::new(max_tx_size),
@@ -256,15 +259,28 @@ where
         _ctx: Context,
         tx: Box<SignedTransaction>,
     ) -> ProtocolResult<()> {
-        let backend = EVMExecutorAdapter::from_root(
-            **CURRENT_STATE_ROOT.load(),
-            Arc::clone(&self.trie_db),
-            Arc::clone(&self.storage),
-            Default::default(),
-        )?;
-
         if let TransactionAction::Call(addr) = tx.transaction.unsigned.action {
+            if let Some(res) = self.addr_nonce.get(&addr) {
+                if res.value() >= &tx.transaction.unsigned.nonce {
+                    return Err(MemPoolError::InvalidNonce {
+                        current:  res.value().as_u64(),
+                        tx_nonce: tx.transaction.unsigned.nonce.as_u64(),
+                    }
+                    .into());
+                } else {
+                    return Ok(());
+                }
+            }
+
+            let backend = EVMExecutorAdapter::from_root(
+                **CURRENT_STATE_ROOT.load(),
+                Arc::clone(&self.trie_db),
+                Arc::clone(&self.storage),
+                Default::default(),
+            )?;
+
             let account = EvmExecutor::default().get_account(&backend, &addr);
+            self.addr_nonce.insert(addr, account.nonce);
             if account.nonce >= tx.transaction.unsigned.nonce {
                 return Err(MemPoolError::InvalidNonce {
                     current:  account.nonce.as_u64(),

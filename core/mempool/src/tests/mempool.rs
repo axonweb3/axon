@@ -228,11 +228,12 @@ fn bench_insert_serial_10(b: &mut Bencher) {
 
 #[bench]
 fn bench_insert_serial_100(b: &mut Bencher) {
+    let runtime = tokio::runtime::Runtime::new().unwrap();
     let mempool = &Arc::new(default_mempool_sync());
     let txs = default_mock_txs(100);
 
     b.iter(move || {
-        futures::executor::block_on(async {
+        runtime.block_on(async {
             for tx in txs.clone().into_iter() {
                 let _ = mempool.insert(Context::new(), tx).await;
             }
@@ -242,11 +243,12 @@ fn bench_insert_serial_100(b: &mut Bencher) {
 
 #[bench]
 fn bench_insert_serial_1000(b: &mut Bencher) {
+    let runtime = tokio::runtime::Runtime::new().unwrap();
     let mempool = &Arc::new(default_mempool_sync());
     let txs = default_mock_txs(1000);
 
     b.iter(move || {
-        futures::executor::block_on(async {
+        runtime.block_on(async {
             for tx in txs.clone().into_iter() {
                 let _ = mempool.insert(Context::new(), tx).await;
             }
