@@ -33,7 +33,12 @@ impl ServiceProtocol for TransmitterProtocol {
     fn init(&mut self, _context: &mut ProtocolContext) {}
 
     fn connected(&mut self, context: ProtocolContextMutRef, _version: &str) {
-        log::info!("{} open on {}", context.proto_id, context.session.id);
+        log::info!(
+            "{} open on {}, addr: {}",
+            context.proto_id,
+            context.session.id,
+            context.session.address
+        );
         self.peer_manager.open_protocol(
             &extract_peer_id(&context.session.address).unwrap(),
             crate::protocols::SupportProtocols::Transmitter.protocol_id(),

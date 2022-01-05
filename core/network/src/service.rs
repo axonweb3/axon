@@ -248,6 +248,8 @@ impl NetworkService {
             .set_send_buffer_size(config.send_buffer_size)
             .set_recv_buffer_size(config.recv_buffer_size)
             .timeout(Duration::from_secs(5));
+        #[cfg(target_os = "linux")]
+        let service_builder = service_builder.tcp_bind(config.default_listen.clone());
 
         let service = service_builder.build(service_handle);
 
@@ -609,13 +611,14 @@ impl ServiceHandle for ServiceHandler {
     fn handle_event(&mut self, control: &mut ServiceContext, event: ServiceEvent) {
         match event {
             ServiceEvent::SessionOpen { session_context } => {
-                let (con, status) = self.peer_store.with_registry_mut(|reg| {
+                let (feeler, status) = self.peer_store.with_registry_mut(|reg| {
+                    reg.dialing.remove(&session_context.address);
                     (
-                        reg.dialing.remove(&session_context.address),
+                        reg.is_feeler(&session_context.address),
                         reg.connection_status(),
                     )
                 });
-                if !con {
+                if feeler {
                     return;
                 }
                 let disable = status.total + 1 > self.config.max_connections
@@ -633,9 +636,9 @@ impl ServiceHandle for ServiceHandler {
                     self.peer_store.register(PeerInfo::new(session_context))
                 }
             }
-            ServiceEvent::SessionClose { session_context } => self
-                .peer_store
-                .unregister(&extract_peer_id(&session_context.address).unwrap()),
+            ServiceEvent::SessionClose { session_context } => {
+                self.peer_store.unregister(&session_context.address)
+            }
             ServiceEvent::ListenClose { address } => {
                 log::info!("listen stop at: {}", address)
             }

@@ -43,6 +43,7 @@ pub trait AddressManager {
     fn misbehave(&mut self, session_id: SessionId, kind: Misbehavior) -> MisbehaveResult;
     fn get_random(&mut self, n: usize) -> Vec<Multiaddr>;
     fn consensus_list(&self) -> Vec<Multiaddr>;
+    fn add_reuse_port_addr(&mut self, addr: Multiaddr);
 }
 
 // bitcoin: bloom.h, bloom.cpp => CRollingBloomFilter
