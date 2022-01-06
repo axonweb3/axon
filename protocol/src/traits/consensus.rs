@@ -4,7 +4,6 @@ use async_trait::async_trait;
 use bytes::Bytes;
 use creep::Context;
 
-use crate::traits::MixedTxHashes;
 use crate::types::{
     Address, Block, BlockNumber, ExecResp, Hash, Header, Hex, MerkleRoot, Proof, Receipt,
     SignedTransaction, Validator,
@@ -181,7 +180,7 @@ pub trait ConsensusAdapter: CommonConsensusAdapter + Send + Sync {
         height: u64,
         cycle_limit: u64,
         tx_num_limit: u64,
-    ) -> ProtocolResult<MixedTxHashes>;
+    ) -> ProtocolResult<Vec<Hash>>;
 
     /// Synchronous signed transactions.
     async fn sync_txs(&self, ctx: Context, propose_txs: Vec<Hash>) -> ProtocolResult<()>;

@@ -13,14 +13,14 @@ use common_crypto::{
     Secp256k1RecoverablePublicKey, Signature, ToPublicKey, UncompressedPublicKey,
 };
 use protocol::codec::ProtocolCodec;
-use protocol::traits::{Context, MemPool, MemPoolAdapter, MixedTxHashes};
+use protocol::traits::{Context, MemPool, MemPoolAdapter};
 use protocol::types::{
     public_to_address, recover_intact_pub_key, Bytes, Hash, Hasher, Public, SignedTransaction,
     Transaction, TransactionAction, UnverifiedTransaction, H256, U256,
 };
 use protocol::{async_trait, tokio, ProtocolResult};
 
-use crate::{adapter::AdapterError, check_dup_order_hashes, HashMemPool, MemPoolError};
+use crate::{adapter::AdapterError, check_dup_order_hashes, MemPoolError, MemPoolImpl};
 
 const CYCLE_LIMIT: u64 = 1_000_000;
 const TX_NUM_LIMIT: u64 = 10_000;
@@ -67,10 +67,10 @@ impl MemPoolAdapter for HashMemPoolAdapter {
     async fn check_authorization(
         &self,
         _ctx: Context,
-        tx: Box<SignedTransaction>,
+        tx: &SignedTransaction,
     ) -> ProtocolResult<()> {
-        check_hash(&tx.clone()).await?;
-        check_sig(&tx)
+        check_hash(tx).await?;
+        check_sig(tx)
     }
 
     async fn check_transaction(
@@ -120,17 +120,17 @@ fn mock_txs(valid_size: usize, invalid_size: usize, timeout: u64) -> Vec<SignedT
         .map(|i| {
             let priv_key = Secp256k1RecoverablePrivateKey::generate(&mut OsRng);
             let pub_key = priv_key.pub_key();
-            mock_signed_tx(&priv_key, &pub_key, timeout, i < valid_size)
+            mock_signed_tx(&priv_key, &pub_key, timeout, i as u64, i < valid_size)
         })
         .collect()
 }
 
-fn default_mempool_sync() -> HashMemPool<HashMemPoolAdapter> {
+fn default_mempool_sync() -> MemPoolImpl<HashMemPoolAdapter> {
     let rt = tokio::runtime::Runtime::new().unwrap();
     rt.block_on(default_mempool())
 }
 
-async fn default_mempool() -> HashMemPool<HashMemPoolAdapter> {
+async fn default_mempool() -> MemPoolImpl<HashMemPoolAdapter> {
     new_mempool(POOL_SIZE, TIMEOUT_GAP, CYCLE_LIMIT, MAX_TX_SIZE).await
 }
 
@@ -139,9 +139,9 @@ async fn new_mempool(
     _timeout_gap: u64,
     _cycles_limit: u64,
     _max_tx_size: u64,
-) -> HashMemPool<HashMemPoolAdapter> {
+) -> MemPoolImpl<HashMemPoolAdapter> {
     let adapter = HashMemPoolAdapter::new();
-    let mempool = HashMemPool::new(pool_size, adapter, vec![]).await;
+    let mempool = MemPoolImpl::new(pool_size, adapter, vec![]).await;
     mempool
 }
 
@@ -185,7 +185,7 @@ async fn concurrent_check_sig(txs: Vec<SignedTransaction>) {
 
 async fn concurrent_insert(
     txs: Vec<SignedTransaction>,
-    mempool: Arc<HashMemPool<HashMemPoolAdapter>>,
+    mempool: Arc<MemPoolImpl<HashMemPoolAdapter>>,
 ) {
     let futs = txs
         .into_iter()
@@ -199,7 +199,7 @@ async fn concurrent_insert(
 
 async fn concurrent_broadcast(
     txs: Vec<SignedTransaction>,
-    mempool: Arc<HashMemPool<HashMemPoolAdapter>>,
+    mempool: Arc<MemPoolImpl<HashMemPoolAdapter>>,
 ) {
     let futs = txs
         .into_iter()
@@ -218,19 +218,19 @@ async fn concurrent_broadcast(
     futures::future::try_join_all(futs).await.unwrap();
 }
 
-async fn exec_insert(signed_tx: SignedTransaction, mempool: Arc<HashMemPool<HashMemPoolAdapter>>) {
+async fn exec_insert(signed_tx: SignedTransaction, mempool: Arc<MemPoolImpl<HashMemPoolAdapter>>) {
     let _ = mempool.insert(Context::new(), signed_tx).await;
 }
 
-async fn exec_flush(remove_hashes: Vec<Hash>, mempool: Arc<HashMemPool<HashMemPoolAdapter>>) {
+async fn exec_flush(remove_hashes: Vec<Hash>, mempool: Arc<MemPoolImpl<HashMemPoolAdapter>>) {
     mempool.flush(Context::new(), &remove_hashes).await.unwrap()
 }
 
 async fn exec_package(
-    mempool: Arc<HashMemPool<HashMemPoolAdapter>>,
+    mempool: Arc<MemPoolImpl<HashMemPoolAdapter>>,
     cycle_limit: u64,
     tx_num_limit: u64,
-) -> MixedTxHashes {
+) -> Vec<Hash> {
     mempool
         .package(Context::new(), cycle_limit, tx_num_limit)
         .await
@@ -239,7 +239,7 @@ async fn exec_package(
 
 async fn exec_ensure_order_txs(
     require_hashes: Vec<Hash>,
-    mempool: Arc<HashMemPool<HashMemPoolAdapter>>,
+    mempool: Arc<MemPoolImpl<HashMemPoolAdapter>>,
 ) {
     mempool
         .ensure_order_txs(Context::new(), None, &require_hashes)
@@ -249,7 +249,7 @@ async fn exec_ensure_order_txs(
 
 async fn _exec_sync_propose_txs(
     require_hashes: Vec<Hash>,
-    mempool: Arc<HashMemPool<HashMemPoolAdapter>>,
+    mempool: Arc<MemPoolImpl<HashMemPoolAdapter>>,
 ) {
     mempool
         .sync_propose_txs(Context::new(), require_hashes)
@@ -259,7 +259,7 @@ async fn _exec_sync_propose_txs(
 
 async fn exec_get_full_txs(
     require_hashes: Vec<Hash>,
-    mempool: Arc<HashMemPool<HashMemPoolAdapter>>,
+    mempool: Arc<MemPoolImpl<HashMemPoolAdapter>>,
 ) -> Vec<SignedTransaction> {
     mempool
         .get_full_txs(Context::new(), None, &require_hashes)
@@ -267,9 +267,9 @@ async fn exec_get_full_txs(
         .unwrap()
 }
 
-fn mock_transaction() -> Transaction {
+fn mock_transaction(nonce: u64) -> Transaction {
     Transaction {
-        nonce:                    U256::one(),
+        nonce:                    nonce.into(),
         gas_limit:                U256::one(),
         max_priority_fee_per_gas: U256::one(),
         gas_price:                U256::one(),
@@ -284,9 +284,10 @@ fn mock_signed_tx(
     priv_key: &Secp256k1RecoverablePrivateKey,
     pub_key: &Secp256k1RecoverablePublicKey,
     _timeout: u64,
+    nonce: u64,
     valid: bool,
 ) -> SignedTransaction {
-    let raw = mock_transaction();
+    let raw = mock_transaction(nonce);
     let mut tx = UnverifiedTransaction {
         unsigned:  raw,
         signature: None,
@@ -311,14 +312,6 @@ fn mock_signed_tx(
         sender:      public_to_address(&pub_key),
         public:      Some(pub_key),
     }
-}
-
-fn _check_order_consistant(mixed_tx_hashes: &MixedTxHashes, txs: &[SignedTransaction]) -> bool {
-    mixed_tx_hashes
-        .order_tx_hashes
-        .iter()
-        .enumerate()
-        .any(|(i, hash)| hash == &txs.get(i).unwrap().transaction.hash)
 }
 
 fn random_bytes(len: usize) -> Bytes {

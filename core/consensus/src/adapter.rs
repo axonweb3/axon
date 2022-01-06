@@ -11,7 +11,7 @@ use core_network::{PeerId, PeerIdExt};
 
 use protocol::traits::{
     CommonConsensusAdapter, ConsensusAdapter, Context, Executor, Gossip, MemPool, MessageTarget,
-    MixedTxHashes, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
+    PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
 };
 use protocol::types::{
     BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Hasher, Header, Hex, MerkleRoot,
@@ -58,7 +58,7 @@ where
         _number: u64,
         cycle_limit: u64,
         tx_num_limit: u64,
-    ) -> ProtocolResult<MixedTxHashes> {
+    ) -> ProtocolResult<Vec<Hash>> {
         self.mempool.package(ctx, cycle_limit, tx_num_limit).await
     }
 

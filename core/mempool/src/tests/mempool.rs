@@ -75,9 +75,9 @@ macro_rules! package {
             &Arc::new(new_mempool($insert * 10, $timeout_gap, CYCLE_LIMIT, MAX_TX_SIZE).await);
         let txs = mock_txs($insert, 0, $timeout);
         concurrent_insert(txs.clone(), Arc::clone(mempool)).await;
-        let mixed_tx_hashes = exec_package(Arc::clone(mempool), CYCLE_LIMIT, $tx_num_limit).await;
-        assert_eq!(mixed_tx_hashes.order_tx_hashes.len(), $expect_order);
-        assert_eq!(mixed_tx_hashes.propose_tx_hashes.len(), $expect_propose);
+        protocol::tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        let tx_hashes = exec_package(Arc::clone(mempool), CYCLE_LIMIT, $tx_num_limit).await;
+        assert_eq!(tx_hashes.len(), $expect_order);
     };
 }
 
@@ -108,9 +108,9 @@ async fn test_flush() {
     let (remove_txs, _) = txs.split_at(123);
     let remove_hashes: Vec<Hash> = remove_txs.iter().map(|tx| tx.transaction.hash).collect();
     exec_flush(remove_hashes, Arc::clone(&mempool)).await;
-    assert_eq!(mempool.map_len(), 432);
+    assert_eq!(mempool.len(), 432);
     exec_package(Arc::clone(&mempool), CYCLE_LIMIT, TX_NUM_LIMIT).await;
-    assert_eq!(mempool.map_len(), 432);
+    assert_eq!(mempool.len(), 432);
 
     // flush absent txs
     let txs = default_mock_txs(222);
@@ -229,11 +229,12 @@ fn bench_insert_serial_10(b: &mut Bencher) {
 
 #[bench]
 fn bench_insert_serial_100(b: &mut Bencher) {
+    let runtime = tokio::runtime::Runtime::new().unwrap();
     let mempool = &Arc::new(default_mempool_sync());
     let txs = default_mock_txs(100);
 
     b.iter(move || {
-        futures::executor::block_on(async {
+        runtime.block_on(async {
             for tx in txs.clone().into_iter() {
                 let _ = mempool.insert(Context::new(), tx).await;
             }
@@ -243,11 +244,12 @@ fn bench_insert_serial_100(b: &mut Bencher) {
 
 #[bench]
 fn bench_insert_serial_1000(b: &mut Bencher) {
+    let runtime = tokio::runtime::Runtime::new().unwrap();
     let mempool = &Arc::new(default_mempool_sync());
     let txs = default_mock_txs(1000);
 
     b.iter(move || {
-        futures::executor::block_on(async {
+        runtime.block_on(async {
             for tx in txs.clone().into_iter() {
                 let _ = mempool.insert(Context::new(), tx).await;
             }
@@ -259,9 +261,13 @@ fn bench_insert_serial_1000(b: &mut Bencher) {
 fn bench_package(b: &mut Bencher) {
     let runtime = tokio::runtime::Runtime::new().unwrap();
 
-    let mempool = Arc::new(default_mempool_sync());
+    let mempool = Arc::new(runtime.block_on(default_mempool()));
     let txs = default_mock_txs(50_000);
     runtime.block_on(concurrent_insert(txs, Arc::clone(&mempool)));
+    std::thread::sleep(std::time::Duration::from_secs(1));
+
+    assert_eq!(mempool.get_tx_cache().real_queue_len(), 50_000);
+
     b.iter(|| {
         runtime.block_on(exec_package(
             Arc::clone(&mempool),
@@ -350,7 +356,7 @@ async fn bench_sign_with_spawn_list() {
             let adapter = Arc::clone(&adapter);
             tokio::spawn(async move {
                 adapter
-                    .check_authorization(Context::new(), Box::new(tx))
+                    .check_authorization(Context::new(), &tx)
                     .await
                     .unwrap();
             })
@@ -368,15 +374,12 @@ async fn bench_sign_with_spawn_list() {
 #[tokio::test]
 async fn bench_sign() {
     let adapter = HashMemPoolAdapter::new();
-    let txs = default_mock_txs(30000)
-        .into_iter()
-        .map(Box::new)
-        .collect::<Vec<_>>();
+    let txs = default_mock_txs(30000).into_iter().collect::<Vec<_>>();
     let now = std::time::Instant::now();
 
     for tx in txs.iter() {
         adapter
-            .check_authorization(Context::new(), tx.clone())
+            .check_authorization(Context::new(), tx)
             .await
             .unwrap();
     }

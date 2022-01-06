@@ -7,7 +7,7 @@ use overlord::types::{AggregatedSignature, Commit, Proof as OverlordProof};
 use common_crypto::BlsPrivateKey;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{
-    CommonConsensusAdapter, ConsensusAdapter, Context, MessageTarget, MixedTxHashes, NodeInfo,
+    CommonConsensusAdapter, ConsensusAdapter, Context, MessageTarget, NodeInfo,
 };
 use protocol::types::{
     Block, Bytes, ExecResp, Hash, Hasher, Header, Hex, Metadata, MetadataVersion, Pill, Proof,
@@ -238,7 +238,7 @@ impl ConsensusAdapter for MockConsensusAdapter {
         _number: u64,
         _cycles_limit: u64,
         _tx_num_limit: u64,
-    ) -> ProtocolResult<MixedTxHashes> {
+    ) -> ProtocolResult<Vec<Hash>> {
         unimplemented!()
     }
 

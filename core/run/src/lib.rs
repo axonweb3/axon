@@ -33,7 +33,7 @@ use core_consensus::{
 };
 use core_executor::{EVMExecutorAdapter, EvmExecutor, MPTTrie, RocksTrieDB};
 use core_mempool::{
-    DefaultMemPoolAdapter, HashMemPool, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
+    DefaultMemPoolAdapter, MemPoolImpl, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
     RPC_PULL_TXS, RPC_RESP_PULL_TXS, RPC_RESP_PULL_TXS_SYNC,
 };
 use core_network::{NetworkConfig, NetworkService};
@@ -238,7 +238,7 @@ impl Axon {
             config.mempool.broadcast_txs_interval,
         );
         let mempool = Arc::new(
-            HashMemPool::new(
+            MemPoolImpl::new(
                 config.mempool.pool_size as usize,
                 mempool_adapter,
                 current_stxs.clone(),
@@ -251,8 +251,7 @@ impl Axon {
             let interval = Duration::from_millis(1000);
             loop {
                 sleep(interval).await;
-                common_apm::metrics::mempool::MEMPOOL_LEN_GAUGE
-                    .set(monitor_mempool.map_len() as i64);
+                common_apm::metrics::mempool::MEMPOOL_LEN_GAUGE.set(monitor_mempool.len() as i64);
             }
         });
 

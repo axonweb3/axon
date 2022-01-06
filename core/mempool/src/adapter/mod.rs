@@ -6,6 +6,7 @@ use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::{error::Error, marker::PhantomData, sync::Arc, time::Duration};
 
 use arc_swap::ArcSwap;
+use dashmap::DashMap;
 use futures::{
     channel::mpsc::{
         channel, unbounded, Receiver, Sender, TrySendError, UnboundedReceiver, UnboundedSender,
@@ -21,9 +22,7 @@ use core_executor::{EVMExecutorAdapter, EvmExecutor};
 use protocol::traits::{
     Context, Executor, Gossip, MemPoolAdapter, PeerTrust, Priority, Rpc, Storage, TrustFeedback,
 };
-use protocol::types::{
-    recover_intact_pub_key, Hash, MerkleRoot, SignedTransaction, TransactionAction,
-};
+use protocol::types::{recover_intact_pub_key, Hash, MerkleRoot, SignedTransaction, H160, U256};
 use protocol::{
     async_trait, codec::ProtocolCodec, Display, ProtocolError, ProtocolErrorKind, ProtocolResult,
 };
@@ -140,6 +139,7 @@ pub struct DefaultMemPoolAdapter<C, N, S, DB> {
     storage: Arc<S>,
     trie_db: Arc<DB>,
 
+    addr_nonce:  DashMap<H160, U256>,
     timeout_gap: AtomicU64,
     gas_limit:   AtomicU64,
     max_tx_size: AtomicUsize,
@@ -191,6 +191,7 @@ where
             storage,
             trie_db,
 
+            addr_nonce: DashMap::new(),
             timeout_gap: AtomicU64::new(timeout_gap),
             gas_limit: AtomicU64::new(gas_limit),
             max_tx_size: AtomicUsize::new(max_tx_size),
@@ -254,8 +255,21 @@ where
     async fn check_authorization(
         &self,
         _ctx: Context,
-        tx: Box<SignedTransaction>,
+        tx: &SignedTransaction,
     ) -> ProtocolResult<()> {
+        let addr = &tx.sender;
+        if let Some(res) = self.addr_nonce.get(addr) {
+            if res.value() >= &tx.transaction.unsigned.nonce {
+                return Err(MemPoolError::InvalidNonce {
+                    current:  res.value().as_u64(),
+                    tx_nonce: tx.transaction.unsigned.nonce.as_u64(),
+                }
+                .into());
+            } else {
+                return Ok(());
+            }
+        }
+
         let backend = EVMExecutorAdapter::from_root(
             **CURRENT_STATE_ROOT.load(),
             Arc::clone(&self.trie_db),
@@ -263,15 +277,15 @@ where
             Default::default(),
         )?;
 
-        if let TransactionAction::Call(addr) = tx.transaction.unsigned.action {
-            let account = EvmExecutor::default().get_account(&backend, &addr);
-            if account.nonce >= tx.transaction.unsigned.nonce {
-                return Err(MemPoolError::InvalidNonce {
-                    current:  account.nonce.as_u64(),
-                    tx_nonce: tx.transaction.unsigned.nonce.as_u64(),
-                }
-                .into());
+        let account = EvmExecutor::default().get_account(&backend, addr);
+        self.addr_nonce.insert(*addr, account.nonce);
+
+        if account.nonce >= tx.transaction.unsigned.nonce {
+            return Err(MemPoolError::InvalidNonce {
+                current:  account.nonce.as_u64(),
+                tx_nonce: tx.transaction.unsigned.nonce.as_u64(),
             }
+            .into());
         }
 
         Ok(())
@@ -280,6 +294,10 @@ where
     async fn check_transaction(&self, ctx: Context, stx: &SignedTransaction) -> ProtocolResult<()> {
         if stx.transaction.signature.is_none() {
             return Err(AdapterError::VerifySignature("missing signature".to_string()).into());
+        }
+
+        if stx.public.is_none() {
+            return Err(AdapterError::VerifySignature("missing public key".to_string()).into());
         }
 
         let fixed_bytes = stx.transaction.encode()?;
@@ -326,15 +344,12 @@ where
                     TrustFeedback::Worse(format!("Mempool wrong chain of tx {:?}", tx_hash)),
                 );
             }
+            let wrong_chain_id = MemPoolError::WrongChain(tx_hash);
 
-            return Err(MemPoolError::WrongChain { tx_hash }.into());
+            return Err(wrong_chain_id.into());
         }
 
         // Verify signature
-        if stx.public.is_none() {
-            return Err(MemPoolError::MissingPublicKey.into());
-        }
-
         Secp256k1Recoverable::verify_signature(
             stx.transaction.signature_hash().as_bytes(),
             stx.transaction
@@ -352,7 +367,7 @@ where
 
     async fn check_storage_exist(&self, ctx: Context, tx_hash: &Hash) -> ProtocolResult<()> {
         match self.storage.get_transaction_by_hash(ctx, tx_hash).await {
-            Ok(Some(_)) => Err(MemPoolError::CommittedTx { tx_hash: *tx_hash }.into()),
+            Ok(Some(_)) => Err(MemPoolError::CommittedTx(*tx_hash).into()),
             Ok(None) => Ok(()),
             Err(err) => Err(err),
         }
@@ -392,6 +407,7 @@ where
         self.gas_limit.store(cycles_limit, Ordering::Relaxed);
         self.max_tx_size
             .store(max_tx_size as usize, Ordering::Relaxed);
+        self.addr_nonce.clear();
         CURRENT_STATE_ROOT.swap(Arc::new(state_root));
     }
 

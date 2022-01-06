@@ -65,11 +65,10 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
         next_number: u64,
     ) -> Result<(Pill, Bytes), Box<dyn Error + Send>> {
         let status = self.status.inner();
-        let (tx_hashes, propose_hashes) = self
+        let tx_hashes = self
             .adapter
             .get_txs_from_mempool(ctx.clone(), next_number, status.gas_limit.as_u64(), 10000)
-            .await?
-            .clap();
+            .await?;
         let signed_txs = self.adapter.get_full_txs(ctx.clone(), &tx_hashes).await?;
         let order_root = Merkle::from_hashes(tx_hashes.clone())
             .get_root_hash()
@@ -111,7 +110,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
 
         let pill = Pill {
             block,
-            propose_hashes,
+            propose_hashes: vec![],
         };
 
         let hash = Hasher::digest(pill.block.header.encode()?);

@@ -21,6 +21,24 @@ pub struct Transaction {
     pub access_list:              AccessList,
 }
 
+impl std::hash::Hash for Transaction {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.nonce.hash(state);
+        self.max_priority_fee_per_gas.hash(state);
+        self.gas_price.hash(state);
+        self.gas_limit.hash(state);
+        self.value.hash(state);
+        self.data.hash(state);
+        if let TransactionAction::Call(addr) = self.action {
+            addr.hash(state);
+        }
+
+        for access in self.access_list.iter() {
+            access.address.hash(state);
+        }
+    }
+}
+
 impl Transaction {
     pub fn encode(&self, chain_id: u64, signature: Option<SignatureComponents>) -> BytesMut {
         let utx = UnverifiedTransaction {
@@ -34,7 +52,7 @@ impl Transaction {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
 pub struct UnverifiedTransaction {
     pub unsigned:  Transaction,
     pub signature: Option<SignatureComponents>,
@@ -58,7 +76,7 @@ impl UnverifiedTransaction {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
 pub struct SignatureComponents {
     pub r:          H256,
     pub s:          H256,
@@ -91,7 +109,7 @@ impl SignatureComponents {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
 pub struct SignedTransaction {
     pub transaction: UnverifiedTransaction,
     pub sender:      H160,

@@ -19,11 +19,10 @@ use crate::code_address;
 macro_rules! blocking_async {
     ($self_: ident, $adapter: ident, $method: ident$ (, $args: expr)*) => {{
         let (tx, rx) = crossbeam_channel::bounded(1);
-
         let rt = protocol::tokio::runtime::Handle::current();
         let adapter = Arc::clone(&$self_.$adapter);
 
-        rt.clone().spawn_blocking(move || {
+        protocol::tokio::task::block_in_place(move || {
             let res = rt.block_on(adapter.$method( $($args,)* )).unwrap();
             let _ = tx.send(res);
         });
