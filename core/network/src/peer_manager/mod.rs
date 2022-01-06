@@ -109,7 +109,7 @@ impl PeerManager {
 
         for id in self.consensus_list.read().iter() {
             if let Some(info) = online.peers.get(id) {
-                if info.session_type.is_outbound() {
+                if info.session_type.is_outbound() || info.reuse {
                     list.push(info.addr.clone());
                 }
 
@@ -130,12 +130,10 @@ impl PeerManager {
         self.with_peer_store_mut(|peer_store| peer_store.add_connected_peer(addr, ty));
     }
 
-    pub fn unregister(&self, id: &PeerId) {
+    pub fn unregister(&self, addr: &Multiaddr) {
         if let Some(peer) = self.with_registry_mut(|online| {
-            online.peers.remove(id).map(|info| {
-                online.remove_feeler(&info.addr);
-                info
-            })
+            online.remove_feeler(addr);
+            online.peers.remove(&extract_peer_id(addr).unwrap())
         }) {
             self.with_peer_store_mut(|peer_store| peer_store.remove_disconnected_peer(&peer.addr));
         }

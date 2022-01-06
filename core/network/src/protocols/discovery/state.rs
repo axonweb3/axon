@@ -56,7 +56,11 @@ impl SessionState {
                     }
                 })
                 .next();
-            let msg = DiscoveryMessage::new_get_nodes(FIRST_VERSION, MAX_ADDR_TO_SEND as u32, port);
+            #[cfg(target_os = "linux")]
+            let version = REUSE_PORT_VERSION;
+            #[cfg(not(target_os = "linux"))]
+            let version = FIRST_VERSION;
+            let msg = DiscoveryMessage::new_get_nodes(version, MAX_ADDR_TO_SEND as u32, port);
             let mut buf = BytesMut::with_capacity(msg.encoded_len());
             msg.encode(&mut buf).unwrap();
 

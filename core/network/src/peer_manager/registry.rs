@@ -13,6 +13,7 @@ pub struct PeerInfo {
     opened_protocols: HashSet<ProtocolId>,
     pub session_type: SessionType,
     pub listens:      Vec<Multiaddr>,
+    pub reuse:        bool,
 }
 
 impl PeerInfo {
@@ -23,6 +24,7 @@ impl PeerInfo {
             opened_protocols: Default::default(),
             session_type:     ctx.ty,
             listens:          Vec::new(),
+            reuse:            false,
         }
     }
 

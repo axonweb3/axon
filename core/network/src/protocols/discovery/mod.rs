@@ -140,6 +140,8 @@ impl<M: AddressManager> ServiceProtocol for DiscoveryProtocol<M> {
                             if version >= state::REUSE_PORT_VERSION {
                                 // after enable reuse port, it can be broadcast
                                 state.remote_addr.change_to_listen();
+                                self.addr_mgr
+                                    .add_reuse_port_addr(state.remote_addr.to_inner().clone())
                             }
 
                             let max = ::std::cmp::min(MAX_ADDR_TO_SEND, count as usize);
@@ -339,6 +341,7 @@ impl AddressManager for DiscoveryAddressManager {
     }
 
     fn add_new_addrs(&mut self, _session_id: SessionId, addrs: Vec<Multiaddr>) {
+        log::info!("get discovery addr len: {}", addrs.len());
         if addrs.is_empty() {
             return;
         }
@@ -380,5 +383,16 @@ impl AddressManager for DiscoveryAddressManager {
 
     fn consensus_list(&self) -> Vec<Multiaddr> {
         self.peer_manager.connected_consensus_peer()
+    }
+
+    fn add_reuse_port_addr(&mut self, addr: Multiaddr) {
+        let peer_id = extract_peer_id(&addr).unwrap();
+        self.peer_manager.with_registry_mut(|reg| {
+            if let Some(info) = reg.peers.get_mut(&peer_id) {
+                info.reuse = true
+            }
+        });
+        self.peer_manager
+            .with_peer_store_mut(|peer_store| peer_store.add_outbound_addr(addr));
     }
 }

@@ -36,12 +36,12 @@ use core_mempool::{
     DefaultMemPoolAdapter, MemPoolImpl, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
     RPC_PULL_TXS, RPC_RESP_PULL_TXS, RPC_RESP_PULL_TXS_SYNC,
 };
-use core_network::{NetworkConfig, NetworkService};
+use core_network::{NetworkConfig, NetworkService, PeerId, PeerIdExt};
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 #[cfg(unix)]
 use protocol::tokio::signal::unix::{self as os_impl};
 use protocol::tokio::{sync::Mutex as AsyncMutex, time::sleep};
-use protocol::traits::{CommonStorage, Context, Executor, MemPool, NodeInfo, Storage};
+use protocol::traits::{CommonStorage, Context, Executor, MemPool, Network, NodeInfo, Storage};
 use protocol::types::{
     Account, Address, Bloom, BloomInput, Genesis, Hasher, MerkleRoot, Metadata, Validator,
     NIL_DATA, RLP_NULL, U256,
@@ -416,16 +416,15 @@ impl Axon {
             lock,
         ));
 
-        // let peer_ids = metadata
-        //     .verifier_list
-        //     .iter()
-        //     .map(|v|
-        // PeerId::from_pubkey_bytes(v.pub_key.decode()).map(PeerIdExt::into_bytes_ext))
-        //     .collect::<Result<Vec<_>, _>>()?;
+        let peer_ids = metadata
+            .verifier_list
+            .iter()
+            .map(|v| PeerId::from_pubkey_bytes(v.pub_key.decode()).map(PeerIdExt::into_bytes_ext))
+            .collect::<Result<Vec<_>, _>>()?;
 
-        // network_service
-        //     .handle()
-        //     .tag_consensus(Context::new(), peer_ids)?;
+        network_service
+            .handle()
+            .tag_consensus(Context::new(), peer_ids)?;
 
         // register consensus
         network_service.register_endpoint_handler(
