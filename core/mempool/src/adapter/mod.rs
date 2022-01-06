@@ -22,9 +22,7 @@ use core_executor::{EVMExecutorAdapter, EvmExecutor};
 use protocol::traits::{
     Context, Executor, Gossip, MemPoolAdapter, PeerTrust, Priority, Rpc, Storage, TrustFeedback,
 };
-use protocol::types::{
-    recover_intact_pub_key, Hash, MerkleRoot, SignedTransaction, TransactionAction, H160, U256,
-};
+use protocol::types::{recover_intact_pub_key, Hash, MerkleRoot, SignedTransaction, H160, U256};
 use protocol::{
     async_trait, codec::ProtocolCodec, Display, ProtocolError, ProtocolErrorKind, ProtocolResult,
 };
@@ -257,37 +255,37 @@ where
     async fn check_authorization(
         &self,
         _ctx: Context,
-        tx: Box<SignedTransaction>,
+        tx: &SignedTransaction,
     ) -> ProtocolResult<()> {
-        if let TransactionAction::Call(addr) = tx.transaction.unsigned.action {
-            if let Some(res) = self.addr_nonce.get(&addr) {
-                if res.value() >= &tx.transaction.unsigned.nonce {
-                    return Err(MemPoolError::InvalidNonce {
-                        current:  res.value().as_u64(),
-                        tx_nonce: tx.transaction.unsigned.nonce.as_u64(),
-                    }
-                    .into());
-                } else {
-                    return Ok(());
-                }
-            }
-
-            let backend = EVMExecutorAdapter::from_root(
-                **CURRENT_STATE_ROOT.load(),
-                Arc::clone(&self.trie_db),
-                Arc::clone(&self.storage),
-                Default::default(),
-            )?;
-
-            let account = EvmExecutor::default().get_account(&backend, &addr);
-            self.addr_nonce.insert(addr, account.nonce);
-            if account.nonce >= tx.transaction.unsigned.nonce {
+        let addr = &tx.sender;
+        if let Some(res) = self.addr_nonce.get(addr) {
+            if res.value() >= &tx.transaction.unsigned.nonce {
                 return Err(MemPoolError::InvalidNonce {
-                    current:  account.nonce.as_u64(),
+                    current:  res.value().as_u64(),
                     tx_nonce: tx.transaction.unsigned.nonce.as_u64(),
                 }
                 .into());
+            } else {
+                return Ok(());
             }
+        }
+
+        let backend = EVMExecutorAdapter::from_root(
+            **CURRENT_STATE_ROOT.load(),
+            Arc::clone(&self.trie_db),
+            Arc::clone(&self.storage),
+            Default::default(),
+        )?;
+
+        let account = EvmExecutor::default().get_account(&backend, &addr);
+        self.addr_nonce.insert(*addr, account.nonce);
+
+        if account.nonce >= tx.transaction.unsigned.nonce {
+            return Err(MemPoolError::InvalidNonce {
+                current:  account.nonce.as_u64(),
+                tx_nonce: tx.transaction.unsigned.nonce.as_u64(),
+            }
+            .into());
         }
 
         Ok(())
@@ -346,7 +344,7 @@ where
                     TrustFeedback::Worse(format!("Mempool wrong chain of tx {:?}", tx_hash)),
                 );
             }
-            let wrong_chain_id = MemPoolError::WrongChain { tx_hash };
+            let wrong_chain_id = MemPoolError::WrongChain(tx_hash);
 
             return Err(wrong_chain_id.into());
         }
@@ -369,7 +367,7 @@ where
 
     async fn check_storage_exist(&self, ctx: Context, tx_hash: &Hash) -> ProtocolResult<()> {
         match self.storage.get_transaction_by_hash(ctx, tx_hash).await {
-            Ok(Some(_)) => Err(MemPoolError::CommittedTx { tx_hash: *tx_hash }.into()),
+            Ok(Some(_)) => Err(MemPoolError::CommittedTx(*tx_hash).into()),
             Ok(None) => Ok(()),
             Err(err) => Err(err),
         }

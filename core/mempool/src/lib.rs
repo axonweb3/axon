@@ -90,27 +90,21 @@ where
     }
 
     async fn insert_tx(&self, ctx: Context, tx: SignedTransaction) -> ProtocolResult<()> {
-        let tx = Box::new(tx);
         let tx_hash = &tx.transaction.hash;
         if self.pool.reach_limit() {
-            return Err(MemPoolError::ReachLimit {
-                pool_size: self.pool.pool_size(),
-            }
-            .into());
+            return Err(MemPoolError::ReachLimit(self.pool.pool_size()).into());
         }
 
-        self.adapter
-            .check_authorization(ctx.clone(), tx.clone())
-            .await?;
+        self.adapter.check_authorization(ctx.clone(), &tx).await?;
         self.adapter.check_transaction(ctx.clone(), &tx).await?;
         self.adapter
             .check_storage_exist(ctx.clone(), tx_hash)
             .await?;
 
-        self.pool.insert(*tx.clone())?;
+        self.pool.insert(tx.clone())?;
 
         if !ctx.is_network_origin_txs() {
-            self.adapter.broadcast_tx(ctx, *tx).await?;
+            self.adapter.broadcast_tx(ctx, tx).await?;
         } else {
             self.adapter.report_good(ctx);
         }
@@ -118,24 +112,25 @@ where
         Ok(())
     }
 
-    async fn verify_tx_in_parallel(&self, ctx: Context, tx_ptrs: Vec<usize>) -> ProtocolResult<()> {
+    async fn verify_tx_in_parallel(
+        &self,
+        ctx: Context,
+        txs: Vec<SignedTransaction>,
+    ) -> ProtocolResult<()> {
         let now = Instant::now();
-        let len = tx_ptrs.len();
+        let len = txs.len();
 
-        let futs = tx_ptrs
+        let futs = txs
             .into_iter()
-            .map(|ptr| {
+            .map(|tx| {
                 let adapter = Arc::clone(&self.adapter);
                 let ctx = ctx.clone();
 
                 tokio::spawn(async move {
-                    let boxed_stx = unsafe { Box::from_raw(ptr as *mut SignedTransaction) };
-                    let signed_tx = *(boxed_stx.clone());
-
-                    adapter.check_authorization(ctx.clone(), boxed_stx).await?;
-                    adapter.check_transaction(ctx.clone(), &signed_tx).await?;
+                    adapter.check_authorization(ctx.clone(), &tx).await?;
+                    adapter.check_transaction(ctx.clone(), &tx).await?;
                     adapter
-                        .check_storage_exist(ctx.clone(), &signed_tx.transaction.hash)
+                        .check_storage_exist(ctx.clone(), &tx.transaction.hash)
                         .await
                 })
             })
@@ -267,18 +262,10 @@ where
                 .into());
             }
 
-            let (tx_ptrs, txs): (Vec<_>, Vec<_>) = txs
-                .into_iter()
-                .map(|tx| {
-                    let boxed = Box::new(tx);
-                    (Box::into_raw(boxed.clone()) as usize, boxed)
-                })
-                .unzip();
-
-            self.verify_tx_in_parallel(ctx.clone(), tx_ptrs).await?;
+            self.verify_tx_in_parallel(ctx.clone(), txs.clone()).await?;
 
             for signed_tx in txs.into_iter() {
-                self.pool.insert(*signed_tx)?;
+                self.pool.insert(signed_tx)?;
             }
 
             self.adapter.report_good(ctx);
@@ -313,7 +300,7 @@ fn check_dup_order_hashes(order_tx_hashes: &[Hash]) -> ProtocolResult<()> {
 
     for hash in order_tx_hashes.iter() {
         if dup_set.contains(hash) {
-            return Err(MemPoolError::EnsureDup { hash: *hash }.into());
+            return Err(MemPoolError::EnsureDup(*hash).into());
         }
 
         dup_set.insert(hash);
@@ -357,29 +344,29 @@ pub enum MemPoolError {
     #[display(fmt = "Tx nonce {} is invalid current nonce {}", tx_nonce, current)]
     InvalidNonce { current: u64, tx_nonce: u64 },
 
-    #[display(fmt = "Tx: {:?} inserts failed", tx_hash)]
-    Insert { tx_hash: Hash },
+    #[display(fmt = "Tx: {:?} inserts failed", _0)]
+    Insert(Hash),
 
-    #[display(fmt = "Mempool reaches limit: {}", pool_size)]
-    ReachLimit { pool_size: usize },
+    #[display(fmt = "Mempool reaches limit: {}", _0)]
+    ReachLimit(usize),
 
-    #[display(fmt = "Tx: {:?} exists in pool", tx_hash)]
-    Dup { tx_hash: Hash },
+    #[display(fmt = "Tx: {:?} exists in pool", _0)]
+    Dup(Hash),
 
     #[display(fmt = "Pull txs, require: {}, response: {}", require, response)]
     EnsureBreak { require: usize, response: usize },
 
     #[display(
         fmt = "There is duplication in order transactions. duplication tx_hash {:?}",
-        hash
+        _0
     )]
-    EnsureDup { hash: Hash },
+    EnsureDup(Hash),
 
     #[display(fmt = "Fetch full txs, require: {}, response: {}", require, response)]
     MisMatch { require: usize, response: usize },
 
-    #[display(fmt = "Tx inserts candidate_queue failed, len: {}", len)]
-    InsertCandidate { len: usize },
+    #[display(fmt = "Tx inserts candidate_queue failed, len: {}", _0)]
+    InsertCandidate(usize),
 
     #[display(fmt = "Tx: {:?} check authorization error {:?}", tx_hash, err_info)]
     CheckAuthorization { tx_hash: Hash, err_info: String },
@@ -387,17 +374,17 @@ pub enum MemPoolError {
     #[display(fmt = "Check_hash failed, expect: {:?}, get: {:?}", expect, actual)]
     CheckHash { expect: Hash, actual: Hash },
 
-    #[display(fmt = "Tx: {:?} already commit", tx_hash)]
-    CommittedTx { tx_hash: Hash },
+    #[display(fmt = "Tx: {:?} already commit", _0)]
+    CommittedTx(Hash),
 
-    #[display(fmt = "Tx: {:?} doesn't match our chain id", tx_hash)]
-    WrongChain { tx_hash: Hash },
+    #[display(fmt = "Tx: {:?} doesn't match our chain id", _0)]
+    WrongChain(Hash),
 
     #[display(fmt = "Tx: {:?} timeout {}", tx_hash, timeout)]
     Timeout { tx_hash: Hash, timeout: u64 },
 
-    #[display(fmt = "Tx: {:?} invalid timeout", tx_hash)]
-    InvalidTimeout { tx_hash: Hash },
+    #[display(fmt = "Tx: {:?} invalid timeout", _0)]
+    InvalidTimeout(Hash),
 
     #[display(fmt = "Batch transaction validation failed")]
     VerifyBatchTransactions,

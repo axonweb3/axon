@@ -54,10 +54,7 @@ impl PirorityPool {
 
     pub fn insert(&self, stx: SignedTransaction) -> ProtocolResult<()> {
         if self.co_queue.is_full() {
-            return Err(MemPoolError::ReachLimit {
-                pool_size: self.co_queue.len(),
-            }
-            .into());
+            return Err(MemPoolError::ReachLimit(self.co_queue.len()).into());
         }
 
         let tx_wrapper = TxWrapper::from(stx);

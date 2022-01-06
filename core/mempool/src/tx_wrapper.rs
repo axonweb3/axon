@@ -121,20 +121,20 @@ mod tests {
 
     #[test]
     fn test_tx_digest_sort() {
-		let tx_1 = mock_tx_digest(1, 10);
-		let tx_2 = mock_tx_digest(3, 15);
-		let tx_3 = mock_tx_digest(2, 5);
-		let tx_4 = mock_tx_digest(2, 3);
+        let tx_1 = mock_tx_digest(1, 10);
+        let tx_2 = mock_tx_digest(3, 15);
+        let tx_3 = mock_tx_digest(2, 5);
+        let tx_4 = mock_tx_digest(2, 3);
 
-		let mut heap = BinaryHeap::new();
-		heap.push(Arc::clone(&tx_1));
-		heap.push(Arc::clone(&tx_3));
-		heap.push(Arc::clone(&tx_2));
-		heap.push(Arc::clone(&tx_4));
+        let mut heap = BinaryHeap::new();
+        heap.push(Arc::clone(&tx_1));
+        heap.push(Arc::clone(&tx_3));
+        heap.push(Arc::clone(&tx_2));
+        heap.push(Arc::clone(&tx_4));
 
-		assert_eq!(heap.pop().unwrap(), tx_2);
-		assert_eq!(heap.pop().unwrap(), tx_4);
-		assert_eq!(heap.pop().unwrap(), tx_3);
-		assert_eq!(heap.pop().unwrap(), tx_1);
-	}
+        assert_eq!(heap.pop().unwrap(), tx_2);
+        assert_eq!(heap.pop().unwrap(), tx_4);
+        assert_eq!(heap.pop().unwrap(), tx_3);
+        assert_eq!(heap.pop().unwrap(), tx_1);
+    }
 }

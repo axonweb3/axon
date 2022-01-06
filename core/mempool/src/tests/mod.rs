@@ -67,10 +67,10 @@ impl MemPoolAdapter for HashMemPoolAdapter {
     async fn check_authorization(
         &self,
         _ctx: Context,
-        tx: Box<SignedTransaction>,
+        tx: &SignedTransaction,
     ) -> ProtocolResult<()> {
-        check_hash(&tx.clone()).await?;
-        check_sig(&tx)
+        check_hash(tx).await?;
+        check_sig(tx)
     }
 
     async fn check_transaction(

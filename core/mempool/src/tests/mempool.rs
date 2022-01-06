@@ -356,7 +356,7 @@ async fn bench_sign_with_spawn_list() {
             let adapter = Arc::clone(&adapter);
             tokio::spawn(async move {
                 adapter
-                    .check_authorization(Context::new(), Box::new(tx))
+                    .check_authorization(Context::new(), &tx)
                     .await
                     .unwrap();
             })
@@ -374,15 +374,12 @@ async fn bench_sign_with_spawn_list() {
 #[tokio::test]
 async fn bench_sign() {
     let adapter = HashMemPoolAdapter::new();
-    let txs = default_mock_txs(30000)
-        .into_iter()
-        .map(Box::new)
-        .collect::<Vec<_>>();
+    let txs = default_mock_txs(30000).into_iter().collect::<Vec<_>>();
     let now = std::time::Instant::now();
 
     for tx in txs.iter() {
         adapter
-            .check_authorization(Context::new(), tx.clone())
+            .check_authorization(Context::new(), tx)
             .await
             .unwrap();
     }
