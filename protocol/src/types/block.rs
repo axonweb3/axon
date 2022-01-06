@@ -6,7 +6,7 @@ use crate::types::{
 
 pub type BlockNumber = u64;
 
-#[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq)]
 pub struct Proposal {
     pub prev_hash:                  Hash,
     pub proposer:                   H160,
