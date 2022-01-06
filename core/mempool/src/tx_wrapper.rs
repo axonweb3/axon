@@ -93,6 +93,48 @@ impl TxDigest {
     }
 }
 
-pub fn get_tx_ptr(stx: &SignedTransaction) -> TxPtr {
+fn get_tx_ptr(stx: &SignedTransaction) -> TxPtr {
     Arc::new(stx.into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use std::collections::BinaryHeap;
+
+    use rand::random;
+
+    fn rand_hash() -> Hash {
+        Hash::from_slice(&(0..32).map(|_| random::<u8>()).collect::<Vec<_>>())
+    }
+
+    fn mock_tx_digest(gas_price: u64, nonce: u64) -> Arc<TxDigest> {
+        Arc::new(TxDigest {
+            hash:       rand_hash(),
+            gas_price:  gas_price.into(),
+            nonce:      nonce.into(),
+            sender:     H160::default(),
+            is_dropped: AtomicBool::new(false),
+        })
+    }
+
+    #[test]
+    fn test_tx_digest_sort() {
+		let tx_1 = mock_tx_digest(1, 10);
+		let tx_2 = mock_tx_digest(3, 15);
+		let tx_3 = mock_tx_digest(2, 5);
+		let tx_4 = mock_tx_digest(2, 3);
+
+		let mut heap = BinaryHeap::new();
+		heap.push(Arc::clone(&tx_1));
+		heap.push(Arc::clone(&tx_3));
+		heap.push(Arc::clone(&tx_2));
+		heap.push(Arc::clone(&tx_4));
+
+		assert_eq!(heap.pop().unwrap(), tx_2);
+		assert_eq!(heap.pop().unwrap(), tx_4);
+		assert_eq!(heap.pop().unwrap(), tx_3);
+		assert_eq!(heap.pop().unwrap(), tx_1);
+	}
 }

@@ -409,6 +409,7 @@ where
         self.gas_limit.store(cycles_limit, Ordering::Relaxed);
         self.max_tx_size
             .store(max_tx_size as usize, Ordering::Relaxed);
+        self.addr_nonce.clear();
         CURRENT_STATE_ROOT.swap(Arc::new(state_root));
     }
 

@@ -72,6 +72,7 @@ impl PirorityPool {
         self.real_queue
             .lock()
             .iter()
+            .filter(|ptr| !ptr.is_dropped())
             .take(limit)
             .map(|ptr| ptr.hash)
             .collect()
@@ -100,7 +101,7 @@ impl PirorityPool {
     pub fn flush(&self, hashes: &[Hash]) -> ProtocolResult<()> {
         let _ = self.flush_lock.lock();
 
-        self.clear_co_queue();
+        self.topple_queue();
         let residual = self.get_residual(hashes);
 
         self.clear_all();
@@ -125,7 +126,7 @@ impl PirorityPool {
         self.tx_map.iter().map(|kv| kv.value().clone()).collect()
     }
 
-    fn clear_co_queue(&self) {
+    fn topple_queue(&self) {
         let txs = pop_all_item(Arc::clone(&self.co_queue));
         let mut q = self.real_queue.lock();
         txs.into_iter().for_each(|p_tx| q.push(p_tx));
@@ -146,6 +147,11 @@ impl PirorityPool {
         {
             old_ptr.set_dropped();
         }
+    }
+
+    #[cfg(test)]
+    pub fn real_queue_len(&self) -> usize {
+        self.real_queue.lock().len()
     }
 }
 

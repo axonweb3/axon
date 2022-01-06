@@ -261,9 +261,13 @@ fn bench_insert_serial_1000(b: &mut Bencher) {
 fn bench_package(b: &mut Bencher) {
     let runtime = tokio::runtime::Runtime::new().unwrap();
 
-    let mempool = Arc::new(default_mempool_sync());
+    let mempool = Arc::new(runtime.block_on(default_mempool()));
     let txs = default_mock_txs(50_000);
     runtime.block_on(concurrent_insert(txs, Arc::clone(&mempool)));
+    std::thread::sleep(std::time::Duration::from_secs(1));
+
+    assert_eq!(mempool.get_tx_cache().real_queue_len(), 50_000);
+
     b.iter(|| {
         runtime.block_on(exec_package(
             Arc::clone(&mempool),
