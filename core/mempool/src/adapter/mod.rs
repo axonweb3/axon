@@ -277,7 +277,7 @@ where
             Default::default(),
         )?;
 
-        let account = EvmExecutor::default().get_account(&backend, &addr);
+        let account = EvmExecutor::default().get_account(&backend, addr);
         self.addr_nonce.insert(*addr, account.nonce);
 
         if account.nonce >= tx.transaction.unsigned.nonce {
