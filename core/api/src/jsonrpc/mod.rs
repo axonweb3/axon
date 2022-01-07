@@ -1,19 +1,19 @@
 mod r#impl;
 mod web3_types;
 
-use jsonrpsee::{
-    http_server::{HttpServerBuilder, HttpServerHandle},
-    proc_macros::rpc,
-    types::Error,
-};
+use std::sync::Arc;
+
+use jsonrpsee::http_server::{HttpServerBuilder, HttpServerHandle};
+use jsonrpsee::ws_server::{WsServerBuilder, WsServerHandle};
+use jsonrpsee::{core::Error, proc_macros::rpc};
 
 use common_config_parser::types::ConfigApi;
-use protocol::traits::{MemPool, Storage};
+use protocol::traits::APIAdapter;
 use protocol::types::{Bytes, SignedTransaction, H160, H256, U256};
 use protocol::ProtocolResult;
 
 use crate::jsonrpc::web3_types::{BlockId, Web3Block, Web3CallRequest, Web3Receipt};
-use crate::{adapter::DefaultAPIAdapter, APIError};
+use crate::APIError;
 
 type RpcResult<T> = Result<T, Error>;
 
@@ -69,23 +69,26 @@ pub trait AxonJsonRpc {
     async fn gas_price(&self) -> RpcResult<U256>;
 }
 
-pub fn run_http_server<M, S, DB>(
+pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
     config: ConfigApi,
-    adapter: DefaultAPIAdapter<M, S, DB>,
-) -> ProtocolResult<HttpServerHandle>
-where
-    M: MemPool + 'static,
-    S: Storage + 'static,
-    DB: cita_trie::DB + 'static,
-{
-    let server = HttpServerBuilder::new()
+    adapter: Arc<Adapter>,
+) -> ProtocolResult<(HttpServerHandle, WsServerHandle)> {
+    let http_server = HttpServerBuilder::new()
         .max_request_body_size(config.max_payload_size as u32)
         .build(config.listening_address)
         .map_err(|e| APIError::HttpServer(e.to_string()))?;
+    let ws_server = WsServerBuilder::new()
+        .max_request_body_size(config.max_payload_size as u32)
+        .build(config.listening_address)
+        .await
+        .map_err(|e| APIError::WebSocketServer(e.to_string()))?;
 
-    let handle = server
-        .start(r#impl::JsonRpcImpl::new(adapter).into_rpc())
+    let http_handle = http_server
+        .start(r#impl::JsonRpcImpl::new(Arc::clone(&adapter)).into_rpc())
         .map_err(|e| APIError::HttpServer(e.to_string()))?;
+    let ws_handle = ws_server
+        .start(r#impl::JsonRpcImpl::new(adapter).into_rpc())
+        .map_err(|e| APIError::WebSocketServer(e.to_string()))?;
 
-    Ok(handle)
+    Ok((http_handle, ws_handle))
 }

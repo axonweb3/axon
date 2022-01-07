@@ -9,7 +9,7 @@ edition = "2021"
 async-graphql = { version = "3.0", features = ["tracing"] }
 cita_trie = "3.0"
 # jsonrpsee = { version = "0.7", features = ["http-server", "macros"] }
-jsonrpsee = { git = "https://github.com/davidchild/jsonrpsee.git", branch = "jsonrpsee_cross",features = ["http-server", "macros"] }
+jsonrpsee = { git = "https://github.com/paritytech/jsonrpsee.git", rev = "3749ae2", features = ["http-server", "macros", "ws-server"] }
 parking_lot = "0.11"
 log = "0.4"
 hex = "0.4"

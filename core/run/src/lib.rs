@@ -16,7 +16,7 @@ use common_crypto::{
     BlsCommonReference, BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey,
     ToPublicKey, UncompressedPublicKey,
 };
-use core_api::{jsonrpc::run_http_server, DefaultAPIAdapter};
+use core_api::{jsonrpc::run_jsonrpc_server, DefaultAPIAdapter};
 use core_consensus::message::{
     ChokeMessageHandler, ProposalMessageHandler, PullBlockRpcHandler, PullProofRpcHandler,
     PullTxsRpcHandler, QCMessageHandler, RemoteHeightMessageHandler, VoteMessageHandler,
@@ -469,12 +469,12 @@ impl Axon {
         tokio::spawn(network_service.run());
 
         // Run API
-        let api_adapter = DefaultAPIAdapter::new(
+        let api_adapter = Arc::new(DefaultAPIAdapter::new(
             Arc::clone(&mempool),
             Arc::clone(&storage),
             Arc::clone(&trie_db),
-        );
-        let _handle = run_http_server(self.config.rpc.clone(), api_adapter)?;
+        ));
+        let _handles = run_jsonrpc_server(self.config.rpc.clone(), api_adapter).await?;
 
         // Run sync
         tokio::spawn(async move {
