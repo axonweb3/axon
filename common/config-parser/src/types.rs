@@ -11,12 +11,13 @@ use protocol::types::Hex;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct ConfigApi {
-    pub listening_address:   SocketAddr,
+    pub http_listening_address: Option<SocketAddr>,
+    pub ws_listening_address:   Option<SocketAddr>,
     #[serde(default)]
-    pub maxconn:             usize,
+    pub maxconn:                usize,
     #[serde(default)]
-    pub max_payload_size:    usize,
-    pub enable_dump_profile: Option<bool>,
+    pub max_payload_size:       usize,
+    pub enable_dump_profile:    Option<bool>,
 }
 
 #[derive(Clone, Debug, Deserialize)]

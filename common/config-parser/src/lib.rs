@@ -35,12 +35,6 @@ pub fn parse_file<T: de::DeserializeOwned>(
     }
 }
 
-// /// If name is starts with "http", parse it by function `parse_http`, else
-// /// `parse_file` in use.
-// pub fn parse<T: de::DeserializeOwned>(name: &str) -> Result<T, ParseError> {
-//     parse_file(name)
-// }
-
 #[derive(Debug)]
 pub enum ParseError {
     IO(io::Error),

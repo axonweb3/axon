@@ -72,23 +72,36 @@ pub trait AxonJsonRpc {
 pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
     config: ConfigApi,
     adapter: Arc<Adapter>,
-) -> ProtocolResult<(HttpServerHandle, WsServerHandle)> {
-    let http_server = HttpServerBuilder::new()
-        .max_request_body_size(config.max_payload_size as u32)
-        .build(config.listening_address)
-        .map_err(|e| APIError::HttpServer(e.to_string()))?;
-    let ws_server = WsServerBuilder::new()
-        .max_request_body_size(config.max_payload_size as u32)
-        .build(config.listening_address)
-        .await
-        .map_err(|e| APIError::WebSocketServer(e.to_string()))?;
+) -> ProtocolResult<(Option<HttpServerHandle>, Option<WsServerHandle>)> {
+    let mut ret = (None, None);
 
-    let http_handle = http_server
-        .start(r#impl::JsonRpcImpl::new(Arc::clone(&adapter)).into_rpc())
-        .map_err(|e| APIError::HttpServer(e.to_string()))?;
-    let ws_handle = ws_server
-        .start(r#impl::JsonRpcImpl::new(adapter).into_rpc())
-        .map_err(|e| APIError::WebSocketServer(e.to_string()))?;
+    if let Some(addr) = config.http_listening_address {
+        let server = HttpServerBuilder::new()
+            .max_request_body_size(config.max_payload_size as u32)
+            .build(addr)
+            .map_err(|e| APIError::HttpServer(e.to_string()))?;
 
-    Ok((http_handle, ws_handle))
+        ret.0 = Some(
+            server
+                .start(r#impl::JsonRpcImpl::new(Arc::clone(&adapter)).into_rpc())
+                .map_err(|e| APIError::HttpServer(e.to_string()))?,
+        );
+    }
+
+    if let Some(addr) = config.ws_listening_address {
+        let server = WsServerBuilder::new()
+            .max_request_body_size(config.max_payload_size as u32)
+            .max_connections(config.maxconn as u64)
+            .build(addr)
+            .await
+            .map_err(|e| APIError::WebSocketServer(e.to_string()))?;
+
+        ret.1 = Some(
+            server
+                .start(r#impl::JsonRpcImpl::new(adapter).into_rpc())
+                .map_err(|e| APIError::WebSocketServer(e.to_string()))?,
+        )
+    }
+
+    Ok(ret)
 }

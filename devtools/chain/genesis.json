@@ -24,6 +24,7 @@
         "signature": [],
         "bitmap": []
       },
+      "last_checkpoint_block_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
       "chain_id": 1
     },
     "tx_hashes": []
