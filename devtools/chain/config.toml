@@ -5,7 +5,8 @@ privkey = "0x95500289866f83502cc1fb894ef5e2b840ca5f867cc9e84ab32fb8872b5dd36c"
 data_path = "./devtools/chain/data"
 
 [rpc]
-listening_address = "127.0.0.1:8000"
+http_listening_address = "127.0.0.1:8000"
+ws_listening_address = "127.0.0.1:8010"
 maxconn = 25000
 max_payload_size = 1048576
 # enable_dump_profile = false
