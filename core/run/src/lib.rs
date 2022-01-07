@@ -36,7 +36,9 @@ use core_mempool::{
     DefaultMemPoolAdapter, MemPoolImpl, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
     RPC_PULL_TXS, RPC_RESP_PULL_TXS, RPC_RESP_PULL_TXS_SYNC,
 };
-use core_network::{NetworkConfig, NetworkService, PeerId, PeerIdExt};
+use core_network::{
+    observe_listen_port_occupancy, NetworkConfig, NetworkService, PeerId, PeerIdExt,
+};
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 #[cfg(unix)]
 use protocol::tokio::signal::unix::{self as os_impl};
@@ -152,6 +154,7 @@ impl Axon {
 
     pub async fn start(self) -> ProtocolResult<()> {
         log::info!("node starts");
+        observe_listen_port_occupancy(&[self.config.network.listening_address.clone()]).await?;
         let config = self.config.clone();
         // Init Block db
         let path_block = config.data_path_for_block();

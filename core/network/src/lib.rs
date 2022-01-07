@@ -15,7 +15,7 @@ mod traits;
 
 pub use self::config::NetworkConfig;
 pub use self::service::{NetworkService, NetworkServiceHandle};
-pub use tentacle::secio::PeerId;
+pub use tentacle::{multiaddr, secio::PeerId};
 
 use crate::error::NetworkError;
 use protocol::types::Bytes;
@@ -50,4 +50,40 @@ impl PeerIdExt for PeerId {
     fn to_string(&self) -> String {
         self.to_base58()
     }
+}
+
+/// Observe listen port occupancy
+pub async fn observe_listen_port_occupancy(
+    _addrs: &[multiaddr::MultiAddr],
+) -> Result<(), NetworkError> {
+    #[cfg(target_os = "linux")]
+    {
+        use std::net::{SocketAddr, TcpListener};
+        use tentacle::utils::{dns::DnsResolver, multiaddr_to_socketaddr};
+
+        for raw_addr in _addrs {
+            let ip_addr: Option<SocketAddr> = match DnsResolver::new(raw_addr.clone()) {
+                Some(dns) => dns
+                    .await
+                    .ok()
+                    .as_ref()
+                    .map(multiaddr_to_socketaddr)
+                    .flatten(),
+                None => multiaddr_to_socketaddr(raw_addr),
+            };
+
+            if let Some(addr) = ip_addr {
+                if let Err(e) = TcpListener::bind(addr) {
+                    log::error!(
+                        "addr {} can't use on your machines by error: {}, please check",
+                        raw_addr,
+                        e
+                    );
+                    return Err(NetworkError::IoError(e));
+                }
+            }
+        }
+    }
+
+    Ok(())
 }
