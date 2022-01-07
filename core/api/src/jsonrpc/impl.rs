@@ -1,6 +1,8 @@
-use jsonrpsee::types::Error;
+use std::sync::Arc;
 
-use protocol::traits::{APIAdapter, Context, MemPool, Storage};
+use jsonrpsee::core::Error;
+
+use protocol::traits::{APIAdapter, Context};
 use protocol::types::{
     Bytes, Header, SignedTransaction, TxResp, UnverifiedTransaction, H160, H256, H64, U256,
 };
@@ -10,19 +12,14 @@ use crate::jsonrpc::web3_types::{
     BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3Receipt,
 };
 use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
-use crate::{adapter::DefaultAPIAdapter, APIError};
+use crate::APIError;
 
-pub struct JsonRpcImpl<M, S, DB> {
-    adapter: DefaultAPIAdapter<M, S, DB>,
+pub struct JsonRpcImpl<Adapter> {
+    adapter: Arc<Adapter>,
 }
 
-impl<M, S, DB> JsonRpcImpl<M, S, DB>
-where
-    M: MemPool + 'static,
-    S: Storage + 'static,
-    DB: cita_trie::DB + 'static,
-{
-    pub fn new(adapter: DefaultAPIAdapter<M, S, DB>) -> Self {
+impl<Adapter: APIAdapter> JsonRpcImpl<Adapter> {
+    pub fn new(adapter: Arc<Adapter>) -> Self {
         Self { adapter }
     }
 
@@ -42,12 +39,7 @@ where
 }
 
 #[async_trait]
-impl<M, S, DB> AxonJsonRpcServer for JsonRpcImpl<M, S, DB>
-where
-    M: MemPool + 'static,
-    S: Storage + 'static,
-    DB: cita_trie::DB + 'static,
-{
+impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
     async fn send_raw_transaction(&self, tx: Bytes) -> RpcResult<H256> {
         let utx = UnverifiedTransaction::decode(&tx[1..])
             .map_err(|e| Error::Custom(e.to_string()))?

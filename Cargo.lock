@@ -460,9 +460,9 @@ dependencies = [
 
 [[package]]
 name = "bumpalo"
-version = "3.9.0"
+version = "3.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe438c9d2f2b0fb88a112154ed81e30b0a491c29322afe1db3b6eec5811f5ba0"
+checksum = "a4a45a46ab1f2412e53d3a0ade76ffad2025804294569aae387231a0cd6e0899"
 
 [[package]]
 name = "byte-slice-cast"
@@ -1572,9 +1572,9 @@ dependencies = [
 
 [[package]]
 name = "h2"
-version = "0.3.9"
+version = "0.3.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f072413d126e57991455e0a922b31e4c8ba7c2ffbebf6b78b4f8521397d65cd"
+checksum = "0c9de88456263e249e241fcd211d3954e2c9b0ef7ccfc235a444eb367cae3689"
 dependencies = [
  "bytes",
  "fnv",
@@ -1876,69 +1876,24 @@ checksum = "078e285eafdfb6c4b434e0d31e8cfcb5115b651496faca5749b88fafd4f23bfd"
 
 [[package]]
 name = "jsonrpsee"
-version = "0.6.0"
-source = "git+https://github.com/davidchild/jsonrpsee.git?branch=jsonrpsee_cross#2ef8ed9aee5052a016a40a45e2031c7ab6997f1e"
+version = "0.7.0"
+source = "git+https://github.com/paritytech/jsonrpsee.git?rev=3749ae2#3749ae277ff8da1c1bb285420a97055e7b9a137a"
 dependencies = [
+ "jsonrpsee-core",
  "jsonrpsee-http-server",
  "jsonrpsee-proc-macros",
  "jsonrpsee-types",
- "jsonrpsee-utils",
+ "jsonrpsee-ws-server",
 ]
 
 [[package]]
-name = "jsonrpsee-http-server"
-version = "0.6.0"
-source = "git+https://github.com/davidchild/jsonrpsee.git?branch=jsonrpsee_cross#2ef8ed9aee5052a016a40a45e2031c7ab6997f1e"
-dependencies = [
- "futures-channel",
- "futures-util",
- "globset",
- "hyper",
- "jsonrpsee-types",
- "jsonrpsee-utils",
- "lazy_static",
- "serde_json",
- "socket2",
- "tokio",
- "tracing",
- "unicase",
-]
-
-[[package]]
-name = "jsonrpsee-proc-macros"
-version = "0.6.0"
-source = "git+https://github.com/davidchild/jsonrpsee.git?branch=jsonrpsee_cross#2ef8ed9aee5052a016a40a45e2031c7ab6997f1e"
-dependencies = [
- "proc-macro-crate",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "jsonrpsee-types"
-version = "0.6.0"
-source = "git+https://github.com/davidchild/jsonrpsee.git?branch=jsonrpsee_cross#2ef8ed9aee5052a016a40a45e2031c7ab6997f1e"
+name = "jsonrpsee-core"
+version = "0.7.0"
+source = "git+https://github.com/paritytech/jsonrpsee.git?rev=3749ae2#3749ae277ff8da1c1bb285420a97055e7b9a137a"
 dependencies = [
  "anyhow",
- "async-trait",
- "beef",
- "futures-channel",
- "futures-util",
- "hyper",
- "serde",
- "serde_json",
- "soketto",
- "thiserror",
- "tracing",
-]
-
-[[package]]
-name = "jsonrpsee-utils"
-version = "0.6.0"
-source = "git+https://github.com/davidchild/jsonrpsee.git?branch=jsonrpsee_cross#2ef8ed9aee5052a016a40a45e2031c7ab6997f1e"
-dependencies = [
  "arrayvec",
+ "async-trait",
  "beef",
  "futures-channel",
  "futures-util",
@@ -1949,8 +1904,68 @@ dependencies = [
  "rustc-hash",
  "serde",
  "serde_json",
+ "soketto",
  "thiserror",
  "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "jsonrpsee-http-server"
+version = "0.7.0"
+source = "git+https://github.com/paritytech/jsonrpsee.git?rev=3749ae2#3749ae277ff8da1c1bb285420a97055e7b9a137a"
+dependencies = [
+ "futures-channel",
+ "futures-util",
+ "globset",
+ "hyper",
+ "jsonrpsee-core",
+ "jsonrpsee-types",
+ "lazy_static",
+ "serde_json",
+ "socket2",
+ "tokio",
+ "tracing",
+ "unicase",
+]
+
+[[package]]
+name = "jsonrpsee-proc-macros"
+version = "0.7.0"
+source = "git+https://github.com/paritytech/jsonrpsee.git?rev=3749ae2#3749ae277ff8da1c1bb285420a97055e7b9a137a"
+dependencies = [
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "jsonrpsee-types"
+version = "0.7.0"
+source = "git+https://github.com/paritytech/jsonrpsee.git?rev=3749ae2#3749ae277ff8da1c1bb285420a97055e7b9a137a"
+dependencies = [
+ "anyhow",
+ "beef",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tracing",
+]
+
+[[package]]
+name = "jsonrpsee-ws-server"
+version = "0.7.0"
+source = "git+https://github.com/paritytech/jsonrpsee.git?rev=3749ae2#3749ae277ff8da1c1bb285420a97055e7b9a137a"
+dependencies = [
+ "futures-channel",
+ "futures-util",
+ "jsonrpsee-core",
+ "jsonrpsee-types",
+ "serde_json",
+ "soketto",
+ "tokio",
+ "tokio-util",
  "tracing",
 ]
 
@@ -3351,9 +3366,9 @@ dependencies = [
 
 [[package]]
 name = "sha2"
-version = "0.9.8"
+version = "0.9.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b69f9a4c9740d74c5baa3fd2e547f9525fa8088a8a958e0ca2409a514e33f5fa"
+checksum = "4d58a1e1bf39749807d89cf2d98ac2dfa0ff1cb3faa38fbb64dd88ac8013d800"
 dependencies = [
  "block-buffer 0.9.0",
  "cfg-if",
@@ -3769,6 +3784,7 @@ checksum = "9e99e1983e5d376cd8eb4b66604d2e99e79f5bd988c3055891dcd8c9e2604cc0"
 dependencies = [
  "bytes",
  "futures-core",
+ "futures-io",
  "futures-sink",
  "log",
  "pin-project-lite",

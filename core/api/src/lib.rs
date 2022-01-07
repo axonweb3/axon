@@ -16,6 +16,9 @@ pub enum APIError {
     #[display(fmt = "http server error {:?}", _0)]
     HttpServer(String),
 
+    #[display(fmt = "web socket server error {:?}", _0)]
+    WebSocketServer(String),
+
     #[display(fmt = "storage error {:?}", _0)]
     Storage(String),
 }
