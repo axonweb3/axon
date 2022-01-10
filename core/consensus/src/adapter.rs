@@ -480,7 +480,7 @@ where
             .verifier_list
             .iter()
             .map(|v| Node {
-                address:        v.pub_key.decode(),
+                address:        v.pub_key.as_bytes(),
                 propose_weight: v.propose_weight,
                 vote_weight:    v.vote_weight,
             })
@@ -514,7 +514,7 @@ where
             .verifier_list
             .iter()
             .filter_map(|v| {
-                if signed_voters.contains(&v.pub_key.decode()) {
+                if signed_voters.contains(&v.pub_key.as_bytes()) {
                     Some(v.bls_pub_key.clone())
                 } else {
                     None

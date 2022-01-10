@@ -55,6 +55,15 @@ impl Hasher {
 pub struct Hex(String);
 
 impl Hex {
+    pub fn decode(s: String) -> ProtocolResult<Bytes> {
+        if (!s.starts_with("0x") && !s.starts_with("0X")) || s.len() < 3 {
+            return Err(TypesError::HexPrefix.into());
+        }
+
+        let h = hex::decode(&s[2..]).map_err(|error| TypesError::FromHex { error })?;
+        Ok(Bytes::from(h))
+    }
+
     pub fn from_string(s: String) -> ProtocolResult<Self> {
         if (!s.starts_with("0x") && !s.starts_with("0X")) || s.len() < 3 {
             return Err(TypesError::HexPrefix.into());
@@ -72,7 +81,7 @@ impl Hex {
         (&self.0[2..]).to_owned()
     }
 
-    pub fn decode(&self) -> Bytes {
+    pub fn as_bytes(&self) -> Bytes {
         Bytes::from(hex::decode(&self.0[2..]).expect("impossible, already checked in from_string"))
     }
 }
@@ -321,7 +330,7 @@ pub struct ValidatorExtend {
 impl From<ValidatorExtend> for Validator {
     fn from(ve: ValidatorExtend) -> Self {
         Validator {
-            pub_key:        ve.pub_key.decode(),
+            pub_key:        ve.pub_key.as_bytes(),
             propose_weight: ve.propose_weight,
             vote_weight:    ve.vote_weight,
         }

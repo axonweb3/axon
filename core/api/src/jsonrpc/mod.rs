@@ -21,7 +21,7 @@ type RpcResult<T> = Result<T, Error>;
 pub trait AxonJsonRpc {
     /// Sends signed transaction, returning its hash.
     #[method(name = "eth_sendRawTransaction")]
-    async fn send_raw_transaction(&self, tx: Bytes) -> RpcResult<H256>;
+    async fn send_raw_transaction(&self, tx: String) -> RpcResult<H256>;
 
     /// Get transaction by its hash.
     #[method(name = "eth_getTransactionByHash")]
