@@ -136,13 +136,13 @@ fn test_simplestorage() {
     assert_eq!(r.remain_gas, 18446744073709450374);
 
     // Thr created contract's address is
-    // 0x1334d12e187d9aa97ea520fdd100c5d4f867ade0, you can get the address from
-    // the ApplyBackend.
+    // 0xc15d2ba57d126e6603240e89437efd419ce329d2, you can get the address by
+    // `println!("{:?}", backend.state().keys());`
 
     // let's call SimpleStorage.set(42)
     let tx = gen_tx(
         H160::from_str("0xf000000000000000000000000000000000000000").unwrap(),
-        H160::from_str("0x1334d12e187d9aa97ea520fdd100c5d4f867ade0").unwrap(),
+        H160::from_str("0xc15d2ba57d126e6603240e89437efd419ce329d2").unwrap(),
         hex::decode("60fe47b1000000000000000000000000000000000000000000000000000000000000002a")
             .unwrap(),
     );
@@ -154,7 +154,7 @@ fn test_simplestorage() {
     // let's call SimpleStorage.get() by exec
     let tx = gen_tx(
         H160::from_str("0xf000000000000000000000000000000000000000").unwrap(),
-        H160::from_str("0x1334d12e187d9aa97ea520fdd100c5d4f867ade0").unwrap(),
+        H160::from_str("0xc15d2ba57d126e6603240e89437efd419ce329d2").unwrap(),
         hex::decode("6d4ce63c").unwrap(),
     );
     let r = executor.inner_exec(&mut backend, tx);
@@ -168,7 +168,7 @@ fn test_simplestorage() {
     // let's call SimpleStorage.get() by call
     let r = executor.call(
         &mut backend,
-        H160::from_str("0x1334d12e187d9aa97ea520fdd100c5d4f867ade0").unwrap(),
+        H160::from_str("0xc15d2ba57d126e6603240e89437efd419ce329d2").unwrap(),
         hex::decode("6d4ce63c").unwrap(),
     );
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Returned));
