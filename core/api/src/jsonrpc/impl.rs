@@ -4,7 +4,7 @@ use jsonrpsee::core::Error;
 
 use protocol::traits::{APIAdapter, Context};
 use protocol::types::{
-    Bytes, Header, SignedTransaction, TxResp, UnverifiedTransaction, H160, H256, H64, U256,
+    Bytes, Header, Hex, SignedTransaction, TxResp, UnverifiedTransaction, H160, H256, H64, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
@@ -40,8 +40,9 @@ impl<Adapter: APIAdapter> JsonRpcImpl<Adapter> {
 
 #[async_trait]
 impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
-    async fn send_raw_transaction(&self, tx: Bytes) -> RpcResult<H256> {
-        let utx = UnverifiedTransaction::decode(&tx[1..])
+    async fn send_raw_transaction(&self, tx: String) -> RpcResult<H256> {
+        let raw = Hex::decode(tx).map_err(|e| Error::Custom(e.to_string()))?;
+        let utx = UnverifiedTransaction::decode(&raw[1..])
             .map_err(|e| Error::Custom(e.to_string()))?
             .hash();
         let stx = SignedTransaction::try_from(utx).map_err(|e| Error::Custom(e.to_string()))?;

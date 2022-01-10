@@ -408,7 +408,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Pill> for ConsensusEngine<Adapt
             .verifier_list
             .into_iter()
             .map(|v| Node {
-                address:        v.pub_key.decode(),
+                address:        v.pub_key.as_bytes(),
                 propose_weight: v.propose_weight,
                 vote_weight:    v.vote_weight,
             })
@@ -694,7 +694,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         let pub_keys = metadata
             .verifier_list
             .iter()
-            .map(|v| v.pub_key.decode())
+            .map(|v| v.pub_key.as_bytes())
             .collect();
         self.adapter.tag_consensus(Context::new(), pub_keys)?;
 
@@ -730,7 +730,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
 pub fn generate_new_crypto_map(metadata: Metadata) -> ProtocolResult<HashMap<Bytes, BlsPublicKey>> {
     let mut new_addr_pubkey_map = HashMap::new();
     for validator in metadata.verifier_list.into_iter() {
-        let addr = validator.pub_key.decode();
+        let addr = validator.pub_key.as_bytes();
         let hex_pubkey = hex::decode(validator.bls_pub_key.as_string_trim0x()).map_err(|err| {
             ConsensusError::Other(format!("hex decode metadata bls pubkey error {:?}", err))
         })?;
@@ -745,7 +745,7 @@ fn convert_to_overlord_authority(validators: &[ValidatorExtend]) -> Vec<Node> {
     let mut authority = validators
         .iter()
         .map(|v| Node {
-            address:        v.pub_key.decode(),
+            address:        v.pub_key.as_bytes(),
             propose_weight: v.propose_weight,
             vote_weight:    v.vote_weight,
         })

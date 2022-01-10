@@ -294,7 +294,7 @@ impl Axon {
             .verifier_list
             .iter()
             .map(|v| Validator {
-                pub_key:        v.pub_key.decode(),
+                pub_key:        v.pub_key.as_bytes(),
                 propose_weight: v.propose_weight,
                 vote_weight:    v.vote_weight,
             })
@@ -367,7 +367,7 @@ impl Axon {
 
         let mut bls_pub_keys = HashMap::new();
         for validator_extend in metadata.verifier_list.iter() {
-            let address = validator_extend.pub_key.decode();
+            let address = validator_extend.pub_key.as_bytes();
             let hex_pubkey = hex::decode(validator_extend.bls_pub_key.as_string_trim0x())
                 .map_err(MainError::FromHex)?;
             let pub_key = BlsPublicKey::try_from(hex_pubkey.as_ref()).map_err(MainError::Crypto)?;
@@ -422,7 +422,7 @@ impl Axon {
         let peer_ids = metadata
             .verifier_list
             .iter()
-            .map(|v| PeerId::from_pubkey_bytes(v.pub_key.decode()).map(PeerIdExt::into_bytes_ext))
+            .map(|v| PeerId::from_pubkey_bytes(v.pub_key.as_bytes()).map(PeerIdExt::into_bytes_ext))
             .collect::<Result<Vec<_>, _>>()?;
 
         network_service
