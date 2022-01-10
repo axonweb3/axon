@@ -171,5 +171,5 @@ pub fn code_address(sender: &H160, nonce: &U256) -> H256 {
     let mut stream = rlp::RlpStream::new_list(2);
     stream.append(sender);
     stream.append(nonce);
-    H256::from(Hasher::digest(&stream.out())).into()
+    Hasher::digest(&stream.out())
 }
