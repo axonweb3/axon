@@ -1,5 +1,5 @@
 [package]
-name = "ckb-client"
+name = "cross-client"
 version = "0.1.0"
 edition = "2021"
 
