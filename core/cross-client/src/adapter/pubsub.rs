@@ -10,7 +10,7 @@ use tokio_util::codec::Framed;
 use protocol::tokio::io::{AsyncRead, AsyncWrite};
 use protocol::types::BytesMut;
 
-use crate::stream_codec::StreamCodec;
+use crate::adapter::stream_codec::StreamCodec;
 
 /// General rpc subscription client
 pub struct Client<T> {

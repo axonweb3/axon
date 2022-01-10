@@ -1,29 +1,30 @@
-mod pubsub;
-mod stream_codec;
+mod adapter;
 
-pub use pubsub::Client;
+use std::sync::Arc;
 
-use ckb_jsonrpc_types as ckb;
-
-use protocol::tokio::io::{AsyncRead, AsyncWrite};
-use protocol::tokio::net::TcpStream;
-use protocol::traits::{CkbClient, Context};
-use protocol::types::{Header, Transaction, Validator};
+use protocol::traits::{Context, CrossAdapter, CrossClient};
+use protocol::types::{BlockNumber, Hash, Log};
 use protocol::{async_trait, ProtocolResult};
 
-pub type ClientTcpImpl = Client<TcpStream>;
+pub struct CrossChainImpl<Adapter> {
+    adapter: Arc<Adapter>,
+}
 
 #[async_trait]
-impl CkbClient for ClientTcpImpl {
-    async fn get_validator_list(&self, ctx: Context) -> ProtocolResult<Vec<Validator>> {
-        Ok(vec![])
-    }
-
-    async fn watch_cross_tx(&self, ctx: Context) -> ProtocolResult<Transaction> {
-        todo!()
-    }
-
-    async fn verify_check_point(&self, ctx: Context, header: Header) -> ProtocolResult<()> {
+impl<Adapter: CrossAdapter + 'static> CrossClient for CrossChainImpl<Adapter> {
+    async fn set_evm_log(
+        &self,
+        ctx: Context,
+        block_number: BlockNumber,
+        block_hash: Hash,
+        logs: &[Vec<Log>],
+    ) -> ProtocolResult<()> {
         Ok(())
+    }
+}
+
+impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
+    pub fn new(adapter: Arc<Adapter>) -> Self {
+        CrossChainImpl { adapter }
     }
 }
