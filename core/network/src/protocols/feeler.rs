@@ -1,6 +1,7 @@
 use crate::peer_manager::PeerManager;
 use std::sync::Arc;
 use tentacle::{
+    async_trait,
     context::{ProtocolContext, ProtocolContextMutRef},
     traits::ServiceProtocol,
 };
@@ -17,10 +18,11 @@ impl Feeler {
     }
 }
 
+#[async_trait]
 impl ServiceProtocol for Feeler {
-    fn init(&mut self, _context: &mut ProtocolContext) {}
+    async fn init(&mut self, _context: &mut ProtocolContext) {}
 
-    fn connected(&mut self, context: ProtocolContextMutRef, _: &str) {
+    async fn connected(&mut self, context: ProtocolContextMutRef<'_>, _: &str) {
         let session = context.session;
         if context.session.ty.is_outbound() {
             self.network_state.with_peer_store_mut(|peer_store| {
@@ -29,12 +31,12 @@ impl ServiceProtocol for Feeler {
         }
 
         log::debug!("peer={} FeelerProtocol.connected", session.address);
-        if let Err(err) = context.control().disconnect(session.id) {
+        if let Err(err) = context.control().disconnect(session.id).await {
             log::debug!("Disconnect failed {:?}, error: {:?}", session.id, err);
         }
     }
 
-    fn disconnected(&mut self, context: ProtocolContextMutRef) {
+    async fn disconnected(&mut self, context: ProtocolContextMutRef<'_>) {
         let session = context.session;
         self.network_state.with_registry_mut(|reg| {
             reg.remove_feeler(&session.address);

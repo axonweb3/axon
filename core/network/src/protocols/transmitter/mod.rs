@@ -1,4 +1,5 @@
 use tentacle::{
+    async_trait,
     bytes::Bytes,
     context::{ProtocolContext, ProtocolContextMutRef},
     runtime::spawn,
@@ -29,10 +30,11 @@ impl TransmitterProtocol {
     }
 }
 
+#[async_trait]
 impl ServiceProtocol for TransmitterProtocol {
-    fn init(&mut self, _context: &mut ProtocolContext) {}
+    async fn init(&mut self, _context: &mut ProtocolContext) {}
 
-    fn connected(&mut self, context: ProtocolContextMutRef, _version: &str) {
+    async fn connected(&mut self, context: ProtocolContextMutRef<'_>, _version: &str) {
         log::info!(
             "{} open on {}, addr: {}",
             context.proto_id,
@@ -45,7 +47,7 @@ impl ServiceProtocol for TransmitterProtocol {
         )
     }
 
-    fn disconnected(&mut self, context: ProtocolContextMutRef) {
+    async fn disconnected(&mut self, context: ProtocolContextMutRef<'_>) {
         log::info!("{} close on {}", context.proto_id, context.session.id);
         self.peer_manager.close_protocol(
             &extract_peer_id(&context.session.address).unwrap(),
@@ -53,7 +55,7 @@ impl ServiceProtocol for TransmitterProtocol {
         )
     }
 
-    fn received(&mut self, context: ProtocolContextMutRef, data: Bytes) {
+    async fn received(&mut self, context: ProtocolContextMutRef<'_>, data: Bytes) {
         let session = context.session;
         let recv_msg = ReceivedMessage {
             session_id: session.id,

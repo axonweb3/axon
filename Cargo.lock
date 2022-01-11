@@ -844,6 +844,7 @@ dependencies = [
  "serde",
  "serde_json",
  "snap",
+ "socket2",
  "tentacle",
  "tokio-util",
 ]
@@ -3499,10 +3500,11 @@ dependencies = [
 
 [[package]]
 name = "tentacle"
-version = "0.4.0-alpha.2"
+version = "0.4.0-beta.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "287ab001dd594fc2cfb4866e41e9d58f183de555ee636b0ef9a86dc4b70d45d4"
+checksum = "6af9c22d15ad752718f819d60a1661c0e0d6647d7c3b72b0d1d4d3af6e0bb36a"
 dependencies = [
+ "async-trait",
  "bytes",
  "futures",
  "js-sys",
@@ -3512,7 +3514,8 @@ dependencies = [
  "nohash-hasher",
  "once_cell",
  "parking_lot",
- "rand 0.7.3",
+ "rand 0.8.4",
+ "socket2",
  "tentacle-multiaddr",
  "tentacle-secio",
  "thiserror",

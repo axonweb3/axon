@@ -97,7 +97,7 @@ impl NetworkGossip {
         };
         let (connected, unconnected) = self.peer_manager.peers(peer_ids);
         if !unconnected.is_empty() {
-            let mut control = self.transmitter.clone();
+            let control = self.transmitter.clone();
             tokio::spawn(async move {
                 for addr in unconnected {
                     control
