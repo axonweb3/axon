@@ -13,8 +13,8 @@ use parking_lot::Mutex;
 use common_apm::muta_apm;
 use common_config_parser::types::Config;
 use common_crypto::{
-    BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey,
-    ToPublicKey, UncompressedPublicKey,
+    BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey, ToPublicKey,
+    UncompressedPublicKey,
 };
 use core_api::{jsonrpc::run_jsonrpc_server, DefaultAPIAdapter};
 use core_consensus::message::{
