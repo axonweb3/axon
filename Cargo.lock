@@ -3571,11 +3571,10 @@ dependencies = [
 
 [[package]]
 name = "tentacle"
-version = "0.4.0-beta.1"
+version = "0.4.0-alpha.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d64a033eb10400eac3fd68051682b900f9889a3e6205f4829def47230c653f10"
+checksum = "287ab001dd594fc2cfb4866e41e9d58f183de555ee636b0ef9a86dc4b70d45d4"
 dependencies = [
- "async-trait",
  "bytes",
  "futures",
  "js-sys",
@@ -3585,8 +3584,7 @@ dependencies = [
  "nohash-hasher",
  "once_cell",
  "parking_lot",
- "rand 0.8.4",
- "socket2",
+ "rand 0.7.3",
  "tentacle-multiaddr",
  "tentacle-secio",
  "thiserror",
