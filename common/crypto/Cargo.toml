@@ -7,7 +7,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ophelia-bls-amcl = "0.3"
+ophelia-blst = "0.3"
 ophelia-secp256k1 = "0.3"
 ophelia = "0.3"
 

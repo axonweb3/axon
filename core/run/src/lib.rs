@@ -13,7 +13,7 @@ use parking_lot::Mutex;
 use common_apm::muta_apm;
 use common_config_parser::types::Config;
 use common_crypto::{
-    BlsCommonReference, BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey,
+    BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey,
     ToPublicKey, UncompressedPublicKey,
 };
 use core_api::{jsonrpc::run_jsonrpc_server, DefaultAPIAdapter};
@@ -123,7 +123,7 @@ impl Axon {
         )?);
         let mut mpt = MPTTrie::new(trie_db);
 
-        let distribute_address = Address::from_hex("0x35e70c3f5a794a77efc2ec5ba964bffcc7fd2c0a")?;
+        let distribute_address = Address::from_hex("0x8ab0cf264df99d83525e9e11c7e4db01558ae1b1")?;
         let distribute_account = Account {
             nonce:        0u64.into(),
             balance:      32000001100000000000u128.into(),

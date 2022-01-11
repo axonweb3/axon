@@ -1,5 +1,5 @@
 # crypto
-privkey = "0x95500289866f83502cc1fb894ef5e2b840ca5f867cc9e84ab32fb8872b5dd36c"
+privkey = "0x37aa0f893d05914a4def0460c0a984d3611546cfb26924d7a7ca6e0db9950a2d"
 
 # db config
 data_path = "./devtools/chain/data"
@@ -24,7 +24,7 @@ overlord_gap = 5
 sync_txs_chunk_size = 5000
 
 [[network.bootstraps]]
-multi_address = "/ip4/127.0.0.1/tcp/8001/p2p/QmcEhrEJhNdKzUHQDodYLuoiYpnhKFxoGTw52RdSZKYLu5"
+multi_address = "/ip4/127.0.0.1/tcp/8001/p2p/QmNk6bBwkLPuqnsrtxpp819XLZY3ymgjs3p1nKtxBVgqxj"
 
 [mempool]
 timeout_gap = 20

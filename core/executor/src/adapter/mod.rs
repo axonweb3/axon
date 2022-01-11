@@ -274,6 +274,8 @@ where
             },
         };
 
+        if reset_storage {}
+
         let storage_root = if reset_storage {
             RLP_NULL
         } else {

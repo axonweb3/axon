@@ -10,7 +10,7 @@ license = "MIT"
 [dependencies]
 clap = { version = "2.33", features = ["yaml"] }
 hex = "0.4"
-ophelia-bls-amcl = "0.3"
+ophelia-blst = "0.3"
 ophelia = "0.3"
 protocol = { path = "../../protocol", package = "axon-protocol" }
 rand = "0.7"

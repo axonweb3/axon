@@ -10,9 +10,9 @@
   "interval": 3000,
   "verifier_list": [
     {
-      "bls_pub_key": "0x0419c9bbd2f4843e3ebd9cf677e6b0c6344571fcc4b217f98ebb5fb938ef2837dace4457442b4d64a3c02148e778caffd0089de2d26102a41cbadcc6ed3ee5a8823754ef18f16be8a897964a0d03bde4c80fb430e1361eb174af27ccda4eb0865d",
-      "pub_key": "0x0300554dea8901b6b5f1f24f5b84b4f28e22cda8ec1dec6efd805cdcdd2d7d8858",
-      "address": "0x35e70c3f5a794a77efc2ec5ba964bffcc7fd2c0a",
+      "bls_pub_key": "0xac85bbb40347b6e06ac2dc2da1f75eece029cdc0ed2d456c457d27e288bfbfbcd4c5c19716e9b250134a0e76ce50fa22",
+      "pub_key": "0x031ddc35212b7fc7ff6685b17d91f77c972535aee5c7ae5684d3e72b986f08834b",
+      "address": "0x8ab0cf264df99d83525e9e11c7e4db01558ae1b1",
       "propose_weight": 1,
       "vote_weight": 1
     }
