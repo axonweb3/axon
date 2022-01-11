@@ -1,13 +1,15 @@
-use protocol::ProtocolResult;
 use std::{
     net::{IpAddr, Ipv4Addr},
     path::PathBuf,
     time::Duration,
 };
+
 use tentacle::{
     multiaddr::{Multiaddr, Protocol},
     secio::{PeerId, SecioKeyPair},
 };
+
+use protocol::{codec::hex_decode, ProtocolResult};
 
 use crate::error::NetworkError;
 
@@ -176,8 +178,8 @@ impl NetworkConfig {
         self
     }
 
-    pub fn secio_keypair(mut self, sk_hex: String) -> ProtocolResult<Self> {
-        let maybe_skp = hex::decode(sk_hex).map(SecioKeyPair::secp256k1_raw_key);
+    pub fn secio_keypair(mut self, sk_hex: &str) -> ProtocolResult<Self> {
+        let maybe_skp = hex_decode(sk_hex).map(SecioKeyPair::secp256k1_raw_key);
 
         if let Ok(Ok(skp)) = maybe_skp {
             self.secio_keypair = skp;

@@ -4,7 +4,7 @@ pub mod executor;
 pub mod receipt;
 pub mod transaction;
 
-use hex_simd::{decode_to_boxed_bytes, encode_to_boxed_str, AsciiCase, Error};
+use hex_simd::{decode_to_boxed_bytes, encode_to_boxed_str, AsciiCase};
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 
 use crate::types::{Address, Bytes, DBBytes, H160};

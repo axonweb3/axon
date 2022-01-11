@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 use core_network::{NetworkConfig, NetworkService, NetworkServiceHandle};
-use protocol::traits::Rpc;
 use protocol::{
+    codec::hex_encode,
     tokio,
-    traits::{Context, Gossip, MessageHandler, Priority, TrustFeedback},
+    traits::{Context, Gossip, MessageHandler, Priority, Rpc, TrustFeedback},
     types::Bytes,
     ProtocolError,
 };
@@ -70,7 +70,7 @@ async fn main() {
     env_logger::init();
 
     let bt_seckey_bytes = "8".repeat(32);
-    let bt_seckey = hex::encode(&bt_seckey_bytes);
+    let bt_seckey = hex_encode(&bt_seckey_bytes);
     let bt_keypair = SecioKeyPair::secp256k1_raw_key(bt_seckey_bytes).expect("keypair");
     let peer_id = bt_keypair.peer_id().to_base58();
 
@@ -79,7 +79,7 @@ async fn main() {
 
         let bt_conf = NetworkConfig::new()
             .listen_addr("/ip4/127.0.0.1/tcp/1337".parse().unwrap())
-            .secio_keypair(bt_seckey)
+            .secio_keypair(&bt_seckey)
             .expect("set keypair");
         let mut bootstrap = NetworkService::new(bt_conf);
         let handle = bootstrap.handle();

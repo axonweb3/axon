@@ -194,7 +194,7 @@ impl Axon {
             .bootstraps(self.config.network.bootstraps.clone().unwrap_or_default().iter().map(|addr| addr.multi_address.clone()).collect())
             // .allowlist(allowlist)?
             .listen_addr(self.config.network.listening_address.clone())
-            .secio_keypair(network_privkey)?;
+            .secio_keypair(&network_privkey)?;
 
         let mut network_service = NetworkService::new(network_config);
         network_service.set_chain_id(self.genesis.block.header.chain_id.to_string());

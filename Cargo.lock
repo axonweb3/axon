@@ -242,7 +242,6 @@ version = "0.2.1"
 dependencies = [
  "axon-protocol",
  "clap 2.34.0",
- "hex",
  "ophelia",
  "ophelia-blst",
  "rand 0.7.3",
@@ -831,7 +830,6 @@ dependencies = [
  "env_logger",
  "faketime",
  "futures",
- "hex",
  "ipnetwork",
  "log",
  "parking_lot",
