@@ -13,8 +13,8 @@ use parking_lot::Mutex;
 use common_apm::muta_apm;
 use common_config_parser::types::Config;
 use common_crypto::{
-    BlsCommonReference, BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey,
-    ToPublicKey, UncompressedPublicKey,
+    BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey, ToPublicKey,
+    UncompressedPublicKey,
 };
 use core_api::{jsonrpc::run_jsonrpc_server, DefaultAPIAdapter};
 use core_consensus::message::{
@@ -123,7 +123,7 @@ impl Axon {
         )?);
         let mut mpt = MPTTrie::new(trie_db);
 
-        let distribute_address = Address::from_hex("0x35e70c3f5a794a77efc2ec5ba964bffcc7fd2c0a")?;
+        let distribute_address = Address::from_hex("0x8ab0cf264df99d83525e9e11c7e4db01558ae1b1")?;
         let distribute_account = Account {
             nonce:        0u64.into(),
             balance:      32000001100000000000u128.into(),
@@ -375,17 +375,11 @@ impl Axon {
             bls_pub_keys.insert(address, pub_key);
         }
 
-        let mut priv_key = Vec::new();
-        priv_key.extend_from_slice(&[0u8; 16]);
-        let mut tmp = hex::decode(config.privkey.as_string_trim0x()).unwrap();
-        priv_key.append(&mut tmp);
-        let bls_priv_key = BlsPrivateKey::try_from(priv_key.as_ref()).map_err(MainError::Crypto)?;
-
+        let bls_priv_key =
+            BlsPrivateKey::try_from(hex_privkey.as_ref()).map_err(MainError::Crypto)?;
         let hex_common_ref =
             hex::decode(metadata.common_ref.as_string_trim0x()).map_err(MainError::FromHex)?;
-        let common_ref: BlsCommonReference = std::str::from_utf8(hex_common_ref.as_ref())
-            .map_err(MainError::Utf8)?
-            .into();
+        let common_ref = String::from_utf8(hex_common_ref).map_err(MainError::Utf8)?;
 
         let crypto = Arc::new(OverlordCrypto::new(bls_priv_key, bls_pub_keys, common_ref));
 
@@ -590,7 +584,7 @@ pub enum MainError {
     Crypto(common_crypto::Error),
 
     #[display(fmt = "{:?}", _0)]
-    Utf8(std::str::Utf8Error),
+    Utf8(std::string::FromUtf8Error),
 
     #[display(fmt = "{:?}", _0)]
     JSONParse(serde_json::error::Error),

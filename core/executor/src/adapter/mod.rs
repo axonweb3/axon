@@ -277,25 +277,25 @@ where
         let storage_root = if reset_storage {
             RLP_NULL
         } else {
-            let mut storage_trie = if old_account.storage_root == RLP_NULL {
-                MPTTrie::new(Arc::clone(&self.db))
-            } else {
-                MPTTrie::from_root(old_account.storage_root, Arc::clone(&self.db)).unwrap()
-            };
-
-            storage.into_iter().for_each(|(k, v)| {
-                let _ = storage_trie.insert(k.as_bytes(), v.as_bytes());
-            });
-            storage_trie.commit().unwrap_or(RLP_NULL)
+            old_account.storage_root
         };
 
-        log::warn!("address {:?}, basic {:?}", address, basic);
+        let mut storage_trie = if storage_root == RLP_NULL {
+            MPTTrie::new(Arc::clone(&self.db))
+        } else {
+            MPTTrie::from_root(old_account.storage_root, Arc::clone(&self.db)).unwrap()
+        };
 
+        storage.into_iter().for_each(|(k, v)| {
+            let _ = storage_trie.insert(k.as_bytes(), v.as_bytes());
+        });
+
+        let new_storage_root = storage_trie.commit().unwrap_or(RLP_NULL);
         let mut new_account = Account {
-            nonce: basic.nonce,
-            balance: basic.balance,
-            code_hash: old_account.code_hash,
-            storage_root,
+            nonce:        basic.nonce,
+            balance:      basic.balance,
+            code_hash:    old_account.code_hash,
+            storage_root: new_storage_root,
         };
 
         if let Some(c) = code {

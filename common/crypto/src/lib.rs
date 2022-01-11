@@ -5,7 +5,7 @@ pub use ophelia::{
     BlsSignatureVerify, Crypto, Error, PrivateKey, PublicKey, Signature, ToBlsPublicKey,
     ToPublicKey, UncompressedPublicKey,
 };
-pub use ophelia_bls_amcl::{BlsCommonReference, BlsPrivateKey, BlsPublicKey, BlsSignature};
+pub use ophelia_blst::{BlsPrivateKey, BlsPublicKey, BlsSignature};
 pub use ophelia_secp256k1::{
     recover as secp256k1_recover, Secp256k1, Secp256k1PrivateKey, Secp256k1PublicKey,
     Secp256k1Recoverable, Secp256k1RecoverablePrivateKey, Secp256k1RecoverablePublicKey,
@@ -32,20 +32,12 @@ mod benches {
     use std::convert::TryFrom;
 
     use overlord::types::{Vote, VoteType};
-    use rand::distributions::Alphanumeric;
-    use rand::{random, Rng, RngCore};
+    use rand::{random};
     use test::Bencher;
 
-    use protocol::types::{Bytes, H256, Hasher, BytesMut};
+    use protocol::types::{Bytes, H256, Hasher};
 
     use super::*;
-
-    fn gen_common_ref() -> String {
-        rand::thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(10)
-            .collect::<String>()
-    }
 
     fn mock_block_hash() -> H256 {
         let temp = (0..10).map(|_| random::<u8>()).collect::<Vec<_>>();
@@ -66,19 +58,11 @@ mod benches {
         keypairs: &mut Vec<(BlsPrivateKey, BlsPublicKey)>,
         sigs: &mut Vec<BlsSignature>,
         hash: &HashValue,
-        common_ref: &BlsCommonReference,
     ) {
         for _i in 0..size {
-            let seckey = {
-                let mut seed = [0u8; 32];
-                rand::rngs::OsRng.fill_bytes(&mut seed);
-                let hash = Hasher::digest(BytesMut::from(seed.as_ref()).freeze());
-                Bytes::from(hash.as_bytes().to_vec())
-            };
-
             let bls_priv_key =
-                BlsPrivateKey::try_from([&[0u8; 16], seckey.as_ref()].concat().as_ref()).unwrap();
-            let bls_pub_key = bls_priv_key.pub_key(common_ref);
+                BlsPrivateKey::generate(&mut rand::rngs::OsRng);
+            let bls_pub_key = bls_priv_key.pub_key(&String::new());
 
             let sig = bls_priv_key.sign_message(hash);
             keypairs.push((bls_priv_key, bls_pub_key));
@@ -88,7 +72,6 @@ mod benches {
 
     #[bench]
     fn bench_4_aggregated_sig(b: &mut Bencher) {
-        let common_ref: BlsCommonReference = gen_common_ref().as_str().into();
         let vote_msg = HashValue::try_from(
             Hasher::digest(Bytes::from(rlp::encode(&mock_vote())))
                 .as_bytes(),
@@ -102,7 +85,6 @@ mod benches {
             &mut priv_pub_keys,
             &mut signatures,
             &vote_msg,
-            &common_ref,
         );
 
         let sigs_pubkeys = signatures
@@ -119,7 +101,6 @@ mod benches {
 
     #[bench]
     fn bench_8_aggregated_sig(b: &mut Bencher) {
-        let common_ref: BlsCommonReference = gen_common_ref().as_str().into();
         let vote_msg = HashValue::try_from(
             Hasher::digest(Bytes::from(rlp::encode(&mock_vote())))
                 .as_bytes(),
@@ -133,7 +114,6 @@ mod benches {
             &mut priv_pub_keys,
             &mut signatures,
             &vote_msg,
-            &common_ref,
         );
 
         let sigs_pubkeys = signatures
@@ -150,7 +130,6 @@ mod benches {
 
     #[bench]
     fn bench_16_aggregated_sig(b: &mut Bencher) {
-        let common_ref: BlsCommonReference = gen_common_ref().as_str().into();
         let vote_msg = HashValue::try_from(
             Hasher::digest(Bytes::from(rlp::encode(&mock_vote())))
                 .as_bytes(),
@@ -164,7 +143,6 @@ mod benches {
             &mut priv_pub_keys,
             &mut signatures,
             &vote_msg,
-            &common_ref,
         );
 
         let sigs_pubkeys = signatures
@@ -181,7 +159,6 @@ mod benches {
 
     #[bench]
     fn bench_32_aggregated_sig(b: &mut Bencher) {
-        let common_ref: BlsCommonReference = gen_common_ref().as_str().into();
         let vote_msg = HashValue::try_from(
             Hasher::digest(Bytes::from(rlp::encode(&mock_vote())))
                 .as_bytes(),
@@ -195,7 +172,6 @@ mod benches {
             &mut priv_pub_keys,
             &mut signatures,
             &vote_msg,
-            &common_ref,
         );
 
         let sigs_pubkeys = signatures
@@ -212,7 +188,6 @@ mod benches {
 
     #[bench]
     fn bench_64_aggregated_sig(b: &mut Bencher) {
-        let common_ref: BlsCommonReference = gen_common_ref().as_str().into();
         let vote_msg = HashValue::try_from(
             Hasher::digest(Bytes::from(rlp::encode(&mock_vote())))
                 .as_bytes(),
@@ -226,7 +201,6 @@ mod benches {
             &mut priv_pub_keys,
             &mut signatures,
             &vote_msg,
-            &common_ref,
         );
 
         let sigs_pubkeys = signatures
@@ -243,7 +217,6 @@ mod benches {
 
     #[bench]
     fn bench_4_aggregated_sig_verify(b: &mut Bencher) {
-        let common_ref: BlsCommonReference = gen_common_ref().as_str().into();
         let vote_msg = HashValue::try_from(
             Hasher::digest(Bytes::from(rlp::encode(&mock_vote())))
                 .as_bytes(),
@@ -257,7 +230,6 @@ mod benches {
             &mut priv_pub_keys,
             &mut signatures,
             &vote_msg,
-            &common_ref,
         );
 
         let sigs_pubkeys = signatures
@@ -265,25 +237,24 @@ mod benches {
             .zip(priv_pub_keys.iter())
             .map(|(sig, key_pair)| (sig.clone(), key_pair.1.clone()))
             .collect::<Vec<_>>();
-        let aggragated_sig = BlsSignature::combine(sigs_pubkeys);
+        let aggragated_sig = BlsSignature::combine(sigs_pubkeys).unwrap();
         let aggregated_key = BlsPublicKey::aggregate(
             priv_pub_keys
                 .iter()
                 .map(|key_pair| key_pair.1.clone())
                 .collect::<Vec<_>>(),
-        );
+        ).unwrap();
 
         b.iter(move || {
             aggragated_sig
                 .clone()
-                .verify(&vote_msg, &aggregated_key, &common_ref)
+                .verify(&vote_msg, &aggregated_key, &String::new())
                 .unwrap();
         })
     }
 
     #[bench]
     fn bench_8_aggregated_sig_verify(b: &mut Bencher) {
-        let common_ref: BlsCommonReference = gen_common_ref().as_str().into();
         let vote_msg = HashValue::try_from(
             Hasher::digest(Bytes::from(rlp::encode(&mock_vote())))
                 .as_bytes(),
@@ -297,7 +268,6 @@ mod benches {
             &mut priv_pub_keys,
             &mut signatures,
             &vote_msg,
-            &common_ref,
         );
 
         let sigs_pubkeys = signatures
@@ -305,25 +275,24 @@ mod benches {
             .zip(priv_pub_keys.iter())
             .map(|(sig, key_pair)| (sig.clone(), key_pair.1.clone()))
             .collect::<Vec<_>>();
-        let aggragated_sig = BlsSignature::combine(sigs_pubkeys);
+        let aggragated_sig = BlsSignature::combine(sigs_pubkeys).unwrap();
         let aggregated_key = BlsPublicKey::aggregate(
             priv_pub_keys
                 .iter()
                 .map(|key_pair| key_pair.1.clone())
                 .collect::<Vec<_>>(),
-        );
+        ).unwrap();
 
         b.iter(move || {
             aggragated_sig
                 .clone()
-                .verify(&vote_msg, &aggregated_key, &common_ref)
+                .verify(&vote_msg, &aggregated_key, &String::new())
                 .unwrap();
         })
     }
 
     #[bench]
     fn bench_16_aggregated_sig_verify(b: &mut Bencher) {
-        let common_ref: BlsCommonReference = gen_common_ref().as_str().into();
         let vote_msg = HashValue::try_from(
             Hasher::digest(Bytes::from(rlp::encode(&mock_vote())))
                 .as_bytes(),
@@ -337,7 +306,6 @@ mod benches {
             &mut priv_pub_keys,
             &mut signatures,
             &vote_msg,
-            &common_ref,
         );
 
         let sigs_pubkeys = signatures
@@ -345,25 +313,24 @@ mod benches {
             .zip(priv_pub_keys.iter())
             .map(|(sig, key_pair)| (sig.clone(), key_pair.1.clone()))
             .collect::<Vec<_>>();
-        let aggragated_sig = BlsSignature::combine(sigs_pubkeys);
+        let aggragated_sig = BlsSignature::combine(sigs_pubkeys).unwrap();
         let aggregated_key = BlsPublicKey::aggregate(
             priv_pub_keys
                 .iter()
                 .map(|key_pair| key_pair.1.clone())
                 .collect::<Vec<_>>(),
-        );
+        ).unwrap();
 
         b.iter(move || {
             aggragated_sig
                 .clone()
-                .verify(&vote_msg, &aggregated_key, &common_ref)
+                .verify(&vote_msg, &aggregated_key, &String::new())
                 .unwrap();
         })
     }
 
     #[bench]
     fn bench_32_aggregated_sig_verify(b: &mut Bencher) {
-        let common_ref: BlsCommonReference = gen_common_ref().as_str().into();
         let vote_msg = HashValue::try_from(
             Hasher::digest(Bytes::from(rlp::encode(&mock_vote())))
                 .as_bytes(),
@@ -377,7 +344,6 @@ mod benches {
             &mut priv_pub_keys,
             &mut signatures,
             &vote_msg,
-            &common_ref,
         );
 
         let sigs_pubkeys = signatures
@@ -385,25 +351,24 @@ mod benches {
             .zip(priv_pub_keys.iter())
             .map(|(sig, key_pair)| (sig.clone(), key_pair.1.clone()))
             .collect::<Vec<_>>();
-        let aggragated_sig = BlsSignature::combine(sigs_pubkeys);
+        let aggragated_sig = BlsSignature::combine(sigs_pubkeys).unwrap();
         let aggregated_key = BlsPublicKey::aggregate(
             priv_pub_keys
                 .iter()
                 .map(|key_pair| key_pair.1.clone())
                 .collect::<Vec<_>>(),
-        );
+        ).unwrap();
 
         b.iter(move || {
             aggragated_sig
                 .clone()
-                .verify(&vote_msg, &aggregated_key, &common_ref)
+                .verify(&vote_msg, &aggregated_key, &String::new())
                 .unwrap();
         })
     }
 
     #[bench]
     fn bench_64_aggregated_sig_verify(b: &mut Bencher) {
-        let common_ref: BlsCommonReference = gen_common_ref().as_str().into();
         let vote_msg = HashValue::try_from(
             Hasher::digest(Bytes::from(rlp::encode(&mock_vote())))
                 .as_bytes(),
@@ -417,7 +382,6 @@ mod benches {
             &mut priv_pub_keys,
             &mut signatures,
             &vote_msg,
-            &common_ref,
         );
 
         let sigs_pubkeys = signatures
@@ -425,18 +389,18 @@ mod benches {
             .zip(priv_pub_keys.iter())
             .map(|(sig, key_pair)| (sig.clone(), key_pair.1.clone()))
             .collect::<Vec<_>>();
-        let aggragated_sig = BlsSignature::combine(sigs_pubkeys);
+        let aggragated_sig = BlsSignature::combine(sigs_pubkeys).unwrap();
         let aggregated_key = BlsPublicKey::aggregate(
             priv_pub_keys
                 .iter()
                 .map(|key_pair| key_pair.1.clone())
                 .collect::<Vec<_>>(),
-        );
+        ).unwrap();
 
         b.iter(move || {
             aggragated_sig
                 .clone()
-                .verify(&vote_msg, &aggregated_key, &common_ref)
+                .verify(&vote_msg, &aggregated_key, &String::new())
                 .unwrap();
         })
     }

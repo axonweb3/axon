@@ -5,12 +5,10 @@ use std::convert::TryFrom;
 use std::default::Default;
 
 use clap::App;
-use ophelia::{PublicKey, ToBlsPublicKey};
-use ophelia_bls_amcl::BlsPrivateKey;
-use protocol::types::{Address, Bytes, BytesMut, Hasher};
-use rand::distributions::Alphanumeric;
-use rand::Rng;
-use rand::{rngs::OsRng, RngCore};
+use ophelia::{PrivateKey, PublicKey, ToBlsPublicKey};
+use ophelia_blst::BlsPrivateKey;
+use protocol::types::{Address, Bytes};
+use rand::rngs::OsRng;
 use serde::Serialize;
 use tentacle_secio::SecioKeyPair;
 
@@ -41,21 +39,8 @@ pub fn main() {
         panic!("private keys length can not be larger than number");
     }
 
-    let common_ref_encoded = value_t!(m, "common_ref", String).unwrap();
-    let common_ref = if common_ref_encoded.is_empty() {
-        rand::thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(10)
-            .collect::<String>()
-    } else {
-        String::from_utf8(
-            hex::decode(common_ref_encoded).expect("common_ref should be a hex string"),
-        )
-        .expect("common_ref should be a valid utf8 string")
-    };
-
     let mut output = Output {
-        common_ref: add_0x(hex::encode(common_ref.clone())),
+        common_ref: add_0x(String::from("0")),
         keypairs:   vec![],
     };
 
@@ -64,14 +49,9 @@ pub fn main() {
         let seckey = if i < len {
             Bytes::from(hex::decode(&priv_keys[i]).expect("decode hex private key"))
         } else {
-            let mut seed = [0u8; 32];
-            OsRng.fill_bytes(&mut seed);
-            Bytes::from(
-                Hasher::digest(BytesMut::from(seed.as_ref()).freeze())
-                    .as_bytes()
-                    .to_vec(),
-            )
+            BlsPrivateKey::generate(&mut OsRng).to_bytes()
         };
+
         let keypair = SecioKeyPair::secp256k1_raw_key(seckey.as_ref()).expect("secp256k1 keypair");
         let pubkey = keypair.public_key().inner();
         let address = Address::from_pubkey_bytes(pubkey.clone()).unwrap();
@@ -81,9 +61,8 @@ pub fn main() {
         k.peer_id = keypair.public_key().peer_id().to_base58();
         k.address = add_0x(hex::encode(address.as_slice()));
 
-        let priv_key =
-            BlsPrivateKey::try_from([&[0u8; 16], seckey.as_ref()].concat().as_ref()).unwrap();
-        let pub_key = priv_key.pub_key(&common_ref.as_str().into());
+        let priv_key = BlsPrivateKey::try_from(seckey.as_ref()).unwrap();
+        let pub_key = priv_key.pub_key(&output.common_ref);
         k.bls_public_key = add_0x(hex::encode(pub_key.to_bytes()));
         k.index = i + 1;
         output.keypairs.push(k);
