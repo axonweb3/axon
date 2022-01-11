@@ -265,7 +265,7 @@ dependencies = [
  "ethereum-types",
  "evm",
  "hasher",
- "hex",
+ "hex-simd",
  "lazy_static",
  "ophelia",
  "ophelia-secp256k1",
@@ -705,7 +705,6 @@ dependencies = [
  "cita_trie",
  "common-config-parser",
  "core-executor",
- "hex",
  "jsonrpsee",
  "log",
  "parking_lot",
@@ -743,7 +742,6 @@ dependencies = [
  "core-storage",
  "creep",
  "futures",
- "hex",
  "json",
  "lazy_static",
  "log",
@@ -773,7 +771,6 @@ dependencies = [
  "evm",
  "futures",
  "hasher",
- "hex",
  "lazy_static",
  "log",
  "parking_lot",
@@ -812,7 +809,6 @@ dependencies = [
  "crossbeam-queue",
  "dashmap",
  "futures",
- "hex",
  "indexmap",
  "lazy_static",
  "log",
@@ -869,7 +865,6 @@ dependencies = [
  "core-network",
  "core-storage",
  "futures",
- "hex",
  "log",
  "parking_lot",
  "rlp",
@@ -887,7 +882,6 @@ dependencies = [
  "axon-protocol",
  "common-apm",
  "futures",
- "hex",
  "lazy_static",
  "log",
  "num-traits",
@@ -1626,6 +1620,15 @@ name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
+
+[[package]]
+name = "hex-simd"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fe0c75fc22984fd442b0be94ce95ed5f09babbe58df45ec8e71a1aedec6904e6"
+dependencies = [
+ "simd-abstraction",
+]
 
 [[package]]
 name = "hmac"
@@ -3364,6 +3367,12 @@ checksum = "e51e73328dc4ac0c7ccbda3a494dfa03df1de2f46018127f60c693f2648455b0"
 dependencies = [
  "libc",
 ]
+
+[[package]]
+name = "simd-abstraction"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "df70fadc9b3167d59d7301bffe0eee7f0a353024d338e7d25d822c28450ae893"
 
 [[package]]
 name = "slab"

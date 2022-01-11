@@ -39,6 +39,7 @@ use core_network::{
     observe_listen_port_occupancy, NetworkConfig, NetworkService, PeerId, PeerIdExt,
 };
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
+use protocol::codec::{hex_decode, ProtocolCodec};
 #[cfg(unix)]
 use protocol::tokio::signal::unix as os_impl;
 use protocol::tokio::{runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep};
@@ -47,9 +48,7 @@ use protocol::types::{
     Account, Address, Genesis, Hasher, MerkleRoot, Metadata, Proposal, Validator, NIL_DATA,
     RLP_NULL, U256,
 };
-use protocol::{
-    codec::ProtocolCodec, tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
-};
+use protocol::{tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 #[derive(Debug)]
 pub struct Axon {
@@ -260,8 +259,7 @@ impl Axon {
         });
 
         // self private key
-        let hex_privkey =
-            hex::decode(config.privkey.as_string_trim0x()).map_err(MainError::FromHex)?;
+        let hex_privkey = hex_decode(&config.privkey.as_string_trim0x())?;
         let my_privkey =
             Secp256k1PrivateKey::try_from(hex_privkey.as_ref()).map_err(MainError::Crypto)?;
         let my_pubkey = my_privkey.pub_key();
@@ -355,16 +353,14 @@ impl Axon {
         let mut bls_pub_keys = HashMap::new();
         for validator_extend in metadata.verifier_list.iter() {
             let address = validator_extend.pub_key.as_bytes();
-            let hex_pubkey = hex::decode(validator_extend.bls_pub_key.as_string_trim0x())
-                .map_err(MainError::FromHex)?;
+            let hex_pubkey = hex_decode(&validator_extend.bls_pub_key.as_string_trim0x())?;
             let pub_key = BlsPublicKey::try_from(hex_pubkey.as_ref()).map_err(MainError::Crypto)?;
             bls_pub_keys.insert(address, pub_key);
         }
 
         let bls_priv_key =
             BlsPrivateKey::try_from(hex_privkey.as_ref()).map_err(MainError::Crypto)?;
-        let hex_common_ref =
-            hex::decode(metadata.common_ref.as_string_trim0x()).map_err(MainError::FromHex)?;
+        let hex_common_ref = hex_decode(&metadata.common_ref.as_string_trim0x())?;
         let common_ref = String::from_utf8(hex_common_ref).map_err(MainError::Utf8)?;
 
         let crypto = Arc::new(OverlordCrypto::new(bls_priv_key, bls_pub_keys, common_ref));
@@ -562,9 +558,6 @@ pub enum MainError {
 
     #[display(fmt = "Toml fails to parse genesis {:?}", _0)]
     GenesisTomlDe(toml::de::Error),
-
-    #[display(fmt = "hex error {:?}", _0)]
-    FromHex(hex::FromHexError),
 
     #[display(fmt = "crypto error {:?}", _0)]
     Crypto(common_crypto::Error),

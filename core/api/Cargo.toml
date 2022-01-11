@@ -12,7 +12,6 @@ cita_trie = "3.0"
 jsonrpsee = { git = "https://github.com/paritytech/jsonrpsee.git", rev = "3749ae2", features = ["http-server", "macros", "ws-server"] }
 parking_lot = "0.11"
 log = "0.4"
-hex = "0.4"
 serde = { version = "1.0", features = ["derive"] }
 
 protocol = { path = "../../protocol", package = "axon-protocol"}

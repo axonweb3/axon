@@ -32,7 +32,7 @@ pub enum TypesError {
     LengthMismatch { expect: usize, real: usize },
 
     #[display(fmt = "{:?}", error)]
-    FromHex { error: hex::FromHexError },
+    FromHex { error: hex_simd::Error },
 
     #[display(fmt = "{:?} is an invalid address", address)]
     InvalidAddress { address: String },

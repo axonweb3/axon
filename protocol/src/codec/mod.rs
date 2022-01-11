@@ -4,6 +4,7 @@ pub mod executor;
 pub mod receipt;
 pub mod transaction;
 
+use hex_simd::{decode_to_boxed_bytes, encode_to_boxed_str, AsciiCase, Error};
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 
 use crate::types::{Address, Bytes, DBBytes, H160};
@@ -48,4 +49,14 @@ impl Decodable for Address {
         let inner: H160 = r.val_at(0)?;
         Ok(Address(inner))
     }
+}
+
+pub fn hex_encode<T: AsRef<[u8]>>(src: T) -> String {
+    encode_to_boxed_str(src.as_ref(), AsciiCase::Lower).into_string()
+}
+
+pub fn hex_decode(src: &str) -> ProtocolResult<Vec<u8>> {
+    let res = decode_to_boxed_bytes(src.as_bytes())
+        .map_err(|error| crate::types::TypesError::FromHex { error })?;
+    Ok(res.into())
 }
