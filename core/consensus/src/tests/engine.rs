@@ -87,7 +87,6 @@ fn _mock_node_info() -> NodeInfo {
 
 fn _mock_metadata() -> Metadata {
     Metadata {
-        chain_id:                   1u64.into(),
         version:                    MetadataVersion::new(0, 100000),
         common_ref:                 Hex::from_string("0x703873635a6b51513451".to_string()).unwrap(),
         timeout_gap:                20,

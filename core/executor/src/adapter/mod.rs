@@ -24,7 +24,9 @@ macro_rules! blocking_async {
 
         protocol::tokio::task::block_in_place(move || {
             let res = rt.block_on(adapter.$method( $($args,)* )).unwrap();
-            let _ = tx.send(res);
+            if let Err(e) = tx.send(res) {
+                log::error!("[API] blocking async task send result error {:?}", e);
+            }
         });
 
         rx.recv()

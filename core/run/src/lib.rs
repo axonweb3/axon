@@ -198,6 +198,7 @@ impl Axon {
             .secio_keypair(network_privkey)?;
 
         let mut network_service = NetworkService::new(network_config);
+        network_service.set_chain_id(self.genesis.block.header.chain_id.to_string());
 
         // Init trie db
         let path_state = config.data_path_for_state();
