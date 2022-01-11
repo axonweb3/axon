@@ -25,7 +25,7 @@
         "bitmap": []
       },
       "last_checkpoint_block_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-      "chain_id": 1
+      "chain_id": 1337
     },
     "tx_hashes": []
   },

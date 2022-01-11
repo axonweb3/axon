@@ -282,7 +282,6 @@ impl MetadataVersion {
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq)]
 pub struct Metadata {
-    pub chain_id:                   U256,
     pub version:                    MetadataVersion,
     pub common_ref:                 Hex,
     pub timeout_gap:                u64,

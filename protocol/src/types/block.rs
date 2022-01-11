@@ -110,7 +110,6 @@ mod tests {
     #[test]
     fn print_metadata() {
         let metadata = Metadata {
-            chain_id: 0u64.into(),
             version: MetadataVersion::new(0, 1000000000),
             timeout_gap: 1000,
             common_ref: Hex::from_string("0x6c747758636859487038".to_string()).unwrap(),
