@@ -10,6 +10,7 @@ use std::{
     time::{Duration, Instant},
 };
 use tentacle::{
+    async_trait,
     bytes::Bytes,
     context::{ProtocolContext, ProtocolContextMutRef, SessionContext},
     multiaddr::{Multiaddr, Protocol},
@@ -113,9 +114,9 @@ impl IdentifyProtocol {
         }
     }
 
-    fn received_identify(
+    async fn received_identify(
         &self,
-        context: &mut ProtocolContextMutRef,
+        context: &mut ProtocolContextMutRef<'_>,
         chain_id: &str,
     ) -> MisbehaveResult {
         if self.peer_manager.chain_id() == chain_id {
@@ -124,19 +125,23 @@ impl IdentifyProtocol {
                     .peer_manager
                     .with_registry(|reg| reg.is_feeler(&context.session.address))
                 {
-                    let _ = context.open_protocols(
-                        context.session.id,
-                        TargetProtocol::Single(
-                            crate::protocols::SupportProtocols::Feeler.protocol_id(),
-                        ),
-                    );
+                    let _ = context
+                        .open_protocols(
+                            context.session.id,
+                            TargetProtocol::Single(
+                                crate::protocols::SupportProtocols::Feeler.protocol_id(),
+                            ),
+                        )
+                        .await;
                 } else {
-                    let _ = context.open_protocols(
-                        context.session.id,
-                        TargetProtocol::Filter(Box::new(|id| {
-                            id != &crate::protocols::SupportProtocols::Feeler.protocol_id()
-                        })),
-                    );
+                    let _ = context
+                        .open_protocols(
+                            context.session.id,
+                            TargetProtocol::Filter(Box::new(|id| {
+                                id != &crate::protocols::SupportProtocols::Feeler.protocol_id()
+                            })),
+                        )
+                        .await;
                 }
             }
             MisbehaveResult::Continue
@@ -246,8 +251,9 @@ impl IdentifyProtocol {
     }
 }
 
+#[async_trait]
 impl ServiceProtocol for IdentifyProtocol {
-    fn init(&mut self, context: &mut ProtocolContext) {
+    async fn init(&mut self, context: &mut ProtocolContext) {
         let proto_id = context.proto_id;
         if context
             .set_service_notify(
@@ -255,13 +261,14 @@ impl ServiceProtocol for IdentifyProtocol {
                 Duration::from_secs(CHECK_TIMEOUT_INTERVAL),
                 CHECK_TIMEOUT_TOKEN,
             )
+            .await
             .is_err()
         {
             warn!("identify start fail")
         }
     }
 
-    fn connected(&mut self, context: ProtocolContextMutRef, _version: &str) {
+    async fn connected(&mut self, context: ProtocolContextMutRef<'_>, _version: &str) {
         let session = context.session;
 
         self.peer_manager.open_protocol(
@@ -302,10 +309,10 @@ impl ServiceProtocol for IdentifyProtocol {
         )
         .into_bytes();
 
-        let _ = context.quick_send_message(data);
+        let _ = context.quick_send_message(data).await;
     }
 
-    fn disconnected(&mut self, context: ProtocolContextMutRef) {
+    async fn disconnected(&mut self, context: ProtocolContextMutRef<'_>) {
         self.remote_infos
             .remove(&context.session.id)
             .expect("RemoteInfo must exists");
@@ -328,7 +335,7 @@ impl ServiceProtocol for IdentifyProtocol {
         }
     }
 
-    fn received(&mut self, mut context: ProtocolContextMutRef, data: Bytes) {
+    async fn received(&mut self, mut context: ProtocolContextMutRef<'_>, data: Bytes) {
         let session = context.session;
 
         match Identity::decode(data).ok() {
@@ -337,6 +344,7 @@ impl ServiceProtocol for IdentifyProtocol {
                     if self.check_duplicate(&mut context).is_disconnect()
                         || self
                             .received_identify(&mut context, &message.chain_id)
+                            .await
                             .is_disconnect()
                         || self
                             .process_listens(&mut context, addr_info.listen_addrs())
@@ -345,11 +353,11 @@ impl ServiceProtocol for IdentifyProtocol {
                             .process_observed(&mut context, addr_info.observed_addr())
                             .is_disconnect()
                     {
-                        let _ = context.disconnect(session.id);
+                        let _ = context.disconnect(session.id).await;
                     }
                 }
                 None => {
-                    let _ = context.disconnect(session.id);
+                    let _ = context.disconnect(session.id).await;
                 }
             },
             None => {
@@ -361,16 +369,16 @@ impl ServiceProtocol for IdentifyProtocol {
                     "IdentifyProtocol received invalid data from {:?}",
                     info.peer_id
                 );
-                let _ = context.disconnect(session.id);
+                let _ = context.disconnect(session.id).await;
             }
         }
     }
 
-    fn notify(&mut self, context: &mut ProtocolContext, _token: u64) {
+    async fn notify(&mut self, context: &mut ProtocolContext, _token: u64) {
         for (session_id, info) in &self.remote_infos {
             if !info.has_received && (info.connected_at + info.timeout) <= Instant::now() {
                 debug!("{:?} receive identify message timeout", info.peer_id);
-                let _ = context.disconnect(*session_id);
+                let _ = context.disconnect(*session_id).await;
             }
         }
     }

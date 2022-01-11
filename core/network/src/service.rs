@@ -13,7 +13,6 @@ use crate::{
 
 use async_trait::async_trait;
 use bytes::Bytes;
-use futures::StreamExt;
 use protocol::tokio::time::{Instant, MissedTickBehavior};
 use protocol::{
     tokio,
@@ -24,6 +23,10 @@ use protocol::{
     ProtocolResult,
 };
 use rand::prelude::IteratorRandom;
+#[cfg(unix)]
+use std::os::unix::io::{FromRawFd, IntoRawFd};
+#[cfg(windows)]
+use std::os::windows::io::{FromRawSocket, IntoRawSocket};
 use std::{collections::HashSet, sync::Arc, time::Duration};
 use tentacle::{
     builder::ServiceBuilder,
@@ -33,7 +36,7 @@ use tentacle::{
     secio::{error::SecioError, PeerId},
     service::{
         ProtocolHandle, Service, ServiceAsyncControl, ServiceError, ServiceEvent, SessionType,
-        TargetProtocol,
+        TargetProtocol, TcpSocket,
     },
     traits::ServiceHandle,
     utils::{extract_peer_id, is_reachable, multiaddr_to_socketaddr},
@@ -118,7 +121,7 @@ impl Network for NetworkServiceHandle {
                     until,
                     "ban from other module".to_string(),
                 ) {
-                    let mut sender = self.gossip.transmitter.clone();
+                    let sender = self.gossip.transmitter.clone();
                     tokio::spawn(async move {
                         let _ignore = sender.disconnect(id).await;
                     });
@@ -173,7 +176,7 @@ pub struct NetworkService {
 
     // Core service
     peer_mgr_handle: Arc<PeerManager>,
-    net:             Service<ServiceHandler>,
+    net:             Option<Service<ServiceHandler>>,
 
     control:            ServiceAsyncControl,
     try_identify_count: u8,
@@ -249,11 +252,28 @@ impl NetworkService {
             .set_recv_buffer_size(config.recv_buffer_size)
             .timeout(Duration::from_secs(5));
         #[cfg(target_os = "linux")]
-        let service_builder = service_builder.tcp_bind(config.default_listen.clone());
+        let service_builder = {
+            let addr = multiaddr_to_socketaddr(&config.default_listen).unwrap();
+            service_builder.tcp_config(move |socket: TcpSocket| {
+                let socket = unsafe {
+                    #[cfg(unix)]
+                    let socket = socket2::Socket::from_raw_fd(socket.into_raw_fd());
+                    #[cfg(windows)]
+                    let socket = socket2::Socket::from_raw_socket(socket.into_raw_socket());
+                    socket
+                };
+                #[cfg(all(unix, not(target_os = "solaris"), not(target_os = "illumos")))]
+                socket.set_reuse_port(true)?;
+
+                socket.set_reuse_address(true)?;
+                socket.bind(&addr.into())?;
+                Ok(socket.into())
+            })
+        };
 
         let service = service_builder.build(service_handle);
 
-        let control: ServiceAsyncControl = service.control().clone().into();
+        let control: ServiceAsyncControl = service.control().clone();
 
         let gossip = NetworkGossip::new(control.clone(), Arc::clone(&peer_manager));
         let rpc = NetworkRpc::new(control, message_router);
@@ -263,8 +283,8 @@ impl NetworkService {
             gossip,
             rpc,
             peer_mgr_handle: peer_manager,
-            control: service.control().clone().into(),
-            net: service,
+            control: service.control().clone(),
+            net: Some(service),
             try_identify_count: 0,
         }
     }
@@ -468,13 +488,16 @@ impl NetworkService {
     }
 
     pub async fn run(mut self) {
-        self.net
-            .listen(self.config.default_listen.clone())
-            .await
-            .unwrap();
+        if let Some(mut net) = self.net.take() {
+            net.listen(self.config.default_listen.clone())
+                .await
+                .unwrap();
 
-        for addr in self.config.bootstraps.to_vec() {
-            self.dial_identify(addr).await;
+            for addr in self.config.bootstraps.to_vec() {
+                self.dial_identify(addr).await;
+            }
+
+            tokio::spawn(async move { net.run().await });
         }
 
         let mut interval = tokio::time::interval_at(Instant::now(), Duration::from_secs(10));
@@ -484,7 +507,6 @@ impl NetworkService {
         dump_interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
         loop {
             tokio::select! {
-                Some(_) = self.net.next() => {},
                 _ = interval.tick() => {
                     self.try_dial_consensus().await;
                     self.try_dial_peers().await;
@@ -511,8 +533,9 @@ struct ServiceHandler {
     config:     Arc<NetworkConfig>,
 }
 
+#[async_trait]
 impl ServiceHandle for ServiceHandler {
-    fn handle_error(&mut self, control: &mut ServiceContext, error: ServiceError) {
+    async fn handle_error(&mut self, control: &mut ServiceContext, error: ServiceError) {
         match error {
             ServiceError::DialerError { address, error } => {
                 self.peer_store.with_registry_mut(|reg| {
@@ -554,7 +577,7 @@ impl ServiceHandle for ServiceHandler {
                     Duration::from_secs(300).as_millis() as u64,
                     message,
                 );
-                let _ignore = control.disconnect(id);
+                let _ignore = control.disconnect(id).await;
             }
             ServiceError::SessionTimeout { session_context } => {
                 log::warn!(
@@ -593,22 +616,21 @@ impl ServiceHandle for ServiceHandler {
             ServiceError::ProtocolHandleError { proto_id, error } => {
                 log::debug!("ProtocolHandleError: {:?}, proto_id: {}", error, proto_id);
 
-                if let ProtocolHandleErrorKind::AbnormallyClosed(opt_session_id) = error {
-                    if let Some(id) = opt_session_id {
-                        self.peer_store.ban_session_id(
-                            id,
-                            Duration::from_secs(300).as_millis() as u64,
-                            format!("protocol {} panic when process peer message", proto_id),
-                        );
-                    }
-                    log::warn!("ProtocolHandleError: {:?}, proto_id: {}", error, proto_id);
-                    std::process::exit(-1)
+                let ProtocolHandleErrorKind::AbnormallyClosed(opt_session_id) = error;
+                if let Some(id) = opt_session_id {
+                    self.peer_store.ban_session_id(
+                        id,
+                        Duration::from_secs(300).as_millis() as u64,
+                        format!("protocol {} panic when process peer message", proto_id),
+                    );
                 }
+                log::warn!("ProtocolHandleError: {:?}, proto_id: {}", error, proto_id);
+                std::process::exit(-1)
             }
         }
     }
 
-    fn handle_event(&mut self, control: &mut ServiceContext, event: ServiceEvent) {
+    async fn handle_event(&mut self, control: &mut ServiceContext, event: ServiceEvent) {
         match event {
             ServiceEvent::SessionOpen { session_context } => {
                 let (feeler, status) = self.peer_store.with_registry_mut(|reg| {
@@ -631,7 +653,7 @@ impl ServiceHandle for ServiceHandler {
                     };
 
                 if disable && !self.peer_store.always_allow(&session_context.address) {
-                    let _ignore = control.disconnect(session_context.id);
+                    let _ignore = control.disconnect(session_context.id).await;
                 } else {
                     self.peer_store.register(PeerInfo::new(session_context))
                 }

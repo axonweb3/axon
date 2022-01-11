@@ -14,7 +14,7 @@ pub use self::{
 use crate::compress::{compress, decompress};
 use tentacle::{
     builder::MetaBuilder,
-    service::{BlockingFlag, ProtocolHandle, ProtocolMeta},
+    service::{ProtocolHandle, ProtocolMeta},
     traits::ServiceProtocol,
     ProtocolId,
 };
@@ -71,12 +71,6 @@ impl SupportProtocols {
         }
     }
 
-    pub fn flag(&self) -> BlockingFlag {
-        let mut no_blocking_flag = BlockingFlag::default();
-        no_blocking_flag.disable_all();
-        no_blocking_flag
-    }
-
     pub fn build_meta_with_service_handle<
         SH: FnOnce() -> ProtocolHandle<Box<dyn ServiceProtocol + Send + 'static + Unpin>>,
     >(
@@ -94,7 +88,6 @@ impl From<SupportProtocols> for MetaBuilder {
         MetaBuilder::default()
             .id(p.protocol_id())
             .support_versions(p.support_versions())
-            .flag(p.flag())
             .name(move |_| p.name())
             .before_send(compress)
             .before_receive(|| Some(Box::new(decompress)))

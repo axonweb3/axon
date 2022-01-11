@@ -7,6 +7,7 @@ use std::{
     time::{Duration, Instant},
 };
 use tentacle::{
+    async_trait,
     bytes::{Bytes, BytesMut},
     context::{ProtocolContext, ProtocolContextMutRef},
     service::TargetSession,
@@ -53,7 +54,7 @@ impl PingHandler {
 
     fn pong_received(&mut self, _id: SessionId, _last_ping: Instant) {}
 
-    fn ping_peers(&mut self, context: &ProtocolContext) {
+    async fn ping_peers(&mut self, context: &ProtocolContext) {
         let now = Instant::now();
         let send_nonce = nonce(&now, self.start_time);
         let peers: HashSet<SessionId> = self
@@ -80,6 +81,7 @@ impl PingHandler {
                     proto_id,
                     ping_msg,
                 )
+                .await
                 .is_err()
             {
                 debug!("send message fail");
@@ -115,25 +117,28 @@ impl PingStatus {
     }
 }
 
+#[async_trait]
 impl ServiceProtocol for PingHandler {
-    fn init(&mut self, context: &mut ProtocolContext) {
+    async fn init(&mut self, context: &mut ProtocolContext) {
         // periodicly send ping to peers
         let proto_id = context.proto_id;
         if context
             .set_service_notify(proto_id, self.interval, SEND_PING_TOKEN)
+            .await
             .is_err()
         {
             warn!("start ping fail");
         }
         if context
             .set_service_notify(proto_id, self.timeout, CHECK_TIMEOUT_TOKEN)
+            .await
             .is_err()
         {
             warn!("start ping fail");
         }
     }
 
-    fn connected(&mut self, context: ProtocolContextMutRef, version: &str) {
+    async fn connected(&mut self, context: ProtocolContextMutRef<'_>, version: &str) {
         let session = context.session;
         self.connected_session_ids
             .entry(session.id)
@@ -153,7 +158,7 @@ impl ServiceProtocol for PingHandler {
         )
     }
 
-    fn disconnected(&mut self, context: ProtocolContextMutRef) {
+    async fn disconnected(&mut self, context: ProtocolContextMutRef<'_>) {
         let session = context.session;
         self.connected_session_ids.remove(&session.id);
 
@@ -167,7 +172,7 @@ impl ServiceProtocol for PingHandler {
         )
     }
 
-    fn received(&mut self, context: ProtocolContextMutRef, data: Bytes) {
+    async fn received(&mut self, context: ProtocolContextMutRef<'_>, data: Bytes) {
         let session = context.session;
         match PingMessage::decode(data).ok() {
             None => {}
@@ -176,7 +181,7 @@ impl ServiceProtocol for PingHandler {
                 PingPayload::Ping(nonce) => {
                     self.ping_received(session.id);
                     let pong = PingMessage::new_pong(nonce).into_bytes();
-                    if let Err(err) = context.send_message(pong) {
+                    if let Err(err) = context.send_message(pong).await {
                         debug!("send message {}", err);
                     }
                 }
@@ -189,7 +194,7 @@ impl ServiceProtocol for PingHandler {
                             self.pong_received(session.id, last_ping_sent_at);
                             return;
                         }
-                        if let Err(err) = context.disconnect(session.id) {
+                        if let Err(err) = context.disconnect(session.id).await {
                             debug!("send message {}", err);
                         }
                     }
@@ -198,9 +203,9 @@ impl ServiceProtocol for PingHandler {
         }
     }
 
-    fn notify(&mut self, context: &mut ProtocolContext, token: u64) {
+    async fn notify(&mut self, context: &mut ProtocolContext, token: u64) {
         match token {
-            SEND_PING_TOKEN => self.ping_peers(context),
+            SEND_PING_TOKEN => self.ping_peers(context).await,
             CHECK_TIMEOUT_TOKEN => {
                 let timeout = self.timeout;
                 for (id, _ps) in self
@@ -209,7 +214,7 @@ impl ServiceProtocol for PingHandler {
                     .filter(|(_id, ps)| ps.processing && ps.elapsed() >= timeout)
                 {
                     debug!("ping timeout, {:?}", id);
-                    let _ = context.disconnect(*id);
+                    let _ = context.disconnect(*id).await;
                 }
             }
             _ => panic!("unknown token {}", token),
