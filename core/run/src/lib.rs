@@ -383,9 +383,7 @@ impl Axon {
 
         let hex_common_ref =
             hex::decode(metadata.common_ref.as_string_trim0x()).map_err(MainError::FromHex)?;
-        let common_ref: BlsCommonReference = std::str::from_utf8(hex_common_ref.as_ref())
-            .map_err(MainError::Utf8)?
-            .into();
+        let common_ref = String::from_utf8(hex_common_ref).map_err(MainError::Utf8)?;
 
         let crypto = Arc::new(OverlordCrypto::new(bls_priv_key, bls_pub_keys, common_ref));
 
@@ -590,7 +588,7 @@ pub enum MainError {
     Crypto(common_crypto::Error),
 
     #[display(fmt = "{:?}", _0)]
-    Utf8(std::str::Utf8Error),
+    Utf8(std::string::FromUtf8Error),
 
     #[display(fmt = "{:?}", _0)]
     JSONParse(serde_json::error::Error),
