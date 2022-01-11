@@ -375,7 +375,8 @@ impl Axon {
             bls_pub_keys.insert(address, pub_key);
         }
 
-        let bls_priv_key = BlsPrivateKey::try_from(hex_privkey.as_ref()).map_err(MainError::Crypto)?;
+        let bls_priv_key =
+            BlsPrivateKey::try_from(hex_privkey.as_ref()).map_err(MainError::Crypto)?;
         let hex_common_ref =
             hex::decode(metadata.common_ref.as_string_trim0x()).map_err(MainError::FromHex)?;
         let common_ref = String::from_utf8(hex_common_ref).map_err(MainError::Utf8)?;
