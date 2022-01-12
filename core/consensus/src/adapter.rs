@@ -25,7 +25,7 @@ use crate::message::{
 };
 use crate::types::PullTxsRequest;
 use crate::util::{convert_hex_to_bls_pubkeys, OverlordCrypto};
-use crate::BlockHeaderField::{PreviousBlockHash, ProofHash};
+use crate::BlockHeaderField::PreviousBlockHash;
 use crate::BlockProofField::{BitMap, HashMismatch, HeightMismatch, Signature, WeightNotFound};
 use crate::{BlockProofField, ConsensusError, METADATA_CONTROLER};
 
