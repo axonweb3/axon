@@ -5,7 +5,7 @@ use std::sync::Arc;
 use overlord::types::{AggregatedSignature, Commit, Proof as OverlordProof};
 
 use common_crypto::BlsPrivateKey;
-use protocol::codec::ProtocolCodec;
+use protocol::codec::{hex_decode, ProtocolCodec};
 use protocol::traits::{
     CommonConsensusAdapter, ConsensusAdapter, Context, MessageTarget, NodeInfo,
 };
@@ -65,13 +65,13 @@ fn _init_crypto() -> OverlordCrypto {
     let mut priv_key = Vec::new();
     priv_key.extend_from_slice(&[0u8; 16]);
     let mut tmp =
-        hex::decode("45c56be699dca666191ad3446897e0f480da234da896270202514a0e1a587c3f").unwrap();
+        hex_decode("45c56be699dca666191ad3446897e0f480da234da896270202514a0e1a587c3f").unwrap();
     priv_key.append(&mut tmp);
 
     OverlordCrypto::new(
         BlsPrivateKey::try_from(priv_key.as_ref()).unwrap(),
         HashMap::new(),
-        std::str::from_utf8(hex::decode("").unwrap().as_ref())
+        std::str::from_utf8(hex_decode("").unwrap().as_ref())
             .unwrap()
             .into(),
     )

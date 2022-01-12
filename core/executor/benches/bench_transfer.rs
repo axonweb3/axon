@@ -10,15 +10,16 @@ use common_crypto::{
 };
 use core_executor::{EVMExecutorAdapter, EvmExecutor, MPTTrie, RocksTrieDB};
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
+use protocol::codec::{hex_decode, ProtocolCodec};
+use protocol::traits::Executor;
 use protocol::types::{
     public_to_address, Account, Address, ExecutorContext, Hash, Public, SignedTransaction,
     Transaction, TransactionAction, UnverifiedTransaction, NIL_DATA, RLP_NULL, U256,
 };
-use protocol::{codec::ProtocolCodec, traits::Executor};
 
 lazy_static::lazy_static! {
     static ref PRIVITE_KEY: Secp256k1RecoverablePrivateKey
-        = Secp256k1RecoverablePrivateKey::try_from(hex::decode("95500289866f83502cc1fb894ef5e2b840ca5f867cc9e84ab32fb8872b5dd36c").unwrap().as_ref()).unwrap();
+        = Secp256k1RecoverablePrivateKey::try_from(hex_decode("95500289866f83502cc1fb894ef5e2b840ca5f867cc9e84ab32fb8872b5dd36c").unwrap().as_ref()).unwrap();
     static ref DISTRIBUTE_ADDRESS: Address = Address::from_hex("0x35e70c3f5a794a77efc2ec5ba964bffcc7fd2c0a").unwrap();
 }
 

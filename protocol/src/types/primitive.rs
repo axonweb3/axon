@@ -9,6 +9,7 @@ use ophelia_secp256k1::Secp256k1PublicKey;
 use overlord::DurationConfig;
 use serde::{de, Deserialize, Serialize};
 
+use crate::codec::{hex_decode, hex_encode};
 use crate::types::{BlockNumber, Bytes, TypesError};
 use crate::{ProtocolError, ProtocolResult};
 
@@ -20,6 +21,8 @@ pub type Hash = H256;
 pub type MerkleRoot = Hash;
 
 const ADDRESS_LEN: usize = 20;
+const HEX_PREFIX: &str = "0x";
+const HEX_PREFIX_UPPER: &str = "0X";
 
 pub const NIL_DATA: H256 = H256([
     0xc5, 0xd2, 0x46, 0x01, 0x86, 0xf7, 0x23, 0x3c, 0x92, 0x7e, 0x7d, 0xb2, 0xdc, 0xc7, 0x03, 0xc0,
@@ -55,21 +58,26 @@ impl Hasher {
 pub struct Hex(String);
 
 impl Hex {
+    pub fn encode<T: AsRef<[u8]>>(src: T) -> Self {
+        let mut s = HEX_PREFIX.to_string();
+        s.push_str(&hex_encode(src));
+        Hex(s)
+    }
+
     pub fn decode(s: String) -> ProtocolResult<Bytes> {
-        if (!s.starts_with("0x") && !s.starts_with("0X")) || s.len() < 3 {
+        if (!s.starts_with(HEX_PREFIX) && !s.starts_with(HEX_PREFIX_UPPER)) || s.len() < 3 {
             return Err(TypesError::HexPrefix.into());
         }
 
-        let h = hex::decode(&s[2..]).map_err(|error| TypesError::FromHex { error })?;
-        Ok(Bytes::from(h))
+        Ok(Bytes::from(hex_decode(&s[2..])?))
     }
 
     pub fn from_string(s: String) -> ProtocolResult<Self> {
-        if (!s.starts_with("0x") && !s.starts_with("0X")) || s.len() < 3 {
+        if (!s.starts_with(HEX_PREFIX) && !s.starts_with(HEX_PREFIX_UPPER)) || s.len() < 3 {
             return Err(TypesError::HexPrefix.into());
         }
 
-        hex::decode(&s[2..]).map_err(|error| TypesError::FromHex { error })?;
+        let _ = hex_decode(&s[2..])?;
         Ok(Hex(s))
     }
 
@@ -82,7 +90,7 @@ impl Hex {
     }
 
     pub fn as_bytes(&self) -> Bytes {
-        Bytes::from(hex::decode(&self.0[2..]).expect("impossible, already checked in from_string"))
+        Bytes::from(hex_decode(&self.0[2..]).expect("impossible, already checked in from_string"))
     }
 }
 
@@ -225,9 +233,7 @@ impl Address {
 
     pub fn from_hex(s: &str) -> ProtocolResult<Self> {
         let s = clean_0x(s)?;
-        let bytes = hex::decode(s).map_err(TypesError::from)?;
-
-        let bytes = Bytes::from(bytes);
+        let bytes = Bytes::from(hex_decode(s)?);
         Self::from_bytes(bytes)
     }
 
@@ -250,7 +256,7 @@ impl FromStr for Address {
 
 impl fmt::Debug for Address {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let eip55 = checksum(&hex::encode(&self.0));
+        let eip55 = checksum(&hex_encode(&self.0));
         eip55.fmt(f)?;
         Ok(())
     }
@@ -258,7 +264,7 @@ impl fmt::Debug for Address {
 
 impl fmt::Display for Address {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let eip55 = checksum(&hex::encode(&self.0));
+        let eip55 = checksum(&hex_encode(&self.0));
         eip55.fmt(f)?;
         Ok(())
     }
@@ -371,7 +377,7 @@ fn clean_0x(s: &str) -> ProtocolResult<&str> {
 
 pub fn checksum(address: &str) -> String {
     let address = address.trim_start_matches("0x").to_lowercase();
-    let address_hash = hex::encode(Hasher::digest(address.as_bytes()));
+    let address_hash = hex_encode(Hasher::digest(address.as_bytes()));
 
     address
         .char_indices()

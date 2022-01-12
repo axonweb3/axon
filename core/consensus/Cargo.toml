@@ -11,7 +11,6 @@ cita_trie = "3.0"
 json = "0.12"
 creep = "0.2"
 futures = { version = "0.3", features = ["async-await"] }
-hex = "0.4"
 log = "0.4"
 overlord = "0.3"
 parking_lot = "0.11"

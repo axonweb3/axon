@@ -7,6 +7,7 @@ use std::default::Default;
 use clap::App;
 use ophelia::{PrivateKey, PublicKey, ToBlsPublicKey};
 use ophelia_blst::BlsPrivateKey;
+use protocol::codec::{hex_decode, hex_encode};
 use protocol::types::{Address, Bytes};
 use rand::rngs::OsRng;
 use serde::Serialize;
@@ -47,7 +48,7 @@ pub fn main() {
     for i in 0..number {
         let mut k = Keypair::default();
         let seckey = if i < len {
-            Bytes::from(hex::decode(&priv_keys[i]).expect("decode hex private key"))
+            Bytes::from(hex_decode(&priv_keys[i]).expect("decode hex private key"))
         } else {
             BlsPrivateKey::generate(&mut OsRng).to_bytes()
         };
@@ -56,14 +57,14 @@ pub fn main() {
         let pubkey = keypair.public_key().inner();
         let address = Address::from_pubkey_bytes(pubkey.clone()).unwrap();
 
-        k.private_key = add_0x(hex::encode(seckey.as_ref()));
-        k.public_key = add_0x(hex::encode(pubkey));
+        k.private_key = add_0x(hex_encode(seckey.as_ref()));
+        k.public_key = add_0x(hex_encode(pubkey));
         k.peer_id = keypair.public_key().peer_id().to_base58();
-        k.address = add_0x(hex::encode(address.as_slice()));
+        k.address = add_0x(hex_encode(address.as_slice()));
 
         let priv_key = BlsPrivateKey::try_from(seckey.as_ref()).unwrap();
         let pub_key = priv_key.pub_key(&output.common_ref);
-        k.bls_public_key = add_0x(hex::encode(pub_key.to_bytes()));
+        k.bls_public_key = add_0x(hex_encode(pub_key.to_bytes()));
         k.index = i + 1;
         output.keypairs.push(k);
     }
