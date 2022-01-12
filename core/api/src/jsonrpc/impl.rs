@@ -9,7 +9,7 @@ use protocol::types::{
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
 use crate::jsonrpc::web3_types::{
-    BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3Receipt, Web3Tools,
+    BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3Receipt,
 };
 use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
 use crate::APIError;
@@ -163,7 +163,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             .call_evm(req, data_decode_bytes, number.into())
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
-        let call_hex_result = Web3Tools::hexcode(resp.ret);
+        let call_hex_result =Hex::encode(resp.ret).as_string();
         Ok(call_hex_result)
     }
 
@@ -211,7 +211,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         };
         Ok(U256::from(count))
     }
-    
+
     async fn get_transaction_receipt(&self, hash: H256) -> RpcResult<Option<Web3Receipt>> {
         let res = self
             .adapter

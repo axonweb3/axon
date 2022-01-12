@@ -5,7 +5,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use protocol::codec::ProtocolCodec;
 use protocol::types::{
-    AccessList, Block, Bloom, Bytes, Hash, Hasher, Public, Receipt, SignedTransaction,
+    AccessList, Block, Bloom, Bytes, Hash, Hasher, Public, Receipt, SignedTransaction,Hex,
     TransactionAction, H160, H256, U256, U64,
 };
 
@@ -34,16 +34,6 @@ impl RichTransactionOrHash {
             RichTransactionOrHash::Hash(hash) => *hash,
             RichTransactionOrHash::Rich(stx) => stx.transaction.hash,
         }
-    }
-}
-
-pub struct Web3Tools {}
-impl Web3Tools {
-    pub fn hexcode<T: AsRef<[u8]>>(data: T) -> String {
-        let mut prex = "0x".to_string();
-        let hex_bytes = hex::encode(data);
-        prex.push_str(&hex_bytes);
-        prex
     }
 }
 
@@ -106,7 +96,7 @@ impl Web3Receipt {
             web3_receipt.logs.push(Web3ReceiptLog {
                 address:           item.address,
                 topics:            item.topics,
-                data:              Web3Tools::hexcode(item.data),
+                data:              Hex::encode(item.data).as_string(),
                 block_number:      receipt.block_number.into(),
                 transaction_hash:  receipt.tx_hash,
                 transaction_index: Some(receipt.tx_index.into()),
@@ -166,7 +156,7 @@ impl From<Block> for Web3Block {
             total_difficulty:  None,
             seal_fields:       vec![],
             base_fee_per_gas:  b.header.base_fee_per_gas,
-            extra_data:        Web3Tools::hexcode(b.header.extra_data),
+            extra_data:        Hex::encode(b.header.extra_data).as_string(),
             size:              Some(encode.len().into()),
             gas_limit:         b.header.gas_limit,
             gas_used:          b.header.gas_used,
