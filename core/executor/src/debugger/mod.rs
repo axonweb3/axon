@@ -104,7 +104,7 @@ pub fn mock_signed_tx(tx: Transaction) -> SignedTransaction {
 }
 
 pub fn clear_data() {
-	std::fs::remove_dir_all(DB_PATH).unwrap()
+    std::fs::remove_dir_all(DB_PATH).unwrap()
 }
 
 fn rand_hash() -> Hash {
