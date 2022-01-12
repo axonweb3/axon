@@ -157,7 +157,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
 
     async fn call(&self, req: Web3CallRequest, number: BlockId) -> RpcResult<String> {
         let data_tmp = req.data.clone();
-        let data_decode_bytes =Hex::decode(data_tmp)
+        let data_decode_bytes = Hex::decode(data_tmp)
         .map_err(|e| Error::Custom(e.to_string()))?; 
         let resp = self
             .call_evm(req, data_decode_bytes, number.into())
