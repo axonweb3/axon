@@ -5,7 +5,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use protocol::codec::ProtocolCodec;
 use protocol::types::{
-    AccessList, Block, Bloom, Bytes, Hash, Hasher, Public, Receipt, SignedTransaction,Hex,
+    AccessList, Block, Bloom, Bytes, Hash, Hasher, Hex, Public, Receipt, SignedTransaction,
     TransactionAction, H160, H256, U256, U64,
 };
 

@@ -7,7 +7,7 @@ use tentacle_multiaddr::MultiAddr;
 
 use core_consensus::{DEFAULT_OVERLORD_GAP, DEFAULT_SYNC_TXS_CHUNK_SIZE};
 use core_mempool::{DEFAULT_BROADCAST_TXS_INTERVAL, DEFAULT_BROADCAST_TXS_SIZE};
-use protocol::types::Hex;
+use protocol::types::{Hex, H256};
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct ConfigApi {
@@ -142,22 +142,30 @@ pub struct ConfigAPM {
 }
 
 #[derive(Clone, Debug, Deserialize)]
+pub struct ConfigCrossClient {
+    pub axon_udt_hash:      H256,
+    pub ckb_uri:            String,
+    pub start_block_number: u64,
+}
+
+#[derive(Clone, Debug, Deserialize)]
 pub struct Config {
     // crypto
     pub privkey:   Hex,
     // db config
     pub data_path: PathBuf,
 
-    pub rpc:       ConfigApi,
-    pub network:   ConfigNetwork,
-    pub mempool:   ConfigMempool,
-    pub executor:  ConfigExecutor,
-    pub consensus: ConfigConsensus,
+    pub rpc:          ConfigApi,
+    pub network:      ConfigNetwork,
+    pub mempool:      ConfigMempool,
+    pub executor:     ConfigExecutor,
+    pub consensus:    ConfigConsensus,
     #[serde(default)]
-    pub logger:    ConfigLogger,
+    pub logger:       ConfigLogger,
     #[serde(default)]
-    pub rocksdb:   ConfigRocksDB,
-    pub apm:       Option<ConfigAPM>,
+    pub rocksdb:      ConfigRocksDB,
+    pub apm:          Option<ConfigAPM>,
+    pub cross_client: ConfigCrossClient,
 }
 
 impl Config {

@@ -33,6 +33,7 @@ members = [
 
     "core/api",
     "core/cli",
+    "core/cross-client",
     "core/consensus",
     "core/executor",
     "core/mempool",
