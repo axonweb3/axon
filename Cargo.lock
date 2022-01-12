@@ -778,6 +778,7 @@ dependencies = [
  "log",
  "parking_lot",
  "rand 0.8.4",
+ "rlp",
  "rocksdb",
 ]
 

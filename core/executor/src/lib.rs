@@ -8,8 +8,8 @@ use common_merkle::Merkle;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ApplyBackend, Backend, Executor, ExecutorAdapter as Adapter};
 use protocol::types::{
-    Account, Config, ExecResp, Hash, Hasher, SignedTransaction, TransactionAction, TxResp, H160,
-    H256, NIL_DATA, RLP_NULL, U256,
+    Account, Config, ExecResp, Hasher, SignedTransaction, TransactionAction, TxResp, H160, H256,
+    NIL_DATA, RLP_NULL, U256,
 };
 
 pub use crate::adapter::{EVMExecutorAdapter, MPTTrie, RocksTrieDB};
@@ -104,6 +104,7 @@ impl EvmExecutor {
         backend: &mut B,
         tx: SignedTransaction,
     ) -> TxResp {
+        let old_nonce = backend.basic(tx.sender).nonce;
         let config = Config::london();
         let metadata = StackSubstateMetadata::new(u64::MAX, &config);
         let state = MemoryStackState::new(metadata, backend);
@@ -124,11 +125,10 @@ impl EvmExecutor {
                     .collect(),
             ),
             TransactionAction::Create => {
-                let exit_reason = executor.transact_create2(
+                let exit_reason = executor.transact_create(
                     tx.sender,
                     tx.transaction.unsigned.value,
                     tx.transaction.unsigned.data.to_vec(),
-                    H256::default(),
                     tx.transaction.unsigned.gas_limit.as_u64(),
                     tx.transaction
                         .unsigned
@@ -148,11 +148,7 @@ impl EvmExecutor {
             let (values, logs) = executor.into_state().deconstruct();
             backend.apply(values, logs, true);
             if tx.transaction.unsigned.action == TransactionAction::Create {
-                Some(code_address(
-                    &tx.sender,
-                    &H256::default(),
-                    &Hasher::digest(tx.transaction.unsigned.data.as_ref()),
-                ))
+                Some(code_address(&tx.sender, &old_nonce))
             } else {
                 None
             }
@@ -171,11 +167,9 @@ impl EvmExecutor {
     }
 }
 
-pub fn code_address(sender: &H160, _salt: &H256, code_hash: &Hash) -> H256 {
-    let mut encode = vec![0xff];
-    encode.extend_from_slice(sender.as_bytes());
-    encode.extend_from_slice(H256::default().as_bytes());
-    encode.extend_from_slice(code_hash.as_bytes());
-
-    Hasher::digest(&encode)
+pub fn code_address(sender: &H160, nonce: &U256) -> H256 {
+    let mut stream = rlp::RlpStream::new_list(2);
+    stream.append(sender);
+    stream.append(nonce);
+    Hasher::digest(&stream.out())
 }

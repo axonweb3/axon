@@ -14,8 +14,6 @@ use protocol::types::{
 };
 use protocol::{codec::ProtocolCodec, ProtocolResult};
 
-use crate::code_address;
-
 macro_rules! blocking_async {
     ($self_: ident, $adapter: ident, $method: ident$ (, $args: expr)*) => {{
         let (tx, rx) = crossbeam_channel::bounded(1);
@@ -301,14 +299,12 @@ where
         if let Some(c) = code {
             let new_code_hash = Hasher::digest(&c);
             if new_code_hash != old_account.code_hash {
-                let code_address = code_address(&address, &H256::default(), &new_code_hash);
-
                 let _ = blocking_async!(
                     self,
                     storage,
                     insert_code,
                     Context::new(),
-                    code_address,
+                    address.into(),
                     new_code_hash,
                     c.into()
                 );
