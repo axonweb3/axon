@@ -3,7 +3,7 @@ use std::sync::Arc;
 use arc_swap::ArcSwap;
 use parking_lot::Mutex;
 
-use protocol::types::{BlockNumber, Hash, Metadata, Proof, U256};
+use protocol::types::{BlockNumber, Hash, Metadata, Proof, H256, U256};
 
 lazy_static::lazy_static! {
     pub static ref METADATA_CONTROLER: ArcSwap<MetadataController> = ArcSwap::from_pointee(MetadataController::default());
@@ -75,6 +75,7 @@ impl StatusAgent {
 pub struct CurrentStatus {
     pub prev_hash:        Hash,
     pub last_number:      BlockNumber,
+    pub last_state_root:  H256,
     pub gas_limit:        U256,
     pub base_fee_per_gas: U256,
     pub proof:            Proof,

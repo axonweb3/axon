@@ -237,17 +237,12 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
                 .load(current_number, proposal.transactions_root)?,
         };
 
-        let last_block = self
-            .adapter
-            .get_block_by_number(ctx.clone(), proposal.number - 1)
-            .await?;
-
         // Execute transactions
         let resp = self
             .adapter
             .exec(
                 ctx.clone(),
-                last_block.header.state_root,
+                self.status.inner().last_state_root,
                 &proposal,
                 signed_txs.clone(),
             )
@@ -609,6 +604,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         let new_status = CurrentStatus {
             prev_hash:        block_hash,
             last_number:      block_number,
+            last_state_root:  resp.state_root,
             gas_limit:        metadata.gas_limit.into(),
             base_fee_per_gas: block.header.base_fee_per_gas,
             proof:            proof.clone(),

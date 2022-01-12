@@ -137,7 +137,7 @@ impl Axon {
 
         self.state_root = mpt.commit()?;
 
-        log::info!("Execute the genesis distribute success");
+        log::info!("Execute the genesis distribute success, genesis state root {:?}", self.state_root);
 
         storage
             .update_latest_proof(Context::new(), self.genesis.block.header.proof.clone())
@@ -312,6 +312,7 @@ impl Axon {
             CurrentStatus {
                 prev_hash:        Hasher::digest(current_header.encode()?),
                 last_number:      current_header.number,
+                last_state_root:  self.state_root,
                 gas_limit:        metadata.gas_limit.into(),
                 base_fee_per_gas: U256::one(),
                 proof:            latest_proof,
@@ -332,6 +333,7 @@ impl Axon {
             CurrentStatus {
                 prev_hash:        block_hash,
                 last_number:      current_header.number,
+                last_state_root:  current_header.state_root,
                 gas_limit:        metadata.gas_limit.into(),
                 base_fee_per_gas: current_header.base_fee_per_gas,
                 proof:            current_header.proof.clone(),
@@ -494,7 +496,7 @@ impl Axon {
             }
         });
 
-        let ctrl_c_handler = tokio::task::spawn_local(async {
+        let ctrl_c_handler = tokio::spawn(async {
             #[cfg(windows)]
             let _ = tokio::signal::ctrl_c().await;
             #[cfg(unix)]
