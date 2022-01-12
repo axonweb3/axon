@@ -23,7 +23,12 @@ impl<Adapter: APIAdapter> JsonRpcImpl<Adapter> {
         Self { adapter }
     }
 
-    async fn call_evm(&self, req: Web3CallRequest, number: Option<u64>) -> ProtocolResult<TxResp> {
+    async fn call_evm(
+        &self,
+        req: Web3CallRequest,
+        data: Bytes,
+        number: Option<u64>,
+    ) -> ProtocolResult<TxResp> {
         let header = self
             .adapter
             .get_block_header_by_number(Context::new(), number)
@@ -36,7 +41,7 @@ impl<Adapter: APIAdapter> JsonRpcImpl<Adapter> {
             .evm_call(
                 Context::new(),
                 req.from,
-                req.data.to_vec(),
+                data.to_vec(),
                 mock_header.state_root,
                 mock_header.into(),
             )
@@ -150,13 +155,16 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         self.chain_id().await
     }
 
-    async fn call(&self, req: Web3CallRequest, number: BlockId) -> RpcResult<Bytes> {
+    async fn call(&self, req: Web3CallRequest, number: BlockId) -> RpcResult<String> {
+        let data_tmp = req.data.clone();
+        let data_decode_bytes = Hex::decode(data_tmp)
+            .map_err(|e| Error::Custom(e.to_string()))?; 
         let resp = self
-            .call_evm(req, number.into())
+            .call_evm(req, data_decode_bytes, number.into())
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
-
-        Ok(Bytes::from(resp.ret))
+        let call_hex_result =Hex::encode(resp.ret).as_string();
+        Ok(call_hex_result)
     }
 
     async fn estimate_gas(&self, req: Web3CallRequest, number: Option<BlockId>) -> RpcResult<U256> {
@@ -164,9 +172,11 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             Some(BlockId::Num(n)) => Some(n),
             _ => None,
         };
-
+        let data_tmp = req.data.clone();
+        let data_decode_bytes =Hex::decode(data_tmp)
+            .map_err(|e| Error::Custom(e.to_string()))?;
         let resp = self
-            .call_evm(req, num)
+            .call_evm(req, data_decode_bytes,num)
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
@@ -187,6 +197,19 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             .ok_or_else(|| {
                 Error::Custom(format!("Cannot get code by hash {:?}", account.code_hash))
             })
+    }
+
+    async fn get_transaction_count_by_number(&self, number: BlockId) -> RpcResult<U256> {
+        let block = self
+            .adapter
+            .get_block_by_number(Context::new(), number.into())
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+        let count = match block {
+            Some(bc) => bc.tx_hashes.len(),
+            _ => 0,
+        };
+        Ok(U256::from(count))
     }
 
     async fn get_transaction_receipt(&self, hash: H256) -> RpcResult<Option<Web3Receipt>> {

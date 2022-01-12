@@ -5,7 +5,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use protocol::codec::ProtocolCodec;
 use protocol::types::{
-    AccessList, Block, Bloom, Bytes, Hash, Hasher, Log, Public, Receipt, SignedTransaction,
+    AccessList, Block, Bloom, Bytes, Hash, Hasher, Public, Receipt, SignedTransaction,Hex,
     TransactionAction, H160, H256, U256, U64,
 };
 
@@ -47,7 +47,7 @@ pub struct Web3Receipt {
     pub effective_gas_price: U256,
     pub from:                H160,
     pub gas_used:            U256,
-    pub logs:                Vec<Log>,
+    pub logs:                Vec<Web3ReceiptLog>,
     pub logs_bloom:          Bloom,
     #[serde(rename = "root")]
     pub state_root:          Hash,
@@ -59,9 +59,23 @@ pub struct Web3Receipt {
     pub transaction_type:    Option<U64>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct Web3ReceiptLog {
+    pub address:           H160,
+    pub topics:            Vec<H256>,
+    pub data:              String,
+    pub block_number:      U256,
+    pub transaction_hash:  Hash,
+    pub transaction_index: Option<U256>,
+    pub block_hash:        Hash,
+    pub log_index:         U256,
+    pub removed:           bool,
+}
+
 impl Web3Receipt {
     pub fn new(receipt: Receipt, stx: SignedTransaction) -> Web3Receipt {
-        Web3Receipt {
+        let mut web3_receipt = Web3Receipt {
             block_number:        receipt.block_number.into(),
             block_hash:          receipt.block_hash,
             contract_address:    receipt.code_address.map(Into::into),
@@ -70,14 +84,30 @@ impl Web3Receipt {
             from:                receipt.sender,
             status:              receipt.status(),
             gas_used:            receipt.used_gas,
-            logs:                receipt.logs,
+            logs:                vec![],
             logs_bloom:          receipt.logs_bloom,
             state_root:          receipt.state_root,
             to:                  stx.get_to(),
             transaction_hash:    receipt.tx_hash,
             transaction_index:   Some(receipt.tx_index.into()),
             transaction_type:    Some(0x02u64.into()),
+        };
+        for item in receipt.logs.into_iter() {
+            web3_receipt.logs.push(Web3ReceiptLog {
+                address:           item.address,
+                topics:            item.topics,
+                data:              Hex::encode(item.data).as_string(),
+                block_number:      receipt.block_number.into(),
+                transaction_hash:  receipt.tx_hash,
+                transaction_index: Some(receipt.tx_index.into()),
+                block_hash:        receipt.block_hash,
+                // Todo: FIX ME
+                log_index:         U256::default(),
+                // Todo: FIXME
+                removed:           false,
+            });
         }
+        web3_receipt
     }
 }
 
@@ -96,7 +126,7 @@ pub struct Web3Block {
     pub number:            U256,
     pub gas_used:          U256,
     pub gas_limit:         U256,
-    pub extra_data:        Bytes,
+    pub extra_data:        String,
     pub logs_bloom:        Option<Bloom>,
     pub timestamp:         U256,
     pub difficulty:        U256,
@@ -106,6 +136,8 @@ pub struct Web3Block {
     pub uncles:            Vec<H256>,
     pub transactions:      Vec<RichTransactionOrHash>,
     pub size:              Option<U256>,
+    pub mix_hash:          H256,
+    pub nonce:             U256,
 }
 
 impl From<Block> for Web3Block {
@@ -126,7 +158,7 @@ impl From<Block> for Web3Block {
             total_difficulty:  None,
             seal_fields:       vec![],
             base_fee_per_gas:  b.header.base_fee_per_gas,
-            extra_data:        b.header.extra_data,
+            extra_data:        Hex::encode(b.header.extra_data).as_string(),
             size:              Some(encode.len().into()),
             gas_limit:         b.header.gas_limit,
             gas_used:          b.header.gas_used,
@@ -137,6 +169,8 @@ impl From<Block> for Web3Block {
                 .map(|hash| RichTransactionOrHash::Hash(*hash))
                 .collect(),
             uncles:            vec![],
+            mix_hash:          H256::default(),
+            nonce:             U256::default(),
         }
     }
 }
@@ -232,7 +266,7 @@ pub struct Web3CallRequest {
     pub max_fee_per_gas:          Option<U256>,
     pub gas:                      Option<U256>,
     pub value:                    Option<U256>,
-    pub data:                     Bytes,
+    pub data:                     String,
     pub nonce:                    Option<U256>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub access_list:              Option<AccessList>,
