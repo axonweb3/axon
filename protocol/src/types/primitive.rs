@@ -21,6 +21,8 @@ pub type Hash = H256;
 pub type MerkleRoot = Hash;
 
 const ADDRESS_LEN: usize = 20;
+const HEX_PREFIX: &str = "0x";
+const HEX_PREFIX_UPPER: &str = "0X";
 
 pub const NIL_DATA: H256 = H256([
     0xc5, 0xd2, 0x46, 0x01, 0x86, 0xf7, 0x23, 0x3c, 0x92, 0x7e, 0x7d, 0xb2, 0xdc, 0xc7, 0x03, 0xc0,
@@ -56,8 +58,14 @@ impl Hasher {
 pub struct Hex(String);
 
 impl Hex {
+    pub fn encode<T: AsRef<[u8]>>(src: T) -> Self {
+        let mut s = HEX_PREFIX.to_string();
+        s.push_str(&hex_encode(src));
+        Hex(s)
+    }
+
     pub fn decode(s: String) -> ProtocolResult<Bytes> {
-        if (!s.starts_with("0x") && !s.starts_with("0X")) || s.len() < 3 {
+        if (!s.starts_with(HEX_PREFIX) && !s.starts_with(HEX_PREFIX_UPPER)) || s.len() < 3 {
             return Err(TypesError::HexPrefix.into());
         }
 
@@ -65,7 +73,7 @@ impl Hex {
     }
 
     pub fn from_string(s: String) -> ProtocolResult<Self> {
-        if (!s.starts_with("0x") && !s.starts_with("0X")) || s.len() < 3 {
+        if (!s.starts_with(HEX_PREFIX) && !s.starts_with(HEX_PREFIX_UPPER)) || s.len() < 3 {
             return Err(TypesError::HexPrefix.into());
         }
 
