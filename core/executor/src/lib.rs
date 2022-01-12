@@ -1,5 +1,11 @@
 #![feature(test)]
 
+pub mod adapter;
+#[cfg(test)]
+mod debugger;
+#[cfg(test)]
+mod tests;
+
 use std::collections::BTreeMap;
 
 use evm::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadata};
@@ -13,10 +19,6 @@ use protocol::types::{
 };
 
 pub use crate::adapter::{EVMExecutorAdapter, MPTTrie, RocksTrieDB};
-
-pub mod adapter;
-#[cfg(test)]
-mod tests;
 
 #[derive(Default)]
 pub struct EvmExecutor;

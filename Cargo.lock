@@ -770,6 +770,7 @@ dependencies = [
  "crossbeam-channel",
  "dashmap",
  "evm",
+ "fastrand",
  "futures",
  "hasher",
  "lazy_static",
