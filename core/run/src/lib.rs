@@ -41,8 +41,8 @@ use core_network::{
 };
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 #[cfg(unix)]
-use protocol::tokio::signal::unix::{self as os_impl};
-use protocol::tokio::{sync::Mutex as AsyncMutex, time::sleep};
+use protocol::tokio::signal::unix as os_impl;
+use protocol::tokio::{runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep};
 use protocol::traits::{CommonStorage, Context, Executor, MemPool, Network, NodeInfo, Storage};
 use protocol::types::{
     Account, Address, Bloom, BloomInput, Genesis, Hasher, MerkleRoot, Metadata, Validator,
@@ -81,7 +81,7 @@ impl Axon {
             log::info!("muta_apm start");
         }
 
-        let rt = tokio::runtime::Builder::new_multi_thread()
+        let rt = RuntimeBuilder::new_multi_thread()
             .enable_all()
             .build()
             .expect("new tokio runtime");
