@@ -101,6 +101,7 @@ impl Web3Receipt {
                 transaction_hash:  receipt.tx_hash,
                 transaction_index: Some(receipt.tx_index.into()),
                 block_hash:        receipt.block_hash,
+                // Todo: FIX ME
                 log_index:         U256::default(),
                 removed:           false,
             });
