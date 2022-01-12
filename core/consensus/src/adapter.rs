@@ -417,15 +417,6 @@ where
             );
         }
 
-        // the block 0 and 1 's proof is consensus-ed by community
-        if proposal.number > 1u64 && proposal.prev_hash != proposal.proof.block_hash {
-            log::error!(
-                "[consensus] verify_block_header, verifying proposal: {:?}",
-                proposal
-            );
-            return Err(ConsensusError::VerifyBlockHeader(proposal.number, ProofHash).into());
-        }
-
         Ok(())
     }
 
