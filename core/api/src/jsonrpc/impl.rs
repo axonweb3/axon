@@ -40,7 +40,7 @@ impl<Adapter: APIAdapter> JsonRpcImpl<Adapter> {
         self.adapter
             .evm_call(
                 Context::new(),
-                req.from,
+                req.to,
                 data.to_vec(),
                 mock_header.state_root,
                 mock_header.into(),
