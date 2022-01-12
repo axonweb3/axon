@@ -60,3 +60,21 @@ pub fn hex_decode(src: &str) -> ProtocolResult<Vec<u8>> {
         .map_err(|error| crate::types::TypesError::FromHex { error })?;
     Ok(res.into())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_hex_codec() {
+        let mut data = [0u8; 128];
+        fastrand::shuffle(&mut data);
+        let data = data.to_vec();
+
+        assert_eq!(hex_encode(&data), hex::encode(data.clone()));
+        assert_eq!(
+            hex_decode(&hex_encode(&data)).unwrap(),
+            hex::decode(hex::encode(data)).unwrap()
+        );
+    }
+}
