@@ -103,6 +103,7 @@ impl Web3Receipt {
                 block_hash:        receipt.block_hash,
                 // Todo: FIX ME
                 log_index:         U256::default(),
+                // Todo: FIXME
                 removed:           false,
             });
         }
