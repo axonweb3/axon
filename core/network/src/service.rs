@@ -36,7 +36,7 @@ use tentacle::{
     secio::{error::SecioError, PeerId},
     service::{
         ProtocolHandle, Service, ServiceAsyncControl, ServiceError, ServiceEvent, SessionType,
-        TargetProtocol,
+        TargetProtocol, TcpSocket,
     },
     traits::ServiceHandle,
     utils::{extract_peer_id, is_reachable, multiaddr_to_socketaddr},
