@@ -216,7 +216,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         self.adapter
             .verify_proof(
                 ctx.clone(),
-                &consenting_rich_block.block.header,
+                consenting_rich_block.block.clone(),
                 consenting_proof.clone(),
             )
             .await
@@ -240,9 +240,9 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
                 e
             })?;
 
-        let previous_block_header = self
+        let previous_block = self
             .adapter
-            .get_block_header_by_number(ctx.clone(), consenting_rich_block.block.header.number - 1)
+            .get_block_by_number(ctx.clone(), consenting_rich_block.block.header.number - 1)
             .await
             .map_err(|e| {
                 log::error!(
@@ -255,14 +255,14 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         self.adapter
             .verify_proof(
                 ctx.clone(),
-                &previous_block_header,
+                previous_block.clone(),
                 consenting_rich_block.block.header.proof.clone(),
             )
             .await
             .map_err(|e| {
                 log::error!(
                     "[synchronization]: verify_proof error, previous block header: {:?}, proof: {:?}",
-                    previous_block_header,
+                    previous_block.header,
                     consenting_rich_block.block.header.proof
                 );
                 e

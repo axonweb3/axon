@@ -137,7 +137,10 @@ impl Axon {
 
         self.state_root = mpt.commit()?;
 
-        log::info!("Execute the genesis distribute success, genesis state root {:?}", self.state_root);
+        log::info!(
+            "Execute the genesis distribute success, genesis state root {:?}",
+            self.state_root
+        );
 
         storage
             .update_latest_proof(Context::new(), self.genesis.block.header.proof.clone())

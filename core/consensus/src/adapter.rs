@@ -430,45 +430,40 @@ where
     }
 
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
-    async fn verify_proof(
-        &self,
-        ctx: Context,
-        block_header: &Header,
-        proof: Proof,
-    ) -> ProtocolResult<()> {
+    async fn verify_proof(&self, ctx: Context, block: Block, proof: Proof) -> ProtocolResult<()> {
         // the block 0 has no proof, which is consensus-ed by community, not by chain
-        if block_header.number == 0 {
+        if block.header.number == 0 {
             return Ok(());
         };
 
-        if block_header.number != proof.number {
+        if block.header.number != proof.number {
             log::error!(
                 "[consensus] verify_proof, block_header.number: {}, proof.number: {}",
-                block_header.number,
+                block.header.number,
                 proof.number
             );
             return Err(ConsensusError::VerifyProof(
-                block_header.number,
-                HeightMismatch(block_header.number, proof.number),
+                block.header.number,
+                HeightMismatch(block.header.number, proof.number),
             )
             .into());
         }
 
-        let blockhash = Hasher::digest(block_header.encode()?);
+        let proposal_hash = Hasher::digest(Proposal::from(block.clone()).encode()?);
 
-        if blockhash != proof.block_hash {
+        if proposal_hash != proof.block_hash {
             log::error!(
                 "[consensus] verify_proof, blockhash: {:?}, proof.block_hash: {:?}",
-                blockhash,
+                proposal_hash,
                 proof.block_hash
             );
-            return Err(ConsensusError::VerifyProof(block_header.number, HashMismatch).into());
+            return Err(ConsensusError::VerifyProof(block.header.number, HashMismatch).into());
         }
 
         // the auth_list for the target should comes from previous number
         let metadata = METADATA_CONTROLER.load().current();
 
-        if !metadata.version.contains(block_header.number) {
+        if !metadata.version.contains(block.header.number) {
             return Err(ConsensusError::ConfusedMetadata(
                 metadata.version.start,
                 metadata.version.end,
@@ -488,7 +483,7 @@ where
 
         let signed_voters = extract_voters(&mut authority_list, &proof.bitmap).map_err(|_| {
             log::error!("[consensus] extract_voters fails, bitmap error");
-            ConsensusError::VerifyProof(block_header.number, BitMap)
+            ConsensusError::VerifyProof(block.header.number, BitMap)
         })?;
 
         let vote = Vote {
@@ -504,7 +499,7 @@ where
             .collect::<HashMap<overlord::types::Address, u32>>();
         self.verify_proof_weight(
             ctx.clone(),
-            block_header.number,
+            block.header.number,
             weight_map,
             signed_voters.clone(),
         )?;
@@ -524,13 +519,13 @@ where
 
         self.verify_proof_signature(
             ctx,
-            block_header.number,
+            block.header.number,
             vote_hash.clone(),
             proof.signature.clone(),
             hex_pubkeys,
         ).map_err(|e| {
             log::error!("[consensus] verify_proof_signature error, number {}, vote: {:?}, vote_hash:{:?}, sig:{:?}, signed_voter:{:?}",
-            block_header.number,
+            block.header.number,
             vote,
             vote_hash,
             proof.signature,
