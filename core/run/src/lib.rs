@@ -41,8 +41,8 @@ use core_network::{
 };
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 #[cfg(unix)]
-use protocol::tokio::signal::unix::{self as os_impl};
-use protocol::tokio::{sync::Mutex as AsyncMutex, time::sleep};
+use protocol::tokio::signal::unix as os_impl;
+use protocol::tokio::{runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep};
 use protocol::traits::{CommonStorage, Context, Executor, MemPool, Network, NodeInfo, Storage};
 use protocol::types::{
     Account, Address, Bloom, BloomInput, Genesis, Hasher, MerkleRoot, Metadata, Validator,
@@ -81,14 +81,15 @@ impl Axon {
             log::info!("muta_apm start");
         }
 
-        let rt = tokio::runtime::Runtime::new().expect("new tokio runtime");
-        let local = tokio::task::LocalSet::new();
-        local.block_on(&rt, async move {
+        let rt = RuntimeBuilder::new_multi_thread()
+            .enable_all()
+            .build()
+            .expect("new tokio runtime");
+
+        rt.block_on(async move {
             self.create_genesis().await?;
             self.start().await
-        })?;
-
-        Ok(())
+        })
     }
 
     pub async fn create_genesis(&mut self) -> ProtocolResult<()> {
@@ -308,6 +309,7 @@ impl Axon {
         };
         let current_header = &current_block.header;
         let current_number = current_block.header.number;
+        let latest_proof = storage.get_latest_proof(Context::new()).await?;
 
         let current_consensus_status = if current_number == 0 {
             CurrentStatus {
@@ -319,7 +321,7 @@ impl Axon {
                 gas_used:         0u64.into(),
                 gas_limit:        metadata.gas_limit.into(),
                 base_fee_per_gas: U256::one(),
-                proof:            current_header.proof.clone(),
+                proof:            latest_proof,
             }
         } else {
             // Init executor
