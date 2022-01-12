@@ -208,18 +208,15 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         }
 
         let proposal = commit.content;
-        let block_hash = Hash::from_slice(commit.proof.block_hash.as_ref());
-        let signature = commit.proof.signature.signature.clone();
-        let bitmap = commit.proof.signature.address_bitmap.clone();
         let txs_len = proposal.tx_hashes.len();
 
         // Storage save the latest proof.
         let proof = Proof {
-            number: commit.proof.height,
-            round: commit.proof.round,
-            block_hash,
-            signature,
-            bitmap,
+            number:     commit.proof.height,
+            round:      commit.proof.round,
+            block_hash: Hash::from_slice(commit.proof.block_hash.as_ref()),
+            signature:  commit.proof.signature.signature.clone(),
+            bitmap:     commit.proof.signature.address_bitmap.clone(),
         };
         common_apm::metrics::consensus::ENGINE_ROUND_GAUGE.set(commit.proof.round as i64);
 
