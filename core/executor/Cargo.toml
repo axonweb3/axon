@@ -25,6 +25,7 @@ common-merkle = { path = "../../common/merkle" }
 
 [dev-dependencies]
 criterion = "0.3"
+fastrand = "1.6"
 
 core-storage = { path = "../storage" }
 common-crypto = { path = "../../common/crypto" }

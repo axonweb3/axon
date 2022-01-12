@@ -163,7 +163,7 @@ impl Axon {
             path_block.clone(),
             config.rocksdb.max_open_files,
         )?);
-        let storage = Arc::new(ImplStorage::new(Arc::clone(&rocks_adapter)));
+        let storage = Arc::new(ImplStorage::new(rocks_adapter));
 
         // Init network
         let network_config = NetworkConfig::new()
