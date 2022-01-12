@@ -1,3 +1,5 @@
+#![allow(dead_code, unused_variables, clippy::needless_return)]
+
 mod adapter;
 
 use std::sync::Arc;

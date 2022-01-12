@@ -157,13 +157,12 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
 
     async fn call(&self, req: Web3CallRequest, number: BlockId) -> RpcResult<String> {
         let data_tmp = req.data.clone();
-        let data_decode_bytes = Hex::decode(data_tmp)
-            .map_err(|e| Error::Custom(e.to_string()))?; 
+        let data_decode_bytes = Hex::decode(data_tmp).map_err(|e| Error::Custom(e.to_string()))?;
         let resp = self
             .call_evm(req, data_decode_bytes, number.into())
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
-        let call_hex_result =Hex::encode(resp.ret).as_string();
+        let call_hex_result = Hex::encode(resp.ret).as_string();
         Ok(call_hex_result)
     }
 
@@ -173,10 +172,9 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             _ => None,
         };
         let data_tmp = req.data.clone();
-        let data_decode_bytes =Hex::decode(data_tmp)
-            .map_err(|e| Error::Custom(e.to_string()))?;
+        let data_decode_bytes = Hex::decode(data_tmp).map_err(|e| Error::Custom(e.to_string()))?;
         let resp = self
-            .call_evm(req, data_decode_bytes,num)
+            .call_evm(req, data_decode_bytes, num)
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 

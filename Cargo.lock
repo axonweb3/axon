@@ -1119,8 +1119,12 @@ version = "0.1.0"
 dependencies = [
  "axon-protocol",
  "ckb-jsonrpc-types",
+ "ckb-types",
+ "common-config-parser",
  "futures",
  "jsonrpc-core",
+ "log",
+ "reqwest",
  "serde",
  "serde_json",
  "tokio-util",
