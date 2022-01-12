@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 use protocol::codec::ProtocolCodec;
 use protocol::tokio::{sync::Mutex, time::sleep};
 use protocol::traits::{Context, Synchronization, SynchronizationAdapter};
-use protocol::types::{Block, Bloom, BloomInput, Hasher, Proof, Receipt, SignedTransaction};
+use protocol::types::{Block, Hash, Hasher, Proof, Proposal, Receipt, SignedTransaction};
 use protocol::{async_trait, ProtocolResult};
 
 use crate::status::{CurrentStatus, StatusAgent, METADATA_CONTROLER};
@@ -144,6 +144,12 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         };
 
         let mut current_consented_number = current_number;
+        let mut last_state_root = self
+            .adapter
+            .get_block_by_number(ctx.clone(), current_number)
+            .await?
+            .header
+            .state_root;
 
         while current_consented_number < remote_number {
             let consenting_number = current_consented_number + 1;
@@ -171,7 +177,8 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             let inst = Instant::now();
             self.commit_block(
                 ctx.clone(),
-                consenting_rich_block.clone(),
+                &mut last_state_root,
+                consenting_rich_block,
                 consenting_proof,
                 sync_status_agent.clone(),
             )
@@ -179,7 +186,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             .map_err(|e| {
                 log::error!(
                     "[synchronization]: commit block {} error",
-                    consenting_rich_block.block.header.number
+                    current_consented_number
                 );
                 e
             })?;
@@ -200,6 +207,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         consenting_rich_block: &RichBlock,
     ) -> ProtocolResult<Proof> {
         let consenting_number = consenting_rich_block.block.header.number;
+        let proposal: Proposal = consenting_rich_block.block.clone().into();
 
         let consenting_proof: Proof = self
             .adapter
@@ -230,7 +238,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             })?;
 
         self.adapter
-            .verify_block_header(ctx.clone(), &consenting_rich_block.block)
+            .verify_block_header(ctx.clone(), &proposal)
             .await
             .map_err(|e| {
                 log::error!(
@@ -288,6 +296,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
     async fn commit_block(
         &self,
         ctx: Context,
+        last_state_root: &mut Hash,
         rich_block: RichBlock,
         proof: Proof,
         status_agent: StatusAgent,
@@ -298,13 +307,31 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             .adapter
             .exec(
                 ctx.clone(),
-                block_hash,
-                &block.header,
+                *last_state_root,
+                &block.clone().into(),
                 rich_block.txs.clone(),
             )
             .await?;
 
-        let (receipts, logs) = generate_receipts_and_logs(
+        if resp.state_root != block.header.state_root {
+            return Err(ConsensusError::InvalidStateRoot {
+                expect: block.header.state_root,
+                actual: resp.state_root,
+            }
+            .into());
+        }
+
+        if resp.receipt_root != block.header.receipts_root {
+            return Err(ConsensusError::InvalidReceiptsRoot {
+                expect: block.header.receipts_root,
+                actual: resp.receipt_root,
+            }
+            .into());
+        }
+
+        *last_state_root = resp.state_root;
+
+        let (receipts, _logs) = generate_receipts_and_logs(
             block.header.number,
             block_hash,
             block.header.state_root,
@@ -316,11 +343,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         let new_status = CurrentStatus {
             prev_hash:        Hasher::digest(block.header.encode()?),
             last_number:      block.header.number,
-            state_root:       resp.state_root,
-            receipts_root:    resp.receipt_root,
-            log_bloom:        Bloom::from(BloomInput::Raw(rlp::encode_list(&logs).as_ref())),
             gas_limit:        metadata.gas_limit.into(),
-            gas_used:         resp.gas_used.into(),
             base_fee_per_gas: block.header.base_fee_per_gas,
             proof:            proof.clone(),
         };

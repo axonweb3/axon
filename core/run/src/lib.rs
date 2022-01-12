@@ -26,10 +26,9 @@ use core_consensus::message::{
     RPC_SYNC_PULL_TXS,
 };
 use core_consensus::status::{CurrentStatus, MetadataController, StatusAgent};
-use core_consensus::{engine::generate_receipts_and_logs, util::OverlordCrypto};
 use core_consensus::{
-    ConsensusWal, DurationConfig, Node, OverlordConsensus, OverlordConsensusAdapter,
-    OverlordSynchronization, SignedTxsWAL, METADATA_CONTROLER,
+    util::OverlordCrypto, ConsensusWal, DurationConfig, Node, OverlordConsensus,
+    OverlordConsensusAdapter, OverlordSynchronization, SignedTxsWAL, METADATA_CONTROLER,
 };
 use core_executor::{EVMExecutorAdapter, EvmExecutor, MPTTrie, RocksTrieDB};
 use core_mempool::{
@@ -45,8 +44,8 @@ use protocol::tokio::signal::unix as os_impl;
 use protocol::tokio::{runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep};
 use protocol::traits::{CommonStorage, Context, Executor, MemPool, Network, NodeInfo, Storage};
 use protocol::types::{
-    Account, Address, Bloom, BloomInput, Genesis, Hasher, MerkleRoot, Metadata, Validator,
-    NIL_DATA, RLP_NULL, U256,
+    Account, Address, Genesis, Hasher, MerkleRoot, Metadata, Proposal, Validator, NIL_DATA,
+    RLP_NULL, U256,
 };
 use protocol::{
     codec::ProtocolCodec, tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
@@ -315,41 +314,26 @@ impl Axon {
             CurrentStatus {
                 prev_hash:        Hasher::digest(current_header.encode()?),
                 last_number:      current_header.number,
-                state_root:       self.state_root,
-                receipts_root:    Default::default(),
-                log_bloom:        Default::default(),
-                gas_used:         0u64.into(),
                 gas_limit:        metadata.gas_limit.into(),
                 base_fee_per_gas: U256::one(),
                 proof:            latest_proof,
             }
         } else {
             // Init executor
+            let proposal = Proposal::from(current_header.clone());
             let executor = EvmExecutor::default();
             let mut backend = EVMExecutorAdapter::from_root(
                 current_header.state_root,
                 Arc::clone(&trie_db),
                 Arc::clone(&storage),
-                current_header.clone().into(),
+                proposal.into(),
             )?;
-            let resp = executor.exec(&mut backend, current_stxs.clone());
+            let _resp = executor.exec(&mut backend, current_stxs.clone());
             let block_hash = Hasher::digest(current_header.encode()?);
-
-            let (_receipts, logs) = generate_receipts_and_logs(
-                current_header.number,
-                block_hash,
-                current_header.state_root,
-                &current_stxs,
-                &resp,
-            );
 
             CurrentStatus {
                 prev_hash:        block_hash,
                 last_number:      current_header.number,
-                state_root:       resp.state_root,
-                receipts_root:    resp.receipt_root,
-                log_bloom:        Bloom::from(BloomInput::Raw(rlp::encode_list(&logs).as_ref())),
-                gas_used:         resp.gas_used.into(),
                 gas_limit:        metadata.gas_limit.into(),
                 base_fee_per_gas: current_header.base_fee_per_gas,
                 proof:            current_header.proof.clone(),
@@ -359,7 +343,7 @@ impl Axon {
         // set args in mempool
         mempool.set_args(
             Context::new(),
-            current_consensus_status.state_root,
+            current_header.state_root,
             metadata.timeout_gap,
             metadata.gas_limit,
             metadata.max_tx_size,

@@ -33,7 +33,13 @@ impl<Adapter: APIAdapter> JsonRpcImpl<Adapter> {
         let mock_header = mock_header_by_call_req(header, &req);
 
         self.adapter
-            .evm_call(Context::new(), req.from, req.data.to_vec(), mock_header)
+            .evm_call(
+                Context::new(),
+                req.from,
+                req.data.to_vec(),
+                mock_header.state_root,
+                mock_header.into(),
+            )
             .await
     }
 }
