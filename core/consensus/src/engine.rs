@@ -208,18 +208,15 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         }
 
         let proposal = commit.content;
-        let block_hash = Hash::from_slice(commit.proof.block_hash.as_ref());
-        let signature = commit.proof.signature.signature.clone();
-        let bitmap = commit.proof.signature.address_bitmap.clone();
         let txs_len = proposal.tx_hashes.len();
 
         // Storage save the latest proof.
         let proof = Proof {
-            number: commit.proof.height,
-            round: commit.proof.round,
-            block_hash,
-            signature,
-            bitmap,
+            number:     commit.proof.height,
+            round:      commit.proof.round,
+            block_hash: Hash::from_slice(commit.proof.block_hash.as_ref()),
+            signature:  commit.proof.signature.signature.clone(),
+            bitmap:     commit.proof.signature.address_bitmap.clone(),
         };
         common_apm::metrics::consensus::ENGINE_ROUND_GAUGE.set(commit.proof.round as i64);
 
@@ -237,17 +234,12 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
                 .load(current_number, proposal.transactions_root)?,
         };
 
-        let last_block = self
-            .adapter
-            .get_block_by_number(ctx.clone(), proposal.number - 1)
-            .await?;
-
         // Execute transactions
         let resp = self
             .adapter
             .exec(
                 ctx.clone(),
-                last_block.header.state_root,
+                self.status.inner().last_state_root,
                 &proposal,
                 signed_txs.clone(),
             )
@@ -482,35 +474,35 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         // verify the proof in the block for previous block
         // skip to get previous proof to compare because the node may just comes from
         // sync and waste a delay of read
-        let previous_block_header = self
+        let previous_block = self
             .adapter
-            .get_block_header_by_number(ctx.clone(), proposal.number - 1)
+            .get_block_by_number(ctx.clone(), proposal.number - 1)
             .await?;
 
         // verify block timestamp.
         if !validate_timestamp(
             current_timestamp,
             proposal.timestamp,
-            previous_block_header.timestamp,
+            previous_block.header.timestamp,
         ) {
             return Err(ProtocolError::from(ConsensusError::InvalidTimestamp));
         }
 
         self.adapter
-                .verify_proof(
-                    ctx.clone(),
-                    &previous_block_header,
-                    proposal.proof.clone(),
-                )
-                .await
-                .map_err(|e| {
-                    error!(
-                        "[consensus] check_block, verify_proof error, previous block header: {:?}, proof: {:?}",
-                        previous_block_header,
-                        proposal.proof
-                    );
-                    e
-                })?;
+            .verify_proof(
+                ctx.clone(),
+                previous_block.clone(),
+                proposal.proof.clone(),
+            )
+            .await
+            .map_err(|e| {
+                error!(
+                    "[consensus] check_block, verify_proof error, previous block header: {:?}, proof: {:?}",
+                    previous_block.header,
+                    proposal.proof
+                );
+                e
+            })?;
 
         self.adapter
             .verify_txs(ctx.clone(), proposal.number, &proposal.tx_hashes)
@@ -609,6 +601,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         let new_status = CurrentStatus {
             prev_hash:        block_hash,
             last_number:      block_number,
+            last_state_root:  resp.state_root,
             gas_limit:        metadata.gas_limit.into(),
             base_fee_per_gas: block.header.base_fee_per_gas,
             proof:            proof.clone(),

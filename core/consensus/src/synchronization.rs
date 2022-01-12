@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 use protocol::codec::ProtocolCodec;
 use protocol::tokio::{sync::Mutex, time::sleep};
 use protocol::traits::{Context, Synchronization, SynchronizationAdapter};
-use protocol::types::{Block, Hash, Hasher, Proof, Proposal, Receipt, SignedTransaction};
+use protocol::types::{Block, Hasher, Proof, Proposal, Receipt, SignedTransaction};
 use protocol::{async_trait, ProtocolResult};
 
 use crate::status::{CurrentStatus, StatusAgent, METADATA_CONTROLER};
@@ -137,19 +137,12 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         current_number: u64,
         remote_number: u64,
     ) -> ProtocolResult<()> {
+        let mut current_consented_number = current_number;
         let remote_number = if current_number + ONCE_SYNC_BLOCK_LIMIT > remote_number {
             remote_number
         } else {
             current_number + ONCE_SYNC_BLOCK_LIMIT
         };
-
-        let mut current_consented_number = current_number;
-        let mut last_state_root = self
-            .adapter
-            .get_block_by_number(ctx.clone(), current_number)
-            .await?
-            .header
-            .state_root;
 
         while current_consented_number < remote_number {
             let consenting_number = current_consented_number + 1;
@@ -177,7 +170,6 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             let inst = Instant::now();
             self.commit_block(
                 ctx.clone(),
-                &mut last_state_root,
                 consenting_rich_block,
                 consenting_proof,
                 sync_status_agent.clone(),
@@ -224,7 +216,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         self.adapter
             .verify_proof(
                 ctx.clone(),
-                &consenting_rich_block.block.header,
+                consenting_rich_block.block.clone(),
                 consenting_proof.clone(),
             )
             .await
@@ -248,9 +240,9 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
                 e
             })?;
 
-        let previous_block_header = self
+        let previous_block = self
             .adapter
-            .get_block_header_by_number(ctx.clone(), consenting_rich_block.block.header.number - 1)
+            .get_block_by_number(ctx.clone(), consenting_rich_block.block.header.number - 1)
             .await
             .map_err(|e| {
                 log::error!(
@@ -263,14 +255,14 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         self.adapter
             .verify_proof(
                 ctx.clone(),
-                &previous_block_header,
+                previous_block.clone(),
                 consenting_rich_block.block.header.proof.clone(),
             )
             .await
             .map_err(|e| {
                 log::error!(
                     "[synchronization]: verify_proof error, previous block header: {:?}, proof: {:?}",
-                    previous_block_header,
+                    previous_block.header,
                     consenting_rich_block.block.header.proof
                 );
                 e
@@ -296,7 +288,6 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
     async fn commit_block(
         &self,
         ctx: Context,
-        last_state_root: &mut Hash,
         rich_block: RichBlock,
         proof: Proof,
         status_agent: StatusAgent,
@@ -307,7 +298,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             .adapter
             .exec(
                 ctx.clone(),
-                *last_state_root,
+                status_agent.inner().last_state_root,
                 &block.clone().into(),
                 rich_block.txs.clone(),
             )
@@ -329,8 +320,6 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             .into());
         }
 
-        *last_state_root = resp.state_root;
-
         let (receipts, _logs) = generate_receipts_and_logs(
             block.header.number,
             block_hash,
@@ -343,6 +332,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         let new_status = CurrentStatus {
             prev_hash:        Hasher::digest(block.header.encode()?),
             last_number:      block.header.number,
+            last_state_root:  resp.state_root,
             gas_limit:        metadata.gas_limit.into(),
             base_fee_per_gas: block.header.base_fee_per_gas,
             proof:            proof.clone(),
