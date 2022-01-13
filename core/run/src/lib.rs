@@ -45,7 +45,7 @@ use protocol::tokio::signal::unix as os_impl;
 use protocol::tokio::{runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep};
 use protocol::traits::{CommonStorage, Context, Executor, MemPool, Network, NodeInfo, Storage};
 use protocol::types::{
-    Account, Address, Genesis, Hasher, MerkleRoot, Metadata, Proposal, Validator, NIL_DATA,
+    Account, Address, Hasher, MerkleRoot, Metadata, Proposal, RichBlock, Validator, NIL_DATA,
     RLP_NULL, U256,
 };
 use protocol::{tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
@@ -53,13 +53,13 @@ use protocol::{tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolR
 #[derive(Debug)]
 pub struct Axon {
     config:     Config,
-    genesis:    Genesis,
+    genesis:    RichBlock,
     metadata:   Metadata,
     state_root: MerkleRoot,
 }
 
 impl Axon {
-    pub fn new(config: Config, genesis: Genesis, metadata: Metadata) -> Axon {
+    pub fn new(config: Config, genesis: RichBlock, metadata: Metadata) -> Axon {
         Axon {
             config,
             genesis,
@@ -91,8 +91,6 @@ impl Axon {
     }
 
     pub async fn create_genesis(&mut self) -> ProtocolResult<()> {
-        log::info!("Genesis data: {:?}", self.genesis);
-
         // Init Block db
         let path_block = self.config.data_path_for_block();
         let rocks_adapter = Arc::new(RocksAdapter::new(
@@ -120,7 +118,7 @@ impl Axon {
             self.config.rocksdb.max_open_files,
             self.config.executor.triedb_cache_size,
         )?);
-        let mut mpt = MPTTrie::new(trie_db);
+        let mut mpt = MPTTrie::new(Arc::clone(&trie_db));
 
         let distribute_address = Address::from_hex("0x8ab0cf264df99d83525e9e11c7e4db01558ae1b1")?;
         let distribute_account = Account {
@@ -135,11 +133,22 @@ impl Axon {
             distribute_account.encode()?.as_ref(),
         )?;
 
-        self.state_root = mpt.commit()?;
+        let proposal = Proposal::from(self.genesis.block.clone());
+        let executor = EvmExecutor::default();
+        let mut backend = EVMExecutorAdapter::from_root(
+            mpt.commit()?,
+            trie_db,
+            Arc::clone(&storage),
+            proposal.into(),
+        )?;
+        let resp = executor.exec(&mut backend, self.genesis.txs.clone());
+
+        self.state_root = resp.state_root;
 
         log::info!(
-            "Execute the genesis distribute success, genesis state root {:?}",
-            self.state_root
+            "Execute the genesis distribute success, genesis state root {:?}, response {:?}",
+            self.state_root,
+            resp
         );
 
         storage
@@ -148,8 +157,15 @@ impl Axon {
         storage
             .insert_block(Context::new(), self.genesis.block.clone())
             .await?;
+        storage
+            .insert_transactions(
+                Context::new(),
+                self.genesis.block.header.number,
+                self.genesis.txs.clone(),
+            )
+            .await?;
 
-        log::info!("The genesis block is created {:?}", self.genesis);
+        log::info!("The genesis block is created {:?}", self.genesis.block);
 
         Ok(())
     }
@@ -582,5 +598,18 @@ impl std::error::Error for MainError {}
 impl From<MainError> for ProtocolError {
     fn from(error: MainError) -> ProtocolError {
         ProtocolError::new(ProtocolErrorKind::Main, Box::new(error))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use protocol::types::RichBlock;
+    use std::fs;
+
+    #[test]
+    fn decode_genesis() {
+        let raw = fs::read("../../devtools/chain/genesis.json").unwrap();
+        let genesis: RichBlock = serde_json::from_slice(&raw).unwrap();
+        println!("{:?}", genesis);
     }
 }

@@ -143,12 +143,6 @@ pub struct Proof {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct Genesis {
-    pub block:    Block,
-    pub rich_txs: Vec<SignedTransaction>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct RichBlock {
     pub block: Block,
     pub txs:   Vec<SignedTransaction>,
@@ -157,7 +151,7 @@ pub struct RichBlock {
 #[cfg(test)]
 mod tests {
     use crate::types::{
-        Block, Genesis, Header, Hex, Metadata, MetadataVersion, ValidatorExtend, H160,
+        Block, Header, Hex, Metadata, MetadataVersion, RichBlock, ValidatorExtend, H160,
     };
     use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -170,9 +164,9 @@ mod tests {
 
     #[test]
     fn print_genesis() {
-        let genesis = Genesis {
-            rich_txs: vec![],
-            block:    Block {
+        let genesis = RichBlock {
+            txs:   vec![],
+            block: Block {
                 tx_hashes: vec![],
                 header:    Header {
                     prev_hash:                  Default::default(),
