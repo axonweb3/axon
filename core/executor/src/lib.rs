@@ -72,7 +72,6 @@ impl Executor for EvmExecutor {
             r.logs = backend.get_logs();
             gas_use += r.gas_used;
 
-            log::warn!("[exec] resp {:?}", r);
             hashes.push(Hasher::digest(&r.ret));
             res.push(r);
         });
