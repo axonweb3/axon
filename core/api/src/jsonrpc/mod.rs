@@ -12,7 +12,9 @@ use protocol::traits::APIAdapter;
 use protocol::types::{Bytes, SignedTransaction, H160, H256, U256};
 use protocol::ProtocolResult;
 
-use crate::jsonrpc::web3_types::{BlockId, Web3Block, Web3CallRequest, Web3Receipt};
+use crate::jsonrpc::web3_types::{
+    BlockId, Web3Block, Web3CallRequest, Web3Filter, Web3Log, Web3Receipt,
+};
 use crate::APIError;
 
 type RpcResult<T> = Result<T, Error>;
@@ -70,6 +72,9 @@ pub trait AxonJsonRpc {
 
     #[method(name = "eth_gasPrice")]
     async fn gas_price(&self) -> RpcResult<U256>;
+
+    #[method(name = "eth_getLogs")]
+    async fn get_logs(&self, filter: Web3Filter) -> RpcResult<Vec<Web3Log>>;
 }
 
 pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(

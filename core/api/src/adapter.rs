@@ -77,6 +77,10 @@ where
         }
     }
 
+    // async fn get_block_by_hash(&self, ctx: Context, hash: Hash) ->
+    // ProtocolResult<Option<Block>> {     self.storage.get_block_by_hash(ctx,
+    // hash).await }
+
     async fn get_block_header_by_number(
         &self,
         ctx: Context,

@@ -4,12 +4,13 @@ use jsonrpsee::core::Error;
 
 use protocol::traits::{APIAdapter, Context};
 use protocol::types::{
-    Bytes, Header, Hex, SignedTransaction, TxResp, UnverifiedTransaction, H160, H256, H64, U256,
+    Block, BlockNumber, Bytes, Header, Hex, Receipt, SignedTransaction, TxResp,
+    UnverifiedTransaction, H160, H256, H64, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
 use crate::jsonrpc::web3_types::{
-    BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3Receipt,
+    BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3Filter, Web3Log, Web3Receipt,
 };
 use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
 use crate::APIError;
@@ -244,6 +245,161 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
     async fn listening(&self) -> RpcResult<bool> {
         Ok(true)
     }
+
+    async fn get_logs(&self, filter: Web3Filter) -> RpcResult<Vec<Web3Log>> {
+        if filter.topics.is_none() {
+            return Ok(Vec::new());
+        }
+
+        let topics = filter.topics.unwrap();
+
+        #[allow(clippy::large_enum_variant)]
+        enum BlockPosition {
+            // Hash(H256),
+            Num(BlockNumber),
+            Block(Block),
+        }
+
+        async fn get_logs<T: APIAdapter>(
+            adapter: &T,
+            position: BlockPosition,
+            topics: &[H256],
+            logs: &mut Vec<Web3Log>,
+        ) -> RpcResult<()> {
+            let extend_logs = |logs: &mut Vec<Web3Log>, receipts: Vec<Option<Receipt>>| {
+                let mut index = 0;
+                for receipt in receipts.into_iter().flatten() {
+                    let log_len = receipt.logs.len();
+                    from_receipt_to_web3_log(index, topics, receipt, logs);
+                    index += log_len;
+                }
+            };
+
+            match position {
+                // BlockPosition::Hash(hash) => {
+                //     match adapter
+                //         .get_block_by_hash(Context::new(), hash)
+                //         .await
+                //         .map_err(|e| Error::Custom(e.to_string()))?
+                //     {
+                //         Some(block) => {
+                //             let receipts = adapter
+                //                 .get_receipts_by_hashes(
+                //                     Context::new(),
+                //                     block.header.number,
+                //                     &block.tx_hashes,
+                //                 )
+                //                 .await
+                //                 .map_err(|e| Error::Custom(e.to_string()))?;
+                //             extend_logs(logs, receipts);
+                //             Ok(())
+                //         }
+                //         None => Err(Error::Custom(format!(
+                //             "Invalid block hash
+                //     {}",
+                //             hash
+                //         ))),
+                //     }
+                // }
+                BlockPosition::Num(n) => {
+                    let block = adapter
+                        .get_block_by_number(Context::new(), Some(n))
+                        .await
+                        .map_err(|e| Error::Custom(e.to_string()))?
+                        .unwrap();
+                    let receipts = adapter
+                        .get_receipts_by_hashes(
+                            Context::new(),
+                            block.header.number,
+                            &block.tx_hashes,
+                        )
+                        .await
+                        .map_err(|e| Error::Custom(e.to_string()))?;
+
+                    extend_logs(logs, receipts);
+                    Ok(())
+                }
+                BlockPosition::Block(block) => {
+                    let receipts = adapter
+                        .get_receipts_by_hashes(
+                            Context::new(),
+                            block.header.number,
+                            &block.tx_hashes,
+                        )
+                        .await
+                        .map_err(|e| Error::Custom(e.to_string()))?;
+
+                    extend_logs(logs, receipts);
+                    Ok(())
+                }
+            }
+        }
+
+        let mut all_logs = Vec::new();
+        match filter.block_hash {
+            Some(_hash) => {
+                // get_logs(
+                //     &self.adapter,
+                //     BlockPosition::Hash(hash),
+                //     &topics,
+                //     &mut all_logs,
+                // )
+                // .await?;
+            }
+            None => {
+                let latest_block = self
+                    .adapter
+                    .get_block_by_number(Context::new(), None)
+                    .await
+                    .map_err(|e| Error::Custom(e.to_string()))?
+                    .unwrap();
+                let latest_number = latest_block.header.number;
+                let (start, end) = {
+                    let convert = |id: BlockId| -> BlockNumber {
+                        match id {
+                            BlockId::Num(n) => n,
+                            BlockId::Latest => latest_number,
+                        }
+                    };
+
+                    (
+                        filter.from_block.map(convert).unwrap_or(latest_number),
+                        filter.to_block.map(convert).unwrap_or(latest_number),
+                    )
+                };
+
+                if start > latest_number {
+                    return Err(Error::Custom(format!("Invalid from_block {}", start)));
+                }
+
+                let mut visiter_last_block = false;
+                for n in start..=end {
+                    if n == latest_number {
+                        visiter_last_block = true;
+                    } else {
+                        get_logs(
+                            &*self.adapter,
+                            BlockPosition::Num(n),
+                            &topics,
+                            &mut all_logs,
+                        )
+                        .await?;
+                    }
+                }
+
+                if visiter_last_block {
+                    get_logs(
+                        &*self.adapter,
+                        BlockPosition::Block(latest_block),
+                        &topics,
+                        &mut all_logs,
+                    )
+                    .await?;
+                }
+            }
+        }
+        Ok(all_logs)
+    }
 }
 
 fn mock_header_by_call_req(latest_header: Header, call_req: &Web3CallRequest) -> Header {
@@ -279,5 +435,31 @@ fn mock_header_by_call_req(latest_header: Header, call_req: &Web3CallRequest) ->
         proof:                      latest_header.proof,
         last_checkpoint_block_hash: latest_header.last_checkpoint_block_hash,
         chain_id:                   latest_header.chain_id,
+    }
+}
+
+fn from_receipt_to_web3_log(
+    index: usize,
+    topics: &[H256],
+    receipt: Receipt,
+    logs: &mut Vec<Web3Log>,
+) {
+    for log in receipt.logs {
+        for (idx, topic) in log.topics.iter().enumerate() {
+            if topics.contains(topic) {
+                let web3_log = Web3Log {
+                    address:           receipt.sender,
+                    topics:            log.topics.clone(),
+                    data:              Hex::encode(&log.data),
+                    block_hash:        Some(receipt.block_hash),
+                    block_number:      Some(receipt.block_number.into()),
+                    transaction_hash:  Some(receipt.tx_hash),
+                    transaction_index: Some(receipt.tx_index.into()),
+                    log_index:         Some((index + idx).into()),
+                    removed:           false,
+                };
+                logs.push(web3_log);
+            }
+        }
     }
 }
