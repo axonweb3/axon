@@ -23,7 +23,7 @@ use std::time::Instant;
 use futures::future::try_join_all;
 
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
-use protocol::types::{Hash, SignedTransaction, H256};
+use protocol::types::{Hash, SignedTransaction, H256, U256};
 use protocol::{async_trait, tokio, Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 use crate::context::TxContext;
@@ -167,7 +167,7 @@ where
     async fn package(
         &self,
         _ctx: Context,
-        gas_limit: u64,
+        gas_limit: U256,
         tx_num_limit: u64,
     ) -> ProtocolResult<Vec<Hash>> {
         log::info!(

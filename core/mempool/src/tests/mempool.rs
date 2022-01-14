@@ -76,7 +76,7 @@ macro_rules! package {
         let txs = mock_txs($insert, 0, $timeout);
         concurrent_insert(txs.clone(), Arc::clone(mempool)).await;
         protocol::tokio::time::sleep(std::time::Duration::from_millis(100)).await;
-        let tx_hashes = exec_package(Arc::clone(mempool), CYCLE_LIMIT, $tx_num_limit).await;
+        let tx_hashes = exec_package(Arc::clone(mempool), CYCLE_LIMIT.into(), $tx_num_limit).await;
         assert_eq!(tx_hashes.len(), $expect_order);
     };
 }
@@ -109,7 +109,7 @@ async fn test_flush() {
     let remove_hashes: Vec<Hash> = remove_txs.iter().map(|tx| tx.transaction.hash).collect();
     exec_flush(remove_hashes, Arc::clone(&mempool)).await;
     assert_eq!(mempool.len(), 432);
-    exec_package(Arc::clone(&mempool), CYCLE_LIMIT, TX_NUM_LIMIT).await;
+    exec_package(Arc::clone(&mempool), CYCLE_LIMIT.into(), TX_NUM_LIMIT).await;
     assert_eq!(mempool.len(), 432);
 
     // flush absent txs
@@ -271,7 +271,7 @@ fn bench_package(b: &mut Bencher) {
     b.iter(|| {
         runtime.block_on(exec_package(
             Arc::clone(&mempool),
-            CYCLE_LIMIT,
+            CYCLE_LIMIT.into(),
             TX_NUM_LIMIT,
         ));
     });
@@ -339,7 +339,11 @@ fn bench_flush(b: &mut Bencher) {
     b.iter(|| {
         runtime.block_on(concurrent_insert(txs.clone(), Arc::clone(mempool)));
         runtime.block_on(exec_flush(remove_hashes.clone(), Arc::clone(mempool)));
-        runtime.block_on(exec_package(Arc::clone(mempool), CYCLE_LIMIT, TX_NUM_LIMIT));
+        runtime.block_on(exec_package(
+            Arc::clone(mempool),
+            CYCLE_LIMIT.into(),
+            TX_NUM_LIMIT,
+        ));
     });
 }
 
