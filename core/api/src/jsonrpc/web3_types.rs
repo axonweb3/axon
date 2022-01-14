@@ -437,3 +437,28 @@ impl<'a> Visitor<'a> for IndexVisitor {
         self.visit_str(value.as_ref())
     }
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct Web3Filter {
+    pub from_block: Option<BlockId>,
+    pub to_block:   Option<BlockId>,
+    pub block_hash: Option<H256>,
+    pub address:    Option<H160>,
+    pub topics:     Option<Vec<H256>>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct Web3Log {
+    pub address:           H160,
+    pub topics:            Vec<H256>,
+    pub data:              Hex,
+    pub block_hash:        Option<H256>,
+    pub block_number:      Option<U256>,
+    pub transaction_hash:  Option<H256>,
+    pub transaction_index: Option<U256>,
+    pub log_index:         Option<U256>,
+    #[serde(default)]
+    pub removed:           bool,
+}
