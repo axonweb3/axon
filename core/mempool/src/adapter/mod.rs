@@ -5,7 +5,6 @@ pub mod message;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::{error::Error, marker::PhantomData, sync::Arc, time::Duration};
 
-use arc_swap::ArcSwap;
 use dashmap::DashMap;
 use futures::{
     channel::mpsc::{
@@ -24,7 +23,8 @@ use protocol::traits::{
 };
 use protocol::types::{recover_intact_pub_key, Hash, MerkleRoot, SignedTransaction, H160, U256};
 use protocol::{
-    async_trait, codec::ProtocolCodec, Display, ProtocolError, ProtocolErrorKind, ProtocolResult,
+    async_trait, codec::ProtocolCodec, lazy::CURRENT_STATE_ROOT, Display, ProtocolError,
+    ProtocolErrorKind, ProtocolResult,
 };
 
 use protocol::tokio::{self, time::sleep};
@@ -36,10 +36,6 @@ use crate::MemPoolError;
 
 pub const DEFAULT_BROADCAST_TXS_SIZE: usize = 200;
 pub const DEFAULT_BROADCAST_TXS_INTERVAL: u64 = 200; // milliseconds
-
-lazy_static::lazy_static! {
-    static ref CURRENT_STATE_ROOT: ArcSwap<MerkleRoot> = ArcSwap::from_pointee(Default::default());
-}
 
 struct IntervalTxsBroadcaster;
 
@@ -398,7 +394,7 @@ where
     fn set_args(
         &self,
         _context: Context,
-        state_root: MerkleRoot,
+        _state_root: MerkleRoot,
         timeout_gap: u64,
         cycles_limit: u64,
         max_tx_size: u64,
@@ -408,7 +404,6 @@ where
         self.max_tx_size
             .store(max_tx_size as usize, Ordering::Relaxed);
         self.addr_nonce.clear();
-        CURRENT_STATE_ROOT.swap(Arc::new(state_root));
     }
 
     fn report_good(&self, ctx: Context) {

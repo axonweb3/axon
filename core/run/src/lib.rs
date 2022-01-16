@@ -40,6 +40,7 @@ use core_network::{
 };
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::codec::{hex_decode, ProtocolCodec};
+use protocol::lazy::{CHAIN_ID, CURRENT_STATE_ROOT};
 #[cfg(unix)]
 use protocol::tokio::signal::unix as os_impl;
 use protocol::tokio::{runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep};
@@ -358,6 +359,9 @@ impl Axon {
                 proof:            current_header.proof.clone(),
             }
         };
+
+        CURRENT_STATE_ROOT.swap(Arc::new(current_consensus_status.last_state_root));
+        CHAIN_ID.swap(Arc::new(current_header.chain_id));
 
         // set args in mempool
         mempool.set_args(
