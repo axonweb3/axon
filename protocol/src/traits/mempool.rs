@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use creep::Context;
 
-use crate::types::{Hash, MerkleRoot, SignedTransaction};
+use crate::types::{Hash, MerkleRoot, SignedTransaction, U256};
 use crate::ProtocolResult;
 
 #[async_trait]
@@ -11,7 +11,7 @@ pub trait MemPool: Send + Sync {
     async fn package(
         &self,
         ctx: Context,
-        cycles_limit: u64,
+        cycles_limit: U256,
         tx_num_limit: u64,
     ) -> ProtocolResult<Vec<Hash>>;
 

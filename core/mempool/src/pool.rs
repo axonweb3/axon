@@ -65,7 +65,7 @@ impl PirorityPool {
         Ok(())
     }
 
-    pub fn package(&self, _gas_limit: u64, limit: usize) -> Vec<Hash> {
+    pub fn package(&self, _gas_limit: U256, limit: usize) -> Vec<Hash> {
         self.real_queue
             .lock()
             .iter()

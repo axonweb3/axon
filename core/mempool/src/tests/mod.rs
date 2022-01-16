@@ -228,7 +228,7 @@ async fn exec_flush(remove_hashes: Vec<Hash>, mempool: Arc<MemPoolImpl<HashMemPo
 
 async fn exec_package(
     mempool: Arc<MemPoolImpl<HashMemPoolAdapter>>,
-    cycle_limit: u64,
+    cycle_limit: U256,
     tx_num_limit: u64,
 ) -> Vec<Hash> {
     mempool

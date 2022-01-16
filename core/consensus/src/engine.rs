@@ -65,7 +65,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         let status = self.status.inner();
         let txs = self
             .adapter
-            .get_txs_from_mempool(ctx.clone(), next_number, status.gas_limit.as_u64(), 10000)
+            .get_txs_from_mempool(ctx.clone(), next_number, status.gas_limit, 10000)
             .await?;
         let signed_txs = self.adapter.get_full_txs(ctx.clone(), &txs).await?;
         let order_root = Merkle::from_hashes(txs.clone())

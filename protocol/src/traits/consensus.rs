@@ -6,7 +6,7 @@ use creep::Context;
 
 use crate::types::{
     Address, Block, BlockNumber, ExecResp, Hash, Header, Hex, MerkleRoot, Proof, Proposal, Receipt,
-    SignedTransaction, Validator,
+    SignedTransaction, Validator, U256,
 };
 use crate::ProtocolResult;
 
@@ -173,7 +173,7 @@ pub trait ConsensusAdapter: CommonConsensusAdapter + Send + Sync {
         &self,
         ctx: Context,
         height: u64,
-        cycle_limit: u64,
+        gas_limit: U256,
         tx_num_limit: u64,
     ) -> ProtocolResult<Vec<Hash>>;
 

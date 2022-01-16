@@ -15,7 +15,7 @@ use protocol::traits::{
 };
 use protocol::types::{
     BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Hasher, Header, Hex, MerkleRoot,
-    Proof, Proposal, Receipt, SignedTransaction, Validator,
+    Proof, Proposal, Receipt, SignedTransaction, Validator, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, tokio::task, ProtocolResult};
 
@@ -56,10 +56,10 @@ where
         &self,
         ctx: Context,
         _number: u64,
-        cycle_limit: u64,
+        gas_limit: U256,
         tx_num_limit: u64,
     ) -> ProtocolResult<Vec<Hash>> {
-        self.mempool.package(ctx, cycle_limit, tx_num_limit).await
+        self.mempool.package(ctx, gas_limit, tx_num_limit).await
     }
 
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
