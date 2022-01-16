@@ -8,23 +8,34 @@ use std::{
     time::Duration,
 };
 
-use ckb_types::prelude::{Entity, Unpack};
+use ckb_types::{
+    core::{BlockNumber, BlockView, TransactionView},
+    packed,
+    prelude::*,
+};
+
 use common_config_parser::types::{Config, ConfigCrossClient};
-use protocol::traits::{Context, CrossAdapter, MemPool};
-use protocol::types::{Bytes, SignedTransaction};
+use common_crypto::{
+    Crypto, PrivateKey, Secp256k1PrivateKey, Secp256k1Recoverable, Signature, ToPublicKey,
+    UncompressedPublicKey,
+};
+use core_executor::{EVMExecutorAdapter, EvmExecutor};
+use protocol::traits::{Context, CrossAdapter, Executor, MemPool, Storage};
+use protocol::types::{
+    public_to_address, Bytes, Public, SignedTransaction, Transaction, TransactionAction,
+    UnverifiedTransaction, H160, U256,
+};
 use protocol::{
     async_trait,
+    lazy::{CHAIN_ID, CURRENT_STATE_ROOT},
     tokio::{self, sync::mpsc},
     ProtocolResult,
 };
 
-use ckb_types::{
-    core::{BlockNumber, BlockView, TransactionView},
-    packed::Transaction,
-};
+const TWO_THOUSAND: u64 = 2000;
 
-pub struct DefaultCrossAdapter<M> {
-    mempool:        Arc<M>,
+pub struct DefaultCrossAdapter<M, S, DB> {
+    priv_key:       Secp256k1PrivateKey,
     ckb_client:     rpc_client::RpcClient,
     config:         ConfigCrossClient,
     tip_number:     BlockNumber,
@@ -33,12 +44,18 @@ pub struct DefaultCrossAdapter<M> {
     block_sender:   mpsc::Sender<Vec<io::Result<BlockView>>>,
     start_fetch:    bool,
     backup_dir:     PathBuf,
+
+    mempool: Arc<M>,
+    storage: Arc<S>,
+    trie_db: Arc<DB>,
 }
 
 #[async_trait]
-impl<M> CrossAdapter for DefaultCrossAdapter<M>
+impl<M, S, DB> CrossAdapter for DefaultCrossAdapter<M, S, DB>
 where
     M: MemPool + 'static,
+    S: Storage + 'static,
+    DB: cita_trie::DB + 'static,
 {
     async fn watch_ckb_client(&self, ctx: Context) -> ProtocolResult<()> {
         Ok(())
@@ -53,15 +70,23 @@ where
     }
 }
 
-impl<M> DefaultCrossAdapter<M>
+impl<M, S, DB> DefaultCrossAdapter<M, S, DB>
 where
     M: MemPool + 'static,
+    S: Storage + 'static,
+    DB: cita_trie::DB + 'static,
 {
-    pub fn new(config: Config, mempool: Arc<M>) -> Self {
+    pub fn new(
+        config: Config,
+        pk: Secp256k1PrivateKey,
+        mempool: Arc<M>,
+        storage: Arc<S>,
+        trie_db: Arc<DB>,
+    ) -> Self {
         let backup_dir = config.data_path.join("cross_client");
         let (sender, recv) = mpsc::channel(256);
         Self {
-            mempool,
+            priv_key: pk,
             ckb_client: rpc_client::RpcClient::new(&config.cross_client.ckb_uri),
             tip_number: 0,
             current_number: std::cmp::max(
@@ -73,6 +98,10 @@ where
             block_sender: sender,
             start_fetch: true,
             backup_dir,
+
+            mempool,
+            storage,
+            trie_db,
         }
     }
 
@@ -204,7 +233,7 @@ where
                 .unwrap();
 
             let tx_view: TransactionView =
-                Into::<Transaction>::into(input_tx.transaction.unwrap().inner).into_view();
+                Into::<packed::Transaction>::into(input_tx.transaction.unwrap().inner).into_view();
 
             let (_, data) = tx_view.output_with_data(index.unpack()).unwrap();
 
@@ -218,11 +247,55 @@ where
     }
 
     async fn send_axon_tx(&mut self, amount: Option<u128>, addr: Bytes) {
+        let addr = H160::from_slice(&addr[0..20]);
         if amount.is_none() {
             return;
         }
 
-        // TODO: insert axon tx to tx pool
+        let tx = Transaction {
+            nonce:                    self.get_nonce(&addr),
+            max_priority_fee_per_gas: TWO_THOUSAND.into(),
+            gas_price:                TWO_THOUSAND.into(),
+            gas_limit:                100000u64.into(),
+            action:                   TransactionAction::Call(addr),
+            data:                     Default::default(),
+            value:                    amount.unwrap().into(),
+            access_list:              vec![],
+        };
+
+        let mut utx = UnverifiedTransaction {
+            unsigned:  tx,
+            signature: None,
+            chain_id:  **CHAIN_ID.load(),
+            hash:      Default::default(),
+        };
+        let raw = utx.signature_hash();
+        let signature =
+            Secp256k1Recoverable::sign_message(raw.as_bytes(), &self.priv_key.to_bytes())
+                .unwrap()
+                .to_bytes();
+        utx.signature = Some(signature.into());
+        let pub_key = Public::from_slice(&self.priv_key.pub_key().to_uncompressed_bytes()[1..65]);
+
+        let stx = SignedTransaction {
+            transaction: utx.hash(),
+            sender:      public_to_address(&pub_key),
+            public:      Some(pub_key),
+        };
+
+        let _ = self.mempool.insert(Context::new(), stx).await;
+    }
+
+    fn get_nonce(&self, addr: &H160) -> U256 {
+        let backend = EVMExecutorAdapter::from_root(
+            **CURRENT_STATE_ROOT.load(),
+            Arc::clone(&self.trie_db),
+            Arc::clone(&self.storage),
+            Default::default(),
+        )
+        .unwrap();
+
+        EvmExecutor::default().get_account(&backend, addr).nonce
     }
 
     async fn dump_current_number(&self) -> io::Result<()> {

@@ -1,6 +1,7 @@
 #![allow(clippy::mutable_key_type, clippy::derive_hash_xor_eq, dead_code)]
 
 pub mod codec;
+pub mod lazy;
 pub mod traits;
 pub mod types;
 
