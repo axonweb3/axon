@@ -27,17 +27,21 @@ use protocol::types::{
 };
 use protocol::{
     async_trait,
+    codec::hex_encode,
     lazy::{ASSET_CONTRACT_ADDRESS, CHAIN_ID, CURRENT_STATE_ROOT},
     tokio::{self, sync::mpsc},
     ProtocolResult,
 };
 
+ethabi_contract::use_contract!(asset, "./src/adapter/abi/asset.abi");
+
+use asset::functions as asset_functions;
+#[allow(unused_imports)]
+use asset::events as asset_events;
+#[allow(unused_imports)]
+use asset::logs::Burned as BurnedLog;
+
 const TWO_THOUSAND: u64 = 2000;
-
-ethabi_contract::use_contract!(aseet, "./src/adapter/abi/asset.abi");
-
-use aseet::functions as asset_functions;
-use protocol::codec::hex_encode;
 
 pub struct DefaultCrossAdapter<M, S, DB> {
     priv_key:       Secp256k1PrivateKey,
