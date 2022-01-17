@@ -2,6 +2,7 @@
 
 mod uniswap2;
 
+use std::iter::repeat_with;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -9,8 +10,8 @@ use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::codec::ProtocolCodec;
 use protocol::traits::Executor;
 use protocol::types::{
-    Account, Address, ExecResp, ExecutorContext, Hash, Hasher, SignedTransaction, Transaction,
-    UnverifiedTransaction, H256, NIL_DATA, RLP_NULL, U256,
+    Account, ExecResp, ExecutorContext, Hash, Hasher, SignedTransaction, Transaction,
+    UnverifiedTransaction, H160, H256, NIL_DATA, RLP_NULL, U256,
 };
 
 use crate::adapter::{EVMExecutorAdapter, MPTTrie};
@@ -27,23 +28,21 @@ pub struct EvmDebugger {
 }
 
 impl EvmDebugger {
-    pub fn new() -> Self {
+    pub fn new(distribute_address: H160, distribute_amount: U256) -> Self {
         let rocks_adapter = Arc::new(RocksAdapter::new(DATA_PATH, 1024).unwrap());
         let trie = Arc::new(RocksTrieDB::new(STATE_PATH, 1024, 1000).unwrap());
 
         let mut mpt = MPTTrie::new(Arc::clone(&trie));
 
-        let distribute_address =
-            Address::from_hex("0x8ab0cf264df99d83525e9e11c7e4db01558ae1b1").unwrap();
         let distribute_account = Account {
             nonce:        0u64.into(),
-            balance:      32000001100000000000u128.into(),
+            balance:      distribute_amount,
             storage_root: RLP_NULL,
             code_hash:    NIL_DATA,
         };
 
         mpt.insert(
-            distribute_address.as_slice(),
+            distribute_address.as_bytes(),
             distribute_account.encode().unwrap().as_ref(),
         )
         .unwrap();
@@ -88,7 +87,7 @@ impl EvmDebugger {
     }
 }
 
-pub fn mock_signed_tx(tx: Transaction) -> SignedTransaction {
+pub fn mock_signed_tx(tx: Transaction, sender: H160) -> SignedTransaction {
     let utx = UnverifiedTransaction {
         unsigned:  tx,
         hash:      Hash::default(),
@@ -98,8 +97,8 @@ pub fn mock_signed_tx(tx: Transaction) -> SignedTransaction {
 
     SignedTransaction {
         transaction: utx,
-        sender:      rand_hash().into(),
-        public:      None,
+        sender,
+        public: None,
     }
 }
 
@@ -108,7 +107,7 @@ pub fn clear_data() {
 }
 
 fn rand_hash() -> Hash {
-    let mut data = [0u8; 64];
+    let mut data: Vec<u8> = repeat_with(|| fastrand::u8(..)).take(64).collect();
     fastrand::shuffle(&mut data);
     Hasher::digest(&data)
 }

@@ -26,6 +26,9 @@ common-merkle = { path = "../../common/merkle" }
 [dev-dependencies]
 criterion = "0.3"
 fastrand = "1.6"
+ethabi = "16.0"
+ethabi-contract = "16.0"
+ethabi-derive = "16.0"
 
 core-storage = { path = "../storage" }
 common-crypto = { path = "../../common/crypto" }
