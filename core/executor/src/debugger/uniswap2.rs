@@ -8,11 +8,10 @@ use protocol::codec::hex_decode;
 use protocol::tokio;
 use protocol::types::{Bytes, TransactionAction, H160};
 
-ethabi_contract::use_contract!(factory, "./res/factory.abi");
-ethabi_contract::use_contract!(router, "./res/router.abi");
-ethabi_contract::use_contract!(weth, "./res/weth.abi");
-ethabi_contract::use_contract!(erc20, "./res/erc20.abi");
-ethabi_contract::use_contract!(asset, "./res/asset.abi");
+ethabi_contract::use_contract!(factory, "res/factory.abi");
+ethabi_contract::use_contract!(router, "res/router.abi");
+ethabi_contract::use_contract!(weth, "res/weth.abi");
+ethabi_contract::use_contract!(erc20, "res/erc20.abi");
 
 use erc20::constructor as erc20_constructor;
 use erc20::functions as erc20_functions;
