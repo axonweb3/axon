@@ -23,7 +23,10 @@ use protocol::types::{
     Block, BlockNumber, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, MerkleRoot, Metadata,
     Proof, Proposal, Receipt, SignedTransaction, ValidatorExtend, U256,
 };
-use protocol::{async_trait, tokio::sync::Mutex as AsyncMutex, ProtocolError, ProtocolResult};
+use protocol::{
+    async_trait, lazy::CURRENT_STATE_ROOT, tokio::sync::Mutex as AsyncMutex, ProtocolError,
+    ProtocolResult,
+};
 
 use crate::message::{
     END_GOSSIP_AGGREGATED_VOTE, END_GOSSIP_SIGNED_CHOKE, END_GOSSIP_SIGNED_PROPOSAL,
@@ -607,6 +610,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             proof:            proof.clone(),
         };
 
+        CURRENT_STATE_ROOT.swap(Arc::new(resp.state_root));
         self.status.swap(new_status);
 
         // update timeout_gap of mempool

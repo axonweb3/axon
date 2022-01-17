@@ -1,5 +1,5 @@
 [package]
-name = "cross-client"
+name = "core-cross-client"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,8 +7,12 @@ edition = "2021"
 
 [dependencies]
 protocol = { path = "../../protocol", package = "axon-protocol"}
+common-config-parser = { path = "../../common/config-parser" }
+common-crypto = { path = "../../common/crypto"}
+core-executor = { path = "../../core/executor" }
 
 
+cita_trie = "3.0"
 ckb-jsonrpc-types = "0.101"
 futures = "0.3"
 jsonrpc-core = "18.0"
@@ -17,5 +21,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 ckb-types = "0.101.3"
 reqwest = { version = "0.11.1", features = ["json"] }
-common-config-parser = { path = "../../common/config-parser" }
 log = "0.4"
+ethabi = "16.0"
+ethabi-contract = "16.0"
+ethabi-derive = "16.0"

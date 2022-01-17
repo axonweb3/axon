@@ -2,10 +2,12 @@
 
 mod adapter;
 
+pub use adapter::DefaultCrossAdapter;
+
 use std::sync::Arc;
 
 use protocol::traits::{Context, CrossAdapter, CrossClient};
-use protocol::types::{BlockNumber, Hash, Log};
+use protocol::types::{BlockNumber, Hash, Header, Log, Proof};
 use protocol::{async_trait, ProtocolResult};
 
 pub struct CrossChainImpl<Adapter> {
@@ -20,6 +22,15 @@ impl<Adapter: CrossAdapter + 'static> CrossClient for CrossChainImpl<Adapter> {
         block_number: BlockNumber,
         block_hash: Hash,
         logs: &[Vec<Log>],
+    ) -> ProtocolResult<()> {
+        Ok(())
+    }
+
+    async fn set_checkpoint(
+        &self,
+        ctx: Context,
+        block_header: Header,
+        proof: Proof,
     ) -> ProtocolResult<()> {
         Ok(())
     }

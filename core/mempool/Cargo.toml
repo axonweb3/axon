@@ -6,13 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-arc-swap = "1.5"
 cita_trie = "3.0"
 crossbeam-queue = "0.3"
 dashmap = { version = "5.0", features = ["rayon"] }
 futures = { version = "0.3", features = [ "async-await" ] }
 indexmap = { version = "1.7", features = ["rayon"] }
-lazy_static = "1.4"
 log = "0.4"
 rayon = "1.5"
 rlp = "0.5"

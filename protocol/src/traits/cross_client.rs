@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use creep::Context;
 
-use crate::types::{BlockNumber, Hash, Log, SignedTransaction};
+use crate::types::{BlockNumber, Hash, Header, Log, Proof, SignedTransaction};
 use crate::ProtocolResult;
 
 #[async_trait]
@@ -21,5 +21,12 @@ pub trait CrossClient: Send + Sync {
         block_number: BlockNumber,
         block_hash: Hash,
         logs: &[Vec<Log>],
+    ) -> ProtocolResult<()>;
+
+    async fn set_checkpoint(
+        &self,
+        ctx: Context,
+        block_header: Header,
+        proof: Proof,
     ) -> ProtocolResult<()>;
 }

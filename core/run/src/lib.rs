@@ -30,6 +30,7 @@ use core_consensus::{
     util::OverlordCrypto, ConsensusWal, DurationConfig, Node, OverlordConsensus,
     OverlordConsensusAdapter, OverlordSynchronization, SignedTxsWAL, METADATA_CONTROLER,
 };
+use core_cross_client::DefaultCrossAdapter;
 use core_executor::{EVMExecutorAdapter, EvmExecutor, MPTTrie, RocksTrieDB};
 use core_mempool::{
     DefaultMemPoolAdapter, MemPoolImpl, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
@@ -40,6 +41,7 @@ use core_network::{
 };
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::codec::{hex_decode, ProtocolCodec};
+use protocol::lazy::{ASSET_CONTRACT_ADDRESS, CHAIN_ID, CURRENT_STATE_ROOT};
 #[cfg(unix)]
 use protocol::tokio::signal::unix as os_impl;
 use protocol::tokio::{runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep};
@@ -359,6 +361,10 @@ impl Axon {
             }
         };
 
+        CURRENT_STATE_ROOT.swap(Arc::new(current_consensus_status.last_state_root));
+        CHAIN_ID.swap(Arc::new(current_header.chain_id));
+        ASSET_CONTRACT_ADDRESS.swap(Arc::new(self.config.asset_contract_address.into()));
+
         // set args in mempool
         mempool.set_args(
             Context::new(),
@@ -367,6 +373,16 @@ impl Axon {
             metadata.gas_limit,
             metadata.max_tx_size,
         );
+
+        // start cross chain client
+        let cross_client = DefaultCrossAdapter::new(
+            self.config.clone(),
+            Secp256k1PrivateKey::try_from(hex_privkey.as_ref()).unwrap(),
+            Arc::clone(&mempool),
+            Arc::clone(&storage),
+            Arc::clone(&trie_db),
+        );
+        tokio::spawn(cross_client.run());
 
         let consensus_interval = metadata.interval;
         let status_agent = StatusAgent::new(current_consensus_status);
