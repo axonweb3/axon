@@ -157,7 +157,7 @@ fn get_pair_address(token_a: H160, token_b: H160, factory: H160) -> H160 {
 
     let mut data = hex_decode("ff").unwrap();
     let pair_init_code_hash = hex_decode(PAIR_INIT_CODE_HASH).unwrap();
-    data.extend_from_slice(&factory.as_bytes());
+    data.extend_from_slice(factory.as_bytes());
     data.extend_from_slice(tmp.as_bytes());
     data.extend_from_slice(&pair_init_code_hash);
 
@@ -175,19 +175,14 @@ async fn test_uniswap2_add_liquidity() {
     let sender = distribution_address;
     let mut block_number = 1;
 
-    let factory_address = deploy_factory(
-        &mut debugger,
-        sender.clone(),
-        &mut block_number,
-        sender.clone(),
-    ); // factory's contract address is 0x6beb69f8bb038f1e9e4291ca3e5a0cddf633e796
-    let weth_address = deploy_weth(&mut debugger, sender.clone(), &mut block_number); // weth's contract address is 0x2d7b72c32ff49908b3dd12434d6c78338385f2ef
+    let factory_address = deploy_factory(&mut debugger, sender, &mut block_number, sender); // factory's contract address is 0x6beb69f8bb038f1e9e4291ca3e5a0cddf633e796
+    let weth_address = deploy_weth(&mut debugger, sender, &mut block_number); // weth's contract address is 0x2d7b72c32ff49908b3dd12434d6c78338385f2ef
     let router_address = deploy_router(
         &mut debugger,
-        sender.clone(),
+        sender,
         &mut block_number,
-        factory_address.clone(),
-        weth_address.clone(),
+        factory_address,
+        weth_address,
     );
 
     // deploy 1st erc20
@@ -195,11 +190,11 @@ async fn test_uniswap2_add_liquidity() {
     let erc20_symbol_0 = "18".to_string();
     let erc20_address_0 = deploy_erc20(
         &mut debugger,
-        sender.clone(),
+        sender,
         &mut block_number,
         erc20_name_0,
         erc20_symbol_0,
-        sender.clone(),
+        sender,
     );
 
     // deploy 2rd erc20
@@ -207,11 +202,11 @@ async fn test_uniswap2_add_liquidity() {
     let erc20_symbol_1 = "18".to_string();
     let erc20_address_1 = deploy_erc20(
         &mut debugger,
-        sender.clone(),
+        sender,
         &mut block_number,
         erc20_name_1,
         erc20_symbol_1,
-        sender.clone(),
+        sender,
     );
 
     // Approve router max allowance of 1st erc20
@@ -258,8 +253,8 @@ async fn test_uniswap2_add_liquidity() {
     let amount_b_designed: U256 = 10000_000000000000000000u128.into();
     let amount_a_min: U256 = 49000_000000000000000000u128.into();
     let amount_b_min: U256 = 9000_000000000000000000u128.into();
-    let to = sender.clone();
-    let deadline: U256 = (time_now() + 1000_000).into();
+    let to = sender;
+    let deadline: U256 = (time_now() + 1_000_000).into();
     let call_add_liquidity_code = router_functions::add_liquidity::encode_input(
         token_a,
         token_b,
@@ -273,7 +268,7 @@ async fn test_uniswap2_add_liquidity() {
     let tx = construct_tx(
         TransactionAction::Call(router_address),
         U256::default(),
-        call_add_liquidity_code.clone(),
+        call_add_liquidity_code,
     );
     let stx = mock_signed_tx(tx, sender);
     let resp = debugger.exec(block_number, vec![stx]);
@@ -294,19 +289,14 @@ async fn test_uniswap2_add_liquidity_eth() {
     let sender = H160::from_str("0x3f17f1962b36e491b30a40b2405849e597ba5fb5").unwrap();
     let mut block_number = 1;
 
-    let factory_address = deploy_factory(
-        &mut debugger,
-        sender.clone(),
-        &mut block_number,
-        sender.clone(),
-    ); // factory's contract address is 0x6beb69f8bb038f1e9e4291ca3e5a0cddf633e796
-    let weth_address = deploy_weth(&mut debugger, sender.clone(), &mut block_number); // weth's contract address is 0x2d7b72c32ff49908b3dd12434d6c78338385f2ef
+    let factory_address = deploy_factory(&mut debugger, sender, &mut block_number, sender); // factory's contract address is 0x6beb69f8bb038f1e9e4291ca3e5a0cddf633e796
+    let weth_address = deploy_weth(&mut debugger, sender, &mut block_number); // weth's contract address is 0x2d7b72c32ff49908b3dd12434d6c78338385f2ef
     let router_address = deploy_router(
         &mut debugger,
-        sender.clone(),
+        sender,
         &mut block_number,
-        factory_address.clone(),
-        weth_address.clone(),
+        factory_address,
+        weth_address,
     );
 
     println!("######## Call router's factory(), which is essential for addLiquidityETH, must be called before deploying erc20 contract");
@@ -330,11 +320,11 @@ async fn test_uniswap2_add_liquidity_eth() {
     let erc20_symbol = "18".to_string();
     let erc20_address = deploy_erc20(
         &mut debugger,
-        sender.clone(),
+        sender,
         &mut block_number,
         erc20_name,
         erc20_symbol,
-        sender.clone(),
+        sender,
     );
 
     // Approve router max allowance of 1st erc20
@@ -343,7 +333,7 @@ async fn test_uniswap2_add_liquidity_eth() {
     let tx = construct_tx(
         TransactionAction::Call(erc20_address),
         U256::default(),
-        call_approve_code.clone(),
+        call_approve_code,
     );
     let stx = mock_signed_tx(tx, sender);
     let resp = debugger.exec(block_number, vec![stx]);
@@ -375,7 +365,7 @@ async fn test_uniswap2_add_liquidity_eth() {
     let tx = construct_tx(
         TransactionAction::Call(weth_address),
         U256::default(),
-        call_transfer_code.clone(),
+        call_transfer_code,
     );
     let stx = mock_signed_tx(tx, sender);
     let resp = debugger.exec(block_number, vec![stx]);
@@ -391,8 +381,8 @@ async fn test_uniswap2_add_liquidity_eth() {
     let amount_token_desired: U256 = 50000_000000000000000000u128.into();
     let amount_token_min: U256 = 49000_000000000000000000u128.into();
     let amount_eth_min: U256 = 10000_000000000000000000u128.into();
-    let to = sender.clone();
-    let deadline: U256 = (time_now() + 1000_000).into();
+    let to = sender;
+    let deadline: U256 = (time_now() + 1_000_000).into();
     let call_add_liquidity_code = router_functions::add_liquidity_eth::encode_input(
         token,
         amount_token_desired,
@@ -404,7 +394,7 @@ async fn test_uniswap2_add_liquidity_eth() {
     let tx = construct_tx(
         TransactionAction::Call(router_address),
         U256::default(),
-        call_add_liquidity_code.clone(),
+        call_add_liquidity_code,
     );
     let stx = mock_signed_tx(tx, sender);
     let resp = debugger.exec(block_number, vec![stx]);
