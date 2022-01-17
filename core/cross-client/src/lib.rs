@@ -2,6 +2,8 @@
 
 mod adapter;
 
+pub use adapter::DefaultCrossAdapter;
+
 use std::sync::Arc;
 
 use protocol::traits::{Context, CrossAdapter, CrossClient};

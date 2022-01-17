@@ -27,7 +27,7 @@ use protocol::types::{
 };
 use protocol::{
     async_trait,
-    lazy::{CHAIN_ID, CURRENT_STATE_ROOT},
+    lazy::{ASSET_CONTRACT_ADDRESS, CHAIN_ID, CURRENT_STATE_ROOT},
     tokio::{self, sync::mpsc},
     ProtocolResult,
 };
@@ -257,7 +257,7 @@ where
             max_priority_fee_per_gas: TWO_THOUSAND.into(),
             gas_price:                TWO_THOUSAND.into(),
             gas_limit:                100000u64.into(),
-            action:                   TransactionAction::Call(addr),
+            action:                   TransactionAction::Call(**ASSET_CONTRACT_ADDRESS.load()),
             data:                     Default::default(),
             value:                    amount.unwrap().into(),
             access_list:              vec![],
