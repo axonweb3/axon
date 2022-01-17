@@ -1,28 +1,26 @@
+ethabi_contract::use_contract!(factory, "./res/factory.abi");
+ethabi_contract::use_contract!(router, "./res/router.abi");
+ethabi_contract::use_contract!(weth, "./res/weth.abi");
+ethabi_contract::use_contract!(erc20, "./res/erc20.abi");
+ethabi_contract::use_contract!(asset, "./res/asset.abi");
+
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::str::FromStr;
 
-use ethabi_contract::use_contract;
+use erc20::constructor as erc20_constructor;
+use erc20::functions as erc20_functions;
 use evm::{ExitReason, ExitSucceed};
+use factory::constructor as factory_constructor;
+use router::constructor as router_constructor;
+use router::functions as router_functions;
+use weth::functions as weth_functions;
 
 use protocol::codec::hex_decode;
 use protocol::tokio;
 use protocol::types::{Bytes, TransactionAction, H160};
 
 use super::*;
-
-use_contract!(factory, "./res/factory.abi");
-use_contract!(router, "./res/router.abi");
-use_contract!(weth, "./res/weth.abi");
-use_contract!(erc20, "./res/erc20.abi");
-use_contract!(asset, "./res/asset.abi");
-
-use erc20::constructor as erc20_constructor;
-use erc20::functions as erc20_functions;
-use factory::constructor as factory_constructor;
-use router::constructor as router_constructor;
-use router::funcassettions as router_functions;
-use weth::functions as weth_functions;
 
 const PAIR_INIT_CODE_HASH: &str =
     "f8b6d1d8e3b05a01c9235ebfcb119fab138bc18a3baaf65e5405861e9a2a60c8";
