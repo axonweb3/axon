@@ -12,6 +12,7 @@ use ckb_types::{
     core::{BlockNumber, BlockView, TransactionView},
     packed,
     prelude::*,
+    H256,
 };
 
 use common_config_parser::types::{Config, ConfigCrossClient};
@@ -33,6 +34,11 @@ use protocol::{
 };
 
 const TWO_THOUSAND: u64 = 2000;
+
+ethabi_contract::use_contract!(aseet, "./src/adapter/abi/asset.abi");
+
+use aseet::functions as asset_functions;
+use protocol::codec::hex_encode;
 
 pub struct DefaultCrossAdapter<M, S, DB> {
     priv_key:       Secp256k1PrivateKey,
@@ -147,8 +153,8 @@ where
             self.start_fetch = false;
 
             let mut tasks = Vec::new();
-            for i in
-                self.current_number + 1..=std::cmp::min(self.tip_number - self.current_number, 24)
+            for i in self.current_number + 1
+                ..=std::cmp::min(self.tip_number - 24, self.current_number + 200)
             {
                 let task = self.ckb_client.get_block_by_number(i.into());
                 let handle = tokio::spawn(task);
@@ -194,6 +200,8 @@ where
     async fn search_tx(&mut self, block: BlockView) {
         self.current_number = block.number();
 
+        log::info!("current block number : {:?}", block.number());
+
         let txs = block.transactions();
         for tx in txs {
             let inputs = tx.inputs();
@@ -238,19 +246,27 @@ where
             let (_, data) = tx_view.output_with_data(index.unpack()).unwrap();
 
             let input_amount = get_amount(data);
+
+            log::info!("search tx hash: {:?}", hex_encode(&tx.hash().raw_data()));
+
             self.send_axon_tx(
-                output_amount.checked_sub(input_amount),
+                input_amount.checked_sub(output_amount),
                 witnesses.get(2).unwrap().raw_data(),
+                tx.hash().raw_data().to_vec(),
             )
             .await;
         }
     }
 
-    async fn send_axon_tx(&mut self, amount: Option<u128>, addr: Bytes) {
+    async fn send_axon_tx(&mut self, amount: Option<u128>, addr: Bytes, tx_hash: Vec<u8>) {
         let addr = H160::from_slice(&addr[0..20]);
         if amount.is_none() {
             return;
         }
+
+        let distribution_amount: U256 = amount.unwrap().into();
+
+        let input = asset_functions::mint::encode_input(distribution_amount, addr, tx_hash);
 
         let tx = Transaction {
             nonce:                    self.get_nonce(&addr),
@@ -258,8 +274,8 @@ where
             gas_price:                TWO_THOUSAND.into(),
             gas_limit:                100000u64.into(),
             action:                   TransactionAction::Call(**ASSET_CONTRACT_ADDRESS.load()),
-            data:                     Default::default(),
-            value:                    amount.unwrap().into(),
+            data:                     Bytes::from(input),
+            value:                    Default::default(),
             access_list:              vec![],
         };
 
@@ -283,7 +299,11 @@ where
             public:      Some(pub_key),
         };
 
-        let _ = self.mempool.insert(Context::new(), stx).await;
+        log::info!("axon tx hash: {:?}", stx.transaction.hash);
+
+        if let Err(e) = self.mempool.insert(Context::new(), stx).await {
+            log::info!("send tx hash err: {:?}", e);
+        };
     }
 
     fn get_nonce(&self, addr: &H160) -> U256 {
@@ -295,7 +315,7 @@ where
         )
         .unwrap();
 
-        EvmExecutor::default().get_account(&backend, addr).nonce
+        EvmExecutor::default().get_account(&backend, addr).nonce + 1
     }
 
     async fn dump_current_number(&self) -> io::Result<()> {
