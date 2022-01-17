@@ -14,12 +14,14 @@ use_contract!(factory, "./res/factory.abi");
 use_contract!(router, "./res/router.abi");
 use_contract!(weth, "./res/weth.abi");
 use_contract!(erc20, "./res/erc20.abi");
+use_contract!(asset, "./res/asset.abi");
 
+use asset::functions as asset_functions;
 use erc20::constructor as erc20_constructor;
 use erc20::functions as erc20_functions;
 use factory::constructor as factory_constructor;
 use router::constructor as router_constructor;
-use router::functions as router_functions;
+use router::funcassettions as router_functions;
 use weth::functions as weth_functions;
 
 const PAIR_INIT_CODE_HASH: &str =
@@ -284,6 +286,11 @@ async fn test_uniswap2_add_liquidity() {
         resp.tx_resp[0].exit_reason,
         ExitReason::Succeed(ExitSucceed::Returned)
     );
+}
+
+#[test]
+fn test() {
+    
 }
 
 #[tokio::test(flavor = "multi_thread")]
