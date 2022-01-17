@@ -57,8 +57,7 @@ max_open_files = 64
 # tracing_address = "127.0.0.1:6831"
 # tracing_batch_size = 50
 
-
 [cross_client]
 axon_udt_hash = "0xf32ec1e3274c27ac4cc018c92efec443847e9b78ba8cbedca36f0fa8c35d1c9e"
-ckb_uri = "http://47.243.115.142:8114"
+ckb_uri = "https://mercury-testnet.ckbapp.dev/rpc"
 start_block_number = 4096800
