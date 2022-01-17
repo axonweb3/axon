@@ -45,7 +45,7 @@ impl EvmDebugger {
             distribute_address.as_bytes(),
             distribute_account.encode().unwrap().as_ref(),
         )
-            .unwrap();
+        .unwrap();
 
         EvmDebugger {
             state_root: mpt.commit().unwrap(),
@@ -83,7 +83,7 @@ impl EvmDebugger {
             Arc::clone(&self.storage),
             exec_ctx,
         )
-            .unwrap()
+        .unwrap()
     }
 }
 
