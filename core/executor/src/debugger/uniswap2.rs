@@ -259,7 +259,7 @@ async fn test_uniswap2_add_liquidity() {
     let amount_a_min: U256 = 49000_000000000000000000u128.into();
     let amount_b_min: U256 = 9000_000000000000000000u128.into();
     let to = sender.clone();
-    let deadline: U256 = (time_now() / 1000 + 1000_000).into();
+    let deadline: U256 = (time_now() + 1000_000).into();
     let call_add_liquidity_code = router_functions::add_liquidity::encode_input(
         token_a,
         token_b,
@@ -392,7 +392,7 @@ async fn test_uniswap2_add_liquidity_eth() {
     let amount_token_min: U256 = 49000_000000000000000000u128.into();
     let amount_eth_min: U256 = 10000_000000000000000000u128.into();
     let to = sender.clone();
-    let deadline: U256 = (time_now() / 1000 + 1000_000).into();
+    let deadline: U256 = (time_now() + 1000_000).into();
     let call_add_liquidity_code = router_functions::add_liquidity_eth::encode_input(
         token,
         amount_token_desired,
