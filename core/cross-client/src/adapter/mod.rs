@@ -12,7 +12,6 @@ use ckb_types::{
     core::{BlockNumber, BlockView, TransactionView},
     packed,
     prelude::*,
-    H256,
 };
 
 use common_config_parser::types::{Config, ConfigCrossClient};

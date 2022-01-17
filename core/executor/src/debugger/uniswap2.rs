@@ -5,10 +5,11 @@ use std::str::FromStr;
 use ethabi_contract::use_contract;
 use evm::{ExitReason, ExitSucceed};
 
-use super::*;
 use protocol::codec::hex_decode;
 use protocol::tokio;
 use protocol::types::{Bytes, TransactionAction, H160};
+
+use super::*;
 
 use_contract!(factory, "./res/factory.abi");
 use_contract!(router, "./res/router.abi");
@@ -16,7 +17,6 @@ use_contract!(weth, "./res/weth.abi");
 use_contract!(erc20, "./res/erc20.abi");
 use_contract!(asset, "./res/asset.abi");
 
-use asset::functions as asset_functions;
 use erc20::constructor as erc20_constructor;
 use erc20::functions as erc20_functions;
 use factory::constructor as factory_constructor;
@@ -372,7 +372,7 @@ async fn test_uniswap2_add_liquidity_eth() {
     println!("######## transfer WETH to pair_address, which is essential for addLiquidityETH");
     let pair_address = get_pair_address(erc20_address, weth_address, factory_address);
     println!("pair_address: {:?}", pair_address);
-    let value = distribution_amount / 2;
+    let value = distribution_amount / 2u64;
     let call_transfer_code = weth_functions::transfer::encode_input(pair_address, value);
     let tx = construct_tx(
         TransactionAction::Call(weth_address),
