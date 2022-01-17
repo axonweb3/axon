@@ -35,9 +35,9 @@ use protocol::{
 
 ethabi_contract::use_contract!(asset, "./src/adapter/abi/asset.abi");
 
-use asset::functions as asset_functions;
 #[allow(unused_imports)]
 use asset::events as asset_events;
+use asset::functions as asset_functions;
 #[allow(unused_imports)]
 use asset::logs::Burned as BurnedLog;
 
