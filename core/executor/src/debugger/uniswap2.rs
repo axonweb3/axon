@@ -1,11 +1,14 @@
-use super::*;
-use protocol::codec::hex_decode;
-use protocol::tokio;
-use protocol::types::{Bytes, TransactionAction, H160};
+use std::fs::File;
+use std::io::{BufReader, Read};
 use std::str::FromStr;
 
 use ethabi_contract::use_contract;
 use evm::{ExitReason, ExitSucceed};
+
+use super::*;
+use protocol::codec::hex_decode;
+use protocol::tokio;
+use protocol::types::{Bytes, TransactionAction, H160};
 
 use_contract!(factory, "./res/factory.abi");
 use_contract!(router, "./res/router.abi");
@@ -17,8 +20,6 @@ use erc20::functions as erc20_functions;
 use factory::constructor as factory_constructor;
 use router::constructor as router_constructor;
 use router::functions as router_functions;
-use std::fs::File;
-use std::io::{BufReader, Read};
 use weth::functions as weth_functions;
 
 const PAIR_INIT_CODE_HASH: &str =
