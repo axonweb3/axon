@@ -408,7 +408,6 @@ impl CrossClient for CrossAdapterHandle {
                     {
                         Ok(respond) => {
                             let tx = respond.sign(&self.pk);
-
                             match self
                                 .client
                                 .send_transaction(&tx, Some(OutputsValidator::Passthrough))
@@ -454,7 +453,6 @@ impl CrossClient for CrossAdapterHandle {
         {
             Ok(respond) => {
                 let tx = respond.sign(&self.pk);
-
                 match self
                     .client
                     .send_transaction(&tx, Some(OutputsValidator::Passthrough))

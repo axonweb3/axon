@@ -7,7 +7,7 @@ use ckb_jsonrpc_types::{
 use ckb_types::{packed, prelude::*, H160, H256};
 use common_crypto::{HashValue, PrivateKey, Secp256k1RecoverablePrivateKey, Signature};
 use futures::Future;
-use protocol::{codec::hex_encode, types::Bytes};
+use protocol::types::{Bytes, Hex};
 use serde::{Deserialize, Serialize};
 use std::{
     cmp, io,
@@ -191,7 +191,6 @@ impl TransactionCompletionResponse {
 
             blake2b.update(tx_hash.as_slice());
             blake2b.update(&(group.original_witness.len() as u64).to_le_bytes());
-
             blake2b.update(&group.original_witness);
 
             for witness in group_witnesses.iter().skip(1) {
@@ -300,7 +299,7 @@ impl Ord for SignatureAction {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct SubmitCheckpointPayload {
     pub node_id:              Identity,
     pub admin_id:             Identity,
@@ -310,17 +309,17 @@ pub struct SubmitCheckpointPayload {
     pub checkpoint_type_hash: H256,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Identity {
     pub flag:    u8,
-    pub content: Bytes,
+    pub content: Hex,
 }
 
 impl Identity {
     pub fn new(flag: u8, content: Vec<u8>) -> Self {
         Self {
             flag,
-            content: hex_encode(content).into_bytes().into(),
+            content: Hex::encode(content),
         }
     }
 }
