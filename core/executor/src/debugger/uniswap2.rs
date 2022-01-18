@@ -177,8 +177,9 @@ async fn test_uniswap2_add_liquidity() {
     let distribution_address =
         H160::from_str("0x3f17f1962b36e491b30a40b2405849e597ba5fb5").unwrap();
     let distribution_amount: U256 = 1234560000000000000000000u128.into();
+    let db_path = "./free-space/db0";
 
-    let mut debugger = EvmDebugger::new(distribution_address, distribution_amount);
+    let mut debugger = EvmDebugger::new(distribution_address, distribution_amount, db_path);
     let sender = distribution_address;
     let mut block_number = 1;
 
@@ -294,8 +295,9 @@ async fn test_uniswap2_add_liquidity_eth() {
     let distribution_address =
         H160::from_str("0x3f17f1962b36e491b30a40b2405849e597ba5fb5").unwrap();
     let distribution_amount: U256 = 1234560000000000000000000u128.into();
+    let db_path = "./free-space/db1";
 
-    let mut debugger = EvmDebugger::new(distribution_address, distribution_amount);
+    let mut debugger = EvmDebugger::new(distribution_address, distribution_amount, db_path);
     let sender = H160::from_str("0x3f17f1962b36e491b30a40b2405849e597ba5fb5").unwrap();
     let mut block_number = 1;
 

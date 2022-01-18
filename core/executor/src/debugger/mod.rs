@@ -17,10 +17,6 @@ use protocol::types::{
 use crate::adapter::{EVMExecutorAdapter, MPTTrie};
 use crate::{EvmExecutor, RocksTrieDB};
 
-const DB_PATH: &str = "./free-space/db";
-const DATA_PATH: &str = "./free-space/db/data";
-const STATE_PATH: &str = "./free-space/db/state";
-
 pub struct EvmDebugger {
     state_root: H256,
     storage:    Arc<ImplStorage<RocksAdapter>>,
@@ -28,9 +24,13 @@ pub struct EvmDebugger {
 }
 
 impl EvmDebugger {
-    pub fn new(distribute_address: H160, distribute_amount: U256) -> Self {
-        let rocks_adapter = Arc::new(RocksAdapter::new(DATA_PATH, 1024).unwrap());
-        let trie = Arc::new(RocksTrieDB::new(STATE_PATH, 1024, 1000).unwrap());
+    pub fn new(distribute_address: H160, distribute_amount: U256, db_path: &str) -> Self {
+        let mut db_data_path = db_path.to_string();
+        db_data_path.push_str("/data");
+        let rocks_adapter = Arc::new(RocksAdapter::new(db_data_path, 1024).unwrap());
+        let mut db_state_path = db_path.to_string();
+        db_state_path.push_str("/state");
+        let trie = Arc::new(RocksTrieDB::new(db_state_path, 1024, 1000).unwrap());
 
         let mut mpt = MPTTrie::new(Arc::clone(&trie));
 
@@ -102,8 +102,8 @@ pub fn mock_signed_tx(tx: Transaction, sender: H160) -> SignedTransaction {
     }
 }
 
-pub fn clear_data() {
-    std::fs::remove_dir_all(DB_PATH).unwrap()
+pub fn clear_data(db_path: &str) {
+    std::fs::remove_dir_all(db_path).unwrap()
 }
 
 fn rand_hash() -> Hash {
