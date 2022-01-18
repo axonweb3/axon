@@ -170,7 +170,10 @@ where
 
             let mut tasks = Vec::new();
             for i in self.current_number + 1
-                ..=std::cmp::min(self.tip_number - 24, self.current_number + 200)
+                ..=std::cmp::min(
+                    self.tip_number.saturating_sub(24),
+                    self.current_number + 200,
+                )
             {
                 let task = self.client.get_block_by_number(i.into());
                 let handle = tokio::spawn(task);
