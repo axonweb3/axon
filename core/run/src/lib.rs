@@ -374,7 +374,6 @@ impl Axon {
             metadata.max_tx_size,
         );
 
-
         // start cross chain client
         let cross_client = DefaultCrossAdapter::new(
             self.config.clone(),
@@ -413,8 +412,8 @@ impl Axon {
             Arc::clone(&mempool),
             Arc::clone(&storage),
             Arc::clone(&trie_db),
-            Arc::clone(&crypto),
             Arc::new(cross_handle),
+            Arc::clone(&crypto),
         )?;
 
         let consensus_adapter = Arc::new(consensus_adapter);

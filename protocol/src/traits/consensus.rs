@@ -157,7 +157,7 @@ pub trait CommonConsensusAdapter: Send + Sync {
     async fn notify_checkpoint(
         &self,
         ctx: Context,
-        header: Header,
+        block: Block,
         proof: Proof,
     ) -> ProtocolResult<()>;
 

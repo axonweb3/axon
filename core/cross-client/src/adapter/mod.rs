@@ -25,7 +25,7 @@ use core_executor::{EVMExecutorAdapter, EvmExecutor};
 use ethabi::RawLog;
 use protocol::traits::{Context, CrossAdapter, CrossClient, Executor, MemPool, Storage};
 use protocol::types::{
-    public_to_address, Bytes, Header, Log, Proof, Proposal, Public, SignedTransaction, Transaction,
+    public_to_address, Block, Bytes, Log, Proof, Proposal, Public, SignedTransaction, Transaction,
     TransactionAction, UnverifiedTransaction, H160, H256, U256,
 };
 use protocol::{
@@ -415,14 +415,9 @@ impl CrossClient for CrossAdapterHandle {
         Ok(())
     }
 
-    async fn set_checkpoint(
-        &self,
-        ctx: Context,
-        block_header: Header,
-        proof: Proof,
-    ) -> ProtocolResult<()> {
-        let number = block_header.number;
-        let mut proposal = Proposal::from(block_header).encode()?.to_vec();
+    async fn set_checkpoint(&self, ctx: Context, block: Block, proof: Proof) -> ProtocolResult<()> {
+        let number = block.header.number;
+        let mut proposal = Proposal::from(block).encode()?.to_vec();
         let mut proof = proof.encode()?.to_vec();
         proposal.append(&mut proof);
 

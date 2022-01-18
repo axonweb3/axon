@@ -143,12 +143,13 @@ pub struct ConfigAPM {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct ConfigCrossClient {
-    pub axon_udt_hash:      H256,
-    pub ckb_uri:            String,
-    pub mercury_uri:        String,
-    pub start_block_number: u64,
-    pub pk:                 Vec<u8>,
-    pub enable:             bool,
+    pub axon_udt_hash:       H256,
+    pub ckb_uri:             String,
+    pub mercury_uri:         String,
+    pub start_block_number:  u64,
+    pub pk:                  Vec<u8>,
+    pub enable:              bool,
+    pub checkpoint_interval: u64,
 
     pub admin_address:        H160,
     pub node_address:         H160,

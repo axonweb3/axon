@@ -591,6 +591,13 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             .notify_block_logs(ctx.clone(), block_number, block_hash, &logs)
             .await?;
 
+        // Submit checkpoint
+        if block_number % self.cross_period_interval == 0 {
+            self.adapter
+                .notify_checkpoint(ctx.clone(), block.clone(), proof.clone())
+                .await?;
+        }
+
         // Save signed transactions
         self.adapter
             .save_signed_txs(ctx.clone(), block_number, txs)

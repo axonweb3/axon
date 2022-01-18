@@ -548,10 +548,10 @@ where
     async fn notify_checkpoint(
         &self,
         ctx: Context,
-        header: Header,
+        block: Block,
         proof: Proof,
     ) -> ProtocolResult<()> {
-        self.cross_client.set_checkpoint(ctx, header, proof).await
+        self.cross_client.set_checkpoint(ctx, block, proof).await
     }
 
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]

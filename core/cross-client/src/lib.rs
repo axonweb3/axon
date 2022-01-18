@@ -7,7 +7,7 @@ pub use adapter::DefaultCrossAdapter;
 use std::sync::Arc;
 
 use protocol::traits::{Context, CrossAdapter, CrossClient};
-use protocol::types::{BlockNumber, Hash, Header, Log, Proof};
+use protocol::types::{Block, BlockNumber, Hash, Log, Proof};
 use protocol::{async_trait, ProtocolResult};
 use protocol::{Display, ProtocolError, ProtocolErrorKind};
 
@@ -27,12 +27,7 @@ impl<Adapter: CrossAdapter + 'static> CrossClient for CrossChainImpl<Adapter> {
         Ok(())
     }
 
-    async fn set_checkpoint(
-        &self,
-        ctx: Context,
-        block_header: Header,
-        proof: Proof,
-    ) -> ProtocolResult<()> {
+    async fn set_checkpoint(&self, ctx: Context, block: Block, proof: Proof) -> ProtocolResult<()> {
         Ok(())
     }
 }

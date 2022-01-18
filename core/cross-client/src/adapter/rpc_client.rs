@@ -17,6 +17,7 @@ use std::{
     },
 };
 
+#[allow(clippy::upper_case_acronyms)]
 enum Target {
     CKB,
     Mercury,
@@ -165,6 +166,7 @@ pub struct TransactionCompletionResponse {
 }
 
 impl TransactionCompletionResponse {
+    #[allow(clippy::identity_op)]
     pub fn sign(self, key: &Secp256k1PrivateKey) -> Transaction {
         let tx: packed::Transaction = Into::<packed::Transaction>::into(self.tx_view.inner);
 
@@ -236,8 +238,9 @@ struct ScriptGroup {
 }
 
 impl ScriptGroup {
+    #[allow(clippy::identity_op)]
     fn group_witnesses(&self, tx: &packed::Transaction) -> Vec<Bytes> {
-        let mut group_witnesses = Vec::new();
+        let mut group_witnesses = Vec::with_capacity(self.action.other_indexes_in_group.len() + 1);
         group_witnesses.push(self.original_witness.clone());
         for idx in self.action.other_indexes_in_group.iter() {
             group_witnesses.push(tx.witnesses().get(*idx).unwrap().as_bytes());
