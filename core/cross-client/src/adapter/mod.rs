@@ -42,6 +42,8 @@ use asset::events as asset_events;
 use asset::functions as asset_functions;
 
 use self::asset::logs::Burned;
+use common_config_parser::parse_json;
+use protocol::codec::hex_decode;
 
 const TWO_THOUSAND: u64 = 2000;
 
@@ -123,7 +125,7 @@ where
         CrossAdapterHandle {
             client: self.client.clone(),
             config: self.config.clone(),
-            pk:     Secp256k1PrivateKey::try_from(self.config.pk.as_slice()).unwrap(),
+            pk:     Secp256k1PrivateKey::try_from(self.config.pk.as_bytes().as_ref()).unwrap(),
         }
     }
 
@@ -394,18 +396,24 @@ impl CrossClient for CrossAdapterHandle {
 
                     let payload = rpc_client::CrossChainTransferPayload {
                         sender: "ckt1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsqdrhpvcu82numz73852ed45cdxn4kcn72cr4338a".to_string(),
-                        receiver: hex_encode(recipient_ckb_address),
+                        receiver: String::from_utf8(recipient_ckb_address).unwrap(),
                         udt_hash: self.config.axon_udt_hash.0.into(),
+                        direction: 1,
                         amount: amount.to_string(),
                         memo: [0;20].into(),
                     };
 
-                    let respond = self
+                    let mut respond = self
                         .client
                         .build_cross_chain_transfer_transaction(payload)
                         .await
                         .map_err(CrossClientError::IO)?;
+
+                    log::info!("respond: {:?}", serde_json::to_string(&respond));
+
                     let tx = respond.sign(&self.pk);
+
+                    log::info!("respond: {:?}", serde_json::to_string(&tx));
 
                     self.client
                         .send_transaction(&tx, Some(OutputsValidator::Passthrough))

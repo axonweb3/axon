@@ -152,11 +152,12 @@ impl RpcClient {
 
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
 pub struct CrossChainTransferPayload {
-    pub sender:   String,
-    pub receiver: String,
-    pub udt_hash: H256,
-    pub amount:   String,
-    pub memo:     H160,
+    pub sender:    String,
+    pub receiver:  String,
+    pub udt_hash:  H256,
+    pub amount:    String,
+    pub direction: u8,
+    pub memo:      H160,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -203,16 +204,16 @@ impl TransactionCompletionResponse {
 
             let mut signature = key
                 .sign_message(&HashValue::from_bytes_unchecked(hash))
-                .to_bytes()
-                .to_vec();
+                .to_bytes();
 
-            let mut new_witness = group.original_witness.to_vec();
+            let mut new_witness: packed::Bytes = group.original_witness.pack();
+            let witness = ckb_types::packed::WitnessArgs::new_unchecked(new_witness.as_bytes())
+                .as_builder()
+                .lock(Some(signature).pack())
+                .build()
+                .as_bytes();
 
-            new_witness[0 + group.action.signature_location.offset
-                ..signature.len() + group.action.signature_location.offset]
-                .swap_with_slice(&mut signature);
-
-            new_witnesses_index.push((group.action.signature_location.index, new_witness));
+            new_witnesses_index.push((group.action.signature_location.index, witness));
         }
 
         let witnesses = tx.witnesses();

@@ -147,7 +147,7 @@ pub struct ConfigCrossClient {
     pub ckb_uri:             String,
     pub mercury_uri:         String,
     pub start_block_number:  u64,
-    pub pk:                  Vec<u8>,
+    pub pk:                  Hex,
     pub enable:              bool,
     pub checkpoint_interval: u64,
 
