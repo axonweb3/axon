@@ -11,6 +11,7 @@ use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
 use crate::jsonrpc::web3_types::{
     BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3Filter, Web3Log, Web3Receipt,
+    Web3TransactionOut,
 };
 use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
 use crate::APIError;
@@ -67,14 +68,31 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         Ok(hash)
     }
 
-    async fn get_transaction_by_hash(&self, hash: H256) -> RpcResult<SignedTransaction> {
-        let stx = self
+    async fn get_transaction_by_hash(&self, hash: H256) -> RpcResult<Option<Web3TransactionOut>> {
+        let res = self
             .adapter
             .get_transaction_by_hash(Context::new(), hash)
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
-        stx.ok_or_else(|| Error::Custom(format!("Cannot get transaction by hash {:?}", hash)))
+        if res.is_none() {
+            return Ok(None);
+        }
+
+        let stx = res.unwrap();
+        if let Some(receipt) = self
+            .adapter
+            .get_receipt_by_tx_hash(Context::new(), hash)
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?
+        {
+            Ok(Some(Web3TransactionOut::create(receipt, stx)))
+        } else {
+            Err(Error::Custom(format!(
+                "Cannot get transaction by hash {:?}",
+                hash
+            )))
+        }
     }
 
     async fn get_block_by_number(
@@ -180,20 +198,23 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         Ok(resp.gas_used.into())
     }
 
-    async fn get_code(&self, address: H160, number: BlockId) -> RpcResult<Bytes> {
+    async fn get_code(&self, address: H160, number: BlockId) -> RpcResult<Hex> {
         let account = self
             .adapter
             .get_account(Context::new(), address, number.into())
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
-        self.adapter
+        let code_result = self
+            .adapter
             .get_code_by_hash(Context::new(), &account.code_hash)
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?
-            .ok_or_else(|| {
-                Error::Custom(format!("Cannot get code by hash {:?}", account.code_hash))
-            })
+            .map_err(|e| Error::Custom(e.to_string()))?;
+        if let Some(code_bytes) = code_result {
+            Ok(Hex::encode(code_bytes))
+        } else {
+            Ok(Hex::encode(Bytes::from("0")))
+        }
     }
 
     async fn get_transaction_count_by_number(&self, number: BlockId) -> RpcResult<U256> {
