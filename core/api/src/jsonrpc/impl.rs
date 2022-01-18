@@ -75,23 +75,22 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
-        if res.is_none() {
-            return Ok(None);
-        }
-
-        let stx = res.unwrap();
-        if let Some(receipt) = self
-            .adapter
-            .get_receipt_by_tx_hash(Context::new(), hash)
-            .await
-            .map_err(|e| Error::Custom(e.to_string()))?
-        {
-            Ok(Some(Web3Transaction::create(receipt, stx)))
+        if let Some(stx) = res {
+            if let Some(receipt) = self
+                .adapter
+                .get_receipt_by_tx_hash(Context::new(), hash)
+                .await
+                .map_err(|e| Error::Custom(e.to_string()))?
+            {
+                Ok(Some(Web3Transaction::create(receipt, stx)))
+            } else {
+                Err(Error::Custom(format!(
+                    "can not get receipt by hash {:?}",
+                    hash
+                )))
+            }
         } else {
-            Err(Error::Custom(format!(
-                "can not get receipt by hash {:?}",
-                hash
-            )))
+            Ok(None)
         }
     }
 
@@ -237,23 +236,22 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
-        if res.is_none() {
-            return Ok(None);
-        }
-
-        let stx = res.unwrap();
-        if let Some(receipt) = self
-            .adapter
-            .get_receipt_by_tx_hash(Context::new(), hash)
-            .await
-            .map_err(|e| Error::Custom(e.to_string()))?
-        {
-            Ok(Some(Web3Receipt::new(receipt, stx)))
+        if let Some(stx) = res {
+            if let Some(receipt) = self
+                .adapter
+                .get_receipt_by_tx_hash(Context::new(), hash)
+                .await
+                .map_err(|e| Error::Custom(e.to_string()))?
+            {
+                Ok(Some(Web3Receipt::new(receipt, stx)))
+            } else {
+                Err(Error::Custom(format!(
+                    "can not get receipt by hash {:?}",
+                    hash
+                )))
+            }
         } else {
-            Err(Error::Custom(format!(
-                "Cannot get receipt by hash {:?}",
-                hash
-            )))
+            Ok(None)
         }
     }
 

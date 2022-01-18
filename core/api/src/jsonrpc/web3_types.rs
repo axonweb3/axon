@@ -73,7 +73,7 @@ impl Web3Transaction {
         let signature = stx.transaction.signature.clone();
         let mut web3_transaction_out_tx = Web3Transaction {
             block_number:             receipt.block_number.into(),
-            block_hash:               receipt.block_hash.into(),
+            block_hash:               receipt.block_hash,
             from:                     receipt.sender,
             contract_address:         receipt.code_address.map(Into::into),
             cumulative_gas_used:      receipt.used_gas,
@@ -83,9 +83,9 @@ impl Web3Transaction {
             public_key:               stx.public,
             gas:                      receipt.used_gas,
             gas_price:                stx.transaction.unsigned.gas_price,
-            max_fee_per_gas:          U256::from(1337i32),
+            max_fee_per_gas:          U256::from(1337u64),
             max_priority_fee_per_gas: stx.transaction.unsigned.max_priority_fee_per_gas,
-            hash:                     receipt.tx_hash.into(),
+            hash:                     receipt.tx_hash,
             to:                       stx.get_to(),
             input:                    Hex::encode(stx.transaction.unsigned.data),
             nonece:                   stx.transaction.unsigned.value,
