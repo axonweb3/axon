@@ -9,11 +9,11 @@ use jsonrpsee::{core::Error, proc_macros::rpc};
 
 use common_config_parser::types::ConfigApi;
 use protocol::traits::APIAdapter;
-use protocol::types::{Bytes, Hex, SignedTransaction, H160, H256, U256};
+use protocol::types::{Hex, H160, H256, U256};
 use protocol::ProtocolResult;
 
 use crate::jsonrpc::web3_types::{
-    BlockId, Web3Block, Web3CallRequest, Web3Filter, Web3Log, Web3Receipt,
+    BlockId, Web3Block, Web3CallRequest, Web3Filter, Web3Log, Web3Receipt, Web3Transaction,
 };
 use crate::APIError;
 
@@ -27,7 +27,7 @@ pub trait AxonJsonRpc {
 
     /// Get transaction by its hash.
     #[method(name = "eth_getTransactionByHash")]
-    async fn get_transaction_by_hash(&self, hash: H256) -> RpcResult<SignedTransaction>;
+    async fn get_transaction_by_hash(&self, hash: H256) -> RpcResult<Option<Web3Transaction>>;
 
     /// Returns block with given number.
     #[method(name = "eth_getBlockByNumber")]
@@ -62,7 +62,7 @@ pub trait AxonJsonRpc {
     async fn net_version(&self) -> RpcResult<U256>;
 
     #[method(name = "eth_getCode")]
-    async fn get_code(&self, address: H160, number: BlockId) -> RpcResult<Bytes>;
+    async fn get_code(&self, address: H160, number: BlockId) -> RpcResult<Hex>;
 
     #[method(name = "eth_getTransactionReceipt")]
     async fn get_transaction_receipt(&self, hash: H256) -> RpcResult<Option<Web3Receipt>>;

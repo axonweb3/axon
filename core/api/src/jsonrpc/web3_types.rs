@@ -5,8 +5,8 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use protocol::codec::ProtocolCodec;
 use protocol::types::{
-    AccessList, Block, Bloom, Bytes, Hash, Hasher, Hex, Public, Receipt, SignedTransaction,
-    TransactionAction, H160, H256, U256, U64,
+    AccessList, Block, Bloom, Bytes, Hash, Hasher, Hex, Public, Receipt, SignedTransaction, H160,
+    H256, U256, U64,
 };
 
 #[allow(clippy::large_enum_variant)]
@@ -34,6 +34,76 @@ impl RichTransactionOrHash {
             RichTransactionOrHash::Hash(hash) => *hash,
             RichTransactionOrHash::Rich(stx) => stx.transaction.hash,
         }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct Web3Transaction {
+    pub block_number:             U256,
+    pub block_hash:               H256,
+    pub from:                     H160,
+    pub contract_address:         Option<H160>,
+    pub cumulative_gas_used:      U256,
+    pub effective_gas_price:      U256,
+    pub gas:                      U256,
+    pub creates:                  Option<H160>,
+    pub raw:                      Hex,
+    pub public_key:               Option<Public>,
+    pub gas_price:                U256,
+    pub max_fee_per_gas:          U256,
+    pub max_priority_fee_per_gas: U256,
+    pub hash:                     Hash,
+    pub input:                    Hex,
+    pub nonece:                   U256,
+    pub to:                       Option<H160>,
+    pub transaction_index:        Option<U256>,
+    pub value:                    U256,
+    #[serde(rename = "type")]
+    pub type_:                    Option<U64>,
+    pub access_list:              Option<AccessList>,
+    pub chain_id:                 Option<U256>,
+    pub standard_v:               Option<U256>,
+    pub r:                        U256,
+    pub s:                        U256,
+}
+
+impl Web3Transaction {
+    pub fn create(receipt: Receipt, stx: SignedTransaction) -> Web3Transaction {
+        let signature = stx.transaction.signature.clone();
+        let mut web3_transaction_out_tx = Web3Transaction {
+            block_number:             receipt.block_number.into(),
+            block_hash:               receipt.block_hash,
+            from:                     receipt.sender,
+            contract_address:         receipt.code_address.map(Into::into),
+            cumulative_gas_used:      receipt.used_gas,
+            effective_gas_price:      receipt.used_gas,
+            creates:                  receipt.code_address.map(Into::into),
+            raw:                      Hex::encode(stx.transaction.encode().unwrap()),
+            public_key:               stx.public,
+            gas:                      receipt.used_gas,
+            gas_price:                stx.transaction.unsigned.gas_price,
+            max_fee_per_gas:          U256::from(1337u64),
+            max_priority_fee_per_gas: stx.transaction.unsigned.max_priority_fee_per_gas,
+            hash:                     receipt.tx_hash,
+            to:                       stx.get_to(),
+            input:                    Hex::encode(stx.transaction.unsigned.data),
+            nonece:                   stx.transaction.unsigned.value,
+            transaction_index:        Some(receipt.tx_index.into()),
+            value:                    stx.transaction.unsigned.value,
+            type_:                    Some(0x02u64.into()),
+            access_list:              Some(stx.transaction.unsigned.access_list.clone()),
+            chain_id:                 Some(stx.transaction.chain_id.into()),
+            standard_v:               Some(U256::default()),
+            r:                        U256::default(),
+            s:                        U256::default(),
+        };
+        if let Some(sc) = signature {
+            web3_transaction_out_tx.standard_v = Some(sc.standard_v.into());
+            web3_transaction_out_tx.r = sc.r.as_ref().into();
+            web3_transaction_out_tx.s = sc.s.as_ref().into();
+        }
+        web3_transaction_out_tx
     }
 }
 
@@ -171,78 +241,6 @@ impl From<Block> for Web3Block {
             uncles:            vec![],
             mix_hash:          H256::default(),
             nonce:             U256::default(),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct Web3Transaction {
-    #[serde(rename = "type")]
-    pub type_:                    U64,
-    pub hash:                     Hash,
-    pub nonce:                    U256,
-    pub block_hash:               Option<Hash>,
-    pub block_number:             Option<U256>,
-    pub transaction_index:        Option<U256>,
-    pub from:                     H160,
-    pub to:                       Option<H160>,
-    pub value:                    U256,
-    pub gas_price:                U256,
-    pub max_fee_per_gas:          Option<U256>,
-    pub gas:                      U256,
-    pub input:                    Bytes,
-    pub creates:                  Option<H160>,
-    pub raw:                      Bytes,
-    pub public_key:               Option<Public>,
-    pub chain_id:                 Option<U64>,
-    pub standard_v:               Option<U256>,
-    pub r:                        U256,
-    pub s:                        U256,
-    pub condition:                Option<TransactionCondition>,
-    pub access_list:              Option<AccessList>,
-    pub max_priority_fee_per_gas: Option<U256>,
-}
-
-impl Web3Transaction {
-    pub fn _new(stx: SignedTransaction, receipt: Receipt) -> Web3Transaction {
-        let signature = stx.transaction.signature.clone().unwrap();
-        let (transfer, create_contract) =
-            if let TransactionAction::Call(to) = stx.transaction.unsigned.action {
-                (Some(to), None)
-            } else {
-                (
-                    None,
-                    receipt
-                        .code_address
-                        .map(|addr| H160::from_slice(&addr.0[0..20])),
-                )
-            };
-
-        Web3Transaction {
-            type_:                    0x02u64.into(),
-            hash:                     stx.transaction.hash,
-            nonce:                    stx.transaction.unsigned.nonce,
-            block_hash:               Some(receipt.block_hash),
-            block_number:             Some(receipt.block_number.into()),
-            transaction_index:        Some(receipt.tx_index.into()),
-            from:                     stx.sender,
-            to:                       transfer,
-            value:                    stx.transaction.unsigned.value,
-            gas_price:                stx.transaction.unsigned.gas_price,
-            max_fee_per_gas:          None,
-            gas:                      receipt.used_gas,
-            input:                    stx.transaction.unsigned.data.clone(),
-            creates:                  create_contract,
-            raw:                      stx.transaction.encode().unwrap(),
-            chain_id:                 Some(stx.transaction.chain_id.into()),
-            public_key:               stx.public,
-            standard_v:               Some(signature.standard_v.into()),
-            r:                        signature.r.as_ref().into(),
-            s:                        signature.s.as_ref().into(),
-            condition:                Some(TransactionCondition::Number(receipt.block_number)),
-            access_list:              Some(stx.transaction.unsigned.access_list.clone()),
-            max_priority_fee_per_gas: Some(stx.transaction.unsigned.max_priority_fee_per_gas),
         }
     }
 }
