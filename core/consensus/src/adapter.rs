@@ -10,12 +10,12 @@ use core_executor::{EVMExecutorAdapter, EvmExecutor};
 use core_network::{PeerId, PeerIdExt};
 
 use protocol::traits::{
-    CommonConsensusAdapter, ConsensusAdapter, Context, Executor, Gossip, MemPool, MessageTarget,
-    PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
+    CommonConsensusAdapter, ConsensusAdapter, Context, CrossClient, Executor, Gossip, MemPool,
+    MessageTarget, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
 };
 use protocol::types::{
-    BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Hasher, Header, Hex, MerkleRoot,
-    Proof, Proposal, Receipt, SignedTransaction, Validator, U256,
+    BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Hasher, Header, Hex, Log,
+    MerkleRoot, Proof, Proposal, Receipt, SignedTransaction, Validator, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, tokio::task, ProtocolResult};
 
@@ -33,22 +33,25 @@ pub struct OverlordConsensusAdapter<
     M: MemPool,
     N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage,
+    CS: CrossClient,
     DB: cita_trie::DB,
 > {
     network:          Arc<N>,
     mempool:          Arc<M>,
     storage:          Arc<S>,
     trie_db:          Arc<DB>,
+    cross_client:     Arc<CS>,
     overlord_handler: RwLock<Option<OverlordHandler<Proposal>>>,
     crypto:           Arc<OverlordCrypto>,
 }
 
 #[async_trait]
-impl<M, N, S, DB> ConsensusAdapter for OverlordConsensusAdapter<M, N, S, DB>
+impl<M, N, S, CS, DB> ConsensusAdapter for OverlordConsensusAdapter<M, N, S, CS, DB>
 where
     M: MemPool + 'static,
     N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
+    CS: CrossClient + 'static,
     DB: cita_trie::DB + 'static,
 {
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
@@ -136,11 +139,12 @@ where
 }
 
 #[async_trait]
-impl<M, N, S, DB> SynchronizationAdapter for OverlordConsensusAdapter<M, N, S, DB>
+impl<M, N, S, CS, DB> SynchronizationAdapter for OverlordConsensusAdapter<M, N, S, CS, DB>
 where
     M: MemPool + 'static,
     N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
+    CS: CrossClient + 'static,
     DB: cita_trie::DB + 'static,
 {
     #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
@@ -236,11 +240,12 @@ where
 }
 
 #[async_trait]
-impl<M, N, S, DB> CommonConsensusAdapter for OverlordConsensusAdapter<M, N, S, DB>
+impl<M, N, S, CS, DB> CommonConsensusAdapter for OverlordConsensusAdapter<M, N, S, CS, DB>
 where
     M: MemPool + 'static,
     N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
+    CS: CrossClient + 'static,
     DB: cita_trie::DB + 'static,
 {
     /// Save a block to the database.
@@ -528,6 +533,27 @@ where
         Ok(())
     }
 
+    async fn notify_block_logs(
+        &self,
+        ctx: Context,
+        block_number: u64,
+        block_hash: Hash,
+        logs: &[Vec<Log>],
+    ) -> ProtocolResult<()> {
+        self.cross_client
+            .set_evm_log(ctx, block_number, block_hash, logs)
+            .await
+    }
+
+    async fn notify_checkpoint(
+        &self,
+        ctx: Context,
+        header: Header,
+        proof: Proof,
+    ) -> ProtocolResult<()> {
+        self.cross_client.set_checkpoint(ctx, header, proof).await
+    }
+
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
     fn verify_proof_signature(
         &self,
@@ -550,10 +576,10 @@ where
             })
     }
 
-    #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
+    // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
     fn verify_proof_weight(
         &self,
-        ctx: Context,
+        _ctx: Context,
         block_number: u64,
         weight_map: HashMap<Bytes, u32>,
         signed_voters: Vec<Bytes>,
@@ -598,11 +624,12 @@ where
     }
 }
 
-impl<M, N, S, DB> OverlordConsensusAdapter<M, N, S, DB>
+impl<M, N, S, CS, DB> OverlordConsensusAdapter<M, N, S, CS, DB>
 where
     M: MemPool + 'static,
     N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
+    CS: CrossClient + 'static,
     DB: cita_trie::DB + 'static,
 {
     pub fn new(
@@ -610,6 +637,7 @@ where
         mempool: Arc<M>,
         storage: Arc<S>,
         trie_db: Arc<DB>,
+        cross_client: Arc<CS>,
         crypto: Arc<OverlordCrypto>,
     ) -> ProtocolResult<Self> {
         Ok(OverlordConsensusAdapter {
@@ -617,6 +645,7 @@ where
             mempool,
             storage,
             trie_db,
+            cross_client,
             overlord_handler: RwLock::new(None),
             crypto,
         })
