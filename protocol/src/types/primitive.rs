@@ -58,6 +58,10 @@ impl Hasher {
 pub struct Hex(String);
 
 impl Hex {
+    pub fn empty() -> Self {
+        Hex(String::from(HEX_PREFIX))
+    }
+
     pub fn encode<T: AsRef<[u8]>>(src: T) -> Self {
         let mut s = HEX_PREFIX.to_string();
         s.push_str(&hex_encode(src));

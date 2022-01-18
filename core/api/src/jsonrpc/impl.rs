@@ -89,7 +89,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             Ok(Some(Web3Transaction::create(receipt, stx)))
         } else {
             Err(Error::Custom(format!(
-                "Cannot get transaction by hash {:?}",
+                "can not get receipt by hash {:?}",
                 hash
             )))
         }
@@ -213,7 +213,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         if let Some(code_bytes) = code_result {
             Ok(Hex::encode(code_bytes))
         } else {
-            Ok(Hex::encode(Bytes::from("0")))
+            Ok(Hex::empty())
         }
     }
 

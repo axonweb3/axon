@@ -61,7 +61,7 @@ pub struct Web3Transaction {
     pub value:                    U256,
     #[serde(rename = "type")]
     pub type_:                    Option<U64>,
-    pub access_list:              Option<AccessList>, // Fix this type : Vec<AccessListItem>,
+    pub access_list:              Option<AccessList>,
     pub chain_id:                 Option<U256>,
     pub standard_v:               Option<U256>,
     pub r:                        U256,
@@ -87,7 +87,7 @@ impl Web3Transaction {
             max_priority_fee_per_gas: stx.transaction.unsigned.max_priority_fee_per_gas,
             hash:                     receipt.tx_hash.into(),
             to:                       stx.get_to(),
-            input:                    Hex::encode(stx.transaction.unsigned.data.clone()),
+            input:                    Hex::encode(stx.transaction.unsigned.data),
             nonece:                   stx.transaction.unsigned.value,
             transaction_index:        Some(receipt.tx_index.into()),
             value:                    stx.transaction.unsigned.value,
