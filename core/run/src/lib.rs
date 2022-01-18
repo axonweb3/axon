@@ -13,8 +13,8 @@ use parking_lot::Mutex;
 use common_apm::muta_apm;
 use common_config_parser::types::Config;
 use common_crypto::{
-    BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey, ToPublicKey,
-    UncompressedPublicKey,
+    BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey,
+    Secp256k1RecoverablePrivateKey, ToPublicKey, UncompressedPublicKey,
 };
 use core_api::{jsonrpc::run_jsonrpc_server, DefaultAPIAdapter};
 use core_consensus::message::{
@@ -377,7 +377,7 @@ impl Axon {
         // start cross chain client
         let cross_client = DefaultCrossAdapter::new(
             self.config.clone(),
-            Secp256k1PrivateKey::try_from(hex_privkey.as_ref()).unwrap(),
+            Secp256k1RecoverablePrivateKey::try_from(hex_privkey.as_ref()).unwrap(),
             Arc::clone(&mempool),
             Arc::clone(&storage),
             Arc::clone(&trie_db),

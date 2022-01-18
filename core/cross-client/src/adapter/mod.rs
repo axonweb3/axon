@@ -18,8 +18,8 @@ use ckb_types::{
 use crate::CrossClientError;
 use common_config_parser::types::{Config, ConfigCrossClient};
 use common_crypto::{
-    Crypto, PrivateKey, Secp256k1PrivateKey, Secp256k1Recoverable, Signature, ToPublicKey,
-    UncompressedPublicKey,
+    Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey, Signature,
+    ToPublicKey, UncompressedPublicKey,
 };
 use core_executor::{EVMExecutorAdapter, EvmExecutor};
 use ethabi::RawLog;
@@ -48,7 +48,7 @@ use protocol::codec::hex_decode;
 const TWO_THOUSAND: u64 = 2000;
 
 pub struct DefaultCrossAdapter<M, S, DB> {
-    priv_key:       Secp256k1PrivateKey,
+    priv_key:       Secp256k1RecoverablePrivateKey,
     client:         rpc_client::RpcClient,
     config:         ConfigCrossClient,
     tip_number:     BlockNumber,
@@ -91,7 +91,7 @@ where
 {
     pub fn new(
         config: Config,
-        pk: Secp256k1PrivateKey,
+        pk: Secp256k1RecoverablePrivateKey,
         mempool: Arc<M>,
         storage: Arc<S>,
         trie_db: Arc<DB>,
@@ -125,7 +125,8 @@ where
         CrossAdapterHandle {
             client: self.client.clone(),
             config: self.config.clone(),
-            pk:     Secp256k1PrivateKey::try_from(self.config.pk.as_bytes().as_ref()).unwrap(),
+            pk:     Secp256k1RecoverablePrivateKey::try_from(self.config.pk.as_bytes().as_ref())
+                .unwrap(),
         }
     }
 
@@ -371,7 +372,7 @@ where
 pub struct CrossAdapterHandle {
     client: rpc_client::RpcClient,
     config: ConfigCrossClient,
-    pk:     Secp256k1PrivateKey,
+    pk:     Secp256k1RecoverablePrivateKey,
 }
 
 #[async_trait]
@@ -415,10 +416,13 @@ impl CrossClient for CrossAdapterHandle {
 
                     log::info!("respond: {:?}", serde_json::to_string(&tx));
 
-                    self.client
+                    let tx_hash = self
+                        .client
                         .send_transaction(&tx, Some(OutputsValidator::Passthrough))
                         .await
                         .map_err(CrossClientError::IO)?;
+
+                    log::info!("tx hash: {}", tx_hash);
                 }
             }
         }
