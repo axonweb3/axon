@@ -143,9 +143,10 @@ pub struct ConfigAPM {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct ConfigCrossClient {
-    pub axon_udt_hash:      H256,
-    pub ckb_uri:            String,
-    pub start_block_number: u64,
+    pub axon_udt_hash:       H256,
+    pub ckb_uri:             String,
+    pub start_block_number:  u64,
+    pub checkpoint_interval: u64,
 }
 
 #[derive(Clone, Debug, Deserialize)]

@@ -375,14 +375,14 @@ impl Axon {
         );
 
         // start cross chain client
-        let cross_client = DefaultCrossAdapter::new(
+        let cross_client_adapter = DefaultCrossAdapter::new(
             self.config.clone(),
             Secp256k1PrivateKey::try_from(hex_privkey.as_ref()).unwrap(),
             Arc::clone(&mempool),
             Arc::clone(&storage),
             Arc::clone(&trie_db),
         );
-        tokio::spawn(cross_client.run());
+        tokio::spawn(cross_client_adapter.run());
 
         let consensus_interval = metadata.interval;
         let status_agent = StatusAgent::new(current_consensus_status);
@@ -402,12 +402,13 @@ impl Axon {
 
         let crypto = Arc::new(OverlordCrypto::new(bls_priv_key, bls_pub_keys, common_ref));
 
-        let consensus_adapter = OverlordConsensusAdapter::<_, _, _, _>::new(
+        let consensus_adapter = OverlordConsensusAdapter::<_, _, _, _, _>::new(
             Arc::new(network_service.handle()),
             Arc::clone(&mempool),
             Arc::clone(&storage),
             Arc::clone(&trie_db),
             Arc::clone(&crypto),
+            Arc::clone(&cross_client),
         )?;
 
         let consensus_adapter = Arc::new(consensus_adapter);
@@ -422,6 +423,7 @@ impl Axon {
             Arc::clone(&consensus_adapter),
             Arc::clone(&lock),
             Arc::clone(&consensus_wal),
+            self.config.cross_client.checkpoint_interval,
         ));
 
         consensus_adapter.set_overlord_handler(overlord_consensus.get_overlord_handler());

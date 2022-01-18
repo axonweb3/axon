@@ -20,8 +20,8 @@ use common_merkle::Merkle;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
-    Block, BlockNumber, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, MerkleRoot, Metadata,
-    Proof, Proposal, Receipt, SignedTransaction, ValidatorExtend, U256,
+    Block, BlockNumber, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, Log, MerkleRoot,
+    Metadata, Proof, Proposal, Receipt, SignedTransaction, ValidatorExtend, U256,
 };
 use protocol::{
     async_trait, lazy::CURRENT_STATE_ROOT, tokio::sync::Mutex as AsyncMutex, ProtocolError,
@@ -49,6 +49,7 @@ pub struct ConsensusEngine<Adapter> {
     crypto:  Arc<OverlordCrypto>,
     lock:    Arc<AsyncMutex<()>>,
 
+    cross_period_interval:        u64,
     last_commit_time:             RwLock<u64>,
     consensus_wal:                Arc<ConsensusWal>,
     last_check_block_fail_reason: RwLock<String>,
@@ -254,7 +255,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             metadata.verifier_list
         );
 
-        self.update_status(resp, proposal.clone(), proof, signed_txs)
+        self.update_status(ctx.clone(), resp, proposal.clone(), proof, signed_txs)
             .await?;
 
         self.adapter
@@ -437,6 +438,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         crypto: Arc<OverlordCrypto>,
         lock: Arc<AsyncMutex<()>>,
         consensus_wal: Arc<ConsensusWal>,
+        cross_period_interval: u64,
     ) -> Self {
         Self {
             status,
@@ -446,6 +448,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             adapter,
             crypto,
             lock,
+            cross_period_interval,
             last_commit_time: RwLock::new(time_now()),
             consensus_wal,
             last_check_block_fail_reason: RwLock::new(String::new()),
@@ -565,6 +568,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
     /// 5. Save the receipt.
     pub async fn update_status(
         &self,
+        ctx: Context,
         resp: ExecResp,
         proposal: Proposal,
         proof: Proof,
@@ -574,7 +578,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         let block_number = block.header.number;
         let block_hash = Hasher::digest(block.header.encode()?);
 
-        let (receipts, _logs) = generate_receipts_and_logs(
+        let (receipts, logs) = generate_receipts_and_logs(
             block_number,
             block_hash,
             block.header.state_root,
@@ -582,22 +586,25 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             &resp,
         );
 
+        // Call cross client
+        self.adapter
+            .notify_block_logs(ctx.clone(), block_number, block_hash, &logs)
+            .await?;
+
         // Save signed transactions
         self.adapter
-            .save_signed_txs(Context::new(), block_number, txs)
+            .save_signed_txs(ctx.clone(), block_number, txs)
             .await?;
 
         // Save the block.
+        self.adapter.save_block(ctx.clone(), block.clone()).await?;
+
         self.adapter
-            .save_block(Context::new(), block.clone())
+            .save_receipts(ctx.clone(), block_number, receipts)
             .await?;
 
         self.adapter
-            .save_receipts(Context::new(), block_number, receipts)
-            .await?;
-
-        self.adapter
-            .save_proof(Context::new(), block.header.proof.clone())
+            .save_proof(ctx.clone(), block.header.proof.clone())
             .await?;
 
         let metadata = METADATA_CONTROLER.load().current();
@@ -615,7 +622,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
 
         // update timeout_gap of mempool
         self.adapter.set_args(
-            Context::new(),
+            ctx.clone(),
             resp.state_root,
             metadata.timeout_gap,
             metadata.gas_limit,
@@ -627,7 +634,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             .iter()
             .map(|v| v.pub_key.as_bytes())
             .collect();
-        self.adapter.tag_consensus(Context::new(), pub_keys)?;
+        self.adapter.tag_consensus(ctx, pub_keys)?;
 
         if block.header.number != proof.number {
             info!("[consensus] update_status for handle_commit, error, before update, block number {}, proof number:{}, proof : {:?}",
@@ -715,7 +722,7 @@ pub fn generate_receipts_and_logs(
     state_root: MerkleRoot,
     txs: &[SignedTransaction],
     resp: &ExecResp,
-) -> (Vec<Receipt>, Vec<Bloom>) {
+) -> (Vec<Receipt>, Vec<Vec<Log>>) {
     let receipts = txs
         .iter()
         .enumerate()
@@ -734,7 +741,7 @@ pub fn generate_receipts_and_logs(
             ret: res.exit_reason.clone(),
         })
         .collect::<Vec<_>>();
-    let logs = receipts.iter().map(|r| r.logs_bloom).collect::<Vec<_>>();
+    let logs = receipts.iter().map(|r| r.logs.clone()).collect::<Vec<_>>();
 
     (receipts, logs)
 }
