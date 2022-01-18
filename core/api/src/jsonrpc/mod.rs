@@ -13,7 +13,7 @@ use protocol::types::{Hex, H160, H256, U256};
 use protocol::ProtocolResult;
 
 use crate::jsonrpc::web3_types::{
-    BlockId, Web3Block, Web3CallRequest, Web3Filter, Web3Log, Web3Receipt,Web3TransactionOut,
+    BlockId, Web3Block, Web3CallRequest, Web3Filter, Web3Log, Web3Receipt, Web3Transaction,
 };
 use crate::APIError;
 
@@ -27,7 +27,7 @@ pub trait AxonJsonRpc {
 
     /// Get transaction by its hash.
     #[method(name = "eth_getTransactionByHash")]
-    async fn get_transaction_by_hash(&self, hash: H256) -> RpcResult<Option<Web3TransactionOut>>;
+    async fn get_transaction_by_hash(&self, hash: H256) -> RpcResult<Option<Web3Transaction>>;
 
     /// Returns block with given number.
     #[method(name = "eth_getBlockByNumber")]

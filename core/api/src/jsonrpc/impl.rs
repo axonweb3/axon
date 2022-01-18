@@ -11,7 +11,7 @@ use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
 use crate::jsonrpc::web3_types::{
     BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3Filter, Web3Log, Web3Receipt,
-    Web3TransactionOut,
+    Web3Transaction,
 };
 use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
 use crate::APIError;
@@ -68,7 +68,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         Ok(hash)
     }
 
-    async fn get_transaction_by_hash(&self, hash: H256) -> RpcResult<Option<Web3TransactionOut>> {
+    async fn get_transaction_by_hash(&self, hash: H256) -> RpcResult<Option<Web3Transaction>> {
         let res = self
             .adapter
             .get_transaction_by_hash(Context::new(), hash)
@@ -86,7 +86,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             .await
             .map_err(|e| Error::Custom(e.to_string()))?
         {
-            Ok(Some(Web3TransactionOut::create(receipt, stx)))
+            Ok(Some(Web3Transaction::create(receipt, stx)))
         } else {
             Err(Error::Custom(format!(
                 "Cannot get transaction by hash {:?}",
