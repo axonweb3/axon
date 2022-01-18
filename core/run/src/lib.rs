@@ -374,15 +374,21 @@ impl Axon {
             metadata.max_tx_size,
         );
 
+
         // start cross chain client
-        let cross_client_adapter = DefaultCrossAdapter::new(
+        let cross_client = DefaultCrossAdapter::new(
             self.config.clone(),
             Secp256k1PrivateKey::try_from(hex_privkey.as_ref()).unwrap(),
             Arc::clone(&mempool),
             Arc::clone(&storage),
             Arc::clone(&trie_db),
         );
-        tokio::spawn(cross_client_adapter.run());
+        let cross_handle = cross_client.handle();
+
+        // start cross chain client
+        if self.config.cross_client.enable {
+            tokio::spawn(cross_client.run());
+        }
 
         let consensus_interval = metadata.interval;
         let status_agent = StatusAgent::new(current_consensus_status);
@@ -408,7 +414,7 @@ impl Axon {
             Arc::clone(&storage),
             Arc::clone(&trie_db),
             Arc::clone(&crypto),
-            Arc::clone(&cross_client),
+            Arc::new(cross_handle),
         )?;
 
         let consensus_adapter = Arc::new(consensus_adapter);

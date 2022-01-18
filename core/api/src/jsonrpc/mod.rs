@@ -9,7 +9,7 @@ use jsonrpsee::{core::Error, proc_macros::rpc};
 
 use common_config_parser::types::ConfigApi;
 use protocol::traits::APIAdapter;
-use protocol::types::{Bytes, SignedTransaction, H160, H256, U256};
+use protocol::types::{Bytes, Hex, SignedTransaction, H160, H256, U256};
 use protocol::ProtocolResult;
 
 use crate::jsonrpc::web3_types::{
@@ -50,7 +50,7 @@ pub trait AxonJsonRpc {
     async fn get_balance(&self, address: H160, number: BlockId) -> RpcResult<U256>;
 
     #[method(name = "eth_call")]
-    async fn call(&self, req: Web3CallRequest, number: BlockId) -> RpcResult<String>;
+    async fn call(&self, req: Web3CallRequest, number: BlockId) -> RpcResult<Hex>;
 
     #[method(name = "eth_estimateGas")]
     async fn estimate_gas(&self, req: Web3CallRequest, number: Option<BlockId>) -> RpcResult<U256>;

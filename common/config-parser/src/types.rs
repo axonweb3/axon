@@ -7,7 +7,7 @@ use tentacle_multiaddr::MultiAddr;
 
 use core_consensus::{DEFAULT_OVERLORD_GAP, DEFAULT_SYNC_TXS_CHUNK_SIZE};
 use core_mempool::{DEFAULT_BROADCAST_TXS_INTERVAL, DEFAULT_BROADCAST_TXS_SIZE};
-use protocol::types::{Hex, H256};
+use protocol::types::{Hex, H160, H256};
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct ConfigApi {
@@ -143,10 +143,17 @@ pub struct ConfigAPM {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct ConfigCrossClient {
-    pub axon_udt_hash:       H256,
-    pub ckb_uri:             String,
-    pub start_block_number:  u64,
-    pub checkpoint_interval: u64,
+    pub axon_udt_hash:      H256,
+    pub ckb_uri:            String,
+    pub mercury_uri:        String,
+    pub start_block_number: u64,
+    pub pk:                 Vec<u8>,
+    pub enable:             bool,
+
+    pub admin_address:        H160,
+    pub node_address:         H160,
+    pub selection_lock_hash:  H256,
+    pub checkpoint_type_hash: H256,
 }
 
 #[derive(Clone, Debug, Deserialize)]

@@ -929,6 +929,7 @@ version = "0.1.0"
 dependencies = [
  "axon-protocol",
  "cita_trie",
+ "ckb-hash",
  "ckb-jsonrpc-types",
  "ckb-types",
  "common-config-parser",
