@@ -587,23 +587,15 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         );
 
         // Call cross client
-        if let Err(e) = self
-            .adapter
+        self.adapter
             .notify_block_logs(ctx.clone(), block_number, block_hash, &logs)
-            .await
-        {
-            log::error!("[cross-chain]: set log {:?}", e);
-        }
+            .await;
 
         // Submit checkpoint
         if block_number % self.cross_period_interval == 0 {
-            if let Err(e) = self
-                .adapter
+            self.adapter
                 .notify_checkpoint(ctx.clone(), block.clone(), proof.clone())
-                .await
-            {
-                log::error!("[cross-chain]: submit checkpoint {:?}", e);
-            }
+                .await;
         }
 
         // Save signed transactions

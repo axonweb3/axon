@@ -152,14 +152,9 @@ pub trait CommonConsensusAdapter: Send + Sync {
         block_number: u64,
         block_hash: Hash,
         logs: &[Vec<Log>],
-    ) -> ProtocolResult<()>;
+    );
 
-    async fn notify_checkpoint(
-        &self,
-        ctx: Context,
-        block: Block,
-        proof: Proof,
-    ) -> ProtocolResult<()>;
+    async fn notify_checkpoint(&self, ctx: Context, block: Block, proof: Proof);
 
     fn verify_proof_signature(
         &self,

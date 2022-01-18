@@ -21,7 +21,7 @@ pub trait CrossClient: Send + Sync {
         block_number: BlockNumber,
         block_hash: Hash,
         logs: &[Vec<Log>],
-    ) -> ProtocolResult<()>;
+    );
 
-    async fn set_checkpoint(&self, ctx: Context, block: Block, proof: Proof) -> ProtocolResult<()>;
+    async fn set_checkpoint(&self, ctx: Context, block: Block, proof: Proof);
 }

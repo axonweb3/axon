@@ -167,17 +167,15 @@ pub struct TransactionCompletionResponse {
 }
 
 impl TransactionCompletionResponse {
-    #[allow(clippy::identity_op)]
     pub fn sign(self, key: &Secp256k1RecoverablePrivateKey) -> Transaction {
         let tx: packed::Transaction = Into::<packed::Transaction>::into(self.tx_view.inner);
+        let witnesses = tx.witnesses();
 
         let mut groups = Vec::with_capacity(self.signature_actions.len());
         for action in self.signature_actions {
             groups.push(ScriptGroup {
-                original_witness: tx
-                    .witnesses()
-                    .get(action.signature_location.index)
-                    .unwrap()
+                original_witness: witnesses
+                    .get_unchecked(action.signature_location.index)
                     .unpack(),
                 action,
             })
@@ -187,43 +185,14 @@ impl TransactionCompletionResponse {
         let tx_hash = tx.calc_tx_hash();
 
         for group in groups {
-            let group_witnesses = group.group_witnesses(&tx);
+            let group_witnesses = group.group_witnesses(&witnesses);
 
             let mut blake2b = ckb_hash::new_blake2b();
-            // let mut message = Vec::new();
 
             blake2b.update(tx_hash.as_slice());
-            println!("tx hash: {:?}", hex_encode(tx_hash.as_slice()));
-            blake2b.update(
-                &(tx.witnesses()
-                    .get_unchecked(group.action.signature_location.index)
-                    .raw_data()
-                    .len() as u64)
-                    .to_le_bytes(),
-            );
+            blake2b.update(&(group.original_witness.len() as u64).to_le_bytes());
 
-            println!(
-                "tx witness len: {:?}",
-                tx.witnesses()
-                    .get_unchecked(group.action.signature_location.index)
-                    .raw_data()
-                    .len() as u64
-            );
-
-            blake2b.update(
-                &tx.witnesses()
-                    .get_unchecked(group.action.signature_location.index)
-                    .raw_data(),
-            );
-
-            println!(
-                "tx witness: {:?}",
-                hex_encode(
-                    &tx.witnesses()
-                        .get_unchecked(group.action.signature_location.index)
-                        .raw_data()
-                )
-            );
+            blake2b.update(&group.original_witness);
 
             for witness in group_witnesses.iter().skip(1) {
                 blake2b.update(&(witness.len() as u64).to_le_bytes());
@@ -232,15 +201,11 @@ impl TransactionCompletionResponse {
 
             let mut hash = [0u8; 32];
             blake2b.finalize(&mut hash);
-            println!("{:?}", hex_encode(hash));
 
-            let mut signature = key
+            let signature = key
                 .sign_message(&HashValue::from_bytes_unchecked(hash))
                 .to_bytes();
 
-            // let mut new_witness: packed::Bytes = group.original_witness.pack();
-
-            println!("{:?}", group.original_witness.to_vec());
             let witness = ckb_types::packed::WitnessArgs::new_unchecked(group.original_witness)
                 .as_builder()
                 .lock(Some(signature).pack())
@@ -249,8 +214,6 @@ impl TransactionCompletionResponse {
 
             new_witnesses_index.push((group.action.signature_location.index, witness));
         }
-
-        let witnesses = tx.witnesses();
 
         let mut new_witnesses = Vec::new();
         for i in 0..witnesses.item_count() {
@@ -274,15 +237,11 @@ struct ScriptGroup {
 
 impl ScriptGroup {
     #[allow(clippy::identity_op)]
-    fn group_witnesses(&self, tx: &packed::Transaction) -> Vec<Bytes> {
+    fn group_witnesses(&self, witnesses: &packed::BytesVec) -> Vec<Bytes> {
         let mut group_witnesses = Vec::with_capacity(self.action.other_indexes_in_group.len() + 1);
-        group_witnesses.push(
-            tx.witnesses()
-                .get_unchecked(self.action.signature_location.index)
-                .raw_data(),
-        );
+        group_witnesses.push(self.original_witness.clone());
         for idx in self.action.other_indexes_in_group.iter() {
-            group_witnesses.push(tx.witnesses().get_unchecked(*idx).raw_data());
+            group_witnesses.push(witnesses.get_unchecked(*idx).raw_data());
         }
         group_witnesses
     }

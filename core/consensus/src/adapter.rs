@@ -539,18 +539,13 @@ where
         block_number: u64,
         block_hash: Hash,
         logs: &[Vec<Log>],
-    ) -> ProtocolResult<()> {
+    ) {
         self.cross_client
             .set_evm_log(ctx, block_number, block_hash, logs)
             .await
     }
 
-    async fn notify_checkpoint(
-        &self,
-        ctx: Context,
-        block: Block,
-        proof: Proof,
-    ) -> ProtocolResult<()> {
+    async fn notify_checkpoint(&self, ctx: Context, block: Block, proof: Proof) {
         self.cross_client.set_checkpoint(ctx, block, proof).await
     }
 

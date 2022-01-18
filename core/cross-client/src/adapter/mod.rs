@@ -15,7 +15,6 @@ use ckb_types::{
     prelude::*,
 };
 
-use crate::CrossClientError;
 use common_config_parser::types::{Config, ConfigCrossClient};
 use common_crypto::{
     Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey, Signature,
@@ -42,8 +41,6 @@ use asset::events as asset_events;
 use asset::functions as asset_functions;
 
 use self::asset::logs::Burned;
-use common_config_parser::parse_json;
-use protocol::codec::hex_decode;
 
 const TWO_THOUSAND: u64 = 2000;
 
@@ -383,7 +380,7 @@ impl CrossClient for CrossAdapterHandle {
         block_number: BlockNumber,
         block_hash: H256,
         logs: &[Vec<Log>],
-    ) -> ProtocolResult<()> {
+    ) {
         for inner_logs in logs {
             for log in inner_logs {
                 if let Ok(burn) = asset_events::burned::parse_log(RawLog::from((
@@ -404,36 +401,38 @@ impl CrossClient for CrossAdapterHandle {
                         memo: [0;20].into(),
                     };
 
-                    let mut respond = self
+                    match self
                         .client
                         .build_cross_chain_transfer_transaction(payload)
                         .await
-                        .map_err(CrossClientError::IO)?;
+                    {
+                        Ok(respond) => {
+                            let tx = respond.sign(&self.pk);
 
-                    log::info!("respond: {:?}", serde_json::to_string(&respond));
-
-                    let tx = respond.sign(&self.pk);
-
-                    log::info!("respond: {:?}", serde_json::to_string(&tx));
-
-                    let tx_hash = self
-                        .client
-                        .send_transaction(&tx, Some(OutputsValidator::Passthrough))
-                        .await
-                        .map_err(CrossClientError::IO)?;
-
-                    log::info!("tx hash: {}", tx_hash);
+                            match self
+                                .client
+                                .send_transaction(&tx, Some(OutputsValidator::Passthrough))
+                                .await
+                            {
+                                Ok(tx_hash) => log::info!("set_evm_log send tx hash: {}", tx_hash),
+                                Err(e) => {
+                                    log::info!("set_evm_log send tx error: {}", e);
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            log::info!("build_cross_chain_transfer_transaction error: {}", e);
+                        }
+                    }
                 }
             }
         }
-
-        Ok(())
     }
 
-    async fn set_checkpoint(&self, ctx: Context, block: Block, proof: Proof) -> ProtocolResult<()> {
+    async fn set_checkpoint(&self, ctx: Context, block: Block, proof: Proof) {
         let number = block.header.number;
-        let mut proposal = Proposal::from(block).encode()?.to_vec();
-        let mut proof = proof.encode()?.to_vec();
+        let mut proposal = Proposal::from(block).encode().unwrap().to_vec();
+        let mut proof = proof.encode().unwrap().to_vec();
         proposal.append(&mut proof);
 
         let payload = rpc_client::SubmitCheckpointPayload {
@@ -448,18 +447,29 @@ impl CrossClient for CrossAdapterHandle {
             checkpoint_type_hash: self.config.checkpoint_type_hash.0.into(),
         };
 
-        let respond = self
+        match self
             .client
             .build_submit_checkpoint_transaction(payload)
             .await
-            .map_err(CrossClientError::IO)?;
-        let tx = respond.sign(&self.pk);
-        self.client
-            .send_transaction(&tx, Some(OutputsValidator::Passthrough))
-            .await
-            .map_err(CrossClientError::IO)?;
+        {
+            Ok(respond) => {
+                let tx = respond.sign(&self.pk);
 
-        Ok(())
+                match self
+                    .client
+                    .send_transaction(&tx, Some(OutputsValidator::Passthrough))
+                    .await
+                {
+                    Ok(tx_hash) => log::info!("set_checkpoint send tx hash: {}", tx_hash),
+                    Err(e) => {
+                        log::info!("set_checkpoint send tx error: {}", e);
+                    }
+                }
+            }
+            Err(e) => {
+                log::info!("build_submit_checkpoint_transaction error: {}", e);
+            }
+        }
     }
 }
 
