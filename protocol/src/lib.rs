@@ -22,6 +22,7 @@ pub enum ProtocolErrorKind {
     Storage,
     Service,
     Main,
+    CrossClient,
 
     // types
     Types,
