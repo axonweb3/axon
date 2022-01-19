@@ -8,6 +8,7 @@ use std::{
     time::Duration,
 };
 
+use ckb_jsonrpc_types::OutputsValidator;
 use ckb_types::{
     core::{BlockNumber, BlockView, TransactionView},
     packed,
@@ -16,18 +17,19 @@ use ckb_types::{
 
 use common_config_parser::types::{Config, ConfigCrossClient};
 use common_crypto::{
-    Crypto, PrivateKey, Secp256k1PrivateKey, Secp256k1Recoverable, Signature, ToPublicKey,
-    UncompressedPublicKey,
+    Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey, Signature,
+    ToPublicKey, UncompressedPublicKey,
 };
 use core_executor::{EVMExecutorAdapter, EvmExecutor};
-use protocol::traits::{Context, CrossAdapter, Executor, MemPool, Storage};
+use ethabi::RawLog;
+use protocol::traits::{Context, CrossAdapter, CrossClient, Executor, MemPool, Storage};
 use protocol::types::{
-    public_to_address, Bytes, Public, SignedTransaction, Transaction, TransactionAction,
-    UnverifiedTransaction, H160, U256,
+    public_to_address, Block, Bytes, Log, Proof, Proposal, Public, SignedTransaction, Transaction,
+    TransactionAction, UnverifiedTransaction, H160, H256, U256,
 };
 use protocol::{
     async_trait,
-    codec::hex_encode,
+    codec::{hex_encode, ProtocolCodec},
     lazy::{ASSET_CONTRACT_ADDRESS, CHAIN_ID, CURRENT_STATE_ROOT},
     tokio::{self, sync::mpsc},
     ProtocolResult,
@@ -35,17 +37,16 @@ use protocol::{
 
 ethabi_contract::use_contract!(asset, "./src/adapter/abi/asset.abi");
 
-#[allow(unused_imports)]
 use asset::events as asset_events;
 use asset::functions as asset_functions;
-#[allow(unused_imports)]
-use asset::logs::Burned as BurnedLog;
+
+use self::asset::logs::Burned;
 
 const TWO_THOUSAND: u64 = 2000;
 
 pub struct DefaultCrossAdapter<M, S, DB> {
-    priv_key:       Secp256k1PrivateKey,
-    ckb_client:     rpc_client::RpcClient,
+    priv_key:       Secp256k1RecoverablePrivateKey,
+    client:         rpc_client::RpcClient,
     config:         ConfigCrossClient,
     tip_number:     BlockNumber,
     current_number: BlockNumber,
@@ -87,7 +88,7 @@ where
 {
     pub fn new(
         config: Config,
-        pk: Secp256k1PrivateKey,
+        pk: Secp256k1RecoverablePrivateKey,
         mempool: Arc<M>,
         storage: Arc<S>,
         trie_db: Arc<DB>,
@@ -96,7 +97,10 @@ where
         let (sender, recv) = mpsc::channel(256);
         Self {
             priv_key: pk,
-            ckb_client: rpc_client::RpcClient::new(&config.cross_client.ckb_uri),
+            client: rpc_client::RpcClient::new(
+                &config.cross_client.ckb_uri,
+                &config.cross_client.mercury_uri,
+            ),
             tip_number: 0,
             current_number: std::cmp::max(
                 load_current_number(backup_dir.as_path()),
@@ -114,6 +118,15 @@ where
         }
     }
 
+    pub fn handle(&self) -> CrossAdapterHandle {
+        CrossAdapterHandle {
+            client: self.client.clone(),
+            config: self.config.clone(),
+            pk:     Secp256k1RecoverablePrivateKey::try_from(self.config.pk.as_bytes().as_ref())
+                .unwrap(),
+        }
+    }
+
     pub async fn run(mut self) {
         self.update_tip_number().await;
 
@@ -127,7 +140,7 @@ where
                 },
                 res = self.block_recv.recv() => {
                     if let Some(blocks) = res {
-                        self.handle(blocks).await;
+                        self.handle_blocks(blocks).await;
                     } else {
                         break
                     }
@@ -140,7 +153,7 @@ where
     }
 
     async fn update_tip_number(&mut self) {
-        let tip_header = self.ckb_client.get_tip_header().await.unwrap();
+        let tip_header = self.client.get_tip_header().await.unwrap();
 
         self.tip_number = tip_header.inner.number.into();
 
@@ -157,9 +170,12 @@ where
 
             let mut tasks = Vec::new();
             for i in self.current_number + 1
-                ..=std::cmp::min(self.tip_number - 24, self.current_number + 200)
+                ..=std::cmp::min(
+                    self.tip_number.saturating_sub(24),
+                    self.current_number + 200,
+                )
             {
-                let task = self.ckb_client.get_block_by_number(i.into());
+                let task = self.client.get_block_by_number(i.into());
                 let handle = tokio::spawn(task);
                 tasks.push(handle)
             }
@@ -177,7 +193,7 @@ where
         }
     }
 
-    async fn handle(&mut self, blocks: Vec<io::Result<BlockView>>) {
+    async fn handle_blocks(&mut self, blocks: Vec<io::Result<BlockView>>) {
         for res in blocks {
             match res {
                 Ok(block) => self.search_tx(block).await,
@@ -185,8 +201,7 @@ where
                     let number = self.current_number + 1;
                     log::info!("get block {} error: {}", number, e);
                     loop {
-                        if let Ok(block) = self.ckb_client.get_block_by_number(number.into()).await
-                        {
+                        if let Ok(block) = self.client.get_block_by_number(number.into()).await {
                             self.search_tx(block.into()).await
                         }
                     }
@@ -237,7 +252,7 @@ where
             let (hash, index) = (input_point.tx_hash(), input_point.index());
 
             let input_tx = self
-                .ckb_client
+                .client
                 .get_transaction(&hash.unpack())
                 .await
                 .expect("get previous tx fail")
@@ -347,6 +362,112 @@ where
         })
         .await
         .unwrap()
+    }
+}
+
+#[derive(Clone)]
+pub struct CrossAdapterHandle {
+    client: rpc_client::RpcClient,
+    config: ConfigCrossClient,
+    pk:     Secp256k1RecoverablePrivateKey,
+}
+
+#[async_trait]
+impl CrossClient for CrossAdapterHandle {
+    async fn set_evm_log(
+        &self,
+        ctx: Context,
+        block_number: BlockNumber,
+        block_hash: H256,
+        logs: &[Vec<Log>],
+    ) {
+        for inner_logs in logs {
+            for log in inner_logs {
+                if let Ok(burn) = asset_events::burned::parse_log(RawLog::from((
+                    log.topics.clone(),
+                    log.data.clone(),
+                ))) {
+                    let Burned {
+                        amount,
+                        recipient_ckb_address,
+                    } = burn;
+
+                    let payload = rpc_client::CrossChainTransferPayload {
+                        sender: "ckt1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsqdrhpvcu82numz73852ed45cdxn4kcn72cr4338a".to_string(),
+                        receiver: String::from_utf8(recipient_ckb_address).unwrap(),
+                        udt_hash: self.config.axon_udt_hash.0.into(),
+                        direction: 1,
+                        amount: amount.to_string(),
+                        memo: [0;20].into(),
+                    };
+
+                    match self
+                        .client
+                        .build_cross_chain_transfer_transaction(payload)
+                        .await
+                    {
+                        Ok(respond) => {
+                            let tx = respond.sign(&self.pk);
+                            match self
+                                .client
+                                .send_transaction(&tx, Some(OutputsValidator::Passthrough))
+                                .await
+                            {
+                                Ok(tx_hash) => log::info!("set_evm_log send tx hash: {}", tx_hash),
+                                Err(e) => {
+                                    log::info!("set_evm_log send tx error: {}", e);
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            log::info!("build_cross_chain_transfer_transaction error: {}", e);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    async fn set_checkpoint(&self, ctx: Context, block: Block, proof: Proof) {
+        let number = block.header.number;
+        let mut proposal = Proposal::from(block).encode().unwrap().to_vec();
+        let mut proof = proof.encode().unwrap().to_vec();
+        proposal.append(&mut proof);
+
+        let payload = rpc_client::SubmitCheckpointPayload {
+            node_id:              rpc_client::Identity::new(0, self.config.node_address.0.to_vec()),
+            admin_id:             rpc_client::Identity::new(
+                0,
+                self.config.admin_address.0.to_vec(),
+            ),
+            period_number:        number,
+            checkpoint:           proposal.into(),
+            selection_lock_hash:  self.config.selection_lock_hash.0.into(),
+            checkpoint_type_hash: self.config.checkpoint_type_hash.0.into(),
+        };
+
+        match self
+            .client
+            .build_submit_checkpoint_transaction(payload)
+            .await
+        {
+            Ok(respond) => {
+                let tx = respond.sign(&self.pk);
+                match self
+                    .client
+                    .send_transaction(&tx, Some(OutputsValidator::Passthrough))
+                    .await
+                {
+                    Ok(tx_hash) => log::info!("set_checkpoint send tx hash: {}", tx_hash),
+                    Err(e) => {
+                        log::info!("set_checkpoint send tx error: {}", e);
+                    }
+                }
+            }
+            Err(e) => {
+                log::info!("build_submit_checkpoint_transaction error: {}", e);
+            }
+        }
     }
 }
 

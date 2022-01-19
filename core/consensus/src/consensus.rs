@@ -107,6 +107,7 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
         adapter: Arc<Adapter>,
         lock: Arc<AsyncMutex<()>>,
         consensus_wal: Arc<ConsensusWal>,
+        cross_period_interval: u64,
     ) -> Self {
         let engine = Arc::new(ConsensusEngine::new(
             status,
@@ -116,6 +117,7 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
             Arc::clone(&crypto),
             lock,
             consensus_wal,
+            cross_period_interval,
         ));
         let status = engine.status();
         let metadata = METADATA_CONTROLER.load().current();

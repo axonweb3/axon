@@ -25,3 +25,5 @@ log = "0.4"
 ethabi = "16.0"
 ethabi-contract = "16.0"
 ethabi-derive = "16.0"
+
+ckb-hash = "0.101"
