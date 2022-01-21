@@ -1,4 +1,3 @@
-use bytes::BytesMut;
 use std::time::{Duration, Instant};
 
 use log::debug;
@@ -10,7 +9,9 @@ use tentacle::{
     SessionId,
 };
 
-use super::{
+use protocol::types::BytesMut;
+
+use crate::protocols::discovery::{
     addr::AddrKnown,
     protocol::{DiscoveryMessage, Node},
     AddressManager, MAX_ADDR_TO_SEND,

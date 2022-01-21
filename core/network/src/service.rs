@@ -4,8 +4,6 @@ use std::os::unix::io::{FromRawFd, IntoRawFd};
 use std::os::windows::io::{FromRawSocket, IntoRawSocket};
 use std::{collections::HashSet, sync::Arc, time::Duration};
 
-use async_trait::async_trait;
-use bytes::Bytes;
 use rand::prelude::IteratorRandom;
 use tentacle::{
     builder::ServiceBuilder,
@@ -24,11 +22,12 @@ use tentacle::{
 
 use protocol::tokio::time::{Instant, MissedTickBehavior};
 use protocol::{
-    tokio,
+    async_trait, tokio,
     traits::{
         Context, Gossip, MessageCodec, MessageHandler, Network, PeerTag, PeerTrust, Priority, Rpc,
         TrustFeedback,
     },
+    types::Bytes,
     ProtocolResult,
 };
 

@@ -1,9 +1,9 @@
 use std::time::Duration;
+
 use tentacle::{bytes::Bytes, service::ServiceAsyncControl, SessionId};
 
-use async_trait::async_trait;
 use protocol::traits::{Context, MessageCodec, Priority, Rpc};
-use protocol::{tokio, ProtocolResult};
+use protocol::{async_trait, tokio, ProtocolResult};
 
 use crate::endpoint::Endpoint;
 use crate::error::{ErrorKind, NetworkError};

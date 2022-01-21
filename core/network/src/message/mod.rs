@@ -4,8 +4,9 @@
 use std::collections::HashMap;
 
 // use common_apm::muta_apm::rustracing_jaeger::span::TraceId;
-use bytes::Bytes;
 use prost::Message;
+
+use protocol::types::Bytes;
 
 use crate::endpoint::Endpoint;
 use crate::error::{ErrorKind, NetworkError};

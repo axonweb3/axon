@@ -1,7 +1,6 @@
-use bytes::BufMut;
 use serde::{Deserialize, Serialize};
 
-use protocol::types::{Bytes, BytesMut};
+use protocol::types::{BufMut, Bytes, BytesMut};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub enum RpcResponse {

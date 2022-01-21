@@ -1,10 +1,10 @@
-use async_trait::async_trait;
-use bytes::Bytes;
-use protocol::traits::{Context, Gossip, MessageCodec, Priority};
-use protocol::{tokio, ProtocolResult};
 use std::sync::Arc;
+
 use tentacle::secio::PeerId;
 use tentacle::service::{ServiceAsyncControl, TargetProtocol, TargetSession};
+
+use protocol::traits::{Context, Gossip, MessageCodec, Priority};
+use protocol::{async_trait, tokio, types::Bytes, ProtocolResult};
 
 use crate::endpoint::Endpoint;
 use crate::error::NetworkError;
