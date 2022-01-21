@@ -488,10 +488,9 @@ fn move_file<P: AsRef<Path>>(src: P, dst: P) -> Result<(), io::Error> {
 fn load_current_number<P: AsRef<Path>>(path: P) -> BlockNumber {
     fs::File::open(path.as_ref().join("current_number.txt"))
         .ok()
-        .map(|mut f| {
+        .and_then(|mut f| {
             let mut buf = [0; 8];
             f.read_exact(&mut buf).map(|_| u64::from_le_bytes(buf)).ok()
         })
-        .flatten()
         .unwrap_or_default()
 }

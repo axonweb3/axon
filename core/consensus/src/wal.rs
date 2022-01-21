@@ -388,7 +388,7 @@ mod tests {
     fn test_txs_wal() {
         fs::remove_dir_all(PathBuf::from_str(FULL_TXS_PATH).unwrap()).unwrap();
 
-        let wal = SignedTxsWAL::new(FULL_TXS_PATH.to_string());
+        let wal = SignedTxsWAL::new(FULL_TXS_PATH);
         let txs_01 = mock_wal_txs(100);
         let hash_01 = Hasher::digest(rlp::encode_list(&txs_01));
         wal.save(1u64, hash_01, txs_01.clone()).unwrap();
@@ -421,7 +421,7 @@ mod tests {
     #[test]
     fn test_consensus_wal() {
         // write one, read one
-        let wal = ConsensusWal::new(FULL_CONSENSUS_PATH.to_string());
+        let wal = ConsensusWal::new(FULL_CONSENSUS_PATH);
         let info = get_random_bytes(1000);
         wal.update_overlord_wal(Context::new(),info.clone()).unwrap();
 
@@ -500,7 +500,7 @@ mod tests {
 
     #[bench]
     fn bench_save_wal_1000_txs(b: &mut Bencher) {
-        let wal = SignedTxsWAL::new(FULL_TXS_PATH.to_string());
+        let wal = SignedTxsWAL::new(FULL_TXS_PATH);
         let txs = mock_wal_txs(1000);
         let txs_hash = Hasher::digest(Bytes::from(rlp::encode_list(&txs)));
 
@@ -511,7 +511,7 @@ mod tests {
 
     #[bench]
     fn bench_save_wal_2000_txs(b: &mut Bencher) {
-        let wal = SignedTxsWAL::new(FULL_TXS_PATH.to_string());
+        let wal = SignedTxsWAL::new(FULL_TXS_PATH);
         let txs = mock_wal_txs(2000);
         let txs_hash = Hasher::digest(Bytes::from(rlp::encode_list(&txs)));
 
@@ -522,7 +522,7 @@ mod tests {
 
     #[bench]
     fn bench_save_wal_4000_txs(b: &mut Bencher) {
-        let wal = SignedTxsWAL::new(FULL_TXS_PATH.to_string());
+        let wal = SignedTxsWAL::new(FULL_TXS_PATH);
         let txs = mock_wal_txs(4000);
         let txs_hash = Hasher::digest(Bytes::from(rlp::encode_list(&txs)));
 
@@ -533,7 +533,7 @@ mod tests {
 
     #[bench]
     fn bench_save_wal_8000_txs(b: &mut Bencher) {
-        let wal = SignedTxsWAL::new(FULL_TXS_PATH.to_string());
+        let wal = SignedTxsWAL::new(FULL_TXS_PATH);
         let txs = mock_wal_txs(8000);
         let txs_hash = Hasher::digest(Bytes::from(rlp::encode_list(&txs)));
 
@@ -544,7 +544,7 @@ mod tests {
 
     #[bench]
     fn bench_save_wal_16000_txs(b: &mut Bencher) {
-        let wal = SignedTxsWAL::new(FULL_TXS_PATH.to_string());
+        let wal = SignedTxsWAL::new(FULL_TXS_PATH);
         let txs = mock_wal_txs(16000);
         let txs_hash = Hasher::digest(Bytes::from(rlp::encode_list(&txs)));
 

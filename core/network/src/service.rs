@@ -487,6 +487,7 @@ impl NetworkService {
         }
     }
 
+    #[allow(clippy::unnecessary_to_owned)]
     pub async fn run(mut self) {
         if let Some(mut net) = self.net.take() {
             net.listen(self.config.default_listen.clone())
