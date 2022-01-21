@@ -1,6 +1,6 @@
-use async_trait::async_trait;
 use core_network::{NetworkConfig, NetworkService, NetworkServiceHandle};
 use protocol::{
+    async_trait,
     codec::hex_encode,
     tokio,
     traits::{Context, Gossip, MessageHandler, Priority, Rpc, TrustFeedback},

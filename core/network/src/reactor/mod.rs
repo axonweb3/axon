@@ -4,10 +4,8 @@ mod rpc_map;
 use std::convert::TryFrom;
 use std::marker::PhantomData;
 
-use async_trait::async_trait;
-use bytes::Bytes;
 use protocol::traits::{Context, MessageCodec, MessageHandler, TrustFeedback};
-use protocol::ProtocolResult;
+use protocol::{async_trait, types::Bytes, ProtocolResult};
 
 use crate::endpoint::{Endpoint, EndpointScheme, RpcEndpoint};
 use crate::message::NetworkMessage;

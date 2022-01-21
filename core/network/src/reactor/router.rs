@@ -1,4 +1,3 @@
-use bytes::Bytes;
 use std::collections::HashMap;
 use std::future::Future;
 use std::sync::Arc;
@@ -6,7 +5,7 @@ use std::sync::Arc;
 use derive_more::Display;
 use parking_lot::RwLock;
 use protocol::traits::{MessageCodec, MessageHandler};
-use protocol::ProtocolResult;
+use protocol::{types::Bytes, ProtocolResult};
 use tentacle::context::ProtocolContextMutRef;
 use tentacle::secio::PeerId;
 use tentacle::SessionId;

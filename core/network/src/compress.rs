@@ -1,7 +1,9 @@
-use bytes::{BufMut, Bytes, BytesMut};
+use std::io;
+
+use protocol::types::{BufMut, Bytes, BytesMut};
+
 use log::debug;
 use snap::raw::{decompress_len, Decoder as SnapDecoder, Encoder as SnapEncoder};
-use std::io;
 
 pub(crate) const COMPRESSION_SIZE_THRESHOLD: usize = 1024;
 const UNCOMPRESS_FLAG: u8 = 0b0000_0000;

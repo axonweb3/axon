@@ -39,7 +39,7 @@ impl PirorityPool {
         tokio::spawn(async move {
             loop {
                 if !co_queue.is_empty() {
-                    let _ = flush_lock.lock();
+                    let _writing = flush_lock.lock();
                     let txs = pop_all_item(Arc::clone(&co_queue));
                     let mut q = real_queue.lock();
                     txs.into_iter().for_each(|p_tx| q.push(p_tx));
@@ -96,7 +96,7 @@ impl PirorityPool {
     }
 
     pub fn flush(&self, hashes: &[Hash]) -> ProtocolResult<()> {
-        let _ = self.flush_lock.lock();
+        let _flushing = self.flush_lock.lock();
 
         self.topple_queue();
         let residual = self.get_residual(hashes);
