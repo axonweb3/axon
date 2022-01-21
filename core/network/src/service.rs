@@ -1,33 +1,12 @@
-use crate::{
-    config::NetworkConfig,
-    endpoint::{Endpoint, EndpointScheme},
-    error::NetworkError,
-    outbound::{NetworkGossip, NetworkRpc},
-    peer_manager::{AddrInfo, PeerInfo, PeerManager, PeerStore},
-    protocols::{
-        DiscoveryAddressManager, DiscoveryProtocol, Feeler, IdentifyProtocol, PingHandler,
-        SupportProtocols, TransmitterProtocol,
-    },
-    reactor::MessageRouter,
-};
-
-use async_trait::async_trait;
-use bytes::Bytes;
-use protocol::tokio::time::{Instant, MissedTickBehavior};
-use protocol::{
-    tokio,
-    traits::{
-        Context, Gossip, MessageCodec, MessageHandler, Network, PeerTag, PeerTrust, Priority, Rpc,
-        TrustFeedback,
-    },
-    ProtocolResult,
-};
-use rand::prelude::IteratorRandom;
 #[cfg(unix)]
 use std::os::unix::io::{FromRawFd, IntoRawFd};
 #[cfg(windows)]
 use std::os::windows::io::{FromRawSocket, IntoRawSocket};
 use std::{collections::HashSet, sync::Arc, time::Duration};
+
+use async_trait::async_trait;
+use bytes::Bytes;
+use rand::prelude::IteratorRandom;
 use tentacle::{
     builder::ServiceBuilder,
     context::ServiceContext,
@@ -41,6 +20,29 @@ use tentacle::{
     traits::ServiceHandle,
     utils::{extract_peer_id, is_reachable, multiaddr_to_socketaddr},
     yamux::Config as YamuxConfig,
+};
+
+use protocol::tokio::time::{Instant, MissedTickBehavior};
+use protocol::{
+    tokio,
+    traits::{
+        Context, Gossip, MessageCodec, MessageHandler, Network, PeerTag, PeerTrust, Priority, Rpc,
+        TrustFeedback,
+    },
+    ProtocolResult,
+};
+
+use crate::{
+    config::NetworkConfig,
+    endpoint::{Endpoint, EndpointScheme},
+    error::NetworkError,
+    outbound::{NetworkGossip, NetworkRpc},
+    peer_manager::{AddrInfo, PeerInfo, PeerManager, PeerStore},
+    protocols::{
+        DiscoveryAddressManager, DiscoveryProtocol, Feeler, IdentifyProtocol, PingHandler,
+        SupportProtocols, TransmitterProtocol,
+    },
+    reactor::MessageRouter,
 };
 
 #[derive(Clone)]
