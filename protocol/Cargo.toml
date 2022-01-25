@@ -28,7 +28,7 @@ tokio = { version = "1.14", features = ["full"] }
 common-crypto = { path = "../common/crypto" }
 
 [dev-dependencies]
-fastrand = "1.6"
+getrandom = "0.2"
 hex = "0.4"
 rand = "0.7"
 serde_json = "1.0"

@@ -22,7 +22,7 @@ impl<T: Encodable + Decodable + Send> ProtocolCodec for T {
     }
 
     fn decode<B: AsRef<[u8]>>(bytes: B) -> ProtocolResult<Self> {
-        Self::decode(&rlp::Rlp::new(bytes.as_ref()))
+        Self::decode(&Rlp::new(bytes.as_ref()))
             .map_err(|e| error::CodecError::Rlp(e.to_string()).into())
     }
 }
@@ -64,11 +64,12 @@ pub fn hex_decode(src: &str) -> ProtocolResult<Vec<u8>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use getrandom::getrandom;
 
     #[test]
     fn test_hex_codec() {
         let mut data = [0u8; 128];
-        fastrand::shuffle(&mut data);
+        getrandom(&mut data).unwrap();
         let data = data.to_vec();
 
         assert_eq!(hex_encode(&data), hex::encode(data.clone()));
