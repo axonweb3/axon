@@ -1,4 +1,4 @@
-name: conventional-pr
+name: Conventional PR
 on:
   pull_request:
     branches:
