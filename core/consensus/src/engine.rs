@@ -229,11 +229,6 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         };
         common_apm::metrics::consensus::ENGINE_ROUND_GAUGE.set(commit.proof.round as i64);
 
-        log::error!(
-            "save proof number {}, block_number {}",
-            proof.number,
-            current_number
-        );
         self.adapter.save_proof(ctx.clone(), proof.clone()).await?;
 
         // Get full transactions from mempool. If is error, try get from wal.
@@ -618,10 +613,6 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
 
         self.adapter
             .save_receipts(ctx.clone(), block_number, receipts)
-            .await?;
-
-        self.adapter
-            .save_proof(ctx.clone(), block.header.proof.clone())
             .await?;
 
         let metadata = METADATA_CONTROLER.load().current();
