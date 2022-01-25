@@ -97,10 +97,11 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         };
 
         if proposal.number != proposal.proof.number + 1 {
-            error!(
-                "[consensus] get_block for {}, proof error, proof number {} mismatch",
-                proposal.number, proposal.proof.number,
-            );
+            return Err(ProtocolError::from(ConsensusError::InvalidProof {
+                expect: proposal.number - 1,
+                actual: proposal.proof.number,
+            })
+            .into());
         }
 
         let hash = Hasher::digest(proposal.encode()?);
@@ -126,7 +127,11 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         let time = Instant::now();
 
         if proposal.number != proposal.proof.number + 1 {
-            error!("[consensus-engine]: check_block for overlord receives a proposal, error, block number {}, proposal {:?}", proposal.number, proposal);
+            return Err(ProtocolError::from(ConsensusError::InvalidProof {
+                expect: proposal.number - 1,
+                actual: proposal.proof.number,
+            })
+            .into());
         }
 
         let tx_hashes = proposal.tx_hashes.clone();
@@ -224,6 +229,11 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         };
         common_apm::metrics::consensus::ENGINE_ROUND_GAUGE.set(commit.proof.round as i64);
 
+        log::error!(
+            "save proof number {}, block_number {}",
+            proof.number,
+            current_number
+        );
         self.adapter.save_proof(ctx.clone(), proof.clone()).await?;
 
         // Get full transactions from mempool. If is error, try get from wal.

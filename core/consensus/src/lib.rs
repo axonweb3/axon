@@ -111,8 +111,12 @@ pub enum ConsensusError {
     OverlordErr(Box<dyn Error + Send>),
 
     /// Consensus missed last block proof.
-    #[display(fmt = "Consensus missed proof of {} block", _0)]
-    MissingProof(u64),
+    #[display(
+        fmt = "Invalid proof block number, expect {}, actual {}",
+        expect,
+        actual
+    )]
+    InvalidProof { expect: u64, actual: u64 },
 
     /// Consensus missed the pill.
     #[display(fmt = "Consensus missed pill cooresponding {:?}", _0)]

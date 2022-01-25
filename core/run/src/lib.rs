@@ -357,7 +357,7 @@ impl Axon {
                 last_state_root:  current_header.state_root,
                 gas_limit:        metadata.gas_limit.into(),
                 base_fee_per_gas: current_header.base_fee_per_gas,
-                proof:            current_header.proof.clone(),
+                proof:            storage.get_latest_proof(Context::new()).await?,
             }
         };
 
