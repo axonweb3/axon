@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-async-graphql = { version = "3.0", features = ["tracing"] }
+# async-graphql = { version = "3.0", features = ["tracing"] }
 cita_trie = "3.0"
 jsonrpsee = { version = "0.8", features = ["http-server", "macros", "ws-server"] }
 parking_lot = "0.11"
