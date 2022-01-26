@@ -709,7 +709,7 @@ fn validate_timestamp(
     proposal_timestamp: u64,
     previous_timestamp: u64,
 ) -> bool {
-    if proposal_timestamp <= previous_timestamp {
+    if proposal_timestamp < previous_timestamp {
         log::error!(
             "[consensus] invalid timestamp previous {:?}, proposal {:?}",
             previous_timestamp,
@@ -718,7 +718,7 @@ fn validate_timestamp(
         return false;
     }
 
-    if proposal_timestamp >= current_timestamp {
+    if proposal_timestamp > current_timestamp {
         log::error!(
             "[consensus] invalid timestamp proposal {:?}, current {:?}",
             proposal_timestamp,
