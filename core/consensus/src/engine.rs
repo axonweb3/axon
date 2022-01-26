@@ -97,10 +97,11 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         };
 
         if proposal.number != proposal.proof.number + 1 {
-            error!(
-                "[consensus] get_block for {}, proof error, proof number {} mismatch",
-                proposal.number, proposal.proof.number,
-            );
+            return Err(ProtocolError::from(ConsensusError::InvalidProof {
+                expect: proposal.number - 1,
+                actual: proposal.proof.number,
+            })
+            .into());
         }
 
         let hash = Hasher::digest(proposal.encode()?);
@@ -126,7 +127,11 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         let time = Instant::now();
 
         if proposal.number != proposal.proof.number + 1 {
-            error!("[consensus-engine]: check_block for overlord receives a proposal, error, block number {}, proposal {:?}", proposal.number, proposal);
+            return Err(ProtocolError::from(ConsensusError::InvalidProof {
+                expect: proposal.number - 1,
+                actual: proposal.proof.number,
+            })
+            .into());
         }
 
         let tx_hashes = proposal.tx_hashes.clone();
@@ -608,10 +613,6 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
 
         self.adapter
             .save_receipts(ctx.clone(), block_number, receipts)
-            .await?;
-
-        self.adapter
-            .save_proof(ctx.clone(), block.header.proof.clone())
             .await?;
 
         let metadata = METADATA_CONTROLER.load().current();
