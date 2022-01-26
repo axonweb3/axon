@@ -69,7 +69,12 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         let status = self.status.inner();
         let txs = self
             .adapter
-            .get_txs_from_mempool(ctx.clone(), next_number, status.gas_limit, 10000)
+            .get_txs_from_mempool(
+                ctx.clone(),
+                next_number,
+                status.gas_limit,
+                METADATA_CONTROLER.load().current().tx_num_limit,
+            )
             .await?;
         let signed_txs = self.adapter.get_full_txs(ctx.clone(), &txs).await?;
         let order_root = Merkle::from_hashes(txs.clone())
@@ -608,12 +613,13 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             .save_signed_txs(ctx.clone(), block_number, txs)
             .await?;
 
-        // Save the block.
-        self.adapter.save_block(ctx.clone(), block.clone()).await?;
-
+        // Save transaction receipts
         self.adapter
             .save_receipts(ctx.clone(), block_number, receipts)
             .await?;
+
+        // Save the block
+        self.adapter.save_block(ctx.clone(), block.clone()).await?;
 
         let metadata = METADATA_CONTROLER.load().current();
         let new_status = CurrentStatus {
@@ -703,7 +709,7 @@ fn validate_timestamp(
     proposal_timestamp: u64,
     previous_timestamp: u64,
 ) -> bool {
-    if proposal_timestamp <= previous_timestamp {
+    if proposal_timestamp < previous_timestamp {
         log::error!(
             "[consensus] invalid timestamp previous {:?}, proposal {:?}",
             previous_timestamp,
@@ -712,7 +718,7 @@ fn validate_timestamp(
         return false;
     }
 
-    if proposal_timestamp >= current_timestamp {
+    if proposal_timestamp > current_timestamp {
         log::error!(
             "[consensus] invalid timestamp proposal {:?}, current {:?}",
             proposal_timestamp,
