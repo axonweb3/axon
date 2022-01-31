@@ -160,7 +160,7 @@ dependencies = [
  "bincode",
  "bytes",
  "common-crypto",
- "creep",
+ "creep 0.3.0",
  "derive_more",
  "ethereum",
  "ethereum-types",
@@ -741,7 +741,7 @@ version = "0.2.1"
 dependencies = [
  "anyhow",
  "chrono",
- "creep",
+ "creep 0.3.0",
  "env_logger",
  "json",
  "log",
@@ -823,7 +823,7 @@ dependencies = [
  "core-mempool",
  "core-network",
  "core-storage",
- "creep",
+ "creep 0.3.0",
  "futures",
  "json",
  "lazy_static",
@@ -1011,6 +1011,15 @@ name = "creep"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "44b3989c311486a207116b17712102cf6f18a6af80308ed13ac6350b9d85e75c"
+dependencies = [
+ "dyn-clone",
+]
+
+[[package]]
+name = "creep"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bd4e19cc6f4898f5b42c275f005c15dbc6e825f5948cc4513cdd81470f1dc326"
 dependencies = [
  "dyn-clone",
 ]
@@ -2305,7 +2314,7 @@ version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23c741a1e603e0526071c4814b643d99598d9bd620a01531b2a26d72148d5094"
 dependencies = [
- "creep",
+ "creep 0.2.2",
  "crossbeam-channel",
  "lazy_static",
  "log",
@@ -2594,7 +2603,7 @@ dependencies = [
  "async-trait",
  "bit-vec 0.6.3",
  "bytes",
- "creep",
+ "creep 0.2.2",
  "derive_more",
  "futures",
  "hex",

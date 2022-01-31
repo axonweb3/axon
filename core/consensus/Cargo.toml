@@ -9,7 +9,7 @@ edition = "2021"
 arc-swap = "1.5"
 cita_trie = "3.0"
 json = "0.12"
-creep = "0.2"
+creep = "0.3"
 futures = { version = "0.3", features = ["async-await"] }
 log = "0.4"
 overlord = "0.3"

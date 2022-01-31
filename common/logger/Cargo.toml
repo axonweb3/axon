@@ -14,7 +14,7 @@ log = "0.4"
 # log4rs document.
 log4rs = { version = "1.0", features = ["all_components", "file_appender", "yaml_format"] }
 json = "0.12"
-creep = "0.2"
+creep = "0.3"
 rustracing_jaeger = "0.7"
 serde = "1.0"
 serde_derive = "1.0"
