@@ -8,6 +8,11 @@ updates:
   - package-ecosystem: cargo 
     directory: "/" 
     schedule:
-      interval: "daily"
+      interval: daily
       time: "03:00"
       timezone: Asia/Shanghai
+    versioning-strategy: lockfile-only
+    ignore:
+    - dependency-name: creep
+      versions:
+      - 0.2.2
