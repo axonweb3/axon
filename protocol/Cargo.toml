@@ -23,7 +23,7 @@ ophelia-secp256k1 = "0.3"
 ophelia = "0.3"
 overlord = "0.3"
 serde = { version = "1.0", features = ["derive"] }
-tokio = { version = "1.14", features = ["full"] }
+tokio = { version = "1.16", features = ["full"] }
 
 common-crypto = { path = "../common/crypto" }
 

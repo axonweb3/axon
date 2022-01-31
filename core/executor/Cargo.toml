@@ -17,7 +17,7 @@ log = "0.4"
 rand = { version = "0.8", features = ["small_rng"] }
 rlp = "0.5"
 rocksdb = "0.17"
-parking_lot = "0.11"
+parking_lot = "0.12"
 
 protocol = { path = "../../protocol", package = "axon-protocol"}
 common-apm = { path = "../../common/apm" }

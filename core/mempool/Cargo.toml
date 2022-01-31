@@ -15,7 +15,7 @@ log = "0.4"
 rayon = "1.5"
 rlp = "0.5"
 rlp-derive = "0.1"
-parking_lot = "0.11"
+parking_lot = "0.12"
 
 protocol = { path = "../../protocol", package = "axon-protocol"}
 common-apm = { path = "../../common/apm" }
@@ -24,5 +24,5 @@ core-executor = { path = "../../core/executor" }
 
 [dev-dependencies]
 criterion = { version = "0.3", features = ["async_tokio"] }
-parking_lot = "0.11"
+parking_lot = "0.12"
 rand = "0.7"
