@@ -145,7 +145,7 @@ dependencies = [
  "clap 2.34.0",
  "ophelia",
  "ophelia-blst",
- "rand 0.7.3",
+ "rand 0.8.4",
  "serde",
  "serde_json",
  "tentacle-secio",
@@ -173,7 +173,7 @@ dependencies = [
  "ophelia",
  "ophelia-secp256k1",
  "overlord",
- "rand 0.7.3",
+ "rand 0.8.4",
  "rlp",
  "serde",
  "serde_json",
@@ -731,7 +731,7 @@ dependencies = [
  "ophelia-blst",
  "ophelia-secp256k1",
  "overlord",
- "rand 0.7.3",
+ "rand 0.8.4",
  "rlp",
 ]
 
@@ -756,7 +756,7 @@ name = "common-merkle"
 version = "0.2.1"
 dependencies = [
  "axon-protocol",
- "rand 0.7.3",
+ "rand 0.8.4",
  "rayon",
  "static_merkle_tree",
 ]
@@ -831,7 +831,7 @@ dependencies = [
  "num-traits",
  "overlord",
  "parking_lot 0.12.0",
- "rand 0.7.3",
+ "rand 0.8.4",
  "rlp",
  "rlp-derive",
  "serde",
@@ -922,7 +922,7 @@ dependencies = [
  "indexmap",
  "log",
  "parking_lot 0.12.0",
- "rand 0.7.3",
+ "rand 0.8.4",
  "rayon",
  "rlp",
  "rlp-derive",
@@ -942,7 +942,7 @@ dependencies = [
  "log",
  "parking_lot 0.12.0",
  "prost",
- "rand 0.7.3",
+ "rand 0.8.4",
  "rlp",
  "serde",
  "serde_json",
@@ -993,7 +993,7 @@ dependencies = [
  "log",
  "num-traits",
  "parking_lot 0.12.0",
- "rand 0.7.3",
+ "rand 0.8.4",
  "rocksdb",
 ]
 
