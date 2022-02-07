@@ -304,6 +304,7 @@ fn bench_get_20000_full_txs(b: &mut Bencher) {
 }
 
 #[bench]
+#[ignore]
 fn bench_get_40000_full_txs(b: &mut Bencher) {
     let runtime = tokio::runtime::Runtime::new().unwrap();
 
@@ -317,6 +318,7 @@ fn bench_get_40000_full_txs(b: &mut Bencher) {
 }
 
 #[bench]
+#[ignore]
 fn bench_get_80000_full_txs(b: &mut Bencher) {
     let runtime = tokio::runtime::Runtime::new().unwrap();
 

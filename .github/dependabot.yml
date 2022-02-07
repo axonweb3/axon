@@ -8,14 +8,13 @@ updates:
   - package-ecosystem: cargo 
     directory: "/" 
     schedule:
-      interval: weekly
-      day: wednesday
+      interval: daily
       time: "03:00"
       timezone: Asia/Shanghai
     ignore:
     - dependency-name: creep
       versions:
-      - 0.2.2
+      - 0.3.x
     - dependency-name: rand
       versions:
-      - 0.7.3
+      - 0.8.x
