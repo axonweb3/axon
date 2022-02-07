@@ -1,8 +1,6 @@
 name: Conventional PR
 on:
   pull_request:
-    branches:
-      - main
 
 jobs:
   Lint:
