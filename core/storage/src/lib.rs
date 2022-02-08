@@ -39,41 +39,6 @@ lazy_static::lazy_static! {
     pub static ref OVERLORD_WAL_KEY: Hash = Hasher::digest(Bytes::from("overlord_wal"));
 }
 
-// // FIXME: https://github.com/facebook/rocksdb/wiki/Transactions
-// macro_rules! batch_insert {
-//     ($self_: ident, $block_height:expr, $vec: expr, $hash_path: item,
-// $schema: ident) => {         let (hashes, heights) = $vec
-//             .iter()
-//             .map(|item| {
-//                 (
-//                     item.$hash_path.clone(),
-//                     StorageBatchModify::Insert($block_height),
-//                 )
-//             })
-//             .unzip();
-
-//         let (keys, batch_stxs): (Vec<_>, Vec<_>) = $vec
-//             .into_iter()
-//             .map(|item| {
-//                 (
-//                     CommonHashKey::new($block_height,
-// item.$hash_path.clone()),
-// StorageBatchModify::Insert(item),                 )
-//             })
-//             .unzip();
-
-//         $self_
-//             .adapter
-//             .batch_modify::<$schema>(keys, batch_stxs)
-//             .await?;
-
-//         $self_
-//             .adapter
-//             .batch_modify::<HashHeightSchema>(hashes, heights)
-//             .await?;
-//     };
-// }
-
 macro_rules! get {
     ($self_: ident, $key: expr, $schema: ident) => {{
         $self_.adapter.get::<$schema>($key).await
@@ -146,7 +111,7 @@ impl<Adapter: StorageAdapter> ImplStorage<Adapter> {
             .await?;
 
         self.adapter
-            .batch_modify::<HashHeightSchema>(hashes, heights)
+            .batch_modify::<TxHashNumberSchema>(hashes, heights)
             .await?;
 
         Ok(())
@@ -177,7 +142,7 @@ impl<Adapter: StorageAdapter> ImplStorage<Adapter> {
             .await?;
 
         self.adapter
-            .batch_modify::<HashHeightSchema>(hashes, heights)
+            .batch_modify::<TxHashNumberSchema>(hashes, heights)
             .await?;
 
         Ok(())
@@ -322,9 +287,10 @@ impl_storage_schema_for!(
 );
 impl_storage_schema_for!(BlockSchema, BlockKey, Block, Block);
 impl_storage_schema_for!(BlockHeaderSchema, BlockKey, Header, BlockHeader);
+impl_storage_schema_for!(BlockHashNumberSchema, Hash, u64, HashHeight);
 impl_storage_schema_for!(ReceiptSchema, CommonHashKey, Receipt, Receipt);
 impl_storage_schema_for!(ReceiptBytesSchema, CommonHashKey, DBBytes, Receipt);
-impl_storage_schema_for!(HashHeightSchema, Hash, u64, HashHeight);
+impl_storage_schema_for!(TxHashNumberSchema, Hash, u64, HashHeight);
 impl_storage_schema_for!(LatestBlockSchema, Hash, Block, Block);
 impl_storage_schema_for!(LatestProofSchema, Hash, Proof, Block);
 impl_storage_schema_for!(OverlordWalSchema, Hash, Bytes, Wal);
@@ -364,6 +330,9 @@ impl<Adapter: StorageAdapter> CommonStorage for ImplStorage<Adapter> {
             .await?;
         self.adapter
             .insert::<BlockHeaderSchema>(BlockKey::new(block.header.number), block.header.clone())
+            .await?;
+        self.adapter
+            .insert::<BlockHashNumberSchema>(block.hash(), block.header.number)
             .await?;
         Ok(())
     }
@@ -421,6 +390,23 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         self.batch_insert_stxs(signed_txs, block_height).await?;
 
         Ok(())
+    }
+
+    async fn get_block_by_hash(
+        &self,
+        ctx: Context,
+        block_hash: &Hash,
+    ) -> ProtocolResult<Option<Block>> {
+        let block_number = self
+            .adapter
+            .get::<BlockHashNumberSchema>(*block_hash)
+            .await?;
+
+        if let Some(num) = block_number {
+            return self.get_block(ctx, num).await;
+        }
+
+        Ok(None)
     }
 
     // #[muta_apm::derive::tracing_span(kind = "storage")]
@@ -542,7 +528,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         _ctx: Context,
         hash: &Hash,
     ) -> ProtocolResult<Option<SignedTransaction>> {
-        if let Some(block_height) = get!(self, *hash, HashHeightSchema)? {
+        if let Some(block_height) = get!(self, *hash, TxHashNumberSchema)? {
             get!(
                 self,
                 CommonHashKey::new(block_height, *hash),
@@ -570,7 +556,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         _ctx: Context,
         hash: Hash,
     ) -> ProtocolResult<Option<Receipt>> {
-        if let Some(block_height) = get!(self, hash, HashHeightSchema)? {
+        if let Some(block_height) = get!(self, hash, TxHashNumberSchema)? {
             get!(self, CommonHashKey::new(block_height, hash), ReceiptSchema)
         } else {
             Ok(None)

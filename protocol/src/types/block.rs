@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
 
+use crate::codec::ProtocolCodec;
 use crate::types::{
-    Bloom, BloomInput, Bytes, ExecResp, Hash, MerkleRoot, SignedTransaction, H160, H64, U256,
+    Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, MerkleRoot, SignedTransaction, H160, H64,
+    U256,
 };
 
 pub type BlockNumber = u64;
@@ -107,6 +109,10 @@ impl Block {
             header,
             tx_hashes: proposal.tx_hashes,
         }
+    }
+
+    pub fn hash(&self) -> Hash {
+        Hasher::digest(self.encode().unwrap())
     }
 }
 

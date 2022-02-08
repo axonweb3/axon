@@ -60,6 +60,12 @@ pub trait Storage: CommonStorage {
         signed_txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<()>;
 
+    async fn get_block_by_hash(
+        &self,
+        ctx: Context,
+        block_hash: &Hash,
+    ) -> ProtocolResult<Option<Block>>;
+
     async fn get_transactions(
         &self,
         ctx: Context,
