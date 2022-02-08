@@ -16,7 +16,7 @@ lazy_static = "1.4"
 log = "0.4"
 rand = { version = "0.8", features = ["small_rng"] }
 rlp = "0.5"
-rocksdb = "0.17"
+rocksdb = "0.18"
 parking_lot = "0.12"
 
 protocol = { path = "../../protocol", package = "axon-protocol"}
