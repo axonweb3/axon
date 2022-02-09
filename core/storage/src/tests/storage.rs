@@ -17,6 +17,7 @@ fn test_storage_block_insert() {
 
     let height = 100;
     let block = mock_block(height, Hasher::digest(get_random_bytes(10)));
+    let block_hash = block.hash();
 
     exec!(storage.insert_block(Context::new(), block));
 
@@ -25,6 +26,9 @@ fn test_storage_block_insert() {
 
     let block = exec!(storage.get_block(Context::new(), height));
     assert_eq!(Some(height), block.map(|b| b.header.number));
+
+    let block = exec!(storage.get_block_by_hash(Context::new(), &block_hash));
+    assert_eq!(height, block.unwrap().header.number);
 }
 
 #[test]
@@ -107,16 +111,6 @@ fn test_storage_evm_code_insert() {
     let code_3 = exec!(storage.get_code_by_address(Context::new(), &address));
     assert_eq!(code, code_3.unwrap());
 }
-
-// #[test]
-// fn test_storage_wal_insert() {
-//     let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()));
-//
-//     let info = get_random_bytes(64);
-//     exec!(storage.update_overlord_wal(Context::new(), info.clone()));
-//     let info_2 = exec!(storage.load_overlord_wal(Context::new(),));
-//     assert_eq!(info, info_2);
-// }
 
 #[rustfmt::skip]
 /// Bench in Intel(R) Core(TM) i7-4770HQ CPU @ 2.20GHz (8 x 2200)
