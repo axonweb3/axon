@@ -251,6 +251,7 @@ impl NetworkService {
             .max_connection_number(config.max_connections)
             .set_send_buffer_size(config.send_buffer_size)
             .set_recv_buffer_size(config.recv_buffer_size)
+            .set_channel_size(1024)
             .timeout(Duration::from_secs(5));
         #[cfg(target_os = "linux")]
         let service_builder = {
