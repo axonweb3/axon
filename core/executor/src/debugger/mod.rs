@@ -2,9 +2,10 @@
 
 mod uniswap2;
 
-use std::iter::repeat_with;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
+
+use getrandom::getrandom;
 
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::codec::ProtocolCodec;
@@ -107,8 +108,8 @@ pub fn clear_data(db_path: &str) {
 }
 
 fn rand_hash() -> Hash {
-    let mut data: Vec<u8> = repeat_with(|| fastrand::u8(..)).take(64).collect();
-    fastrand::shuffle(&mut data);
+    let mut data = [0u8; 128];
+    getrandom(&mut data).unwrap();
     Hasher::digest(&data)
 }
 

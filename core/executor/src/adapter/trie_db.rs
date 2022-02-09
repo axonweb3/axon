@@ -62,6 +62,16 @@ impl RocksTrieDB {
 
         Ok(Some(res.unwrap().clone()))
     }
+
+    #[cfg(test)]
+    fn cache_get(&self, key: &[u8]) -> Option<Vec<u8>> {
+        self.cache.get(key).map(|v| v.value().to_vec())
+    }
+
+    #[cfg(test)]
+    fn cache_len(&self) -> usize {
+        self.cache.len()
+    }
 }
 
 impl cita_trie::DB for RocksTrieDB {
@@ -203,18 +213,16 @@ fn to_store_err(e: rocksdb::Error) -> RocksTrieDBError {
 #[cfg(test)]
 mod tests {
     extern crate test;
+    use getrandom::getrandom;
+    use cita_trie::DB;
     use test::Bencher;
 
     use super::*;
 
-    #[bench]
-    fn bench_rand(b: &mut Bencher) {
-        b.iter(|| {
-            let mut rng = SmallRng::seed_from_u64(RAND_SEED);
-            for _ in 0..10000 {
-                rng.gen_range(10..1000000);
-            }
-        })
+    fn rand_bytes(len: usize) -> Vec<u8> {
+        let mut ret = (0..len).map(|_| 0u8).collect::<Vec<_>>();
+        getrandom(&mut ret).unwrap();
+        ret
     }
 
     #[test]
@@ -226,5 +234,75 @@ mod tests {
             let res = rand_remove_list(keys.clone(), num);
             assert_eq!(res.len(), num);
         }
+    }
+
+    #[test]
+    fn test_trie_insert() {
+        let key_1 = rand_bytes(32);
+        let val_1 = rand_bytes(128);
+        let key_2 = rand_bytes(32);
+        let val_2 = rand_bytes(256);
+
+        let dir = tempfile::tempdir().unwrap();
+        let trie = RocksTrieDB::new(dir.path(), 1024, 100).unwrap();
+
+        trie.insert(key_1.clone(), val_1.clone()).unwrap();
+        trie.insert(key_2.clone(), val_2.clone()).unwrap();
+
+        let get_1 = trie.get(&key_1).unwrap();
+        assert_eq!(val_1, get_1.unwrap());
+
+        let get_2 = trie.get(&key_2).unwrap();
+        assert_eq!(val_2, get_2.unwrap());
+
+        let val_3 = rand_bytes(256);
+        trie.insert(key_1.clone(), val_3.clone()).unwrap();
+        let get_3 = trie.get(&key_1).unwrap();
+        assert_eq!(val_3, get_3.unwrap());
+
+        dir.close().unwrap();
+    }
+
+    #[test]
+    fn test_trie_cache() {
+        let key_1 = rand_bytes(32);
+        let val_1 = rand_bytes(128);
+        let key_2 = rand_bytes(32);
+        let val_2 = rand_bytes(256);
+
+        let dir = tempfile::tempdir().unwrap();
+        let trie = RocksTrieDB::new(dir.path(), 1024, 100).unwrap();
+
+        trie.insert(key_1.clone(), val_1.clone()).unwrap();
+        trie.insert(key_2.clone(), val_2.clone()).unwrap();
+
+        let get_1 = trie.get(&key_1).unwrap();
+        assert_eq!(val_1, get_1.unwrap());
+        assert_eq!(trie.cache_len(), 2);
+
+        let get_2 = trie.get(&key_2).unwrap();
+        assert_eq!(val_2, get_2.unwrap());
+        assert_eq!(trie.cache_len(), 2);
+
+        let get_1 = trie.cache_get(&key_1).unwrap();
+        assert_eq!(val_1, get_1);
+
+        let val_3 = rand_bytes(256);
+        trie.insert(key_1.clone(), val_3.clone()).unwrap();
+        let get_3 = trie.cache_get(&key_1).unwrap();
+        assert_eq!(val_3, get_3);
+        assert_eq!(trie.cache_len(), 2);
+
+        dir.close().unwrap();
+    }
+
+    #[bench]
+    fn bench_rand(b: &mut Bencher) {
+        b.iter(|| {
+            let mut rng = SmallRng::seed_from_u64(RAND_SEED);
+            for _ in 0..10000 {
+                rng.gen_range(10..1000000);
+            }
+        })
     }
 }
