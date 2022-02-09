@@ -8,7 +8,7 @@ edition = "2021"
 [dependencies]
 protocol = { path = "../../protocol", package = "axon-protocol"}
 
-tentacle = { version = "0.4.0-beta.2", features = ["parking_lot"] }
+tentacle = { version = "0.4.0-beta.3", features = ["parking_lot"] }
 rlp = "0.5"
 snap = "1.0"
 log = "0.4"
