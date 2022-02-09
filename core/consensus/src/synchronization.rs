@@ -2,10 +2,9 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 // use common_apm::muta_apm;
-use protocol::codec::ProtocolCodec;
 use protocol::tokio::{sync::Mutex, time::sleep};
 use protocol::traits::{Context, Synchronization, SynchronizationAdapter};
-use protocol::types::{Block, Hasher, Proof, Proposal, Receipt, SignedTransaction};
+use protocol::types::{Block, Proof, Proposal, Receipt, SignedTransaction};
 use protocol::{async_trait, ProtocolResult};
 
 use crate::status::{CurrentStatus, StatusAgent, METADATA_CONTROLER};
@@ -293,7 +292,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         status_agent: StatusAgent,
     ) -> ProtocolResult<()> {
         let block = &rich_block.block;
-        let block_hash = Hasher::digest(block.header.encode()?);
+        let block_hash = block.header_hash();
         let resp = self
             .adapter
             .exec(
@@ -330,7 +329,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         let metadata = METADATA_CONTROLER.load().current();
 
         let new_status = CurrentStatus {
-            prev_hash:        Hasher::digest(block.header.encode()?),
+            prev_hash:        block.header_hash(),
             last_number:      block.header.number,
             last_state_root:  resp.state_root,
             gas_limit:        metadata.gas_limit.into(),

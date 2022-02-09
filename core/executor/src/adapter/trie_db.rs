@@ -1,14 +1,15 @@
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Instant;
+use std::{fs, io};
 
 use dashmap::DashMap;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
+use rocksdb::ops::{Get, Open, Put, WriteOps};
 use rocksdb::{Options, WriteBatch, DB};
 
 use common_apm::metrics::storage::{on_storage_get_state, on_storage_put_state};
-use protocol::types::Bytes;
-use protocol::{Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
+use protocol::{types::Bytes, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 // 49999 is the largest prime number within 50000.
 const RAND_SEED: u64 = 49999;
@@ -25,6 +26,10 @@ impl RocksTrieDB {
         max_open_files: i32,
         cache_size: usize,
     ) -> ProtocolResult<Self> {
+        if !path.as_ref().is_dir() {
+            fs::create_dir_all(&path).map_err(RocksTrieDBError::CreateDB)?;
+        }
+
         let mut opts = Options::default();
         opts.create_if_missing(true);
         opts.create_missing_column_families(true);
@@ -45,17 +50,27 @@ impl RocksTrieDB {
 
         if res.is_none() {
             let inst = Instant::now();
-            let ret = self.db.get(key).map_err(to_store_err)?;
+            let ret = self.db.get(key).map_err(to_store_err)?.map(|r| r.to_vec());
             on_storage_get_state(inst.elapsed(), 1.0);
 
-            if let Some(val) = ret.clone() {
-                self.cache.insert(key.to_owned(), val);
+            if let Some(val) = &ret {
+                self.cache.insert(key.to_owned(), val.clone());
             }
 
             return Ok(ret);
         }
 
         Ok(Some(res.unwrap().clone()))
+    }
+
+    #[cfg(test)]
+    fn cache_get(&self, key: &[u8]) -> Option<Vec<u8>> {
+        self.cache.get(key).map(|v| v.value().to_vec())
+    }
+
+    #[cfg(test)]
+    fn cache_len(&self) -> usize {
+        self.cache.len()
     }
 }
 
@@ -72,7 +87,7 @@ impl cita_trie::DB for RocksTrieDB {
         if res {
             Ok(true)
         } else {
-            if let Some(val) = self.db.get(key).map_err(to_store_err)? {
+            if let Some(val) = self.db.get(key).map_err(to_store_err)?.map(|r| r.to_vec()) {
                 self.cache.insert(key.to_owned(), val);
                 return Ok(true);
             }
@@ -108,13 +123,13 @@ impl cita_trie::DB for RocksTrieDB {
             for (key, val) in keys.iter().zip(values.iter()) {
                 total_size += key.len();
                 total_size += val.len();
-                batch.put(key, val);
+                batch.put(key, val)?;
                 self.cache.insert(key.clone(), val.clone());
             }
         }
 
         let inst = Instant::now();
-        self.db.write(batch).map_err(to_store_err)?;
+        self.db.write(&batch).map_err(to_store_err)?;
         on_storage_put_state(inst.elapsed(), total_size as f64);
         Ok(())
     }
@@ -152,7 +167,7 @@ fn rand_remove_list<T: Clone>(keys: Vec<T>, num: usize) -> Vec<T> {
     let mut len = keys.len() - 1;
     let mut idx_list = (0..len).collect::<Vec<_>>();
     let mut rng = SmallRng::seed_from_u64(RAND_SEED);
-    let mut ret = Vec::new();
+    let mut ret = Vec::with_capacity(num);
 
     for _ in 0..num {
         let tmp = rng.gen_range(0..len);
@@ -160,6 +175,7 @@ fn rand_remove_list<T: Clone>(keys: Vec<T>, num: usize) -> Vec<T> {
         ret.push(keys[idx].to_owned());
         len -= 1;
     }
+
     ret
 }
 
@@ -174,8 +190,11 @@ pub enum RocksTrieDBError {
     #[display(fmt = "parameters do not match")]
     InsertParameter,
 
-    #[display(fmt = "batch length dont match")]
+    #[display(fmt = "batch length do not match")]
     BatchLengthMismatch,
+
+    #[display(fmt = "Create DB path {}", _0)]
+    CreateDB(io::Error),
 }
 
 impl std::error::Error for RocksTrieDBError {}
@@ -194,18 +213,16 @@ fn to_store_err(e: rocksdb::Error) -> RocksTrieDBError {
 #[cfg(test)]
 mod tests {
     extern crate test;
+    use cita_trie::DB;
+    use getrandom::getrandom;
     use test::Bencher;
 
     use super::*;
 
-    #[bench]
-    fn bench_rand(b: &mut Bencher) {
-        b.iter(|| {
-            let mut rng = SmallRng::seed_from_u64(RAND_SEED);
-            for _ in 0..10000 {
-                rng.gen_range(10..1000000);
-            }
-        })
+    fn rand_bytes(len: usize) -> Vec<u8> {
+        let mut ret = (0..len).map(|_| 0u8).collect::<Vec<_>>();
+        getrandom(&mut ret).unwrap();
+        ret
     }
 
     #[test]
@@ -217,5 +234,75 @@ mod tests {
             let res = rand_remove_list(keys.clone(), num);
             assert_eq!(res.len(), num);
         }
+    }
+
+    #[test]
+    fn test_trie_insert() {
+        let key_1 = rand_bytes(32);
+        let val_1 = rand_bytes(128);
+        let key_2 = rand_bytes(32);
+        let val_2 = rand_bytes(256);
+
+        let dir = tempfile::tempdir().unwrap();
+        let trie = RocksTrieDB::new(dir.path(), 1024, 100).unwrap();
+
+        trie.insert(key_1.clone(), val_1.clone()).unwrap();
+        trie.insert(key_2.clone(), val_2.clone()).unwrap();
+
+        let get_1 = trie.get(&key_1).unwrap();
+        assert_eq!(val_1, get_1.unwrap());
+
+        let get_2 = trie.get(&key_2).unwrap();
+        assert_eq!(val_2, get_2.unwrap());
+
+        let val_3 = rand_bytes(256);
+        trie.insert(key_1.clone(), val_3.clone()).unwrap();
+        let get_3 = trie.get(&key_1).unwrap();
+        assert_eq!(val_3, get_3.unwrap());
+
+        dir.close().unwrap();
+    }
+
+    #[test]
+    fn test_trie_cache() {
+        let key_1 = rand_bytes(32);
+        let val_1 = rand_bytes(128);
+        let key_2 = rand_bytes(32);
+        let val_2 = rand_bytes(256);
+
+        let dir = tempfile::tempdir().unwrap();
+        let trie = RocksTrieDB::new(dir.path(), 1024, 100).unwrap();
+
+        trie.insert(key_1.clone(), val_1.clone()).unwrap();
+        trie.insert(key_2.clone(), val_2.clone()).unwrap();
+
+        let get_1 = trie.get(&key_1).unwrap();
+        assert_eq!(val_1, get_1.unwrap());
+        assert_eq!(trie.cache_len(), 2);
+
+        let get_2 = trie.get(&key_2).unwrap();
+        assert_eq!(val_2, get_2.unwrap());
+        assert_eq!(trie.cache_len(), 2);
+
+        let get_1 = trie.cache_get(&key_1).unwrap();
+        assert_eq!(val_1, get_1);
+
+        let val_3 = rand_bytes(256);
+        trie.insert(key_1.clone(), val_3.clone()).unwrap();
+        let get_3 = trie.cache_get(&key_1).unwrap();
+        assert_eq!(val_3, get_3);
+        assert_eq!(trie.cache_len(), 2);
+
+        dir.close().unwrap();
+    }
+
+    #[bench]
+    fn bench_rand(b: &mut Bencher) {
+        b.iter(|| {
+            let mut rng = SmallRng::seed_from_u64(RAND_SEED);
+            for _ in 0..10000 {
+                rng.gen_range(10..1000000);
+            }
+        })
     }
 }

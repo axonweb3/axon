@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
 
+use crate::codec::ProtocolCodec;
 use crate::types::{
-    Bloom, BloomInput, Bytes, ExecResp, Hash, MerkleRoot, SignedTransaction, H160, H64, U256,
+    Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, MerkleRoot, SignedTransaction, H160, H64,
+    U256,
 };
 
 pub type BlockNumber = u64;
@@ -108,6 +110,10 @@ impl Block {
             tx_hashes: proposal.tx_hashes,
         }
     }
+
+    pub fn header_hash(&self) -> Hash {
+        self.header.hash()
+    }
 }
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq)]
@@ -131,6 +137,16 @@ pub struct Header {
     pub proof:                      Proof,
     pub last_checkpoint_block_hash: Hash,
     pub chain_id:                   u64,
+}
+
+impl Header {
+    pub fn hash(&self) -> Hash {
+        Hasher::digest(self.encode().unwrap())
+    }
+
+    pub fn size(&self) -> usize {
+        self.encode().unwrap().len()
+    }
 }
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq)]

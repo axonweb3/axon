@@ -62,8 +62,9 @@ impl Executor for EvmExecutor {
         backend: &mut B,
         txs: Vec<SignedTransaction>,
     ) -> ExecResp {
-        let mut res = Vec::new();
-        let mut hashes = Vec::new();
+        let txs_len = txs.len();
+        let mut res = Vec::with_capacity(txs_len);
+        let mut hashes = Vec::with_capacity(txs_len);
         let mut gas_use = 0u64;
 
         txs.into_iter().for_each(|tx| {

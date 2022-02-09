@@ -50,7 +50,7 @@ impl MemPoolAdapter for HashMemPoolAdapter {
         _height: Option<u64>,
         tx_hashes: Vec<Hash>,
     ) -> ProtocolResult<Vec<SignedTransaction>> {
-        let mut vec = Vec::new();
+        let mut vec = Vec::with_capacity(tx_hashes.len());
         for hash in tx_hashes {
             if let Some(tx) = self.network_txs.get(&hash) {
                 vec.push(tx.clone());

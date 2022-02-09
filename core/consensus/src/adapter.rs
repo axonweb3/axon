@@ -409,7 +409,7 @@ where
                 e
             })?;
 
-        let previous_block_hash = Hasher::digest(previous_block_header.encode()?);
+        let previous_block_hash = previous_block_header.hash();
 
         if previous_block_hash != proposal.prev_hash {
             log::error!(
@@ -558,10 +558,10 @@ where
         aggregated_signature_bytes: Bytes,
         vote_keys: Vec<Hex>,
     ) -> ProtocolResult<()> {
-        let mut pub_keys = Vec::new();
-        for hex in vote_keys.into_iter() {
-            pub_keys.push(convert_hex_to_bls_pubkeys(hex)?)
-        }
+        let pub_keys = vote_keys
+            .into_iter()
+            .map(convert_hex_to_bls_pubkeys)
+            .collect::<Result<Vec<_>, _>>()?;
 
         self.crypto
             .inner_verify_aggregated_signature(vote_hash, pub_keys, aggregated_signature_bytes)

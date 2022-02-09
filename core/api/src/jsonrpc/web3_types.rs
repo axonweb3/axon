@@ -5,8 +5,8 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use protocol::codec::ProtocolCodec;
 use protocol::types::{
-    AccessList, Block, Bloom, Bytes, Hash, Hasher, Hex, Public, Receipt, SignedTransaction, H160,
-    H256, U256, U64,
+    AccessList, Block, Bloom, Bytes, Hash, Hex, Public, Receipt, SignedTransaction, H160, H256,
+    U256, U64,
 };
 
 #[allow(clippy::large_enum_variant)]
@@ -212,9 +212,8 @@ pub struct Web3Block {
 
 impl From<Block> for Web3Block {
     fn from(b: Block) -> Self {
-        let encode = b.header.encode().unwrap();
         Web3Block {
-            hash:              Hasher::digest(&encode),
+            hash:              b.header_hash(),
             number:            b.header.number.into(),
             author:            b.header.proposer,
             parent_hash:       b.header.prev_hash,
@@ -228,8 +227,8 @@ impl From<Block> for Web3Block {
             total_difficulty:  None,
             seal_fields:       vec![],
             base_fee_per_gas:  b.header.base_fee_per_gas,
-            extra_data:        Hex::encode(b.header.extra_data),
-            size:              Some(encode.len().into()),
+            extra_data:        Hex::encode(&b.header.extra_data),
+            size:              Some(b.header.size().into()),
             gas_limit:         b.header.gas_limit,
             gas_used:          b.header.gas_used,
             timestamp:         b.header.timestamp.into(),
