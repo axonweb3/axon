@@ -586,7 +586,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
     ) -> ProtocolResult<()> {
         let block = Block::new(proposal, resp.clone());
         let block_number = block.header.number;
-        let block_hash = block.hash();
+        let block_hash = block.header_hash();
 
         let (receipts, logs) = generate_receipts_and_logs(
             block_number,

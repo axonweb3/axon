@@ -47,7 +47,7 @@ use protocol::tokio::signal::unix as os_impl;
 use protocol::tokio::{runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep};
 use protocol::traits::{CommonStorage, Context, Executor, MemPool, Network, NodeInfo, Storage};
 use protocol::types::{
-    Account, Address, Hasher, MerkleRoot, Metadata, Proposal, RichBlock, Validator, NIL_DATA,
+    Account, Address, MerkleRoot, Metadata, Proposal, RichBlock, Validator, NIL_DATA,
     RLP_NULL, U256,
 };
 use protocol::{tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
@@ -331,7 +331,7 @@ impl Axon {
 
         let current_consensus_status = if current_number == 0 {
             CurrentStatus {
-                prev_hash:        Hasher::digest(current_header.encode()?),
+                prev_hash:        current_header.hash(),
                 last_number:      current_header.number,
                 last_state_root:  self.state_root,
                 gas_limit:        metadata.gas_limit.into(),
@@ -349,7 +349,7 @@ impl Axon {
                 proposal.into(),
             )?;
             let _resp = executor.exec(&mut backend, current_stxs.clone());
-            let block_hash = Hasher::digest(current_header.encode()?);
+            let block_hash = current_header.hash();
 
             CurrentStatus {
                 prev_hash:        block_hash,

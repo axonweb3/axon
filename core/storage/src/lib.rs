@@ -332,7 +332,7 @@ impl<Adapter: StorageAdapter> CommonStorage for ImplStorage<Adapter> {
             .insert::<BlockHeaderSchema>(BlockKey::new(block.header.number), block.header.clone())
             .await?;
         self.adapter
-            .insert::<BlockHashNumberSchema>(block.hash(), block.header.number)
+            .insert::<BlockHashNumberSchema>(block.header_hash(), block.header.number)
             .await?;
         Ok(())
     }

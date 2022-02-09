@@ -37,7 +37,7 @@ fn _mock_commit(block: Block) -> Commit<Pill> {
             height:     11,
             round:      0,
             block_hash: Bytes::from(
-                Hasher::digest(block.header.encode().unwrap())
+                block.header_hash()
                     .as_bytes()
                     .to_vec(),
             ),

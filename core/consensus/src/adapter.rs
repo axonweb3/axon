@@ -409,7 +409,7 @@ where
                 e
             })?;
 
-        let previous_block_hash = Hasher::digest(previous_block_header.encode()?);
+        let previous_block_hash = previous_block_header.hash();
 
         if previous_block_hash != proposal.prev_hash {
             log::error!(

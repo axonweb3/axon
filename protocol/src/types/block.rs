@@ -111,8 +111,8 @@ impl Block {
         }
     }
 
-    pub fn hash(&self) -> Hash {
-        Hasher::digest(self.encode().unwrap())
+    pub fn header_hash(&self) -> Hash {
+        self.header.hash()
     }
 }
 
@@ -137,6 +137,16 @@ pub struct Header {
     pub proof:                      Proof,
     pub last_checkpoint_block_hash: Hash,
     pub chain_id:                   u64,
+}
+
+impl Header {
+    pub fn hash(&self) -> Hash {
+        Hasher::digest(self.encode().unwrap())
+    }
+
+    pub fn size(&self) -> usize {
+        self.encode().unwrap().len()
+    }
 }
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq)]
