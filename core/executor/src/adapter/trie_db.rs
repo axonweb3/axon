@@ -213,8 +213,8 @@ fn to_store_err(e: rocksdb::Error) -> RocksTrieDBError {
 #[cfg(test)]
 mod tests {
     extern crate test;
-    use getrandom::getrandom;
     use cita_trie::DB;
+    use getrandom::getrandom;
     use test::Bencher;
 
     use super::*;

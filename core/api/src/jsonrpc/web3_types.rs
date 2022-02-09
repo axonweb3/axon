@@ -5,8 +5,8 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use protocol::codec::ProtocolCodec;
 use protocol::types::{
-    AccessList, Block, Bloom, Bytes, Hash, Hex, Public, Receipt, SignedTransaction, H160,
-    H256, U256, U64,
+    AccessList, Block, Bloom, Bytes, Hash, Hex, Public, Receipt, SignedTransaction, H160, H256,
+    U256, U64,
 };
 
 #[allow(clippy::large_enum_variant)]

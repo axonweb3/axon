@@ -47,8 +47,8 @@ use protocol::tokio::signal::unix as os_impl;
 use protocol::tokio::{runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep};
 use protocol::traits::{CommonStorage, Context, Executor, MemPool, Network, NodeInfo, Storage};
 use protocol::types::{
-    Account, Address, MerkleRoot, Metadata, Proposal, RichBlock, Validator, NIL_DATA,
-    RLP_NULL, U256,
+    Account, Address, MerkleRoot, Metadata, Proposal, RichBlock, Validator, NIL_DATA, RLP_NULL,
+    U256,
 };
 use protocol::{tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
