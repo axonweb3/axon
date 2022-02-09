@@ -1,20 +1,22 @@
 use std::error::Error;
-// use std::fmt::Formatter;
 use std::marker::PhantomData;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Instant;
+use std::{fs, io};
 
+use rocksdb::ops::{DeleteCF, GetCF, GetColumnFamilys, IterateCF, OpenCF, PutCF, WriteOps};
 use rocksdb::{ColumnFamily, DBIterator, Options, WriteBatch, DB};
 
 use common_apm::metrics::storage::on_storage_put_cf;
-use protocol::codec::ProtocolCodec;
+use protocol::codec::{hex_encode, ProtocolCodec};
 use protocol::traits::{
     IntoIteratorByRef, StorageAdapter, StorageBatchModify, StorageCategory, StorageIterator,
     StorageSchema,
 };
-use protocol::types::Bytes;
-use protocol::{async_trait, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
+use protocol::{
+    async_trait, types::Bytes, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
+};
 
 #[derive(Debug)]
 pub struct RocksAdapter {
@@ -23,6 +25,10 @@ pub struct RocksAdapter {
 
 impl RocksAdapter {
     pub fn new<P: AsRef<Path>>(path: P, max_open_files: i32) -> ProtocolResult<Self> {
+        if !path.as_ref().is_dir() {
+            fs::create_dir_all(&path).map_err(RocksAdapterError::CreateDB)?;
+        }
+
         let mut opts = Options::default();
         opts.create_if_missing(true);
         opts.create_missing_column_families(true);
@@ -91,7 +97,10 @@ impl<'a, 'b: 'a, S: StorageSchema, P: AsRef<[u8]>> IntoIterator
     type Item = ProtocolResult<(<S as StorageSchema>::Key, <S as StorageSchema>::Value)>;
 
     fn into_iter(self) -> Self::IntoIter {
-        let iter: DBIterator<'_> = self.db.prefix_iterator_cf(self.column, self.prefix);
+        let iter: DBIterator<'_> = self
+            .db
+            .prefix_iterator_cf(self.column, self.prefix.as_ref())
+            .unwrap_or_else(|_| panic!("create db {:?} prefix iterator", hex_encode(self.prefix)));
 
         Box::new(RocksIterator {
             inner: iter,
@@ -195,11 +204,12 @@ impl StorageAdapter for RocksAdapter {
                 }
                 None => batch.delete_cf(column, key),
             }
+            .map_err(RocksAdapterError::from)?;
         }
 
         on_storage_put_cf(S::category(), inst.elapsed(), insert_size as f64);
 
-        self.db.write(batch).map_err(RocksAdapterError::from)?;
+        self.db.write(&batch).map_err(RocksAdapterError::from)?;
         Ok(())
     }
 
@@ -232,6 +242,9 @@ pub enum RocksAdapterError {
 
     #[display(fmt = "batch length dont match")]
     BatchLengthMismatch,
+
+    #[display(fmt = "Create DB path {}", _0)]
+    CreateDB(io::Error),
 }
 
 impl Error for RocksAdapterError {}

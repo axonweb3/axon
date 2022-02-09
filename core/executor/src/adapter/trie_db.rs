@@ -1,14 +1,15 @@
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Instant;
+use std::{fs, io};
 
 use dashmap::DashMap;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
+use rocksdb::ops::{Get, Open, Put, WriteOps};
 use rocksdb::{Options, WriteBatch, DB};
 
 use common_apm::metrics::storage::{on_storage_get_state, on_storage_put_state};
-use protocol::types::Bytes;
-use protocol::{Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
+use protocol::{types::Bytes, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 // 49999 is the largest prime number within 50000.
 const RAND_SEED: u64 = 49999;
@@ -25,6 +26,10 @@ impl RocksTrieDB {
         max_open_files: i32,
         cache_size: usize,
     ) -> ProtocolResult<Self> {
+        if !path.as_ref().is_dir() {
+            fs::create_dir_all(&path).map_err(RocksTrieDBError::CreateDB)?;
+        }
+
         let mut opts = Options::default();
         opts.create_if_missing(true);
         opts.create_missing_column_families(true);
@@ -45,11 +50,11 @@ impl RocksTrieDB {
 
         if res.is_none() {
             let inst = Instant::now();
-            let ret = self.db.get(key).map_err(to_store_err)?;
+            let ret = self.db.get(key).map_err(to_store_err)?.map(|r| r.to_vec());
             on_storage_get_state(inst.elapsed(), 1.0);
 
-            if let Some(val) = ret.clone() {
-                self.cache.insert(key.to_owned(), val);
+            if let Some(val) = &ret {
+                self.cache.insert(key.to_owned(), val.clone());
             }
 
             return Ok(ret);
@@ -72,7 +77,7 @@ impl cita_trie::DB for RocksTrieDB {
         if res {
             Ok(true)
         } else {
-            if let Some(val) = self.db.get(key).map_err(to_store_err)? {
+            if let Some(val) = self.db.get(key).map_err(to_store_err)?.map(|r| r.to_vec()) {
                 self.cache.insert(key.to_owned(), val);
                 return Ok(true);
             }
@@ -108,13 +113,13 @@ impl cita_trie::DB for RocksTrieDB {
             for (key, val) in keys.iter().zip(values.iter()) {
                 total_size += key.len();
                 total_size += val.len();
-                batch.put(key, val);
+                batch.put(key, val)?;
                 self.cache.insert(key.clone(), val.clone());
             }
         }
 
         let inst = Instant::now();
-        self.db.write(batch).map_err(to_store_err)?;
+        self.db.write(&batch).map_err(to_store_err)?;
         on_storage_put_state(inst.elapsed(), total_size as f64);
         Ok(())
     }
@@ -174,8 +179,11 @@ pub enum RocksTrieDBError {
     #[display(fmt = "parameters do not match")]
     InsertParameter,
 
-    #[display(fmt = "batch length dont match")]
+    #[display(fmt = "batch length do not match")]
     BatchLengthMismatch,
+
+    #[display(fmt = "Create DB path {}", _0)]
+    CreateDB(io::Error),
 }
 
 impl std::error::Error for RocksTrieDBError {}

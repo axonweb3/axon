@@ -13,7 +13,7 @@ arc-swap="1.4"
 futures = "0.3"
 lazy_static = "1.4"
 parking_lot = "0.12"
-rocksdb = "0.17"
+rocksdb = { version = "0.16", package = "ckb-rocksdb" }
 
 [dev-dependencies]
 num-traits = "0.2"
