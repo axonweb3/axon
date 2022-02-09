@@ -145,7 +145,7 @@ pub trait StorageAdapter: Send + Sync {
         &self,
         keys: Vec<<S as StorageSchema>::Key>,
     ) -> ProtocolResult<Vec<Option<<S as StorageSchema>::Value>>> {
-        let mut vec = Vec::new();
+        let mut vec = Vec::with_capacity(keys.len());
 
         for key in keys {
             vec.push(self.get::<S>(key).await?);

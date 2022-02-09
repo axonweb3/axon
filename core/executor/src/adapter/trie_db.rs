@@ -157,7 +157,7 @@ fn rand_remove_list<T: Clone>(keys: Vec<T>, num: usize) -> Vec<T> {
     let mut len = keys.len() - 1;
     let mut idx_list = (0..len).collect::<Vec<_>>();
     let mut rng = SmallRng::seed_from_u64(RAND_SEED);
-    let mut ret = Vec::new();
+    let mut ret = Vec::with_capacity(num);
 
     for _ in 0..num {
         let tmp = rng.gen_range(0..len);
@@ -165,6 +165,7 @@ fn rand_remove_list<T: Clone>(keys: Vec<T>, num: usize) -> Vec<T> {
         ret.push(keys[idx].to_owned());
         len -= 1;
     }
+
     ret
 }
 

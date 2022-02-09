@@ -107,7 +107,8 @@ impl Crypto for OverlordCrypto {
         voters: Vec<Bytes>,
     ) -> Result<(), Box<dyn Error + Send>> {
         let map = self.addr_pubkey.read();
-        let mut pub_keys = Vec::new();
+        let mut pub_keys = Vec::with_capacity(voters.len());
+
         for addr in voters.iter() {
             let pub_key = map.get(addr).ok_or_else(|| {
                 ProtocolError::from(ConsensusError::Other("lose public key".to_string()))
