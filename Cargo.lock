@@ -807,10 +807,13 @@ dependencies = [
  "common-config-parser",
  "core-consensus",
  "core-executor",
+ "fastrand",
+ "json",
  "jsonrpsee",
  "log",
  "parking_lot 0.12.0",
  "serde",
+ "serde_json",
 ]
 
 [[package]]

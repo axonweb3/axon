@@ -502,4 +502,28 @@ pub struct SyncStatus {
     pub starting_block: U256,
     pub current_block:  U256,
     pub highest_block:  U256,
+    pub known_states:   U256,
+    pub pulled_states:  U256,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sync_status_json() {
+        let status = Web3SyncStatus::False;
+        let json = json::parse(&serde_json::to_string(&status).unwrap()).unwrap();
+        assert!(json.is_boolean());
+
+        let status = Web3SyncStatus::Doing(SyncStatus {
+            starting_block: fastrand::u64(..).into(),
+            current_block:  fastrand::u64(..).into(),
+            highest_block:  fastrand::u64(..).into(),
+            known_states:   U256::default(),
+            pulled_states:  U256::default(),
+        });
+        let json = json::parse(&serde_json::to_string(&status).unwrap()).unwrap();
+        assert!(json.is_object());
+    }
 }
