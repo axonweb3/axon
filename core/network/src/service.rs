@@ -165,6 +165,13 @@ impl Network for NetworkServiceHandle {
 
         Ok(())
     }
+
+    fn peer_count(&self, _ctx: Context) -> ProtocolResult<usize> {
+        Ok(self
+            .gossip
+            .peer_manager
+            .with_registry(|reg| reg.peers.len()))
+    }
 }
 
 pub struct NetworkService {

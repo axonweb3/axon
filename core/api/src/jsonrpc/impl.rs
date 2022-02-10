@@ -262,6 +262,17 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         Ok(true)
     }
 
+    async fn peer_count(&self) -> RpcResult<U256> {
+        self.adapter
+            .peer_count(Context::new())
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))
+    }
+
+    async fn syncing(&self) -> RpcResult<bool> {
+        Ok(false)
+    }
+
     async fn get_logs(&self, filter: Web3Filter) -> RpcResult<Vec<Web3Log>> {
         if filter.topics.is_none() {
             return Ok(Vec::new());
@@ -271,7 +282,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
 
         #[allow(clippy::large_enum_variant)]
         enum BlockPosition {
-            // Hash(H256),
+            Hash(H256),
             Num(BlockNumber),
             Block(Block),
         }
@@ -292,31 +303,31 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             };
 
             match position {
-                // BlockPosition::Hash(hash) => {
-                //     match adapter
-                //         .get_block_by_hash(Context::new(), hash)
-                //         .await
-                //         .map_err(|e| Error::Custom(e.to_string()))?
-                //     {
-                //         Some(block) => {
-                //             let receipts = adapter
-                //                 .get_receipts_by_hashes(
-                //                     Context::new(),
-                //                     block.header.number,
-                //                     &block.tx_hashes,
-                //                 )
-                //                 .await
-                //                 .map_err(|e| Error::Custom(e.to_string()))?;
-                //             extend_logs(logs, receipts);
-                //             Ok(())
-                //         }
-                //         None => Err(Error::Custom(format!(
-                //             "Invalid block hash
-                //     {}",
-                //             hash
-                //         ))),
-                //     }
-                // }
+                BlockPosition::Hash(hash) => {
+                    match adapter
+                        .get_block_by_hash(Context::new(), hash)
+                        .await
+                        .map_err(|e| Error::Custom(e.to_string()))?
+                    {
+                        Some(block) => {
+                            let receipts = adapter
+                                .get_receipts_by_hashes(
+                                    Context::new(),
+                                    block.header.number,
+                                    &block.tx_hashes,
+                                )
+                                .await
+                                .map_err(|e| Error::Custom(e.to_string()))?;
+                            extend_logs(logs, receipts);
+                            Ok(())
+                        }
+                        None => Err(Error::Custom(format!(
+                            "Invalid block hash
+                    {}",
+                            hash
+                        ))),
+                    }
+                }
                 BlockPosition::Num(n) => {
                     let block = adapter
                         .get_block_by_number(Context::new(), Some(n))
@@ -353,14 +364,14 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
 
         let mut all_logs = Vec::new();
         match filter.block_hash {
-            Some(_hash) => {
-                // get_logs(
-                //     &self.adapter,
-                //     BlockPosition::Hash(hash),
-                //     &topics,
-                //     &mut all_logs,
-                // )
-                // .await?;
+            Some(hash) => {
+                get_logs(
+                    &*self.adapter,
+                    BlockPosition::Hash(hash),
+                    &topics,
+                    &mut all_logs,
+                )
+                .await?;
             }
             None => {
                 let latest_block = self

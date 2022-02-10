@@ -489,6 +489,8 @@ impl Axon {
         network_service.register_rpc_response(RPC_RESP_SYNC_PULL_PROOF)?;
         network_service.register_rpc_response(RPC_RESP_SYNC_PULL_TXS)?;
 
+        let network_handle = network_service.handle();
+
         // Run network
         tokio::spawn(network_service.run());
 
@@ -497,6 +499,7 @@ impl Axon {
             Arc::clone(&mempool),
             Arc::clone(&storage),
             Arc::clone(&trie_db),
+            Arc::new(network_handle),
         ));
         let _handles = run_jsonrpc_server(self.config.rpc.clone(), api_adapter).await?;
 

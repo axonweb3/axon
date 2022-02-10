@@ -70,6 +70,12 @@ pub trait AxonJsonRpc {
     #[method(name = "net_listening")]
     async fn listening(&self) -> RpcResult<bool>;
 
+    #[method(name = "net_peerCount")]
+    async fn peer_count(&self) -> RpcResult<U256>;
+
+    #[method(name = "eth_syncing")]
+    async fn syncing(&self) -> RpcResult<bool>;
+
     #[method(name = "eth_gasPrice")]
     async fn gas_price(&self) -> RpcResult<U256>;
 
