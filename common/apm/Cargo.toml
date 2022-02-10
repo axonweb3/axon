@@ -14,3 +14,5 @@ prometheus = "0.13"
 prometheus-static-metric = "0.5"
 derive_more = "0.99"
 lazy_static = "1.4"
+hyper = { version = "0.14", features = ["full"] }
+axum = "0.4.5"
