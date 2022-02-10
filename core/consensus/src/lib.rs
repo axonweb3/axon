@@ -25,7 +25,7 @@ use protocol::{Display, ProtocolError, ProtocolErrorKind};
 pub use crate::adapter::OverlordConsensusAdapter;
 pub use crate::consensus::OverlordConsensus;
 pub use crate::status::METADATA_CONTROLER;
-pub use crate::synchronization::{OverlordSynchronization, RichBlock};
+pub use crate::synchronization::{OverlordSynchronization, RichBlock, SyncStatus, SYNC_STATUS};
 pub use crate::wal::{ConsensusWal, SignedTxsWAL};
 pub use overlord::{types::Node, DurationConfig};
 

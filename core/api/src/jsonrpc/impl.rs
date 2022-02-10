@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use jsonrpsee::core::Error;
 
+use core_consensus::SYNC_STATUS;
 use protocol::traits::{APIAdapter, Context};
 use protocol::types::{
     Block, BlockNumber, Bytes, Header, Hex, Receipt, SignedTransaction, TxResp,
@@ -11,7 +12,7 @@ use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
 use crate::jsonrpc::web3_types::{
     BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3Filter, Web3Log, Web3Receipt,
-    Web3Transaction,
+    Web3SyncStatus, Web3Transaction,
 };
 use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
 use crate::APIError;
@@ -269,8 +270,8 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             .map_err(|e| Error::Custom(e.to_string()))
     }
 
-    async fn syncing(&self) -> RpcResult<bool> {
-        Ok(false)
+    async fn syncing(&self) -> RpcResult<Web3SyncStatus> {
+        Ok(SYNC_STATUS.read().clone().into())
     }
 
     async fn get_logs(&self, filter: Web3Filter) -> RpcResult<Vec<Web3Log>> {

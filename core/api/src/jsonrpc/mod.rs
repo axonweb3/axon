@@ -13,7 +13,8 @@ use protocol::types::{Hex, H160, H256, U256};
 use protocol::ProtocolResult;
 
 use crate::jsonrpc::web3_types::{
-    BlockId, Web3Block, Web3CallRequest, Web3Filter, Web3Log, Web3Receipt, Web3Transaction,
+    BlockId, Web3Block, Web3CallRequest, Web3Filter, Web3Log, Web3Receipt, Web3SyncStatus,
+    Web3Transaction,
 };
 use crate::APIError;
 
@@ -74,7 +75,7 @@ pub trait AxonJsonRpc {
     async fn peer_count(&self) -> RpcResult<U256>;
 
     #[method(name = "eth_syncing")]
-    async fn syncing(&self) -> RpcResult<bool>;
+    async fn syncing(&self) -> RpcResult<Web3SyncStatus>;
 
     #[method(name = "eth_gasPrice")]
     async fn gas_price(&self) -> RpcResult<U256>;

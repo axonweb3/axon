@@ -1,10 +1,12 @@
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use parking_lot::RwLock;
+
 // use common_apm::muta_apm;
 use protocol::tokio::{sync::Mutex, time::sleep};
 use protocol::traits::{Context, Synchronization, SynchronizationAdapter};
-use protocol::types::{Block, Proof, Proposal, Receipt, SignedTransaction};
+use protocol::types::{Block, Proof, Proposal, Receipt, SignedTransaction, U256};
 use protocol::{async_trait, ProtocolResult};
 
 use crate::status::{CurrentStatus, StatusAgent, METADATA_CONTROLER};
@@ -13,6 +15,10 @@ use crate::{engine::generate_receipts_and_logs, ConsensusError};
 
 const POLLING_BROADCAST: u64 = 2000;
 const ONCE_SYNC_BLOCK_LIMIT: u64 = 50;
+
+lazy_static::lazy_static! {
+    pub static ref SYNC_STATUS: RwLock<SyncStatus> = RwLock::new(SyncStatus::default());
+}
 
 #[derive(Clone, Debug)]
 pub struct RichBlock {
@@ -89,6 +95,7 @@ impl<Adapter: SynchronizationAdapter> Synchronization for OverlordSynchronizatio
         );
 
         self.update_status(ctx, sync_status_agent)?;
+        SYNC_STATUS.write().finish();
 
         Ok(())
     }
@@ -143,6 +150,12 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             current_number + ONCE_SYNC_BLOCK_LIMIT
         };
 
+        {
+            SYNC_STATUS
+                .write()
+                .start(current_consented_number, remote_number);
+        }
+
         while current_consented_number < remote_number {
             let consenting_number = current_consented_number + 1;
             log::info!(
@@ -187,6 +200,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             common_apm::metrics::consensus::ENGINE_SYNC_BLOCK_COUNTER.inc_by(1u64);
             common_apm::metrics::consensus::ENGINE_SYNC_BLOCK_HISTOGRAM
                 .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+            SYNC_STATUS.write().add_one();
         }
 
         Ok(())
@@ -469,5 +483,44 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             sync_status.last_number,
         );
         Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum SyncStatus {
+    False,
+    Syncing {
+        start:   U256,
+        current: U256,
+        highest: U256,
+    },
+}
+
+impl Default for SyncStatus {
+    fn default() -> Self {
+        SyncStatus::False
+    }
+}
+
+impl SyncStatus {
+    pub fn start(&mut self, start: u64, highest: u64) {
+        *self = SyncStatus::Syncing {
+            start:   start.into(),
+            current: start.into(),
+            highest: highest.into(),
+        };
+    }
+
+    pub fn finish(&mut self) {
+        *self = SyncStatus::False;
+    }
+
+    pub fn add_one(&mut self) {
+        match *self {
+            SyncStatus::False => (),
+            SyncStatus::Syncing { mut current, .. } => {
+                current += U256::one();
+            }
+        }
     }
 }
