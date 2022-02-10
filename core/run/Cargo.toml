@@ -17,6 +17,7 @@ clap = "3.0"
 rlp = "0.5"
 toml = "0.5"
 cita_trie = "3.0"
+axum = "0.4.5"
 
 common-apm = { path = "../../common/apm" }
 common-config-parser = { path = "../../common/config-parser" }
@@ -30,3 +31,4 @@ core-mempool = { path = "../../core/mempool" }
 core-network = { path = "../../core/network" }
 core-consensus = { path = "../../core/consensus" }
 core-cross-client = { path = "../../core/cross-client" }
+

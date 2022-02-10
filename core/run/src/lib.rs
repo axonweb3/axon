@@ -503,6 +503,15 @@ impl Axon {
         ));
         let _handles = run_jsonrpc_server(self.config.rpc.clone(), api_adapter).await?;
 
+        // Start http server
+        tokio::spawn(async move {
+            let addr = std::net::SocketAddr::from(([127, 0, 0, 1], 3000));
+            axum::Server::bind(&addr)
+                .serve(common_apm::prom_server::prom_server().into_make_service())
+                .await
+                .unwrap();
+        });
+
         // Run sync
         tokio::spawn(async move {
             if let Err(e) = synchronization.polling_broadcast().await {
