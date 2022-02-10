@@ -479,6 +479,8 @@ impl From<InnerSyncStatus> for Web3SyncStatus {
                 starting_block: start,
                 current_block:  current,
                 highest_block:  highest,
+                known_states:   U256::default(),
+                pulled_states:  U256::default(),
             }),
         }
     }
