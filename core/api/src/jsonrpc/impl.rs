@@ -11,8 +11,8 @@ use protocol::types::{
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
 use crate::jsonrpc::web3_types::{
-    BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3Filter, Web3Log, Web3Receipt,
-    Web3SyncStatus, Web3Transaction,
+    BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter,
+    Web3Log, Web3Receipt, Web3SyncStatus, Web3Transaction,
 };
 use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
 use crate::APIError;
@@ -102,6 +102,43 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         let block = self
             .adapter
             .get_block_by_number(Context::new(), number.into())
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+
+        match block {
+            Some(b) => {
+                let capacity = b.tx_hashes.len();
+                let mut ret = Web3Block::from(b);
+                if show_rich_tx {
+                    let mut txs = Vec::with_capacity(capacity);
+                    for tx in ret.transactions.iter() {
+                        let tx = self
+                            .adapter
+                            .get_transaction_by_hash(Context::new(), tx.get_hash())
+                            .await
+                            .map_err(|e| Error::Custom(e.to_string()))?
+                            .unwrap();
+
+                        txs.push(RichTransactionOrHash::Rich(tx));
+                    }
+
+                    ret.transactions = txs;
+                }
+
+                Ok(Some(ret))
+            }
+            None => Ok(None),
+        }
+    }
+
+    async fn get_block_by_hash(
+        &self,
+        hash: H256,
+        show_rich_tx: bool,
+    ) -> RpcResult<Option<Web3Block>> {
+        let block = self
+            .adapter
+            .get_block_by_hash(Context::new(), hash)
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
@@ -427,6 +464,20 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             }
         }
         Ok(all_logs)
+    }
+
+    async fn fee_history(
+        &self,
+        _block_count: u64,
+        _newest_block: BlockId,
+        _reward_percentiles: Option<Vec<u64>>,
+    ) -> RpcResult<Web3FeeHistory> {
+        Ok(Web3FeeHistory {
+            oldest_block:     U256::from(0),
+            reward:           None,
+            base_fee_per_gas: Vec::new(),
+            gas_used_ratio:   Vec::new(),
+        })
     }
 }
 
