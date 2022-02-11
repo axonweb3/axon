@@ -508,6 +508,15 @@ pub struct SyncStatus {
     pub pulled_states:  U256,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct Web3FeeHistory {
+    pub oldest_block:     U256,
+    pub reward:           Option<Vec<U256>>,
+    pub base_fee_per_gas: Vec<U256>,
+    pub gas_used_ratio:   Vec<U256>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -11,8 +11,8 @@ use protocol::types::{
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
 use crate::jsonrpc::web3_types::{
-    BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3Filter, Web3Log, Web3Receipt,
-    Web3SyncStatus, Web3Transaction,
+    BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter,
+    Web3Log, Web3Receipt, Web3SyncStatus, Web3Transaction,
 };
 use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
 use crate::APIError;
@@ -427,6 +427,20 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             }
         }
         Ok(all_logs)
+    }
+
+    async fn fee_history(
+        &self,
+        _block_count: u64,
+        _newest_block: BlockId,
+        _reward_percentiles: Option<Vec<u64>>,
+    ) -> RpcResult<Web3FeeHistory> {
+        Ok(Web3FeeHistory {
+            oldest_block:     U256::from(0),
+            reward:           None,
+            base_fee_per_gas: Vec::new(),
+            gas_used_ratio:   Vec::new(),
+        })
     }
 }
 

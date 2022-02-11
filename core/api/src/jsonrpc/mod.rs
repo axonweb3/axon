@@ -13,8 +13,8 @@ use protocol::types::{Hex, H160, H256, U256};
 use protocol::ProtocolResult;
 
 use crate::jsonrpc::web3_types::{
-    BlockId, Web3Block, Web3CallRequest, Web3Filter, Web3Log, Web3Receipt, Web3SyncStatus,
-    Web3Transaction,
+    BlockId, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter, Web3Log, Web3Receipt,
+    Web3SyncStatus, Web3Transaction,
 };
 use crate::APIError;
 
@@ -82,6 +82,14 @@ pub trait AxonJsonRpc {
 
     #[method(name = "eth_getLogs")]
     async fn get_logs(&self, filter: Web3Filter) -> RpcResult<Vec<Web3Log>>;
+
+    #[method(name = "eth_feeHistory")]
+    async fn fee_history(
+        &self,
+        block_count: u64,
+        newest_block: BlockId,
+        reward_percentiles: Option<Vec<u64>>,
+    ) -> RpcResult<Web3FeeHistory>;
 }
 
 pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
