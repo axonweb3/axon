@@ -7,7 +7,7 @@ use proc_macro::TokenStream;
 /// use std::io::Error;
 /// use metrics_derive::metrics_rpc;
 /// use protocol::types::{Hash, SignedTransaction};
-/// 
+///
 /// pub struct RpcExample;
 ///
 /// impl RpcExample {
@@ -17,15 +17,15 @@ use proc_macro::TokenStream;
 ///     }
 /// }
 /// ```
-/// 
+///
 /// The expanded code shown below:
 /// ```
 /// use std::io::Error;
 /// use metrics_derive::metrics_rpc;
 /// use protocol::types::{Hash, SignedTransaction};
-/// 
+///
 /// pub struct ExampleRpc;
-/// 
+///
 /// impl ExampleRpc {
 ///     fn send_raw_transaction(&self, tx: SignedTransaction) -> Result<Hash, Error> {
 ///         let inst = std::time::Instant::now();
