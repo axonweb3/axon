@@ -1,0 +1,13 @@
+name: Benchamark CI
+on:
+  pull_request:
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v1
+      - name: Run benchmark
+        run: |
+          cd /home/ckb/axon-devops/benchmark/deploy
+          ansible-playbook deploy.yml --tags build,deploy,start,benchmark,shutdown -e axon_branch=${{ github.head_ref }} -e pr_number=${{ github.event.pull_request.number }}
