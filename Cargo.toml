@@ -24,11 +24,13 @@ core-storage = { path = "./core/storage" }
 members = [
     "devtools/keypair",
 
+    "common/apm",
     "common/channel",
     "common/config-parser",
     "common/crypto",
     "common/logger",
     "common/merkle",
+    "common/metrics-derive",
     "common/pubsub",
 
     "core/api",
