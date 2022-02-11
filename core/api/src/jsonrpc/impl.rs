@@ -131,6 +131,43 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         }
     }
 
+    async fn get_block_by_hash(
+        &self,
+        hash: H256,
+        show_rich_tx: bool,
+    ) -> RpcResult<Option<Web3Block>> {
+        let block = self
+            .adapter
+            .get_block_by_hash(Context::new(), hash)
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+
+        match block {
+            Some(b) => {
+                let capacity = b.tx_hashes.len();
+                let mut ret = Web3Block::from(b);
+                if show_rich_tx {
+                    let mut txs = Vec::with_capacity(capacity);
+                    for tx in ret.transactions.iter() {
+                        let tx = self
+                            .adapter
+                            .get_transaction_by_hash(Context::new(), tx.get_hash())
+                            .await
+                            .map_err(|e| Error::Custom(e.to_string()))?
+                            .unwrap();
+
+                        txs.push(RichTransactionOrHash::Rich(tx));
+                    }
+
+                    ret.transactions = txs;
+                }
+
+                Ok(Some(ret))
+            }
+            None => Ok(None),
+        }
+    }
+
     async fn get_transaction_count(&self, address: H160, number: BlockId) -> RpcResult<U256> {
         let account = self
             .adapter

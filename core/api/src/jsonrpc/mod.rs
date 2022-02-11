@@ -38,6 +38,13 @@ pub trait AxonJsonRpc {
         show_rich_tx: bool,
     ) -> RpcResult<Option<Web3Block>>;
 
+    #[method(name = "eth_getBlockByHash")]
+    async fn get_block_by_hash(
+        &self,
+        hash: H256,
+        show_rich_tx: bool,
+    ) -> RpcResult<Option<Web3Block>>;
+
     #[method(name = "eth_blockNumber")]
     async fn block_number(&self) -> RpcResult<U256>;
 
