@@ -2327,6 +2327,7 @@ dependencies = [
 name = "metrics-derive"
 version = "0.1.0"
 dependencies = [
+ "axon-protocol",
  "common-apm",
  "proc-macro2",
  "quote",
