@@ -851,6 +851,7 @@ version = "0.1.0"
 dependencies = [
  "axon-protocol",
  "cita_trie",
+ "common-apm",
  "common-config-parser",
  "core-consensus",
  "core-executor",

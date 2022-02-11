@@ -9,6 +9,7 @@ use protocol::types::{
     UnverifiedTransaction, H160, H256, H64, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
+use std::time::Instant;
 
 use crate::jsonrpc::web3_types::{
     BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3Filter, Web3Log, Web3Receipt,
@@ -16,6 +17,9 @@ use crate::jsonrpc::web3_types::{
 };
 use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
 use crate::APIError;
+use common_apm::metrics::api::{
+    API_REQUEST_RESULT_COUNTER_VEC_STATIC, API_REQUEST_TIME_HISTOGRAM_STATIC,
+};
 
 pub struct JsonRpcImpl<Adapter> {
     adapter: Arc<Adapter>,
@@ -55,6 +59,378 @@ impl<Adapter: APIAdapter> JsonRpcImpl<Adapter> {
 #[async_trait]
 impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
     async fn send_raw_transaction(&self, tx: Hex) -> RpcResult<H256> {
+        let inst = Instant::now();
+
+        let res = self.inner_send_raw_transaction(&tx).await;
+        if res.is_err() {
+            API_REQUEST_RESULT_COUNTER_VEC_STATIC
+                .eth_sendRawTransaction
+                .failure
+                .inc();
+            return res;
+        }
+
+        API_REQUEST_RESULT_COUNTER_VEC_STATIC
+            .eth_sendRawTransaction
+            .success
+            .inc();
+
+        API_REQUEST_TIME_HISTOGRAM_STATIC
+            .eth_sendRawTransaction
+            .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+
+        res
+    }
+
+    async fn get_transaction_by_hash(&self, hash: H256) -> RpcResult<Option<Web3Transaction>> {
+        let inst = Instant::now();
+
+        let res = self.inner_get_transaction_by_hash(hash).await;
+
+        if res.is_err() {
+            API_REQUEST_RESULT_COUNTER_VEC_STATIC
+                .eth_getTransactionByHash
+                .failure
+                .inc();
+            return res;
+        }
+
+        API_REQUEST_RESULT_COUNTER_VEC_STATIC
+            .eth_getTransactionByHash
+            .success
+            .inc();
+
+        API_REQUEST_TIME_HISTOGRAM_STATIC
+            .eth_getTransactionByHash
+            .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+
+        res
+    }
+
+    async fn get_block_by_number(
+        &self,
+        number: BlockId,
+        show_rich_tx: bool,
+    ) -> RpcResult<Option<Web3Block>> {
+        let inst = Instant::now();
+
+        let res = self.inner_get_block_by_number(number, show_rich_tx).await;
+
+        if res.is_err() {
+            API_REQUEST_RESULT_COUNTER_VEC_STATIC
+                .eth_getBlockByNumber
+                .failure
+                .inc();
+            return res;
+        }
+
+        API_REQUEST_RESULT_COUNTER_VEC_STATIC
+            .eth_getBlockByNumber
+            .success
+            .inc();
+
+        API_REQUEST_TIME_HISTOGRAM_STATIC
+            .eth_getBlockByNumber
+            .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+
+        res
+    }
+
+    async fn block_number(&self) -> RpcResult<U256> {
+        let inst = Instant::now();
+
+        let res = self.inner_block_number().await;
+
+        if res.is_err() {
+            API_REQUEST_RESULT_COUNTER_VEC_STATIC
+                .eth_blockNumber
+                .failure
+                .inc();
+            return res;
+        }
+
+        API_REQUEST_RESULT_COUNTER_VEC_STATIC
+            .eth_blockNumber
+            .success
+            .inc();
+
+        API_REQUEST_TIME_HISTOGRAM_STATIC
+            .eth_blockNumber
+            .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+
+        res
+    }
+
+    async fn get_transaction_count(&self, address: H160, number: BlockId) -> RpcResult<U256> {
+        let inst = Instant::now();
+
+        let res = self.inner_get_transaction_count(address, number).await;
+
+        if res.is_err() {
+            API_REQUEST_RESULT_COUNTER_VEC_STATIC
+                .eth_getBlockTransactionCountByNumber
+                .failure
+                .inc();
+            return res;
+        }
+
+        API_REQUEST_RESULT_COUNTER_VEC_STATIC
+            .eth_getBlockTransactionCountByNumber
+            .success
+            .inc();
+
+        API_REQUEST_TIME_HISTOGRAM_STATIC
+            .eth_getBlockTransactionCountByNumber
+            .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+
+        res
+    }
+
+    async fn get_transaction_count_by_number(&self, number: BlockId) -> RpcResult<U256> {
+        let inst = Instant::now();
+
+        let res = self.inner_get_transaction_count_by_number(number).await;
+
+        if res.is_err() {
+            API_REQUEST_RESULT_COUNTER_VEC_STATIC
+                .eth_getTransactionCount
+                .failure
+                .inc();
+            return res;
+        }
+
+        API_REQUEST_RESULT_COUNTER_VEC_STATIC
+            .eth_getTransactionCount
+            .success
+            .inc();
+
+        API_REQUEST_TIME_HISTOGRAM_STATIC
+            .eth_getTransactionCount
+            .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+
+        res
+    }
+
+    async fn get_balance(&self, address: H160, number: BlockId) -> RpcResult<U256> {
+        let inst = Instant::now();
+
+        let res = self.inner_get_balance(address, number).await;
+
+        if res.is_err() {
+            API_REQUEST_RESULT_COUNTER_VEC_STATIC
+                .eth_getBalance
+                .failure
+                .inc();
+            return res;
+        }
+
+        API_REQUEST_RESULT_COUNTER_VEC_STATIC
+            .eth_getBalance
+            .success
+            .inc();
+
+        API_REQUEST_TIME_HISTOGRAM_STATIC
+            .eth_getBalance
+            .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+
+        res
+    }
+
+    async fn call(&self, req: Web3CallRequest, number: BlockId) -> RpcResult<Hex> {
+        let inst = Instant::now();
+
+        let res = self.inner_call(req, number).await;
+
+        if res.is_err() {
+            API_REQUEST_RESULT_COUNTER_VEC_STATIC.eth_call.failure.inc();
+            return res;
+        }
+
+        API_REQUEST_RESULT_COUNTER_VEC_STATIC.eth_call.success.inc();
+
+        API_REQUEST_TIME_HISTOGRAM_STATIC
+            .eth_call
+            .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+
+        res
+    }
+
+    async fn estimate_gas(&self, req: Web3CallRequest, number: Option<BlockId>) -> RpcResult<U256> {
+        let inst = Instant::now();
+
+        let res = self.inner_estimate_gas(req, number).await;
+
+        if res.is_err() {
+            API_REQUEST_RESULT_COUNTER_VEC_STATIC
+                .eth_estimateGas
+                .failure
+                .inc();
+            return res;
+        }
+
+        API_REQUEST_RESULT_COUNTER_VEC_STATIC
+            .eth_estimateGas
+            .success
+            .inc();
+
+        API_REQUEST_TIME_HISTOGRAM_STATIC
+            .eth_estimateGas
+            .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+
+        res
+    }
+
+    async fn chain_id(&self) -> RpcResult<U256> {
+        let inst = Instant::now();
+
+        let res = self.inner_chain_id().await;
+
+        if res.is_err() {
+            API_REQUEST_RESULT_COUNTER_VEC_STATIC
+                .eth_chainId
+                .failure
+                .inc();
+            return res;
+        }
+
+        API_REQUEST_RESULT_COUNTER_VEC_STATIC
+            .eth_chainId
+            .success
+            .inc();
+
+        API_REQUEST_TIME_HISTOGRAM_STATIC
+            .eth_chainId
+            .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+
+        res
+    }
+
+    async fn net_version(&self) -> RpcResult<U256> {
+        self.chain_id().await
+    }
+
+    async fn get_code(&self, address: H160, number: BlockId) -> RpcResult<Hex> {
+        let inst = Instant::now();
+
+        let res = self.inner_get_code(address, number).await;
+
+        if res.is_err() {
+            API_REQUEST_RESULT_COUNTER_VEC_STATIC
+                .eth_getCode
+                .failure
+                .inc();
+            return res;
+        }
+
+        API_REQUEST_RESULT_COUNTER_VEC_STATIC
+            .eth_getCode
+            .success
+            .inc();
+
+        API_REQUEST_TIME_HISTOGRAM_STATIC
+            .eth_getCode
+            .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+
+        res
+    }
+
+    async fn get_transaction_receipt(&self, hash: H256) -> RpcResult<Option<Web3Receipt>> {
+        let inst = Instant::now();
+
+        let res = self.inner_get_transaction_receipt(hash).await;
+
+        if res.is_err() {
+            API_REQUEST_RESULT_COUNTER_VEC_STATIC
+                .eth_getTransactionReceipt
+                .failure
+                .inc();
+            return res;
+        }
+
+        API_REQUEST_RESULT_COUNTER_VEC_STATIC
+            .eth_getTransactionReceipt
+            .success
+            .inc();
+
+        API_REQUEST_TIME_HISTOGRAM_STATIC
+            .eth_getTransactionReceipt
+            .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+
+        res
+    }
+
+    async fn listening(&self) -> RpcResult<bool> {
+        let inst = Instant::now();
+
+        let res = self.inner_listening().await;
+
+        API_REQUEST_RESULT_COUNTER_VEC_STATIC
+            .net_listening
+            .success
+            .inc();
+
+        API_REQUEST_TIME_HISTOGRAM_STATIC
+            .net_listening
+            .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+
+        res
+    }
+
+    async fn peer_count(&self) -> RpcResult<U256> {
+        self.adapter
+            .peer_count(Context::new())
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))
+    }
+
+    async fn syncing(&self) -> RpcResult<Web3SyncStatus> {
+        Ok(SYNC_STATUS.read().clone().into())
+    }
+
+    async fn gas_price(&self) -> RpcResult<U256> {
+        let inst = Instant::now();
+
+        let res = self.inner_gas_price().await;
+
+        API_REQUEST_RESULT_COUNTER_VEC_STATIC
+            .eth_gasPrice
+            .success
+            .inc();
+
+        API_REQUEST_TIME_HISTOGRAM_STATIC
+            .eth_gasPrice
+            .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+
+        res
+    }
+
+    async fn get_logs(&self, filter: Web3Filter) -> RpcResult<Vec<Web3Log>> {
+        let inst = Instant::now();
+
+        let res = self.inner_get_logs(filter).await;
+
+        if res.is_err() {
+            API_REQUEST_RESULT_COUNTER_VEC_STATIC
+                .eth_getLogs
+                .failure
+                .inc();
+            return res;
+        }
+
+        API_REQUEST_RESULT_COUNTER_VEC_STATIC
+            .eth_getLogs
+            .success
+            .inc();
+
+        API_REQUEST_TIME_HISTOGRAM_STATIC
+            .eth_getLogs
+            .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+
+        res
+    }
+}
+impl<Adapter: APIAdapter + 'static> JsonRpcImpl<Adapter> {
+    async fn inner_send_raw_transaction(&self, tx: &Hex) -> RpcResult<H256> {
         let utx = UnverifiedTransaction::decode(&tx.as_bytes()[1..])
             .map_err(|e| Error::Custom(e.to_string()))?
             .hash();
@@ -68,7 +444,10 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         Ok(hash)
     }
 
-    async fn get_transaction_by_hash(&self, hash: H256) -> RpcResult<Option<Web3Transaction>> {
+    async fn inner_get_transaction_by_hash(
+        &self,
+        hash: H256,
+    ) -> Result<Option<Web3Transaction>, Error> {
         let res = self
             .adapter
             .get_transaction_by_hash(Context::new(), hash)
@@ -94,11 +473,11 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         }
     }
 
-    async fn get_block_by_number(
+    async fn inner_get_block_by_number(
         &self,
         number: BlockId,
         show_rich_tx: bool,
-    ) -> RpcResult<Option<Web3Block>> {
+    ) -> Result<Option<Web3Block>, Error> {
         let block = self
             .adapter
             .get_block_by_number(Context::new(), number.into())
@@ -131,7 +510,20 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         }
     }
 
-    async fn get_transaction_count(&self, address: H160, number: BlockId) -> RpcResult<U256> {
+    async fn inner_block_number(&self) -> Result<U256, Error> {
+        self.adapter
+            .get_block_header_by_number(Context::new(), None)
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?
+            .map(|h| U256::from(h.number))
+            .ok_or_else(|| Error::Custom("Cannot get latest block header".to_string()))
+    }
+
+    async fn inner_get_transaction_count(
+        &self,
+        address: H160,
+        number: BlockId,
+    ) -> Result<U256, Error> {
         let account = self
             .adapter
             .get_account(Context::new(), address, number.into())
@@ -141,16 +533,20 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         Ok(account.nonce)
     }
 
-    async fn block_number(&self) -> RpcResult<U256> {
-        self.adapter
-            .get_block_header_by_number(Context::new(), None)
+    async fn inner_get_transaction_count_by_number(&self, number: BlockId) -> Result<U256, Error> {
+        let block = self
+            .adapter
+            .get_block_by_number(Context::new(), number.into())
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?
-            .map(|h| U256::from(h.number))
-            .ok_or_else(|| Error::Custom("Cannot get latest block header".to_string()))
+            .map_err(|e| Error::Custom(e.to_string()))?;
+        let count = match block {
+            Some(bc) => bc.tx_hashes.len(),
+            _ => 0,
+        };
+        Ok(U256::from(count))
     }
 
-    async fn get_balance(&self, address: H160, number: BlockId) -> RpcResult<U256> {
+    async fn inner_get_balance(&self, address: H160, number: BlockId) -> Result<U256, Error> {
         let account = self
             .adapter
             .get_account(Context::new(), address, number.into())
@@ -160,20 +556,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         Ok(account.balance)
     }
 
-    async fn chain_id(&self) -> RpcResult<U256> {
-        self.adapter
-            .get_block_header_by_number(Context::new(), None)
-            .await
-            .map_err(|e| Error::Custom(e.to_string()))?
-            .map(|h| U256::from(h.chain_id))
-            .ok_or_else(|| Error::Custom("Cannot get latest block header".to_string()))
-    }
-
-    async fn net_version(&self) -> RpcResult<U256> {
-        self.chain_id().await
-    }
-
-    async fn call(&self, req: Web3CallRequest, number: BlockId) -> RpcResult<Hex> {
+    async fn inner_call(&self, req: Web3CallRequest, number: BlockId) -> Result<Hex, Error> {
         let data_bytes = req.data.as_bytes();
         let resp = self
             .call_evm(req, data_bytes, number.into())
@@ -183,7 +566,11 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         Ok(call_hex_result)
     }
 
-    async fn estimate_gas(&self, req: Web3CallRequest, number: Option<BlockId>) -> RpcResult<U256> {
+    async fn inner_estimate_gas(
+        &self,
+        req: Web3CallRequest,
+        number: Option<BlockId>,
+    ) -> Result<U256, Error> {
         let num = match number {
             Some(BlockId::Num(n)) => Some(n),
             _ => None,
@@ -197,7 +584,16 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         Ok(resp.gas_used.into())
     }
 
-    async fn get_code(&self, address: H160, number: BlockId) -> RpcResult<Hex> {
+    async fn inner_chain_id(&self) -> Result<U256, Error> {
+        self.adapter
+            .get_block_header_by_number(Context::new(), None)
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?
+            .map(|h| U256::from(h.chain_id))
+            .ok_or_else(|| Error::Custom("Cannot get latest block header".to_string()))
+    }
+
+    async fn inner_get_code(&self, address: H160, number: BlockId) -> Result<Hex, Error> {
         let account = self
             .adapter
             .get_account(Context::new(), address, number.into())
@@ -216,20 +612,10 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         }
     }
 
-    async fn get_transaction_count_by_number(&self, number: BlockId) -> RpcResult<U256> {
-        let block = self
-            .adapter
-            .get_block_by_number(Context::new(), number.into())
-            .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
-        let count = match block {
-            Some(bc) => bc.tx_hashes.len(),
-            _ => 0,
-        };
-        Ok(U256::from(count))
-    }
-
-    async fn get_transaction_receipt(&self, hash: H256) -> RpcResult<Option<Web3Receipt>> {
+    async fn inner_get_transaction_receipt(
+        &self,
+        hash: H256,
+    ) -> Result<Option<Web3Receipt>, Error> {
         let res = self
             .adapter
             .get_transaction_by_hash(Context::new(), hash)
@@ -255,26 +641,15 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         }
     }
 
-    async fn gas_price(&self) -> RpcResult<U256> {
-        Ok(U256::from(8u64))
-    }
-
-    async fn listening(&self) -> RpcResult<bool> {
+    async fn inner_listening(&self) -> Result<bool, Error> {
         Ok(true)
     }
 
-    async fn peer_count(&self) -> RpcResult<U256> {
-        self.adapter
-            .peer_count(Context::new())
-            .await
-            .map_err(|e| Error::Custom(e.to_string()))
+    async fn inner_gas_price(&self) -> Result<U256, Error> {
+        Ok(U256::from(8u64))
     }
 
-    async fn syncing(&self) -> RpcResult<Web3SyncStatus> {
-        Ok(SYNC_STATUS.read().clone().into())
-    }
-
-    async fn get_logs(&self, filter: Web3Filter) -> RpcResult<Vec<Web3Log>> {
+    async fn inner_get_logs(&self, filter: Web3Filter) -> RpcResult<Vec<Web3Log>> {
         if filter.topics.is_none() {
             return Ok(Vec::new());
         }

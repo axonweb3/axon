@@ -1,13 +1,7 @@
-use axum::{
-    http::StatusCode,
-    response::IntoResponse,
-    routing::{get, post},
-    Json, Router,
-};
+use axum::Router;
 
 pub fn prom_server() -> Router {
-    let app = axum::Router::new().route("/metrics", axum::routing::get(get_metrics));
-    app
+    axum::Router::new().route("/metrics", axum::routing::get(get_metrics))
 }
 
 async fn get_metrics() -> String {
