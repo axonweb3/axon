@@ -15,4 +15,5 @@ serde_json = "1.0"
 syn = { version = "1.0", features = ["full"] }
 
 [dev-dependencies]
+protocol = { path = "../../protocol", package = "axon-protocol"}
 common-apm = { path = "../apm" }
