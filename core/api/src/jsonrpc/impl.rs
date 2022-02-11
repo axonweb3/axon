@@ -471,7 +471,6 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         Ok(all_logs)
     }
 
-
     async fn fee_history(
         &self,
         _block_count: u64,
@@ -485,7 +484,6 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             gas_used_ratio:   Vec::new(),
         })
     }
-
 
     async fn client_version(&self) -> RpcResult<String> {
         Ok(self.version.clone())
