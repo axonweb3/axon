@@ -5,7 +5,7 @@ use jsonrpsee::core::Error;
 use core_consensus::SYNC_STATUS;
 use protocol::traits::{APIAdapter, Context};
 use protocol::types::{
-    Block, BlockNumber, Bytes, Header, Hex, Receipt, SignedTransaction, TxResp,
+    Block, BlockNumber, Bytes, Hash, Hasher, Header, Hex, Receipt, SignedTransaction, TxResp,
     UnverifiedTransaction, H160, H256, H64, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
@@ -19,11 +19,15 @@ use crate::APIError;
 
 pub struct JsonRpcImpl<Adapter> {
     adapter: Arc<Adapter>,
+    version: String,
 }
 
 impl<Adapter: APIAdapter> JsonRpcImpl<Adapter> {
-    pub fn new(adapter: Arc<Adapter>) -> Self {
-        Self { adapter }
+    pub fn new(adapter: Arc<Adapter>, version: &str) -> Self {
+        Self {
+            adapter,
+            version: version.to_string(),
+        }
     }
 
     async fn call_evm(
@@ -478,6 +482,21 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             base_fee_per_gas: Vec::new(),
             gas_used_ratio:   Vec::new(),
         })
+    }
+
+    async fn client_version(&self) -> RpcResult<String> {
+        Ok(self.version.clone())
+    }
+
+    async fn accounts(&self) -> RpcResult<Vec<Hex>> {
+        Ok(vec![])
+    }
+
+    async fn sha3(&self, data: Hex) -> RpcResult<Hash> {
+        let decode_data =
+            Hex::decode(data.as_string()).map_err(|e| Error::Custom(e.to_string()))?;
+        let ret = Hasher::digest(decode_data.as_ref());
+        Ok(ret)
     }
 }
 
