@@ -1,33 +1,36 @@
 use std::sync::Arc;
 
 use core_executor::{EVMExecutorAdapter, EvmExecutor};
-use protocol::traits::{APIAdapter, Context, Executor, ExecutorAdapter, MemPool, Storage};
+use protocol::traits::{APIAdapter, Context, Executor, ExecutorAdapter, MemPool, Network, Storage};
 use protocol::types::{
     Account, Block, BlockNumber, Bytes, ExecutorContext, Hash, Header, Proposal, Receipt,
-    SignedTransaction, TxResp, H160,
+    SignedTransaction, TxResp, H160, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
 use crate::APIError;
 
 #[derive(Clone)]
-pub struct DefaultAPIAdapter<M, S, DB> {
+pub struct DefaultAPIAdapter<M, S, DB, Net> {
     mempool: Arc<M>,
     storage: Arc<S>,
     trie_db: Arc<DB>,
+    net:     Arc<Net>,
 }
 
-impl<M, S, DB> DefaultAPIAdapter<M, S, DB>
+impl<M, S, DB, Net> DefaultAPIAdapter<M, S, DB, Net>
 where
     M: MemPool + 'static,
     S: Storage + 'static,
     DB: cita_trie::DB + 'static,
+    Net: Network + 'static,
 {
-    pub fn new(mempool: Arc<M>, storage: Arc<S>, trie_db: Arc<DB>) -> Self {
+    pub fn new(mempool: Arc<M>, storage: Arc<S>, trie_db: Arc<DB>, net: Arc<Net>) -> Self {
         Self {
             mempool,
             storage,
             trie_db,
+            net,
         }
     }
 
@@ -52,11 +55,12 @@ where
 }
 
 #[async_trait]
-impl<M, S, DB> APIAdapter for DefaultAPIAdapter<M, S, DB>
+impl<M, S, DB, Net> APIAdapter for DefaultAPIAdapter<M, S, DB, Net>
 where
     M: MemPool + 'static,
     S: Storage + 'static,
     DB: cita_trie::DB + 'static,
+    Net: Network + 'static,
 {
     async fn insert_signed_txs(
         &self,
@@ -77,9 +81,9 @@ where
         }
     }
 
-    // async fn get_block_by_hash(&self, ctx: Context, hash: Hash) ->
-    // ProtocolResult<Option<Block>> {     self.storage.get_block_by_hash(ctx,
-    // hash).await }
+    async fn get_block_by_hash(&self, ctx: Context, hash: Hash) -> ProtocolResult<Option<Block>> {
+        self.storage.get_block_by_hash(ctx, &hash).await
+    }
 
     async fn get_block_header_by_number(
         &self,
@@ -168,5 +172,9 @@ where
 
     async fn get_code_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>> {
         self.storage.get_code_by_hash(ctx, hash).await
+    }
+
+    async fn peer_count(&self, ctx: Context) -> ProtocolResult<U256> {
+        self.net.peer_count(ctx).map(Into::into)
     }
 }

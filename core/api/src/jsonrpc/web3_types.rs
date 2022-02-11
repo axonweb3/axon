@@ -3,6 +3,7 @@ use std::fmt;
 use serde::de::{Error, MapAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+use core_consensus::SyncStatus as InnerSyncStatus;
 use protocol::codec::ProtocolCodec;
 use protocol::types::{
     AccessList, Block, Bloom, Bytes, Hash, Hex, Public, Receipt, SignedTransaction, H160, H256,
@@ -458,4 +459,73 @@ pub struct Web3Log {
     pub log_index:         Option<U256>,
     #[serde(default)]
     pub removed:           bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Web3SyncStatus {
+    Doing(SyncStatus),
+    False,
+}
+
+impl From<InnerSyncStatus> for Web3SyncStatus {
+    fn from(inner: InnerSyncStatus) -> Self {
+        match inner {
+            InnerSyncStatus::False => Web3SyncStatus::False,
+            InnerSyncStatus::Syncing {
+                start,
+                current,
+                highest,
+            } => Web3SyncStatus::Doing(SyncStatus {
+                starting_block: start,
+                current_block:  current,
+                highest_block:  highest,
+                known_states:   U256::default(),
+                pulled_states:  U256::default(),
+            }),
+        }
+    }
+}
+
+impl Serialize for Web3SyncStatus {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            Web3SyncStatus::Doing(status) => status.serialize(serializer),
+            Web3SyncStatus::False => false.serialize(serializer),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncStatus {
+    pub starting_block: U256,
+    pub current_block:  U256,
+    pub highest_block:  U256,
+    pub known_states:   U256,
+    pub pulled_states:  U256,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sync_status_json() {
+        let status = Web3SyncStatus::False;
+        let json = json::parse(&serde_json::to_string(&status).unwrap()).unwrap();
+        assert!(json.is_boolean());
+
+        let status = Web3SyncStatus::Doing(SyncStatus {
+            starting_block: fastrand::u64(..).into(),
+            current_block:  fastrand::u64(..).into(),
+            highest_block:  fastrand::u64(..).into(),
+            known_states:   U256::default(),
+            pulled_states:  U256::default(),
+        });
+        let json = json::parse(&serde_json::to_string(&status).unwrap()).unwrap();
+        assert!(json.is_object());
+    }
 }

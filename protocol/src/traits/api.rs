@@ -5,6 +5,7 @@ use crate::types::{
 };
 use crate::ProtocolResult;
 use async_trait::async_trait;
+use ethereum_types::U256;
 
 #[async_trait]
 pub trait APIAdapter: Send + Sync {
@@ -20,8 +21,7 @@ pub trait APIAdapter: Send + Sync {
         height: Option<u64>,
     ) -> ProtocolResult<Option<Block>>;
 
-    // async fn get_block_by_hash(&self, ctx: Context, hash: Hash) ->
-    // ProtocolResult<Option<Block>>;
+    async fn get_block_by_hash(&self, ctx: Context, hash: Hash) -> ProtocolResult<Option<Block>>;
 
     async fn get_block_header_by_number(
         &self,
@@ -72,4 +72,6 @@ pub trait APIAdapter: Send + Sync {
     ) -> ProtocolResult<TxResp>;
 
     async fn get_code_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>>;
+
+    async fn peer_count(&self, ctx: Context) -> ProtocolResult<U256>;
 }
