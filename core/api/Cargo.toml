@@ -15,8 +15,9 @@ serde = { version = "1.0", features = ["derive"] }
 
 protocol = { path = "../../protocol", package = "axon-protocol"}
 common-config-parser = { path = "../../common/config-parser" }
-core-consensus = { path = "../../core/consensus" }
 core-executor = { path = "../../core/executor" }
+common-apm = { path = "../../common/apm" }
+core-consensus = { path = "../../core/consensus" }
 
 [dev-dependencies]
 fastrand = "1.7"
