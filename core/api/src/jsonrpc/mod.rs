@@ -16,6 +16,7 @@ use crate::jsonrpc::web3_types::{
     BlockId, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter, Web3Log, Web3Receipt,
     Web3SyncStatus, Web3Transaction,
 };
+
 use crate::APIError;
 
 type RpcResult<T> = Result<T, Error>;

@@ -14,6 +14,7 @@ use crate::jsonrpc::web3_types::{
     BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter,
     Web3Log, Web3Receipt, Web3SyncStatus, Web3Transaction,
 };
+
 use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
 use crate::APIError;
 
@@ -470,6 +471,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         Ok(all_logs)
     }
 
+
     async fn fee_history(
         &self,
         _block_count: u64,
@@ -483,6 +485,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             gas_used_ratio:   Vec::new(),
         })
     }
+
 
     async fn client_version(&self) -> RpcResult<String> {
         Ok(self.version.clone())
