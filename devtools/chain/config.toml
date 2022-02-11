@@ -17,7 +17,6 @@ client_version = "0.1.0"
 # private_key_file_path = "key.pem"
 # certificate_chain_file_path = "cert.pem"
 
-
 [network]
 listening_address = "/ip4/0.0.0.0/tcp/8001"
 rpc_timeout = 10
