@@ -1,6 +1,7 @@
 name: Benchamark CI
 on:
   pull_request:
+
 jobs:
   build:
     runs-on: self-hosted

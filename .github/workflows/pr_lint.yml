@@ -1,7 +1,7 @@
 name: Conventional PR
 on:
   pull_request:
-
+    types: ['opened', 'edited', 'reopened', 'synchronize']
 jobs:
   Lint:
     runs-on: ubuntu-latest
