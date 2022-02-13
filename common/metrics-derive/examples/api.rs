@@ -1,6 +1,6 @@
 use async_trait::async_trait;
+use common_metrics_derive::metrics_rpc;
 use jsonrpsee::core::Error;
-use metrics_derive::metrics_rpc;
 
 use protocol::types::{Hash, SignedTransaction};
 
