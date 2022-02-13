@@ -18,6 +18,7 @@ common-config-parser = { path = "../../common/config-parser" }
 core-executor = { path = "../../core/executor" }
 common-apm = { path = "../../common/apm" }
 core-consensus = { path = "../../core/consensus" }
+metrics-derive =  { path = "../../common/metrics-derive" }
 
 [dev-dependencies]
 fastrand = "1.7"
