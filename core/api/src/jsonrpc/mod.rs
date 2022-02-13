@@ -9,13 +9,14 @@ use jsonrpsee::{core::Error, proc_macros::rpc};
 
 use common_config_parser::types::ConfigApi;
 use protocol::traits::APIAdapter;
-use protocol::types::{Hex, H160, H256, U256};
+use protocol::types::{Hash, Hex, H160, H256, U256};
 use protocol::ProtocolResult;
 
 use crate::jsonrpc::web3_types::{
     BlockId, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter, Web3Log, Web3Receipt,
     Web3SyncStatus, Web3Transaction,
 };
+
 use crate::APIError;
 
 type RpcResult<T> = Result<T, Error>;
@@ -97,6 +98,15 @@ pub trait AxonJsonRpc {
         newest_block: BlockId,
         reward_percentiles: Option<Vec<u64>>,
     ) -> RpcResult<Web3FeeHistory>;
+
+    #[method(name = "web3_clientVersion")]
+    async fn client_version(&self) -> RpcResult<String>;
+
+    #[method(name = "eth_accounts")]
+    async fn accounts(&self) -> RpcResult<Vec<Hex>>;
+
+    #[method(name = "web3_sha3")]
+    async fn sha3(&self, data: Hex) -> RpcResult<Hash>;
 }
 
 pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
@@ -113,7 +123,10 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
 
         ret.0 = Some(
             server
-                .start(r#impl::JsonRpcImpl::new(Arc::clone(&adapter)).into_rpc())
+                .start(
+                    r#impl::JsonRpcImpl::new(Arc::clone(&adapter), &config.client_version)
+                        .into_rpc(),
+                )
                 .map_err(|e| APIError::HttpServer(e.to_string()))?,
         );
     }
@@ -128,7 +141,7 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
 
         ret.1 = Some(
             server
-                .start(r#impl::JsonRpcImpl::new(adapter).into_rpc())
+                .start(r#impl::JsonRpcImpl::new(adapter, &config.client_version).into_rpc())
                 .map_err(|e| APIError::WebSocketServer(e.to_string()))?,
         )
     }

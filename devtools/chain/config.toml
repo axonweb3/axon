@@ -11,11 +11,11 @@ http_listening_address = "127.0.0.1:8000"
 ws_listening_address = "127.0.0.1:8010"
 maxconn = 25000
 max_payload_size = 1048576
+client_version = "0.1.0"
 # enable_dump_profile = false
 # [graphql.tls]
 # private_key_file_path = "key.pem"
 # certificate_chain_file_path = "cert.pem"
-
 
 [network]
 listening_address = "/ip4/0.0.0.0/tcp/8001"
