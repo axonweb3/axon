@@ -38,7 +38,6 @@ pub fn expand_rpc_metrics(attr: TokenStream, func: TokenStream) -> TokenStream {
                     .#func_ident
                     .success
                     .inc();
-
                 common_apm::metrics::api::API_REQUEST_TIME_HISTOGRAM_STATIC
                     .#func_ident
                     .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
@@ -50,26 +49,25 @@ pub fn expand_rpc_metrics(attr: TokenStream, func: TokenStream) -> TokenStream {
         quote! {
             let inst = std::time::Instant::now();
 
-                let ret: #func_ret_ty = #func_block;
+            let ret: #func_ret_ty = #func_block;
 
-                if ret.is_err() {
-                    common_apm::metrics::api::API_REQUEST_RESULT_COUNTER_VEC_STATIC
-                        .#func_ident
-                        .failure
-                        .inc();
-                    return ret;
-                }
-
+            if ret.is_err() {
                 common_apm::metrics::api::API_REQUEST_RESULT_COUNTER_VEC_STATIC
                     .#func_ident
-                    .success
+                    .failure
                     .inc();
+                return ret;
+            }
 
-                common_apm::metrics::api::API_REQUEST_TIME_HISTOGRAM_STATIC
-                    .#func_ident
-                    .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+            common_apm::metrics::api::API_REQUEST_RESULT_COUNTER_VEC_STATIC
+                .#func_ident
+                .success
+                .inc();
+            common_apm::metrics::api::API_REQUEST_TIME_HISTOGRAM_STATIC
+                .#func_ident
+                .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
 
-                ret
+            ret
         }
     };
 
