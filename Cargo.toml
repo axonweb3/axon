@@ -12,17 +12,18 @@ common-apm = { path = "./common/apm" }
 common-config-parser = { path = "./common/config-parser" }
 common-crypto = { path = "./common/crypto" }
 common-logger = { path = "./common/logger" }
-protocol = { path = "./protocol", package = "axon-protocol" }
 core-api = { path = "./core/api" }
-core-cli = { path = "./core/cli"}
+core-cli = { path = "./core/cli" }
 core-consensus = { path = "./core/consensus" }
 core-mempool = { path = "./core/mempool" }
 core-network = { path = "./core/network" }
 core-storage = { path = "./core/storage" }
+protocol = { path = "./protocol", package = "axon-protocol" }
 
 [workspace]
 members = [
-    "devtools/keypair",
+
+    "byzantine",
 
     "common/apm",
     "common/channel",
@@ -35,17 +36,16 @@ members = [
 
     "core/api",
     "core/cli",
-    "core/cross-client",
     "core/consensus",
+    "core/cross-client",
     "core/executor",
     "core/mempool",
     "core/network",
     "core/run",
     "core/storage",
+    "devtools/keypair",
     
     "protocol",
-
-    "byzantine",
 ]
 
 [features]

@@ -2,7 +2,6 @@
 name = "core-mempool"
 version = "0.1.0"
 edition = "2021"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -12,15 +11,15 @@ dashmap = { version = "5.1", features = ["rayon"] }
 futures = { version = "0.3", features = [ "async-await" ] }
 indexmap = { version = "1.7", features = ["rayon"] }
 log = "0.4"
+parking_lot = "0.12"
 rayon = "1.5"
 rlp = "0.5"
 rlp-derive = "0.1"
-parking_lot = "0.12"
-
-protocol = { path = "../../protocol", package = "axon-protocol"}
 common-apm = { path = "../../common/apm" }
 common-crypto = { path = "../../common/crypto" }
 core-executor = { path = "../../core/executor" }
+
+protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [dev-dependencies]
 criterion = { version = "0.3", features = ["async_tokio"] }

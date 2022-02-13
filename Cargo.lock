@@ -827,6 +827,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "common-metrics-derive"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "axon-protocol",
+ "common-apm",
+ "jsonrpsee",
+ "proc-macro2",
+ "quote",
+ "serde_json",
+ "syn",
+]
+
+[[package]]
 name = "common-pubsub"
 version = "0.2.1"
 
@@ -853,13 +867,13 @@ dependencies = [
  "cita_trie",
  "common-apm",
  "common-config-parser",
+ "common-metrics-derive",
  "core-consensus",
  "core-executor",
  "fastrand",
  "json",
  "jsonrpsee",
  "log",
- "metrics-derive",
  "parking_lot 0.12.0",
  "serde",
  "serde_json",
@@ -2322,20 +2336,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "171d2f700835121c3b04ccf0880882987a050fd5c7ae88148abf537d33dd3a56"
 dependencies = [
  "cfg-if",
-]
-
-[[package]]
-name = "metrics-derive"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "axon-protocol",
- "common-apm",
- "jsonrpsee",
- "proc-macro2",
- "quote",
- "serde_json",
- "syn",
 ]
 
 [[package]]

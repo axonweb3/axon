@@ -2,33 +2,32 @@
 name = "core-run"
 version = "0.1.0"
 edition = "2021"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+axum = "0.4.5"
 backtrace = "0.3"
+cita_trie = "3.0"
+clap = "3.0"
 futures = "0.3"
+log = "0.4"
 parking_lot = "0.12"
+rlp = "0.5"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
-log = "0.4"
-clap = "3.0"
-rlp = "0.5"
 toml = "0.5"
-cita_trie = "3.0"
-axum = "0.4.5"
 
 common-apm = { path = "../../common/apm" }
 common-config-parser = { path = "../../common/config-parser" }
 common-crypto = { path = "../../common/crypto" }
 common-logger = { path = "../../common/logger" }
-protocol = { path = "../../protocol", package = "axon-protocol" }
 core-api = { path = "../../core/api" }
-core-executor = { path = "../../core/executor" }
-core-storage = { path = "../../core/storage" }
-core-mempool = { path = "../../core/mempool" }
-core-network = { path = "../../core/network" }
 core-consensus = { path = "../../core/consensus" }
 core-cross-client = { path = "../../core/cross-client" }
+core-executor = { path = "../../core/executor" }
+core-mempool = { path = "../../core/mempool" }
+core-network = { path = "../../core/network" }
+core-storage = { path = "../../core/storage" }
+protocol = { path = "../../protocol", package = "axon-protocol" }
 
