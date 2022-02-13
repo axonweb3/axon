@@ -2328,8 +2328,10 @@ dependencies = [
 name = "metrics-derive"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
  "axon-protocol",
  "common-apm",
+ "jsonrpsee",
  "proc-macro2",
  "quote",
  "serde_json",

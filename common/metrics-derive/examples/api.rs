@@ -1,15 +1,28 @@
-use std::io::Error;
-
+use async_trait::async_trait;
+use jsonrpsee::core::Error;
 use metrics_derive::metrics_rpc;
 
 use protocol::types::{Hash, SignedTransaction};
 
+#[async_trait]
+pub trait Rpc {
+    async fn send_transaction(&self, tx: SignedTransaction) -> Result<Hash, Error>;
+
+    fn listening(&self) -> Result<bool, Error>;
+}
+
 pub struct RpcExample;
 
-impl RpcExample {
+#[async_trait]
+impl Rpc for RpcExample {
     #[metrics_rpc("eth_sendRawTransaction")]
-    fn send_raw_transaction(&self, tx: SignedTransaction) -> Result<Hash, Error> {
+    async fn send_transaction(&self, tx: SignedTransaction) -> Result<Hash, Error> {
         Ok(tx.transaction.hash)
+    }
+
+    #[metrics_rpc("net_listening")]
+    fn listening(&self) -> Result<bool, Error> {
+        Ok(false)
     }
 }
 
