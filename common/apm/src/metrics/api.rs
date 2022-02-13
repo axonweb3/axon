@@ -12,6 +12,7 @@ make_auto_flush_static_metric! {
         eth_getTransactionByHash,
         eth_getBlockByNumber,
         eth_blockNumber,
+        eth_getBlockByHash,
         eth_getTransactionCount,
         eth_getBlockTransactionCountByNumber,
         eth_getBalance,
@@ -21,8 +22,10 @@ make_auto_flush_static_metric! {
         net_version,
         eth_getCode,
         eth_getTransactionReceipt,
+        net_peerCount,
         net_listening,
         eth_gasPrice,
+        eth_syncing,
         eth_getLogs,
         get_block,
     }

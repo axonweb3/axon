@@ -16,10 +16,9 @@ use crate::jsonrpc::web3_types::{
     BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter,
     Web3Log, Web3Receipt, Web3SyncStatus, Web3Transaction,
 };
+
 use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
 use crate::APIError;
-
-use metrics_derive::metrics_rpc;
 
 pub struct JsonRpcImpl<Adapter> {
     adapter: Arc<Adapter>,
@@ -113,6 +112,44 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         let block = self
             .adapter
             .get_block_by_number(Context::new(), number.into())
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+
+        match block {
+            Some(b) => {
+                let capacity = b.tx_hashes.len();
+                let mut ret = Web3Block::from(b);
+                if show_rich_tx {
+                    let mut txs = Vec::with_capacity(capacity);
+                    for tx in ret.transactions.iter() {
+                        let tx = self
+                            .adapter
+                            .get_transaction_by_hash(Context::new(), tx.get_hash())
+                            .await
+                            .map_err(|e| Error::Custom(e.to_string()))?
+                            .unwrap();
+
+                        txs.push(RichTransactionOrHash::Rich(tx));
+                    }
+
+                    ret.transactions = txs;
+                }
+
+                Ok(Some(ret))
+            }
+            None => Ok(None),
+        }
+    }
+
+    #[metrics_rpc("eth_getBlockByHash")]
+    async fn get_block_by_hash(
+        &self,
+        hash: H256,
+        show_rich_tx: bool,
+    ) -> RpcResult<Option<Web3Block>> {
+        let block = self
+            .adapter
+            .get_block_by_hash(Context::new(), hash)
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
@@ -281,7 +318,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         Ok(U256::from(8u64))
     }
 
-    #[metrics_rpc("net_listening")]
+    // #[metrics_rpc("net_listening")]
     async fn listening(&self) -> RpcResult<bool> {
         Ok(true)
     }
@@ -294,7 +331,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             .map_err(|e| Error::Custom(e.to_string()))
     }
 
-    // #[metrics_rpc("eth_syncing")]
+    #[metrics_rpc("eth_syncing")]
     async fn syncing(&self) -> RpcResult<Web3SyncStatus> {
         Ok(SYNC_STATUS.read().clone().into())
     }
