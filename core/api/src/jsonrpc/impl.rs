@@ -10,7 +10,6 @@ use protocol::types::{
     UnverifiedTransaction, H160, H256, H64, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
-use std::time::Instant;
 
 use crate::jsonrpc::web3_types::{
     BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter,
