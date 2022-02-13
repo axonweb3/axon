@@ -36,7 +36,7 @@ impl PinBoxFutRet {
             Type::Path(TypePath { qself: _, path }) => {
                 let last_seg = path.segments.last().cloned();
                 match last_seg.map(|ls| (ls.ident.clone(), ls)) {
-                    Some((ls_ident, ls)) if ls_ident.to_string() == PIN => ls,
+                    Some((ls_ident, ls)) if ls_ident == PIN => ls,
                     _ => return PinBoxFutRet::default(),
                 }
             }
