@@ -6,20 +6,20 @@ edition = "2021"
 
 [dependencies]
 cita_trie = "3.0"
+common-apm = { path = "../../common/apm" }
+common-crypto = { path = "../../common/crypto" }
+core-executor = { path = "../../core/executor" }
 crossbeam-queue = "0.3"
 dashmap = { version = "5.1", features = ["rayon"] }
 futures = { version = "0.3", features = [ "async-await" ] }
 indexmap = { version = "1.7", features = ["rayon"] }
 log = "0.4"
 parking_lot = "0.12"
+
+protocol = { path = "../../protocol", package = "axon-protocol" }
 rayon = "1.5"
 rlp = "0.5"
 rlp-derive = "0.1"
-common-apm = { path = "../../common/apm" }
-common-crypto = { path = "../../common/crypto" }
-core-executor = { path = "../../core/executor" }
-
-protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [dev-dependencies]
 criterion = { version = "0.3", features = ["async_tokio"] }

@@ -9,18 +9,18 @@ cita_trie = "3.0"
 ckb-hash = "0.101"
 ckb-jsonrpc-types = "0.101"
 ckb-types = "0.101.3"
+common-config-parser = { path = "../../common/config-parser" }
+common-crypto = { path = "../../common/crypto" }
+core-executor = { path = "../../core/executor" }
 ethabi = "16.0"
 ethabi-contract = "16.0"
 ethabi-derive = "16.0"
 futures = "0.3"
 jsonrpc-core = "18.0"
 log = "0.4"
+
+protocol = { path = "../../protocol", package = "axon-protocol" }
 reqwest = { version = "0.11.1", features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio-util = { version = "0.6", features = ["codec"] }
-common-config-parser = { path = "../../common/config-parser" }
-common-crypto = { path = "../../common/crypto" }
-core-executor = { path = "../../core/executor" }
-
-protocol = { path = "../../protocol", package = "axon-protocol" }

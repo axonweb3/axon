@@ -2,7 +2,6 @@
 name = "axon-protocol"
 version = "0.1.0"
 edition = "2021"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -10,6 +9,8 @@ arc-swap = "1.5"
 async-trait = "0.1"
 bincode = "1.3"
 bytes = { version = "1.1", features = ["serde"] }
+
+common-crypto = { path = "../common/crypto" }
 creep = "0.2"
 derive_more = "0.99"
 ethereum = "0.11"
@@ -18,14 +19,12 @@ evm = { version = "0.33", features = ["with-codec", "with-serde"] }
 hasher = { version = "0.1", features = ["hash-keccak"] }
 hex-simd = "0.5"
 lazy_static = "1.4"
-rlp = "0.5"
-ophelia-secp256k1 = "0.3"
 ophelia = "0.3"
+ophelia-secp256k1 = "0.3"
 overlord = "0.3"
+rlp = "0.5"
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1.16", features = ["full"] }
-
-common-crypto = { path = "../common/crypto" }
 
 [dev-dependencies]
 getrandom = "0.2"
