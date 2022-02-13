@@ -505,7 +505,7 @@ impl Axon {
 
         // Start http server
         tokio::spawn(async move {
-            let addr = std::net::SocketAddr::from(([127, 0, 0, 1], 3000));
+            let addr = std::net::SocketAddr::from(([127, 0, 0, 1], 8100));
             axum::Server::bind(&addr)
                 .serve(common_apm::prom_server::prom_server().into_make_service())
                 .await
