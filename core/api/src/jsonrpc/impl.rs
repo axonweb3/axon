@@ -323,7 +323,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         Ok(true)
     }
 
-    // #[metrics_rpc("net_peerCount")]
+    #[metrics_rpc("net_peerCount")]
     async fn peer_count(&self) -> RpcResult<U256> {
         self.adapter
             .peer_count(Context::new())
@@ -331,7 +331,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             .map_err(|e| Error::Custom(e.to_string()))
     }
 
-    // #[metrics_rpc("eth_syncing")]
+    #[metrics_rpc("eth_syncing")]
     async fn syncing(&self) -> RpcResult<Web3SyncStatus> {
         Ok(SYNC_STATUS.read().clone().into())
     }
