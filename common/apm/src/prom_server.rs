@@ -1,7 +1,7 @@
 use axum::Router;
 
 pub fn prom_server() -> Router {
-    axum::Router::new().route("/metrics", axum::routing::get(get_metrics))
+    Router::new().route("/metrics", axum::routing::get(get_metrics))
 }
 
 async fn get_metrics() -> String {
