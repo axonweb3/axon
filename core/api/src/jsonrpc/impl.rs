@@ -318,7 +318,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         Ok(U256::from(8u64))
     }
 
-    // #[metrics_rpc("net_listening")]
+    #[metrics_rpc("net_listening")]
     async fn listening(&self) -> RpcResult<bool> {
         Ok(true)
     }
@@ -331,7 +331,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             .map_err(|e| Error::Custom(e.to_string()))
     }
 
-    #[metrics_rpc("eth_syncing")]
+    // #[metrics_rpc("eth_syncing")]
     async fn syncing(&self) -> RpcResult<Web3SyncStatus> {
         Ok(SYNC_STATUS.read().clone().into())
     }
