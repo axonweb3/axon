@@ -22,7 +22,6 @@ common-apm = { path = "../../common/apm" }
 common-merkle = { path = "../../common/merkle" }
 protocol = { path = "../../protocol", package = "axon-protocol" }
 
-
 [dev-dependencies]
 common-crypto = { path = "../../common/crypto" }
 
