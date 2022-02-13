@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  Build:
+  Format:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -16,5 +16,21 @@ jobs:
           components: rustfmt, clippy
           toolchain: nightly
 
-      - name: fmt
+      - name: check-fmt
         run: make check-fmt
+
+  Sort:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          components: rustfmt, clippy
+          toolchain: nightly
+      
+      - name: install-cargo-sort
+        run: cargo install cargo-sort
+
+      - name: check-sort
+        run: cargo sort -gwc
