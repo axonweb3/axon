@@ -6,8 +6,6 @@ edition = "2021"
 
 [dependencies]
 cita_trie = "3.0"
-common-apm = { path = "../../common/apm" }
-common-merkle = { path = "../../common/merkle" }
 crossbeam-channel = "0.5"
 dashmap = "5.1"
 evm = "0.33"
@@ -16,11 +14,13 @@ hasher = "0.1"
 lazy_static = "1.4"
 log = "0.4"
 parking_lot = "0.12"
-
-protocol = { path = "../../protocol", package = "axon-protocol" }
 rand = { version = "0.8", features = ["small_rng"] }
 rlp = "0.5"
 rocksdb = { version = "0.16", package = "ckb-rocksdb" }
+
+common-apm = { path = "../../common/apm" }
+common-merkle = { path = "../../common/merkle" }
+protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [dev-dependencies]
 common-crypto = { path = "../../common/crypto" }

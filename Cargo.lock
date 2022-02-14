@@ -813,7 +813,6 @@ dependencies = [
  "log4rs",
  "rustracing_jaeger",
  "serde",
- "serde_derive",
 ]
 
 [[package]]
@@ -822,7 +821,6 @@ version = "0.2.1"
 dependencies = [
  "axon-protocol",
  "rand 0.7.3",
- "rayon",
  "static_merkle_tree",
 ]
 

@@ -6,13 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
-core-consensus = { path = "../../core/consensus" }
-core-mempool = { path = "../../core/mempool" }
-protocol = { path = "../../protocol", package = "axon-protocol" }
 reqwest = "0.11"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 stringreader = "0.1"
 tentacle-multiaddr = "0.3"
 toml = "0.5"
+
+core-consensus = { path = "../../core/consensus" }
+core-mempool = { path = "../../core/mempool" }
+protocol = { path = "../../protocol", package = "axon-protocol" }
