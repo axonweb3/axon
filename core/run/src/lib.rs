@@ -10,7 +10,7 @@ use std::time::Duration;
 use backtrace::Backtrace;
 use parking_lot::Mutex;
 
-use common_apm::muta_apm;
+use common_apm::{muta_apm, server::run_prometheus_server};
 use common_config_parser::types::Config;
 use common_crypto::{
     BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey,
@@ -581,7 +581,7 @@ impl Axon {
             None => std::net::SocketAddr::from(([0, 0, 0, 0], 8100)),
         };
         tokio::spawn(async move {
-            common_apm::server::run_prometheus_server(prometheus_listening_address);
+            run_prometheus_server(prometheus_listening_address).await;
         });
     }
 
