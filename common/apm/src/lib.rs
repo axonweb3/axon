@@ -2,9 +2,7 @@
 #![allow(clippy::float_cmp)]
 
 pub mod metrics;
-pub mod prom_server;
-
+pub mod server;
 pub use muta_apm;
-
 pub use prometheus;
 pub use prometheus_static_metric;

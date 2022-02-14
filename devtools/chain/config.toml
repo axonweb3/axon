@@ -56,6 +56,7 @@ max_open_files = 64
 #service_name = "muta"
 #tracing_address = "0.0.0.1:6831"
 #tracing_batch_size = 50
+#prometheus_listening_address = "0.0.0.0:8200"
 
 [cross_client]
 axon_udt_hash = "0xf32ec1e3274c27ac4cc018c92efec443847e9b78ba8cbedca36f0fa8c35d1c9e"

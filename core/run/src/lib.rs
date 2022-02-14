@@ -503,14 +503,8 @@ impl Axon {
         ));
         let _handles = run_jsonrpc_server(self.config.rpc.clone(), api_adapter).await?;
 
-        // Start http server
-        tokio::spawn(async move {
-            let addr = std::net::SocketAddr::from(([127, 0, 0, 1], 8100));
-            axum::Server::bind(&addr)
-                .serve(common_apm::prom_server::prom_server().into_make_service())
-                .await
-                .unwrap();
-        });
+        // Start prometheus http server
+        Self::run_prometheus_server(config);
 
         // Run sync
         tokio::spawn(async move {
@@ -579,6 +573,19 @@ impl Axon {
         };
 
         Ok(())
+    }
+
+    fn run_prometheus_server(config: Config) {
+        let prometheus_listening_address = match config.apm {
+            Some(apm_config) => apm_config.prometheus_listening_address,
+            None => std::net::SocketAddr::from(([0, 0, 0, 0], 8100)),
+        };
+        tokio::spawn(async move {
+            axum::Server::bind(&prometheus_listening_address)
+                .serve(common_apm::server::prometheus_server().into_make_service())
+                .await
+                .unwrap();
+        });
     }
 
     fn panic_log(info: &panic::PanicInfo) {

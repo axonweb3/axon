@@ -1,4 +1,5 @@
 #![allow(non_snake_case)]
+
 use crate::metrics::{
     auto_flush_from, exponential_buckets, make_auto_flush_static_metric, register_counter_vec,
     register_histogram_vec, CounterVec, HistogramVec,
