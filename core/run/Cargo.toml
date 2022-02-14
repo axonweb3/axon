@@ -5,7 +5,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = "0.4.5"
 backtrace = "0.3"
 cita_trie = "3.0"
 clap = "3.0"

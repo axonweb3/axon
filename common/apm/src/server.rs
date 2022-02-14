@@ -1,7 +1,12 @@
 use axum::Router;
+use std::net::SocketAddr;
 
-pub fn prometheus_server() -> Router {
-    Router::new().route("/metrics", axum::routing::get(get_metrics))
+pub async fn run_prometheus_server(prometheus_listening_address: SocketAddr) {
+    let router = Router::new().route("/metrics", axum::routing::get(get_metrics));
+    axum::Server::bind(&prometheus_listening_address)
+        .serve(router.into_make_service())
+        .await
+        .unwrap();
 }
 
 async fn get_metrics() -> String {

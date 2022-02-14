@@ -581,10 +581,7 @@ impl Axon {
             None => std::net::SocketAddr::from(([0, 0, 0, 0], 8100)),
         };
         tokio::spawn(async move {
-            axum::Server::bind(&prometheus_listening_address)
-                .serve(common_apm::server::prometheus_server().into_make_service())
-                .await
-                .unwrap();
+            common_apm::server::run_prometheus_server(prometheus_listening_address);
         });
     }
 
