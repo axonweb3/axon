@@ -74,4 +74,12 @@ pub trait APIAdapter: Send + Sync {
     async fn get_code_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>>;
 
     async fn peer_count(&self, ctx: Context) -> ProtocolResult<U256>;
+
+    async fn get_storage_at(
+        &self,
+        ctx: Context,
+        address: H160,
+        position: Hash,
+        height: Option<u64>,
+    ) -> ProtocolResult<Bytes>;
 }

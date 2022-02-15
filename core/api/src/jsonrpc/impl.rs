@@ -602,6 +602,22 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         }
         Ok(None)
     }
+
+    #[metrics_rpc("eth_getStorageAt")]
+    async fn get_storage_at(
+        &self,
+        address: H160,
+        position: Hash,
+        number: BlockId,
+    ) -> RpcResult<Hex> {
+        let value = self
+            .adapter
+            .get_storage_at(Context::new(), address, position, number.into())
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+
+        Ok(Hex::encode(&value))
+    }
 }
 
 fn mock_header_by_call_req(latest_header: Header, call_req: &Web3CallRequest) -> Header {

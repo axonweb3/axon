@@ -127,6 +127,14 @@ pub trait AxonJsonRpc {
         number: BlockId,
         position: U256,
     ) -> RpcResult<Option<Web3Transaction>>;
+
+    #[method(name = "eth_getStorageAt")]
+    async fn get_storage_at(
+        &self,
+        address: H160,
+        position: Hash,
+        number: BlockId,
+    ) -> RpcResult<Hex>;
 }
 
 pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(

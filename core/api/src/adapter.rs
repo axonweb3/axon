@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use core_executor::{EVMExecutorAdapter, EvmExecutor};
+use core_executor::{EVMExecutorAdapter, EvmExecutor, MPTTrie};
 use protocol::traits::{APIAdapter, Context, Executor, ExecutorAdapter, MemPool, Network, Storage};
 use protocol::types::{
     Account, Block, BlockNumber, Bytes, ExecutorContext, Hash, Header, Proposal, Receipt,
@@ -176,5 +176,34 @@ where
 
     async fn peer_count(&self, ctx: Context) -> ProtocolResult<U256> {
         self.net.peer_count(ctx).map(Into::into)
+    }
+
+    async fn get_storage_at(
+        &self,
+        ctx: Context,
+        address: H160,
+        position: Hash,
+        height: Option<u64>,
+    ) -> ProtocolResult<Bytes> {
+        let block = self
+            .get_block_by_number(ctx, height)
+            .await?
+            .ok_or_else(|| APIError::Adapter("Can't find this block".to_string()))?;
+
+        let state_mpt_tree =
+            MPTTrie::from_root(block.header.state_root, Arc::clone(&self.trie_db)).unwrap();
+
+        let raw_account = state_mpt_tree
+            .get(address.as_bytes())?
+            .ok_or_else(|| APIError::Adapter("Can't find this address".to_string()))?;
+
+        let account = Account::decode(raw_account).unwrap();
+
+        let storage_mpt_tree =
+            MPTTrie::from_root(account.storage_root, Arc::clone(&self.trie_db)).unwrap();
+
+        storage_mpt_tree
+            .get(position.as_bytes())?
+            .ok_or_else(|| APIError::Adapter("Can't find this position".to_string()).into())
     }
 }
