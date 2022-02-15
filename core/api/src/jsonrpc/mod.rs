@@ -85,6 +85,9 @@ pub trait AxonJsonRpc {
     #[method(name = "eth_syncing")]
     async fn syncing(&self) -> RpcResult<Web3SyncStatus>;
 
+    #[method(name = "eth_mining")]
+    async fn mining(&self) -> RpcResult<bool>;
+
     #[method(name = "eth_gasPrice")]
     async fn gas_price(&self) -> RpcResult<U256>;
 
@@ -107,6 +110,23 @@ pub trait AxonJsonRpc {
 
     #[method(name = "web3_sha3")]
     async fn sha3(&self, data: Hex) -> RpcResult<Hash>;
+
+    #[method(name = "eth_getTransactionCountByHash")]
+    async fn get_block_transaction_count_by_hash(&self, hash: Hash) -> RpcResult<U256>;
+
+    #[method(name = "eth_getTransactionByBlockHashAndIndex")]
+    async fn get_transaction_by_block_hash_and_index(
+        &self,
+        hash: Hash,
+        position: U256,
+    ) -> RpcResult<Option<Web3Transaction>>;
+
+    #[method(name = "eth_getTransactionByBlockNumberAndIndex")]
+    async fn get_transaction_by_block_number_and_index(
+        &self,
+        number: BlockId,
+        position: U256,
+    ) -> RpcResult<Option<Web3Transaction>>;
 }
 
 pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(

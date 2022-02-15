@@ -29,6 +29,14 @@ make_auto_flush_static_metric! {
         eth_syncing,
         eth_getLogs,
         get_block,
+        eth_mining,
+        eth_feeHistory,
+        web3_clientVersion,
+        eth_accounts,
+        web3_sha3,
+        eth_getTransactionCountByHash,
+        eth_getTransactionByBlockHashAndIndex,
+        eth_getTransactionByBlockNumberAndIndex,
     }
 
     pub label_enum Request_Result {
