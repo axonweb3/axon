@@ -3,14 +3,15 @@ name = "common-apm"
 version = "0.2.1"
 authors = ["Nervos Dev <dev@nervos.org>"]
 edition = "2021"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-protocol = { path = "../../protocol", package = "axon-protocol" }
-
+axum = "0.4"
+derive_more = "0.99"
+hyper = { version = "0.14", features = ["http1", "server"] }
+lazy_static = "1.4"
 muta-apm = "0.1.0-alpha.15"
 prometheus = "0.13"
 prometheus-static-metric = "0.5"
-derive_more = "0.99"
-lazy_static = "1.4"
+
+protocol = { path = "../../protocol", package = "axon-protocol" }

@@ -2,7 +2,6 @@
 name = "core-executor"
 version = "0.1.0"
 edition = "2021"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -14,25 +13,25 @@ futures = "0.3"
 hasher = "0.1"
 lazy_static = "1.4"
 log = "0.4"
+parking_lot = "0.12"
 rand = { version = "0.8", features = ["small_rng"] }
 rlp = "0.5"
 rocksdb = { version = "0.16", package = "ckb-rocksdb" }
-parking_lot = "0.12"
 
-protocol = { path = "../../protocol", package = "axon-protocol"}
 common-apm = { path = "../../common/apm" }
 common-merkle = { path = "../../common/merkle" }
+protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [dev-dependencies]
+common-crypto = { path = "../../common/crypto" }
+
+core-storage = { path = "../storage" }
 criterion = "0.3"
-getrandom = "0.2"
 ethabi = "16.0"
 ethabi-contract = "16.0"
 ethabi-derive = "16.0"
+getrandom = "0.2"
 tempfile = "3.3"
-
-core-storage = { path = "../storage" }
-common-crypto = { path = "../../common/crypto" }
 
 [[bench]]
 name = "bench_transfer"

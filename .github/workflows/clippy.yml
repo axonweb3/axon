@@ -6,7 +6,7 @@ on:
   pull_request:
 
 jobs:
-  Build:
+  Clippy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -15,5 +15,5 @@ jobs:
           profile: minimal
           components: rustfmt, clippy
 
-      - name: clippy
+      - name: cargo-clippy
         run: make clippy && git diff --exit-code Cargo.lock

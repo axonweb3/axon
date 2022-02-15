@@ -138,9 +138,10 @@ impl Default for ConfigLogger {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct ConfigAPM {
-    pub service_name:       String,
-    pub tracing_address:    SocketAddr,
-    pub tracing_batch_size: Option<usize>,
+    pub service_name:                 String,
+    pub tracing_address:              SocketAddr,
+    pub tracing_batch_size:           Option<usize>,
+    pub prometheus_listening_address: SocketAddr,
 }
 
 #[derive(Clone, Debug, Deserialize)]

@@ -2,7 +2,6 @@
 name = "core-cli"
 version = "0.1.0"
 edition = "2021"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -10,7 +9,7 @@ clap = { version = "3.0", features = ["cargo"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
-core-run = { path = "../../core/run" }
-common-logger = { path = "../../common/logger" }
 common-config-parser = { path = "../../common/config-parser" }
-protocol = { path = "../../protocol", package = "axon-protocol"}
+common-logger = { path = "../../common/logger" }
+core-run = { path = "../../core/run" }
+protocol = { path = "../../protocol", package = "axon-protocol" }

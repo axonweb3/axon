@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use jsonrpsee::core::Error;
 
+use common_metrics_derive::metrics_rpc;
 use core_consensus::SYNC_STATUS;
 use protocol::traits::{APIAdapter, Context};
 use protocol::types::{
@@ -59,6 +60,7 @@ impl<Adapter: APIAdapter> JsonRpcImpl<Adapter> {
 
 #[async_trait]
 impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
+    #[metrics_rpc("eth_sendRawTransaction")]
     async fn send_raw_transaction(&self, tx: Hex) -> RpcResult<H256> {
         let utx = UnverifiedTransaction::decode(&tx.as_bytes()[1..])
             .map_err(|e| Error::Custom(e.to_string()))?
@@ -73,6 +75,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         Ok(hash)
     }
 
+    #[metrics_rpc("eth_getTransactionByHash")]
     async fn get_transaction_by_hash(&self, hash: H256) -> RpcResult<Option<Web3Transaction>> {
         let res = self
             .adapter
@@ -99,6 +102,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         }
     }
 
+    #[metrics_rpc("eth_getBlockByNumber")]
     async fn get_block_by_number(
         &self,
         number: BlockId,
@@ -136,6 +140,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         }
     }
 
+    #[metrics_rpc("eth_getBlockByHash")]
     async fn get_block_by_hash(
         &self,
         hash: H256,
@@ -173,6 +178,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         }
     }
 
+    #[metrics_rpc("eth_getTransactionCount")]
     async fn get_transaction_count(&self, address: H160, number: BlockId) -> RpcResult<U256> {
         let account = self
             .adapter
@@ -183,6 +189,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         Ok(account.nonce)
     }
 
+    #[metrics_rpc("eth_blockNumber")]
     async fn block_number(&self) -> RpcResult<U256> {
         self.adapter
             .get_block_header_by_number(Context::new(), None)
@@ -192,6 +199,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             .ok_or_else(|| Error::Custom("Cannot get latest block header".to_string()))
     }
 
+    #[metrics_rpc("eth_getBalance")]
     async fn get_balance(&self, address: H160, number: BlockId) -> RpcResult<U256> {
         let account = self
             .adapter
@@ -202,6 +210,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         Ok(account.balance)
     }
 
+    #[metrics_rpc("eth_chainId")]
     async fn chain_id(&self) -> RpcResult<U256> {
         self.adapter
             .get_block_header_by_number(Context::new(), None)
@@ -211,10 +220,12 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             .ok_or_else(|| Error::Custom("Cannot get latest block header".to_string()))
     }
 
+    #[metrics_rpc("net_version")]
     async fn net_version(&self) -> RpcResult<U256> {
         self.chain_id().await
     }
 
+    #[metrics_rpc("eth_call")]
     async fn call(&self, req: Web3CallRequest, number: BlockId) -> RpcResult<Hex> {
         let data_bytes = req.data.as_bytes();
         let resp = self
@@ -225,6 +236,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         Ok(call_hex_result)
     }
 
+    #[metrics_rpc("eth_estimateGas")]
     async fn estimate_gas(&self, req: Web3CallRequest, number: Option<BlockId>) -> RpcResult<U256> {
         let num = match number {
             Some(BlockId::Num(n)) => Some(n),
@@ -239,6 +251,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         Ok(resp.gas_used.into())
     }
 
+    #[metrics_rpc("eth_getCode")]
     async fn get_code(&self, address: H160, number: BlockId) -> RpcResult<Hex> {
         let account = self
             .adapter
@@ -258,6 +271,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         }
     }
 
+    #[metrics_rpc("eth_getBlockTransactionCountByNumber")]
     async fn get_transaction_count_by_number(&self, number: BlockId) -> RpcResult<U256> {
         let block = self
             .adapter
@@ -271,6 +285,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         Ok(U256::from(count))
     }
 
+    #[metrics_rpc("eth_getTransactionReceipt")]
     async fn get_transaction_receipt(&self, hash: H256) -> RpcResult<Option<Web3Receipt>> {
         let res = self
             .adapter
@@ -297,14 +312,17 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         }
     }
 
+    #[metrics_rpc("eth_gasPrice")]
     async fn gas_price(&self) -> RpcResult<U256> {
         Ok(U256::from(8u64))
     }
 
+    #[metrics_rpc("net_listening")]
     async fn listening(&self) -> RpcResult<bool> {
         Ok(true)
     }
 
+    #[metrics_rpc("net_peerCount")]
     async fn peer_count(&self) -> RpcResult<U256> {
         self.adapter
             .peer_count(Context::new())
@@ -312,10 +330,12 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             .map_err(|e| Error::Custom(e.to_string()))
     }
 
+    #[metrics_rpc("eth_syncing")]
     async fn syncing(&self) -> RpcResult<Web3SyncStatus> {
         Ok(SYNC_STATUS.read().clone().into())
     }
 
+    #[metrics_rpc("eth_getLogs")]
     async fn get_logs(&self, filter: Web3Filter) -> RpcResult<Vec<Web3Log>> {
         if filter.topics.is_none() {
             return Ok(Vec::new());

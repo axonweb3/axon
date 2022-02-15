@@ -10,7 +10,7 @@ use std::time::Duration;
 use backtrace::Backtrace;
 use parking_lot::Mutex;
 
-use common_apm::muta_apm;
+use common_apm::{muta_apm, server::run_prometheus_server};
 use common_config_parser::types::Config;
 use common_crypto::{
     BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey,
@@ -503,6 +503,9 @@ impl Axon {
         ));
         let _handles = run_jsonrpc_server(self.config.rpc.clone(), api_adapter).await?;
 
+        // Start prometheus http server
+        Self::run_prometheus_server(config);
+
         // Run sync
         tokio::spawn(async move {
             if let Err(e) = synchronization.polling_broadcast().await {
@@ -570,6 +573,16 @@ impl Axon {
         };
 
         Ok(())
+    }
+
+    fn run_prometheus_server(config: Config) {
+        let prometheus_listening_address = match config.apm {
+            Some(apm_config) => apm_config.prometheus_listening_address,
+            None => std::net::SocketAddr::from(([0, 0, 0, 0], 8100)),
+        };
+        tokio::spawn(async move {
+            run_prometheus_server(prometheus_listening_address).await;
+        });
     }
 
     fn panic_log(info: &panic::PanicInfo) {

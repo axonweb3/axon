@@ -3,16 +3,15 @@ name = "common-crypto"
 version = "0.2.1"
 authors = ["Nervos Dev <dev@nervos.org>"]
 edition = "2021"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+ophelia = "0.3"
 ophelia-blst = "0.3"
 ophelia-secp256k1 = "0.3"
-ophelia = "0.3"
 
 [dev-dependencies]
 overlord = "0.3"
-protocol = { path = "../../protocol", package = "axon-protocol"}
+protocol = { path = "../../protocol", package = "axon-protocol" }
 rand = "0.7"
 rlp = "0.5"

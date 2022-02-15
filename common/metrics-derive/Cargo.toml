@@ -1,0 +1,21 @@
+[package]
+name = "common-metrics-derive"
+version = "0.1.0"
+edition = "2021"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0"
+quote = "1.0"
+serde_json = "1.0"
+syn = { version = "1.0", features = ["full"] }
+
+[dev-dependencies]
+async-trait = "0.1"
+common-apm = { path = "../apm" }
+jsonrpsee = { version = "0.9", features = ["macros"] }
+
+protocol = { path = "../../protocol", package = "axon-protocol" }

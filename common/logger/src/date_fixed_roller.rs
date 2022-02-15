@@ -4,9 +4,10 @@ use std::path::Path;
 
 use chrono::prelude::Utc;
 use log4rs::append::rolling_file::policy::compound::roll::Roll;
-use log4rs::config::{Deserialize, Deserializers};
+use log4rs::config::{Deserialize as LogDeserialize, Deserializers};
+use serde::Deserialize;
 
-#[derive(serde_derive::Deserialize, Clone)]
+#[derive(Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct DateFixedWindowRollerConfig {
     pattern: String,
@@ -84,7 +85,7 @@ impl Roll for DateFixedWindowRoller {
 
 pub struct DateFixedWindowRollerDeserializer;
 
-impl Deserialize for DateFixedWindowRollerDeserializer {
+impl LogDeserialize for DateFixedWindowRollerDeserializer {
     type Config = DateFixedWindowRollerConfig;
     type Trait = dyn Roll;
 
