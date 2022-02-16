@@ -1,7 +1,8 @@
 use std::{fmt, str::FromStr};
 
 pub use ethereum_types::{
-    Bloom, Public, Secret, Signature, H128, H160, H256, H512, H520, H64, U128, U256, U512, U64,
+    BigEndianHash, Bloom, Public, Secret, Signature, H128, H160, H256, H512, H520, H64, U128, U256,
+    U512, U64,
 };
 use hasher::{Hasher as KeccakHasher, HasherKeccak};
 use ophelia::{PublicKey, UncompressedPublicKey};

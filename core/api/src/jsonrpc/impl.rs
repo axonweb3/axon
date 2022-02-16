@@ -322,6 +322,11 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         Ok(true)
     }
 
+    #[metrics_rpc("eth_mining")]
+    async fn mining(&self) -> RpcResult<bool> {
+        Ok(false)
+    }
+
     #[metrics_rpc("net_peerCount")]
     async fn peer_count(&self) -> RpcResult<U256> {
         self.adapter
@@ -491,6 +496,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         Ok(all_logs)
     }
 
+    #[metrics_rpc("eth_feeHistory")]
     async fn fee_history(
         &self,
         _block_count: u64,
@@ -505,19 +511,118 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         })
     }
 
+    #[metrics_rpc("web3_clientVersion")]
     async fn client_version(&self) -> RpcResult<String> {
         Ok(self.version.clone())
     }
 
+    #[metrics_rpc("eth_accounts")]
     async fn accounts(&self) -> RpcResult<Vec<Hex>> {
         Ok(vec![])
     }
 
+    #[metrics_rpc("web3_sha3")]
     async fn sha3(&self, data: Hex) -> RpcResult<Hash> {
         let decode_data =
             Hex::decode(data.as_string()).map_err(|e| Error::Custom(e.to_string()))?;
         let ret = Hasher::digest(decode_data.as_ref());
         Ok(ret)
+    }
+
+    #[metrics_rpc("eth_getTransactionCountByHash")]
+    async fn get_block_transaction_count_by_hash(&self, hash: Hash) -> RpcResult<U256> {
+        Ok(self
+            .adapter
+            .get_block_by_hash(Context::new(), hash)
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?
+            .map(|b| U256::from(b.tx_hashes.len()))
+            .unwrap_or_default())
+    }
+
+    #[metrics_rpc("eth_getTransactionByBlockHashAndIndex")]
+    async fn get_transaction_by_block_hash_and_index(
+        &self,
+        hash: Hash,
+        position: U256,
+    ) -> RpcResult<Option<Web3Transaction>> {
+        if position > U256::from(usize::MAX) {
+            return Err(Error::Custom(format!("invalid position: {}", position)));
+        }
+
+        let mut raw = [0u8; 32];
+
+        position.to_little_endian(&mut raw);
+
+        let mut raw_index = [0u8; 8];
+        raw_index.copy_from_slice(&raw[..8]);
+        let index = usize::from_le_bytes(raw_index);
+        let block = self
+            .adapter
+            .get_block_by_hash(Context::new(), hash)
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+
+        if let Some(block) = block {
+            if let Some(tx_hash) = block.tx_hashes.get(index) {
+                return self.get_transaction_by_hash(*tx_hash).await;
+            }
+        }
+        Ok(None)
+    }
+
+    #[metrics_rpc("eth_getTransactionByBlockNumberAndIndex")]
+    async fn get_transaction_by_block_number_and_index(
+        &self,
+        number: BlockId,
+        position: U256,
+    ) -> RpcResult<Option<Web3Transaction>> {
+        if position > U256::from(usize::MAX) {
+            return Err(Error::Custom(format!("invalid position: {}", position)));
+        }
+
+        let mut raw = [0u8; 32];
+
+        position.to_little_endian(&mut raw);
+
+        let mut raw_index = [0u8; 8];
+        raw_index.copy_from_slice(&raw[..8]);
+        let index = usize::from_le_bytes(raw_index);
+
+        let block = self
+            .adapter
+            .get_block_by_number(Context::new(), number.into())
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+
+        if let Some(block) = block {
+            if let Some(tx_hash) = block.tx_hashes.get(index) {
+                return self.get_transaction_by_hash(*tx_hash).await;
+            }
+        }
+        Ok(None)
+    }
+
+    #[metrics_rpc("eth_getStorageAt")]
+    async fn get_storage_at(
+        &self,
+        address: H160,
+        position: U256,
+        number: BlockId,
+    ) -> RpcResult<Hex> {
+        let block = self
+            .adapter
+            .get_block_by_number(Context::new(), number.into())
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?
+            .ok_or_else(|| Error::Custom("Can't find this block".to_string()))?;
+        let value = self
+            .adapter
+            .get_storage_at(Context::new(), address, position, block.header.state_root)
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+
+        Ok(Hex::encode(&value))
     }
 }
 
