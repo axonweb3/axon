@@ -607,7 +607,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
     async fn get_storage_at(
         &self,
         address: H160,
-        position: Hash,
+        position: U256,
         number: BlockId,
     ) -> RpcResult<Hex> {
         let block = self

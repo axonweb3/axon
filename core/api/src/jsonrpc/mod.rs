@@ -132,7 +132,7 @@ pub trait AxonJsonRpc {
     async fn get_storage_at(
         &self,
         address: H160,
-        position: Hash,
+        position: U256,
         number: BlockId,
     ) -> RpcResult<Hex>;
 }

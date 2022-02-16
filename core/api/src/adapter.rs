@@ -182,7 +182,7 @@ where
         &self,
         _ctx: Context,
         address: H160,
-        position: Hash,
+        position: U256,
         state_root: Hash,
     ) -> ProtocolResult<Bytes> {
         let state_mpt_tree = MPTTrie::from_root(state_root, Arc::clone(&self.trie_db))?;
@@ -195,8 +195,12 @@ where
 
         let storage_mpt_tree = MPTTrie::from_root(account.storage_root, Arc::clone(&self.trie_db))?;
 
+        let mut raw = Hash::zero();
+
+        position.to_big_endian(raw.as_bytes_mut());
+
         storage_mpt_tree
-            .get(position.as_bytes())?
+            .get(raw.as_bytes())?
             .ok_or_else(|| APIError::Adapter("Can't find this position".to_string()).into())
     }
 }

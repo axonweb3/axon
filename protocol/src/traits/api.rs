@@ -79,7 +79,7 @@ pub trait APIAdapter: Send + Sync {
         &self,
         ctx: Context,
         address: H160,
-        position: Hash,
+        position: U256,
         state_root: Hash,
     ) -> ProtocolResult<Bytes>;
 }
