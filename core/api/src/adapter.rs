@@ -180,18 +180,12 @@ where
 
     async fn get_storage_at(
         &self,
-        ctx: Context,
+        _ctx: Context,
         address: H160,
         position: Hash,
-        height: Option<u64>,
+        state_root: Hash,
     ) -> ProtocolResult<Bytes> {
-        let block = self
-            .get_block_by_number(ctx, height)
-            .await?
-            .ok_or_else(|| APIError::Adapter("Can't find this block".to_string()))?;
-
-        let state_mpt_tree =
-            MPTTrie::from_root(block.header.state_root, Arc::clone(&self.trie_db)).unwrap();
+        let state_mpt_tree = MPTTrie::from_root(state_root, Arc::clone(&self.trie_db))?;
 
         let raw_account = state_mpt_tree
             .get(address.as_bytes())?
@@ -199,8 +193,7 @@ where
 
         let account = Account::decode(raw_account).unwrap();
 
-        let storage_mpt_tree =
-            MPTTrie::from_root(account.storage_root, Arc::clone(&self.trie_db)).unwrap();
+        let storage_mpt_tree = MPTTrie::from_root(account.storage_root, Arc::clone(&self.trie_db))?;
 
         storage_mpt_tree
             .get(position.as_bytes())?

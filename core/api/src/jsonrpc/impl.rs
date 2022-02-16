@@ -610,9 +610,15 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         position: Hash,
         number: BlockId,
     ) -> RpcResult<Hex> {
+        let block = self
+            .adapter
+            .get_block_by_number(Context::new(), number.into())
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?
+            .ok_or_else(|| Error::Custom("Can't find this block".to_string()))?;
         let value = self
             .adapter
-            .get_storage_at(Context::new(), address, position, number.into())
+            .get_storage_at(Context::new(), address, position, block.header.state_root)
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
