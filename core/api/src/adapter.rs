@@ -200,4 +200,8 @@ where
             .get(hash.as_bytes())?
             .ok_or_else(|| APIError::Adapter("Can't find this position".to_string()).into())
     }
+
+    async fn get_number_by_hash(&self, ctx: Context, hash: Hash) -> ProtocolResult<Option<u64>> {
+        self.storage.get_number_by_hash(ctx, &hash).await
+    }
 }
