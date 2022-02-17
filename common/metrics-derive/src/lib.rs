@@ -109,7 +109,7 @@ use proc_macro::TokenStream;
 ///                 .inc();
 ///             common_apm::metrics::api::API_REQUEST_TIME_HISTOGRAM_STATIC
 ///                 .eth_sendRawTransaction
-///                 .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+///                 .observe(common_apm::metrics::duration_to_sec(common_apm::elapsed(inst)));
 ///             ret
 ///         })
 ///     }
@@ -132,7 +132,7 @@ use proc_macro::TokenStream;
 ///             .inc();
 ///         common_apm::metrics::api::API_REQUEST_TIME_HISTOGRAM_STATIC
 ///             .net_listening
-///             .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+///             .observe(common_apm::metrics::duration_to_sec(common_apm::elapsed(inst)));
 ///         ret
 ///     }
 /// }

@@ -40,7 +40,7 @@ pub fn expand_rpc_metrics(attr: TokenStream, func: TokenStream) -> TokenStream {
                     .inc();
                 common_apm::metrics::api::API_REQUEST_TIME_HISTOGRAM_STATIC
                     .#func_ident
-                    .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+                    .observe(common_apm::metrics::duration_to_sec(common_apm::elapsed(inst)));
 
                 ret
             })
@@ -65,7 +65,7 @@ pub fn expand_rpc_metrics(attr: TokenStream, func: TokenStream) -> TokenStream {
                 .inc();
             common_apm::metrics::api::API_REQUEST_TIME_HISTOGRAM_STATIC
                 .#func_ident
-                .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+                .observe(common_apm::metrics::duration_to_sec(common_apm::elapsed(inst)));
 
             ret
         }

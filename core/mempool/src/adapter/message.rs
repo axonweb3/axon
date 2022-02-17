@@ -66,7 +66,9 @@ where
                     .inc();
                 common_apm::metrics::mempool::MEMPOOL_TIME_STATIC
                     .insert_tx_from_p2p
-                    .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+                    .observe(common_apm::metrics::duration_to_sec(common_apm::elapsed(
+                        inst,
+                    )));
             })
         };
 

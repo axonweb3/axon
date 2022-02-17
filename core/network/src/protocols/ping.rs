@@ -113,7 +113,7 @@ impl PingStatus {
 
     /// Time duration since we last send ping.
     fn elapsed(&self) -> Duration {
-        self.last_ping_sent_at.elapsed()
+        (self.last_ping_sent_at).saturating_duration_since(Instant::now())
     }
 }
 

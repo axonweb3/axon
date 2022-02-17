@@ -430,7 +430,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
             let mut count = hashes.len();
             on_storage_get_cf(
                 StorageCategory::SignedTransaction,
-                inst.elapsed(),
+                common_apm::elapsed(inst),
                 count as f64,
             );
 
@@ -582,7 +582,11 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
 
             let set = hashes.iter().collect::<HashSet<_>>();
             let mut count = hashes.len();
-            on_storage_get_cf(StorageCategory::Receipt, inst.elapsed(), count as f64);
+            on_storage_get_cf(
+                StorageCategory::Receipt,
+                common_apm::elapsed(inst),
+                count as f64,
+            );
 
             while count > 0 {
                 let (key, stx_bytes) = match iter.next() {

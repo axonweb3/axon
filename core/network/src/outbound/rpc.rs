@@ -123,7 +123,8 @@ impl Rpc for NetworkRpc {
                     //     .inc();
                     // common_apm::metrics::network::NETWORK_PROTOCOL_TIME_HISTOGRAM_VEC_STATIC
                     //     .rpc
-                    //     .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+                    //     .observe(common_apm::metrics::duration_to_sec(common_apm::
+                    // elapsed(inst)()));
 
                     Ok(R::decode_msg(v)?)
                 }

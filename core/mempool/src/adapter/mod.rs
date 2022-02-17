@@ -527,7 +527,7 @@ mod tests {
         tokio::spawn(IntervalTxsBroadcaster::timer(tx, 200));
         rx.next().await.expect("await interval signal fail");
 
-        assert!(now.elapsed().sub(interval).as_millis() < 100u128);
+        assert!(common_apm::elapsed(now).sub(interval).as_millis() < 100u128);
     }
 
     #[tokio::test]
