@@ -51,7 +51,6 @@ impl IntervalTxsBroadcaster {
     {
         let mut stx_rx = stx_rx.fuse();
         let mut interval_rx = interval_reached.fuse();
-
         let mut txs_cache = Vec::with_capacity(tx_size);
 
         loop {
@@ -527,7 +526,7 @@ mod tests {
         tokio::spawn(IntervalTxsBroadcaster::timer(tx, 200));
         rx.next().await.expect("await interval signal fail");
 
-        assert!(now.elapsed().sub(interval).as_millis() < 100u128);
+        assert!(common_apm::elapsed(now).sub(interval).as_millis() < 100u128);
     }
 
     #[tokio::test]

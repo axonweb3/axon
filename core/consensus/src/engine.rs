@@ -176,7 +176,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
 
         info!(
             "[consensus-engine]: write wal cost {:?} tx_hashes_len {:?}",
-            time.elapsed(),
+            common_apm::elapsed(time),
             tx_hashes_len
         );
         Ok(())

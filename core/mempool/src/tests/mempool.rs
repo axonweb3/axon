@@ -373,7 +373,7 @@ async fn bench_sign_with_spawn_list() {
     println!(
         "bench_sign_with_spawn_list size {:?} cost {:?}",
         len,
-        now.elapsed()
+        common_apm::elapsed(now)
     );
 }
 
@@ -390,7 +390,11 @@ async fn bench_sign() {
             .unwrap();
     }
 
-    println!("bench_sign size {:?} cost {:?}", txs.len(), now.elapsed());
+    println!(
+        "bench_sign size {:?} cost {:?}",
+        txs.len(),
+        common_apm::elapsed(now)
+    );
 }
 
 #[bench]

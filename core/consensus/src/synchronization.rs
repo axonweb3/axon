@@ -198,8 +198,9 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             current_consented_number += 1;
 
             common_apm::metrics::consensus::ENGINE_SYNC_BLOCK_COUNTER.inc_by(1u64);
-            common_apm::metrics::consensus::ENGINE_SYNC_BLOCK_HISTOGRAM
-                .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+            common_apm::metrics::consensus::ENGINE_SYNC_BLOCK_HISTOGRAM.observe(
+                common_apm::metrics::duration_to_sec(common_apm::elapsed(inst)),
+            );
             SYNC_STATUS.write().add_one();
         }
 

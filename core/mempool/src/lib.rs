@@ -117,7 +117,7 @@ where
         ctx: Context,
         txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<()> {
-        let now = Instant::now();
+        let inst = Instant::now();
         let len = txs.len();
 
         let futs = txs
@@ -144,7 +144,7 @@ where
         log::info!(
             "[mempool] verify txs done, size {:?} cost {:?}",
             len,
-            now.elapsed()
+            common_apm::elapsed(inst)
         );
         Ok(())
     }
@@ -182,7 +182,9 @@ where
             .observe((txs.len()) as f64);
         common_apm::metrics::mempool::MEMPOOL_TIME_STATIC
             .package
-            .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
+            .observe(common_apm::metrics::duration_to_sec(common_apm::elapsed(
+                inst,
+            )));
         Ok(txs)
     }
 

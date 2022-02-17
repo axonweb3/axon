@@ -1,4 +1,4 @@
-use clap::{crate_version, App, Arg, ArgMatches};
+use clap::{crate_version, Arg, ArgMatches, Command};
 
 use common_config_parser::{parse_file, types::Config};
 use core_run::Axon;
@@ -10,7 +10,7 @@ pub struct AxonCli {
 
 impl AxonCli {
     pub fn init() -> Self {
-        let matches = App::new("axon")
+        let matches = Command::new("axon")
             .version(crate_version!())
             .arg(
                 Arg::new("config_path")
@@ -36,7 +36,7 @@ impl AxonCli {
                     .required(true)
                     .takes_value(true),
             )
-            .subcommand(App::new("run").about("Run axon process"))
+            .subcommand(Command::new("run").about("Run axon process"))
             .get_matches();
 
         AxonCli { matches }
