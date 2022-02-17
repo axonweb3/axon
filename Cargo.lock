@@ -942,7 +942,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
- "tokio-util 0.6.9",
+ "tokio-util 0.7.0",
 ]
 
 [[package]]
@@ -1033,7 +1033,7 @@ dependencies = [
  "snap",
  "socket2",
  "tentacle",
- "tokio-util 0.6.9",
+ "tokio-util 0.7.0",
  "x25519-dalek",
  "zeroize_derive",
 ]
@@ -3717,9 +3717,9 @@ dependencies = [
 
 [[package]]
 name = "tentacle"
-version = "0.4.0-beta.3"
+version = "0.4.0-beta.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74f61345b51c6a9d775561ee0704c1cd8084457fc5fcd4a508b95c656ef8f7d7"
+checksum = "863528f8370d37ef73e403c59699e0383871f50b464a96262b7320303313255e"
 dependencies = [
  "async-trait",
  "bytes",
@@ -3730,14 +3730,14 @@ dependencies = [
  "molecule",
  "nohash-hasher",
  "once_cell",
- "parking_lot 0.11.2",
+ "parking_lot 0.12.0",
  "rand 0.8.5",
  "socket2",
  "tentacle-multiaddr",
  "tentacle-secio",
  "thiserror",
  "tokio",
- "tokio-util 0.6.9",
+ "tokio-util 0.7.0",
  "tokio-yamux",
  "wasm-bindgen",
  "wasm-bindgen-futures",
