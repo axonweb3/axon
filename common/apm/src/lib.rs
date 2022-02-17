@@ -10,5 +10,5 @@ pub use prometheus_static_metric;
 use std::time::{Duration, Instant};
 
 pub fn elapsed(inst: Instant) -> Duration {
-    inst.saturating_duration_since(Instant::now())
+    Instant::now().saturating_duration_since(inst)
 }

@@ -51,7 +51,6 @@ impl IntervalTxsBroadcaster {
     {
         let mut stx_rx = stx_rx.fuse();
         let mut interval_rx = interval_reached.fuse();
-
         let mut txs_cache = Vec::with_capacity(tx_size);
 
         loop {
