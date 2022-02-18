@@ -118,8 +118,6 @@ pub trait Storage: CommonStorage {
     async fn update_latest_proof(&self, ctx: Context, proof: Proof) -> ProtocolResult<()>;
 
     async fn get_latest_proof(&self, ctx: Context) -> ProtocolResult<Proof>;
-
-    async fn get_number_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<u64>>;
 }
 
 #[async_trait]

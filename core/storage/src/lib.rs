@@ -655,19 +655,6 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         let proof = ensure_get!(self, *LATEST_PROOF_KEY, LatestProofSchema);
         Ok(proof)
     }
-
-    async fn get_number_by_hash(
-        &self,
-        _ctx: Context,
-        block_hash: &Hash,
-    ) -> ProtocolResult<Option<u64>> {
-        let block_number = self
-            .adapter
-            .get::<BlockHashNumberSchema>(*block_hash)
-            .await?;
-
-        Ok(block_number)
-    }
 }
 
 #[derive(Debug, Display, From)]

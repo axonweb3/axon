@@ -82,6 +82,4 @@ pub trait APIAdapter: Send + Sync {
         position: U256,
         state_root: Hash,
     ) -> ProtocolResult<Bytes>;
-
-    async fn get_number_by_hash(&self, ctx: Context, hash: Hash) -> ProtocolResult<Option<u64>>;
 }

@@ -698,7 +698,6 @@ fn from_receipt_to_web3_log(
                     transaction_index: Some(receipt.tx_index.into()),
                     log_index:         Some((index + idx).into()),
                     removed:           false,
-                    log_type:          "".to_string(),
                 };
                 logs.push(web3_log);
             }

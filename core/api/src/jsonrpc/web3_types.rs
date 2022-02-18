@@ -444,7 +444,6 @@ pub struct Web3Filter {
     pub block_hash: Option<H256>,
     pub address:    Option<H160>,
     pub topics:     Option<Vec<H256>>,
-    pub limit:      Option<usize>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -460,8 +459,6 @@ pub struct Web3Log {
     pub log_index:         Option<U256>,
     #[serde(default)]
     pub removed:           bool,
-    #[serde(rename = "type")]
-    pub log_type:          String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
