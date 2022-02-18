@@ -3759,9 +3759,9 @@ dependencies = [
 
 [[package]]
 name = "tentacle-secio"
-version = "0.5.2"
+version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3d4f18ad65a9ec344b1989bcacbaf01e3bf213de71a78d969f4efe3552a52625"
+checksum = "cd1b61199af018787e25f0d6674d5cd66c97ad9e34e8808d284ac0ad09132f2d"
 dependencies = [
  "bs58",
  "bytes",
@@ -3779,7 +3779,7 @@ dependencies = [
  "secp256k1",
  "sha2",
  "tokio",
- "tokio-util 0.6.9",
+ "tokio-util 0.7.0",
  "unsigned-varint",
  "x25519-dalek",
 ]
