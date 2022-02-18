@@ -39,25 +39,25 @@ make_auto_flush_static_metric! {
 
 lazy_static! {
     pub static ref STORAGE_PUT_CF_TIME_USAGE_VEC: CounterVec = register_counter_vec!(
-        "muta_storage_put_cf_seconds",
+        "axon_storage_put_cf_seconds",
         "Storage put_cf time usage",
         &["cf"]
     )
     .unwrap();
     pub static ref STORAGE_PUT_CF_BYTES_COUNTER_VEC: CounterVec = register_counter_vec!(
-        "muta_storage_put_cf_bytes",
+        "axon_storage_put_cf_bytes",
         "Storage total insert bytes",
         &["cf"]
     )
     .unwrap();
     pub static ref STORAGE_GET_CF_TIME_USAGE_VEC: CounterVec = register_counter_vec!(
-        "muta_storage_get_cf_seconds",
+        "axon_storage_get_cf_seconds",
         "Storage get_cf time usage",
         &["cf"]
     )
     .unwrap();
     pub static ref STORAGE_GET_CF_COUNTER_VEC: CounterVec = register_counter_vec!(
-        "muta_storage_get_cf_total",
+        "axon_storage_get_cf_total",
         "Storage total get_cf keys number",
         &["cf"]
     )

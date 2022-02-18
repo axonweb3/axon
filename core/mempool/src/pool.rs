@@ -79,6 +79,10 @@ impl PirorityPool {
         self.tx_map.len()
     }
 
+    pub fn co_queue_len(&self) -> usize {
+        self.co_queue.len()
+    }
+
     pub fn contains(&self, hash: &Hash) -> bool {
         self.tx_map.contains_key(hash)
     }
