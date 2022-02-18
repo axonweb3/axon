@@ -624,6 +624,23 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
 
         Ok(Hex::encode(&value))
     }
+
+    async fn coinbase(&self) -> RpcResult<H160> {
+        // fixme: how to get the the coinbase value
+        Ok(H160::default())
+    }
+
+    async fn hashrate(&self) -> RpcResult<U256> {
+        Ok(U256::from(1u64))
+    }
+
+    async fn submit_work(&self, _nc: U256, _hash: H256, _summary: Hex) -> RpcResult<bool> {
+        Ok(true)
+    }
+
+    async fn submit_hashrate(&self, _hash_rate: Hex, _client_id: Hex) -> RpcResult<bool> {
+        Ok(true)
+    }
 }
 
 fn mock_header_by_call_req(latest_header: Header, call_req: &Web3CallRequest) -> Header {
