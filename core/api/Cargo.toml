@@ -6,14 +6,11 @@ edition = "2021"
 
 [dependencies]
 # async-graphql = { version = "3.0", features = ["tracing"] }
-async-std = "1.10.0"
 cita_trie = "3.0"
 jsonrpsee = { version = "0.9", features = ["http-server", "macros", "ws-server"] }
 log = "0.4"
-parking_lot = "0.12"
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-transient-hashmap = "0.4"
+
 
 common-apm = { path = "../../common/apm" }
 common-config-parser = { path = "../../common/config-parser" }

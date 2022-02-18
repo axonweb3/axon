@@ -1,6 +1,4 @@
 mod r#impl;
-mod poll_filter;
-mod poll_manager;
 mod web3_types;
 
 use std::sync::Arc;
@@ -15,8 +13,8 @@ use protocol::types::{Hash, Hex, H160, H256, U256};
 use protocol::ProtocolResult;
 
 use crate::jsonrpc::web3_types::{
-    BlockId, ChangeWeb3Filter, Filter, FilterChanges, Index, Web3Block, Web3CallRequest,
-    Web3FeeHistory, Web3Filter, Web3Log, Web3Receipt, Web3SyncStatus, Web3Transaction,
+    BlockId, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter, Web3Log, Web3Receipt,
+    Web3SyncStatus, Web3Transaction,
 };
 
 use crate::APIError;
@@ -138,42 +136,17 @@ pub trait AxonJsonRpc {
         number: BlockId,
     ) -> RpcResult<Hex>;
 
-    #[method(name = "eth_newFilter")]
-    async fn new_filter(&self, filter: ChangeWeb3Filter) -> RpcResult<U256>;
-
-    #[method(name = "eth_newBlockFilter")]
-    async fn new_block_filter(&self) -> RpcResult<U256>;
-
-    #[method(name = "eth_newPendingTransactionFilter")]
-    async fn new_pending_transaction_filter(&self) -> RpcResult<U256>;
-
-    #[method(name = "eth_getFilterChanges")]
-    async fn filter_changes(&self, index: Index) -> RpcResult<FilterChanges>;
-
-    #[method(name = "eth_uninstallFilter")]
-    async fn uninstall_filter(&self, index: Index) -> RpcResult<bool>;
-
     #[method(name = "eth_coinbase")]
     async fn coinbase(&self) -> RpcResult<H160>;
 
     #[method(name = "eth_hashrate")]
     async fn hashrate(&self) -> RpcResult<U256>;
 
-    #[method(name = "eth_getWork")]
-    async fn get_work(&self) -> RpcResult<(Hash, Hash, Hash)>;
-
     #[method(name = "eth_submitWork ")]
     async fn submit_work(&self, _nc: U256, _hash: H256, _summary: Hex) -> RpcResult<bool>;
 
     #[method(name = "eth_submitHashrate")]
     async fn submit_hashrate(&self, _hash_rate: Hex, _client_id: Hex) -> RpcResult<bool>;
-
-    #[method(name = "eth_removedLogs")]
-    async fn removed_logs(
-        &self,
-        block_hash: H256,
-        web3_filter: Filter,
-    ) -> RpcResult<(Vec<Web3Log>, u64)>;
 }
 
 pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
@@ -191,12 +164,8 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
         ret.0 = Some(
             server
                 .start(
-                    r#impl::JsonRpcImpl::new(
-                        Arc::clone(&adapter),
-                        &config.client_version,
-                        config.life_time,
-                    )
-                    .into_rpc(),
+                    r#impl::JsonRpcImpl::new(Arc::clone(&adapter), &config.client_version)
+                        .into_rpc(),
                 )
                 .map_err(|e| APIError::HttpServer(e.to_string()))?,
         );
@@ -212,10 +181,7 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
 
         ret.1 = Some(
             server
-                .start(
-                    r#impl::JsonRpcImpl::new(adapter, &config.client_version, config.life_time)
-                        .into_rpc(),
-                )
+                .start(r#impl::JsonRpcImpl::new(adapter, &config.client_version).into_rpc())
                 .map_err(|e| APIError::WebSocketServer(e.to_string()))?,
         )
     }

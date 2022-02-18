@@ -1,9 +1,7 @@
 use std::fmt;
 
-use jsonrpsee::core::DeserializeOwned;
 use serde::de::{Error, MapAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde_json::{from_value, Value};
 
 use core_consensus::SyncStatus as InnerSyncStatus;
 use protocol::codec::ProtocolCodec;
@@ -278,7 +276,6 @@ pub struct Web3CallRequest {
 pub enum BlockId {
     Num(u64),
     Latest,
-    Hash(H256),
 }
 
 impl Default for BlockId {
@@ -292,7 +289,6 @@ impl From<BlockId> for Option<u64> {
         match id {
             BlockId::Num(num) => Some(num),
             BlockId::Latest => None,
-            BlockId::Hash(_h) => None,
         }
     }
 }
@@ -314,10 +310,6 @@ impl Serialize for BlockId {
         match *self {
             BlockId::Num(ref x) => serializer.serialize_str(&format!("0x{:x}", x)),
             BlockId::Latest => serializer.serialize_str("latest"),
-            BlockId::Hash(hash) => serializer.serialize_str(&format!(
-                "{{ 'hash': '{}', 'requireCanonical': '{}'  }}",
-                hash, false
-            )),
         }
     }
 }
@@ -398,7 +390,7 @@ impl<'a> Visitor<'a> for BlockIdVisitor {
 pub struct Index(usize);
 
 impl Index {
-    pub fn value(&self) -> usize {
+    pub fn _value(&self) -> usize {
         self.0
     }
 }
@@ -526,291 +518,6 @@ pub struct Web3FeeHistory {
     pub reward:           Option<Vec<U256>>,
     pub base_fee_per_gas: Vec<U256>,
     pub gas_used_ratio:   Vec<U256>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-#[serde(deny_unknown_fields, rename_all = "camelCase")]
-pub struct WEB3Work {
-    /// The proof-of-work hash.
-    pub pow_hash:  H256,
-    /// The seed hash.
-    pub seed_hash: H256,
-    /// The target.
-    pub target:    H256,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum Web3BlockNumber {
-    Hash {
-        hash:              H256,
-        require_canonical: bool,
-    },
-
-    Num(u64),
-
-    Latest,
-    // Earliest,
-    Pending,
-}
-
-impl Default for Web3BlockNumber {
-    fn default() -> Self {
-        Web3BlockNumber::Latest
-    }
-}
-
-impl<'a> Deserialize<'a> for Web3BlockNumber {
-    fn deserialize<D>(deserializer: D) -> Result<Web3BlockNumber, D::Error>
-    where
-        D: Deserializer<'a>,
-    {
-        deserializer.deserialize_any(Web3BlockNumberVisitor)
-    }
-}
-
-impl Web3BlockNumber {
-    /// Convert block number to min block target.
-    pub fn to_min_block_num(&self) -> Option<u64> {
-        match *self {
-            Web3BlockNumber::Num(ref x) => Some(*x),
-            _ => None,
-        }
-    }
-}
-
-impl Serialize for Web3BlockNumber {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match *self {
-            Web3BlockNumber::Hash {
-                hash,
-                require_canonical,
-            } => serializer.serialize_str(&format!(
-                "{{ 'hash': '{}', 'requireCanonical': '{}'  }}",
-                hash, require_canonical
-            )),
-            Web3BlockNumber::Num(ref x) => serializer.serialize_str(&format!("0x{:x}", x)),
-            Web3BlockNumber::Latest => serializer.serialize_str("latest"),
-            // Web3BlockNumber::Earliest => serializer.serialize_str("earliest"),
-            Web3BlockNumber::Pending => serializer.serialize_str("pending"),
-        }
-    }
-}
-
-struct Web3BlockNumberVisitor;
-
-impl<'a> Visitor<'a> for Web3BlockNumberVisitor {
-    type Value = Web3BlockNumber;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            formatter,
-            "a block number or 'latest', 'earliest' or 'pending'"
-        )
-    }
-
-    fn visit_map<V>(self, mut visitor: V) -> Result<Self::Value, V::Error>
-    where
-        V: MapAccess<'a>,
-    {
-        let (mut require_canonical, mut block_number, mut block_hash) =
-            (false, None::<u64>, None::<H256>);
-
-        loop {
-            let key_str: Option<String> = visitor.next_key()?;
-            match key_str {
-                Some(key) => match key.as_str() {
-                    "Web3BlockNumber" => {
-                        let value: String = visitor.next_value()?;
-                        if let Some(_end) = value.strip_prefix("0x") {
-                            let number = u64::from_str_radix(&value[2..], 16).map_err(|e| {
-                                Error::custom(format!("Invalid block number: {}", e))
-                            })?;
-
-                            block_number = Some(number);
-                            break;
-                        } else {
-                            return Err(Error::custom(
-                                "Invalid block number: missing 0x prefix".to_string(),
-                            ));
-                        }
-                    }
-                    "blockHash" => {
-                        block_hash = Some(visitor.next_value()?);
-                    }
-                    "requireCanonical" => {
-                        require_canonical = visitor.next_value()?;
-                    }
-                    key => return Err(Error::custom(format!("Unknown key: {}", key))),
-                },
-                None => break,
-            };
-        }
-
-        if let Some(number) = block_number {
-            return Ok(Web3BlockNumber::Num(number));
-        }
-
-        if let Some(hash) = block_hash {
-            return Ok(Web3BlockNumber::Hash {
-                hash,
-                require_canonical,
-            });
-        }
-        Err(Error::custom("Invalid input"))
-    }
-
-    fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-    where
-        E: Error,
-    {
-        match value {
-            "latest" => Ok(Web3BlockNumber::Latest),
-            //  "earliest" => Ok(Web3BlockNumber::Earliest),
-            "pending" => Ok(Web3BlockNumber::Pending),
-            _ if value.starts_with("0x") => u64::from_str_radix(&value[2..], 16)
-                .map(Web3BlockNumber::Num)
-                .map_err(|e| Error::custom(format!("Invalid block number: {}", e))),
-            _ => Err(Error::custom(
-                "Invalid block number: missing 0x prefix".to_string(),
-            )),
-        }
-    }
-
-    fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
-    where
-        E: Error,
-    {
-        self.visit_str(value.as_ref())
-    }
-}
-
-#[derive(Serialize, Debug, PartialEq, Eq, Clone, Hash)]
-pub enum VariadicValue<T>
-where
-    T: DeserializeOwned,
-{
-    /// Single
-    Single(T),
-    /// List
-    Multiple(Vec<T>),
-    /// None
-    Null,
-}
-impl<'a, T> Deserialize<'a> for VariadicValue<T>
-where
-    T: DeserializeOwned,
-{
-    fn deserialize<D>(deserializer: D) -> Result<VariadicValue<T>, D::Error>
-    where
-        D: Deserializer<'a>,
-    {
-        let v: Value = Deserialize::deserialize(deserializer)?;
-
-        if v.is_null() {
-            return Ok(VariadicValue::Null);
-        }
-
-        from_value(v.clone())
-            .map(VariadicValue::Single)
-            .or_else(|_| from_value(v).map(VariadicValue::Multiple))
-            .map_err(|err| D::Error::custom(format!("Invalid variadic value type: {}", err)))
-    }
-}
-#[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq)]
-#[serde(rename_all = "camelCase")]
-pub struct Filter {
-    pub from_block: BlockId,
-    pub to_block:   BlockId,
-    pub address:    Option<Vec<H160>>,
-    pub topics:     Vec<Option<Vec<H256>>>,
-    pub limit:      Option<usize>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-#[serde(deny_unknown_fields, rename_all = "camelCase")]
-pub struct ChangeWeb3Filter {
-    pub from_block: Option<Web3BlockNumber>,
-    pub to_block:   Option<Web3BlockNumber>,
-    pub block_hash: Option<H256>,
-    pub address:    Option<VariadicValue<H160>>,
-    pub topics:     Option<Vec<VariadicValue<H256>>>,
-    pub limit:      Option<usize>,
-}
-
-impl ChangeWeb3Filter {
-    pub fn try_into(self) -> Filter {
-        let num_to_id = |num| match num {
-            Web3BlockNumber::Hash { hash, .. } => BlockId::Hash(hash),
-            Web3BlockNumber::Num(n) => BlockId::Num(n),
-            // Web3BlockNumber::Earliest => BlockId::Earliest,
-            Web3BlockNumber::Latest | Web3BlockNumber::Pending => BlockId::Latest,
-        };
-
-        let (from_block, to_block) = match self.block_hash {
-            Some(hash) => (BlockId::Hash(hash), BlockId::Hash(hash)),
-            None => (
-                self.from_block.map_or_else(|| BlockId::Latest, &num_to_id),
-                self.to_block.map_or_else(|| BlockId::Latest, &num_to_id),
-            ),
-        };
-
-        Filter {
-            from_block,
-            to_block,
-            address: self.address.and_then(|address| match address {
-                VariadicValue::Null => None,
-                VariadicValue::Single(a) => Some(vec![a]),
-                VariadicValue::Multiple(a) => Some(a),
-            }),
-            topics: {
-                let mut iter = self
-                    .topics
-                    .map_or_else(Vec::new, |topics| {
-                        topics
-                            .into_iter()
-                            .take(4)
-                            .map(|topic| match topic {
-                                VariadicValue::Null => None,
-                                VariadicValue::Single(t) => Some(vec![t]),
-                                VariadicValue::Multiple(t) => Some(t),
-                            })
-                            .collect()
-                    })
-                    .into_iter();
-
-                vec![
-                    iter.next().unwrap_or(None),
-                    iter.next().unwrap_or(None),
-                    iter.next().unwrap_or(None),
-                    iter.next().unwrap_or(None),
-                ]
-            },
-            limit: self.limit,
-        }
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub enum FilterChanges {
-    Logs(Vec<Web3Log>),
-    Hashes(Vec<H256>),
-    Empty,
-}
-
-impl Serialize for FilterChanges {
-    fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match *self {
-            FilterChanges::Logs(ref logs) => logs.serialize(s),
-            FilterChanges::Hashes(ref hashes) => hashes.serialize(s),
-            FilterChanges::Empty => (&[] as &[Value]).serialize(s),
-        }
-    }
 }
 
 #[cfg(test)]

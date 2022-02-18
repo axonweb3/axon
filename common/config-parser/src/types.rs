@@ -20,8 +20,6 @@ pub struct ConfigApi {
     pub enable_dump_profile:    Option<bool>,
     #[serde(default)]
     pub client_version:         String,
-    #[serde(default)]
-    pub life_time:              u32,
 }
 
 #[derive(Clone, Debug, Deserialize)]
