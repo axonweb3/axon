@@ -41,37 +41,39 @@ make_auto_flush_static_metric! {
 
 lazy_static! {
     pub static ref MEMPOOL_COUNTER_VEC: CounterVec =
-        register_counter_vec!("muta_mempool_counter", "Counter in mempool", &["type"])
+        register_counter_vec!("axon_mempool_counter", "Counter in mempool", &["type"])
             .expect("failed init mempool counter vec");
     pub static ref MEMPOOL_RESULT_COUNTER_VEC: CounterVec = register_counter_vec!(
-        "muta_mempool_result_counter",
+        "axon_mempool_result_counter",
         "Result counter in mempool",
         &["type", "result"]
     )
     .expect("request result total");
     pub static ref MEMPOOL_TIME_HISTOGRAM_VEC: HistogramVec = register_histogram_vec!(
-        "muta_mempool_cost_seconds",
+        "axon_mempool_cost_seconds",
         "Time cost in mempool",
         &["type"],
         exponential_buckets(0.05, 2.0, 10).expect("mempool time expontial")
     )
     .expect("mempool time cost");
     pub static ref MEMPOOL_PACKAGE_SIZE_VEC: HistogramVec = register_histogram_vec!(
-        "muta_mempool_package_size_vec",
+        "axon_mempool_package_size_vec",
         "Package size",
         &["type"],
         exponential_buckets(0.05, 2.0, 10).expect("mempool package size exponential")
     )
     .expect("mempool package size");
     pub static ref MEMPOOL_CURRENT_SIZE_VEC: HistogramVec = register_histogram_vec!(
-        "muta_mempool_current_size_vec",
+        "axon_mempool_current_size_vec",
         "Current size",
         &[],
         exponential_buckets(0.05, 2.0, 10).expect("mempool current size exponential")
     )
     .expect("mempool current size");
     pub static ref MEMPOOL_LEN_GAUGE: IntGauge =
-        register_int_gauge!("muta_mempool_tx_count", "Tx len in mempool").unwrap();
+        register_int_gauge!("axon_mempool_tx_count", "Tx len in mempool").unwrap();
+    pub static ref MEMPOOL_CO_QUEUE_LEN: IntGauge =
+        register_int_gauge!("axon_mempool_co_queue_count", "Tx len in mempool").unwrap();
 }
 
 lazy_static! {

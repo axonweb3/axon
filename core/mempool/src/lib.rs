@@ -61,6 +61,10 @@ where
         self.pool.len()
     }
 
+    pub fn co_queue_len(&self) -> usize {
+        self.pool.co_queue_len()
+    }
+
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
