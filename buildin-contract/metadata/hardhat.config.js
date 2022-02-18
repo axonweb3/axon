@@ -1,0 +1,1 @@
+require("@nomiclabs/hardhat-waffle")
