@@ -135,6 +135,18 @@ pub trait AxonJsonRpc {
         position: U256,
         number: BlockId,
     ) -> RpcResult<Hex>;
+
+    #[method(name = "eth_coinbase")]
+    async fn coinbase(&self) -> RpcResult<H160>;
+
+    #[method(name = "eth_hashrate")]
+    async fn hashrate(&self) -> RpcResult<U256>;
+
+    #[method(name = "eth_submitWork ")]
+    async fn submit_work(&self, _nc: U256, _hash: H256, _summary: Hex) -> RpcResult<bool>;
+
+    #[method(name = "eth_submitHashrate")]
+    async fn submit_hashrate(&self, _hash_rate: Hex, _client_id: Hex) -> RpcResult<bool>;
 }
 
 pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(

@@ -2,13 +2,13 @@ use std::error::Error;
 use std::marker::PhantomData;
 use std::path::Path;
 use std::sync::Arc;
-use std::time::Instant;
 use std::{fs, io};
 
 use rocksdb::ops::{DeleteCF, GetCF, GetColumnFamilys, IterateCF, OpenCF, PutCF, WriteOps};
 use rocksdb::{ColumnFamily, DBIterator, Options, WriteBatch, DB};
 
 use common_apm::metrics::storage::on_storage_put_cf;
+use common_apm::Instant;
 use protocol::codec::{hex_encode, ProtocolCodec};
 use protocol::traits::{
     IntoIteratorByRef, StorageAdapter, StorageBatchModify, StorageCategory, StorageIterator,
@@ -126,7 +126,7 @@ impl StorageAdapter for RocksAdapter {
         let size = val.len() as i64;
 
         db!(self.db, put_cf, column, key, val)?;
-        on_storage_put_cf(S::category(), common_apm::elapsed(inst), size as f64);
+        on_storage_put_cf(S::category(), inst.elapsed(), size as f64);
 
         Ok(())
     }
@@ -207,7 +207,7 @@ impl StorageAdapter for RocksAdapter {
             .map_err(RocksAdapterError::from)?;
         }
 
-        on_storage_put_cf(S::category(), common_apm::elapsed(inst), insert_size as f64);
+        on_storage_put_cf(S::category(), inst.elapsed(), insert_size as f64);
 
         self.db.write(&batch).map_err(RocksAdapterError::from)?;
         Ok(())
