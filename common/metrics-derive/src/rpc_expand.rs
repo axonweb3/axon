@@ -22,7 +22,7 @@ pub fn expand_rpc_metrics(attr: TokenStream, func: TokenStream) -> TokenStream {
     let func_block_wrapper = if func_return.is_pin_box_fut {
         quote! {
             Box::pin(async move {
-                let inst = std::time::Instant::now();
+                let inst = common_apm::Instant::now();
 
                 let ret: #ret_ty = #func_block.await;
 
@@ -40,14 +40,14 @@ pub fn expand_rpc_metrics(attr: TokenStream, func: TokenStream) -> TokenStream {
                     .inc();
                 common_apm::metrics::api::API_REQUEST_TIME_HISTOGRAM_STATIC
                     .#func_ident
-                    .observe(common_apm::metrics::duration_to_sec(common_apm::elapsed(inst)));
+                    .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
 
                 ret
             })
         }
     } else {
         quote! {
-            let inst = std::time::Instant::now();
+            let inst = common_apm::Instant::now();
 
             let ret: #func_ret_ty = #func_block;
 
@@ -65,7 +65,7 @@ pub fn expand_rpc_metrics(attr: TokenStream, func: TokenStream) -> TokenStream {
                 .inc();
             common_apm::metrics::api::API_REQUEST_TIME_HISTOGRAM_STATIC
                 .#func_ident
-                .observe(common_apm::metrics::duration_to_sec(common_apm::elapsed(inst)));
+                .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
 
             ret
         }

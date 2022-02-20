@@ -26,8 +26,8 @@ impl PirorityPool {
     pub async fn new(size: usize) -> Self {
         let pool = PirorityPool {
             occupied_nonce: DashMap::new(),
-            co_queue:       Arc::new(ArrayQueue::new(size * 2)),
-            real_queue:     Arc::new(Mutex::new(BinaryHeap::with_capacity(size))),
+            co_queue:       Arc::new(ArrayQueue::new(size)),
+            real_queue:     Arc::new(Mutex::new(BinaryHeap::with_capacity(size * 2))),
             tx_map:         DashMap::new(),
             flush_lock:     Arc::new(Mutex::new(())),
         };
@@ -77,6 +77,10 @@ impl PirorityPool {
 
     pub fn len(&self) -> usize {
         self.tx_map.len()
+    }
+
+    pub fn co_queue_len(&self) -> usize {
+        self.co_queue.len()
     }
 
     pub fn contains(&self, hash: &Hash) -> bool {

@@ -18,10 +18,10 @@ pub use adapter::{DEFAULT_BROADCAST_TXS_INTERVAL, DEFAULT_BROADCAST_TXS_SIZE};
 use std::collections::HashSet;
 use std::error::Error;
 use std::sync::Arc;
-use std::time::Instant;
 
 use futures::future::try_join_all;
 
+use common_apm::Instant;
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
 use protocol::types::{Hash, SignedTransaction, H256, U256};
 use protocol::{async_trait, tokio, Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
@@ -59,6 +59,10 @@ where
 
     pub fn len(&self) -> usize {
         self.pool.len()
+    }
+
+    pub fn co_queue_len(&self) -> usize {
+        self.pool.co_queue_len()
     }
 
     pub fn is_empty(&self) -> bool {
@@ -144,7 +148,7 @@ where
         log::info!(
             "[mempool] verify txs done, size {:?} cost {:?}",
             len,
-            common_apm::elapsed(inst)
+            inst.elapsed()
         );
         Ok(())
     }
@@ -182,9 +186,7 @@ where
             .observe((txs.len()) as f64);
         common_apm::metrics::mempool::MEMPOOL_TIME_STATIC
             .package
-            .observe(common_apm::metrics::duration_to_sec(common_apm::elapsed(
-                inst,
-            )));
+            .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
         Ok(txs)
     }
 

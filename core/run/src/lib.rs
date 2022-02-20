@@ -10,7 +10,11 @@ use std::time::Duration;
 use backtrace::Backtrace;
 use parking_lot::Mutex;
 
-use common_apm::{muta_apm, server::run_prometheus_server};
+use common_apm::{
+    metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE},
+    muta_apm,
+    server::run_prometheus_server,
+};
 use common_config_parser::types::Config;
 use common_crypto::{
     BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey,
@@ -275,7 +279,8 @@ impl Axon {
             let interval = Duration::from_millis(1000);
             loop {
                 sleep(interval).await;
-                common_apm::metrics::mempool::MEMPOOL_LEN_GAUGE.set(monitor_mempool.len() as i64);
+                MEMPOOL_LEN_GAUGE.set(monitor_mempool.len() as i64);
+                MEMPOOL_CO_QUEUE_LEN.set(monitor_mempool.len() as i64);
             }
         });
 

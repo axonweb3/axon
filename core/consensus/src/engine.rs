@@ -2,7 +2,6 @@ use std::collections::{HashMap, HashSet};
 use std::convert::TryFrom;
 use std::error::Error;
 use std::sync::Arc;
-use std::time::Instant;
 
 use json::JsonValue;
 use log::{error, info};
@@ -13,6 +12,7 @@ use parking_lot::RwLock;
 use rlp::Encodable;
 
 // use common_apm::muta_apm;
+use common_apm::Instant;
 use common_crypto::BlsPublicKey;
 use common_logger::{json, log};
 use common_merkle::Merkle;
@@ -159,26 +159,21 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             }
         }
 
-        info!(
-            "[consensus-engine]: check block cost {:?}",
-            Instant::now() - time
-        );
+        info!("[consensus-engine]: check block cost {:?}", time.elapsed());
+
         let time = Instant::now();
         let txs = self.adapter.get_full_txs(ctx, &tx_hashes).await?;
+        info!("[consensus-engine]: get txs cost {:?}", time.elapsed());
 
-        info!(
-            "[consensus-engine]: get txs cost {:?}",
-            Instant::now() - time
-        );
         let time = Instant::now();
         self.txs_wal
             .save(next_number, proposal.transactions_root, txs)?;
-
         info!(
             "[consensus-engine]: write wal cost {:?} tx_hashes_len {:?}",
-            common_apm::elapsed(time),
+            time.elapsed(),
             tx_hashes_len
         );
+
         Ok(())
     }
 

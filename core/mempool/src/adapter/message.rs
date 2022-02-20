@@ -1,9 +1,9 @@
 use std::sync::Arc;
-use std::time::Instant;
 
 use futures::future::{try_join_all, TryFutureExt};
 use rlp_derive::{RlpDecodable, RlpEncodable};
 
+use common_apm::Instant;
 use protocol::{
     async_trait, tokio,
     traits::{Context, MemPool, MessageHandler, Priority, Rpc, TrustFeedback},
@@ -66,9 +66,7 @@ where
                     .inc();
                 common_apm::metrics::mempool::MEMPOOL_TIME_STATIC
                     .insert_tx_from_p2p
-                    .observe(common_apm::metrics::duration_to_sec(common_apm::elapsed(
-                        inst,
-                    )));
+                    .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
             })
         };
 
