@@ -3,7 +3,8 @@
 
 pub mod metrics;
 pub mod server;
+pub mod tracing;
+
 pub use minstant::{Anchor, Instant};
-pub use muta_apm;
 pub use prometheus;
 pub use prometheus_static_metric;

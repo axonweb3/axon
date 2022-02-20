@@ -769,15 +769,20 @@ dependencies = [
 name = "common-apm"
 version = "0.2.1"
 dependencies = [
+ "arc-swap 1.5.0",
  "axon-protocol",
  "axum",
+ "beef",
  "derive_more",
  "hyper",
  "lazy_static",
+ "log",
  "minstant",
  "muta-apm",
  "prometheus",
  "prometheus-static-metric",
+ "rustracing 0.5.1 (git+http://github.com/KaoImin/rustracing?branch=main)",
+ "rustracing_jaeger 0.7.0 (git+http://github.com/KaoImin/rustracing_jaeger?branch=main)",
 ]
 
 [[package]]
@@ -823,7 +828,7 @@ dependencies = [
  "json",
  "log",
  "log4rs",
- "rustracing_jaeger",
+ "rustracing_jaeger 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde",
 ]
 
@@ -2501,8 +2506,8 @@ dependencies = [
  "log",
  "muta-apm-derive",
  "parking_lot 0.11.2",
- "rustracing",
- "rustracing_jaeger",
+ "rustracing 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustracing_jaeger 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -3493,6 +3498,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustracing"
+version = "0.5.1"
+source = "git+http://github.com/KaoImin/rustracing?branch=main#51a6915f2b0ec834f802c0febdf97e7fad07fd52"
+dependencies = [
+ "backtrace",
+ "beef",
+ "crossbeam-channel",
+ "futures",
+ "minstant",
+ "rand 0.8.5",
+ "tokio",
+ "trackable 1.2.0",
+]
+
+[[package]]
 name = "rustracing_jaeger"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3502,9 +3522,25 @@ dependencies = [
  "hostname",
  "percent-encoding",
  "rand 0.8.5",
- "rustracing",
+ "rustracing 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "thrift_codec",
  "trackable 0.2.24",
+]
+
+[[package]]
+name = "rustracing_jaeger"
+version = "0.7.0"
+source = "git+http://github.com/KaoImin/rustracing_jaeger?branch=main#8ef037d3070e7e77d5b3a683756ab8402ece9e70"
+dependencies = [
+ "beef",
+ "crossbeam-channel",
+ "hostname",
+ "minstant",
+ "percent-encoding",
+ "rand 0.8.5",
+ "rustracing 0.5.1 (git+http://github.com/KaoImin/rustracing?branch=main)",
+ "thrift_codec",
+ "trackable 1.2.0",
 ]
 
 [[package]]
