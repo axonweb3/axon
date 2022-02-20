@@ -78,7 +78,7 @@ impl AxonTracer {
 
 pub fn global_tracer_register(service_name: &str, udp_addr: SocketAddr, batch_size: Option<usize>) {
     let (span_tx, mut span_rx) = channel(SPAN_CHANNEL_SIZE);
-    let batch_size = batch_size.unwrap_or_else(|| DEFAULT_SPAN_BATCH_SIZE);
+    let batch_size = batch_size.unwrap_or(DEFAULT_SPAN_BATCH_SIZE);
     let mut reporter = JaegerCompactReporter::new(service_name).unwrap();
     reporter.set_agent_addr(udp_addr);
     TRACER.swap(Arc::new(AxonTracer::with_sender(span_tx)));

@@ -20,4 +20,5 @@ prometheus-static-metric = "0.5"
 rustracing = { git = "http://github.com/KaoImin/rustracing", branch = "main" }
 rustracing_jaeger = { git = "http://github.com/KaoImin/rustracing_jaeger", branch = "main" }
 
+common-apm-derive = { path = "../apm-derive" }
 protocol = { path = "../../protocol", package = "axon-protocol" }

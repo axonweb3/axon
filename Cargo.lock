@@ -773,6 +773,7 @@ dependencies = [
  "axon-protocol",
  "axum",
  "beef",
+ "common-apm-derive",
  "derive_more",
  "hyper",
  "lazy_static",
@@ -783,6 +784,21 @@ dependencies = [
  "prometheus-static-metric",
  "rustracing 0.5.1 (git+http://github.com/KaoImin/rustracing?branch=main)",
  "rustracing_jaeger 0.7.0 (git+http://github.com/KaoImin/rustracing_jaeger?branch=main)",
+]
+
+[[package]]
+name = "common-apm-derive"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "axon-protocol",
+ "common-apm",
+ "fut-ret",
+ "jsonrpsee",
+ "proc-macro2",
+ "quote",
+ "serde_json",
+ "syn",
 ]
 
 [[package]]
@@ -842,21 +858,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "common-metrics-derive"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "axon-protocol",
- "common-apm",
- "fut-ret",
- "jsonrpsee",
- "proc-macro2",
- "quote",
- "serde_json",
- "syn",
-]
-
-[[package]]
 name = "common-pubsub"
 version = "0.2.1"
 
@@ -883,7 +884,6 @@ dependencies = [
  "cita_trie",
  "common-apm",
  "common-config-parser",
- "common-metrics-derive",
  "core-consensus",
  "core-executor",
  "fastrand",

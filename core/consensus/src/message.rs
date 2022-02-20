@@ -6,7 +6,6 @@ use overlord::types::{AggregatedVote, SignedChoke, SignedProposal, SignedVote};
 use overlord::Codec;
 use rlp::Encodable;
 
-use common_apm::muta_apm;
 use protocol::traits::{
     Consensus, Context, MessageHandler, Priority, Rpc, Storage, Synchronization, TrustFeedback,
 };
@@ -134,7 +133,8 @@ impl<C: Consensus + 'static> VoteMessageHandler<C> {
 impl<C: Consensus + 'static> MessageHandler for VoteMessageHandler<C> {
     type Message = Vote;
 
-    #[muta_apm::derive::tracing_span(name = "handle_vote", kind = "consensus.message")]
+    // #[muta_apm::derive::tracing_span(name = "handle_vote", kind =
+    // "consensus.message")]
     async fn process(&self, ctx: Context, msg: Self::Message) -> TrustFeedback {
         if let Err(e) = self.consensus.set_vote(ctx, msg.to_vec()).await {
             warn!("set vote {}", e);
@@ -211,7 +211,8 @@ impl<Sy: Synchronization + 'static> RemoteHeightMessageHandler<Sy> {
 impl<Sy: Synchronization + 'static> MessageHandler for RemoteHeightMessageHandler<Sy> {
     type Message = BlockNumber;
 
-    #[muta_apm::derive::tracing_span(name = "handle_remote_height", kind = "consensus.message")]
+    // #[muta_apm::derive::tracing_span(name = "handle_remote_height", kind =
+    // "consensus.message")]
     async fn process(&self, ctx: Context, remote_height: Self::Message) -> TrustFeedback {
         if let Err(e) = self
             .synchronization
@@ -251,7 +252,8 @@ where
 impl<R: Rpc + 'static, S: Storage + 'static> MessageHandler for PullBlockRpcHandler<R, S> {
     type Message = BlockNumber;
 
-    #[muta_apm::derive::tracing_span(name = "pull_block_rpc", kind = "consensus.message")]
+    // #[muta_apm::derive::tracing_span(name = "pull_block_rpc", kind =
+    // "consensus.message")]
     async fn process(&self, ctx: Context, msg: BlockNumber) -> TrustFeedback {
         let ret = match self.storage.get_block(ctx.clone(), msg).await {
             Ok(Some(block)) => Ok(block),

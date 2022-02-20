@@ -10,11 +10,7 @@ use std::time::Duration;
 use backtrace::Backtrace;
 use parking_lot::Mutex;
 
-use common_apm::{
-    metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE},
-    muta_apm,
-    server::run_prometheus_server,
-};
+use common_apm::{server::run_prometheus_server, tracing::global_tracer_register};
 use common_config_parser::types::Config;
 use common_crypto::{
     BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey,
@@ -76,7 +72,7 @@ impl Axon {
 
     pub fn run(mut self) -> ProtocolResult<()> {
         if let Some(apm_config) = &self.config.apm {
-            muta_apm::global_tracer_register(
+            global_tracer_register(
                 &apm_config.service_name,
                 apm_config.tracing_address,
                 apm_config.tracing_batch_size,

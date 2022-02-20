@@ -6,7 +6,6 @@ use overlord::types::{
 };
 use overlord::{DurationConfig, Overlord, OverlordHandler};
 
-use common_apm::muta_apm;
 use protocol::traits::{Consensus, ConsensusAdapter, NodeInfo};
 use protocol::types::{Proposal, Validator};
 use protocol::{
@@ -45,17 +44,17 @@ impl<Adapter: ConsensusAdapter + 'static> Consensus for OverlordConsensus<Adapte
     }
 
     async fn set_vote(&self, ctx: Context, vote: Vec<u8>) -> ProtocolResult<()> {
-        let ctx = match muta_apm::MUTA_TRACER.span("consensus.set_vote", vec![
-            muta_apm::rustracing::tag::Tag::new("kind", "consensus"),
-        ]) {
-            Some(mut span) => {
-                span.log(|log| {
-                    log.time(std::time::SystemTime::now());
-                });
-                ctx.with_value("parent_span_ctx", span.context().cloned())
-            }
-            None => ctx,
-        };
+        // let ctx = match muta_apm::MUTA_TRACER.span("consensus.set_vote", vec![
+        //     muta_apm::rustracing::tag::Tag::new("kind", "consensus"),
+        // ]) {
+        //     Some(mut span) => {
+        //         span.log(|log| {
+        //             log.time(std::time::SystemTime::now());
+        //         });
+        //         ctx.with_value("parent_span_ctx", span.context().cloned())
+        //     }
+        //     None => ctx,
+        // };
 
         let signed_vote = SignedVote::decode(&vote)
             .map_err(|_| ConsensusError::DecodeErr(ConsensusType::SignedVote))?;

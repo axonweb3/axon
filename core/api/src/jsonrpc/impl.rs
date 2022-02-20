@@ -8,7 +8,7 @@ use std::{
 
 use jsonrpsee::core::Error;
 
-use common_metrics_derive::metrics_rpc;
+use common_apm::metrics_rpc;
 use core_consensus::SYNC_STATUS;
 use protocol::traits::{APIAdapter, Context};
 use protocol::types::{

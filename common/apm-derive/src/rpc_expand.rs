@@ -1,8 +1,8 @@
+use fut_ret::PinBoxFutRet;
 use proc_macro::TokenStream;
 use proc_macro2 as pm2;
 use quote::quote;
 use syn::{parse_macro_input, AttributeArgs, Ident, ItemFn, Lit, NestedMeta, ReturnType};
-use fut_ret::PinBoxFutRet;
 
 pub fn expand_rpc_metrics(attr: TokenStream, func: TokenStream) -> TokenStream {
     let attr = parse_macro_input!(attr as AttributeArgs);

@@ -6,7 +6,6 @@ edition = "2021"
 repository = "https://github.com/nervosnetwork/axon"
 
 [dependencies]
-
 byzantine = { path = "./byzantine" }
 common-apm = { path = "./common/apm" }
 common-config-parser = { path = "./common/config-parser" }
@@ -26,12 +25,12 @@ members = [
     "byzantine",
 
     "common/apm",
+    "common/apm-derive",
     "common/channel",
     "common/config-parser",
     "common/crypto",
     "common/logger",
     "common/merkle",
-    "common/metrics-derive",
     "common/pubsub",
 
     "core/api",
