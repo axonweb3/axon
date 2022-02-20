@@ -354,7 +354,7 @@ async fn bench_sign_with_spawn_list() {
     let adapter = Arc::new(HashMemPoolAdapter::new());
     let txs = default_mock_txs(30000);
     let len = txs.len();
-    let now = std::time::Instant::now();
+    let now = common_apm::Instant::now();
 
     let futs = txs
         .into_iter()
@@ -373,7 +373,7 @@ async fn bench_sign_with_spawn_list() {
     println!(
         "bench_sign_with_spawn_list size {:?} cost {:?}",
         len,
-        common_apm::elapsed(now)
+        now.elapsed()
     );
 }
 
@@ -381,7 +381,7 @@ async fn bench_sign_with_spawn_list() {
 async fn bench_sign() {
     let adapter = HashMemPoolAdapter::new();
     let txs = default_mock_txs(30000).into_iter().collect::<Vec<_>>();
-    let now = std::time::Instant::now();
+    let now = common_apm::Instant::now();
 
     for tx in txs.iter() {
         adapter
@@ -390,11 +390,7 @@ async fn bench_sign() {
             .unwrap();
     }
 
-    println!(
-        "bench_sign size {:?} cost {:?}",
-        txs.len(),
-        common_apm::elapsed(now)
-    );
+    println!("bench_sign size {:?} cost {:?}", txs.len(), now.elapsed());
 }
 
 #[bench]

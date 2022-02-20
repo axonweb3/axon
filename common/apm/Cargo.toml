@@ -10,6 +10,7 @@ axum = "0.4"
 derive_more = "0.99"
 hyper = { version = "0.14", features = ["http1", "server"] }
 lazy_static = "1.4"
+minstant = "0.1"
 muta-apm = "0.1.0-alpha.15"
 prometheus = "0.13"
 prometheus-static-metric = "0.5"

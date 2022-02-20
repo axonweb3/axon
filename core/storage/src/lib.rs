@@ -11,11 +11,11 @@ use std::convert::From;
 use std::error::Error;
 use std::str::FromStr;
 use std::sync::Arc;
-use std::time::Instant;
 
 use arc_swap::ArcSwap;
 
 use common_apm::metrics::storage::on_storage_get_cf;
+use common_apm::Instant;
 // use common_apm::muta_apm;
 
 use protocol::codec::ProtocolCodec;
@@ -41,7 +41,10 @@ lazy_static::lazy_static! {
 
 macro_rules! get {
     ($self_: ident, $key: expr, $schema: ident) => {{
-        $self_.adapter.get::<$schema>($key).await
+        let inst = Instant::now();
+        let res = $self_.adapter.get::<$schema>($key).await;
+        on_storage_get_cf($schema::category(), inst.elapsed(), 1.0f64);
+        res
     }};
 }
 
@@ -430,7 +433,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
             let mut count = hashes.len();
             on_storage_get_cf(
                 StorageCategory::SignedTransaction,
-                common_apm::elapsed(inst),
+                inst.elapsed(),
                 count as f64,
             );
 
@@ -582,11 +585,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
 
             let set = hashes.iter().collect::<HashSet<_>>();
             let mut count = hashes.len();
-            on_storage_get_cf(
-                StorageCategory::Receipt,
-                common_apm::elapsed(inst),
-                count as f64,
-            );
+            on_storage_get_cf(StorageCategory::Receipt, inst.elapsed(), count as f64);
 
             while count > 0 {
                 let (key, stx_bytes) = match iter.next() {

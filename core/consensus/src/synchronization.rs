@@ -1,9 +1,10 @@
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use parking_lot::RwLock;
 
 // use common_apm::muta_apm;
+use common_apm::Instant;
 use protocol::tokio::{sync::Mutex, time::sleep};
 use protocol::traits::{Context, Synchronization, SynchronizationAdapter};
 use protocol::types::{Block, Proof, Proposal, Receipt, SignedTransaction, U256};
@@ -198,9 +199,8 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             current_consented_number += 1;
 
             common_apm::metrics::consensus::ENGINE_SYNC_BLOCK_COUNTER.inc_by(1u64);
-            common_apm::metrics::consensus::ENGINE_SYNC_BLOCK_HISTOGRAM.observe(
-                common_apm::metrics::duration_to_sec(common_apm::elapsed(inst)),
-            );
+            common_apm::metrics::consensus::ENGINE_SYNC_BLOCK_HISTOGRAM
+                .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
             SYNC_STATUS.write().add_one();
         }
 
