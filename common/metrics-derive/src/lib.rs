@@ -1,4 +1,3 @@
-mod pin_box_fut;
 mod rpc_expand;
 
 use proc_macro::TokenStream;
