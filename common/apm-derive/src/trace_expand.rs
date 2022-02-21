@@ -101,6 +101,7 @@ pub fn expand_trace_span(attr: TokenStream, func: TokenStream) -> TokenStream {
     };
 
     quote! {
+        #[allow(unused_variables, clippy::type_complexity)]
         #func_sig {
             use common_apm::tracing::{LogField, SpanContext, Tag, TRACER};
 
@@ -203,7 +204,7 @@ impl TraceAttrs {
             .map(|(key, val)| {
                 if key == KIND {
                     quote! { span_tags.push(Tag::new(#key, #val)); }
-                } else if let Ok(expr) = parse_str::<Expr>(&val) {
+                } else if let Ok(expr) = parse_str::<Expr>(val) {
                     quote! { span_tags.push(Tag::new(#key, (#expr).to_string())); }
                 } else {
                     quote! { span_tags.push(Tag::new(#key, #val)); }

@@ -10,6 +10,7 @@ use std::time::Duration;
 use backtrace::Backtrace;
 use parking_lot::Mutex;
 
+use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
 use common_apm::{server::run_prometheus_server, tracing::global_tracer_register};
 use common_config_parser::types::Config;
 use common_crypto::{
