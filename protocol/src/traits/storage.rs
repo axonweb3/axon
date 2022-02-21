@@ -105,7 +105,7 @@ pub trait Storage: CommonStorage {
     async fn get_receipt_by_hash(
         &self,
         ctx: Context,
-        hash: Hash,
+        hash: &Hash,
     ) -> ProtocolResult<Option<Receipt>>;
 
     async fn get_receipts(

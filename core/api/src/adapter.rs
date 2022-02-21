@@ -105,7 +105,7 @@ where
         ctx: Context,
         tx_hash: Hash,
     ) -> ProtocolResult<Option<Receipt>> {
-        self.storage.get_receipt_by_hash(ctx, tx_hash).await
+        self.storage.get_receipt_by_hash(ctx, &tx_hash).await
     }
 
     async fn get_receipts_by_hashes(

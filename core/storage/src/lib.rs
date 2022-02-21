@@ -1,10 +1,9 @@
 #![feature(test)]
 #![allow(clippy::mutable_key_type)]
-
+pub mod adapter;
+mod cache;
 #[cfg(test)]
 mod tests;
-
-pub mod adapter;
 
 use std::collections::{HashMap, HashSet};
 use std::convert::From;
@@ -17,7 +16,6 @@ use arc_swap::ArcSwap;
 use common_apm::metrics::storage::on_storage_get_cf;
 use common_apm::Instant;
 // use common_apm::muta_apm;
-
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{
     CommonStorage, Context, Storage, StorageAdapter, StorageBatchModify, StorageCategory,
@@ -31,6 +29,8 @@ use protocol::{
     async_trait, tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
 };
 
+use crate::cache::StorageCache;
+
 const BATCH_VALUE_DECODE_NUMBER: usize = 1000;
 
 lazy_static::lazy_static! {
@@ -39,12 +39,38 @@ lazy_static::lazy_static! {
     pub static ref OVERLORD_WAL_KEY: Hash = Hasher::digest(Bytes::from("overlord_wal"));
 }
 
+macro_rules! get_cache {
+    ($self_: ident, $key: expr, $category: ident) => {{
+        let mut cache = $self_.cache.$category.lock();
+        if let Some(ret) = cache.get($key).cloned() {
+            return Ok(Some(ret));
+        }
+    }};
+}
+
+macro_rules! put_cache {
+    ($self_: ident, $key: expr, $val: expr, $category: ident) => {{
+        if let Some(val) = $val.clone() {
+            let mut cache = $self_.cache.$category.lock();
+            let _ = cache.put($key.clone(), val);
+        }
+    }};
+}
+
 macro_rules! get {
     ($self_: ident, $key: expr, $schema: ident) => {{
         let inst = Instant::now();
         let res = $self_.adapter.get::<$schema>($key).await;
         on_storage_get_cf($schema::category(), inst.elapsed(), 1.0f64);
         res
+    }};
+
+    ($self_: ident, $key: expr, $schema: ident, $cache_key: expr, $category: ident) => {{
+        let inst = Instant::now();
+        let res = $self_.adapter.get::<$schema>($key).await?;
+        put_cache!($self_, $cache_key, res, $category);
+        on_storage_get_cf($schema::category(), inst.elapsed(), 1.0f64);
+        Ok(res)
     }};
 }
 
@@ -74,6 +100,7 @@ macro_rules! impl_storage_schema_for {
 pub struct ImplStorage<Adapter> {
     adapter:      Arc<Adapter>,
     latest_block: ArcSwap<Option<Block>>,
+    cache:        Arc<StorageCache>,
 }
 
 impl<Adapter: StorageAdapter> ImplStorage<Adapter> {
@@ -81,7 +108,15 @@ impl<Adapter: StorageAdapter> ImplStorage<Adapter> {
         Self {
             adapter,
             latest_block: ArcSwap::from(Arc::new(None)),
+            cache: Arc::new(StorageCache::default()),
         }
+    }
+
+    async fn get_block_number_by_hash(&self, hash: &Hash) -> ProtocolResult<Option<u64>> {
+        get_cache!(self, hash, block_numbers);
+        let ret = self.adapter.get::<BlockHashNumberSchema>(*hash).await?;
+        put_cache!(self, hash, ret, block_numbers);
+        Ok(ret)
     }
 
     async fn batch_insert_stxs(
@@ -312,15 +347,23 @@ impl<Adapter: StorageAdapter> CommonStorage for ImplStorage<Adapter> {
     }
 
     async fn get_block(&self, _ctx: Context, height: u64) -> ProtocolResult<Option<Block>> {
-        self.adapter.get::<BlockSchema>(BlockKey::new(height)).await
+        get_cache!(self, &height, blocks);
+        let ret = self
+            .adapter
+            .get::<BlockSchema>(BlockKey::new(height))
+            .await?;
+        put_cache!(self, height, ret, blocks);
+        Ok(ret)
     }
 
     async fn get_block_header(&self, ctx: Context, height: u64) -> ProtocolResult<Option<Header>> {
+        get_cache!(self, &height, headers);
         let opt_header = self
             .adapter
             .get::<BlockHeaderSchema>(BlockKey::new(height))
             .await?;
         if opt_header.is_some() {
+            put_cache!(self, height, opt_header, headers);
             return Ok(opt_header);
         }
 
@@ -400,12 +443,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         ctx: Context,
         block_hash: &Hash,
     ) -> ProtocolResult<Option<Block>> {
-        let block_number = self
-            .adapter
-            .get::<BlockHashNumberSchema>(*block_hash)
-            .await?;
-
-        if let Some(num) = block_number {
+        if let Some(num) = self.get_block_number_by_hash(block_hash).await? {
             return self.get_block(ctx, num).await;
         }
 
@@ -509,7 +547,10 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
     }
 
     async fn get_code_by_hash(&self, _ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>> {
-        self.adapter.get::<EvmCodeSchema>(*hash).await
+        get_cache!(self, hash, codes);
+        let ret = self.adapter.get::<EvmCodeSchema>(*hash).await?;
+        put_cache!(self, hash, ret, codes);
+        Ok(ret)
     }
 
     async fn get_code_by_address(
@@ -531,11 +572,15 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         _ctx: Context,
         hash: &Hash,
     ) -> ProtocolResult<Option<SignedTransaction>> {
+        get_cache!(self, hash, transactions);
+
         if let Some(block_height) = get!(self, *hash, TxHashNumberSchema)? {
             get!(
                 self,
                 CommonHashKey::new(block_height, *hash),
-                TransactionSchema
+                TransactionSchema,
+                hash,
+                transactions
             )
         } else {
             Ok(None)
@@ -557,10 +602,18 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
     async fn get_receipt_by_hash(
         &self,
         _ctx: Context,
-        hash: Hash,
+        hash: &Hash,
     ) -> ProtocolResult<Option<Receipt>> {
-        if let Some(block_height) = get!(self, hash, TxHashNumberSchema)? {
-            get!(self, CommonHashKey::new(block_height, hash), ReceiptSchema)
+        get_cache!(self, hash, receipts);
+
+        if let Some(block_height) = get!(self, *hash, TxHashNumberSchema)? {
+            get!(
+                self,
+                CommonHashKey::new(block_height, *hash),
+                ReceiptSchema,
+                hash,
+                receipts
+            )
         } else {
             Ok(None)
         }
