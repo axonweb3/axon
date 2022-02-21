@@ -1,12 +1,15 @@
+pub use rustracing::{log::LogField, tag::Tag};
+pub use rustracing_jaeger::span::SpanContext;
+
 use std::net::SocketAddr;
 use std::sync::Arc;
 
 use arc_swap::ArcSwap;
 use beef::lean::Cow;
-use rustracing::{sampler::AllSampler, tag::Tag};
+use rustracing::sampler::AllSampler;
 use rustracing_jaeger::reporter::JaegerCompactReporter;
 use rustracing_jaeger::span::{
-    Span, SpanContext, SpanContextState, SpanContextStateBuilder, SpanSender, TraceId,
+    Span, SpanContextState, SpanContextStateBuilder, SpanSender, TraceId,
 };
 use rustracing_jaeger::AsyncTracer;
 

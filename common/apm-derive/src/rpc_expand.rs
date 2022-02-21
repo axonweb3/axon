@@ -80,11 +80,8 @@ pub fn expand_rpc_metrics(attr: TokenStream, func: TokenStream) -> TokenStream {
 
 fn parse_rpc_method(input: &NestedMeta) -> pm2::TokenStream {
     let method = match input {
-        NestedMeta::Lit(lit) => match lit {
-            Lit::Str(api) => Ident::new(&api.value(), pm2::Span::call_site()),
-            _ => panic!("Invalid lit"),
-        },
-        _ => panic!("Invalid nested meta"),
+        NestedMeta::Lit(Lit::Str(api)) => Ident::new(&api.value(), pm2::Span::call_site()),
+        _ => unreachable!("Invalid nested meta"),
     };
 
     quote! { #method }
