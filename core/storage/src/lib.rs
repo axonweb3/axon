@@ -99,16 +99,18 @@ macro_rules! impl_storage_schema_for {
 #[derive(Debug)]
 pub struct ImplStorage<Adapter> {
     adapter:      Arc<Adapter>,
-    latest_block: ArcSwap<Option<Block>>,
     cache:        Arc<StorageCache>,
+    latest_block: ArcSwap<Option<Block>>,
+    latest_proof: ArcSwap<Option<Proof>>,
 }
 
 impl<Adapter: StorageAdapter> ImplStorage<Adapter> {
     pub fn new(adapter: Arc<Adapter>) -> Self {
         Self {
             adapter,
-            latest_block: ArcSwap::from(Arc::new(None)),
             cache: Arc::new(StorageCache::default()),
+            latest_block: ArcSwap::new(Arc::new(None)),
+            latest_proof: ArcSwap::new(Arc::new(None)),
         }
     }
 
@@ -698,14 +700,21 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
 
     async fn update_latest_proof(&self, _ctx: Context, proof: Proof) -> ProtocolResult<()> {
         self.adapter
-            .insert::<LatestProofSchema>(*LATEST_PROOF_KEY, proof)
+            .insert::<LatestProofSchema>(*LATEST_PROOF_KEY, proof.clone())
             .await?;
+
+        self.latest_proof.store(Arc::new(Some(proof)));
+
         Ok(())
     }
 
     async fn get_latest_proof(&self, _ctx: Context) -> ProtocolResult<Proof> {
-        let proof = ensure_get!(self, *LATEST_PROOF_KEY, LatestProofSchema);
-        Ok(proof)
+        if let Some(proof) = self.latest_proof.load().as_ref().clone() {
+            Ok(proof)
+        } else {
+            let proof = ensure_get!(self, *LATEST_PROOF_KEY, LatestProofSchema);
+            Ok(proof)
+        }
     }
 }
 
