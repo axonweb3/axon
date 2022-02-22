@@ -91,7 +91,7 @@ impl Hex {
     }
 
     pub fn as_string_trim0x(&self) -> String {
-        (&self.0[2..]).to_owned()
+        (self.0[2..]).to_owned()
     }
 
     pub fn as_bytes(&self) -> Bytes {
