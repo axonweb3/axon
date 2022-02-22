@@ -7,7 +7,7 @@ use jsonrpsee::http_server::{HttpServerBuilder, HttpServerHandle};
 use jsonrpsee::ws_server::{WsServerBuilder, WsServerHandle};
 use jsonrpsee::{core::Error, proc_macros::rpc};
 
-use common_config_parser::types::ConfigApi;
+use common_config_parser::types::Config;
 use protocol::traits::APIAdapter;
 use protocol::types::{Hash, Hex, H160, H256, U256};
 use protocol::ProtocolResult;
@@ -147,41 +147,51 @@ pub trait AxonJsonRpc {
 
     #[method(name = "eth_submitHashrate")]
     async fn submit_hashrate(&self, _hash_rate: Hex, _client_id: Hex) -> RpcResult<bool>;
+
+    #[method(name = "pprof")]
+    fn pprof(&self, enable: bool) -> RpcResult<bool>;
 }
 
 pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
-    config: ConfigApi,
+    config: Config,
     adapter: Arc<Adapter>,
 ) -> ProtocolResult<(Option<HttpServerHandle>, Option<WsServerHandle>)> {
     let mut ret = (None, None);
 
-    if let Some(addr) = config.http_listening_address {
+    if let Some(addr) = config.rpc.http_listening_address {
         let server = HttpServerBuilder::new()
-            .max_request_body_size(config.max_payload_size as u32)
+            .max_request_body_size(config.rpc.max_payload_size as u32)
             .build(addr)
             .map_err(|e| APIError::HttpServer(e.to_string()))?;
 
         ret.0 = Some(
             server
                 .start(
-                    r#impl::JsonRpcImpl::new(Arc::clone(&adapter), &config.client_version)
-                        .into_rpc(),
+                    r#impl::JsonRpcImpl::new(
+                        Arc::clone(&adapter),
+                        &config.rpc.client_version,
+                        config.data_path.clone(),
+                    )
+                    .into_rpc(),
                 )
                 .map_err(|e| APIError::HttpServer(e.to_string()))?,
         );
     }
 
-    if let Some(addr) = config.ws_listening_address {
+    if let Some(addr) = config.rpc.ws_listening_address {
         let server = WsServerBuilder::new()
-            .max_request_body_size(config.max_payload_size as u32)
-            .max_connections(config.maxconn as u64)
+            .max_request_body_size(config.rpc.max_payload_size as u32)
+            .max_connections(config.rpc.maxconn as u64)
             .build(addr)
             .await
             .map_err(|e| APIError::WebSocketServer(e.to_string()))?;
 
         ret.1 = Some(
             server
-                .start(r#impl::JsonRpcImpl::new(adapter, &config.client_version).into_rpc())
+                .start(
+                    r#impl::JsonRpcImpl::new(adapter, &config.rpc.client_version, config.data_path)
+                        .into_rpc(),
+                )
                 .map_err(|e| APIError::WebSocketServer(e.to_string()))?,
         )
     }

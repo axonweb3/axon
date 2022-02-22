@@ -506,7 +506,7 @@ impl Axon {
             Arc::clone(&trie_db),
             Arc::new(network_handle),
         ));
-        let _handles = run_jsonrpc_server(self.config.rpc.clone(), api_adapter).await?;
+        let _handles = run_jsonrpc_server(self.config.clone(), api_adapter).await?;
 
         // Start prometheus http server
         Self::run_prometheus_server(config);

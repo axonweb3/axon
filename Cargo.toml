@@ -51,4 +51,5 @@ members = [
 [features]
 default = []
 random_leader = ["core-consensus/random_leader"]
+pprof = ["core-api/pprof"]
 # tentacle_metrics = ["core-network/tentacle_metrics"]
