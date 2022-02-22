@@ -1,0 +1,81 @@
+# crypto
+privkey = "0x383fcff8683b8115e31613949be24254b4204ffbe43c227408a76334a2e3fb32"
+
+# db config
+data_path = "./devtools/chain/data2"
+
+asset_contract_address = "0xc2fd48d60ae16b3fe6e333a9a13763691970d9373d4fab7cc323d7ba06fa9986"
+
+[rpc]
+http_listening_address = "127.0.0.1:8000"
+ws_listening_address = "127.0.0.1:8010"
+maxconn = 25000
+max_payload_size = 1048576
+client_version = "0.1.0"
+# enable_dump_profile = false
+# [graphql.tls]
+# private_key_file_path = "key.pem"
+# certificate_chain_file_path = "cert.pem"
+
+[network]
+listening_address = "/ip4/0.0.0.0/tcp/8001"
+rpc_timeout = 10
+
+[consensus]
+overlord_gap = 5
+sync_txs_chunk_size = 5000
+
+[[network.bootstraps]]
+multi_address = "/dns4/axon1/tcp/8001/p2p/QmNk6bBwkLPuqnsrtxpp819XLZY3ymgjs3p1nKtxBVgqxj"
+
+[[network.bootstraps]]
+multi_address = "/dns4/axon2/tcp/8001/p2p/QmaHBJqULbLGDn7Td196goNebH6XMTMMu2sKNNP2DiX9S2"
+
+[[network.bootstraps]]
+multi_address = "/dns4/axon3/tcp/8001/p2p/QmQLufVVmBuHKoYhdDCqUFYVtLYs1quryoaA1mkQYQdWkn"
+
+[[network.bootstraps]]
+multi_address = "/dns4/axon4/tcp/8001/p2p/QmXoSkz4zkHHiFZqmDZQ4gFYtJ72uqtp4m6FX373X4VkRq"
+
+[mempool]
+timeout_gap = 20
+pool_size = 20000000
+broadcast_txs_size = 200
+broadcast_txs_interval = 200
+
+[executor]
+light = false
+triedb_cache_size = 2000
+
+[logger]
+filter = "debug"
+log_to_console = true
+console_show_file_and_line = false
+log_path = "logs/"
+log_to_file = true
+file_size_limit = 1073741824 # 1 GiB
+metrics = true
+# you can specify log level for modules with config below
+# modules_level = { "overlord::state::process" = "debug", core_consensus = "error" }
+
+[rocksdb]
+max_open_files = 64
+
+#[apm]
+#service_name = "muta"
+#tracing_address = "0.0.0.1:6831"
+#tracing_batch_size = 50
+#prometheus_listening_address = "0.0.0.0:8200"
+
+[cross_client]
+axon_udt_hash = "0xf32ec1e3274c27ac4cc018c92efec443847e9b78ba8cbedca36f0fa8c35d1c9e"
+ckb_uri = "https://mercury-testnet.ckbapp.dev/rpc"
+mercury_uri = "http://127.0.0.1:8116"
+start_block_number = 4096800
+checkpoint_interval = 1000
+pk = "0x37aa0f893d05914a4def0460c0a984d3611546cfb26924d7a7ca6e0db9950a2d"
+enable = false
+admin_address = "0x0000000000000000000000000000000000000000"
+node_address = "0x0000000000000000000000000000000000000000"
+selection_lock_hash = "0xf32ec1e3274c27ac4cc018c92efec443847e9b78ba8cbedca36f0fa8c35d1c9e"
+checkpoint_type_hash = "0xf32ec1e3274c27ac4cc018c92efec443847e9b78ba8cbedca36f0fa8c35d1c9e"
