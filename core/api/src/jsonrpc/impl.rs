@@ -1,4 +1,10 @@
-use std::sync::Arc;
+use std::{
+    path::PathBuf,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+};
 
 use jsonrpsee::core::Error;
 
@@ -19,16 +25,21 @@ use crate::jsonrpc::web3_types::{
 use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
 use crate::APIError;
 
+#[allow(dead_code)]
 pub struct JsonRpcImpl<Adapter> {
     adapter: Arc<Adapter>,
     version: String,
+    pprof:   Arc<AtomicBool>,
+    path:    PathBuf,
 }
 
 impl<Adapter: APIAdapter> JsonRpcImpl<Adapter> {
-    pub fn new(adapter: Arc<Adapter>, version: &str) -> Self {
+    pub fn new(adapter: Arc<Adapter>, version: &str, path: PathBuf) -> Self {
         Self {
             adapter,
             version: version.to_string(),
+            pprof: Arc::new(AtomicBool::default()),
+            path: path.join("api"),
         }
     }
 
@@ -641,6 +652,53 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
     async fn submit_hashrate(&self, _hash_rate: Hex, _client_id: Hex) -> RpcResult<bool> {
         Ok(true)
     }
+
+    fn pprof(&self, _enable: bool) -> RpcResult<bool> {
+        #[cfg(feature = "pprof")]
+        {
+            use std::{
+                fs::{create_dir_all, OpenOptions},
+                time::Duration,
+            };
+
+            let old = self.pprof.load(Ordering::Acquire);
+            self.pprof.store(_enable, Ordering::Release);
+            if !old && _enable {
+                let flag = Arc::clone(&self.pprof);
+                let path = self.path.clone();
+                std::thread::spawn(move || {
+                    use pprof::protos::Message;
+                    use std::io::Write;
+
+                    let guard = pprof::ProfilerGuard::new(100).unwrap();
+                    while flag.load(Ordering::Acquire) {
+                        std::thread::sleep(Duration::from_secs(60));
+                        if let Ok(report) = guard.report().build() {
+                            create_dir_all(&path).unwrap();
+                            let tmp_dir = path.join("tmp");
+                            create_dir_all(&tmp_dir).unwrap();
+                            let tmp_file = tmp_dir.join("profile.pb");
+                            let mut file = OpenOptions::new()
+                                .write(true)
+                                .create(true)
+                                .append(false)
+                                .open(&tmp_file)
+                                .unwrap();
+                            let profile = report.pprof().unwrap();
+
+                            let mut content = Vec::new();
+                            profile.encode(&mut content).unwrap();
+                            file.write_all(&content).unwrap();
+                            file.sync_all().unwrap();
+                            move_file(tmp_file, path.join("profile.pb")).unwrap();
+                        };
+                    }
+                });
+            }
+        }
+
+        Ok(self.pprof.load(Ordering::Acquire))
+    }
 }
 
 fn mock_header_by_call_req(latest_header: Header, call_req: &Web3CallRequest) -> Header {
@@ -703,4 +761,17 @@ fn from_receipt_to_web3_log(
             }
         }
     }
+}
+
+/// This function use `copy` then `remove_file` as a fallback when `rename`
+/// failed, this maybe happen when src and dst on different file systems.
+#[cfg(feature = "pprof")]
+fn move_file<P: AsRef<std::path::Path>>(src: P, dst: P) -> Result<(), std::io::Error> {
+    use std::fs::{copy, remove_file, rename};
+
+    if rename(&src, &dst).is_err() {
+        copy(&src, &dst)?;
+        remove_file(&src)?;
+    }
+    Ok(())
 }
