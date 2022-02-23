@@ -42,32 +42,32 @@ make_auto_flush_static_metric! {
 
 lazy_static! {
     pub static ref NETWORK_MESSAGE_COUNT_VEC: CounterVec = register_counter_vec!(
-        "muta_network_message_total",
+        "axon_network_message_total",
         "Total number of network message",
         &["direction", "target", "type", "module", "action"]
     )
     .expect("network message total");
     pub static ref NETWORK_MESSAGE_SIZE_COUNT_VEC: CounterVec = register_counter_vec!(
-        "muta_network_message_size",
+        "axon_network_message_size",
         "Accumulated compressed network message size",
         &["direction", "url"]
     )
     .expect("network message size");
     pub static ref NETWORK_RPC_RESULT_COUNT_VEC: CounterVec = register_counter_vec!(
-        "muta_network_rpc_result_total",
+        "axon_network_rpc_result_total",
         "Total number of network rpc result",
         &["result"]
     )
     .expect("network rpc result total");
     pub static ref NETWORK_PROTOCOL_TIME_HISTOGRAM_VEC: HistogramVec = register_histogram_vec!(
-        "muta_network_protocol_time_cost_seconds",
+        "axon_network_protocol_time_cost_seconds",
         "Network protocol time cost",
         &["type"],
         exponential_buckets(0.01, 2.0, 20).expect("network protocol time expontial")
     )
     .expect("network protocol time cost");
     pub static ref NETWORK_PING_HISTOGRAM_VEC: HistogramVec = register_histogram_vec!(
-        "muta_network_ping_in_ms",
+        "axon_network_ping_in_ms",
         "Network peer ping time",
         &["ip"],
         linear_buckets(100.0, 200.0, 5).expect("network ping time linear buckets")
@@ -86,59 +86,59 @@ lazy_static! {
 
 lazy_static! {
     pub static ref NETWORK_TOTAL_PENDING_DATA_SIZE: IntGauge = register_int_gauge!(
-        "muta_network_total_pending_data_size",
+        "axon_network_total_pending_data_size",
         "Total pending data size"
     )
     .expect("network total pending data size");
     pub static ref NETWORK_IP_PENDING_DATA_SIZE_VEC: IntGaugeVec = register_int_gauge_vec!(
-        "muta_network_ip_pending_data_size",
+        "axon_network_ip_pending_data_size",
         "IP pending data size",
         &["ip"]
     )
     .expect("network ip pending data size");
     pub static ref NETWORK_RECEIVED_MESSAGE_IN_PROCESSING_GUAGE: IntGauge = register_int_gauge!(
-        "muta_network_received_message_in_processing_guage",
+        "axon_network_received_message_in_processing_guage",
         "Total number of network received message current in processing"
     )
     .expect("network received message in processing");
     pub static ref NETWORK_RECEIVED_IP_MESSAGE_IN_PROCESSING_GUAGE_VEC: IntGaugeVec =
         register_int_gauge_vec!(
-            "muta_network_received_ip_message_in_processing_guage",
+            "axon_network_received_ip_message_in_processing_guage",
             "Number of network received messasge from ip current in processing",
             &["ip"]
         )
         .expect("network received ip message in processing");
     pub static ref NETWORK_CONNECTED_PEERS: IntGauge =
-        register_int_gauge!("muta_network_connected_peers", "Total connected peer count")
+        register_int_gauge!("axon_network_connected_peers", "Total connected peer count")
             .expect("network total connecteds");
     pub static ref NETWORK_IP_DISCONNECTED_COUNT_VEC: CounterVec = register_counter_vec!(
-        "muta_network_ip_disconnected_count",
+        "axon_network_ip_disconnected_count",
         "Total number of ip disconnected count",
         &["ip"]
     )
     .expect("network disconnect ip count");
     pub static ref NETWORK_OUTBOUND_CONNECTING_PEERS: IntGauge = register_int_gauge!(
-        "muta_network_outbound_connecting_peers",
+        "axon_network_outbound_connecting_peers",
         "Total number of network outbound connecting peers"
     )
     .expect("network outbound connecting peer count");
     pub static ref NETWORK_UNIDENTIFIED_CONNECTIONS: IntGauge = register_int_gauge!(
-        "muta_network_unidentified_connections",
+        "axon_network_unidentified_connections",
         "Total number of network unidentified connections"
     )
     .expect("network unidentified connections");
     pub static ref NETWORK_SAVED_PEER_COUNT: IntCounter = register_int_counter!(
-        "muta_network_saved_peer_count",
+        "axon_network_saved_peer_count",
         "Total number of saved peer count"
     )
     .expect("network saved peer count");
     pub static ref NETWORK_TAGGED_CONSENSUS_PEERS: IntGauge = register_int_gauge!(
-        "muta_network_tagged_consensus_peers",
+        "axon_network_tagged_consensus_peers",
         "Total number of consensus peers"
     )
     .expect("network tagged consensus peers");
     pub static ref NETWORK_CONNECTED_CONSENSUS_PEERS: IntGauge = register_int_gauge!(
-        "muta_network_connected_consensus_peers",
+        "axon_network_connected_consensus_peers",
         "Total number of connected consensus peers"
     )
     .expect("network connected consenss peers");

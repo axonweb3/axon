@@ -159,15 +159,24 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             }
         }
 
+        common_apm::metrics::consensus::CONSENSUS_CHECK_BLOCK_HISTOGRAM_VEC_STATIC
+            .check_block_cost
+            .observe(common_apm::metrics::duration_to_sec(time.elapsed()));
         info!("[consensus-engine]: check block cost {:?}", time.elapsed());
 
         let time = Instant::now();
         let txs = self.adapter.get_full_txs(ctx, &tx_hashes).await?;
+        common_apm::metrics::consensus::CONSENSUS_CHECK_BLOCK_HISTOGRAM_VEC_STATIC
+            .get_txs_cost
+            .observe(common_apm::metrics::duration_to_sec(time.elapsed()));
         info!("[consensus-engine]: get txs cost {:?}", time.elapsed());
 
         let time = Instant::now();
         self.txs_wal
             .save(next_number, proposal.transactions_root, txs)?;
+        common_apm::metrics::consensus::CONSENSUS_CHECK_BLOCK_HISTOGRAM_VEC_STATIC
+            .write_wal_cost
+            .observe(common_apm::metrics::duration_to_sec(time.elapsed()));
         info!(
             "[consensus-engine]: write wal cost {:?} tx_hashes_len {:?}",
             time.elapsed(),
