@@ -1,9 +1,8 @@
+use fut_ret::PinBoxFutRet;
 use proc_macro::TokenStream;
 use proc_macro2 as pm2;
 use quote::quote;
 use syn::{parse_macro_input, AttributeArgs, Ident, ItemFn, Lit, NestedMeta, ReturnType};
-
-use crate::pin_box_fut::PinBoxFutRet;
 
 pub fn expand_rpc_metrics(attr: TokenStream, func: TokenStream) -> TokenStream {
     let attr = parse_macro_input!(attr as AttributeArgs);
@@ -17,9 +16,9 @@ pub fn expand_rpc_metrics(attr: TokenStream, func: TokenStream) -> TokenStream {
         ReturnType::Default => quote! { () },
         ReturnType::Type(_, ty) => quote! { #ty },
     };
-    let ret_ty = func_return.ret_ty;
+    let ret_ty = func_return.return_type();
 
-    let func_block_wrapper = if func_return.is_pin_box_fut {
+    let func_block_wrapper = if func_return.is_ret_pin_box_fut() {
         quote! {
             Box::pin(async move {
                 let inst = common_apm::Instant::now();
@@ -81,11 +80,8 @@ pub fn expand_rpc_metrics(attr: TokenStream, func: TokenStream) -> TokenStream {
 
 fn parse_rpc_method(input: &NestedMeta) -> pm2::TokenStream {
     let method = match input {
-        NestedMeta::Lit(lit) => match lit {
-            Lit::Str(api) => Ident::new(&api.value(), pm2::Span::call_site()),
-            _ => panic!("Invalid lit"),
-        },
-        _ => panic!("Invalid nested meta"),
+        NestedMeta::Lit(Lit::Str(api)) => Ident::new(&api.value(), pm2::Span::call_site()),
+        _ => unreachable!("Invalid nested meta"),
     };
 
     quote! { #method }

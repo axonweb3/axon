@@ -13,10 +13,8 @@ parking_lot = "0.12"
 pprof = { version = "0.6", features = ["protobuf"], optional = true }
 serde = { version = "1.0", features = ["derive"] }
 
-
 common-apm = { path = "../../common/apm" }
 common-config-parser = { path = "../../common/config-parser" }
-common-metrics-derive =  { path = "../../common/metrics-derive" }
 core-consensus = { path = "../../core/consensus" }
 core-executor = { path = "../../core/executor" }
 protocol = { path = "../../protocol", package = "axon-protocol" }

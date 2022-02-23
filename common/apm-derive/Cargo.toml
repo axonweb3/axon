@@ -1,5 +1,5 @@
 [package]
-name = "common-metrics-derive"
+name = "common-apm-derive"
 version = "0.1.0"
 edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -8,6 +8,7 @@ edition = "2021"
 proc-macro = true
 
 [dependencies]
+fut-ret = "0.2"
 proc-macro2 = "1.0"
 quote = "1.0"
 serde_json = "1.0"

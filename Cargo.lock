@@ -768,15 +768,36 @@ dependencies = [
 name = "common-apm"
 version = "0.2.1"
 dependencies = [
+ "arc-swap 1.5.0",
  "axon-protocol",
  "axum",
+ "beef",
+ "common-apm-derive",
  "derive_more",
  "hyper",
  "lazy_static",
+ "log",
  "minstant",
  "muta-apm",
  "prometheus",
  "prometheus-static-metric",
+ "rustracing 0.5.1 (git+http://github.com/KaoImin/rustracing?branch=main)",
+ "rustracing_jaeger 0.7.0 (git+http://github.com/KaoImin/rustracing_jaeger?branch=main)",
+]
+
+[[package]]
+name = "common-apm-derive"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "axon-protocol",
+ "common-apm",
+ "fut-ret",
+ "jsonrpsee",
+ "proc-macro2",
+ "quote",
+ "serde_json",
+ "syn",
 ]
 
 [[package]]
@@ -822,7 +843,7 @@ dependencies = [
  "json",
  "log",
  "log4rs",
- "rustracing_jaeger",
+ "rustracing_jaeger 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde",
 ]
 
@@ -833,20 +854,6 @@ dependencies = [
  "axon-protocol",
  "rand 0.7.3",
  "static_merkle_tree",
-]
-
-[[package]]
-name = "common-metrics-derive"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "axon-protocol",
- "common-apm",
- "jsonrpsee",
- "proc-macro2",
- "quote",
- "serde_json",
- "syn",
 ]
 
 [[package]]
@@ -876,7 +883,6 @@ dependencies = [
  "cita_trie",
  "common-apm",
  "common-config-parser",
- "common-metrics-derive",
  "core-consensus",
  "core-executor",
  "fastrand",
@@ -1641,6 +1647,17 @@ name = "funty"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fed34cd105917e91daa4da6b3728c47b068749d6a62c59811f06ed2ac71d9da7"
+
+[[package]]
+name = "fut-ret"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2618726717fa5d5f7d804d602f9e847b2ab7ad0bc488b16a3345a2ee94e3364d"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
 
 [[package]]
 name = "futures"
@@ -2500,8 +2517,8 @@ dependencies = [
  "log",
  "muta-apm-derive",
  "parking_lot 0.11.2",
- "rustracing",
- "rustracing_jaeger",
+ "rustracing 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "rustracing_jaeger 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -3492,6 +3509,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustracing"
+version = "0.5.1"
+source = "git+http://github.com/KaoImin/rustracing?branch=main#51a6915f2b0ec834f802c0febdf97e7fad07fd52"
+dependencies = [
+ "backtrace",
+ "beef",
+ "crossbeam-channel",
+ "futures",
+ "minstant",
+ "rand 0.8.5",
+ "tokio",
+ "trackable 1.2.0",
+]
+
+[[package]]
 name = "rustracing_jaeger"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3501,9 +3533,25 @@ dependencies = [
  "hostname",
  "percent-encoding",
  "rand 0.8.5",
- "rustracing",
+ "rustracing 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "thrift_codec",
  "trackable 0.2.24",
+]
+
+[[package]]
+name = "rustracing_jaeger"
+version = "0.7.0"
+source = "git+http://github.com/KaoImin/rustracing_jaeger?branch=main#8ef037d3070e7e77d5b3a683756ab8402ece9e70"
+dependencies = [
+ "beef",
+ "crossbeam-channel",
+ "hostname",
+ "minstant",
+ "percent-encoding",
+ "rand 0.8.5",
+ "rustracing 0.5.1 (git+http://github.com/KaoImin/rustracing?branch=main)",
+ "thrift_codec",
+ "trackable 1.2.0",
 ]
 
 [[package]]

@@ -5,7 +5,6 @@ use overlord::types::{Node, OverlordMsg, Vote, VoteType};
 use overlord::{extract_voters, Crypto, OverlordHandler};
 use parking_lot::RwLock;
 
-use common_apm::muta_apm;
 use core_executor::{EVMExecutorAdapter, EvmExecutor};
 use core_network::{PeerId, PeerIdExt};
 
@@ -147,7 +146,7 @@ where
     CS: CrossClient + 'static,
     DB: cita_trie::DB + 'static,
 {
-    #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
+    // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
     fn update_status(
         &self,
         ctx: Context,
