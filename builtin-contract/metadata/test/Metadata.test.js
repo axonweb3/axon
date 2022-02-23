@@ -62,7 +62,6 @@ describe("Testing MetadataManager", () => {
             .to.be.not.reverted
     })
 
-
     it("`appendMetadata` successed on epoch of 2 and on version of [3, 4]", async () => {
         metadata.epoch = 2
         metadata.version = { start: 3, end: 4 }
