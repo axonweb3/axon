@@ -6,8 +6,8 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use core_consensus::SyncStatus as InnerSyncStatus;
 use protocol::codec::ProtocolCodec;
 use protocol::types::{
-    AccessList, Block, Bloom, Bytes, Hash, Hex, Public, Receipt, SignedTransaction, H160, H256,
-    U256, U64,
+    AccessList, Block, Bloom, Bytes, Hash, Header, Hex, Public, Receipt, SignedTransaction, H160,
+    H256, U256, U64,
 };
 
 #[allow(clippy::large_enum_variant)]
@@ -515,6 +515,47 @@ pub struct Web3FeeHistory {
     pub reward:           Option<Vec<U256>>,
     pub base_fee_per_gas: Vec<U256>,
     pub gas_used_ratio:   Vec<U256>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct Web3Header {
+    pub difficulty:        U256,
+    pub extra_data:        Hex,
+    pub gas_limit:         U256,
+    pub gas_used:          U256,
+    pub logs_bloom:        Option<Bloom>,
+    pub miner:             H160,
+    pub nonce:             U256,
+    pub number:            U256,
+    pub parent_hash:       H256,
+    pub receipts_root:     H256,
+    #[serde(rename = "sha3Uncles")]
+    pub sha3_uncles:       H256,
+    pub state_root:        H256,
+    pub timestamp:         U256,
+    pub transactions_root: H256,
+}
+
+impl From<Header> for Web3Header {
+    fn from(h: Header) -> Self {
+        Web3Header {
+            number:            h.number.into(),
+            parent_hash:       h.prev_hash,
+            sha3_uncles:       Default::default(),
+            logs_bloom:        Some(h.log_bloom),
+            transactions_root: h.transactions_root,
+            state_root:        h.state_root,
+            receipts_root:     h.receipts_root,
+            miner:             h.proposer,
+            difficulty:        h.difficulty,
+            extra_data:        Hex::encode(&h.extra_data),
+            gas_limit:         h.gas_limit,
+            gas_used:          h.gas_used,
+            timestamp:         h.timestamp.into(),
+            nonce:             U256::default(),
+        }
+    }
 }
 
 #[cfg(test)]

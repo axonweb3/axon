@@ -880,6 +880,7 @@ name = "core-api"
 version = "0.1.0"
 dependencies = [
  "axon-protocol",
+ "beef",
  "cita_trie",
  "common-apm",
  "common-config-parser",

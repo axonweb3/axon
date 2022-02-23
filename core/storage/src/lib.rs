@@ -628,6 +628,10 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         block_height: u64,
         hashes: &[Hash],
     ) -> ProtocolResult<Vec<Option<Receipt>>> {
+        if hashes.is_empty() {
+            return Ok(Vec::new());
+        }
+
         let key_prefix = CommonPrefix::new(block_height);
         let mut found = Vec::with_capacity(hashes.len());
 
