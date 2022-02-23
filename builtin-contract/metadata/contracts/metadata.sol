@@ -2,6 +2,8 @@
 
 pragma solidity >=0.7.0;
 
+// import "hardhat/console.sol";
+
 contract MetadataManager {
     struct MetadataVersion {
         uint64 start;
@@ -52,10 +54,10 @@ contract MetadataManager {
         require(find_sender, "fatal/verifier_list has no sender");
 
         MetadataVersion memory version = metadata.version;
-        // require(
-        //     version.start <= block.number && block.number <= version.end,
-        //     "fatal/invalid version"
-        // );
+        require(
+            version.start <= block.number && block.number <= version.end,
+            "fatal/invalid version"
+        );
 
         uint64 epoch = metadata.epoch;
         if (highest_epoch > 0) {
