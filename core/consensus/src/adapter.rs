@@ -5,6 +5,7 @@ use overlord::types::{Node, OverlordMsg, Vote, VoteType};
 use overlord::{extract_voters, Crypto, OverlordHandler};
 use parking_lot::RwLock;
 
+use common_apm::Instant;
 use core_executor::{EVMExecutorAdapter, EvmExecutor};
 use core_network::{PeerId, PeerIdExt};
 
@@ -361,7 +362,13 @@ where
         )?;
 
         Ok(task::block_in_place(|| {
-            EvmExecutor::default().exec(&mut backend, signed_txs)
+            let time = Instant::now();
+            let res = EvmExecutor::default().exec(&mut backend, signed_txs);
+            common_apm::metrics::consensus::CONSENSUS_TIME_HISTOGRAM_VEC_STATIC
+                .exec
+                .observe(common_apm::metrics::duration_to_sec(time.elapsed()));
+
+            res
         }))
     }
 
