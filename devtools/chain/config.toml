@@ -5,6 +5,7 @@ privkey = "0x37aa0f893d05914a4def0460c0a984d3611546cfb26924d7a7ca6e0db9950a2d"
 data_path = "./devtools/chain/data"
 
 asset_contract_address = "0xc2fd48d60ae16b3fe6e333a9a13763691970d9373d4fab7cc323d7ba06fa9986"
+metadata_contract_address = "0xc34393e6a797d2b4e2aabbc7b9dc8bde1db42410d304b5e78c2ff843134e15e0"
 
 [rpc]
 http_listening_address = "127.0.0.1:8000"
