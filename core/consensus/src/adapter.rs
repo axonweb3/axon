@@ -5,7 +5,6 @@ use overlord::types::{Node, OverlordMsg, Vote, VoteType};
 use overlord::{extract_voters, Crypto, OverlordHandler};
 use parking_lot::RwLock;
 
-use common_apm::muta_apm;
 use common_apm::Instant;
 use core_executor::{EVMExecutorAdapter, EvmExecutor};
 use core_network::{PeerId, PeerIdExt};
