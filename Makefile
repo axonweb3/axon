@@ -92,6 +92,9 @@ security-audit:
 metadata-test:
 	cd builtin-contract/metadata && npm install && npm run compile && npm run test
 
+metadata-genesis-deploy:
+	cd builtin-contract/metadata && npm run deploy
+
 .PHONY: build prod prod-test
 .PHONY: fmt test clippy doc doc-deps doc-api check stats
 .PHONY: ci info security-audit

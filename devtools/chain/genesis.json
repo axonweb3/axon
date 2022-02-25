@@ -8561,7 +8561,7 @@
         "unsigned": {
           "nonce": "0x4",
           "max_priority_fee_per_gas": "0x7d0",
-          "max_fee_per_gas": "0x7d0",
+          "gas_price": "0x7d0",
           "gas_limit": "0x3231303030",
           "value": "0x0",
           "data": [
@@ -15811,8 +15811,7 @@
             0,
             51
           ],
-          "access_list": [],
-          "type": 2
+          "access_list": []
         },
         "signature": {
           "r": "0x1dda8608d41b71f5469384c1b80a75ddf193b0625ff25c5c90d75751178d599",

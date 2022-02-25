@@ -20,6 +20,7 @@ async function export_deploy() {
     return FeeMarketEIP1559Transaction.fromTxData(tx).sign(private_key)
 }
 
+// caution: this method only generates mock transaction with mismatched signature to deploy to Axon genesis block
 export_deploy().then(signed_tx => {
     const hex = value => "0x" + value.toString("hex")
     const deploy = {
@@ -27,12 +28,11 @@ export_deploy().then(signed_tx => {
             "unsigned": {
                 "nonce": hex(signed_tx.nonce),
                 "max_priority_fee_per_gas": hex(signed_tx.maxPriorityFeePerGas),
-                "max_fee_per_gas": hex(signed_tx.maxFeePerGas),
+                "gas_price": hex(signed_tx.maxFeePerGas),
                 "gas_limit": hex(signed_tx.gasLimit),
                 "value": hex(signed_tx.value),
                 "data": Array.from(signed_tx.data),
-                "access_list": signed_tx.accessList,
-                "type": signed_tx.type
+                "access_list": signed_tx.accessList
             },
             "signature": {
                 "r": hex(signed_tx.r),
@@ -48,6 +48,6 @@ export_deploy().then(signed_tx => {
     const stream = util.rlp.encode([util.privateToAddress(private_key), signed_tx.nonce])
     const code_address = hex(util.keccak256(stream))
     fs.writeFileSync(__dirname + "/metadata.deploy.json", JSON.stringify({ deploy, code_address }, null, 2))
-    console.log("export to `metadata.deploy.json`")
+    console.log(`export deployment info to '${__dirname}/metadata.deploy.json'`)
     process.exit(0)
 })
