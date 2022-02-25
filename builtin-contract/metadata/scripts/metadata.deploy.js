@@ -22,7 +22,13 @@ async function export_deploy() {
 
 // caution: this method only generates mock transaction with mismatched signature to deploy to Axon genesis block
 export_deploy().then(signed_tx => {
-    const hex = value => "0x" + value.toString("hex")
+    const hex = (value, length) => {
+        let hexed = value.toString("hex")
+        while (length != null && hexed.length < length) {
+            hexed = "0" + hexed
+        }
+        return "0x" + hexed
+    }
     const deploy = {
         "transaction": {
             "unsigned": {
@@ -36,8 +42,8 @@ export_deploy().then(signed_tx => {
                 "access_list": signed_tx.accessList
             },
             "signature": {
-                "r": hex(signed_tx.r),
-                "s": hex(signed_tx.s),
+                "r": hex(signed_tx.r, 64),
+                "s": hex(signed_tx.s, 64),
                 "standard_v": signed_tx.v.toNumber(),
             },
             "chain_id": signed_tx.chainId.toNumber(),
