@@ -30,6 +30,7 @@ export_deploy().then(signed_tx => {
                 "max_priority_fee_per_gas": hex(signed_tx.maxPriorityFeePerGas),
                 "gas_price": hex(signed_tx.maxFeePerGas),
                 "gas_limit": hex(signed_tx.gasLimit),
+                "action": "Create",
                 "value": hex(signed_tx.value),
                 "data": Array.from(signed_tx.data),
                 "access_list": signed_tx.accessList
