@@ -1,0 +1,10 @@
+node_modules
+.env
+coverage
+coverage.json
+typechain
+metadata.deploy.json
+
+#Hardhat files
+cache
+artifacts

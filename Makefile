@@ -89,6 +89,14 @@ security-audit:
 	@cargo audit --version || cargo install cargo-audit
 	@cargo audit
 
+metadata-test:
+	cd builtin-contract/metadata && npm install && npm run compile && npm run test
+
+metadata-genesis-deploy:
+	cd builtin-contract/metadata && npm run deploy
+
+unit-test: test metadata-test
+
 .PHONY: build prod prod-test
 .PHONY: fmt test clippy doc doc-deps doc-api check stats
 .PHONY: ci info security-audit
