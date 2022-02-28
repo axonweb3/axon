@@ -353,11 +353,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
 
     #[metrics_rpc("eth_getLogs")]
     async fn get_logs(&self, filter: Web3Filter) -> RpcResult<Vec<Web3Log>> {
-        if filter.topics.is_none() {
-            return Ok(Vec::new());
-        }
-
-        let topics = filter.topics.unwrap();
+        let topics = filter.topics.unwrap_or_default();
 
         #[allow(clippy::large_enum_variant)]
         enum BlockPosition {
@@ -379,9 +375,9 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                     let log_len = receipt.logs.len();
                     match address {
                         Some(s) if s == &receipt.sender => {
-                            from_receipt_to_web3_log(index, topics, receipt, logs)
+                            from_receipt_to_web3_log(index, topics, &receipt, logs)
                         }
-                        None => from_receipt_to_web3_log(index, topics, receipt, logs),
+                        None => from_receipt_to_web3_log(index, topics, &receipt, logs),
                         _ => (),
                     }
                     index += log_len;
@@ -747,15 +743,15 @@ fn mock_header_by_call_req(latest_header: Header, call_req: &Web3CallRequest) ->
     }
 }
 
-fn from_receipt_to_web3_log(
+pub fn from_receipt_to_web3_log(
     index: usize,
     topics: &[H256],
-    receipt: Receipt,
+    receipt: &Receipt,
     logs: &mut Vec<Web3Log>,
 ) {
-    for log in receipt.logs {
+    for log in &receipt.logs {
         for (idx, topic) in log.topics.iter().enumerate() {
-            if topics.contains(topic) {
+            if topics.is_empty() || topics.contains(topic) {
                 let web3_log = Web3Log {
                     address:           receipt.sender,
                     topics:            log.topics.clone(),

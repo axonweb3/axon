@@ -1,5 +1,6 @@
 mod r#impl;
 mod web3_types;
+mod ws_subscription;
 
 use std::sync::Arc;
 
@@ -12,9 +13,12 @@ use protocol::traits::APIAdapter;
 use protocol::types::{Hash, Hex, H160, H256, U256};
 use protocol::ProtocolResult;
 
-use crate::jsonrpc::web3_types::{
-    BlockId, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter, Web3Log, Web3Receipt,
-    Web3SyncStatus, Web3Transaction,
+use crate::jsonrpc::{
+    web3_types::{
+        BlockId, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter, Web3Log, Web3Receipt,
+        Web3SyncStatus, Web3Transaction,
+    },
+    ws_subscription::{ws_subscription_module, HexIdProvider},
 };
 
 use crate::APIError;
@@ -182,16 +186,22 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
         let server = WsServerBuilder::new()
             .max_request_body_size(config.rpc.max_payload_size as u32)
             .max_connections(config.rpc.maxconn as u64)
+            .set_id_provider(HexIdProvider::default())
             .build(addr)
             .await
             .map_err(|e| APIError::WebSocketServer(e.to_string()))?;
 
+        let mut rpc = r#impl::JsonRpcImpl::new(
+            Arc::clone(&adapter),
+            &config.rpc.client_version,
+            config.data_path,
+        )
+        .into_rpc();
+        rpc.merge(ws_subscription_module(adapter).await).unwrap();
+
         ret.1 = Some(
             server
-                .start(
-                    r#impl::JsonRpcImpl::new(adapter, &config.rpc.client_version, config.data_path)
-                        .into_rpc(),
-                )
+                .start(rpc)
                 .map_err(|e| APIError::WebSocketServer(e.to_string()))?,
         )
     }
