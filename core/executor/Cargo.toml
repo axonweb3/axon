@@ -27,7 +27,7 @@ common-crypto = { path = "../../common/crypto" }
 
 core-storage = { path = "../storage" }
 criterion = "0.3"
-ethabi = "16.0"
+ethabi = "17.0"
 ethabi-contract = "16.0"
 ethabi-derive = "16.0"
 getrandom = "0.2"
