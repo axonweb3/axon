@@ -57,6 +57,10 @@ impl PirorityPool {
             return Err(MemPoolError::ReachLimit(self.co_queue.len()).into());
         }
 
+        // This lock is necessary to avoid mismatch error triggered by the concurrent
+        // operation of tx insertion and flush.
+        let _flushing = self.flush_lock.lock();
+
         let tx_wrapper = TxWrapper::from(stx);
         let _ = self.co_queue.push(tx_wrapper.ptr());
         self.occupy_nonce(tx_wrapper.ptr());
@@ -100,12 +104,14 @@ impl PirorityPool {
     }
 
     pub fn flush(&self, hashes: &[Hash]) -> ProtocolResult<()> {
-        let _flushing = self.flush_lock.lock();
+        let mut residual = Vec::with_capacity(self.tx_map.len());
 
-        self.topple_queue();
-        let residual = self.get_residual(hashes);
-
-        self.clear_all();
+        {
+            let _flushing = self.flush_lock.lock();
+            self.topple_queue();
+            residual = self.get_residual(hashes);
+            self.clear_all();
+        }
 
         for tx in residual.into_iter() {
             self.insert(tx)?;
