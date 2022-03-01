@@ -5,10 +5,15 @@
     "test": "jest"
   },
   "dependencies": {
-    "axios": "^0.26.0"
+    "@chainsafe/dappeteer": "^2.4.0",
+    "axios": "^0.26.0",
+    "puppeteer": "^13.4.0"
   },
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.16.8",
     "jest": "^27.5.1"
+  },
+  "jest": {
+    "preset": "@chainsafe/dappeteer"
   }
 }

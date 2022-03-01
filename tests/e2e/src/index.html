@@ -1,0 +1,21 @@
+<html>
+  <body>
+    <div>
+      <button id="getChainId">Get chain id</button>
+      <div>Chain id: <span id="chainId"></span></div>
+    </div>
+  </body>
+  <script>
+    document
+      .getElementById("getChainId")
+      .addEventListener(
+        "click",
+        () => {
+          ethereum
+            .request({ method: "net_version" })
+            .then((id) => {
+              document.getElementById("chainId").innerHTML = id;
+            });
+        });
+  </script>
+</html>
