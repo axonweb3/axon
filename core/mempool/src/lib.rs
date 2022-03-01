@@ -286,16 +286,9 @@ where
         Ok(())
     }
 
-    fn set_args(
-        &self,
-        context: Context,
-        state_root: H256,
-        timeout_gap: u64,
-        gas_limit: u64,
-        max_tx_size: u64,
-    ) {
+    fn set_args(&self, context: Context, state_root: H256, gas_limit: u64, max_tx_size: u64) {
         self.adapter
-            .set_args(context, state_root, timeout_gap, gas_limit, max_tx_size);
+            .set_args(context, state_root, gas_limit, max_tx_size);
     }
 }
 

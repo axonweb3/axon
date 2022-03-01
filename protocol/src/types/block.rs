@@ -215,8 +215,6 @@ mod tests {
     fn print_metadata() {
         let metadata = Metadata {
             version: MetadataVersion::new(0, 1000000000),
-            timeout_gap: 1000,
-            common_ref: Hex::from_string("0x6c747758636859487038".to_string()).unwrap(),
             gas_limit: 4294967295,
             gas_price: 1,
             interval: 3000,

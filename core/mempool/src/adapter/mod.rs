@@ -366,11 +366,9 @@ where
         &self,
         _context: Context,
         _state_root: MerkleRoot,
-        timeout_gap: u64,
         cycles_limit: u64,
         max_tx_size: u64,
     ) {
-        self.timeout_gap.store(timeout_gap, Ordering::Relaxed);
         self.gas_limit.store(cycles_limit, Ordering::Relaxed);
         self.max_tx_size
             .store(max_tx_size as usize, Ordering::Relaxed);

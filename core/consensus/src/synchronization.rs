@@ -348,6 +348,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             last_number:      block.header.number,
             last_state_root:  resp.state_root,
             gas_limit:        metadata.gas_limit.into(),
+            max_tx_size:      metadata.max_tx_size.into(),
             base_fee_per_gas: block.header.base_fee_per_gas,
             proof:            proof.clone(),
         };

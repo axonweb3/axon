@@ -6,7 +6,7 @@ use creep::Context;
 
 use crate::types::{
     Address, Block, BlockNumber, ExecResp, Hash, Header, Hex, Log, MerkleRoot, Proof, Proposal,
-    Receipt, SignedTransaction, Validator, U256,
+    Receipt, SignedTransaction, TxResp, Validator, H160, U256,
 };
 use crate::ProtocolResult;
 
@@ -129,16 +129,17 @@ pub trait CommonConsensusAdapter: Send + Sync {
         signed_txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<ExecResp>;
 
+    fn call_evm(
+        &self,
+        ctx: Context,
+        header: &Header,
+        addr: H160,
+        data: Vec<u8>,
+    ) -> ProtocolResult<TxResp>;
+
     async fn broadcast_number(&self, ctx: Context, height: u64) -> ProtocolResult<()>;
 
-    fn set_args(
-        &self,
-        context: Context,
-        state_root: MerkleRoot,
-        timeout_gap: u64,
-        gas_limit: u64,
-        max_tx_size: u64,
-    );
+    fn set_args(&self, context: Context, state_root: MerkleRoot, gas_limit: u64, max_tx_size: u64);
 
     fn tag_consensus(&self, ctx: Context, peer_ids: Vec<Bytes>) -> ProtocolResult<()>;
 

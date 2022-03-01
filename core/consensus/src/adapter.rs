@@ -15,7 +15,7 @@ use protocol::traits::{
 };
 use protocol::types::{
     BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Hasher, Header, Hex, Log,
-    MerkleRoot, Proof, Proposal, Receipt, SignedTransaction, Validator, U256,
+    MerkleRoot, Proof, Proposal, Receipt, SignedTransaction, TxResp, Validator, H160, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, tokio::task, ProtocolResult};
 
@@ -372,6 +372,23 @@ where
         }))
     }
 
+    fn call_evm(
+        &self,
+        _ctx: Context,
+        header: &Header,
+        addr: H160,
+        data: Vec<u8>,
+    ) -> ProtocolResult<TxResp> {
+        let mut backend = EVMExecutorAdapter::from_root(
+            header.state_root,
+            Arc::clone(&self.trie_db),
+            Arc::clone(&self.storage),
+            header.into(),
+        )?;
+
+        Ok(EvmExecutor::default().call(&mut backend, addr, data))
+    }
+
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
     async fn broadcast_number(&self, ctx: Context, number: u64) -> ProtocolResult<()> {
         self.network
@@ -379,16 +396,9 @@ where
             .await
     }
 
-    fn set_args(
-        &self,
-        context: Context,
-        state_root: MerkleRoot,
-        timeout_gap: u64,
-        gas_limit: u64,
-        max_tx_size: u64,
-    ) {
+    fn set_args(&self, context: Context, state_root: MerkleRoot, gas_limit: u64, max_tx_size: u64) {
         self.mempool
-            .set_args(context, state_root, timeout_gap, gas_limit, max_tx_size);
+            .set_args(context, state_root, gas_limit, max_tx_size);
     }
 
     fn tag_consensus(&self, _ctx: Context, _pub_keys: Vec<Bytes>) -> ProtocolResult<()> {

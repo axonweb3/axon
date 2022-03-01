@@ -7,7 +7,7 @@ use overlord::types::{
 use overlord::{DurationConfig, Overlord, OverlordHandler};
 
 use protocol::traits::{Consensus, ConsensusAdapter, NodeInfo};
-use protocol::types::{Proposal, Validator};
+use protocol::types::{Proposal, Validator, H160};
 use protocol::{
     async_trait, codec::ProtocolCodec, tokio::sync::Mutex as AsyncMutex, ProtocolResult,
 };
@@ -100,6 +100,7 @@ impl<Adapter: ConsensusAdapter + 'static> Consensus for OverlordConsensus<Adapte
 impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
     pub fn new(
         status: StatusAgent,
+        metadata_address: H160,
         node_info: NodeInfo,
         crypto: Arc<OverlordCrypto>,
         txs_wal: Arc<SignedTxsWAL>,
@@ -110,6 +111,7 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
     ) -> Self {
         let engine = Arc::new(ConsensusEngine::new(
             status,
+            metadata_address,
             node_info.clone(),
             txs_wal,
             Arc::clone(&adapter),

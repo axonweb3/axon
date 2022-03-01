@@ -1,7 +1,8 @@
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use arc_swap::ArcSwap;
-use parking_lot::Mutex;
+use parking_lot::{Mutex, RwLock};
 
 use protocol::types::{BlockNumber, Hash, Metadata, Proof, H256, U256};
 
@@ -77,6 +78,7 @@ pub struct CurrentStatus {
     pub last_number:      BlockNumber,
     pub last_state_root:  H256,
     pub gas_limit:        U256,
+    pub max_tx_size:      U256,
     pub base_fee_per_gas: U256,
     pub proof:            Proof,
 }

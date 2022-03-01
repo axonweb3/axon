@@ -16,12 +16,15 @@ use common_apm::Instant;
 use common_crypto::BlsPublicKey;
 use common_logger::{json, log};
 use common_merkle::Merkle;
-
+use core_metadata::{
+    calc_epoch, decode_resp_metadata, get_metadata, metadata_abi, need_change_metadata, AbiEncode,
+};
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
     Block, BlockNumber, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, Log, MerkleRoot,
-    Metadata, Proof, Proposal, Receipt, SignedTransaction, ValidatorExtend, U256,
+    Metadata, Proof, Proposal, Receipt, SignedTransaction, TransactionAction, ValidatorExtend,
+    H160, U256,
 };
 use protocol::{
     async_trait, lazy::CURRENT_STATE_ROOT, tokio::sync::Mutex as AsyncMutex, ProtocolError,
@@ -40,9 +43,10 @@ use crate::{ConsensusError, METADATA_CONTROLER};
 /// validator is for create new block, and authority is for build overlord
 /// status.
 pub struct ConsensusEngine<Adapter> {
-    status:         StatusAgent,
-    node_info:      NodeInfo,
-    exemption_hash: RwLock<HashSet<Hash>>,
+    status:           StatusAgent,
+    node_info:        NodeInfo,
+    metadata_address: H160,
+    exemption_hash:   RwLock<HashSet<Hash>>,
 
     adapter: Arc<Adapter>,
     txs_wal: Arc<SignedTxsWAL>,
@@ -269,6 +273,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             metadata.verifier_list
         );
 
+        let is_change_metadata = self.contains_change_metadata(&signed_txs);
         self.update_status(ctx.clone(), resp, proposal.clone(), proof, signed_txs)
             .await?;
 
@@ -446,6 +451,7 @@ impl<Adapter: ConsensusAdapter + 'static> Wal for ConsensusEngine<Adapter> {
 impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
     pub fn new(
         status: StatusAgent,
+        metadata_address: H160,
         node_info: NodeInfo,
         wal: Arc<SignedTxsWAL>,
         adapter: Arc<Adapter>,
@@ -456,6 +462,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
     ) -> Self {
         Self {
             status,
+            metadata_address,
             node_info,
             exemption_hash: RwLock::new(HashSet::new()),
             txs_wal: wal,
@@ -471,6 +478,12 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
 
     pub fn status(&self) -> CurrentStatus {
         self.status.inner()
+    }
+
+    fn contains_change_metadata(&self, txs: &[SignedTransaction]) -> bool {
+        let action = TransactionAction::Call(self.metadata_address);
+        txs.iter()
+            .any(|tx| tx.transaction.unsigned.action == action)
     }
 
     fn update_metadata(&self, block_number: BlockNumber) {
@@ -591,6 +604,8 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         let block = Block::new(proposal, resp.clone());
         let block_number = block.header.number;
         let block_hash = block.header_hash();
+        let is_change_metadata = self.contains_change_metadata(&txs);
+        let next_block_number = block_number + 1;
 
         let (receipts, logs) = generate_receipts_and_logs(
             block_number,
@@ -624,13 +639,45 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
 
         // Save the block
         self.adapter.save_block(ctx.clone(), block.clone()).await?;
+        let payload =
+            metadata_abi::MetadataContractCalls::GetMetadata(metadata_abi::GetMetadataCall {
+                epoch: calc_epoch(block_number) + 1,
+            });
 
-        let metadata = METADATA_CONTROLER.load().current();
+        if is_change_metadata {
+            let res = self.adapter.call_evm(
+                ctx.clone(),
+                &block.header,
+                self.metadata_address,
+                payload.encode(),
+            )?;
+            if !res.exit_reason.is_succeed() {
+                return Err(ConsensusError::CallEvm(res.exit_reason).into());
+            }
+
+            let metadata = decode_resp_metadata(&res.ret)?;
+            core_metadata::upload_and_clean_outdated(block_number, metadata);
+        }
+
+        if need_change_metadata(next_block_number) {
+            let metadata = get_metadata(next_block_number).unwrap();
+
+            let pub_keys = metadata
+                .verifier_list
+                .iter()
+                .map(|v| v.pub_key.as_bytes())
+                .collect();
+            self.adapter.tag_consensus(ctx.clone(), pub_keys)?;
+            self.update_overlord_crypto(metadata)?;
+        }
+
+        let last_status = self.status.inner();
         let new_status = CurrentStatus {
             prev_hash:        block_hash,
             last_number:      block_number,
             last_state_root:  resp.state_root,
-            gas_limit:        metadata.gas_limit.into(),
+            gas_limit:        last_status.gas_limit,
+            max_tx_size:      last_status.max_tx_size,
             base_fee_per_gas: block.header.base_fee_per_gas,
             proof:            proof.clone(),
         };
@@ -642,17 +689,9 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         self.adapter.set_args(
             ctx.clone(),
             resp.state_root,
-            metadata.timeout_gap,
-            metadata.gas_limit,
-            metadata.max_tx_size,
+            last_status.gas_limit.as_u64(),
+            last_status.max_tx_size.as_u64(),
         );
-
-        let pub_keys = metadata
-            .verifier_list
-            .iter()
-            .map(|v| v.pub_key.as_bytes())
-            .collect();
-        self.adapter.tag_consensus(ctx, pub_keys)?;
 
         if block.header.number != proof.number {
             info!("[consensus] update_status for handle_commit, error, before update, block number {}, proof number:{}, proof : {:?}",
@@ -661,7 +700,6 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             proof.clone());
         }
 
-        self.update_overlord_crypto(metadata)?;
         Ok(())
     }
 

@@ -19,7 +19,7 @@ use std::error::Error;
 
 use common_crypto::Error as CryptoError;
 
-use protocol::types::{Hash, MerkleRoot};
+use protocol::types::{ExitReason, Hash, MerkleRoot};
 use protocol::{Display, ProtocolError, ProtocolErrorKind};
 
 pub use crate::adapter::OverlordConsensusAdapter;
@@ -149,6 +149,9 @@ pub enum ConsensusError {
 
     ///
     WALErr(std::io::Error),
+
+    #[display(fmt = "Call EVM error {:?}", _0)]
+    CallEvm(ExitReason),
 
     #[display(fmt = "Storage item not found")]
     StorageItemNotFound,
