@@ -104,7 +104,7 @@ impl PirorityPool {
     }
 
     pub fn flush(&self, hashes: &[Hash]) -> ProtocolResult<()> {
-        let mut residual = Vec::with_capacity(self.tx_map.len());
+        let residual;
 
         {
             let _flushing = self.flush_lock.write();
