@@ -39,7 +39,7 @@ impl PirorityPool {
         tokio::spawn(async move {
             loop {
                 if !co_queue.is_empty() {
-                    let _writing = flush_lock.read();
+                    let _flushing = flush_lock.read();
                     let txs = pop_all_item(Arc::clone(&co_queue));
                     let mut q = real_queue.lock();
                     txs.into_iter().for_each(|p_tx| q.push(p_tx));
