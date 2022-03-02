@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use crossbeam_queue::ArrayQueue;
 use dashmap::DashMap;
-use parking_lot::Mutex;
+use parking_lot::{Mutex, RwLock};
 
 use protocol::tokio::{self, time::sleep};
 use protocol::types::{Hash, SignedTransaction, H160, U256};
@@ -19,7 +19,7 @@ pub struct PirorityPool {
     real_queue:     Arc<Mutex<BinaryHeap<TxPtr>>>,
     tx_map:         DashMap<Hash, SignedTransaction>,
 
-    flush_lock: Arc<Mutex<()>>,
+    flush_lock: Arc<RwLock<()>>,
 }
 
 impl PirorityPool {
@@ -29,7 +29,7 @@ impl PirorityPool {
             co_queue:       Arc::new(ArrayQueue::new(size)),
             real_queue:     Arc::new(Mutex::new(BinaryHeap::with_capacity(size * 2))),
             tx_map:         DashMap::new(),
-            flush_lock:     Arc::new(Mutex::new(())),
+            flush_lock:     Arc::new(RwLock::new(())),
         };
 
         let co_queue = Arc::clone(&pool.co_queue);
@@ -39,7 +39,7 @@ impl PirorityPool {
         tokio::spawn(async move {
             loop {
                 if !co_queue.is_empty() {
-                    let _writing = flush_lock.lock();
+                    let _flushing = flush_lock.read();
                     let txs = pop_all_item(Arc::clone(&co_queue));
                     let mut q = real_queue.lock();
                     txs.into_iter().for_each(|p_tx| q.push(p_tx));
@@ -56,6 +56,10 @@ impl PirorityPool {
         if self.co_queue.is_full() {
             return Err(MemPoolError::ReachLimit(self.co_queue.len()).into());
         }
+
+        // This lock is necessary to avoid mismatch error triggered by the concurrent
+        // operation of tx insertion and flush.
+        let _flushing = self.flush_lock.read();
 
         let tx_wrapper = TxWrapper::from(stx);
         let _ = self.co_queue.push(tx_wrapper.ptr());
@@ -100,12 +104,14 @@ impl PirorityPool {
     }
 
     pub fn flush(&self, hashes: &[Hash]) -> ProtocolResult<()> {
-        let _flushing = self.flush_lock.lock();
+        let residual;
 
-        self.topple_queue();
-        let residual = self.get_residual(hashes);
-
-        self.clear_all();
+        {
+            let _flushing = self.flush_lock.write();
+            self.topple_queue();
+            residual = self.get_residual(hashes);
+            self.clear_all();
+        }
 
         for tx in residual.into_iter() {
             self.insert(tx)?;
