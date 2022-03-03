@@ -8,7 +8,6 @@ use std::thread;
 use std::time::Duration;
 
 use backtrace::Backtrace;
-use parking_lot::Mutex;
 
 use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
 use common_apm::{server::run_prometheus_server, tracing::global_tracer_register};
@@ -37,6 +36,7 @@ use core_mempool::{
     DefaultMemPoolAdapter, MemPoolImpl, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
     RPC_PULL_TXS, RPC_RESP_PULL_TXS, RPC_RESP_PULL_TXS_SYNC,
 };
+use core_metadata::{MetadataAdapterImpl, MetadataController};
 use core_network::{
     observe_listen_port_occupancy, NetworkConfig, NetworkService, PeerId, PeerIdExt,
 };
@@ -46,10 +46,11 @@ use protocol::lazy::{ASSET_CONTRACT_ADDRESS, CHAIN_ID, CURRENT_STATE_ROOT};
 #[cfg(unix)]
 use protocol::tokio::signal::unix as os_impl;
 use protocol::tokio::{runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep};
-use protocol::traits::{CommonStorage, Context, Executor, MemPool, Network, NodeInfo, Storage};
+use protocol::traits::{
+    CommonStorage, Context, Executor, MemPool, MetadataControl, Network, NodeInfo, Storage,
+};
 use protocol::types::{
-    Account, Address, MerkleRoot, Metadata, Proposal, RichBlock, Validator, NIL_DATA, RLP_NULL,
-    U256,
+    Account, Address, MerkleRoot, Proposal, RichBlock, Validator, NIL_DATA, RLP_NULL, U256,
 };
 use protocol::{tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
@@ -57,16 +58,14 @@ use protocol::{tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolR
 pub struct Axon {
     config:     Config,
     genesis:    RichBlock,
-    metadata:   Metadata,
     state_root: MerkleRoot,
 }
 
 impl Axon {
-    pub fn new(config: Config, genesis: RichBlock, metadata: Metadata) -> Axon {
+    pub fn new(config: Config, genesis: RichBlock) -> Axon {
         Axon {
             config,
             genesis,
-            metadata,
             state_root: MerkleRoot::default(),
         }
     }
@@ -288,14 +287,6 @@ impl Axon {
         let my_pubkey = my_privkey.pub_key();
         let my_address = Address::from_pubkey_bytes(my_pubkey.to_uncompressed_bytes())?;
 
-        METADATA_CONTROLER.swap(Arc::new(MetadataController::init(
-            Arc::new(Mutex::new(self.metadata.clone())),
-            Arc::new(Mutex::new(self.metadata.clone())),
-            Arc::new(Mutex::new(self.metadata.clone())),
-        )));
-
-        let metadata = METADATA_CONTROLER.load().current();
-
         // register broadcast new transaction
         network_service.register_endpoint_handler(
             END_GOSSIP_NEW_TXS,
@@ -310,6 +301,16 @@ impl Axon {
         network_service.register_rpc_response(RPC_RESP_PULL_TXS)?;
 
         network_service.register_rpc_response(RPC_RESP_PULL_TXS_SYNC)?;
+
+        let metadata_adapter = MetadataAdapterImpl::new(Arc::clone(&storage), Arc::clone(&trie_db));
+        let metadata_controller = Arc::new(MetadataController::new(
+            Arc::new(metadata_adapter),
+            self.config.metadata_contract_address.into(),
+            self.config.epoch_len,
+        ));
+
+        let metadata =
+            metadata_controller.get_metadata_unchecked(Context::new(), current_block.header.number);
 
         // Init Consensus
         let validators: Vec<Validator> = metadata
@@ -333,12 +334,15 @@ impl Axon {
 
         let current_consensus_status = if current_number == 0 {
             CurrentStatus {
-                prev_hash:        current_header.hash(),
-                last_number:      current_header.number,
-                last_state_root:  self.state_root,
-                gas_limit:        metadata.gas_limit.into(),
-                base_fee_per_gas: U256::one(),
-                proof:            latest_proof,
+                prev_hash:                  current_header.hash(),
+                last_number:                current_header.number,
+                last_state_root:            self.state_root,
+                max_tx_size:                metadata.max_tx_size.into(),
+                tx_num_limit:               metadata.tx_num_limit,
+                last_checkpoint_block_hash: metadata.last_checkpoint_block_hash,
+                gas_limit:                  metadata.gas_limit.into(),
+                base_fee_per_gas:           U256::one(),
+                proof:                      latest_proof,
             }
         } else {
             // Init executor
@@ -354,12 +358,15 @@ impl Axon {
             let block_hash = current_header.hash();
 
             CurrentStatus {
-                prev_hash:        block_hash,
-                last_number:      current_header.number,
-                last_state_root:  current_header.state_root,
-                gas_limit:        metadata.gas_limit.into(),
-                base_fee_per_gas: current_header.base_fee_per_gas,
-                proof:            storage.get_latest_proof(Context::new()).await?,
+                prev_hash:                  block_hash,
+                last_number:                current_header.number,
+                last_state_root:            current_header.state_root,
+                max_tx_size:                metadata.max_tx_size.into(),
+                tx_num_limit:               metadata.tx_num_limit,
+                last_checkpoint_block_hash: metadata.last_checkpoint_block_hash,
+                gas_limit:                  metadata.gas_limit.into(),
+                base_fee_per_gas:           current_header.base_fee_per_gas,
+                proof:                      storage.get_latest_proof(Context::new()).await?,
             }
         };
 
@@ -371,7 +378,6 @@ impl Axon {
         mempool.set_args(
             Context::new(),
             current_header.state_root,
-            metadata.timeout_gap,
             metadata.gas_limit,
             metadata.max_tx_size,
         );
@@ -404,17 +410,20 @@ impl Axon {
 
         let bls_priv_key =
             BlsPrivateKey::try_from(hex_privkey.as_ref()).map_err(MainError::Crypto)?;
-        let hex_common_ref = hex_decode(&metadata.common_ref.as_string_trim0x())?;
-        let common_ref = String::from_utf8(hex_common_ref).map_err(MainError::Utf8)?;
 
-        let crypto = Arc::new(OverlordCrypto::new(bls_priv_key, bls_pub_keys, common_ref));
+        let crypto = Arc::new(OverlordCrypto::new(
+            bls_priv_key,
+            bls_pub_keys,
+            String::new(),
+        ));
 
-        let consensus_adapter = OverlordConsensusAdapter::<_, _, _, _, _>::new(
+        let consensus_adapter = OverlordConsensusAdapter::<_, _, _, _, _, _>::new(
             Arc::new(network_service.handle()),
             Arc::clone(&mempool),
             Arc::clone(&storage),
             Arc::clone(&trie_db),
             Arc::new(cross_handle),
+            Arc::clone(&metadata_controller),
             Arc::clone(&crypto),
         )?;
 
@@ -424,6 +433,7 @@ impl Axon {
 
         let overlord_consensus = Arc::new(OverlordConsensus::new(
             status_agent.clone(),
+            self.config.metadata_contract_address.into(),
             node_info,
             Arc::clone(&crypto),
             Arc::clone(&txs_wal),

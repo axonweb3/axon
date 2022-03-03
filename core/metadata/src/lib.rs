@@ -1,47 +1,117 @@
-pub mod metadata_abi;
+mod adapter;
+mod metadata_abi;
 
+pub use crate::adapter::MetadataAdapterImpl;
 pub use ethers::core::abi::{AbiDecode, AbiEncode, AbiType, InvalidOutputType, Tokenizable};
 
 use std::collections::BTreeMap;
 use std::error::Error;
+use std::sync::Arc;
 
 use arc_swap::ArcSwap;
 use ethers::abi::{self, Error as AbiError};
 use parking_lot::RwLock;
 
-use protocol::types::{Hash, Hex, Metadata, MetadataVersion, ValidatorExtend};
+use protocol::traits::{Context, MetadataControl, MetadataControlAdapter};
+use protocol::types::{
+    ExitReason, Hash, Header, Hex, Metadata, MetadataVersion, ValidatorExtend, H160,
+};
 use protocol::{Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
+
+type Epoch = u64;
 
 lazy_static::lazy_static! {
     pub static ref EPOCH_LEN: ArcSwap<u64> = ArcSwap::new(Default::default());
-    pub static ref METADATA: RwLock<BTreeMap<u64, Metadata>> = RwLock::new(Default::default());
 }
 
-pub fn calc_epoch(block_number: u64) -> u64 {
-    block_number / (**EPOCH_LEN.load())
+pub struct MetadataController<Adapter> {
+    adapter:          Arc<Adapter>,
+    metadata_cache:   RwLock<BTreeMap<Epoch, Metadata>>,
+    metadata_address: H160,
 }
 
-pub fn need_change_metadata(block_number: u64) -> bool {
-    block_number % (**EPOCH_LEN.load()) == 0
+impl<Adapter> MetadataControl for MetadataController<Adapter>
+where
+    Adapter: MetadataControlAdapter + 'static,
+{
+    fn calc_epoch(&self, block_number: u64) -> u64 {
+        block_number / (**EPOCH_LEN.load())
+    }
+
+    fn need_change_metadata(&self, block_number: u64) -> bool {
+        block_number % (**EPOCH_LEN.load()) == 0
+    }
+
+    fn update_metadata(&self, _ctx: Context, header: &Header) -> ProtocolResult<()> {
+        let epoch = self.calc_epoch(header.number) + 1;
+        let metadata = self.query_evm_metadata(epoch, header)?;
+        let boundary = epoch.saturating_sub(20);
+
+        let mut cache = self.metadata_cache.write();
+        cache.retain(|&k, _| k < boundary);
+        cache.insert(epoch, metadata);
+
+        Ok(())
+    }
+
+    fn get_metadata(&self, _ctx: Context, header: &Header) -> ProtocolResult<Metadata> {
+        let epoch = self.calc_epoch(header.number);
+        let res = { self.metadata_cache.read().get(&epoch).cloned() };
+
+        if res.is_none() {
+            let metadata = self.query_evm_metadata(epoch, header)?;
+            self.metadata_cache.write().insert(epoch, metadata.clone());
+            return Ok(metadata);
+        }
+
+        Ok(res.unwrap())
+    }
+
+    fn get_metadata_unchecked(&self, _ctx: Context, block_number: u64) -> Metadata {
+        self.metadata_cache
+            .read()
+            .get(&block_number)
+            .cloned()
+            .unwrap()
+    }
 }
 
-pub fn upload_and_clean_outdated(block_number: u64, metadata: Metadata) {
-    let boundary = calc_epoch(block_number).saturating_sub(1);
-    let mut m = METADATA.write();
-    m.retain(|&k, _| k < boundary);
-    m.insert(calc_epoch(metadata.version.start), metadata);
+impl<Adapter: MetadataControlAdapter> MetadataController<Adapter> {
+    pub fn new(adapter: Arc<Adapter>, metadata_address: H160, epoch_len: u64) -> Self {
+        EPOCH_LEN.swap(Arc::new(epoch_len));
+        MetadataController {
+            adapter,
+            metadata_cache: RwLock::new(BTreeMap::new()),
+            metadata_address,
+        }
+    }
+
+    fn query_evm_metadata(&self, epoch: Epoch, header: &Header) -> ProtocolResult<Metadata> {
+        let payload =
+            metadata_abi::MetadataContractCalls::GetMetadata(metadata_abi::GetMetadataCall {
+                epoch,
+            });
+
+        let res = self.adapter.call_evm(
+            Context::new(),
+            header,
+            self.metadata_address,
+            payload.encode(),
+        )?;
+
+        if !res.exit_reason.is_succeed() {
+            return Err(MetadataError::CallEvm(res.exit_reason).into());
+        }
+
+        decode_resp_metadata(&res.ret)
+    }
 }
 
-pub fn get_metadata(block_number: u64) -> Option<Metadata> {
-    let epoch = calc_epoch(block_number);
-    METADATA.read().get(&epoch).cloned()
-}
-
-pub fn decode_resp_metadata(data: &[u8]) -> ProtocolResult<Metadata> {
+fn decode_resp_metadata(data: &[u8]) -> ProtocolResult<Metadata> {
     let tokens = abi::decode(&[metadata_abi::Metadata::param_type()], data)
-        .map_err(ContractError::AbiDecode)?;
+        .map_err(MetadataError::AbiDecode)?;
     let res = metadata_abi::Metadata::from_token(tokens[0].clone())
-        .map_err(ContractError::InvalidTokenType)?;
+        .map_err(MetadataError::InvalidTokenType)?;
     Ok(res.into())
 }
 
@@ -80,18 +150,21 @@ impl From<metadata_abi::ValidatorExtend> for ValidatorExtend {
 }
 
 #[derive(Debug, Display)]
-pub enum ContractError {
+pub enum MetadataError {
     #[display(fmt = "Abi decode error {:?}", _0)]
     AbiDecode(AbiError),
 
     #[display(fmt = "Invalid token type {:?}", _0)]
     InvalidTokenType(InvalidOutputType),
+
+    #[display(fmt = "Call EVM exit {:?}", _0)]
+    CallEvm(ExitReason),
 }
 
-impl Error for ContractError {}
+impl Error for MetadataError {}
 
-impl From<ContractError> for ProtocolError {
-    fn from(error: ContractError) -> ProtocolError {
+impl From<MetadataError> for ProtocolError {
+    fn from(error: MetadataError) -> ProtocolError {
         ProtocolError::new(ProtocolErrorKind::Contract, Box::new(error))
     }
 }
@@ -101,16 +174,16 @@ mod tests {
     use super::*;
     use std::sync::Arc;
 
-    #[test]
-    fn test_calc_epoch() {
-        EPOCH_LEN.swap(Arc::new(100u64));
+    // #[test]
+    // fn test_calc_epoch() {
+    //     EPOCH_LEN.swap(Arc::new(100u64));
 
-        assert_eq!(calc_epoch(1), 0);
-        assert_eq!(calc_epoch(99), 0);
-        assert_eq!(calc_epoch(100), 1);
-        assert_eq!(calc_epoch(101), 1);
-        assert_eq!(calc_epoch(200), 2);
-    }
+    //     assert_eq!(calc_epoch(1), 0);
+    //     assert_eq!(calc_epoch(99), 0);
+    //     assert_eq!(calc_epoch(100), 1);
+    //     assert_eq!(calc_epoch(101), 1);
+    //     assert_eq!(calc_epoch(200), 2);
+    // }
 
     // #[test]
     // fn test_abi() {

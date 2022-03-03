@@ -1242,6 +1242,8 @@ version = "0.1.0"
 dependencies = [
  "arc-swap 1.5.0",
  "axon-protocol",
+ "cita_trie",
+ "core-executor",
  "ethers",
  "lazy_static",
  "parking_lot 0.12.0",
@@ -1291,11 +1293,11 @@ dependencies = [
  "core-cross-client",
  "core-executor",
  "core-mempool",
+ "core-metadata",
  "core-network",
  "core-storage",
  "futures",
  "log",
- "parking_lot 0.12.0",
  "rlp",
  "serde",
  "serde_derive",
@@ -4452,7 +4454,7 @@ dependencies = [
 name = "semver"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0486718e92ec9a68fbed73bb5ef687d71103b142595b406835649bebd33f72c7"
+checksum = "a4a3381e03edd24287172047536f20cabde766e2cd3e65e6b00fb3af51c4f38d"
 dependencies = [
  "serde",
 ]

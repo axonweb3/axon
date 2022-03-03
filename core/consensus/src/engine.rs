@@ -16,9 +16,6 @@ use common_apm::Instant;
 use common_crypto::BlsPublicKey;
 use common_logger::{json, log};
 use common_merkle::Merkle;
-use core_metadata::{
-    calc_epoch, decode_resp_metadata, get_metadata, metadata_abi, need_change_metadata, AbiEncode,
-};
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
@@ -206,7 +203,9 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         }
 
         let status = self.status.inner();
-        let metadata = get_metadata(current_number + 1).unwrap();
+        let metadata = self
+            .adapter
+            .get_metadata_unchecked(ctx.clone(), current_number + 1);
 
         if current_number == status.last_number {
             return Ok(Status {
@@ -269,7 +268,6 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             metadata.verifier_list
         );
 
-        let is_change_metadata = self.contains_change_metadata(&signed_txs);
         self.update_status(ctx.clone(), resp, proposal.clone(), proof, signed_txs)
             .await?;
 
@@ -283,18 +281,18 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             self.exemption_hash.write().clear();
         }
 
-        let metadata = get_metadata(current_number + 1).unwrap();
-
+        let next_block_number = current_number + 1;
+        let metadata = self
+            .adapter
+            .get_metadata_unchecked(ctx.clone(), next_block_number);
         let status = Status {
-            height:         current_number + 1,
+            height:         next_block_number,
             interval:       Some(metadata.interval),
             authority_list: convert_to_overlord_authority(&metadata.verifier_list),
             timer_config:   Some(metadata.into()),
         };
 
-        self.adapter
-            .broadcast_number(ctx.clone(), current_number)
-            .await?;
+        self.adapter.broadcast_number(ctx, current_number).await?;
 
         self.metric_commit(current_number, txs_len);
 
@@ -380,18 +378,20 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
     // )]
     async fn get_authority_list(
         &self,
-        _ctx: Context,
+        ctx: Context,
         next_number: u64,
     ) -> Result<Vec<Node>, Box<dyn Error + Send>> {
         if next_number == 0 {
             return Ok(vec![]);
         }
 
-        let current_metadata = get_metadata(next_number).unwrap();
+        let current_metadata = self
+            .adapter
+            .get_metadata_unchecked(ctx.clone(), next_number);
         let old_metadata = if current_metadata.version.contains(next_number - 1) {
             current_metadata
         } else {
-            get_metadata(next_number - 1).unwrap()
+            self.adapter.get_metadata_unchecked(ctx, next_number - 1)
         };
 
         let mut old_validators = old_metadata
@@ -630,29 +630,15 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
 
         // Save the block
         self.adapter.save_block(ctx.clone(), block.clone()).await?;
-        let payload =
-            metadata_abi::MetadataContractCalls::GetMetadata(metadata_abi::GetMetadataCall {
-                epoch: calc_epoch(block_number) + 1,
-            });
 
         if is_change_metadata {
-            let res = self.adapter.call_evm(
-                ctx.clone(),
-                &block.header,
-                self.metadata_address,
-                payload.encode(),
-            )?;
-            if !res.exit_reason.is_succeed() {
-                return Err(ConsensusError::CallEvm(res.exit_reason).into());
-            }
-
-            let metadata = decode_resp_metadata(&res.ret)?;
-            core_metadata::upload_and_clean_outdated(block_number, metadata);
+            self.adapter.update_metadata(ctx.clone(), &block.header)?;
         }
 
-        if need_change_metadata(next_block_number) {
-            let metadata = get_metadata(next_block_number).unwrap();
-
+        if self.adapter.need_change_metadata(next_block_number) {
+            let metadata = self
+                .adapter
+                .get_metadata_unchecked(ctx.clone(), next_block_number);
             let pub_keys = metadata
                 .verifier_list
                 .iter()
@@ -680,7 +666,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
 
         // update timeout_gap of mempool
         self.adapter.set_args(
-            ctx.clone(),
+            ctx,
             resp.state_root,
             last_status.gas_limit.as_u64(),
             last_status.max_tx_size.as_u64(),

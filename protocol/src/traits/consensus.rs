@@ -5,8 +5,8 @@ use bytes::Bytes;
 use creep::Context;
 
 use crate::types::{
-    Address, Block, BlockNumber, ExecResp, Hash, Header, Hex, Log, MerkleRoot, Proof, Proposal,
-    Receipt, SignedTransaction, TxResp, Validator, H160, U256,
+    Address, Block, BlockNumber, ExecResp, Hash, Header, Hex, Log, MerkleRoot, Metadata, Proof,
+    Proposal, Receipt, SignedTransaction, Validator, U256,
 };
 use crate::ProtocolResult;
 
@@ -129,13 +129,13 @@ pub trait CommonConsensusAdapter: Send + Sync {
         signed_txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<ExecResp>;
 
-    fn call_evm(
-        &self,
-        ctx: Context,
-        header: &Header,
-        addr: H160,
-        data: Vec<u8>,
-    ) -> ProtocolResult<TxResp>;
+    fn need_change_metadata(&self, block_number: u64) -> bool;
+
+    fn get_metadata_unchecked(&self, ctx: Context, block_number: u64) -> Metadata;
+
+    fn get_metadata(&self, ctx: Context, header: &Header) -> ProtocolResult<Metadata>;
+
+    fn update_metadata(&self, ctx: Context, header: &Header) -> ProtocolResult<()>;
 
     async fn broadcast_number(&self, ctx: Context, height: u64) -> ProtocolResult<()>;
 

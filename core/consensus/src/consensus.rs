@@ -6,7 +6,6 @@ use overlord::types::{
 };
 use overlord::{DurationConfig, Overlord, OverlordHandler};
 
-use core_metadata::get_metadata;
 use protocol::traits::{Consensus, ConsensusAdapter, NodeInfo};
 use protocol::types::{Proposal, Validator, H160};
 use protocol::{
@@ -122,7 +121,7 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
             cross_period_interval,
         ));
         let status = engine.status();
-        let metadata = get_metadata(status.last_number + 1).unwrap();
+        let metadata = adapter.get_metadata_unchecked(Context::new(), status.last_number + 1);
 
         let overlord = Overlord::new(node_info.self_pub_key, Arc::clone(&engine), crypto, engine);
         let overlord_handler = overlord.get_handler();

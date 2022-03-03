@@ -2,7 +2,7 @@ use clap::{crate_version, Arg, ArgMatches, Command};
 
 use common_config_parser::{parse_file, types::Config};
 use core_run::Axon;
-use protocol::types::{Metadata, RichBlock};
+use protocol::types::RichBlock;
 
 pub struct AxonCli {
     matches: ArgMatches,
@@ -47,12 +47,10 @@ impl AxonCli {
             parse_file(self.matches.value_of("config_path").unwrap(), false).unwrap();
         let genesis: RichBlock =
             parse_file(self.matches.value_of("genesis_path").unwrap(), true).unwrap();
-        let metadata: Metadata =
-            parse_file(self.matches.value_of("metadata_path").unwrap(), true).unwrap();
 
         register_log(&config);
 
-        Axon::new(config, genesis, metadata).run().unwrap();
+        Axon::new(config, genesis).run().unwrap();
     }
 }
 

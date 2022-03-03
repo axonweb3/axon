@@ -5,7 +5,6 @@ use parking_lot::RwLock;
 
 // use common_apm::muta_apm;
 use common_apm::Instant;
-use core_metadata::get_metadata;
 use protocol::tokio::{sync::Mutex, time::sleep};
 use protocol::traits::{Context, Synchronization, SynchronizationAdapter};
 use protocol::types::{Block, Proof, Proposal, Receipt, SignedTransaction, U256};
@@ -343,14 +342,17 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             &resp,
         );
 
+        let metadata = self.adapter.get_metadata(ctx.clone(), &block.header)?;
         let new_status = CurrentStatus {
-            prev_hash:        block.header_hash(),
-            last_number:      block.header.number,
-            last_state_root:  resp.state_root,
-            gas_limit:        metadata.gas_limit.into(),
-            max_tx_size:      metadata.max_tx_size.into(),
-            base_fee_per_gas: block.header.base_fee_per_gas,
-            proof:            proof.clone(),
+            prev_hash:                  block.header_hash(),
+            last_number:                block.header.number,
+            last_state_root:            resp.state_root,
+            tx_num_limit:               metadata.tx_num_limit,
+            gas_limit:                  metadata.gas_limit.into(),
+            max_tx_size:                metadata.max_tx_size.into(),
+            base_fee_per_gas:           block.header.base_fee_per_gas,
+            proof:                      proof.clone(),
+            last_checkpoint_block_hash: metadata.last_checkpoint_block_hash,
         };
 
         status_agent.swap(new_status);
@@ -366,7 +368,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         // If there are transactions in the trasnaction pool that have been on chain
         // after this execution, make sure they are cleaned up.
         self.adapter
-            .flush_mempool(ctx.clone(), &rich_block.block.tx_hashes)
+            .flush_mempool(ctx, &rich_block.block.tx_hashes)
             .await?;
 
         Ok(())
@@ -437,7 +439,9 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
 
         if current_number == remote_number - 1 {
             sleep(Duration::from_millis(
-                METADATA_CONTROLER.load().current().interval,
+                self.adapter
+                    .get_metadata_unchecked(ctx.clone(), current_number)
+                    .interval,
             ))
             .await;
 
@@ -467,7 +471,9 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
     fn update_status(&self, ctx: Context, sync_status_agent: StatusAgent) -> ProtocolResult<()> {
         let sync_status = sync_status_agent.inner();
         self.status.swap(sync_status.clone());
-        let metadata = METADATA_CONTROLER.load().current();
+        let metadata = self
+            .adapter
+            .get_metadata_unchecked(ctx.clone(), sync_status.last_number + 1);
 
         self.adapter.update_status(
             ctx,
