@@ -26,10 +26,10 @@ use core_consensus::message::{
     RPC_RESP_SYNC_PULL_PROOF, RPC_RESP_SYNC_PULL_TXS, RPC_SYNC_PULL_BLOCK, RPC_SYNC_PULL_PROOF,
     RPC_SYNC_PULL_TXS,
 };
-use core_consensus::status::{CurrentStatus, MetadataController, StatusAgent};
+use core_consensus::status::{CurrentStatus, StatusAgent};
 use core_consensus::{
     util::OverlordCrypto, ConsensusWal, DurationConfig, Node, OverlordConsensus,
-    OverlordConsensusAdapter, OverlordSynchronization, SignedTxsWAL, METADATA_CONTROLER,
+    OverlordConsensusAdapter, OverlordSynchronization, SignedTxsWAL,
 };
 use core_cross_client::DefaultCrossAdapter;
 use core_executor::{EVMExecutorAdapter, EvmExecutor, MPTTrie, RocksTrieDB};

@@ -7,8 +7,8 @@ use parking_lot::RwLock;
 
 use common_apm::Instant;
 use core_executor::{EVMExecutorAdapter, EvmExecutor};
+use core_metadata::get_metadata;
 use core_network::{PeerId, PeerIdExt};
-
 use protocol::traits::{
     CommonConsensusAdapter, ConsensusAdapter, Context, CrossClient, Executor, Gossip, MemPool,
     MessageTarget, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
@@ -27,7 +27,7 @@ use crate::types::PullTxsRequest;
 use crate::util::{convert_hex_to_bls_pubkeys, OverlordCrypto};
 use crate::BlockHeaderField::PreviousBlockHash;
 use crate::BlockProofField::{BitMap, HashMismatch, HeightMismatch, Signature, WeightNotFound};
-use crate::{BlockProofField, ConsensusError, METADATA_CONTROLER};
+use crate::{BlockProofField, ConsensusError};
 
 pub struct OverlordConsensusAdapter<
     M: MemPool,
@@ -473,7 +473,7 @@ where
         }
 
         // the auth_list for the target should comes from previous number
-        let metadata = METADATA_CONTROLER.load().current();
+        let metadata = get_metadata(block.header.number).unwrap();
 
         if !metadata.version.contains(block.header.number) {
             return Err(ConsensusError::ConfusedMetadata(

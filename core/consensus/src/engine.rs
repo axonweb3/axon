@@ -22,9 +22,8 @@ use core_metadata::{
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
-    Block, BlockNumber, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, Log, MerkleRoot,
-    Metadata, Proof, Proposal, Receipt, SignedTransaction, TransactionAction, ValidatorExtend,
-    H160, U256,
+    Block, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, Log, MerkleRoot, Metadata, Proof,
+    Proposal, Receipt, SignedTransaction, TransactionAction, ValidatorExtend, H160, U256,
 };
 use protocol::{
     async_trait, lazy::CURRENT_STATE_ROOT, tokio::sync::Mutex as AsyncMutex, ProtocolError,
@@ -38,7 +37,7 @@ use crate::message::{
 use crate::status::{CurrentStatus, StatusAgent};
 use crate::util::{digest_signed_transactions, time_now, OverlordCrypto};
 use crate::wal::{ConsensusWal, SignedTxsWAL};
-use crate::{ConsensusError, METADATA_CONTROLER};
+use crate::ConsensusError;
 
 /// validator is for create new block, and authority is for build overlord
 /// status.
@@ -77,7 +76,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
                 ctx.clone(),
                 next_number,
                 status.gas_limit,
-                METADATA_CONTROLER.load().current().tx_num_limit,
+                status.tx_num_limit,
             )
             .await?;
         let signed_txs = self.adapter.get_full_txs(ctx.clone(), &txs).await?;
@@ -97,10 +96,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             mixed_hash:                 None,
             base_fee_per_gas:           status.base_fee_per_gas,
             proof:                      status.proof,
-            last_checkpoint_block_hash: METADATA_CONTROLER
-                .load()
-                .current()
-                .last_checkpoint_block_hash,
+            last_checkpoint_block_hash: status.last_checkpoint_block_hash,
             chain_id:                   self.node_info.chain_id,
             tx_hashes:                  txs,
         };
@@ -210,7 +206,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         }
 
         let status = self.status.inner();
-        let metadata = METADATA_CONTROLER.load().current();
+        let metadata = get_metadata(current_number + 1).unwrap();
 
         if current_number == status.last_number {
             return Ok(Status {
@@ -287,8 +283,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             self.exemption_hash.write().clear();
         }
 
-        self.update_metadata(current_number + 1);
-        let metadata = METADATA_CONTROLER.load().current();
+        let metadata = get_metadata(current_number + 1).unwrap();
 
         let status = Status {
             height:         current_number + 1,
@@ -392,11 +387,11 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             return Ok(vec![]);
         }
 
-        let current_metadata = METADATA_CONTROLER.load().current();
+        let current_metadata = get_metadata(next_number).unwrap();
         let old_metadata = if current_metadata.version.contains(next_number - 1) {
             current_metadata
         } else {
-            METADATA_CONTROLER.load().previous()
+            get_metadata(next_number - 1).unwrap()
         };
 
         let mut old_validators = old_metadata
@@ -484,10 +479,6 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         let action = TransactionAction::Call(self.metadata_address);
         txs.iter()
             .any(|tx| tx.transaction.unsigned.action == action)
-    }
-
-    fn update_metadata(&self, block_number: BlockNumber) {
-        METADATA_CONTROLER.load().update(block_number);
     }
 
     async fn inner_check_block(&self, ctx: Context, proposal: &Proposal) -> ProtocolResult<()> {
@@ -673,13 +664,15 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
 
         let last_status = self.status.inner();
         let new_status = CurrentStatus {
-            prev_hash:        block_hash,
-            last_number:      block_number,
-            last_state_root:  resp.state_root,
-            gas_limit:        last_status.gas_limit,
-            max_tx_size:      last_status.max_tx_size,
-            base_fee_per_gas: block.header.base_fee_per_gas,
-            proof:            proof.clone(),
+            prev_hash:                  block_hash,
+            last_number:                block_number,
+            last_state_root:            resp.state_root,
+            gas_limit:                  last_status.gas_limit,
+            max_tx_size:                last_status.max_tx_size,
+            tx_num_limit:               last_status.tx_num_limit,
+            base_fee_per_gas:           block.header.base_fee_per_gas,
+            proof:                      proof.clone(),
+            last_checkpoint_block_hash: last_status.last_checkpoint_block_hash,
         };
 
         CURRENT_STATE_ROOT.swap(Arc::new(resp.state_root));

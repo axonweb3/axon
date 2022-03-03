@@ -1,59 +1,8 @@
-use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use arc_swap::ArcSwap;
-use parking_lot::{Mutex, RwLock};
+use parking_lot::Mutex;
 
-use protocol::types::{BlockNumber, Hash, Metadata, Proof, H256, U256};
-
-lazy_static::lazy_static! {
-    pub static ref METADATA_CONTROLER: ArcSwap<MetadataController> = ArcSwap::from_pointee(MetadataController::default());
-}
-
-#[derive(Default, Debug)]
-pub struct MetadataController {
-    current:  Arc<Mutex<Metadata>>,
-    previous: Arc<Mutex<Metadata>>,
-    next:     Arc<Mutex<Metadata>>,
-}
-
-impl MetadataController {
-    pub fn init(
-        current: Arc<Mutex<Metadata>>,
-        previous: Arc<Mutex<Metadata>>,
-        next: Arc<Mutex<Metadata>>,
-    ) -> Self {
-        MetadataController {
-            current,
-            previous,
-            next,
-        }
-    }
-
-    pub fn current(&self) -> Metadata {
-        self.current.lock().clone()
-    }
-
-    pub fn previous(&self) -> Metadata {
-        self.previous.lock().clone()
-    }
-
-    pub fn set_next(&self, next: Metadata) {
-        *self.next.lock() = next;
-    }
-
-    pub fn update(&self, number: BlockNumber) {
-        let current = self.current();
-
-        if current.version.contains(number) {
-            return;
-        }
-
-        let next = self.next.lock().clone();
-        *self.previous.lock() = current;
-        *self.current.lock() = next;
-    }
-}
+use protocol::types::{BlockNumber, Hash, Proof, H256, U256};
 
 #[derive(Clone)]
 pub struct StatusAgent(Arc<Mutex<CurrentStatus>>);
@@ -74,11 +23,13 @@ impl StatusAgent {
 
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct CurrentStatus {
-    pub prev_hash:        Hash,
-    pub last_number:      BlockNumber,
-    pub last_state_root:  H256,
-    pub gas_limit:        U256,
-    pub max_tx_size:      U256,
-    pub base_fee_per_gas: U256,
-    pub proof:            Proof,
+    pub prev_hash:                  Hash,
+    pub last_number:                BlockNumber,
+    pub last_state_root:            H256,
+    pub tx_num_limit:               u64,
+    pub gas_limit:                  U256,
+    pub max_tx_size:                U256,
+    pub base_fee_per_gas:           U256,
+    pub proof:                      Proof,
+    pub last_checkpoint_block_hash: Hash,
 }

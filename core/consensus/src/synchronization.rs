@@ -5,12 +5,13 @@ use parking_lot::RwLock;
 
 // use common_apm::muta_apm;
 use common_apm::Instant;
+use core_metadata::get_metadata;
 use protocol::tokio::{sync::Mutex, time::sleep};
 use protocol::traits::{Context, Synchronization, SynchronizationAdapter};
 use protocol::types::{Block, Proof, Proposal, Receipt, SignedTransaction, U256};
 use protocol::{async_trait, ProtocolResult};
 
-use crate::status::{CurrentStatus, StatusAgent, METADATA_CONTROLER};
+use crate::status::{CurrentStatus, StatusAgent};
 use crate::util::digest_signed_transactions;
 use crate::{engine::generate_receipts_and_logs, ConsensusError};
 
@@ -341,7 +342,6 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             &rich_block.txs,
             &resp,
         );
-        let metadata = METADATA_CONTROLER.load().current();
 
         let new_status = CurrentStatus {
             prev_hash:        block.header_hash(),
