@@ -2,7 +2,6 @@ mod adapter;
 mod metadata_abi;
 
 pub use crate::adapter::MetadataAdapterImpl;
-pub use ethers::core::abi::{AbiDecode, AbiEncode, AbiType, InvalidOutputType, Tokenizable};
 
 use std::collections::BTreeMap;
 use std::error::Error;
@@ -10,6 +9,7 @@ use std::sync::Arc;
 
 use arc_swap::ArcSwap;
 use ethers::abi::{self, Error as AbiError};
+use ethers::core::abi::{AbiEncode, AbiType, InvalidOutputType, Tokenizable};
 use parking_lot::RwLock;
 
 use protocol::traits::{Context, MetadataControl, MetadataControlAdapter};
@@ -35,7 +35,7 @@ where
     Adapter: MetadataControlAdapter + 'static,
 {
     fn calc_epoch(&self, block_number: u64) -> u64 {
-        block_number / (**EPOCH_LEN.load())
+        calc_epoch(block_number)
     }
 
     fn need_change_metadata(&self, block_number: u64) -> bool {
@@ -149,6 +149,10 @@ impl From<metadata_abi::ValidatorExtend> for ValidatorExtend {
     }
 }
 
+fn calc_epoch(block_number: u64) -> u64 {
+    block_number / (**EPOCH_LEN.load())
+}
+
 #[derive(Debug, Display)]
 pub enum MetadataError {
     #[display(fmt = "Abi decode error {:?}", _0)]
@@ -174,16 +178,16 @@ mod tests {
     use super::*;
     use std::sync::Arc;
 
-    // #[test]
-    // fn test_calc_epoch() {
-    //     EPOCH_LEN.swap(Arc::new(100u64));
+    #[test]
+    fn test_calc_epoch() {
+        EPOCH_LEN.swap(Arc::new(100u64));
 
-    //     assert_eq!(calc_epoch(1), 0);
-    //     assert_eq!(calc_epoch(99), 0);
-    //     assert_eq!(calc_epoch(100), 1);
-    //     assert_eq!(calc_epoch(101), 1);
-    //     assert_eq!(calc_epoch(200), 2);
-    // }
+        assert_eq!(calc_epoch(1), 0);
+        assert_eq!(calc_epoch(99), 0);
+        assert_eq!(calc_epoch(100), 1);
+        assert_eq!(calc_epoch(101), 1);
+        assert_eq!(calc_epoch(200), 2);
+    }
 
     // #[test]
     // fn test_abi() {
