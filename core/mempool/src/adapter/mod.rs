@@ -7,10 +7,7 @@ use std::{error::Error, marker::PhantomData, sync::Arc, time::Duration};
 
 use dashmap::DashMap;
 use futures::{
-    channel::mpsc::{
-        channel, unbounded, Receiver, Sender, TrySendError, UnboundedReceiver, UnboundedSender,
-    },
-    select,
+    channel::mpsc::{unbounded, TrySendError, UnboundedReceiver, UnboundedSender},
     stream::StreamExt,
 };
 use log::{debug, error};
@@ -27,7 +24,7 @@ use protocol::{
     ProtocolErrorKind, ProtocolResult,
 };
 
-use protocol::tokio::{self, time::sleep};
+use protocol::tokio;
 
 use crate::adapter::message::{
     MsgNewTxs, MsgPullTxs, MsgPushTxs, END_GOSSIP_NEW_TXS, RPC_PULL_TXS,
@@ -42,19 +39,20 @@ struct IntervalTxsBroadcaster;
 impl IntervalTxsBroadcaster {
     pub async fn broadcast<G>(
         stx_rx: UnboundedReceiver<SignedTransaction>,
-        interval_reached: Receiver<()>,
+        interval_ms: u64,
         tx_size: usize,
         gossip: G,
         err_tx: UnboundedSender<ProtocolError>,
     ) where
         G: Gossip + Clone + Unpin + 'static,
     {
-        let mut stx_rx = stx_rx.fuse();
-        let mut interval_rx = interval_reached.fuse();
+        let mut stx_rx = stx_rx;
         let mut txs_cache = Vec::with_capacity(tx_size);
+        let mut interval = tokio::time::interval(Duration::from_millis(interval_ms));
+        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
         loop {
-            select! {
+            tokio::select! {
                 opt_stx = stx_rx.next() => {
                     if let Some(stx) = opt_stx {
                         txs_cache.push(stx);
@@ -66,33 +64,13 @@ impl IntervalTxsBroadcaster {
                         debug!("mempool: default mempool adapter dropped")
                     }
                 },
-                signal = interval_rx.next() => {
-                    if signal.is_some() {
+                _ = interval.tick() => {
                         Self::do_broadcast(&mut txs_cache, &gossip, err_tx.clone()).await
-                    }
                 },
-                complete => break,
+                else => {
+                    break
+                }
             };
-        }
-    }
-
-    pub async fn timer(mut signal_tx: Sender<()>, interval: u64) {
-        let interval = Duration::from_millis(interval);
-
-        loop {
-            sleep(interval).await;
-
-            if let Err(err) = signal_tx.try_send(()) {
-                // This means previous interval signal hasn't processed
-                // yet, simply drop this one.
-                if err.is_full() {
-                    debug!("mempool: interval signal channel full");
-                }
-
-                if err.is_disconnected() {
-                    error!("mempool: interval broadcaster dropped");
-                }
-            }
         }
     }
 
@@ -166,16 +144,10 @@ where
     ) -> Self {
         let (stx_tx, stx_rx) = unbounded();
         let (err_tx, err_rx) = unbounded();
-        let (signal_tx, interval_reached) = channel(1);
-
-        tokio::spawn(IntervalTxsBroadcaster::timer(
-            signal_tx,
-            broadcast_txs_interval,
-        ));
 
         tokio::spawn(IntervalTxsBroadcaster::broadcast(
             stx_rx,
-            interval_reached,
+            broadcast_txs_interval,
             broadcast_txs_size,
             network.clone(),
             err_tx,
@@ -442,12 +414,11 @@ impl From<AdapterError> for ProtocolError {
 mod tests {
 
     use futures::{
-        channel::mpsc::{channel, unbounded, UnboundedSender},
+        channel::mpsc::{unbounded, UnboundedSender},
         stream::StreamExt,
     };
-    use std::{ops::Sub, sync::Arc, time::Duration};
+    use std::sync::Arc;
 
-    use common_apm::Instant;
     use parking_lot::Mutex;
 
     use protocol::{traits::MessageCodec, types::Bytes};
@@ -516,29 +487,16 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_interval_timer() {
-        let (tx, mut rx) = channel(1);
-        let interval = Duration::from_millis(200);
-        let now = Instant::now();
-
-        tokio::spawn(IntervalTxsBroadcaster::timer(tx, 200));
-        rx.next().await.expect("await interval signal fail");
-
-        assert!(now.elapsed().sub(interval).as_millis() < 100u128);
-    }
-
-    #[tokio::test]
     async fn test_interval_broadcast_reach_cache_size() {
         let (stx_tx, stx_rx) = unbounded();
         let (err_tx, _err_rx) = unbounded();
-        let (_signal_tx, interval_reached) = channel(1);
         let tx_size = 10;
         let (broadcast_signal_tx, mut broadcast_signal_rx) = unbounded();
         let gossip = MockGossip::new(broadcast_signal_tx);
 
         tokio::spawn(IntervalTxsBroadcaster::broadcast(
             stx_rx,
-            interval_reached,
+            1000000,
             tx_size,
             gossip.clone(),
             err_tx,
@@ -560,15 +518,13 @@ mod tests {
     async fn test_interval_broadcast_reach_interval() {
         let (stx_tx, stx_rx) = unbounded();
         let (err_tx, _err_rx) = unbounded();
-        let (signal_tx, interval_reached) = channel(1);
         let tx_size = 10;
         let (broadcast_signal_tx, mut broadcast_signal_rx) = unbounded();
         let gossip = MockGossip::new(broadcast_signal_tx);
 
-        tokio::spawn(IntervalTxsBroadcaster::timer(signal_tx, 200));
         tokio::spawn(IntervalTxsBroadcaster::broadcast(
             stx_rx,
-            interval_reached,
+            200,
             tx_size,
             gossip.clone(),
             err_tx,
@@ -590,15 +546,13 @@ mod tests {
     async fn test_interval_broadcast() {
         let (stx_tx, stx_rx) = unbounded();
         let (err_tx, _err_rx) = unbounded();
-        let (signal_tx, interval_reached) = channel(1);
         let tx_size = 10;
         let (broadcast_signal_tx, mut broadcast_signal_rx) = unbounded();
         let gossip = MockGossip::new(broadcast_signal_tx);
 
-        tokio::spawn(IntervalTxsBroadcaster::timer(signal_tx, 200));
         tokio::spawn(IntervalTxsBroadcaster::broadcast(
             stx_rx,
-            interval_reached,
+            200,
             tx_size,
             gossip.clone(),
             err_tx,

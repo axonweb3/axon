@@ -69,9 +69,14 @@ impl PirorityPool {
         self.real_queue
             .lock()
             .iter()
-            .filter(|ptr| !ptr.is_dropped())
+            .filter_map(|ptr| {
+                if ptr.is_dropped() {
+                    None
+                } else {
+                    Some(ptr.hash)
+                }
+            })
             .take(limit)
-            .map(|ptr| ptr.hash)
             .collect()
     }
 
