@@ -18,3 +18,10 @@ updates:
     - dependency-name: rand
       versions:
       - 0.8.x
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: daily
+      time: "03:00"
+      timezone: Asia/Shanghai
