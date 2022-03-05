@@ -17,6 +17,7 @@
     "jest": "^27.5.1"
   },
   "jest": {
-    "preset": "@chainsafe/dappeteer"
+    "preset": "@chainsafe/dappeteer",
+    "globalSetup": "./jest/setup.js"
   }
 }
