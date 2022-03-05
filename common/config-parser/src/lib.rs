@@ -93,6 +93,12 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_config() {
+        let file_path = "../../devtools/chain/config.toml";
+        let config: Config = parse_file(&file_path, false).unwrap();
+    }
+
+    #[test]
     fn test_parse_reader() {
         let toml_str = r#"
         global_string = "Best Food"
