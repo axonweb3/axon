@@ -1,0 +1,11 @@
+version: "3"
+services:
+  dev:
+    image: "node:16-buster"
+    volumes:
+      - ".:/root/axon-e2e-tests"
+      - "axon-e2e-tests-npm-cache:/root/.npm"
+    working_dir: "/root/axon-e2e-tests"
+volumes:
+  axon-e2e-tests-npm-cache:
+    external: false
