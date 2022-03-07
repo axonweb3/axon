@@ -91,17 +91,17 @@ security-audit:
 
 metadata-test:
 	cd builtin-contract/metadata \
-		&& npm install --from-lock-file && npm run compile && npm run test
+		&& yarn --from-lock-file && yarn run compile && yarn run test
 
 metadata-genesis-deploy:
-	cd builtin-contract/metadata && npm run deploy
+	cd builtin-contract/metadata && yarn run deploy
 
 crosschain-test:
 	cd builtin-contract/crosschain \
-		&& npm install --from-lock-file && npm run compile && npm run test
+		&& yarn --from-lock-file && yarn run compile && yarn run test
 
 crosschain-genesis-deploy:
-	cd builtin-contract/crosschain && npm run deploy
+	cd builtin-contract/crosschain && yarn run deploy
 
 unit-test: test metadata-test crosschain-test
 
