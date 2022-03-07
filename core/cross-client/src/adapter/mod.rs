@@ -381,6 +381,10 @@ impl CrossClient for CrossAdapterHandle {
         block_hash: H256,
         logs: &[Vec<Log>],
     ) {
+        if !self.config.enable {
+            return;
+        }
+
         for inner_logs in logs {
             for log in inner_logs {
                 if let Ok(burn) = asset_events::burned::parse_log(RawLog::from((
@@ -429,6 +433,10 @@ impl CrossClient for CrossAdapterHandle {
     }
 
     async fn set_checkpoint(&self, ctx: Context, block: Block, proof: Proof) {
+        if !self.config.enable {
+            return;
+        }
+
         let number = block.header.number;
         let mut proposal = Proposal::from(block).encode().unwrap().to_vec();
         let mut proof = proof.encode().unwrap().to_vec();

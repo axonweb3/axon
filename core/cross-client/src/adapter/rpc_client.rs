@@ -214,16 +214,13 @@ impl TransactionCompletionResponse {
             new_witnesses_index.push((group.action.signature_location.index, witness));
         }
 
-        let mut new_witnesses = Vec::new();
-        for i in 0..witnesses.item_count() {
-            new_witnesses.push(witnesses.get_unchecked(i));
-        }
+        let mut new_witnesses = witnesses.as_builder();
 
         for (idx, witness) in new_witnesses_index {
-            new_witnesses[idx] = witness.pack();
+            new_witnesses.replace(idx, witness.pack());
         }
 
-        let builder = witnesses.as_builder().set(new_witnesses).build();
+        let builder = new_witnesses.build();
 
         tx.as_builder().witnesses(builder).build().into()
     }
