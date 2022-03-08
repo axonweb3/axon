@@ -25,3 +25,10 @@ updates:
       interval: daily
       time: "03:00"
       timezone: Asia/Shanghai
+
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: daily
+      time: "03:00"
+      timezone: Asia/Shanghai
