@@ -970,7 +970,6 @@ dependencies = [
  "lazy_static",
  "log",
  "minstant",
- "muta-apm",
  "prometheus",
  "prometheus-static-metric",
  "rustracing 0.5.1 (git+http://github.com/KaoImin/rustracing?branch=main)",
