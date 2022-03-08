@@ -2,7 +2,7 @@ import puppeteer from "puppeteer";
 
 import { launch, setupMetamask } from "@chainsafe/dappeteer";
 
-export const DAPPETEER_DEFAULT_CONFIG = { metamaskVersion: "v10.8.1" };
+export const DAPPETEER_DEFAULT_CONFIG = { metamaskVersion: "v10.8.1", args: ["--headless=chrome"] };
 
 export default async function setup() {
   const browser = await launch(puppeteer, DAPPETEER_DEFAULT_CONFIG);
