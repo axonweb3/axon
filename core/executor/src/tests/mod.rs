@@ -9,7 +9,7 @@ use protocol::types::{
 };
 use protocol::{codec::hex_decode, traits::Executor};
 
-use crate::EvmExecutor;
+use crate::{AxonExecutor, EvmExecutor};
 
 fn gen_vicinity() -> MemoryVicinity {
     MemoryVicinity {
@@ -166,6 +166,7 @@ fn test_simplestorage() {
     assert_eq!(r.remain_gas, 18446744073709528227);
 
     // let's call SimpleStorage.get() by call
+    let executor = AxonExecutor::new();
     let r = executor.call(
         &mut backend,
         H160::from_str("0xc15d2ba57d126e6603240e89437efd419ce329d2").unwrap(),

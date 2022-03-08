@@ -15,8 +15,8 @@ use protocol::types::{
     UnverifiedTransaction, H160, H256, NIL_DATA, RLP_NULL, U256,
 };
 
-use crate::adapter::{EVMExecutorAdapter, MPTTrie};
-use crate::{EvmExecutor, RocksTrieDB};
+use crate::adapter::{AxonExecutorAdapter, MPTTrie};
+use crate::{AxonExecutor, RocksTrieDB};
 
 pub struct EvmDebugger {
     state_root: H256,
@@ -57,13 +57,13 @@ impl EvmDebugger {
 
     pub fn exec(&mut self, number: u64, txs: Vec<SignedTransaction>) -> ExecResp {
         let mut backend = self.backend(number);
-        let evm = EvmExecutor::default();
+        let evm = AxonExecutor::default();
         let res = evm.exec(&mut backend, txs);
         self.state_root = res.state_root;
         res
     }
 
-    fn backend(&self, number: u64) -> EVMExecutorAdapter<ImplStorage<RocksAdapter>, RocksTrieDB> {
+    fn backend(&self, number: u64) -> AxonExecutorAdapter<ImplStorage<RocksAdapter>, RocksTrieDB> {
         let exec_ctx = ExecutorContext {
             block_number:           number.into(),
             block_hash:             rand_hash(),
@@ -78,7 +78,7 @@ impl EvmDebugger {
             logs:                   vec![],
         };
 
-        EVMExecutorAdapter::from_root(
+        AxonExecutorAdapter::from_root(
             self.state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
