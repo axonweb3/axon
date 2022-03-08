@@ -15,7 +15,7 @@ impl EvmExecutor {
         EvmExecutor::default()
     }
 
-    pub(crate) fn inner_exec<B: Backend + ApplyBackend>(
+    pub fn inner_exec<B: Backend + ApplyBackend>(
         &self,
         backend: &mut B,
         tx: SignedTransaction,
