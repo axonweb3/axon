@@ -57,12 +57,18 @@ info:
 	pwd
 	env
 
+e2e-test-lint:
+	cd tests/e2e && yarn && yarn lint
+
 e2e-test:
-	cargo build --example muta-chain
+	cargo build
 	rm -rf ./devtools/chain/data
-	./target/debug/examples/muta-chain -c ./devtools/chain/config.toml -g ./devtools/chain/genesis.toml > /tmp/log 2>&1 &
-	cd tests/e2e && yarn && ./wait-for-it.sh -t 300 localhost:8000 -- yarn run test
-	pkill -2 muta-chain
+	./target/debug/axon --config devtools/chain/config.toml --genesis devtools/chain/genesis.json --metadata devtools/chain/metadata.json > /tmp/log 2>&1 &
+	cd tests/e2e && yarn
+	cd tests/e2e/src && yarn exec http-server &
+	cd tests/e2e && yarn exec wait-on -t 5000 tcp:8000 && yarn exec wait-on -t 5000 tcp:8080 && yarn test
+	pkill -2 axon
+	pkill -2 http-server
 
 byz-test:
 	cargo build --example muta-chain
