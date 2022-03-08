@@ -1,0 +1,29 @@
+name: E2E Tests
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.x]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
+        cache-dependency-path: 'tests/e2e/yarn.lock'
+
+    - name: E2E Tests Linting
+      run: make e2e-test-lint
+
+    - name: E2E Tests
+      run: make e2e-test
