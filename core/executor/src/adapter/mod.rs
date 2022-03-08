@@ -25,14 +25,14 @@ macro_rules! blocking_async {
     }};
 }
 
-pub struct EVMExecutorAdapter<S, DB: cita_trie::DB> {
+pub struct AxonExecutorAdapter<S, DB: cita_trie::DB> {
     exec_ctx: ExecutorContext,
     trie:     MPTTrie<DB>,
     storage:  Arc<S>,
     db:       Arc<DB>,
 }
 
-impl<S, DB> ExecutorAdapter for EVMExecutorAdapter<S, DB>
+impl<S, DB> ExecutorAdapter for AxonExecutorAdapter<S, DB>
 where
     S: Storage + 'static,
     DB: cita_trie::DB + 'static,
@@ -60,7 +60,7 @@ where
     }
 }
 
-impl<S, DB> Backend for EVMExecutorAdapter<S, DB>
+impl<S, DB> Backend for AxonExecutorAdapter<S, DB>
 where
     S: Storage + 'static,
     DB: cita_trie::DB + 'static,
@@ -177,7 +177,7 @@ where
     }
 }
 
-impl<S, DB> ApplyBackend for EVMExecutorAdapter<S, DB>
+impl<S, DB> ApplyBackend for AxonExecutorAdapter<S, DB>
 where
     S: Storage + 'static,
     DB: cita_trie::DB + 'static,
@@ -213,14 +213,14 @@ where
     }
 }
 
-impl<S, DB> EVMExecutorAdapter<S, DB>
+impl<S, DB> AxonExecutorAdapter<S, DB>
 where
     S: Storage + 'static,
     DB: cita_trie::DB + 'static,
 {
     pub fn new(db: Arc<DB>, storage: Arc<S>, exec_ctx: ExecutorContext) -> ProtocolResult<Self> {
         let trie = MPTTrie::new(Arc::clone(&db));
-        Ok(EVMExecutorAdapter {
+        Ok(AxonExecutorAdapter {
             trie,
             db,
             storage,
@@ -236,7 +236,7 @@ where
     ) -> ProtocolResult<Self> {
         let trie = MPTTrie::from_root(state_root, Arc::clone(&db))?;
 
-        Ok(EVMExecutorAdapter {
+        Ok(AxonExecutorAdapter {
             trie,
             db,
             storage,
