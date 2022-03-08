@@ -40,9 +40,9 @@ impl PirorityPool {
             loop {
                 if !co_queue.is_empty() {
                     let _flushing = flush_lock.read();
-                    let txs = pop_all_item(Arc::clone(&co_queue));
                     let mut q = real_queue.lock();
-                    txs.into_iter().for_each(|p_tx| q.push(p_tx));
+                    let txs = pop_all_item(Arc::clone(&co_queue));
+                    txs.for_each(|p_tx| q.push(p_tx));
                 }
 
                 sleep(Duration::from_millis(50)).await;
@@ -70,9 +70,13 @@ impl PirorityPool {
     }
 
     pub fn package(&self, _gas_limit: U256, limit: usize) -> Vec<Hash> {
-        self.real_queue
-            .lock()
-            .iter()
+        let mut q = self.real_queue.lock();
+        if !self.co_queue.is_empty() {
+            let txs = pop_all_item(Arc::clone(&self.co_queue));
+            txs.for_each(|p_tx| q.push(p_tx));
+        }
+
+        q.iter()
             .filter_map(|ptr| {
                 if ptr.is_dropped() {
                     None
@@ -141,7 +145,7 @@ impl PirorityPool {
     fn topple_queue(&self) {
         let txs = pop_all_item(Arc::clone(&self.co_queue));
         let mut q = self.real_queue.lock();
-        txs.into_iter().for_each(|p_tx| q.push(p_tx));
+        txs.for_each(|p_tx| q.push(p_tx));
     }
 
     fn clear_all(&self) {
@@ -167,6 +171,6 @@ impl PirorityPool {
     }
 }
 
-fn pop_all_item<T>(queue: Arc<ArrayQueue<T>>) -> Vec<T> {
-    (0..queue.len()).map(|_| queue.pop().unwrap()).collect()
+fn pop_all_item<T>(queue: Arc<ArrayQueue<T>>) -> impl Iterator<Item = T> {
+    (0..queue.len()).map(move |_| queue.pop().unwrap())
 }
