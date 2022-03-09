@@ -42,7 +42,7 @@ contract MetadataManager {
 
     // push new metadata into `metadata_set`
     function appendMetadata(Metadata memory metadata) public {
-        require(metadata.epoch > 0, "fatal/invalid epoch");
+        require(metadata.epoch >= 0, "fatal/invalid epoch");
 
         bool find_sender = false;
         for (uint i = 0; i < metadata.verifier_list.length; i++) {
