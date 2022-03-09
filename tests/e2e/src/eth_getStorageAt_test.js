@@ -6,8 +6,9 @@ describe("Metamask", () => {
       chainId: 5,
     });
 
+    const pageName = "eth_getStorageAt.html";
     await Promise.all([
-      page.goto("http://localhost:8080"),
+      page.goto(`http://localhost:8080${pageName}`),
       page.bringToFront(),
     ]);
   });
