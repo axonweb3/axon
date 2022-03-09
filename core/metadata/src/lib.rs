@@ -1,5 +1,7 @@
 mod adapter;
 mod metadata_abi;
+#[cfg(test)]
+mod tests;
 
 pub use crate::adapter::MetadataAdapterImpl;
 
@@ -122,6 +124,7 @@ impl From<metadata_abi::Metadata> for Metadata {
                 start: m.version.start,
                 end:   m.version.end,
             },
+            epoch:                      m.epoch,
             gas_limit:                  m.gas_limit,
             gas_price:                  m.gas_price,
             interval:                   m.interval,
@@ -171,31 +174,4 @@ impl From<MetadataError> for ProtocolError {
     fn from(error: MetadataError) -> ProtocolError {
         ProtocolError::new(ProtocolErrorKind::Contract, Box::new(error))
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use std::sync::Arc;
-
-    #[test]
-    fn test_calc_epoch() {
-        EPOCH_LEN.swap(Arc::new(100u64));
-
-        assert_eq!(calc_epoch(1), 0);
-        assert_eq!(calc_epoch(99), 0);
-        assert_eq!(calc_epoch(100), 1);
-        assert_eq!(calc_epoch(101), 1);
-        assert_eq!(calc_epoch(200), 2);
-    }
-
-    // #[test]
-    // fn test_abi() {
-    //     ethers_contract_abigen::Abigen::new("MetadataContract",
-    // "./metadata.abi")         .unwrap()
-    //         .generate()
-    //         .unwrap()
-    //         .write_to_file("./src/metadata_abi.rs")
-    //         .unwrap();
-    // }
 }

@@ -1243,9 +1243,11 @@ dependencies = [
  "axon-protocol",
  "cita_trie",
  "core-executor",
+ "core-storage",
  "ethers",
  "lazy_static",
  "parking_lot 0.12.0",
+ "rand 0.7.3",
  "serde_json",
 ]
 

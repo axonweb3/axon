@@ -294,6 +294,7 @@ impl MetadataVersion {
 #[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq)]
 pub struct Metadata {
     pub version:                    MetadataVersion,
+    pub epoch:                      u64,
     pub gas_limit:                  u64,
     pub gas_price:                  u64,
     pub interval:                   u64,
