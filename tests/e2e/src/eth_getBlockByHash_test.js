@@ -5,12 +5,14 @@ describe("Metamask", () => {
       rpc: "http://localhost:8000",
       chainId: 5,
     });
-
+    
+    const pageName = "eth_getBlockByHash.html";
     await Promise.all([
-      page.goto("http://localhost:8080"),
+      page.goto(`http://localhost:8080${pageName}`),
       page.bringToFront(),
     ]);
   });
+
 
   const btnId = "#btn";
   const testType = document.getElementById("testType");
