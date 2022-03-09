@@ -1,0 +1,17 @@
+name: Benchamark CI
+on:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v3
+      - name: Run benchmark
+        run: k delete -f /home/ckb/axon-devops/axon-chaos/axon-chaso.yaml \
+                && k delete -f /home/ckb/axon-devops/k8s-deploy/k8s/benchmark/axon-benchmark.yaml \
+                && k delete -f /home/ckb/axon-devops/k8s-deploy/k8s/axon \
+                && k apply -f /home/ckb/axon-devops/k8s-deploy/k8s/axon \
+                && k apply -f /home/ckb/axon-devops/axon-chaos/axon-chaso.yaml \
+                && k apply -f /home/ckb/axon-devops/k8s-deploy/k8s/benchmark/axon-benchmark.yaml
