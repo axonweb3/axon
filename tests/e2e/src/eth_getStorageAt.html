@@ -27,8 +27,15 @@
         request_params.params.push(param3);
         request_params.params.push("advantage parameter");
       }
+      if(t_type==3)
+      {
+        request_params.params.push(param1);
+        request_params.params.push(param2);
+      }
       ethereum.request(request_params).then((ret) => {
         document.getElementById("ret").innerHTML = ret;
+      }).catch((error) => {
+        document.getElementById("ret").innerHTML =JSON.stringify(error);
       });
     });
   </script>
