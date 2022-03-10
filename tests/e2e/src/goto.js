@@ -1,7 +1,7 @@
 const host = "http://localhost:8080";
 const axonRpc = { url: "http://localhost:8000", netWrokName: "axon", chianId: 5 };
 const pageIds = {
-  btnId: "#btn", testTypeId: "#testType", param1Id: "#param1", param2Id: "#param2", param3Id: "#param3",
+  btnId: "#btn", testTypeId: "#testType", param1Id: "#param1", param2Id: "#param2", param3Id: "#param3", param4Id: "#param4",
 };
 const goto = async (currentpage, pageName) => {
   try {
