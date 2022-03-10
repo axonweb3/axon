@@ -3,7 +3,7 @@ use protocol::{tokio, traits::MetadataControl};
 use super::*;
 
 // #[test]
-// fn test() {
+// fn test_2() {
 // 	use ethers::core::abi::AbiEncode;
 
 //     let r =
@@ -14,20 +14,14 @@ use super::*;
 // 	});
 // 	let raw_call = call.encode();
 // 	println!("{:?}", raw_call);
-
-// 	use protocol::types::{TransactionAction, Hex};
-
-// 	let ac = TransactionAction::Call(H256::from_slice(&Hex::decode("
-// 0xc34393e6a797d2b4e2aabbc7b9dc8bde1db42410d304b5e78c2ff843134e15e0".
-// to_string()).unwrap()).into()); 	println!("{:?}",
-// serde_json::to_string_pretty(&ac).unwrap()); }
+//  }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_1() {
     let handle = TestHandle::new().await;
     let ctl = handle.metadata_controller(100);
-    let res = ctl.update_metadata(Context::new(), &mock_header(handle.state_root));
-    println!("{:?}", res);  
+    let res = ctl.get_metadata(Context::new(), &mock_header(0, handle.state_root));
+    println!("{:?}", res);
 }
 
 #[test]
@@ -39,6 +33,16 @@ fn test_calc_epoch() {
     assert_eq!(calc_epoch(100), 1);
     assert_eq!(calc_epoch(101), 1);
     assert_eq!(calc_epoch(200), 2);
+}
+
+#[test]
+fn metadata_address() {
+    let sender = H160::from_slice(
+        &protocol::codec::hex_decode("8ab0cf264df99d83525e9e11c7e4db01558ae1b1").unwrap(),
+    );
+    let nonce: U256 = 4u64.into();
+    let addr: H160 = core_executor::code_address(&sender, &nonce).into();
+    println!("{:?}", addr)
 }
 
 // #[test]

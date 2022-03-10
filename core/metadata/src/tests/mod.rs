@@ -23,7 +23,7 @@ const GENESIS_PATH: &str = "../../devtools/chain/genesis.json";
 
 lazy_static::lazy_static! {
     static ref METADATA_ADDRESS: H160
-        = H160::from_slice(&Hex::decode("0x8eb00d616b820c39619ee29e5144d0226cf8b5c15a".to_string()).unwrap());
+        = H160::from_slice(&Hex::decode("0x4af5ec5e3d29d9ddd7f4bf91a022131c41b72352".to_string()).unwrap());
 }
 
 struct TestHandle {
@@ -84,7 +84,8 @@ impl TestHandle {
         .unwrap();
 
         let resp = executor.exec(&mut backend, genesis.txs.clone());
-        println!("{:?}", resp);
+        println!("{:?}", genesis.txs[3]);
+        println!("{:?}", resp.tx_resp[3]);
         self.state_root = resp.state_root;
 
         self.storage
@@ -111,7 +112,7 @@ impl TestHandle {
     ) -> MetadataController<MetadataAdapterImpl<ImplStorage<RocksAdapter>, RocksTrieDB>> {
         let adapter =
             MetadataAdapterImpl::new(Arc::clone(&self.storage), Arc::clone(&self.trie_db));
-        MetadataController::new(Arc::new(adapter), Default::default(), epoch_len)
+        MetadataController::new(Arc::new(adapter), *METADATA_ADDRESS, epoch_len)
     }
 
     pub fn exec(&mut self, txs: Vec<SignedTransaction>) {
@@ -131,14 +132,14 @@ impl TestHandle {
     }
 }
 
-fn mock_header(state: H256) -> Header {
+fn mock_header(blocl_number: u64, state: H256) -> Header {
     Header {
         prev_hash:                  Default::default(),
         proposer:                   Default::default(),
         transactions_root:          Default::default(),
         signed_txs_hash:            Default::default(),
         timestamp:                  Default::default(),
-        number:                     Default::default(),
+        number:                     blocl_number,
         gas_limit:                  1000000000u64.into(),
         extra_data:                 Default::default(),
         mixed_hash:                 Default::default(),

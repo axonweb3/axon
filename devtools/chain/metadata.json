@@ -3,7 +3,7 @@
     "start": 0,
     "end": 1000000000
   },
-  "epoch": 1,
+  "epoch": 0,
   "common_ref": "0x6c747758636859487038",
   "timeout_gap": 1000,
   "gas_limit": 4294967295000,

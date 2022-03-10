@@ -23,7 +23,7 @@ use protocol::{Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 type Epoch = u64;
 
 lazy_static::lazy_static! {
-    pub static ref EPOCH_LEN: ArcSwap<u64> = ArcSwap::new(Default::default());
+    pub static ref EPOCH_LEN: ArcSwap<u64> = ArcSwap::from_pointee(u64::MAX);
 }
 
 pub struct MetadataController<Adapter> {
