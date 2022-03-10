@@ -11,17 +11,21 @@
       const data = document.getElementById("param1").value;
       const t_type = document.getElementById("testType").value;
       const params = [];
-      const request_params = { method: "web3_sha3", params: params }; //deafult is none params  to request test.
       if (t_type == "1") {
-        request_params.params.push(data);
+        params.push(data);
       }
       if (t_type == "2") {
-        request_params.params.push(data);
-        request_params.params.push("advantage parameter");
+        params.push(data);
+        params.push("advantage parameter");
       }
+      const request_params = { method: "web3_sha3", params: params }; //deafult is none params  to request test.
       ethereum.request(request_params).then((ret) => {
         document.getElementById("ret").innerHTML = ret;
-      });
+        console.log(ret);
+      }).catch((error) => {
+        console.log(error);
+        document.getElementById("ret").innerHTML =JSON.stringify(error) ;
+      }); 
     });
   </script>
 </html>
