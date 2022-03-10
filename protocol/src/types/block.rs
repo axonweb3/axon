@@ -215,6 +215,7 @@ mod tests {
     fn print_metadata() {
         let metadata = Metadata {
             version: MetadataVersion::new(0, 1000000000),
+            epoch: 0,
             gas_limit: 4294967295,
             gas_price: 1,
             interval: 3000,
