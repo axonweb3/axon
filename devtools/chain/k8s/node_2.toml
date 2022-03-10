@@ -5,12 +5,14 @@ privkey = "0x383fcff8683b8115e31613949be24254b4204ffbe43c227408a76334a2e3fb32"
 data_path = "./devtools/chain/data2"
 
 asset_contract_address = "0xc2fd48d60ae16b3fe6e333a9a13763691970d9373d4fab7cc323d7ba06fa9986"
+metadata_contract_address = "0xc34393e6a797d2b4e2aabbc7b9dc8bde1db42410d304b5e78c2ff843134e15e0"
+crosschain_contract_address = "0xda6db70ce66da4c6433bb447b484fd480e598621638f380f404697cd9f58b0f8"
 
 [rpc]
-http_listening_address = "127.0.0.1:8000"
-ws_listening_address = "127.0.0.1:8010"
+http_listening_address = "0.0.0.0:8000"
+ws_listening_address = "0.0.0.0:8010"
 maxconn = 25000
-max_payload_size = 1048576
+max_payload_size = 10485760
 client_version = "0.1.0"
 # enable_dump_profile = false
 # [graphql.tls]

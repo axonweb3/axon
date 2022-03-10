@@ -12,7 +12,7 @@ crosschain_contract_address = "0xda6db70ce66da4c6433bb447b484fd480e598621638f380
 http_listening_address = "0.0.0.0:8000"
 ws_listening_address = "0.0.0.0:8010"
 maxconn = 25000
-max_payload_size = 1048576
+max_payload_size = 10485760
 client_version = "0.1.0"
 # enable_dump_profile = false
 # [graphql.tls]
