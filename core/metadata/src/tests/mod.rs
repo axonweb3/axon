@@ -19,7 +19,7 @@ use protocol::types::{
 
 use crate::{calc_epoch, metadata_abi as abi, MetadataAdapterImpl, MetadataController, EPOCH_LEN};
 
-const GENESIS_PATH: &str = "../../devtools/chain/genesis.json";
+const GENESIS_PATH: &str = "../../devtools/chain/genesis_single_node.json";
 
 lazy_static::lazy_static! {
     static ref METADATA_ADDRESS: H160
