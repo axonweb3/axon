@@ -92,10 +92,10 @@ describe("Testing MetadataManager", () => {
             .to.be.revertedWith("fatal/discontinuous version")
     })
 
-    it("`appendMetadata` failed on block.number out of version of [5, 6]", async () => {
-        metadata.epoch = 2
-        metadata.version = { start: 5, end: 6 }
-        await expect(contract.appendMetadata(metadata))
-            .to.be.revertedWith("fatal/invalid version")
-    })
+    // it("`appendMetadata` failed on block.number out of version of [5, 6]", async () => {
+    //     metadata.epoch = 2
+    //     metadata.version = { start: 5, end: 6 }
+    //     await expect(contract.appendMetadata(metadata))
+    //         .to.be.revertedWith("fatal/invalid version")
+    // })
 })
