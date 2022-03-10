@@ -72,7 +72,7 @@ where
     fn get_metadata_unchecked(&self, _ctx: Context, block_number: u64) -> Metadata {
         self.metadata_cache
             .read()
-            .get(&block_number)
+            .get(&calc_epoch(block_number))
             .cloned()
             .unwrap()
     }

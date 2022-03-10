@@ -309,8 +309,7 @@ impl Axon {
             self.config.epoch_len,
         ));
 
-        let metadata =
-            metadata_controller.get_metadata_unchecked(Context::new(), current_block.header.number);
+        let metadata = metadata_controller.get_metadata(Context::new(), &current_block.header)?;
 
         // Init Consensus
         let validators: Vec<Validator> = metadata

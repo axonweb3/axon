@@ -28,14 +28,6 @@ impl AxonCli {
                     .required(true)
                     .takes_value(true),
             )
-            .arg(
-                Arg::new("metadata_path")
-                    .short('m')
-                    .long("metadata")
-                    .help("Axon metadata path")
-                    .required(true)
-                    .takes_value(true),
-            )
             .subcommand(Command::new("run").about("Run axon process"))
             .get_matches();
 
