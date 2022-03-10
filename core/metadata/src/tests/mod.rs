@@ -4,6 +4,7 @@ use std::fs::{self, File};
 use std::io::BufReader;
 use std::sync::Arc;
 
+use ethers::core::abi::AbiEncode;
 use rand::random;
 
 use core_executor::adapter::{MPTTrie, RocksTrieDB};
@@ -84,10 +85,8 @@ impl TestHandle {
         .unwrap();
 
         let resp = executor.exec(&mut backend, genesis.txs.clone());
-        println!("{:?}", genesis.txs[3]);
-        println!("{:?}", resp.tx_resp[3]);
-        self.state_root = resp.state_root;
 
+        self.state_root = resp.state_root;
         self.storage
             .update_latest_proof(Context::new(), genesis.block.header.proof.clone())
             .await
@@ -116,7 +115,8 @@ impl TestHandle {
     }
 
     pub fn exec(&mut self, txs: Vec<SignedTransaction>) {
-        let mut backend = EVMExecutorAdapter::new(
+        let mut backend = EVMExecutorAdapter::from_root(
+            self.state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
             mock_proposal().into(),
@@ -125,10 +125,6 @@ impl TestHandle {
         let resp = EvmExecutor::default().exec(&mut backend, txs);
         println!("{:?}", resp);
         self.state_root = resp.state_root;
-    }
-
-    pub fn state_root(&self) -> H256 {
-        self.state_root
     }
 }
 
@@ -178,7 +174,7 @@ fn mock_proposal() -> Proposal {
 fn mock_transaction(nonce: u64, data: Vec<u8>) -> Transaction {
     Transaction {
         nonce:                    nonce.into(),
-        gas_limit:                U256::one(),
+        gas_limit:                100000000u64.into(),
         max_priority_fee_per_gas: U256::one(),
         gas_price:                U256::one(),
         action:                   TransactionAction::Call(*METADATA_ADDRESS),
@@ -199,9 +195,23 @@ fn mock_signed_tx(nonce: u64, data: Vec<u8>) -> SignedTransaction {
 
     SignedTransaction {
         transaction: tx.hash(),
-        sender:      Default::default(),
+        sender:      Address::from_hex("0x8ab0cf264df99d83525e9e11c7e4db01558ae1b1")
+            .unwrap()
+            .0,
         public:      None,
     }
+}
+
+fn mock_metadata(epoch: u64, start: u64, end: u64) -> Vec<u8> {
+    let r = BufReader::new(File::open("../../devtools/chain/nodes/metadata.json").unwrap());
+    let mut metadata: Metadata = serde_json::from_reader(r).unwrap();
+    metadata.epoch = epoch;
+    metadata.version.start = start;
+    metadata.version.end = end;
+    let call = abi::MetadataContractCalls::AppendMetadata(abi::AppendMetadataCall {
+        metadata: metadata.into(),
+    });
+    call.encode()
 }
 
 impl From<MetadataVersion> for abi::MetadataVersion {
