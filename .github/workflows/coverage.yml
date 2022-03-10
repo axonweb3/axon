@@ -20,7 +20,7 @@ jobs:
       - name: run cargo-tarpaulin
         uses: actions-rs/tarpaulin@v0.1
         with:
-          args: '-p core-executor -p core-mempool -p core-storage -p core-metadata -- --test-threads 1'
+          args: '--avoid-cfg-tarpaulin -p core-executor -p core-mempool -p core-storage -p core-metadata -- --test-threads 1'
 
       - name: upload to codecov.io
         uses: codecov/codecov-action@v2
