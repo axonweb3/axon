@@ -1,98 +1,97 @@
+import { goto } from "./goto";
+
+const pageName = "web3_sha3.html";
 describe("Metamask", () => {
   beforeAll(async () => {
     await metamask.addNetwork({
-      networkName: "Axon",
-      rpc: "http://localhost:8000",
-      chainId: 5,
+      networkName: goto.axonRpc.netWrokName,
+      rpc: goto.axonRpc.url,
+      chainId: goto.axonRpc.chianId,
     });
-
-    const pageName = "web3_sha3.html";
-    await Promise.all([
-      page.goto(`http://localhost:8080${pageName}`),
-      page.bringToFront(),
-    ]);
   });
 
-  const btnId = "#btn";
-  const testType = document.getElementById("testType");
-  const param1 = document.getElementById("param1");
-  const ret = document.getElementById("ret");
-
-  //    the  parameter is empty
+  /**
+  * param:0x68656c6c6f20776f726c64
+  */
   test("web3_sha3_1", async () => {
-    await page.click(btnId);
-    testType.value.value = "1"; // 0: none params  1：common params to request   2: dvantage parameter
-    param1.value = "";
-    await page.waitForFunction(() => ret.innerText !== "");
-
-    await expect(page.$eval(ret.id, (e) => e.innerText)).resolves.toBe(
-      "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
-    );
+    await goto.goto(page, pageName);
+    const testType = await page.$(goto.pageIds.testTypeId);
+    const param1 = await page.$(goto.pageIds.param1Id);
+    await testType.type("1");// 0: none params  1：common params to request   2: dvantage parameter
+    await param1.type("0x68656c6c6f20776f726c64");
+    await goto.check(page, "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad");
   });
 
-  //    the  parameter is 0x68656c6c6f20776f726c64
+  /**
+  * param:""
+  */
   test("web3_sha3_2", async () => {
-    await page.click(btnId);
-    testType.value = "1";
-    param1.value = "0x68656c6c6f20776f726c64";
-    await page.waitForFunction(() => ret.innerText !== "");
-    await expect(page.$eval(ret.id, (e) => e.innerText)).resolves.toBe(
-      "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad",
-    );
+    await goto.goto(page, pageName);
+    const testType = await page.$(goto.pageIds.testTypeId);
+    const param1 = await page.$(goto.pageIds.param1Id);
+    await testType.type("1");// 0: none params  1：common params to request   2: dvantage parameter
+    await param1.type("");
+    await goto.check(page, "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
   });
 
-  //    is not hex  param
+  /**
+ * none param
+ */
   test("web3_sha3_3", async () => {
-    await page.click(btnId);
-    testType.value = "1";
-    param1.value = "123456789";
-    await page.waitForFunction(() => ret.innerText !== "");
-    await expect(page.$eval(ret.id, (e) => e.innerText)).resolves.toBe(
-      "", // fix me
-    );
+    await goto.goto(page, pageName);
+    const testType = await page.$(goto.pageIds.testTypeId);
+    await testType.type("1");// 0: none params  1：common params to request   2: dvantage parameter
+    await goto.check(page, "-32602");
   });
 
-  //    legal hexadecimal string without 0x prefix, even length
+  /**
+ *  param: 0x68656c6c6f20776f726c64
+ *  advantage param
+ */
   test("web3_sha3_4", async () => {
-    await page.click(btnId);
-    testType.value = "1";
-    param1.value = "68656c6c6f20776f726c64"; // fix me
-    await page.waitForFunction(() => ret.innerText !== "");
-    await expect(page.$eval(ret.id, (e) => e.innerText)).resolves.toBe(
-      "", // fix me
-    );
+    await goto.goto(page, pageName);
+    const testType = await page.$(goto.pageIds.testTypeId);
+    await testType.type("2");
+    const param1 = await page.$(goto.pageIds.param1Id);
+    await param1.type("0x68656c6c6f20776f726c64");
+    await goto.check(page, "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad");
   });
 
-  //    legal hexadecimal string without 0x prefix, length is odd
+  /**
+ *  param (none hexadecimal string): 123456
+ */
   test("web3_sha3_5", async () => {
-    await page.click(btnId);
-    testType.value = "1";
-    param1.value = "68656c6c6f20776f726c64c"; // fix me
-    await page.waitForFunction(() => ret.innerText !== "");
-    await expect(page.$eval(ret.id, (e) => e.innerText)).resolves.toBe(
-      "", // fix me
-    );
+    await goto.goto(page, pageName);
+    const testType = await page.$(goto.pageIds.testTypeId);
+    await testType.type("2");
+    const param1 = await page.$(goto.pageIds.param1Id);
+    await param1.type("123456");
+    await goto.check(page, "0xc888c9ce9e098d5864d3ded6ebcc140a12142263bace3a23a36f9905f12bd64a");
   });
 
-  //    none param
+  /**
+ *  param(legal hexadecimal string without 0x prefix, even length):
+ *  68656c6c6f20776f726c64
+ */
   test("web3_sha3_6", async () => {
-    await page.click(btnId);
-    testType.value = "0"; // fix me
-    param1.value = "";
-    await page.waitForFunction(() => ret.innerText !== "");
-    await expect(page.$eval(ret.id, (e) => e.innerText)).resolves.toBe(
-      "", // fix me
-    );
+    await goto.goto(page, pageName);
+    const testType = await page.$(goto.pageIds.testTypeId);
+    await testType.type("2");
+    const param1 = await page.$(goto.pageIds.param1Id);
+    await param1.type("68656c6c6f20776f726c64");
+    await goto.check(page, "0xb1e9ddd229f9a21ef978f6fcd178e74e37a4fa3d87f453bc34e772ec91328181");
   });
 
-  //    advantage  param
+  /**
+ *  param(legal hexadecimal string with 0x prefix, odd length):
+ *  Ox63646667781
+ */
   test("web3_sha3_7", async () => {
-    await page.click(btnId);
-    testType.value = "2";
-    param1.value = ""; //   fix me
-    await page.waitForFunction(() => ret.innerText !== "");
-    await expect(page.$eval(ret.id, (e) => e.innerText)).resolves.toBe(
-      "", // fix me
-    );
+    await goto.goto(page, pageName);
+    const testType = await page.$(goto.pageIds.testTypeId);
+    await testType.type("2");
+    const param1 = await page.$(goto.pageIds.param1Id);
+    await param1.type("Ox63646667781");
+    await goto.check(page, "0x9347910a2c4e4ecc48980bd0d2e01493d4d338ea84eeb596e029f679887ca4db");
   });
 });
