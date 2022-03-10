@@ -1,5 +1,4 @@
-mod adapter_tests;
-mod controller_tests;
+mod controller;
 
 use std::fs::{self, File};
 use std::io::BufReader;
@@ -13,17 +12,18 @@ use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{CommonStorage, Context, Executor, Storage};
 use protocol::types::{
-    Account, Address, Hex, Metadata, MetadataVersion, Proposal, RichBlock, SignedTransaction,
-    Transaction, TransactionAction, UnverifiedTransaction, ValidatorExtend, H160, H256, NIL_DATA,
-    RLP_NULL, U256,
+    Account, Address, Header, Hex, Metadata, MetadataVersion, Proposal, RichBlock,
+    SignedTransaction, Transaction, TransactionAction, UnverifiedTransaction, ValidatorExtend,
+    H160, H256, NIL_DATA, RLP_NULL, U256,
 };
 
 use crate::{calc_epoch, metadata_abi as abi, MetadataAdapterImpl, MetadataController, EPOCH_LEN};
 
 const GENESIS_PATH: &str = "../../devtools/chain/genesis.json";
 
-fn metadata_address() -> H160 {
-    H160::from_slice(&Hex::decode("".to_string()).unwrap())
+lazy_static::lazy_static! {
+    static ref METADATA_ADDRESS: H160
+        = H160::from_slice(&Hex::decode("0x8eb00d616b820c39619ee29e5144d0226cf8b5c15a".to_string()).unwrap());
 }
 
 struct TestHandle {
@@ -114,16 +114,44 @@ impl TestHandle {
         MetadataController::new(Arc::new(adapter), Default::default(), epoch_len)
     }
 
-    fn exec(&mut self, proposal: Proposal, txs: Vec<SignedTransaction>) {
+    pub fn exec(&mut self, txs: Vec<SignedTransaction>) {
         let mut backend = EVMExecutorAdapter::new(
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
-            proposal.into(),
+            mock_proposal().into(),
         )
         .unwrap();
         let resp = EvmExecutor::default().exec(&mut backend, txs);
         println!("{:?}", resp);
         self.state_root = resp.state_root;
+    }
+
+    pub fn state_root(&self) -> H256 {
+        self.state_root
+    }
+}
+
+fn mock_header(state: H256) -> Header {
+    Header {
+        prev_hash:                  Default::default(),
+        proposer:                   Default::default(),
+        transactions_root:          Default::default(),
+        signed_txs_hash:            Default::default(),
+        timestamp:                  Default::default(),
+        number:                     Default::default(),
+        gas_limit:                  1000000000u64.into(),
+        extra_data:                 Default::default(),
+        mixed_hash:                 Default::default(),
+        base_fee_per_gas:           U256::one(),
+        proof:                      Default::default(),
+        last_checkpoint_block_hash: Default::default(),
+        chain_id:                   Default::default(),
+        receipts_root:              Default::default(),
+        log_bloom:                  Default::default(),
+        difficulty:                 U256::one(),
+        nonce:                      Default::default(),
+        gas_used:                   U256::one(),
+        state_root:                 state,
     }
 }
 
@@ -152,7 +180,7 @@ fn mock_transaction(nonce: u64, data: Vec<u8>) -> Transaction {
         gas_limit:                U256::one(),
         max_priority_fee_per_gas: U256::one(),
         gas_price:                U256::one(),
-        action:                   TransactionAction::Call(metadata_address()),
+        action:                   TransactionAction::Call(*METADATA_ADDRESS),
         value:                    U256::one(),
         data:                     data.into(),
         access_list:              vec![],

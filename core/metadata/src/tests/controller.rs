@@ -1,4 +1,4 @@
-use protocol::tokio;
+use protocol::{tokio, traits::MetadataControl};
 
 use super::*;
 
@@ -25,7 +25,9 @@ use super::*;
 #[tokio::test(flavor = "multi_thread")]
 async fn test_1() {
     let handle = TestHandle::new().await;
-    let _ctl = handle.metadata_controller(100);
+    let ctl = handle.metadata_controller(100);
+    let res = ctl.update_metadata(Context::new(), &mock_header(handle.state_root));
+    println!("{:?}", res);  
 }
 
 #[test]
