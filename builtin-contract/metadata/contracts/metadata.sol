@@ -5,6 +5,8 @@ pragma solidity >=0.7.0;
 // import "hardhat/console.sol";
 
 contract MetadataManager {
+    uint64 U64_MAX = 2**64 - 1;
+
     struct MetadataVersion {
         uint64 start;
         uint64 end;
@@ -38,7 +40,7 @@ contract MetadataManager {
     mapping(uint64 => Metadata) metadata_set;
 
     // to identify current highest epoch number
-    uint64 highest_epoch;
+    uint64 highest_epoch = U64_MAX;
 
     // push new metadata into `metadata_set`
     function appendMetadata(Metadata memory metadata) public {
@@ -60,7 +62,7 @@ contract MetadataManager {
         );
 
         uint64 epoch = metadata.epoch;
-        if (highest_epoch > 0) {
+        if (highest_epoch != U64_MAX) {
             require(highest_epoch + 1 == epoch, "fatal/discontinuous epoch");
             require(
                 version.start == metadata_set[highest_epoch].version.end + 1,
@@ -89,7 +91,8 @@ contract MetadataManager {
 
     // get metadata from `metadata_set` by epoch
     function getMetadata(uint64 epoch) public view returns (Metadata memory) {
-        require(metadata_set[epoch].epoch == epoch, "fatal/non-indexed epoch");
-        return metadata_set[epoch];
+        Metadata memory metadata = metadata_set[epoch];
+        require(metadata.gas_limit != 0, "fatal/non-indexed epoch");
+        return metadata;
     }
 }

@@ -12,19 +12,17 @@ describe("Testing MetadataManager", () => {
     let contract = null
     let metadata = null
 
-    beforeEach(async () => {
-        if (contract == null) {
-            let deployer = await ethers.getContractFactory("MetadataManager")
-            contract = await deployer.deploy()
-            await contract.deployed()
-        }
+    before(async () => {
+        let deployer = await ethers.getContractFactory("MetadataManager")
+        contract = await deployer.deploy()
+        await contract.deployed()
         wallets = await ethers.getSigners()
         metadata = {
             version: {
                 start: 1,
                 end: 2
             },
-            epoch: 1,
+            epoch: 0,
             gas_limit: 1000,
             gas_price: 1000000,
             interval: 20,
@@ -47,52 +45,55 @@ describe("Testing MetadataManager", () => {
         }
     })
 
-    it("`getMetadata` failed on non-indexed epoch of 1", async () => {
-        await expect(contract.getMetadata(1))
+    it("`getMetadata` failed on non-indexed epoch of 0", async () => {
+        await expect(contract.getMetadata(0))
             .to.be.revertedWith("fatal/non-indexed epoch")
     })
 
-    it("`appendMetadata` successed on epoch of 1 and on version of [1, 2]", async () => {
+    it("`appendMetadata` successed on epoch of 0 and on version of [1, 2]", async () => {
+        metadata.epoch = 0
+        metadata.version = { start: 1, end: 2 }
         await expect(contract.appendMetadata(metadata))
             .to.be.not.reverted
     })
 
-    it("`getMetadata` successed on epoch of 1", async () => {
-        await expect(contract.getMetadata(1))
+    it("`getMetadata` successed on epoch of 0", async () => {
+        await expect(contract.getMetadata(0))
             .to.be.not.reverted
     })
 
-    it("`appendMetadata` successed on epoch of 2 and on version of [3, 4]", async () => {
-        metadata.epoch = 2
+    it("`appendMetadata` successed on epoch of 1 and on version of [3, 4]", async () => {
+        metadata.epoch = 1
         metadata.version = { start: 3, end: 4 }
         await expect(contract.appendMetadata(metadata))
             .to.be.not.reverted
     })
 
     it("`appendMetadata` failed on mismatched address", async () => {
-        metadata.epoch = 3
+        metadata.epoch = 2
         metadata.version = { start: 5, end: 6 }
         metadata.verifier_list[0].address_ = wallets[1].address
         await expect(contract.appendMetadata(metadata))
             .to.be.revertedWith("fatal/verifier_list has no sender")
     })
 
-    it("`appendMetadata` failed on discontinuous epoch of 4", async () => {
-        metadata.epoch = 4
+    it("`appendMetadata` failed on discontinuous epoch of 3", async () => {
+        metadata.epoch = 3
         metadata.version = { start: 5, end: 6 }
+        metadata.verifier_list[0].address_ = wallets[0].address
         await expect(contract.appendMetadata(metadata))
             .to.be.revertedWith("fatal/discontinuous epoch")
     })
 
     it("`appendMetadata` failed on discontinuous version of [6, 7]", async () => {
-        metadata.epoch = 3
+        metadata.epoch = 2
         metadata.version = { start: 6, end: 7 }
         await expect(contract.appendMetadata(metadata))
             .to.be.revertedWith("fatal/discontinuous version")
     })
 
     it("`appendMetadata` failed on block.number out of version of [5, 6]", async () => {
-        metadata.epoch = 3
+        metadata.epoch = 2
         metadata.version = { start: 5, end: 6 }
         await expect(contract.appendMetadata(metadata))
             .to.be.revertedWith("fatal/invalid version")
