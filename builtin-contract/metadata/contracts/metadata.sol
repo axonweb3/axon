@@ -55,17 +55,11 @@ contract MetadataManager {
         }
         require(find_sender, "fatal/verifier_list has no sender");
 
-        MetadataVersion memory version = metadata.version;
-        require(
-            version.start <= block.number && block.number <= version.end,
-            "fatal/invalid version"
-        );
-
         uint64 epoch = metadata.epoch;
         if (highest_epoch != U64_MAX) {
             require(highest_epoch + 1 == epoch, "fatal/discontinuous epoch");
             require(
-                version.start == metadata_set[highest_epoch].version.end + 1,
+                metadata.version.start == metadata_set[highest_epoch].version.end + 1,
                 "fatal/discontinuous version"
             );
         }
