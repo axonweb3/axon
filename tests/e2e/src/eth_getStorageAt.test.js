@@ -9,7 +9,6 @@ describe("Metamask", () => {
       chainId: goto.axonRpc.chianId,
     });
   });
-
   /**
   * param1:0x295a70b2de5e3953354a6a8344e616ed314d7253 // fixme
   * param2:0x0 // fixme

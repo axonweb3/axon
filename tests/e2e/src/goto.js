@@ -10,6 +10,7 @@ const goto = async (currentpage, pageName) => {
       currentpage.bringToFront(),
     ]);
   } catch (ex) {
+    // eslint-disable-next-line no-console
     console.log(ex);
   }
 };
