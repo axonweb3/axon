@@ -5,7 +5,6 @@ use std::io::BufReader;
 use std::sync::Arc;
 
 use ethers::core::abi::AbiEncode;
-use rand::random;
 
 use core_executor::adapter::{MPTTrie, RocksTrieDB};
 use core_executor::{EVMExecutorAdapter, EvmExecutor};
@@ -13,9 +12,9 @@ use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{CommonStorage, Context, Executor, Storage};
 use protocol::types::{
-    Account, Address, Header, Hex, Metadata, MetadataVersion, Proposal, RichBlock,
-    SignedTransaction, Transaction, TransactionAction, UnverifiedTransaction, ValidatorExtend,
-    H160, H256, NIL_DATA, RLP_NULL, U256,
+    Account, Address, Header, Hex, Metadata, MetadataVersion, Proposal, Public, RichBlock,
+    SignatureComponents, SignedTransaction, Transaction, TransactionAction, UnverifiedTransaction,
+    ValidatorExtend, H160, H256, NIL_DATA, RLP_NULL, U256,
 };
 
 use crate::{calc_epoch, metadata_abi as abi, MetadataAdapterImpl, MetadataController, EPOCH_LEN};
@@ -178,7 +177,7 @@ fn mock_transaction(nonce: u64, data: Vec<u8>) -> Transaction {
         max_priority_fee_per_gas: U256::one(),
         gas_price:                U256::one(),
         action:                   TransactionAction::Call(*METADATA_ADDRESS),
-        value:                    U256::one(),
+        value:                    U256::zero(),
         data:                     data.into(),
         access_list:              vec![],
     }
@@ -188,8 +187,12 @@ fn mock_signed_tx(nonce: u64, data: Vec<u8>) -> SignedTransaction {
     let raw = mock_transaction(nonce, data);
     let tx = UnverifiedTransaction {
         unsigned:  raw,
-        signature: None,
-        chain_id:  random::<u64>(),
+        signature: Some(SignatureComponents {
+            standard_v: 0,
+            r:          H256::default(),
+            s:          H256::default(),
+        }),
+        chain_id:  0,
         hash:      Default::default(),
     };
 
@@ -198,12 +201,12 @@ fn mock_signed_tx(nonce: u64, data: Vec<u8>) -> SignedTransaction {
         sender:      Address::from_hex("0x8ab0cf264df99d83525e9e11c7e4db01558ae1b1")
             .unwrap()
             .0,
-        public:      None,
+        public:      Some(Public::default()),
     }
 }
 
 fn mock_metadata(epoch: u64, start: u64, end: u64) -> Vec<u8> {
-    let r = BufReader::new(File::open("../../devtools/chain/nodes/metadata.json").unwrap());
+    let r = BufReader::new(File::open("../../devtools/chain/metadata.json").unwrap());
     let mut metadata: Metadata = serde_json::from_reader(r).unwrap();
     metadata.epoch = epoch;
     metadata.version.start = start;
