@@ -10,7 +10,7 @@ const goto = async (currentpage, pageName) => {
       currentpage.bringToFront(),
     ]);
   } catch (ex) {
-    throw new Error(ex);
+    console.log(ex);
   }
 };
 
