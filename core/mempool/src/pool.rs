@@ -53,8 +53,8 @@ impl PirorityPool {
     }
 
     pub fn insert(&self, stx: SignedTransaction) -> ProtocolResult<()> {
-        if self.co_queue.is_full() {
-            return Err(MemPoolError::ReachLimit(self.co_queue.len()).into());
+        if self.reach_limit() {
+            return Err(MemPoolError::ReachLimit(self.tx_map.len()).into());
         }
 
         // This lock is necessary to avoid mismatch error triggered by the concurrent
@@ -97,11 +97,12 @@ impl PirorityPool {
     }
 
     pub fn contains(&self, hash: &Hash) -> bool {
+        let _flushing = self.flush_lock.read();
         self.tx_map.contains_key(hash)
     }
 
     pub fn reach_limit(&self) -> bool {
-        self.co_queue.is_full()
+        self.tx_map.len() > self.co_queue.capacity()
     }
 
     pub fn pool_size(&self) -> usize {
@@ -109,6 +110,7 @@ impl PirorityPool {
     }
 
     pub fn get_by_hash(&self, hash: &Hash) -> Option<SignedTransaction> {
+        let _flushing = self.flush_lock.read();
         self.tx_map.get(hash).map(|r| r.clone())
     }
 
