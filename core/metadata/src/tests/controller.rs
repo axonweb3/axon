@@ -22,7 +22,7 @@ async fn test_update_metadata() {
     let mut handle = TestHandle::new().await;
     handle.exec(vec![mock_signed_tx(
         5,
-        mock_metadata(1, 100000000, 199999999),
+        mock_metadata(1, 99999999 + 1, 199999999),
     )]);
     let ctl = handle.metadata_controller(100000000);
     ctl.update_metadata(Context::new(), &mock_header(1, handle.state_root))
