@@ -6,7 +6,7 @@ const TEST_EPOCH_LEN: u64 = 100_000_000;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_get_metadata() {
-    let handle = TestHandle::new().await;
+    let handle = TestHandle::new(0).await;
     let ctl = handle.metadata_controller(TEST_EPOCH_LEN);
     let res = ctl
         .get_metadata(Context::new(), &mock_header(0, handle.state_root))
@@ -21,7 +21,7 @@ async fn test_get_metadata() {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_update_metadata() {
-    let mut handle = TestHandle::new().await;
+    let mut handle = TestHandle::new(1).await;
     handle.exec(vec![mock_signed_tx(
         5,
         mock_metadata(1, 100000000, 199999999),
@@ -43,14 +43,14 @@ async fn test_update_metadata() {
 #[should_panic]
 #[tokio::test(flavor = "multi_thread")]
 async fn test_get_null_metadata() {
-    let handle = TestHandle::new().await;
+    let handle = TestHandle::new(2).await;
     let ctl = handle.metadata_controller(TEST_EPOCH_LEN);
     let _res = ctl.get_metadata_unchecked(Context::new(), 100000001);
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_need_change_metadata() {
-    let handle = TestHandle::new().await;
+    let handle = TestHandle::new(3).await;
     let ctl = handle.metadata_controller(TEST_EPOCH_LEN);
     assert!(ctl.need_change_metadata(100_000_000));
     assert!(!ctl.need_change_metadata(99_999_999));
