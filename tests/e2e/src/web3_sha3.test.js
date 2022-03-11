@@ -45,7 +45,7 @@ describe("Metamask", () => {
 
   /**
  *  param: 0x68656c6c6f20776f726c64
- *  advantage param
+ *  more param
  */
   test("web3_sha3_4", async () => {
     await goto.goto(page, pageName);

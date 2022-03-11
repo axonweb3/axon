@@ -18,7 +18,7 @@
         params.push(data);
         params.push("advantage parameter");
       }
-      const request_params = { method: "web3_sha3", params: params }; //deafult is none params  to request test.
+      const request_params = { method: "web3_sha3", params: params }; //deafult is none param  to request test.
       ethereum.request(request_params).then((ret) => {
         document.getElementById("ret").innerHTML = ret;
         console.log(ret);
