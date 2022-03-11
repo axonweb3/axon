@@ -658,7 +658,7 @@ mod tests {
 
     #[test]
     fn decode_genesis() {
-        let raw = fs::read("../../devtools/chain/genesis.json").unwrap();
+        let raw = fs::read("../../devtools/chain/genesis_single_node.json").unwrap();
         let genesis: RichBlock = serde_json::from_slice(&raw).unwrap();
         println!("{:?}", genesis);
     }

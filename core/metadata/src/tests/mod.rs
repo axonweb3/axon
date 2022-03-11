@@ -32,12 +32,6 @@ struct TestHandle {
     state_root: H256,
 }
 
-impl Drop for TestHandle {
-    fn drop(&mut self) {
-        let _ = fs::remove_dir_all("./free-space");
-    }
-}
-
 impl TestHandle {
     pub async fn new(salt: u64) -> Self {
         let path = "./free-space/".to_string();
