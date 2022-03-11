@@ -546,7 +546,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         Ok(ret)
     }
 
-    #[metrics_rpc("eth_getTransactionCountByHash")]
+    #[metrics_rpc("eth_getBlockTransactionCountByHash")]
     async fn get_block_transaction_count_by_hash(&self, hash: Hash) -> RpcResult<U256> {
         Ok(self
             .adapter

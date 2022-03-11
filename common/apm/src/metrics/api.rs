@@ -34,7 +34,7 @@ make_auto_flush_static_metric! {
         web3_clientVersion,
         eth_accounts,
         web3_sha3,
-        eth_getTransactionCountByHash,
+        eth_getBlockTransactionCountByHash,
         eth_getTransactionByBlockHashAndIndex,
         eth_getTransactionByBlockNumberAndIndex,
         eth_getStorageAt,
