@@ -115,7 +115,7 @@ pub trait AxonJsonRpc {
     #[method(name = "web3_sha3")]
     async fn sha3(&self, data: Hex) -> RpcResult<Hash>;
 
-    #[method(name = "eth_getTransactionCountByHash")]
+    #[method(name = "eth_getBlockTransactionCountByHash")]
     async fn get_block_transaction_count_by_hash(&self, hash: Hash) -> RpcResult<U256>;
 
     #[method(name = "eth_getTransactionByBlockHashAndIndex")]
