@@ -1,5 +1,6 @@
-import goto from "./goto";
-import Config from "../config";
+// eslint-disable-next-line
+import { goto } from "./goto";
+import { Config } from "../config";
 
 const pageName = "web3_sha3.html";
 describe("Metamask", () => {
