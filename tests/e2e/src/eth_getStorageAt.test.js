@@ -1,12 +1,13 @@
-import { goto } from "./goto";
+import goto from "./goto";
+import Config from "../config";
 
 const pageName = "eth_getStorageAt.html";
 describe("Metamask", () => {
   beforeAll(async () => {
     await metamask.addNetwork({
-      networkName: goto.axonRpc.netWrokName,
-      rpc: goto.axonRpc.url,
-      chainId: goto.axonRpc.chianId,
+      networkName: Config.getIns().axonRpc.netWorkName,
+      rpc: Config.getIns().axonRpc.url,
+      chainId: Config.getIns().axonRpc.chainId,
     });
   });
   /**
