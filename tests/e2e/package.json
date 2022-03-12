@@ -12,6 +12,7 @@
     "js-yaml": "^4.1.0",
     "web3": "^1.7.1",
     "yaml": "^1.10.2"
+
   },
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.16.8",

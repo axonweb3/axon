@@ -1,5 +1,6 @@
-import goto from "./goto";
-import Config from "../config";
+// eslint-disable-next-line
+import { goto } from "./goto";
+import { Config } from "../config";
 
 const pageName = "eth_getBlockTransactionCountByHash.html";
 describe("Metamask", () => {
