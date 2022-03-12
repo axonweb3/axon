@@ -1,12 +1,13 @@
-const host = "http://localhost:8080";
-const axonRpc = { url: "http://localhost:8000", netWrokName: "axon", chianId: 5 };
+// eslint-disable-next-line import/no-import-module-exports
+import { Config } from "../config";
+
 const pageIds = {
   btnId: "#btn", testTypeId: "#testType", param1Id: "#param1", param2Id: "#param2", param3Id: "#param3", param4Id: "#param4",
 };
 const goto = async (currentpage, pageName) => {
   try {
     await Promise.all([
-      currentpage.goto(`${host}/${pageName}`),
+      currentpage.goto(`${Config.getIns().httpServer}/${pageName}`),
       currentpage.bringToFront(),
     ]);
   } catch (ex) {
@@ -21,5 +22,5 @@ const check = async (currentpage, expectedValue) => {
   await expect(currentpage.$eval("#ret", (e) => e.innerText)).resolves.toMatch(expectedValue);
 };
 module.exports.goto = {
-  goto, check, pageIds, host, axonRpc,
+  goto, check, pageIds,
 };
