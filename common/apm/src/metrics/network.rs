@@ -47,6 +47,7 @@ lazy_static! {
         &["direction", "target", "type", "module", "action"]
     )
     .expect("network message total");
+    // TODO: 3/12/22 Disregard this metric for now
     pub static ref NETWORK_MESSAGE_SIZE_COUNT_VEC: CounterVec = register_counter_vec!(
         "axon_network_message_size",
         "Accumulated compressed network message size",
@@ -101,22 +102,23 @@ lazy_static! {
         "Total number of network received message current in processing"
     )
     .expect("network received message in processing");
-    pub static ref NETWORK_RECEIVED_IP_MESSAGE_IN_PROCESSING_GUAGE_VEC: IntGaugeVec =
+    pub static ref NETWORK_RECEIVED_PEER_ID_MESSAGE_IN_PROCESSING_GUAGE_VEC: IntGaugeVec =
         register_int_gauge_vec!(
-            "axon_network_received_ip_message_in_processing_guage",
-            "Number of network received messasge from ip current in processing",
-            &["ip"]
+            "axon_network_received_peer_id_message_in_processing_guage",
+            "Number of network received messasge from peer_id current in processing",
+            &["peer_id"]
         )
         .expect("network received ip message in processing");
     pub static ref NETWORK_CONNECTED_PEERS: IntGauge =
         register_int_gauge!("axon_network_connected_peers", "Total connected peer count")
             .expect("network total connecteds");
-    pub static ref NETWORK_IP_DISCONNECTED_COUNT_VEC: CounterVec = register_counter_vec!(
-        "axon_network_ip_disconnected_count",
-        "Total number of ip disconnected count",
-        &["ip"]
+    pub static ref NETWORK_PEER_ID_DISCONNECTED_COUNT_VEC: CounterVec = register_counter_vec!(
+        "axon_network_peer_id_disconnected_count",
+        "Total number of peer_id disconnected count",
+        &["peer_id"]
     )
     .expect("network disconnect ip count");
+    // TODO: 3/12/22 Disregard this metric for now
     pub static ref NETWORK_OUTBOUND_CONNECTING_PEERS: IntGauge = register_int_gauge!(
         "axon_network_outbound_connecting_peers",
         "Total number of network outbound connecting peers"
@@ -127,7 +129,7 @@ lazy_static! {
         "Total number of network unidentified connections"
     )
     .expect("network unidentified connections");
-    pub static ref NETWORK_SAVED_PEER_COUNT: IntCounter = register_int_counter!(
+    pub static ref NETWORK_SAVED_PEER_COUNT: IntGauge = register_int_gauge!(
         "axon_network_saved_peer_count",
         "Total number of saved peer count"
     )

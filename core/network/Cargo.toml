@@ -6,6 +6,7 @@ edition = "2021"
 
 [dependencies]
 bloom-filters = "0.1"
+common-apm = { path = "../../common/apm" }
 derive_more = "0.99"
 faketime = "0.2.0"
 futures = "0.3"

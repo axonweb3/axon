@@ -149,6 +149,8 @@ impl Network for NetworkServiceHandle {
     }
 
     fn tag_consensus(&self, _ctx: Context, peer_ids: Vec<Bytes>) -> ProtocolResult<()> {
+        common_apm::metrics::network::NETWORK_TAGGED_CONSENSUS_PEERS.set(peer_ids.len() as i64);
+
         let mut peer_ids: HashSet<PeerId> = {
             let byteses = peer_ids.iter();
             let maybe_ids = byteses.map(|bytes| {
@@ -526,7 +528,7 @@ impl NetworkService {
                 _ = dump_interval.tick() => {
                     self.peer_mgr_handle.with_peer_store(|store|{
                         let _ignore = store.dump_to_dir(self.config.peer_store_path.clone())
-                            .map_err(|e| log::info!("dump peer store error: {}", e));
+                            .map_err(|e| log::info!("dump peer store error: {:?}", e));
                     })
                 }
                 else => {
@@ -570,7 +572,7 @@ impl ServiceHandle for ServiceHandler {
                         log::warn!("DialerError({}) {}", address, e);
                     }
                     _ => {
-                        log::debug!("DialerError({}) {}", address, error);
+                        log::debug!("DialerError({:?}) {:?}", address, error);
                     }
                 }
             }

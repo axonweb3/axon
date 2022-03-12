@@ -11,6 +11,7 @@ use self::protocol::ReceivedMessage;
 use crate::{
     peer_manager::PeerManager,
     reactor::{MessageRouter, RemotePeer},
+    PeerIdExt,
 };
 use std::sync::Arc;
 
@@ -64,26 +65,24 @@ impl ServiceProtocol for TransmitterProtocol {
         };
 
         let remote_peer = RemotePeer::from_proto_context(&context);
+        let peer_id = remote_peer.peer_id.to_string();
 
         // let host = remote_peer.connected_addr.host.to_owned();
         let route_fut = self.router.route_message(remote_peer.clone(), recv_msg);
         spawn(async move {
-            // common_apm::metrics::network::NETWORK_RECEIVED_MESSAGE_IN_PROCESSING_GUAGE.
-            // inc(); common_apm::metrics::network::
-            // NETWORK_RECEIVED_IP_MESSAGE_IN_PROCESSING_GUAGE_VEC
-            //     .with_label_values(&[&host])
-            //     .inc();
+            common_apm::metrics::network::NETWORK_RECEIVED_MESSAGE_IN_PROCESSING_GUAGE.inc();
+            common_apm::metrics::network::NETWORK_RECEIVED_PEER_ID_MESSAGE_IN_PROCESSING_GUAGE_VEC
+                .with_label_values(&[&peer_id])
+                .inc();
 
             if let Err(err) = route_fut.await {
-                log::warn!("route message from {} failed: {}", remote_peer, err);
+                log::warn!("route message from {:?} failed: {:?}", remote_peer, err);
             }
 
-            // common_apm::metrics::network::
-            // NETWORK_RECEIVED_MESSAGE_IN_PROCESSING_GUAGE.dec();
-            // common_apm::metrics::network::
-            // NETWORK_RECEIVED_IP_MESSAGE_IN_PROCESSING_GUAGE_VEC
-            //     .with_label_values(&[&host])
-            //     .dec();
+            common_apm::metrics::network::NETWORK_RECEIVED_MESSAGE_IN_PROCESSING_GUAGE.dec();
+            common_apm::metrics::network::NETWORK_RECEIVED_PEER_ID_MESSAGE_IN_PROCESSING_GUAGE_VEC
+                .with_label_values(&[&peer_id])
+                .dec();
         });
     }
 }
