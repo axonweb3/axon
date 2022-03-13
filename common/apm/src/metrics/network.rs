@@ -2,8 +2,8 @@ use lazy_static::lazy_static;
 
 use crate::metrics::{
     auto_flush_from, exponential_buckets, linear_buckets, make_auto_flush_static_metric,
-    register_counter_vec, register_histogram_vec, register_int_counter, register_int_gauge,
-    register_int_gauge_vec, CounterVec, HistogramVec, IntCounter, IntGauge, IntGaugeVec,
+    register_counter_vec, register_histogram_vec, register_int_gauge, register_int_gauge_vec,
+    CounterVec, HistogramVec, IntGauge, IntGaugeVec,
 };
 
 make_auto_flush_static_metric! {
