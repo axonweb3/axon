@@ -1,13 +1,13 @@
 // eslint-disable-next-line import/no-import-module-exports
 import { Config } from "../../config";
 
-const yaml = require("js-yaml");
 const Web3 = require("web3");
-
+const iconv = require("iconv-lite");
 const fs = require("fs");
-// const EthereumTx = require('ethereumjs-tx').Transaction;
+
 const erc20 = require("./ERC20.json");
 
+const basePath = "./src/test_data_temp_file";
 const option = { timeout: 1000 * 30 };
 const web3 = new Web3(new Web3.providers.HttpProvider(Config.getIns().axonRpc.url, option));
 
@@ -17,6 +17,18 @@ const transactionInfo = {
   blockNumber: "",
   blockHash: "",
   transactionIndex: "",
+};
+
+const savejson = async (filePath, data) => {
+  const dataStr = JSON.stringify(data, null, 4);
+  if (dataStr) {
+    try {
+      fs.writeFileSync(filePath, dataStr);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.log(`save error ${err}`);
+    }
+  }
 };
 const accountFrom = web3.eth.accounts.privateKeyToAccount(Config.getIns().hexPrivateKey);
 const sendTransaction = async (account, data) => {
@@ -47,7 +59,31 @@ const createTransactionData = async () => {
   transactionInfo.blockHash = receipt.blockHash;
   transactionInfo.blockNumber = receipt.blockNumber;
   transactionInfo.transactionIndex = receipt.transactionIndex;
-  const yamlStr = yaml.dump(transactionInfo);
-  fs.writeFileSync("./src/create_test_data/testData.yaml", yamlStr, "utf8");
+  await savejson(`${basePath}/testData_1.json`, transactionInfo);
 };
-module.exports.createTestData = { createTransactionData };
+
+const readTestDataAsJson = async (testFileName) => {
+  let data;
+  try {
+    const filePath = `${basePath}/${testFileName}`;
+    const jsonData = iconv.decode(fs.readFileSync(filePath, "binary"), "utf8").toString();
+    data = JSON.parse(jsonData);
+    // eslint-disable-next-line no-console
+    console.log(data);
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.log(err);
+  }
+  return data;
+};
+
+const resetTestTmpFiles = async () => {
+  try {
+    fs.rmdirSync(basePath, { recursive: true });
+    fs.mkdirSync(`${basePath}/`);
+  } catch (ex) {
+    fs.mkdirSync(`${basePath}/`);
+  }
+};
+
+module.exports.testDataManage = { createTransactionData, readTestDataAsJson, resetTestTmpFiles };
