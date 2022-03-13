@@ -1,12 +1,6 @@
 describe("Metamask", () => {
   beforeAll(async () => {
-    await metamask.addNetwork({
-      networkName: "Axon",
-      rpc: "http://localhost:8000",
-      chainId: 5,
-    });
-
-    await Promise.all([page.goto("http://localhost:8080"), page.bringToFront()]);
+    await page.goto("http://localhost:8080");
   });
 
   test("net_version", async () => {

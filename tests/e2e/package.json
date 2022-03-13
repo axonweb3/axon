@@ -1,11 +1,12 @@
 {
   "name": "axon-e2e-tests",
   "scripts": {
-    "test": "jest",
+    "test": "jest -i",
     "lint": "eslint src/*.js"
   },
   "dependencies": {
     "@chainsafe/dappeteer": "^2.4.0",
+    "jest-environment-node": "^27.5.1",
     "puppeteer": "^13.4.0"
   },
   "devDependencies": {
@@ -20,6 +21,7 @@
   },
   "jest": {
     "preset": "@chainsafe/dappeteer",
-    "globalSetup": "./jest/setup.js"
+    "globalSetup": "./jest/setup.js",
+    "testEnvironment": "./jest/dappeteer_environment.js"
   }
 }
