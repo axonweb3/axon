@@ -1,5 +1,4 @@
 use parking_lot::{Mutex, RwLock};
-use std::borrow::Borrow;
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
