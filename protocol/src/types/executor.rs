@@ -2,7 +2,7 @@ pub use ethereum::{AccessList, AccessListItem, Account};
 pub use evm::{backend::Log, Config, ExitError, ExitFatal, ExitReason, ExitRevert, ExitSucceed};
 
 use crate::codec::ProtocolCodec;
-use crate::types::{Hash, Hasher, MerkleRoot, Proposal, H160, U256};
+use crate::types::{Hash, Hasher, Header, MerkleRoot, Proposal, H160, U256};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ExecResp {
@@ -47,7 +47,25 @@ impl From<Proposal> for ExecutorContext {
             chain_id:               h.chain_id.into(),
             difficulty:             U256::one(),
             origin:                 h.proposer,
-            gas_price:              Default::default(),
+            gas_price:              U256::one(),
+            block_gas_limit:        h.gas_limit,
+            block_base_fee_per_gas: h.base_fee_per_gas,
+            logs:                   Vec::new(),
+        }
+    }
+}
+
+impl From<&Header> for ExecutorContext {
+    fn from(h: &Header) -> ExecutorContext {
+        ExecutorContext {
+            block_number:           h.number.into(),
+            block_hash:             Hasher::digest(h.encode().unwrap()),
+            block_coinbase:         h.proposer,
+            block_timestamp:        h.timestamp.into(),
+            chain_id:               h.chain_id.into(),
+            difficulty:             U256::one(),
+            origin:                 h.proposer,
+            gas_price:              U256::one(),
             block_gas_limit:        h.gas_limit,
             block_base_fee_per_gas: h.base_fee_per_gas,
             logs:                   Vec::new(),

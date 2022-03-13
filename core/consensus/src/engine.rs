@@ -16,12 +16,11 @@ use common_apm::Instant;
 use common_crypto::BlsPublicKey;
 use common_logger::{json, log};
 use common_merkle::Merkle;
-
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
-    Block, BlockNumber, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, Log, MerkleRoot,
-    Metadata, Proof, Proposal, Receipt, SignedTransaction, ValidatorExtend, U256,
+    Block, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, Log, MerkleRoot, Metadata, Proof,
+    Proposal, Receipt, SignedTransaction, TransactionAction, ValidatorExtend, H160, U256,
 };
 use protocol::{
     async_trait, lazy::CURRENT_STATE_ROOT, tokio::sync::Mutex as AsyncMutex, ProtocolError,
@@ -35,14 +34,15 @@ use crate::message::{
 use crate::status::{CurrentStatus, StatusAgent};
 use crate::util::{digest_signed_transactions, time_now, OverlordCrypto};
 use crate::wal::{ConsensusWal, SignedTxsWAL};
-use crate::{ConsensusError, METADATA_CONTROLER};
+use crate::ConsensusError;
 
 /// validator is for create new block, and authority is for build overlord
 /// status.
 pub struct ConsensusEngine<Adapter> {
-    status:         StatusAgent,
-    node_info:      NodeInfo,
-    exemption_hash: RwLock<HashSet<Hash>>,
+    status:           StatusAgent,
+    node_info:        NodeInfo,
+    metadata_address: H160,
+    exemption_hash:   RwLock<HashSet<Hash>>,
 
     adapter: Arc<Adapter>,
     txs_wal: Arc<SignedTxsWAL>,
@@ -73,7 +73,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
                 ctx.clone(),
                 next_number,
                 status.gas_limit,
-                METADATA_CONTROLER.load().current().tx_num_limit,
+                status.tx_num_limit,
             )
             .await?;
         let signed_txs = self.adapter.get_full_txs(ctx.clone(), &txs).await?;
@@ -93,10 +93,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             mixed_hash:                 None,
             base_fee_per_gas:           status.base_fee_per_gas,
             proof:                      status.proof,
-            last_checkpoint_block_hash: METADATA_CONTROLER
-                .load()
-                .current()
-                .last_checkpoint_block_hash,
+            last_checkpoint_block_hash: status.last_checkpoint_block_hash,
             chain_id:                   self.node_info.chain_id,
             tx_hashes:                  txs,
         };
@@ -206,7 +203,9 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         }
 
         let status = self.status.inner();
-        let metadata = METADATA_CONTROLER.load().current();
+        let metadata = self
+            .adapter
+            .get_metadata_unchecked(ctx.clone(), current_number + 1);
 
         if current_number == status.last_number {
             return Ok(Status {
@@ -282,19 +281,18 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             self.exemption_hash.write().clear();
         }
 
-        self.update_metadata(current_number + 1);
-        let metadata = METADATA_CONTROLER.load().current();
-
+        let next_block_number = current_number + 1;
+        let metadata = self
+            .adapter
+            .get_metadata_unchecked(ctx.clone(), next_block_number);
         let status = Status {
-            height:         current_number + 1,
+            height:         next_block_number,
             interval:       Some(metadata.interval),
             authority_list: convert_to_overlord_authority(&metadata.verifier_list),
             timer_config:   Some(metadata.into()),
         };
 
-        self.adapter
-            .broadcast_number(ctx.clone(), current_number)
-            .await?;
+        self.adapter.broadcast_number(ctx, current_number).await?;
 
         self.metric_commit(current_number, txs_len);
 
@@ -380,18 +378,20 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
     // )]
     async fn get_authority_list(
         &self,
-        _ctx: Context,
+        ctx: Context,
         next_number: u64,
     ) -> Result<Vec<Node>, Box<dyn Error + Send>> {
         if next_number == 0 {
             return Ok(vec![]);
         }
 
-        let current_metadata = METADATA_CONTROLER.load().current();
+        let current_metadata = self
+            .adapter
+            .get_metadata_unchecked(ctx.clone(), next_number);
         let old_metadata = if current_metadata.version.contains(next_number - 1) {
             current_metadata
         } else {
-            METADATA_CONTROLER.load().previous()
+            self.adapter.get_metadata_unchecked(ctx, next_number - 1)
         };
 
         let mut old_validators = old_metadata
@@ -446,6 +446,7 @@ impl<Adapter: ConsensusAdapter + 'static> Wal for ConsensusEngine<Adapter> {
 impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
     pub fn new(
         status: StatusAgent,
+        metadata_address: H160,
         node_info: NodeInfo,
         wal: Arc<SignedTxsWAL>,
         adapter: Arc<Adapter>,
@@ -456,6 +457,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
     ) -> Self {
         Self {
             status,
+            metadata_address,
             node_info,
             exemption_hash: RwLock::new(HashSet::new()),
             txs_wal: wal,
@@ -473,8 +475,10 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         self.status.inner()
     }
 
-    fn update_metadata(&self, block_number: BlockNumber) {
-        METADATA_CONTROLER.load().update(block_number);
+    fn contains_change_metadata(&self, txs: &[SignedTransaction]) -> bool {
+        let action = TransactionAction::Call(self.metadata_address);
+        txs.iter()
+            .any(|tx| tx.transaction.unsigned.action == action)
     }
 
     async fn inner_check_block(&self, ctx: Context, proposal: &Proposal) -> ProtocolResult<()> {
@@ -591,6 +595,8 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         let block = Block::new(proposal, resp.clone());
         let block_number = block.header.number;
         let block_hash = block.header_hash();
+        let is_change_metadata = self.contains_change_metadata(&txs);
+        let next_block_number = block_number + 1;
 
         let (receipts, logs) = generate_receipts_and_logs(
             block_number,
@@ -625,14 +631,34 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         // Save the block
         self.adapter.save_block(ctx.clone(), block.clone()).await?;
 
-        let metadata = METADATA_CONTROLER.load().current();
+        if is_change_metadata {
+            self.adapter.update_metadata(ctx.clone(), &block.header)?;
+        }
+
+        if self.adapter.need_change_metadata(next_block_number) {
+            let metadata = self
+                .adapter
+                .get_metadata_unchecked(ctx.clone(), next_block_number);
+            let pub_keys = metadata
+                .verifier_list
+                .iter()
+                .map(|v| v.pub_key.as_bytes())
+                .collect();
+            self.adapter.tag_consensus(ctx.clone(), pub_keys)?;
+            self.update_overlord_crypto(metadata)?;
+        }
+
+        let last_status = self.status.inner();
         let new_status = CurrentStatus {
-            prev_hash:        block_hash,
-            last_number:      block_number,
-            last_state_root:  resp.state_root,
-            gas_limit:        metadata.gas_limit.into(),
-            base_fee_per_gas: block.header.base_fee_per_gas,
-            proof:            proof.clone(),
+            prev_hash:                  block_hash,
+            last_number:                block_number,
+            last_state_root:            resp.state_root,
+            gas_limit:                  last_status.gas_limit,
+            max_tx_size:                last_status.max_tx_size,
+            tx_num_limit:               last_status.tx_num_limit,
+            base_fee_per_gas:           block.header.base_fee_per_gas,
+            proof:                      proof.clone(),
+            last_checkpoint_block_hash: last_status.last_checkpoint_block_hash,
         };
 
         CURRENT_STATE_ROOT.swap(Arc::new(resp.state_root));
@@ -640,19 +666,11 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
 
         // update timeout_gap of mempool
         self.adapter.set_args(
-            ctx.clone(),
+            ctx,
             resp.state_root,
-            metadata.timeout_gap,
-            metadata.gas_limit,
-            metadata.max_tx_size,
+            last_status.gas_limit.as_u64(),
+            last_status.max_tx_size.as_u64(),
         );
-
-        let pub_keys = metadata
-            .verifier_list
-            .iter()
-            .map(|v| v.pub_key.as_bytes())
-            .collect();
-        self.adapter.tag_consensus(ctx, pub_keys)?;
 
         if block.header.number != proof.number {
             info!("[consensus] update_status for handle_commit, error, before update, block number {}, proof number:{}, proof : {:?}",
@@ -661,7 +679,6 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             proof.clone());
         }
 
-        self.update_overlord_crypto(metadata)?;
         Ok(())
     }
 

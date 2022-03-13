@@ -38,6 +38,7 @@ members = [
     "core/cross-client",
     "core/executor",
     "core/mempool",
+    "core/metadata",
     "core/network",
     "core/run",
     "core/storage",

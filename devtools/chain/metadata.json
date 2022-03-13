@@ -1,8 +1,9 @@
 {
   "version": {
     "start": 0,
-    "end": 1000000000
+    "end": 99999999
   },
+  "epoch": 0,
   "common_ref": "0x6c747758636859487038",
   "timeout_gap": 1000,
   "gas_limit": 4294967295000,

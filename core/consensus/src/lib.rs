@@ -19,12 +19,11 @@ use std::error::Error;
 
 use common_crypto::Error as CryptoError;
 
-use protocol::types::{Hash, MerkleRoot};
+use protocol::types::{ExitReason, Hash, MerkleRoot};
 use protocol::{Display, ProtocolError, ProtocolErrorKind};
 
 pub use crate::adapter::OverlordConsensusAdapter;
 pub use crate::consensus::OverlordConsensus;
-pub use crate::status::METADATA_CONTROLER;
 pub use crate::synchronization::{OverlordSynchronization, RichBlock, SyncStatus, SYNC_STATUS};
 pub use crate::wal::{ConsensusWal, SignedTxsWAL};
 pub use overlord::{types::Node, DurationConfig};
@@ -149,6 +148,9 @@ pub enum ConsensusError {
 
     ///
     WALErr(std::io::Error),
+
+    #[display(fmt = "Call EVM error {:?}", _0)]
+    CallEvm(ExitReason),
 
     #[display(fmt = "Storage item not found")]
     StorageItemNotFound,

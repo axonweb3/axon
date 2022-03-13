@@ -8,14 +8,13 @@ use parking_lot::RwLock;
 use common_apm::Instant;
 use core_executor::{EVMExecutorAdapter, EvmExecutor};
 use core_network::{PeerId, PeerIdExt};
-
 use protocol::traits::{
     CommonConsensusAdapter, ConsensusAdapter, Context, CrossClient, Executor, Gossip, MemPool,
-    MessageTarget, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
+    MessageTarget, MetadataControl, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
 };
 use protocol::types::{
     BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Hasher, Header, Hex, Log,
-    MerkleRoot, Proof, Proposal, Receipt, SignedTransaction, Validator, U256,
+    MerkleRoot, Metadata, Proof, Proposal, Receipt, SignedTransaction, Validator, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, tokio::task, ProtocolResult};
 
@@ -27,31 +26,35 @@ use crate::types::PullTxsRequest;
 use crate::util::{convert_hex_to_bls_pubkeys, OverlordCrypto};
 use crate::BlockHeaderField::PreviousBlockHash;
 use crate::BlockProofField::{BitMap, HashMismatch, HeightMismatch, Signature, WeightNotFound};
-use crate::{BlockProofField, ConsensusError, METADATA_CONTROLER};
+use crate::{BlockProofField, ConsensusError};
 
 pub struct OverlordConsensusAdapter<
     M: MemPool,
     N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage,
     CS: CrossClient,
+    MT: MetadataControl,
     DB: cita_trie::DB,
 > {
-    network:          Arc<N>,
-    mempool:          Arc<M>,
+    network: Arc<N>,
+    mempool: Arc<M>,
+
     storage:          Arc<S>,
     trie_db:          Arc<DB>,
     cross_client:     Arc<CS>,
+    metadata:         Arc<MT>,
     overlord_handler: RwLock<Option<OverlordHandler<Proposal>>>,
     crypto:           Arc<OverlordCrypto>,
 }
 
 #[async_trait]
-impl<M, N, S, CS, DB> ConsensusAdapter for OverlordConsensusAdapter<M, N, S, CS, DB>
+impl<M, N, S, CS, MT, DB> ConsensusAdapter for OverlordConsensusAdapter<M, N, S, CS, MT, DB>
 where
     M: MemPool + 'static,
     N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
     CS: CrossClient + 'static,
+    MT: MetadataControl + 'static,
     DB: cita_trie::DB + 'static,
 {
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
@@ -139,12 +142,13 @@ where
 }
 
 #[async_trait]
-impl<M, N, S, CS, DB> SynchronizationAdapter for OverlordConsensusAdapter<M, N, S, CS, DB>
+impl<M, N, S, CS, MT, DB> SynchronizationAdapter for OverlordConsensusAdapter<M, N, S, CS, MT, DB>
 where
     M: MemPool + 'static,
     N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
     CS: CrossClient + 'static,
+    MT: MetadataControl + 'static,
     DB: cita_trie::DB + 'static,
 {
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
@@ -240,12 +244,13 @@ where
 }
 
 #[async_trait]
-impl<M, N, S, CS, DB> CommonConsensusAdapter for OverlordConsensusAdapter<M, N, S, CS, DB>
+impl<M, N, S, CS, MT, DB> CommonConsensusAdapter for OverlordConsensusAdapter<M, N, S, CS, MT, DB>
 where
     M: MemPool + 'static,
     N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
     CS: CrossClient + 'static,
+    MT: MetadataControl + 'static,
     DB: cita_trie::DB + 'static,
 {
     /// Save a block to the database.
@@ -372,6 +377,22 @@ where
         }))
     }
 
+    fn need_change_metadata(&self, block_number: u64) -> bool {
+        self.metadata.need_change_metadata(block_number)
+    }
+
+    fn get_metadata_unchecked(&self, ctx: Context, block_number: u64) -> Metadata {
+        self.metadata.get_metadata_unchecked(ctx, block_number)
+    }
+
+    fn get_metadata(&self, ctx: Context, header: &Header) -> ProtocolResult<Metadata> {
+        self.metadata.get_metadata(ctx, header)
+    }
+
+    fn update_metadata(&self, ctx: Context, header: &Header) -> ProtocolResult<()> {
+        self.metadata.update_metadata(ctx, header)
+    }
+
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
     async fn broadcast_number(&self, ctx: Context, number: u64) -> ProtocolResult<()> {
         self.network
@@ -379,16 +400,9 @@ where
             .await
     }
 
-    fn set_args(
-        &self,
-        context: Context,
-        state_root: MerkleRoot,
-        timeout_gap: u64,
-        gas_limit: u64,
-        max_tx_size: u64,
-    ) {
+    fn set_args(&self, context: Context, state_root: MerkleRoot, gas_limit: u64, max_tx_size: u64) {
         self.mempool
-            .set_args(context, state_root, timeout_gap, gas_limit, max_tx_size);
+            .set_args(context, state_root, gas_limit, max_tx_size);
     }
 
     fn tag_consensus(&self, _ctx: Context, _pub_keys: Vec<Bytes>) -> ProtocolResult<()> {
@@ -451,6 +465,7 @@ where
             .into());
         }
 
+        // Todo: impl From<&Block> for Proposal
         let proposal_hash = Hasher::digest(Proposal::from(block.clone()).encode()?);
 
         if proposal_hash != proof.block_hash {
@@ -463,7 +478,7 @@ where
         }
 
         // the auth_list for the target should comes from previous number
-        let metadata = METADATA_CONTROLER.load().current();
+        let metadata = self.metadata.get_metadata(ctx.clone(), &block.header)?;
 
         if !metadata.version.contains(block.header.number) {
             return Err(ConsensusError::ConfusedMetadata(
@@ -625,12 +640,13 @@ where
     }
 }
 
-impl<M, N, S, CS, DB> OverlordConsensusAdapter<M, N, S, CS, DB>
+impl<M, N, S, CS, MT, DB> OverlordConsensusAdapter<M, N, S, CS, MT, DB>
 where
     M: MemPool + 'static,
     N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
     CS: CrossClient + 'static,
+    MT: MetadataControl + 'static,
     DB: cita_trie::DB + 'static,
 {
     pub fn new(
@@ -639,12 +655,14 @@ where
         storage: Arc<S>,
         trie_db: Arc<DB>,
         cross_client: Arc<CS>,
+        metadata: Arc<MT>,
         crypto: Arc<OverlordCrypto>,
     ) -> ProtocolResult<Self> {
         Ok(OverlordConsensusAdapter {
             network,
             mempool,
             storage,
+            metadata,
             trie_db,
             cross_client,
             overlord_handler: RwLock::new(None),

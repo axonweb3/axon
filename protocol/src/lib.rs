@@ -16,6 +16,7 @@ pub enum ProtocolErrorKind {
     // traits
     API,
     Consensus,
+    Contract,
     Executor,
     Mempool,
     Network,
