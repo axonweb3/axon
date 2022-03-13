@@ -1,9 +1,9 @@
-describe("Metamask", () => {
+describe("net_version", () => {
   beforeAll(async () => {
-    await page.goto("http://localhost:8080");
+    await page.goto("http://localhost:8080/net_version");
   });
 
-  test("net_version", async () => {
+  it("should returns 0x05", async () => {
     await page.click("#getChainId");
 
     await page.waitForFunction(
