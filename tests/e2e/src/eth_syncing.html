@@ -1,0 +1,22 @@
+
+<html>
+  <body>
+    <div>
+      <button id="getSyncing">Get syncing</button>
+      <div>Syncing: <span id="syncing"></span></div>
+    </div>
+  </body>
+  <script>
+    document
+      .getElementById("getSyncing")
+      .addEventListener(
+        "click",
+        () => {
+          ethereum
+            .request({ method: "eth_syncing" })
+            .then((result) => {
+              document.getElementById("syncing").innerHTML = JSON.stringify(result);
+            });
+        });
+  </script>
+</html>
