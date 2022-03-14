@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BinaryHeap, HashSet};
+use std::collections::{BTreeMap, BinaryHeap};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -114,46 +114,38 @@ impl PirorityPool {
         self.tx_map.get(hash).map(|r| r.clone())
     }
 
-    pub fn flush(&self, hashes: &[Hash]) -> ProtocolResult<()> {
-        let residual;
+    pub fn flush<F: Fn(&SignedTransaction) -> bool>(&self, hashes: &[Hash], nonce_check: F) {
+        let _flushing = self.flush_lock.write();
+        let residual = self.get_residual(hashes, nonce_check);
+        self.occupied_nonce.clear();
 
-        {
-            let _flushing = self.flush_lock.write();
-            self.topple_queue();
-            residual = self.get_residual(hashes);
-            self.clear_all();
+        let mut q = self.real_queue.lock();
+        for tx in residual {
+            let tx_wrapper = TxWrapper::from(tx);
+            self.occupy_nonce(tx_wrapper.ptr());
+            q.push(tx_wrapper.ptr());
         }
-
-        for tx in residual.into_iter() {
-            self.insert(tx)?;
-        }
-
-        Ok(())
     }
 
-    fn get_residual(&self, hashes: &[Hash]) -> Vec<SignedTransaction> {
-        let hashes = hashes.iter().collect::<HashSet<_>>();
-        let q = self.real_queue.lock();
+    fn get_residual<F: Fn(&SignedTransaction) -> bool>(
+        &self,
+        hashes: &[Hash],
+        nonce_check: F,
+    ) -> impl Iterator<Item = SignedTransaction> + '_ {
+        let mut q = self.real_queue.lock();
 
-        for tx_ptr in q.iter() {
-            if hashes.contains(&tx_ptr.hash()) || tx_ptr.is_dropped() {
+        for hash in hashes {
+            self.tx_map.remove(hash);
+        }
+
+        for tx_ptr in q.drain().chain(pop_all_item(Arc::clone(&self.co_queue))) {
+            if tx_ptr.is_dropped() {
                 self.tx_map.remove(tx_ptr.hash());
             }
         }
+        self.tx_map.retain(|_, v| nonce_check(v));
 
-        self.tx_map.iter().map(|kv| kv.value().clone()).collect()
-    }
-
-    fn topple_queue(&self) {
-        let txs = pop_all_item(Arc::clone(&self.co_queue));
-        let mut q = self.real_queue.lock();
-        txs.for_each(|p_tx| q.push(p_tx));
-    }
-
-    fn clear_all(&self) {
-        self.occupied_nonce.clear();
-        self.tx_map.clear();
-        self.real_queue.lock().clear();
+        self.tx_map.iter().map(|kv| kv.value().clone())
     }
 
     fn occupy_nonce(&self, tx_ptr: TxPtr) {

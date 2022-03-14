@@ -195,7 +195,15 @@ where
             "[core_mempool]: flush mempool with {:?} tx_hashes",
             tx_hashes.len(),
         );
-        self.pool.flush(tx_hashes)
+        let nonce_check = |tx: &SignedTransaction| -> bool {
+            let rt = tokio::runtime::Handle::current();
+            tokio::task::block_in_place(|| {
+                rt.block_on(self.adapter.check_authorization(Context::new(), tx))
+                    .is_ok()
+            })
+        };
+        self.pool.flush(tx_hashes, nonce_check);
+        Ok(())
     }
 
     // This method is used to handle fetch signed transactions rpc request from
