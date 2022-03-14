@@ -16,18 +16,12 @@ use protocol::{codec::ProtocolCodec, ProtocolResult};
 
 macro_rules! blocking_async {
     ($self_: ident, $adapter: ident, $method: ident$ (, $args: expr)*) => {{
-        let (tx, rx) = crossbeam_channel::bounded(1);
         let rt = protocol::tokio::runtime::Handle::current();
         let adapter = Arc::clone(&$self_.$adapter);
 
         protocol::tokio::task::block_in_place(move || {
-            let res = rt.block_on(adapter.$method( $($args,)* )).unwrap();
-            if let Err(e) = tx.send(res) {
-                log::error!("[API] blocking async task send result error {:?}", e);
-            }
-        });
-
-        rx.recv()
+            rt.block_on(adapter.$method( $($args,)* )).unwrap()
+        })
     }};
 }
 
@@ -148,7 +142,7 @@ where
 
         let res = blocking_async!(self, storage, get_code_by_hash, Context::new(), &code_hash);
 
-        res.unwrap().unwrap().to_vec()
+        res.unwrap().to_vec()
     }
 
     fn storage(&self, address: H160, index: H256) -> H256 {
