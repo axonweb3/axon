@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie};
+use core_executor::{is_call_system_script, AxonExecutor, AxonExecutorAdapter, MPTTrie};
 use protocol::traits::{APIAdapter, Context, Executor, ExecutorAdapter, MemPool, Network, Storage};
 use protocol::types::{
     Account, BigEndianHash, Block, BlockNumber, Bytes, ExecutorContext, Hash, Header, Proposal,
@@ -67,6 +67,10 @@ where
         ctx: Context,
         signed_tx: SignedTransaction,
     ) -> ProtocolResult<()> {
+        if is_call_system_script(&signed_tx.transaction.unsigned.action) {
+            return self.mempool.insert_system_script_tx(ctx, signed_tx).await;
+        }
+
         self.mempool.insert(ctx, signed_tx).await
     }
 
