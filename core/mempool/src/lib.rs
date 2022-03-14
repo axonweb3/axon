@@ -195,7 +195,8 @@ where
             "[core_mempool]: flush mempool with {:?} tx_hashes",
             tx_hashes.len(),
         );
-        self.pool.flush(tx_hashes)
+        self.pool.flush(tx_hashes);
+        Ok(())
     }
 
     // This method is used to handle fetch signed transactions rpc request from

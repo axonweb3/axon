@@ -114,46 +114,30 @@ impl PirorityPool {
         self.tx_map.get(hash).map(|r| r.clone())
     }
 
-    pub fn flush(&self, hashes: &[Hash]) -> ProtocolResult<()> {
-        let residual;
+    pub fn flush(&self, hashes: &[Hash]) {
+        let _flushing = self.flush_lock.write();
+        let residual = self.get_residual(hashes);
+        self.occupied_nonce.clear();
 
-        {
-            let _flushing = self.flush_lock.write();
-            self.topple_queue();
-            residual = self.get_residual(hashes);
-            self.clear_all();
+        let mut q = self.real_queue.lock();
+        for tx in residual {
+            let tx_wrapper = TxWrapper::from(tx);
+            self.occupy_nonce(tx_wrapper.ptr());
+            q.push(tx_wrapper.ptr());
         }
-
-        for tx in residual.into_iter() {
-            self.insert(tx)?;
-        }
-
-        Ok(())
     }
 
-    fn get_residual(&self, hashes: &[Hash]) -> Vec<SignedTransaction> {
+    fn get_residual(&self, hashes: &[Hash]) -> impl Iterator<Item = SignedTransaction> + '_ {
         let hashes = hashes.iter().collect::<HashSet<_>>();
-        let q = self.real_queue.lock();
+        let mut q = self.real_queue.lock();
 
-        for tx_ptr in q.iter() {
+        for tx_ptr in q.drain().chain(pop_all_item(Arc::clone(&self.co_queue))) {
             if hashes.contains(&tx_ptr.hash()) || tx_ptr.is_dropped() {
                 self.tx_map.remove(tx_ptr.hash());
             }
         }
 
-        self.tx_map.iter().map(|kv| kv.value().clone()).collect()
-    }
-
-    fn topple_queue(&self) {
-        let txs = pop_all_item(Arc::clone(&self.co_queue));
-        let mut q = self.real_queue.lock();
-        txs.for_each(|p_tx| q.push(p_tx));
-    }
-
-    fn clear_all(&self) {
-        self.occupied_nonce.clear();
-        self.tx_map.clear();
-        self.real_queue.lock().clear();
+        self.tx_map.iter().map(|kv| kv.value().clone())
     }
 
     fn occupy_nonce(&self, tx_ptr: TxPtr) {
