@@ -64,8 +64,8 @@ describe("Metamask", () => {
   });
 
   /**
-* param1:Illegal blockhash
-* param2:real transactionIndex
+* param1:Illegal block hash
+* param2:real transaction index
 */
   test("eth_getTransactionByBlockHashAndIndex_1", async () => {
     await goto.goto(page, pageName);
