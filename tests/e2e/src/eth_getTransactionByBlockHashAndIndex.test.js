@@ -20,7 +20,7 @@ describe("Metamask", () => {
 
   /**
   * param1:the real block hash
-  * param2:the real transactionIndex
+  * param2:the real transaction index
   */
   test("eth_getTransactionByBlockHashAndIndex_1", async () => {
     await goto.goto(page, pageName);
@@ -35,7 +35,7 @@ describe("Metamask", () => {
 
   /**
   * param1:the real block hash
-  * param2:error transactionIndex
+  * param2:error transaction index
   */
   test("eth_getTransactionByBlockHashAndIndex_1", async () => {
     await goto.goto(page, pageName);
@@ -50,7 +50,7 @@ describe("Metamask", () => {
 
   /**
 * param1:the not exist block hash
-* param2:real transactionIndex
+* param2:real transaction index
 */
   test("eth_getTransactionByBlockHashAndIndex_1", async () => {
     await goto.goto(page, pageName);
@@ -79,7 +79,7 @@ describe("Metamask", () => {
   });
 
   /**
-* param1:real blockhash
+* param1:real block hash
 * param2:none
 */
   test("eth_getTransactionByBlockHashAndIndex_1", async () => {
@@ -104,7 +104,7 @@ describe("Metamask", () => {
 
   /**
 * param1:the real block hash
-* param2:the real transactionIndex
+* param2:the real transaction index
 */
   test("eth_getTransactionByBlockHashAndIndex_1", async () => {
     await goto.goto(page, pageName);
