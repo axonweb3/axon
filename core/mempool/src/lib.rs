@@ -93,7 +93,12 @@ where
         self.pool.insert(stx)
     }
 
-    async fn insert_tx(&self, ctx: Context, tx: SignedTransaction) -> ProtocolResult<()> {
+    async fn insert_tx(
+        &self,
+        ctx: Context,
+        tx: SignedTransaction,
+        is_system_script: bool,
+    ) -> ProtocolResult<()> {
         let tx_hash = &tx.transaction.hash;
         if self.pool.reach_limit() {
             return Err(MemPoolError::ReachLimit(self.pool.pool_size()).into());
@@ -105,7 +110,11 @@ where
             .check_storage_exist(ctx.clone(), tx_hash)
             .await?;
 
-        self.pool.insert(tx.clone())?;
+        if is_system_script {
+            self.pool.insert_system_script_tx(tx.clone())?;
+        } else {
+            self.pool.insert(tx.clone())?;
+        }
 
         if !ctx.is_network_origin_txs() {
             self.adapter.broadcast_tx(ctx, tx).await?;
@@ -165,7 +174,15 @@ where
     Adapter: MemPoolAdapter + 'static,
 {
     async fn insert(&self, ctx: Context, tx: SignedTransaction) -> ProtocolResult<()> {
-        self.insert_tx(ctx, tx).await
+        self.insert_tx(ctx, tx, false).await
+    }
+
+    async fn insert_system_script_tx(
+        &self,
+        ctx: Context,
+        tx: SignedTransaction,
+    ) -> ProtocolResult<()> {
+        self.insert_tx(ctx, tx, true).await
     }
 
     async fn package(

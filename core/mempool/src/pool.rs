@@ -7,13 +7,14 @@ use dashmap::DashMap;
 use parking_lot::{Mutex, RwLock};
 
 use protocol::tokio::{self, time::sleep};
-use protocol::types::{Hash, SignedTransaction, H160, U256};
+use protocol::types::{Bytes, Hash, SignedTransaction, H160, U256};
 use protocol::ProtocolResult;
 
 use crate::tx_wrapper::{TxPtr, TxWrapper};
 use crate::MemPoolError;
 
 pub struct PirorityPool {
+    sys_tx_bucket:  SystemScriptTxBucket,
     occupied_nonce: DashMap<H160, BTreeMap<U256, TxPtr>>,
     co_queue:       Arc<ArrayQueue<TxPtr>>,
     real_queue:     Arc<Mutex<BinaryHeap<TxPtr>>>,
@@ -25,6 +26,7 @@ pub struct PirorityPool {
 impl PirorityPool {
     pub async fn new(size: usize) -> Self {
         let pool = PirorityPool {
+            sys_tx_bucket:  SystemScriptTxBucket::new(),
             occupied_nonce: DashMap::new(),
             co_queue:       Arc::new(ArrayQueue::new(size)),
             real_queue:     Arc::new(Mutex::new(BinaryHeap::with_capacity(size * 2))),
@@ -52,6 +54,12 @@ impl PirorityPool {
         pool
     }
 
+    pub fn insert_system_script_tx(&self, stx: SignedTransaction) -> ProtocolResult<()> {
+        let _flushing = self.flush_lock.read();
+        self.sys_tx_bucket.insert(stx);
+        Ok(())
+    }
+
     pub fn insert(&self, stx: SignedTransaction) -> ProtocolResult<()> {
         if self.reach_limit() {
             return Err(MemPoolError::ReachLimit(self.tx_map.len()).into());
@@ -70,26 +78,31 @@ impl PirorityPool {
     }
 
     pub fn package(&self, _gas_limit: U256, limit: usize) -> Vec<Hash> {
+        let _flushing = self.flush_lock.read();
+
+        let mut ret = self.sys_tx_bucket.package();
         let mut q = self.real_queue.lock();
         if !self.co_queue.is_empty() {
             let txs = pop_all_item(Arc::clone(&self.co_queue));
             txs.for_each(|p_tx| q.push(p_tx));
         }
 
-        q.iter()
-            .filter_map(|ptr| {
-                if ptr.is_dropped() {
-                    None
-                } else {
-                    Some(ptr.hash)
-                }
-            })
-            .take(limit)
-            .collect()
+        ret.extend(
+            q.iter()
+                .filter_map(|ptr| {
+                    if ptr.is_dropped() {
+                        None
+                    } else {
+                        Some(ptr.hash)
+                    }
+                })
+                .take(limit),
+        );
+        ret
     }
 
     pub fn len(&self) -> usize {
-        self.tx_map.len()
+        self.tx_map.len() + self.sys_tx_bucket.len()
     }
 
     pub fn co_queue_len(&self) -> usize {
@@ -98,11 +111,11 @@ impl PirorityPool {
 
     pub fn contains(&self, hash: &Hash) -> bool {
         let _flushing = self.flush_lock.read();
-        self.tx_map.contains_key(hash)
+        self.tx_map.contains_key(hash) || self.sys_tx_bucket.contains(hash)
     }
 
     pub fn reach_limit(&self) -> bool {
-        self.tx_map.len() > self.co_queue.capacity()
+        self.len() > self.co_queue.capacity()
     }
 
     pub fn pool_size(&self) -> usize {
@@ -111,13 +124,18 @@ impl PirorityPool {
 
     pub fn get_by_hash(&self, hash: &Hash) -> Option<SignedTransaction> {
         let _flushing = self.flush_lock.read();
-        self.tx_map.get(hash).map(|r| r.clone())
+
+        match self.tx_map.get(hash).map(|r| r.clone()) {
+            Some(tx) => Some(tx),
+            None => self.sys_tx_bucket.get_tx_by_hash(hash),
+        }
     }
 
     pub fn flush<F: Fn(&SignedTransaction) -> bool>(&self, hashes: &[Hash], nonce_check: F) {
         let _flushing = self.flush_lock.write();
         let residual = self.get_residual(hashes, nonce_check);
         self.occupied_nonce.clear();
+        self.sys_tx_bucket.flush(hashes);
 
         let mut q = self.real_queue.lock();
         for tx in residual {
@@ -162,6 +180,74 @@ impl PirorityPool {
     #[cfg(test)]
     pub fn real_queue_len(&self) -> usize {
         self.real_queue.lock().len()
+    }
+}
+
+struct SystemScriptTxBucket {
+    hash_data_map: DashMap<Hash, Bytes>,
+    tx_buckets:    DashMap<Bytes, BTreeMap<Hash, SignedTransaction>>,
+}
+
+impl SystemScriptTxBucket {
+    pub fn new() -> Self {
+        SystemScriptTxBucket {
+            hash_data_map: DashMap::new(),
+            tx_buckets:    DashMap::new(),
+        }
+    }
+
+    pub fn insert(&self, stx: SignedTransaction) {
+        let data = stx.transaction.unsigned.data.clone();
+        self.hash_data_map
+            .insert(stx.transaction.hash, data.clone());
+        self.tx_buckets
+            .entry(data)
+            .or_insert_with(BTreeMap::new)
+            .insert(stx.transaction.hash, stx);
+    }
+
+    pub fn package(&self) -> Vec<Hash> {
+        self.tx_buckets
+            .iter()
+            .map(|kv| {
+                kv.value()
+                    .first_key_value()
+                    .map(|(hash, _tx)| *hash)
+                    .unwrap()
+            })
+            .collect()
+    }
+
+    pub fn get_tx_by_hash(&self, hash: &Hash) -> Option<SignedTransaction> {
+        if let Some(data) = self.hash_data_map.get(hash) {
+            if let Some(tx_map) = self.tx_buckets.get(data.value()) {
+                return tx_map.value().get(hash).cloned();
+            }
+        }
+
+        None
+    }
+
+    pub fn flush(&self, hashes: &[Hash]) {
+        for hash in hashes.iter() {
+            if let Some(data) = self.hash_data_map.remove(hash) {
+                self.tx_buckets.remove(&data.1);
+            }
+        }
+    }
+
+    pub fn contains(&self, hash: &Hash) -> bool {
+        if let Some(data) = self.hash_data_map.get(hash) {
+            if let Some(tx_map) = self.tx_buckets.get(data.value()) {
+                return tx_map.contains_key(hash);
+            }
+        }
+
+        false
+    }
+
+    pub fn len(&self) -> usize {
+        self.tx_buckets.len()
     }
 }
 

@@ -113,7 +113,7 @@ impl Executor for AxonExecutor {
     }
 }
 
-fn is_call_system_script(action: &TransactionAction) -> bool {
+pub fn is_call_system_script(action: &TransactionAction) -> bool {
     match action {
         TransactionAction::Call(addr) => addr == &NATIVE_TOKEN_ISSUE_ADDRESS,
         TransactionAction::Create => false,
