@@ -48,10 +48,13 @@ where
         let epoch = self.calc_epoch(header.number) + 1;
         let metadata = self.query_evm_metadata(epoch, header)?;
         let boundary = epoch.saturating_sub(20);
+        let consensus_count = metadata.verifier_list.len();
 
         let mut cache = self.metadata_cache.write();
         cache.retain(|&k, _| k < boundary);
         cache.insert(epoch, metadata);
+
+        common_apm::metrics::network::NETWORK_TAGGED_CONSENSUS_PEERS.set(consensus_count as i64);
 
         Ok(())
     }

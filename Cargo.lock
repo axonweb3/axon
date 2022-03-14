@@ -1242,6 +1242,7 @@ dependencies = [
  "arc-swap 1.5.0",
  "axon-protocol",
  "cita_trie",
+ "common-apm",
  "core-executor",
  "core-storage",
  "ethers",

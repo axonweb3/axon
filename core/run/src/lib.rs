@@ -310,6 +310,8 @@ impl Axon {
         ));
 
         let metadata = metadata_controller.get_metadata(Context::new(), &current_block.header)?;
+        common_apm::metrics::network::NETWORK_TAGGED_CONSENSUS_PEERS
+            .set(metadata.verifier_list.len() as i64);
 
         // Init Consensus
         let validators: Vec<Validator> = metadata
