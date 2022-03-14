@@ -119,6 +119,28 @@ async fn test_flush() {
     assert_eq!(mempool.get_tx_cache().len(), 432);
 }
 
+#[tokio::test]
+async fn test_flush_with_concurrent_insert() {
+    let mempool = Arc::new(new_mempool(1024, 0, 0, 0).await);
+
+    // insert txs
+    let txs = default_mock_txs(1024);
+    concurrent_insert(txs.clone(), Arc::clone(&mempool)).await;
+    assert_eq!(mempool.get_tx_cache().len(), 1024);
+
+    let (remove_txs, _) = txs.split_at(100);
+    let remove_hashes: Vec<Hash> = remove_txs.iter().map(|tx| tx.transaction.hash).collect();
+
+    // flush with concurrent insert will never panic
+    let txs_two = default_mock_txs(300);
+    let j = tokio::spawn(concurrent_insert(txs_two, Arc::clone(&mempool)));
+    exec_flush(remove_hashes, Arc::clone(&mempool)).await;
+    j.await.unwrap();
+
+    // 1024 - 100 + 300 > 1025
+    assert_eq!(mempool.len(), 1025);
+}
+
 macro_rules! ensure_order_txs {
     ($in_pool: expr, $out_pool: expr) => {
         let mempool = &Arc::new(default_mempool().await);
