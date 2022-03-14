@@ -81,5 +81,6 @@ mod tests {
             hex_decode(&hex_encode(&data)).unwrap(),
             hex::decode(hex::encode(data)).unwrap()
         );
+        assert!(hex_decode(String::new().as_str()).unwrap().is_empty());
     }
 }
