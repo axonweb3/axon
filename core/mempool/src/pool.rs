@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BinaryHeap, HashSet};
+use std::collections::{BTreeMap, BinaryHeap};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -128,11 +128,14 @@ impl PirorityPool {
     }
 
     fn get_residual(&self, hashes: &[Hash]) -> impl Iterator<Item = SignedTransaction> + '_ {
-        let hashes = hashes.iter().collect::<HashSet<_>>();
         let mut q = self.real_queue.lock();
 
+        for hash in hashes {
+            self.tx_map.remove(hash);
+        }
+
         for tx_ptr in q.drain().chain(pop_all_item(Arc::clone(&self.co_queue))) {
-            if hashes.contains(&tx_ptr.hash()) || tx_ptr.is_dropped() {
+            if tx_ptr.is_dropped() {
                 self.tx_map.remove(tx_ptr.hash());
             }
         }
