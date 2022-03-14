@@ -56,6 +56,10 @@ pub fn hex_encode<T: AsRef<[u8]>>(src: T) -> String {
 }
 
 pub fn hex_decode(src: &str) -> ProtocolResult<Vec<u8>> {
+    if src.is_empty() {
+        return Ok(Vec::new());
+    }
+
     let res = decode_to_boxed_bytes(src.as_bytes())
         .map_err(|error| crate::types::TypesError::FromHex { error })?;
     Ok(res.into())

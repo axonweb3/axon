@@ -48,6 +48,10 @@ pub struct Hasher;
 
 impl Hasher {
     pub fn digest<B: AsRef<[u8]>>(bytes: B) -> Hash {
+        if bytes.as_ref().is_empty() {
+            return NIL_DATA;
+        }
+
         let hash = HASHER_INST.digest(bytes.as_ref());
         let mut ret = Hash::default();
         ret.0.copy_from_slice(&hash[0..32]);
@@ -63,6 +67,10 @@ impl Hex {
         Hex(String::from(HEX_PREFIX))
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.0.len() == 2
+    }
+
     pub fn encode<T: AsRef<[u8]>>(src: T) -> Self {
         let mut s = HEX_PREFIX.to_string();
         s.push_str(&hex_encode(src));
@@ -70,17 +78,21 @@ impl Hex {
     }
 
     pub fn decode(s: String) -> ProtocolResult<Bytes> {
-        if (!s.starts_with(HEX_PREFIX) && !s.starts_with(HEX_PREFIX_UPPER)) || s.len() < 3 {
-            return Err(TypesError::HexPrefix.into());
-        }
+        let s = if Self::is_prefixed(s.as_str()) {
+            &s[2..]
+        } else {
+            s.as_str()
+        };
 
-        Ok(Bytes::from(hex_decode(&s[2..])?))
+        Ok(Bytes::from(hex_decode(s)?))
     }
 
     pub fn from_string(s: String) -> ProtocolResult<Self> {
-        if (!s.starts_with(HEX_PREFIX) && !s.starts_with(HEX_PREFIX_UPPER)) || s.len() < 3 {
-            return Err(TypesError::HexPrefix.into());
-        }
+        let s = if Self::is_prefixed(s.as_str()) {
+            s
+        } else {
+            HEX_PREFIX.to_string() + &s
+        };
 
         let _ = hex_decode(&s[2..])?;
         Ok(Hex(s))
@@ -96,6 +108,10 @@ impl Hex {
 
     pub fn as_bytes(&self) -> Bytes {
         Bytes::from(hex_decode(&self.0[2..]).expect("impossible, already checked in from_string"))
+    }
+
+    fn is_prefixed(s: &str) -> bool {
+        s.starts_with(HEX_PREFIX) || s.starts_with(HEX_PREFIX_UPPER)
     }
 }
 
@@ -421,5 +437,30 @@ mod tests {
         let raw = std::fs::read(path).unwrap();
         let metadata: Metadata = serde_json::from_slice(&raw).unwrap();
         println!("{:?}", metadata);
+    }
+
+    #[test]
+    fn test_hex_decode() {
+        let hex = String::from("0x");
+        let res = Hex::from_string(hex.clone()).unwrap();
+        assert!(res.is_empty());
+
+        let res = Hex::decode(hex).unwrap();
+        assert!(res.is_empty());
+
+        let hex = String::from("123456");
+        let _ = Hex::from_string(hex.clone()).unwrap();
+        let _ = Hex::decode(hex).unwrap();
+
+        let hex = String::from("0x123f");
+        let _ = Hex::from_string(hex.clone()).unwrap();
+        let _ = Hex::decode(hex).unwrap();
+    }
+
+    #[test]
+    fn test_hash_empty() {
+        let bytes = Hex::empty();
+        let hash = Hasher::digest(bytes.as_bytes());
+        assert_eq!(hash, NIL_DATA);
     }
 }
