@@ -20,7 +20,7 @@ use common_crypto::{
     Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey, Signature,
     ToPublicKey, UncompressedPublicKey,
 };
-use core_executor::{EVMExecutorAdapter, EvmExecutor};
+use core_executor::{AxonExecutor, AxonExecutorAdapter};
 use ethabi::RawLog;
 use protocol::traits::{Context, CrossAdapter, CrossClient, Executor, MemPool, Storage};
 use protocol::types::{
@@ -325,7 +325,7 @@ where
     }
 
     fn get_nonce(&self, addr: &H160) -> U256 {
-        let backend = EVMExecutorAdapter::from_root(
+        let backend = AxonExecutorAdapter::from_root(
             **CURRENT_STATE_ROOT.load(),
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
@@ -333,7 +333,7 @@ where
         )
         .unwrap();
 
-        EvmExecutor::default().get_account(&backend, addr).nonce + 1
+        AxonExecutor::default().get_account(&backend, addr).nonce + 1
     }
 
     async fn dump_current_number(&self) -> io::Result<()> {
