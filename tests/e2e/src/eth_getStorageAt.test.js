@@ -54,7 +54,7 @@ describe("Metamask", () => {
   /**
   * param1:real address
   * param2:0xfffff, that is not exist position
-  * param3:latest
+  * param3:real block number
   */
   test("eth_getStorageAt_3", async () => {
     await goto.goto(page, pageName);
@@ -111,5 +111,41 @@ describe("Metamask", () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     await testType.type("0");// 0: none params  1：common params to request   2: more parameter
     await goto.check(page, "incorrect number of arguments");
+  });
+
+  /**
+  * param1:Illegal address
+  * param2:0x0
+  * param3:real block number
+  */
+  test("eth_getStorageAt_7", async () => {
+    await goto.goto(page, pageName);
+    const testType = await page.$(goto.pageIds.testTypeId);
+    const param1 = await page.$(goto.pageIds.param1Id);
+    const param2 = await page.$(goto.pageIds.param2Id);
+    const param3 = await page.$(goto.pageIds.param3Id);
+    await testType.type("1");// 0: none params  1：common params to request   2: more parameter
+    await param1.type("0x295a70b2de5e3953354a6a");
+    await param2.type("0x0");
+    await param3.type(`0x${testDataInfo.blockNumber.toString(16)}`);
+    await goto.check(page, "invalid length 22");
+  });
+
+  /**
+ * param1:Illegal address
+ * param2:0x0
+ * param3:real block number
+ */
+  test("eth_getStorageAt_8", async () => {
+    await goto.goto(page, pageName);
+    const testType = await page.$(goto.pageIds.testTypeId);
+    const param1 = await page.$(goto.pageIds.param1Id);
+    const param2 = await page.$(goto.pageIds.param2Id);
+    const param3 = await page.$(goto.pageIds.param3Id);
+    await testType.type("2");// 0: none params  1：common params to request   2: more parameter
+    await param1.type(testDataInfo.contractAddress);
+    await param2.type("0x0");
+    await param3.type(`0x${testDataInfo.blockNumber.toString(16)}`);
+    await goto.check(page, "invalid length 22");
   });
 });
