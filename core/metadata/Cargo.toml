@@ -7,6 +7,7 @@ edition = "2021"
 [dependencies]
 arc-swap = "1.5"
 cita_trie = "3.0"
+common-apm = { path = "../../common/apm" }
 ethers = { version = "0.6", features = ["abigen"] }
 lazy_static = "1.4"
 parking_lot = "0.12"

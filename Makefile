@@ -50,6 +50,9 @@ clippy:
 sort:
 	cargo sort -gw
 
+check-sort:
+	cargo sort -gwc
+
 ci: fmt clippy test
 
 info:

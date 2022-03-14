@@ -106,13 +106,12 @@ impl MessageRouter {
 
         async move {
             let network_message = { NetworkMessage::decode(recv_msg.data)? };
-            // common_apm::metrics::network::on_network_message_received(&network_message.
-            // url);
+            common_apm::metrics::network::on_network_message_received(&network_message.url);
 
             let endpoint = network_message.url.parse::<Endpoint>()?;
             // common_apm::metrics::network::NETWORK_MESSAGE_SIZE_COUNT_VEC
             //     .with_label_values(&["received", &endpoint.root()])
-            //     .inc_by(raw_data_size as i64);
+            //     .inc_by(raw_data_size as f64);
 
             let reactor = {
                 let opt_reactor = reactor_map.read().get(&endpoint).cloned();
@@ -124,7 +123,7 @@ impl MessageRouter {
                 .react(router_context, endpoint.clone(), network_message)
                 .await;
             if let Err(err) = ret.as_ref() {
-                log::error!("process {} message failed: {}", endpoint, err);
+                log::error!("process {:?} message failed: {:?}", endpoint, err);
             }
             ret
         }

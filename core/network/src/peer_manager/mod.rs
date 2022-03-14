@@ -12,6 +12,7 @@ pub use self::{
     registry::{Online, PeerInfo},
 };
 use crate::config::NetworkConfig;
+use crate::PeerIdExt;
 
 mod peer_store;
 mod registry;
@@ -122,12 +123,25 @@ impl PeerManager {
 
     pub fn register(&self, peer: PeerInfo) {
         let (addr, ty) = (peer.addr.clone(), peer.session_type);
+        let addr_for_apm_use = peer.addr.clone();
         self.with_registry_mut(|online| {
             online
                 .peers
                 .insert(extract_peer_id(&peer.addr).unwrap(), peer)
         });
         self.with_peer_store_mut(|peer_store| peer_store.add_connected_peer(addr, ty));
+
+        if self
+            .consensus_list
+            .read()
+            .contains(&extract_peer_id(&addr_for_apm_use).unwrap())
+        {
+            common_apm::metrics::network::NETWORK_CONNECTED_CONSENSUS_PEERS.inc()
+        }
+
+        common_apm::metrics::network::NETWORK_CONNECTED_PEERS.inc();
+        common_apm::metrics::network::NETWORK_SAVED_PEER_COUNT
+            .set(self.with_peer_store_mut(|peer_store| peer_store.peer_count()) as i64);
     }
 
     pub fn unregister(&self, addr: &Multiaddr) {
@@ -136,6 +150,19 @@ impl PeerManager {
             online.peers.remove(&extract_peer_id(addr).unwrap())
         }) {
             self.with_peer_store_mut(|peer_store| peer_store.remove_disconnected_peer(&peer.addr));
+
+            let peer_id = extract_peer_id(&peer.addr).unwrap();
+            common_apm::metrics::network::NETWORK_PEER_ID_DISCONNECTED_COUNT_VEC
+                .with_label_values(&[&peer_id.to_string()])
+                .inc();
+
+            if self.consensus_list.read().contains(&peer_id) {
+                common_apm::metrics::network::NETWORK_CONNECTED_CONSENSUS_PEERS.dec()
+            }
+
+            common_apm::metrics::network::NETWORK_CONNECTED_PEERS.dec();
+            common_apm::metrics::network::NETWORK_SAVED_PEER_COUNT
+                .set(self.with_peer_store_mut(|peer_store| peer_store.peer_count()) as i64);
         }
     }
 

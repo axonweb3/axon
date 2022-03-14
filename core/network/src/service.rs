@@ -526,7 +526,7 @@ impl NetworkService {
                 _ = dump_interval.tick() => {
                     self.peer_mgr_handle.with_peer_store(|store|{
                         let _ignore = store.dump_to_dir(self.config.peer_store_path.clone())
-                            .map_err(|e| log::info!("dump peer store error: {}", e));
+                            .map_err(|e| log::info!("dump peer store error: {:?}", e));
                     })
                 }
                 else => {
@@ -570,7 +570,7 @@ impl ServiceHandle for ServiceHandler {
                         log::warn!("DialerError({}) {}", address, e);
                     }
                     _ => {
-                        log::debug!("DialerError({}) {}", address, error);
+                        log::debug!("DialerError({:?}) {:?}", address, error);
                     }
                 }
             }

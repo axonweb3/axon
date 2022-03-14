@@ -1242,6 +1242,7 @@ dependencies = [
  "arc-swap 1.5.0",
  "axon-protocol",
  "cita_trie",
+ "common-apm",
  "core-executor",
  "core-storage",
  "ethers",
@@ -1257,6 +1258,7 @@ version = "0.1.0"
 dependencies = [
  "axon-protocol",
  "bloom-filters",
+ "common-apm",
  "derive_more",
  "env_logger",
  "faketime",

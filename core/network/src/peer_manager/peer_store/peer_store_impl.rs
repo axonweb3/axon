@@ -317,4 +317,8 @@ impl PeerStore {
         }
         Ok(())
     }
+
+    pub fn peer_count(&self) -> usize {
+        self.peers.len()
+    }
 }

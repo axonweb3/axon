@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use tentacle::{bytes::Bytes, service::ServiceAsyncControl, SessionId};
 
+use common_apm::Instant;
 use protocol::traits::{Context, MessageCodec, Priority, Rpc};
 use protocol::{async_trait, tokio, ProtocolResult};
 
@@ -78,6 +79,7 @@ impl Rpc for NetworkRpc {
         let rid = rpc_map.next_rpc_id();
         let connected_addr = cx.remote_connected_addr();
         let done_rx = rpc_map.insert::<RpcResponse>(sid, rid);
+        let inst = Instant::now();
 
         struct _Guard {
             transmitter: MessageRouter,
@@ -107,7 +109,7 @@ impl Rpc for NetworkRpc {
         //     headers.set_span_id(state.span_id());
         //     log::info!("no trace id found for rpc {}", endpoint.full_url());
         // }
-        // common_apm::metrics::network::on_network_message_sent(endpoint.full_url());
+        common_apm::metrics::network::on_network_message_sent(endpoint.full_url());
 
         let ctx = cx.set_url(endpoint.root());
         let net_msg = NetworkMessage::new(endpoint, data, headers).encode()?;
@@ -118,21 +120,28 @@ impl Rpc for NetworkRpc {
         match timeout.await {
             Ok(Ok(ret)) => match ret {
                 RpcResponse::Success(v) => {
-                    // common_apm::metrics::network::NETWORK_RPC_RESULT_COUNT_VEC_STATIC
-                    //     .success
-                    //     .inc();
-                    // common_apm::metrics::network::NETWORK_PROTOCOL_TIME_HISTOGRAM_VEC_STATIC
-                    //     .rpc
-                    //     .observe(common_apm::metrics::duration_to_sec(common_apm::
-                    // elapsed(inst)()));
+                    common_apm::metrics::network::NETWORK_RPC_RESULT_COUNT_VEC_STATIC
+                        .success
+                        .inc();
+                    common_apm::metrics::network::NETWORK_PROTOCOL_TIME_HISTOGRAM_VEC_STATIC
+                        .rpc
+                        .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));
 
                     Ok(R::decode_msg(v)?)
                 }
                 RpcResponse::Error(e) => Err(NetworkError::RemoteResponse(e).into()),
             },
-            Ok(Err(_)) => Err(NetworkError::from(ErrorKind::RpcDropped(connected_addr)).into()),
+            Ok(Err(_)) => {
+                common_apm::metrics::network::NETWORK_RPC_RESULT_COUNT_VEC_STATIC
+                    .timeout
+                    .inc();
+                Err(NetworkError::from(ErrorKind::RpcDropped(connected_addr)).into())
+            }
             Err(_) => {
                 log::info!("rpc call timeout");
+                common_apm::metrics::network::NETWORK_RPC_RESULT_COUNT_VEC_STATIC
+                    .timeout
+                    .inc();
                 Err(NetworkError::from(ErrorKind::RpcTimeout(connected_addr)).into())
             }
         }
@@ -164,7 +173,7 @@ impl Rpc for NetworkRpc {
         //     headers.set_span_id(state.span_id());
         //     log::info!("no trace id found for rpc {}", endpoint.full_url());
         // }
-        // common_apm::metrics::network::on_network_message_sent(endpoint.full_url());
+        common_apm::metrics::network::on_network_message_sent(endpoint.full_url());
 
         let ctx = cx.set_url(endpoint.root());
         let net_msg = NetworkMessage::new(endpoint, encoded_resp, headers).encode()?;

@@ -139,7 +139,7 @@ impl Gossip for NetworkGossip {
         let ctx = cx.set_url(endpoint.to_owned());
         self.send_to_sessions(ctx, TargetSession::All, msg, priority)
             .await?;
-        // common_apm::metrics::network::on_network_message_sent_all_target(endpoint);
+        common_apm::metrics::network::on_network_message_sent_all_target(endpoint);
         Ok(())
     }
 
@@ -156,14 +156,14 @@ impl Gossip for NetworkGossip {
         P: AsRef<[Bytes]> + Send + 'a,
     {
         let msg = self.package_message(cx.clone(), endpoint, msg).await?;
-        // let multicast_count = peer_ids.as_ref().len();
+        let multicast_count = peer_ids.as_ref().len();
 
         let ctx = cx.set_url(endpoint.to_owned());
         self.send_to_peers(ctx, peer_ids, msg, priority).await?;
-        // common_apm::metrics::network::on_network_message_sent_multi_target(
-        //     endpoint,
-        //     multicast_count as i64,
-        // );
+        common_apm::metrics::network::on_network_message_sent_multi_target(
+            endpoint,
+            multicast_count as f64,
+        );
         Ok(())
     }
 }
