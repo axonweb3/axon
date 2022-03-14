@@ -14,8 +14,6 @@ describe("Metamask", () => {
       chainId: Config.getIns().axonRpc.chainId,
     });
     testDataInfo = await testDataManage.readTestDataAsJson("testData_1.json");
-    // eslint-disable-next-line no-console
-    console.log(testDataInfo);
   });
 
   /**
