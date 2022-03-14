@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use tentacle::{
     async_trait,
     bytes::Bytes,
@@ -13,7 +15,6 @@ use crate::{
     reactor::{MessageRouter, RemotePeer},
     PeerIdExt,
 };
-use std::sync::Arc;
 
 pub mod protocol;
 

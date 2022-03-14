@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use tentacle::{bytes::Bytes, service::ServiceAsyncControl, SessionId};
 
+use common_apm::Instant;
 use protocol::traits::{Context, MessageCodec, Priority, Rpc};
 use protocol::{async_trait, tokio, ProtocolResult};
 
@@ -11,8 +12,6 @@ use crate::message::{Headers, NetworkMessage};
 use crate::reactor::MessageRouter;
 use crate::rpc::RpcResponse;
 use crate::traits::NetworkContext;
-
-use common_apm::Instant;
 
 #[derive(Clone)]
 pub struct NetworkRpc {
