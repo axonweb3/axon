@@ -114,9 +114,9 @@ impl PirorityPool {
         self.tx_map.get(hash).map(|r| r.clone())
     }
 
-    pub fn flush(&self, hashes: &[Hash]) {
+    pub fn flush<F: Fn(&SignedTransaction) -> bool>(&self, hashes: &[Hash], nonce_check: F) {
         let _flushing = self.flush_lock.write();
-        let residual = self.get_residual(hashes);
+        let residual = self.get_residual(hashes, nonce_check);
         self.occupied_nonce.clear();
 
         let mut q = self.real_queue.lock();
@@ -127,7 +127,11 @@ impl PirorityPool {
         }
     }
 
-    fn get_residual(&self, hashes: &[Hash]) -> impl Iterator<Item = SignedTransaction> + '_ {
+    fn get_residual<F: Fn(&SignedTransaction) -> bool>(
+        &self,
+        hashes: &[Hash],
+        nonce_check: F,
+    ) -> impl Iterator<Item = SignedTransaction> + '_ {
         let mut q = self.real_queue.lock();
 
         for hash in hashes {
@@ -139,6 +143,7 @@ impl PirorityPool {
                 self.tx_map.remove(tx_ptr.hash());
             }
         }
+        self.tx_map.retain(|_, v| nonce_check(v));
 
         self.tx_map.iter().map(|kv| kv.value().clone())
     }

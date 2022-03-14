@@ -69,7 +69,7 @@ impl MemPoolAdapter for HashMemPoolAdapter {
         _ctx: Context,
         tx: &SignedTransaction,
     ) -> ProtocolResult<()> {
-        check_hash(tx).await?;
+        check_hash(tx)?;
         check_sig(tx)
     }
 
@@ -137,7 +137,7 @@ async fn new_mempool(
     mempool
 }
 
-async fn check_hash(tx: &SignedTransaction) -> ProtocolResult<()> {
+fn check_hash(tx: &SignedTransaction) -> ProtocolResult<()> {
     assert!(tx.transaction.signature.is_some());
     let b = tx.transaction.encode()?;
 
