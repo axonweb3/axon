@@ -31,7 +31,7 @@ use core_consensus::{
     OverlordConsensusAdapter, OverlordSynchronization, SignedTxsWAL,
 };
 use core_cross_client::DefaultCrossAdapter;
-use core_executor::{EVMExecutorAdapter, EvmExecutor, MPTTrie, RocksTrieDB};
+use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB};
 use core_mempool::{
     DefaultMemPoolAdapter, MemPoolImpl, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
     RPC_PULL_TXS, RPC_RESP_PULL_TXS, RPC_RESP_PULL_TXS_SYNC,
@@ -136,8 +136,8 @@ impl Axon {
         )?;
 
         let proposal = Proposal::from(self.genesis.block.clone());
-        let executor = EvmExecutor::default();
-        let mut backend = EVMExecutorAdapter::from_root(
+        let executor = AxonExecutor::default();
+        let mut backend = AxonExecutorAdapter::from_root(
             mpt.commit()?,
             trie_db,
             Arc::clone(&storage),
@@ -348,8 +348,8 @@ impl Axon {
         } else {
             // Init executor
             let proposal = Proposal::from(current_header.clone());
-            let executor = EvmExecutor::default();
-            let mut backend = EVMExecutorAdapter::from_root(
+            let executor = AxonExecutor::default();
+            let mut backend = AxonExecutorAdapter::from_root(
                 current_header.state_root,
                 Arc::clone(&trie_db),
                 Arc::clone(&storage),

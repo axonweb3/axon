@@ -19,7 +19,7 @@ use common_merkle::Merkle;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ApplyBackend, Backend, Executor, ExecutorAdapter as Adapter};
 use protocol::types::{
-    Account, Config, ExecResp, Hasher, SignedTransaction, TransactionAction, TxResp, H160, H256,
+    Account, Config, ExecResp, Hasher, SignedTransaction, TransactionAction, TxResp, H160,
     NIL_DATA, RLP_NULL, U256,
 };
 

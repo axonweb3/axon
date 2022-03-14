@@ -7,7 +7,7 @@ use std::sync::Arc;
 use ethers::core::abi::AbiEncode;
 
 use core_executor::adapter::{MPTTrie, RocksTrieDB};
-use core_executor::{EVMExecutorAdapter, EvmExecutor};
+use core_executor::{AxonExecutor, AxonExecutorAdapter};
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{CommonStorage, Context, Executor, Storage};
@@ -70,8 +70,8 @@ impl TestHandle {
         .unwrap();
 
         let proposal = Proposal::from(genesis.block.clone());
-        let executor = EvmExecutor::default();
-        let mut backend = EVMExecutorAdapter::from_root(
+        let executor = AxonExecutor::default();
+        let mut backend = AxonExecutorAdapter::from_root(
             mpt.commit().unwrap(),
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
@@ -110,14 +110,14 @@ impl TestHandle {
     }
 
     pub fn exec(&mut self, txs: Vec<SignedTransaction>) {
-        let mut backend = EVMExecutorAdapter::from_root(
+        let mut backend = AxonExecutorAdapter::from_root(
             self.state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
             mock_proposal().into(),
         )
         .unwrap();
-        let resp = EvmExecutor::default().exec(&mut backend, txs);
+        let resp = AxonExecutor::default().exec(&mut backend, txs);
         println!("{:?}", resp);
         self.state_root = resp.state_root;
     }

@@ -14,7 +14,7 @@ use log::{debug, error};
 use parking_lot::Mutex;
 
 use common_crypto::{Crypto, Secp256k1Recoverable};
-use core_executor::{EVMExecutorAdapter, EvmExecutor};
+use core_executor::{AxonExecutor, AxonExecutorAdapter};
 use protocol::traits::{
     Context, Executor, Gossip, MemPoolAdapter, PeerTrust, Priority, Rpc, Storage, TrustFeedback,
 };
@@ -237,14 +237,14 @@ where
             }
         }
 
-        let backend = EVMExecutorAdapter::from_root(
+        let backend = AxonExecutorAdapter::from_root(
             **CURRENT_STATE_ROOT.load(),
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
             Default::default(),
         )?;
 
-        let account = EvmExecutor::default().get_account(&backend, addr);
+        let account = AxonExecutor::default().get_account(&backend, addr);
         self.addr_nonce.insert(*addr, account.nonce);
 
         if account.nonce >= tx.transaction.unsigned.nonce {
