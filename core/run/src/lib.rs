@@ -249,11 +249,21 @@ impl Axon {
             current_block.header.number + 1
         );
 
+        let metadata_adapter = MetadataAdapterImpl::new(Arc::clone(&storage), Arc::clone(&trie_db));
+        let metadata_controller = Arc::new(MetadataController::new(
+            Arc::new(metadata_adapter),
+            self.config.metadata_contract_address.into(),
+            self.config.epoch_len,
+        ));
+
+        let metadata = metadata_controller.get_metadata(Context::new(), &current_block.header)?;
+
         // Init mempool
-        let mempool_adapter = DefaultMemPoolAdapter::<Secp256k1, _, _, _>::new(
+        let mempool_adapter = DefaultMemPoolAdapter::<Secp256k1, _, _, _, _>::new(
             network_service.handle(),
             Arc::clone(&storage),
             Arc::clone(&trie_db),
+            Arc::clone(&metadata_controller),
             self.genesis.block.header.chain_id,
             config.mempool.timeout_gap,
             self.genesis.block.header.gas_limit.as_u64(),
@@ -301,17 +311,6 @@ impl Axon {
         network_service.register_rpc_response(RPC_RESP_PULL_TXS)?;
 
         network_service.register_rpc_response(RPC_RESP_PULL_TXS_SYNC)?;
-
-        let metadata_adapter = MetadataAdapterImpl::new(Arc::clone(&storage), Arc::clone(&trie_db));
-        let metadata_controller = Arc::new(MetadataController::new(
-            Arc::new(metadata_adapter),
-            self.config.metadata_contract_address.into(),
-            self.config.epoch_len,
-        ));
-
-        let metadata = metadata_controller.get_metadata(Context::new(), &current_block.header)?;
-        common_apm::metrics::network::NETWORK_TAGGED_CONSENSUS_PEERS
-            .set(metadata.verifier_list.len() as i64);
 
         // Init Consensus
         let validators: Vec<Validator> = metadata
