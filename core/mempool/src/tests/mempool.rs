@@ -137,25 +137,22 @@ async fn test_flush_with_concurrent_insert() {
     exec_flush(remove_hashes, Arc::clone(&mempool)).await;
     j.await.unwrap();
 
-    // 1024 - 100 + 300 > 1025
-    // dashmap length access is not stable, so use Greater than or equal to
-    assert!(mempool.len() >= 1025);
-
     // all retain tx will on mempool
     let cache_pool = mempool.get_tx_cache();
     for tx in retain_txs {
         assert!(cache_pool.contains(&tx.transaction.hash))
     }
 
-    let mut new_tx = 0;
-    for tx in txs_two {
-        if cache_pool.contains(&tx.transaction.hash) {
-            new_tx += 1;
+    if cache_pool.len() > 1024 - 100 {
+        let mut new_tx = 0;
+        for tx in txs_two {
+            if cache_pool.contains(&tx.transaction.hash) {
+                new_tx += 1;
+            }
         }
-    }
 
-    // new insert tx will be >= 1025 - (1024 - 100)
-    assert!(new_tx >= 1025 - (1024 - 100))
+        assert_eq!(new_tx, cache_pool.len() - (1024 - 100))
+    }
 }
 
 macro_rules! ensure_order_txs {
