@@ -19,4 +19,6 @@ jobs:
         run: |
           cd /home/ckb/axon-devops/axon-chaos/axon-chaos-integration
           yarn install
-          node index.js ${{ secrets.CHAOS_URL }}
+          node index.js ${CHAOS_URL}
+        env:
+          CHAOS_URL: ${{ secrets.CHAOS_URL }}
