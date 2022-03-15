@@ -2,7 +2,6 @@
 import { Config } from "../../config";
 
 const Web3 = require("web3");
-const iconv = require("iconv-lite");
 const fs = require("fs");
 
 const erc20 = require("./ERC20.json");

@@ -13,7 +13,7 @@ describe("eth_getStorageAt", () => {
   * param2:0x0
   * param3:real block number
   */
-  it("eth_getStorageAt_1", async () => {
+  it.skip("eth_getStorageAt_1", async () => {
     await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
@@ -31,7 +31,7 @@ describe("eth_getStorageAt", () => {
   * param2:0x0
   * param3:real block number
   */
-  it("eth_getStorageAt_1", async () => {
+  it.skip("eth_getStorageAt_1", async () => {
     await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
