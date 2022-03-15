@@ -9,7 +9,7 @@ describe("web3_sha3", () => {
     await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
-    await testType.type("1");// 0: none params  1：common params to request   2: more parameter
+    await testType.type("1");// 0: none params  1：common params to request   2: more params
     await param1.type("0x68656c6c6f20776f726c64");
     await goto.check(page, "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad");
   });
@@ -21,7 +21,7 @@ describe("web3_sha3", () => {
     await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
-    await testType.type("1");// 0: none params  1：common params to request   2: more parameter
+    await testType.type("1");// 0: none params  1：common params to request   2: more params
     await param1.type("");
     await goto.check(page, "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
   });
@@ -32,7 +32,7 @@ describe("web3_sha3", () => {
   test("web3_sha3_3", async () => {
     await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
-    await testType.type("0");// 0: none params  1：common params to request   2: more parameter
+    await testType.type("0");// 0: none params  1：common params to request   2: more params
     await goto.check(page, "-32602");
   });
 
