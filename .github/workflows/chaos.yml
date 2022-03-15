@@ -5,6 +5,7 @@ on:
 jobs:
   build:
     runs-on: self-hosted
+    environment: chaos
     steps:
       - name: Git checkout
         uses: actions/checkout@v3
@@ -16,9 +17,6 @@ jobs:
 
       - name: Run chaos
         run: |
-          kubectl delete -f /home/ckb/axon-devops/axon-chaos/axon-chaso.yaml
-          kubectl delete -f /home/ckb/axon-devops/k8s-deploy/k8s/benchmark/axon-benchmark.yaml
-          kubectl delete -f /home/ckb/axon-devops/k8s-deploy/k8s/axon
-          kubectl apply -f /home/ckb/axon-devops/k8s-deploy/k8s/axon
-          kubectl apply -f /home/ckb/axon-devops/axon-chaos/axon-chaso.yaml
-          kubectl apply -f /home/ckb/axon-devops/k8s-deploy/k8s/benchmark/axon-benchmark.yaml
+          cd /home/ckb/axon-devops/axon-chaos/axon-chaos-integration
+          yarn install
+          node index.js ${{ secrets.CHAOS_URL }}
