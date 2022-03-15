@@ -15,7 +15,7 @@ describe("eth_getBlockTransactionCountByHash", () => {
     await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
-    await testType.type("1");// 0: none params  1：common params to request   2: more parameter
+    await testType.type("1");// 0: none params  1：common params to request   2: more params
     await param1.type(testDataInfo.blockHash);
     await goto.check(page, "0x1");
   });
@@ -28,7 +28,7 @@ describe("eth_getBlockTransactionCountByHash", () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     await param1.type("0x34e5f68936e20c7d2aef3438937373642bc5ea582e16458f4b1fdad855252874");
-    await testType.type("1");// 0: none params  1：common params to request   2: more parameter 3: less parameter
+    await testType.type("1");// 0: none params  1：common params to request   2: more params 3: less params
     await goto.check(page, "0x0");
   });
 
@@ -40,7 +40,7 @@ describe("eth_getBlockTransactionCountByHash", () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     await param1.type("0x34e5f68936e20c7d2aef343");
-    await testType.type("1");// 0: none params  1：common params to request   2: more parameter 3: less parameter
+    await testType.type("1");// 0: none params  1：common params to request   2: more params 3: less params
     await goto.check(page, "-32602");
   });
 
@@ -50,7 +50,7 @@ describe("eth_getBlockTransactionCountByHash", () => {
   it("eth_getBlockTransactionCountByHash_4", async () => {
     await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
-    await testType.type("0");// 0: none params  1：common params to request   2: more parameter 3: less parameter
+    await testType.type("0");// 0: none params  1：common params to request   2: more params 3: less params
     await goto.check(page, "-32602");
   });
 
@@ -62,7 +62,7 @@ describe("eth_getBlockTransactionCountByHash", () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     await param1.type(testDataInfo.blockHash);
-    await testType.type("2");// 0: none params  1：common params to request   2: more parameter 3: less parameter
+    await testType.type("2");// 0: none params  1：common params to request   2: more params 3: less params
     await goto.check(page, "0x1");
   });
 });
