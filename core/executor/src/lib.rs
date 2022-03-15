@@ -3,6 +3,7 @@
 pub mod adapter;
 #[cfg(test)]
 mod debugger;
+mod precompiles;
 mod system;
 #[cfg(test)]
 mod tests;
