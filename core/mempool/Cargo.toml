@@ -8,7 +8,7 @@ edition = "2021"
 cita_trie = "3.0"
 
 crossbeam-queue = "0.3"
-dashmap = { version = "5.1", features = ["rayon"] }
+dashmap = { version = "5.2", features = ["rayon"] }
 futures = { version = "0.3", features = [ "async-await" ] }
 indexmap = { version = "1.7", features = ["rayon"] }
 log = "0.4"

@@ -7,7 +7,7 @@ edition = "2021"
 [dependencies]
 cita_trie = "3.0"
 crossbeam-channel = "0.5"
-dashmap = "5.1"
+dashmap = "5.2"
 evm = "0.33"
 futures = "0.3"
 hasher = "0.1"
