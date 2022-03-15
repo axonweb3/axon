@@ -52,7 +52,9 @@ fn revert_resp(gas_limit: U256) -> TxResp {
 mod native_token {
     use protocol::codec::ProtocolCodec;
     use protocol::traits::{ApplyBackend, Backend};
-    use protocol::types::{Apply, Basic, ExitReason, ExitSucceed, SignedTransaction, TxResp, H160};
+    use protocol::types::{
+        Apply, Basic, ExitReason, ExitSucceed, SignedTransaction, TxResp, H160, U256,
+    };
 
     use crate::system::revert_resp;
 
@@ -85,7 +87,7 @@ mod native_token {
                 address:       l2_addr,
                 basic:         Basic {
                     balance: account.balance,
-                    nonce:   account.nonce,
+                    nonce:   account.nonce + U256::one(),
                 },
                 code:          None,
                 storage:       vec![],
@@ -98,8 +100,8 @@ mod native_token {
         TxResp {
             exit_reason:  ExitReason::Succeed(ExitSucceed::Returned),
             ret:          account.balance.encode().unwrap().to_vec(),
-            gas_used:     1u64,
-            remain_gas:   (tx.gas_limit - 1u64).as_u64(),
+            gas_used:     0u64,
+            remain_gas:   tx.gas_limit.as_u64(),
             logs:         vec![],
             code_address: None,
         }
