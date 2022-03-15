@@ -62,7 +62,7 @@ const createTransactionData = async () => {
   await savejson(`${basePath}/testData_1.json`, transactionInfo);
 };
 
-const readTestDataAsJson = async (testFileName) => {
+const readTestDataAsJson = (testFileName) => {
   let data;
   try {
     const filePath = `${basePath}/${testFileName}`;
