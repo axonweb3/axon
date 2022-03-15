@@ -3,8 +3,8 @@ use std::sync::Arc;
 use core_executor::{EVMExecutorAdapter, EvmExecutor, MPTTrie};
 use protocol::traits::{APIAdapter, Context, Executor, ExecutorAdapter, MemPool, Network, Storage};
 use protocol::types::{
-    Account, Block, BlockNumber, Bytes, ExecutorContext, Hash, Header, Proposal,
-    Receipt, SignedTransaction, TxResp, H160, U256,
+    Account, Block, BlockNumber, Bytes, ExecutorContext, Hash, Header, Proposal, Receipt,
+    SignedTransaction, TxResp, H160, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
@@ -194,8 +194,6 @@ where
         let account = Account::decode(raw_account).unwrap();
         let storage_mpt_tree = MPTTrie::from_root(account.storage_root, Arc::clone(&self.trie_db))?;
 
-        storage_mpt_tree
-            .get(&position)?
-            .ok_or_else(|| APIError::Adapter("Can't find this position".to_string()).into())
+        Ok(storage_mpt_tree.get(&position)?.unwrap_or_default())
     }
 }
