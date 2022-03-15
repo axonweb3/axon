@@ -66,10 +66,8 @@ const readTestDataAsJson = (testFileName) => {
   let data;
   try {
     const filePath = `${basePath}/${testFileName}`;
-    const jsonData = iconv.decode(fs.readFileSync(filePath, "binary"), "utf8").toString();
+    const jsonData = fs.readFileSync(filePath, "binary").toString();
     data = JSON.parse(jsonData);
-    // eslint-disable-next-line no-console
-    console.log(data);
   } catch (err) {
     // eslint-disable-next-line no-console
     console.log(err);
