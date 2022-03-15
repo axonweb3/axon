@@ -133,12 +133,8 @@ pub trait AxonJsonRpc {
     ) -> RpcResult<Option<Web3Transaction>>;
 
     #[method(name = "eth_getStorageAt")]
-    async fn get_storage_at(
-        &self,
-        address: H160,
-        position: U256,
-        number: BlockId,
-    ) -> RpcResult<Hex>;
+    async fn get_storage_at(&self, address: H160, position: Hex, number: BlockId)
+        -> RpcResult<Hex>;
 
     #[method(name = "eth_coinbase")]
     async fn coinbase(&self) -> RpcResult<H160>;
