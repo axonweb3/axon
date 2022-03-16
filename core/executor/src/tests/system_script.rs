@@ -73,5 +73,5 @@ fn test_burn_token_failed() {
     let account = backend.state().get(&addr).unwrap();
     println!("{:?}", account);
     assert_eq!(account.balance, U256::from(200u64));
-    assert_eq!(account.nonce, U256::from(2u64));
+    assert_eq!(account.nonce, U256::from(1u64));
 }
