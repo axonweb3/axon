@@ -42,7 +42,7 @@ use core_network::{
 };
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::codec::{hex_decode, ProtocolCodec};
-use protocol::lazy::{ASSET_CONTRACT_ADDRESS, CHAIN_ID, CURRENT_STATE_ROOT};
+use protocol::lazy::{CHAIN_ID, CURRENT_STATE_ROOT};
 #[cfg(unix)]
 use protocol::tokio::signal::unix as os_impl;
 use protocol::tokio::{runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep};
@@ -78,7 +78,7 @@ impl Axon {
                 apm_config.tracing_batch_size,
             );
 
-            log::info!("muta_apm start");
+            log::info!("axon_apm start");
         }
 
         let rt = RuntimeBuilder::new_multi_thread()
@@ -146,6 +146,7 @@ impl Axon {
         let resp = executor.exec(&mut backend, self.genesis.txs.clone());
 
         self.state_root = resp.state_root;
+        println!("{:?}", self.state_root);
 
         log::info!(
             "Execute the genesis distribute success, genesis state root {:?}, response {:?}",
@@ -372,7 +373,6 @@ impl Axon {
 
         CURRENT_STATE_ROOT.swap(Arc::new(current_consensus_status.last_state_root));
         CHAIN_ID.swap(Arc::new(current_header.chain_id));
-        ASSET_CONTRACT_ADDRESS.swap(Arc::new(self.config.asset_contract_address.into()));
 
         // set args in mempool
         mempool.set_args(
@@ -552,7 +552,7 @@ impl Axon {
                 )
                 .await
             {
-                log::error!("muta-consensus: {:?} error", e);
+                log::error!("axon-consensus: {:?} error", e);
             }
         });
 
@@ -622,7 +622,7 @@ impl Axon {
 
 #[derive(Debug, Display, From)]
 pub enum MainError {
-    #[display(fmt = "The muta configuration read failed {:?}", _0)]
+    #[display(fmt = "The axon configuration read failed {:?}", _0)]
     ConfigParse(common_config_parser::ParseError),
 
     #[display(fmt = "{:?}", _0)]
