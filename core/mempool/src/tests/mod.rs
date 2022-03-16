@@ -12,6 +12,7 @@ use common_crypto::{
     Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey,
     Secp256k1RecoverablePublicKey, Signature, ToPublicKey, UncompressedPublicKey,
 };
+use core_executor::NATIVE_TOKEN_ISSUE_ADDRESS;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
 use protocol::types::{
@@ -67,18 +68,14 @@ impl MemPoolAdapter for HashMemPoolAdapter {
     async fn check_authorization(
         &self,
         _ctx: Context,
-        tx: &SignedTransaction,
-    ) -> ProtocolResult<()> {
-        check_hash(tx)?;
-        check_sig(tx)
-    }
-
-    async fn check_transaction(
-        &self,
-        _ctx: Context,
         _tx: &SignedTransaction,
     ) -> ProtocolResult<()> {
         Ok(())
+    }
+
+    async fn check_transaction(&self, _ctx: Context, tx: &SignedTransaction) -> ProtocolResult<()> {
+        check_hash(tx)?;
+        check_sig(tx)
     }
 
     async fn check_storage_exist(&self, _ctx: Context, _tx_hash: &Hash) -> ProtocolResult<()> {
@@ -249,13 +246,17 @@ async fn exec_get_full_txs(
         .unwrap()
 }
 
-fn mock_transaction(nonce: u64) -> Transaction {
+fn mock_transaction(nonce: u64, is_call_system_script: bool) -> Transaction {
     Transaction {
         nonce:                    nonce.into(),
         gas_limit:                U256::one(),
         max_priority_fee_per_gas: U256::one(),
         gas_price:                U256::one(),
-        action:                   TransactionAction::Create,
+        action:                   if is_call_system_script {
+            TransactionAction::Call(NATIVE_TOKEN_ISSUE_ADDRESS)
+        } else {
+            TransactionAction::Create
+        },
         value:                    U256::one(),
         data:                     random_bytes(32).to_vec().into(),
         access_list:              vec![],
@@ -269,7 +270,41 @@ fn mock_signed_tx(
     nonce: u64,
     valid: bool,
 ) -> SignedTransaction {
-    let raw = mock_transaction(nonce);
+    let raw = mock_transaction(nonce, false);
+    let mut tx = UnverifiedTransaction {
+        unsigned:  raw,
+        signature: None,
+        chain_id:  random::<u64>(),
+        hash:      Default::default(),
+    };
+
+    let signature = if valid {
+        Secp256k1Recoverable::sign_message(tx.signature_hash().as_bytes(), &priv_key.to_bytes())
+            .unwrap()
+            .to_bytes()
+    } else {
+        Bytes::copy_from_slice([0u8; 65].as_ref())
+    };
+
+    tx.signature = Some(signature.into());
+
+    let pub_key = Public::from_slice(&pub_key.to_uncompressed_bytes()[1..65]);
+
+    SignedTransaction {
+        transaction: tx.hash(),
+        sender:      public_to_address(&pub_key),
+        public:      Some(pub_key),
+    }
+}
+
+fn mock_system_script_signed_tx(
+    priv_key: &Secp256k1RecoverablePrivateKey,
+    pub_key: &Secp256k1RecoverablePublicKey,
+    _timeout: u64,
+    nonce: u64,
+    valid: bool,
+) -> SignedTransaction {
+    let raw = mock_transaction(nonce, true);
     let mut tx = UnverifiedTransaction {
         unsigned:  raw,
         signature: None,

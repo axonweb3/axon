@@ -29,15 +29,12 @@ fn test_issue_token() {
 fn test_burn_token() {
     let addr = H160::from_str("0xf000000000000000000000000000000000000000").unwrap();
     let mut state = BTreeMap::new();
-    state.insert(
-		addr,
-		MemoryAccount {
-			nonce: U256::one(),
-			balance: U256::from(2000u64),
-			storage: BTreeMap::new(),
-			code: Vec::new(),
-		}
-	);
+    state.insert(addr, MemoryAccount {
+        nonce:   U256::one(),
+        balance: U256::from(2000u64),
+        storage: BTreeMap::new(),
+        code:    Vec::new(),
+    });
     let vicinity = gen_vicinity();
     let mut backend = MemoryBackend::new(&vicinity, state);
     let executor = SystemExecutor::default();
@@ -57,15 +54,12 @@ fn test_burn_token() {
 fn test_burn_token_failed() {
     let addr = H160::from_str("0xf000000000000000000000000000000000000000").unwrap();
     let mut state = BTreeMap::new();
-    state.insert(
-		addr,
-		MemoryAccount {
-			nonce: U256::one(),
-			balance: U256::from(200u64),
-			storage: BTreeMap::new(),
-			code: Vec::new(),
-		}
-	);
+    state.insert(addr, MemoryAccount {
+        nonce:   U256::one(),
+        balance: U256::from(200u64),
+        storage: BTreeMap::new(),
+        code:    Vec::new(),
+    });
     let vicinity = gen_vicinity();
     let mut backend = MemoryBackend::new(&vicinity, state);
     let executor = SystemExecutor::default();
@@ -77,7 +71,7 @@ fn test_burn_token_failed() {
     assert!(r.ret.is_empty());
 
     let account = backend.state().get(&addr).unwrap();
-	println!("{:?}", account);
+    println!("{:?}", account);
     assert_eq!(account.balance, U256::from(200u64));
     assert_eq!(account.nonce, U256::from(2u64));
 }

@@ -182,22 +182,6 @@ async fn test_ensure_order_txs() {
     ensure_order_txs!(0, 100);
 }
 
-// #[tokio::test]
-// async fn test_sync_propose_txs() {
-//     let mempool = &Arc::new(default_mempool().await);
-
-//     let txs = &default_mock_txs(50);
-//     let (exist_txs, need_sync_txs) = txs.split_at(20);
-//     concurrent_insert(exist_txs.to_vec(), Arc::clone(mempool)).await;
-//     concurrent_broadcast(need_sync_txs.to_vec(), Arc::clone(mempool)).await;
-
-//     let tx_hashes: Vec<Hash> = txs.iter().map(|tx|
-// tx.transaction.hash).collect();     exec_sync_propose_txs(tx_hashes,
-// Arc::clone(mempool)).await;
-
-//     assert_eq!(mempool.get_tx_cache().len(), 50);
-// }
-
 #[rustfmt::skip]
 /// Bench in Intel(R) Core(TM) i7-4770HQ CPU @ 2.20GHz (8 x 2200):
 /// test tests::mempool::bench_check_sig             ... bench:   2,881,140 ns/iter (+/- 907,215)

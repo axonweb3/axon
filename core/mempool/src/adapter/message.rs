@@ -56,11 +56,7 @@ where
                     .insert_tx_from_p2p
                     .inc();
 
-                let res = if is_call_system_script(&stx.transaction.unsigned.action) {
-                    mem_pool.insert_system_script_tx(ctx, stx).await
-                } else {
-                    mem_pool.insert(ctx, stx).await
-                };
+                let res = mem_pool.insert(ctx, stx).await;
 
                 if res.is_err() {
                     common_apm::metrics::mempool::MEMPOOL_RESULT_COUNTER_STATIC

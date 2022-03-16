@@ -13,7 +13,7 @@ use protocol::ProtocolResult;
 use crate::tx_wrapper::{TxPtr, TxWrapper};
 use crate::MemPoolError;
 
-pub struct PirorityPool {
+pub struct PriorityPool {
     sys_tx_bucket:  SystemScriptTxBucket,
     occupied_nonce: DashMap<H160, BTreeMap<U256, TxPtr>>,
     co_queue:       Arc<ArrayQueue<TxPtr>>,
@@ -23,9 +23,9 @@ pub struct PirorityPool {
     flush_lock: Arc<RwLock<()>>,
 }
 
-impl PirorityPool {
+impl PriorityPool {
     pub async fn new(size: usize) -> Self {
-        let pool = PirorityPool {
+        let pool = PriorityPool {
             sys_tx_bucket:  SystemScriptTxBucket::new(),
             occupied_nonce: DashMap::new(),
             co_queue:       Arc::new(ArrayQueue::new(size)),

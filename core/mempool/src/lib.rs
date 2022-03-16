@@ -22,15 +22,16 @@ use std::sync::Arc;
 use futures::future::try_join_all;
 
 use common_apm::Instant;
+use core_executor::is_call_system_script;
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
 use protocol::types::{Hash, SignedTransaction, H160, H256, U256};
 use protocol::{async_trait, tokio, Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 use crate::context::TxContext;
-use crate::pool::PirorityPool;
+use crate::pool::PriorityPool;
 
 pub struct MemPoolImpl<Adapter> {
-    pool:    PirorityPool,
+    pool:    PriorityPool,
     adapter: Arc<Adapter>,
 }
 
@@ -44,7 +45,7 @@ where
         initial_txs: Vec<SignedTransaction>,
     ) -> Self {
         let mempool = MemPoolImpl {
-            pool:    PirorityPool::new(pool_size).await,
+            pool:    PriorityPool::new(pool_size).await,
             adapter: Arc::new(adapter),
         };
 
@@ -163,7 +164,7 @@ where
     }
 
     #[cfg(test)]
-    pub fn get_tx_cache(&self) -> &PirorityPool {
+    pub fn get_tx_cache(&self) -> &PriorityPool {
         &self.pool
     }
 }
@@ -174,15 +175,8 @@ where
     Adapter: MemPoolAdapter + 'static,
 {
     async fn insert(&self, ctx: Context, tx: SignedTransaction) -> ProtocolResult<()> {
-        self.insert_tx(ctx, tx, false).await
-    }
-
-    async fn insert_system_script_tx(
-        &self,
-        ctx: Context,
-        tx: SignedTransaction,
-    ) -> ProtocolResult<()> {
-        self.insert_tx(ctx, tx, true).await
+        let is_call_system_script = is_call_system_script(&tx.transaction.unsigned.action);
+        self.insert_tx(ctx, tx, is_call_system_script).await
     }
 
     async fn package(
