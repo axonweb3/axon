@@ -17,6 +17,5 @@ trait PrecompileContract {
 }
 
 pub fn build_precompile_set() -> BTreeMap<H160, PrecompileFn> {
-    let ret = BTreeMap::new();
-    ret
+    BTreeMap::new()
 }

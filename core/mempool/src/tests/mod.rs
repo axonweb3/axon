@@ -104,6 +104,16 @@ pub fn default_mock_txs(size: usize) -> Vec<SignedTransaction> {
     mock_txs(size, 0, TIMEOUT)
 }
 
+pub fn mock_sys_txs(size: usize) -> Vec<SignedTransaction> {
+    (0..size)
+        .map(|i| {
+            let priv_key = Secp256k1RecoverablePrivateKey::generate(&mut OsRng);
+            let pub_key = priv_key.pub_key();
+            mock_system_script_signed_tx(&priv_key, &pub_key, 0, i as u64, true)
+        })
+        .collect()
+}
+
 fn mock_txs(valid_size: usize, invalid_size: usize, timeout: u64) -> Vec<SignedTransaction> {
     (0..valid_size + invalid_size)
         .map(|i| {
@@ -208,7 +218,9 @@ async fn concurrent_broadcast(
 }
 
 async fn exec_insert(signed_tx: SignedTransaction, mempool: Arc<MemPoolImpl<HashMemPoolAdapter>>) {
-    let _ = mempool.insert(Context::new(), signed_tx).await;
+    if let Err(e) = mempool.insert(Context::new(), signed_tx).await {
+        println!("{:?}", e);
+    }
 }
 
 async fn exec_flush(remove_hashes: Vec<Hash>, mempool: Arc<MemPoolImpl<HashMemPoolAdapter>>) {

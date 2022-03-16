@@ -4,7 +4,6 @@ use futures::future::{try_join_all, TryFutureExt};
 use rlp_derive::{RlpDecodable, RlpEncodable};
 
 use common_apm::Instant;
-use core_executor::is_call_system_script;
 use protocol::{
     async_trait, tokio,
     traits::{Context, MemPool, MessageHandler, Priority, Rpc, TrustFeedback},

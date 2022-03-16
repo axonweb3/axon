@@ -113,7 +113,7 @@ impl PriorityPool {
     }
 
     pub fn len(&self) -> usize {
-        self.tx_map.len() + self.sys_tx_bucket.len()
+        self.tx_map.len()
     }
 
     pub fn co_queue_len(&self) -> usize {
@@ -192,6 +192,11 @@ impl PriorityPool {
     pub fn real_queue_len(&self) -> usize {
         self.real_queue.lock().len()
     }
+
+    #[cfg(test)]
+    pub fn system_script_queue_len(&self) -> usize {
+        self.sys_tx_bucket.len()
+    }
 }
 
 struct SystemScriptTxBucket {
@@ -257,6 +262,7 @@ impl SystemScriptTxBucket {
         false
     }
 
+    #[cfg(test)]
     pub fn len(&self) -> usize {
         self.tx_buckets.len()
     }

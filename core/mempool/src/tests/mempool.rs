@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use test::Bencher;
@@ -93,6 +94,36 @@ async fn test_package() {
 
     // 3. 2 * tx_num_limit < pool_size
     package!(normal(100, 201, 100, 0));
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_package_multi_types() {
+    let mempool = Arc::new(new_mempool(1024, 0, 0, 0).await);
+
+    // insert txs
+    let evm_txs = default_mock_txs(1024);
+    let sys_txs = mock_sys_txs(5);
+    let mut txs = sys_txs.clone();
+    txs.extend_from_slice(&evm_txs);
+    concurrent_insert(txs.clone(), Arc::clone(&mempool)).await;
+    assert_eq!(mempool.get_tx_cache().system_script_queue_len(), 5);
+
+    let package_txs = mempool
+        .package(Context::new(), 1000000000u64.into(), 10000)
+        .await
+        .unwrap();
+    assert_eq!(
+        sys_txs
+            .iter()
+            .map(|x| &x.transaction.hash)
+            .collect::<HashSet<_>>(),
+        package_txs.iter().take(5).collect::<HashSet<_>>()
+    );
+    assert_eq!(package_txs.len(), 1024 + 5);
+
+    exec_flush(package_txs, Arc::clone(&mempool)).await;
+    assert_eq!(mempool.get_tx_cache().system_script_queue_len(), 0);
+    assert_eq!(mempool.len(), 0);
 }
 
 #[tokio::test(flavor = "multi_thread")]
