@@ -146,7 +146,6 @@ impl Axon {
         let resp = executor.exec(&mut backend, self.genesis.txs.clone());
 
         self.state_root = resp.state_root;
-        println!("{:?}", self.state_root);
 
         log::info!(
             "Execute the genesis distribute success, genesis state root {:?}, response {:?}",
