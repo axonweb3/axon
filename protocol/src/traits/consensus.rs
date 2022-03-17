@@ -188,9 +188,6 @@ pub trait ConsensusAdapter: CommonConsensusAdapter + Send + Sync {
         tx_num_limit: u64,
     ) -> ProtocolResult<Vec<Hash>>;
 
-    /// Synchronous signed transactions.
-    async fn sync_txs(&self, ctx: Context, propose_txs: Vec<Hash>) -> ProtocolResult<()>;
-
     /// Get the signed transactions corresponding to the given hashes.
     async fn get_full_txs(
         &self,

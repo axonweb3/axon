@@ -23,7 +23,7 @@ use futures::future::try_join_all;
 
 use common_apm::Instant;
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
-use protocol::types::{Hash, SignedTransaction, H256, U256};
+use protocol::types::{Hash, SignedTransaction, H160, H256, U256};
 use protocol::{async_trait, tokio, Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 use crate::context::TxContext;
@@ -286,12 +286,8 @@ where
         Ok(())
     }
 
-    async fn sync_propose_txs(
-        &self,
-        _ctx: Context,
-        _propose_tx_hashes: Vec<Hash>,
-    ) -> ProtocolResult<()> {
-        Ok(())
+    async fn get_tx_count_by_address(&self, _ctx: Context, address: H160) -> ProtocolResult<usize> {
+        Ok(self.pool.get_tx_count_by_address(address))
     }
 
     fn set_args(&self, context: Context, state_root: H256, gas_limit: u64, max_tx_size: u64) {

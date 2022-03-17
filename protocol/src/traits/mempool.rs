@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use creep::Context;
 
-use crate::types::{Hash, MerkleRoot, SignedTransaction, U256};
+use crate::types::{Hash, MerkleRoot, SignedTransaction, H160, U256};
 use crate::ProtocolResult;
 
 #[async_trait]
@@ -31,11 +31,7 @@ pub trait MemPool: Send + Sync {
         order_tx_hashes: &[Hash],
     ) -> ProtocolResult<()>;
 
-    async fn sync_propose_txs(
-        &self,
-        ctx: Context,
-        propose_tx_hashes: Vec<Hash>,
-    ) -> ProtocolResult<()>;
+    async fn get_tx_count_by_address(&self, ctx: Context, address: H160) -> ProtocolResult<usize>;
 
     fn set_args(&self, context: Context, state_root: MerkleRoot, gas_limit: u64, max_tx_size: u64);
 }

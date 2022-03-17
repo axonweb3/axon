@@ -239,16 +239,6 @@ async fn exec_ensure_order_txs(
         .unwrap();
 }
 
-async fn _exec_sync_propose_txs(
-    require_hashes: Vec<Hash>,
-    mempool: Arc<MemPoolImpl<HashMemPoolAdapter>>,
-) {
-    mempool
-        .sync_propose_txs(Context::new(), require_hashes)
-        .await
-        .unwrap();
-}
-
 async fn exec_get_full_txs(
     require_hashes: Vec<Hash>,
     mempool: Arc<MemPoolImpl<HashMemPoolAdapter>>,

@@ -68,11 +68,6 @@ where
         self.mempool.package(ctx, gas_limit, tx_num_limit).await
     }
 
-    // #[muta_apm::derive::tracing_span(kind = "consensus.adapter")]
-    async fn sync_txs(&self, ctx: Context, txs: Vec<Hash>) -> ProtocolResult<()> {
-        self.mempool.sync_propose_txs(ctx, txs).await
-    }
-
     // #[muta_apm::derive::tracing_span(kind = "consensus.adapter", logs =
     // "{'txs_len': 'txs.len()'}")]
     async fn get_full_txs(

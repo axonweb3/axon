@@ -1,5 +1,5 @@
 use std::collections::{BTreeMap, BinaryHeap};
-use std::sync::Arc;
+use std::sync::{atomic::Ordering, Arc};
 use std::time::Duration;
 
 use crossbeam_queue::ArrayQueue;
@@ -50,6 +50,17 @@ impl PirorityPool {
         });
 
         pool
+    }
+
+    pub fn get_tx_count_by_address(&self, address: H160) -> usize {
+        if let Some(set) = self.occupied_nonce.get(&address) {
+            return set
+                .iter()
+                .filter(|tx| !tx.1.is_dropped.load(Ordering::Relaxed))
+                .count();
+        }
+
+        0usize
     }
 
     pub fn insert(&self, stx: SignedTransaction) -> ProtocolResult<()> {
