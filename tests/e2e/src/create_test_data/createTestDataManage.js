@@ -14,6 +14,7 @@ const transactionInfo = {
   contractAddress: "",
   transactionHash: "",
   blockNumber: "",
+  hexBlockNumber: "",
   blockHash: "",
   transactionIndex: "",
   accountAddress: "",
@@ -60,6 +61,7 @@ const createTransactionData = async () => {
   transactionInfo.blockNumber = receipt.blockNumber;
   transactionInfo.transactionIndex = receipt.transactionIndex;
   transactionInfo.accountAddress = accountFrom.address;
+  transactionInfo.hexBlockNumber = `0x${receipt.blockNumber.toString(16)}`;
   await savejson(`${basePath}/testData_1.json`, transactionInfo);
 };
 
