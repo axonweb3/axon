@@ -143,7 +143,7 @@ describe("eth_getCode", () => {
   /**
  * none param
  */
-  it("eth_getCode_9", async () => {
+  it("eth_getCode_10", async () => {
     await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     await testType.type("0");// 0: none params  1：common params to request   2: more params
