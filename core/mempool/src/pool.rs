@@ -56,7 +56,7 @@ impl PirorityPool {
         if let Some(set) = self.occupied_nonce.get(&address) {
             return set
                 .iter()
-                .filter(|tx| tx.1.is_dropped.load(Ordering::Relaxed) == false)
+                .filter(|tx| !tx.1.is_dropped.load(Ordering::Relaxed))
                 .count();
         }
 
