@@ -16,6 +16,7 @@ const transactionInfo = {
   blockNumber: "",
   blockHash: "",
   transactionIndex: "",
+  accountAddress: "",
 };
 
 const savejson = async (filePath, data) => {
@@ -35,8 +36,8 @@ const sendTransaction = async (account, data) => {
   const tx = {
     type: 2,
     nonce,
-    maxPriorityFeePerGas: 250,
-    maxFeePerGas: 250,
+    maxPriorityFeePerGas: 2500,
+    maxFeePerGas: 2500,
     gasLimit: web3.utils.stringToHex("21000"),
     chainId: Config.getIns().axonRpc.chainId,
     data,
@@ -58,6 +59,7 @@ const createTransactionData = async () => {
   transactionInfo.blockHash = receipt.blockHash;
   transactionInfo.blockNumber = receipt.blockNumber;
   transactionInfo.transactionIndex = receipt.transactionIndex;
+  transactionInfo.accountAddress = accountFrom.address;
   await savejson(`${basePath}/testData_1.json`, transactionInfo);
 };
 
