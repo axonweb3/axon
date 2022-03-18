@@ -18,8 +18,8 @@ use protocol::types::{
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
 use crate::jsonrpc::web3_types::{
-    BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter,
-    Web3Log, Web3Receipt, Web3SyncStatus, Web3Transaction,
+    BlockId, BlockIdWithPending, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3FeeHistory,
+    Web3Filter, Web3Log, Web3Receipt, Web3SyncStatus, Web3Transaction,
 };
 
 use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
@@ -190,14 +190,24 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
     }
 
     #[metrics_rpc("eth_getTransactionCount")]
-    async fn get_transaction_count(&self, address: H160, number: BlockId) -> RpcResult<U256> {
-        let account = self
-            .adapter
-            .get_account(Context::new(), address, number.into())
-            .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
-
-        Ok(account.nonce)
+    async fn get_transaction_count(
+        &self,
+        address: H160,
+        number: BlockIdWithPending,
+    ) -> RpcResult<U256> {
+        match number {
+            BlockIdWithPending::BlockId(id) => self
+                .adapter
+                .get_account(Context::new(), address, id.into())
+                .await
+                .map(|account| account.nonce)
+                .map_err(|e| Error::Custom(e.to_string())),
+            BlockIdWithPending::Pending => self
+                .adapter
+                .get_pending_tx_count(Context::new(), address)
+                .await
+                .map_err(|e| Error::Custom(e.to_string())),
+        }
     }
 
     #[metrics_rpc("eth_blockNumber")]
