@@ -1,4 +1,7 @@
 name: Coverage Test
+concurrency:
+  group: Coverage Test-${{ github.ref }}
+  cancel-in-progress: true
 on: 
   push:
     branches:
