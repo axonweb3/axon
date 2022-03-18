@@ -423,7 +423,7 @@ impl<'a> Deserialize<'a> for BlockIdWithPending {
                     "pending" => Ok(BlockIdWithPending::Pending),
                     _ => BlockIdVisitor
                         .visit_str(value)
-                        .map(|id| BlockIdWithPending::BlockId(id)),
+                        .map(BlockIdWithPending::BlockId),
                 }
             }
 
