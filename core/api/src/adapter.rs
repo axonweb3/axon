@@ -3,8 +3,8 @@ use std::sync::Arc;
 use core_executor::{EVMExecutorAdapter, EvmExecutor, MPTTrie};
 use protocol::traits::{APIAdapter, Context, Executor, ExecutorAdapter, MemPool, Network, Storage};
 use protocol::types::{
-    Account, Block, BlockNumber, Bytes, ExecutorContext, Hash, Header, Proposal, Receipt,
-    SignedTransaction, TxResp, H160, U256,
+    Account, BigEndianHash, Block, BlockNumber, Bytes, ExecutorContext, Hash, Header, Proposal,
+    Receipt, SignedTransaction, TxResp, H160, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
@@ -182,7 +182,7 @@ where
         &self,
         _ctx: Context,
         address: H160,
-        position: Bytes,
+        position: U256,
         state_root: Hash,
     ) -> ProtocolResult<Bytes> {
         let state_mpt_tree = MPTTrie::from_root(state_root, Arc::clone(&self.trie_db))?;
@@ -192,8 +192,12 @@ where
             .ok_or_else(|| APIError::Adapter("Can't find this address".to_string()))?;
 
         let account = Account::decode(raw_account).unwrap();
+
         let storage_mpt_tree = MPTTrie::from_root(account.storage_root, Arc::clone(&self.trie_db))?;
 
-        Ok(storage_mpt_tree.get(&position)?.unwrap_or_default())
+        let hash: Hash = BigEndianHash::from_uint(&position);
+        storage_mpt_tree
+            .get(hash.as_bytes())?
+            .ok_or_else(|| APIError::Adapter("Can't find this position".to_string()).into())
     }
 }

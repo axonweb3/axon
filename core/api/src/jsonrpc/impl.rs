@@ -624,7 +624,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
     async fn get_storage_at(
         &self,
         address: H160,
-        position: Hex,
+        position: U256,
         number: BlockId,
     ) -> RpcResult<Hex> {
         let block = self
@@ -635,12 +635,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             .ok_or_else(|| Error::Custom("Can't find this block".to_string()))?;
         let value = self
             .adapter
-            .get_storage_at(
-                Context::new(),
-                address,
-                position.as_bytes(),
-                block.header.state_root,
-            )
+            .get_storage_at(Context::new(), address, position, block.header.state_root)
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
