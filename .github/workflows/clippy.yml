@@ -1,4 +1,7 @@
 name: Cargo Clippy
+concurrency:
+  group: Cargo Clippy-${{ github.ref }}
+  cancel-in-progress: true
 on:
   push:
     branches:

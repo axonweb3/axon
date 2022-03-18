@@ -1,4 +1,7 @@
 name: Chaos CI
+concurrency:
+  group: Chaos CI-${{ github.ref }}
+  cancel-in-progress: true
 on:
   pull_request:
 

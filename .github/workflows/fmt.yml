@@ -1,4 +1,7 @@
 name: Code Format
+concurrency:
+  group: Code Format-${{ github.ref }}
+  cancel-in-progress: true
 on:
   push:
     branches:
