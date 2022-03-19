@@ -18,6 +18,7 @@ rlp = "0.5"
 rlp-derive = "0.1"
 
 common-apm = { path = "../../common/apm" }
+common-apm-derive = { path = "../../common/apm-derive" }
 common-crypto = { path = "../../common/crypto" }
 core-executor = { path = "../../core/executor" }
 protocol = { path = "../../protocol", package = "axon-protocol" }

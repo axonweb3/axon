@@ -6,6 +6,7 @@ use std::time::SystemTime;
 
 use creep::Context;
 
+use common_apm_derive::trace_span;
 use protocol::traits::MessageCodec;
 use protocol::types::{BatchSignedTxs, BufMut, Bytes, BytesMut, Hash, Hasher, SignedTransaction};
 use protocol::ProtocolResult;
@@ -165,8 +166,8 @@ impl ConsensusWal {
         }
     }
 
-    // #[muta_apm::derive::tracing_span(kind = "consensus_wal")]
-    pub fn update_overlord_wal(&self, _ctx: Context, info: Bytes) -> ProtocolResult<()> {
+    #[trace_span(kind = "consensus_wal")]
+    pub fn update_overlord_wal(&self, ctx: Context, info: Bytes) -> ProtocolResult<()> {
         // 1st, make sure the dir exists
         let dir_path = self.path.clone();
         if !dir_path.exists() {
@@ -239,8 +240,8 @@ impl ConsensusWal {
         Ok(())
     }
 
-    // #[muta_apm::derive::tracing_span(kind = "consensus_wal")]
-    pub fn load_overlord_wal(&self, _ctx: Context) -> ProtocolResult<Bytes> {
+    #[trace_span(kind = "consensus_wal")]
+    pub fn load_overlord_wal(&self, ctx: Context) -> ProtocolResult<Bytes> {
         // 1st,
         let dir_path = self.path.clone();
         if !dir_path.exists() {

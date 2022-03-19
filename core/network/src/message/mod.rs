@@ -14,6 +14,7 @@ use crate::error::{ErrorKind, NetworkError};
 #[derive(Default)]
 pub struct Headers(HashMap<String, Vec<u8>>);
 
+// TODO: Need to pass trace ids across the network
 // impl Headers {
 //     pub fn set_trace_id(&mut self, id: TraceId) {
 //         self.0

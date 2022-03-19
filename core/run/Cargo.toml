@@ -17,6 +17,7 @@ serde_json = "1.0"
 toml = "0.5"
 
 common-apm = { path = "../../common/apm" }
+common-apm-derive = { path = "../../common/apm-derive" }
 common-config-parser = { path = "../../common/config-parser" }
 common-crypto = { path = "../../common/crypto" }
 common-logger = { path = "../../common/logger" }

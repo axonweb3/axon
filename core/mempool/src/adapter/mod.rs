@@ -13,6 +13,7 @@ use futures::{
 use log::{debug, error};
 use parking_lot::Mutex;
 
+use common_apm_derive::trace_span;
 use common_crypto::{Crypto, Secp256k1Recoverable};
 use core_executor::{EVMExecutorAdapter, EvmExecutor};
 use protocol::traits::{
@@ -180,10 +181,7 @@ where
     S: Storage + 'static,
     DB: cita_trie::DB + 'static,
 {
-    // #[muta_apm::derive::tracing_span(
-    //     kind = "mempool.adapter",
-    //     logs = "{'txs_len': 'tx_hashes.len()'}"
-    // )]
+    #[trace_span(kind = "mempool.adapter", logs = "{txs_len: tx_hashes.len()}")]
     async fn pull_txs(
         &self,
         ctx: Context,

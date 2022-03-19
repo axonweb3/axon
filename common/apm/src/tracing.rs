@@ -81,10 +81,10 @@ impl AxonTracer {
 
 pub fn global_tracer_register(service_name: &str, udp_addr: SocketAddr, batch_size: Option<usize>) {
     let (span_tx, mut span_rx) = channel(SPAN_CHANNEL_SIZE);
-    let batch_size = batch_size.unwrap_or(DEFAULT_SPAN_BATCH_SIZE);
-    let mut reporter = JaegerCompactReporter::new(service_name).unwrap();
-    reporter.set_agent_addr(udp_addr);
     TRACER.swap(Arc::new(AxonTracer::with_sender(span_tx)));
+
+    let reporter = new_jaeger_reporter(service_name, udp_addr);
+    let batch_size = batch_size.unwrap_or(DEFAULT_SPAN_BATCH_SIZE);
 
     tokio::spawn(async move {
         let mut batch_spans = Vec::with_capacity(batch_size);
@@ -96,10 +96,16 @@ pub fn global_tracer_register(service_name: &str, udp_addr: SocketAddr, batch_si
                 if batch_spans.len() >= batch_size {
                     let enough_spans = batch_spans.drain(..).collect::<Vec<_>>();
                     if let Err(err) = reporter.report(&enough_spans) {
-                        log::warn!("jaeger report {}", err);
+                        log::warn!("jaeger report {:?}", err);
                     }
                 }
             }
         }
     });
+}
+
+fn new_jaeger_reporter(service_name: &str, udp_addr: SocketAddr) -> JaegerCompactReporter {
+    let mut reporter = JaegerCompactReporter::new(service_name).unwrap();
+    reporter.set_agent_addr(udp_addr);
+    return reporter;
 }

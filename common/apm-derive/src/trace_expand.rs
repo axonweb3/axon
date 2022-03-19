@@ -20,6 +20,7 @@ const TRACING_LOGS: &str = "logs";
 pub fn expand_trace_span(attr: TokenStream, func: TokenStream) -> TokenStream {
     let attr = parse_macro_input!(attr as AttributeArgs);
     let func = parse_macro_input!(func as ItemFn);
+    let func_vis = &func.vis;
     let func_sig = &func.sig;
     let func_block = &func.block;
     let func_output = &func_sig.output;
@@ -102,7 +103,7 @@ pub fn expand_trace_span(attr: TokenStream, func: TokenStream) -> TokenStream {
 
     quote! {
         #[allow(unused_variables, clippy::type_complexity)]
-        #func_sig {
+        #func_vis #func_sig {
             use common_apm::tracing::{LogField, SpanContext, Tag, TRACER};
 
             let mut span_tags: Vec<Tag> = Vec::new();

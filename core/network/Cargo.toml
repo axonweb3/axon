@@ -6,7 +6,6 @@ edition = "2021"
 
 [dependencies]
 bloom-filters = "0.1"
-common-apm = { path = "../../common/apm" }
 derive_more = "0.99"
 faketime = "0.2.0"
 futures = "0.3"
@@ -23,6 +22,8 @@ socket2 = "0.4"
 tentacle = { version = "0.4.0-beta.4", features = ["parking_lot"] }
 tokio-util = { version = "0.7", features = ["codec"] }
 
+common-apm = { path = "../../common/apm" }
+common-apm-derive = { path = "../../common/apm-derive" }
 protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [dev-dependencies]
