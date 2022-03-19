@@ -152,6 +152,13 @@ where
         Account::decode(bytes)
     }
 
+    async fn get_pending_tx_count(&self, ctx: Context, address: H160) -> ProtocolResult<U256> {
+        self.mempool
+            .get_tx_count_by_address(ctx, address)
+            .await
+            .map(U256::from)
+    }
+
     async fn evm_call(
         &self,
         _ctx: Context,

@@ -386,6 +386,59 @@ impl<'a> Visitor<'a> for BlockIdVisitor {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum BlockIdWithPending {
+    BlockId(BlockId),
+    Pending,
+}
+
+impl<'a> Deserialize<'a> for BlockIdWithPending {
+    fn deserialize<D>(deserializer: D) -> Result<BlockIdWithPending, D::Error>
+    where
+        D: Deserializer<'a>,
+    {
+        pub struct InnerVisitor;
+
+        impl<'a> Visitor<'a> for InnerVisitor {
+            type Value = BlockIdWithPending;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                write!(formatter, "a block number or 'latest' or 'pending' ")
+            }
+
+            fn visit_map<V>(self, visitor: V) -> Result<Self::Value, V::Error>
+            where
+                V: MapAccess<'a>,
+            {
+                BlockIdVisitor
+                    .visit_map(visitor)
+                    .map(BlockIdWithPending::BlockId)
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+            where
+                E: Error,
+            {
+                match value {
+                    "pending" => Ok(BlockIdWithPending::Pending),
+                    _ => BlockIdVisitor
+                        .visit_str(value)
+                        .map(BlockIdWithPending::BlockId),
+                }
+            }
+
+            fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
+            where
+                E: Error,
+            {
+                self.visit_str(value.as_ref())
+            }
+        }
+
+        deserializer.deserialize_any(InnerVisitor)
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub struct Index(usize);
 

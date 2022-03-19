@@ -15,8 +15,8 @@ use protocol::ProtocolResult;
 
 use crate::jsonrpc::{
     web3_types::{
-        BlockId, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter, Web3Log, Web3Receipt,
-        Web3SyncStatus, Web3Transaction,
+        BlockId, BlockIdWithPending, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter,
+        Web3Log, Web3Receipt, Web3SyncStatus, Web3Transaction,
     },
     ws_subscription::{ws_subscription_module, HexIdProvider},
 };
@@ -54,7 +54,11 @@ pub trait AxonJsonRpc {
     async fn block_number(&self) -> RpcResult<U256>;
 
     #[method(name = "eth_getTransactionCount")]
-    async fn get_transaction_count(&self, address: H160, number: BlockId) -> RpcResult<U256>;
+    async fn get_transaction_count(
+        &self,
+        address: H160,
+        number: BlockIdWithPending,
+    ) -> RpcResult<U256>;
 
     #[method(name = "eth_getBlockTransactionCountByNumber")]
     async fn get_transaction_count_by_number(&self, number: BlockId) -> RpcResult<U256>;
