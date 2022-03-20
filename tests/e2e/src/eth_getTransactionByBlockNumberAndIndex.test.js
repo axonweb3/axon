@@ -10,8 +10,8 @@ describe("eth_getTransactionByBlockNumberAndIndex", () => {
 });
 
 /**
-* param1:the real block number
-* param2:the real transaction index
+* param1: the real block number
+* param2: the real transaction index
 */
 it("eth_getTransactionByBlockNumberAndIndex_1", async () => {
   await goto.goto(page, pageName);
@@ -25,8 +25,8 @@ it("eth_getTransactionByBlockNumberAndIndex_1", async () => {
 });
 
 /**
-* param1:the real block number
-* param2:error transaction index
+* param1: the real block number
+* param2: error transaction index
 */
 it("eth_getTransactionByBlockNumberAndIndex_1", async () => {
   await goto.goto(page, pageName);

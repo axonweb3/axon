@@ -38,8 +38,8 @@ describe("eth_getCode", () => {
   });
 
   /**
-  * param1:real account address
-  * param2:real number but not exist in the axon.
+  * param1: real account address
+  * param2: real number but not exist in the axon.
   */
   it("eth_getCode_3", async () => {
     await goto.goto(page, pageName);
