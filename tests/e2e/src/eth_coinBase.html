@@ -14,7 +14,7 @@
     const param2 =new Boolean(document.getElementById("param2").value);
     const t_type = document.getElementById("testType").value;
     const params = [];
-    const request_params = { method: "eth_coinbase", params: params }; //deafult is none params  to request test.
+    const request_params = { method: "eth_coinbase", params: params }; // deafult is none params to request test.
     if (t_type == "2") {
       request_params.params.push("advantage parameter");
     }
