@@ -50,7 +50,7 @@ describe("eth_getBlockTransactionCountByHash", () => {
   it("eth_getBlockTransactionCountByHash_4", async () => {
     await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
-    await testType.type("0"); // 0: none params  1: common params to request   2: more params 3: less params
+    await testType.type("0"); // 0: none params 1: common params to request 2: more params 3: less params
     await goto.check(page, "-32602");
   });
 

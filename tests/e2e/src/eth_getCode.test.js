@@ -16,7 +16,7 @@ describe("eth_getCode", () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
-    await testType.type("1");// 0: none params  1: common params to request   2: more params
+    await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type(testDataInfo.contractAddress);
     await param2.type(testDataInfo.hexBlockNumber);
     await goto.check(page, "0x608060405234801561001057600080fd5b50600436106100b45760003560e01c80633e94dc0f116100715780633e94dc0f146102d057806370a082311461032857806395d89b4114610380578063a457c2d7146104035780");
@@ -31,7 +31,7 @@ describe("eth_getCode", () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
-    await testType.type("1");// 0: none params  1: common params to request   2: more params
+    await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type(testDataInfo.contractAddress);
     await param2.type("0x01");
     await goto.check(page, "0x");
@@ -46,7 +46,7 @@ describe("eth_getCode", () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
-    await testType.type("1");// 0: none params 1: common params to request 2: more params
+    await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type(testDataInfo.contractAddress);
     await param2.type("0xffffffff");
     await goto.check(page, "-32603");
@@ -61,7 +61,7 @@ describe("eth_getCode", () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
-    await testType.type("1");// 0: none params  1: common params to request   2: more params
+    await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type(testDataInfo.accountAddress);
     await param2.type(testDataInfo.hexBlockNumber);
     await goto.check(page, "0x");
@@ -76,7 +76,7 @@ describe("eth_getCode", () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
-    await testType.type("1");// 0: none params 1: common params to request 2: more params
+    await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type("0x7f5659Aa997bC1473985f4391D7435f17C43b11z");
     await param2.type(testDataInfo.hexBlockNumber);
     await goto.check(page, "0x");
@@ -91,7 +91,7 @@ describe("eth_getCode", () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
-    await testType.type("1");// 0: none params 1: common params to request 2: more params
+    await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type("0x7f5659Aa997bC1473985f4391D7435f17C43b11f");
     await param2.type("1");
     await goto.check(page, "-32603");
@@ -135,7 +135,7 @@ describe("eth_getCode", () => {
     await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
-    await testType.type("1");// 0: none params  1: common params to request   2: more params
+    await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type(testDataInfo.accountAddress);
     await goto.check(page, "-32603");
   });
@@ -146,7 +146,7 @@ describe("eth_getCode", () => {
   it("eth_getCode_10", async () => {
     await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
-    await testType.type("0");// 0: none params  1: common params to request   2: more params
+    await testType.type("0"); // 0: none params 1: common params to request 2: more params
     await goto.check(page, "-32603");
   });
 });

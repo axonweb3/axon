@@ -16,7 +16,7 @@ describe("eth_getBalance", () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
-    await testType.type("1");// 0: none params  1: common params to request   2: more params
+    await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type(testDataInfo.accountAddress);
     await param2.type("0x0");
     await goto.check(page, "0x1bc16d775099bf800");
@@ -31,7 +31,7 @@ describe("eth_getBalance", () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
-    await testType.type("1");// 0: none params  1: common params to request   2: more params
+    await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type(testDataInfo.accountAddress);
     await param2.type("0x2");
     await goto.check(page, "0x1bc16d775099bf800");
@@ -46,7 +46,7 @@ describe("eth_getBalance", () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
-    await testType.type("1");// 0: none params  1: common params to request   2: more params
+    await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type(testDataInfo.accountAddress);
     await param2.type("latest");
     await goto.check(page, "0x1bc16d775099bf800");
@@ -61,7 +61,7 @@ describe("eth_getBalance", () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
-    await testType.type("1");// 0: none params  1: common params to request   2: more params
+    await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type(testDataInfo.accountAddress);
     await param2.type("0xfffffff");
     await goto.check(page, "-32001");
@@ -76,7 +76,7 @@ describe("eth_getBalance", () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
-    await testType.type("1");// 0: none params  1: common params to request   2: more params
+    await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type(testDataInfo.contractAddress);
     await param2.type("latest");
     await goto.check(page, "0x0");
@@ -91,7 +91,7 @@ describe("eth_getBalance", () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
-    await testType.type("1");// 0: none params  1: common params to request   2: more params
+    await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type("0x3dF82e36a8b27CE05815f88a8021b61aAbeF8B31");
     await param2.type("latest");
     await goto.check(page, "-32001");
@@ -106,7 +106,7 @@ describe("eth_getBalance", () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
-    await testType.type("1");// 0: none params  1: common params to request   2: more params
+    await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type("0x3dF82e36a8b27CE05815f88a8021b61aAbeF8B31");
     await param2.type("1");
     await goto.check(page, "-32603");
@@ -121,7 +121,7 @@ describe("eth_getBalance", () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
-    await testType.type("1");// 0: none params  1: common params to request   2: more params
+    await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type("0x3dF82e36a8b27CE05815f");
     await param2.type("1");
     await goto.check(page, "-32603");
@@ -137,7 +137,7 @@ describe("eth_getBalance", () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
-    await testType.type("2");// 0: none params  1: common params to request   2: more params
+    await testType.type("2"); // 0: none params 1: common params to request 2: more params
     await param1.type(testDataInfo.accountAddress);
     await param2.type("0x0");
     await goto.check(page, "-32603");
@@ -150,7 +150,7 @@ describe("eth_getBalance", () => {
     await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
-    await testType.type("3");// 0: none params  1: common params to request   2: more params
+    await testType.type("3");// 0: none params  1: common params to request 2: more params
     await param1.type(testDataInfo.accountAddress);
     await goto.check(page, "-32602");
   });
