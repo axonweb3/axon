@@ -6,7 +6,7 @@ import { testDataManage } from "../src/create_test_data/createTestDataManage";
 
 export const DAPPETEER_DEFAULT_CONFIG = {
   metamaskVersion: "v10.8.1",
-  args: [process.env.HEADLESS ? "--headless=chrome" : "","--no-sandbox"],
+  args: [process.env.HEADLESS ? "--headless=chrome" : "", "--no-sandbox"],
 };
 export default async function setup() {
   const browser = await launch(puppeteer, DAPPETEER_DEFAULT_CONFIG);
