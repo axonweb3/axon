@@ -1,0 +1,21 @@
+<html>
+  <body>
+    <div>
+      <button id="getPeerCount">Get peer count</button>
+      <div>Peer count: <span id="peerCount"></span></div>
+    </div>
+  </body>
+  <script>
+    document
+      .getElementById("getPeerCount")
+      .addEventListener(
+        "click",
+        () => {
+          ethereum
+            .request({ method: "net_peerCount" })
+            .then((count) => {
+              document.getElementById("peerCount").innerHTML = count;
+            });
+        });
+  </script>
+</html>

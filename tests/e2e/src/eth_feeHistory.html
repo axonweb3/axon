@@ -1,0 +1,21 @@
+<html>
+  <body>
+    <div>
+      <button id="getFeeHistory">Get fee history</button>
+      <div>Fee history: <span id="feeHistory"></span></div>
+    </div>
+  </body>
+  <script>
+    document
+      .getElementById("getFeeHistory")
+      .addEventListener(
+        "click",
+        () => {
+          ethereum
+            .request({ method: "eth_feeHistory", params: [1, "latest", []] })
+            .then((result) => {
+              document.getElementById("feeHistory").innerHTML = JSON.stringify(result);
+            });
+        });
+  </script>
+</html>
