@@ -377,14 +377,14 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             position: BlockPosition,
             topics: &[H256],
             logs: &mut Vec<Web3Log>,
-            address: Option<&H160>,
+            address: Option<&Vec<H160>>,
         ) -> RpcResult<()> {
             let extend_logs = |logs: &mut Vec<Web3Log>, receipts: Vec<Option<Receipt>>| {
                 let mut index = 0;
                 for receipt in receipts.into_iter().flatten() {
                     let log_len = receipt.logs.len();
                     match address {
-                        Some(s) if s == &receipt.sender => {
+                        Some(s) if s.contains(&receipt.sender) => {
                             from_receipt_to_web3_log(index, topics, &receipt, logs)
                         }
                         None => from_receipt_to_web3_log(index, topics, &receipt, logs),
@@ -454,6 +454,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             }
         }
 
+        let address_filter: Option<Vec<H160>> = filter.address.into();
         let mut all_logs = Vec::new();
         match filter.block_hash {
             Some(hash) => {
@@ -462,7 +463,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                     BlockPosition::Hash(hash),
                     &topics,
                     &mut all_logs,
-                    filter.address.as_ref(),
+                    address_filter.as_ref(),
                 )
                 .await?;
             }
@@ -502,7 +503,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                             BlockPosition::Num(n),
                             &topics,
                             &mut all_logs,
-                            filter.address.as_ref(),
+                            address_filter.as_ref(),
                         )
                         .await?;
                     }
@@ -514,7 +515,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                         BlockPosition::Block(latest_block),
                         &topics,
                         &mut all_logs,
-                        filter.address.as_ref(),
+                        address_filter.as_ref(),
                     )
                     .await?;
                 }

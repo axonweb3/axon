@@ -495,8 +495,62 @@ pub struct Web3Filter {
     pub from_block: Option<BlockId>,
     pub to_block:   Option<BlockId>,
     pub block_hash: Option<H256>,
-    pub address:    Option<H160>,
+    pub address:    MultiType<H160>,
     pub topics:     Option<Vec<H256>>,
+}
+
+#[derive(PartialEq, Eq, Debug, Clone)]
+pub enum MultiType<T> {
+    Single(T),
+    Multi(Vec<T>),
+    Null,
+}
+
+impl<T> From<MultiType<T>> for Option<Vec<T>> {
+    fn from(src: MultiType<T>) -> Self {
+        match src {
+            MultiType::Null => None,
+            MultiType::Single(i) => Some(vec![i]),
+            MultiType::Multi(i) => Some(i),
+        }
+    }
+}
+
+impl<T> Serialize for MultiType<T>
+where
+    T: Serialize,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            MultiType::Single(inner) => inner.serialize(serializer),
+            MultiType::Multi(inner) => inner.serialize(serializer),
+            MultiType::Null => serializer.serialize_none(),
+        }
+    }
+}
+
+impl<'a, T> Deserialize<'a> for MultiType<T>
+where
+    T: for<'b> Deserialize<'b>,
+{
+    fn deserialize<D>(deserializer: D) -> Result<MultiType<T>, D::Error>
+    where
+        D: Deserializer<'a>,
+    {
+        let v: serde_json::Value = Deserialize::deserialize(deserializer)?;
+
+        if v.is_null() {
+            return Ok(MultiType::Null);
+        }
+
+        serde_json::from_value(v.clone())
+            .map(MultiType::Single)
+            .or_else(|_| serde_json::from_value(v).map(MultiType::Multi))
+            .map_err(|err| D::Error::custom(format!("Invalid value type: {}", err)))
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
