@@ -1,13 +1,17 @@
 {
   "name": "axon-e2e-tests",
   "scripts": {
-    "test": "jest -i",
-    "lint": "eslint src/*.js"
+    "test": "jest",
+    "lint": "eslint src/*.js ./*.js"
   },
   "dependencies": {
     "@chainsafe/dappeteer": "^2.4.0",
     "jest-environment-node": "^27.5.1",
-    "puppeteer": "^13.4.0"
+    "ethereumjs-tx": "^2.1.2",
+    "js-yaml": "^4.1.0",
+    "puppeteer": "^13.4.0",
+    "web3": "^1.7.1",
+    "yaml": "^1.10.2"
   },
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.16.8",
