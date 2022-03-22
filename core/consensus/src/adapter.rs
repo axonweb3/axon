@@ -6,7 +6,7 @@ use overlord::{extract_voters, Crypto, OverlordHandler};
 use parking_lot::RwLock;
 
 use common_apm::Instant;
-use core_executor::{EVMExecutorAdapter, EvmExecutor};
+use core_executor::{AxonExecutor, AxonExecutorAdapter};
 use core_network::{PeerId, PeerIdExt};
 use protocol::traits::{
     CommonConsensusAdapter, ConsensusAdapter, Context, CrossClient, Executor, Gossip, MemPool,
@@ -354,7 +354,7 @@ where
         proposal: &Proposal,
         signed_txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<ExecResp> {
-        let mut backend = EVMExecutorAdapter::from_root(
+        let mut backend = AxonExecutorAdapter::from_root(
             last_state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
@@ -363,7 +363,7 @@ where
 
         Ok(task::block_in_place(|| {
             let time = Instant::now();
-            let res = EvmExecutor::default().exec(&mut backend, signed_txs);
+            let res = AxonExecutor::default().exec(&mut backend, signed_txs);
             common_apm::metrics::consensus::CONSENSUS_TIME_HISTOGRAM_VEC_STATIC
                 .exec
                 .observe(common_apm::metrics::duration_to_sec(time.elapsed()));

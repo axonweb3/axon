@@ -14,17 +14,16 @@ use log::{debug, error};
 use parking_lot::Mutex;
 
 use common_crypto::{Crypto, Secp256k1Recoverable};
-use core_executor::{EVMExecutorAdapter, EvmExecutor};
+use core_executor::{is_call_system_script, AxonExecutor, AxonExecutorAdapter};
 use protocol::traits::{
-    Context, Executor, Gossip, MemPoolAdapter, PeerTrust, Priority, Rpc, Storage, TrustFeedback,
+    Context, Executor, Gossip, MemPoolAdapter, MetadataControl, PeerTrust, Priority, Rpc, Storage,
+    TrustFeedback,
 };
 use protocol::types::{recover_intact_pub_key, Hash, MerkleRoot, SignedTransaction, H160, U256};
 use protocol::{
-    async_trait, codec::ProtocolCodec, lazy::CURRENT_STATE_ROOT, Display, ProtocolError,
+    async_trait, codec::ProtocolCodec, lazy::CURRENT_STATE_ROOT, tokio, Display, ProtocolError,
     ProtocolErrorKind, ProtocolResult,
 };
-
-use protocol::tokio;
 
 use crate::adapter::message::{
     MsgNewTxs, MsgPullTxs, MsgPushTxs, END_GOSSIP_NEW_TXS, RPC_PULL_TXS,
@@ -107,10 +106,11 @@ impl IntervalTxsBroadcaster {
     }
 }
 
-pub struct DefaultMemPoolAdapter<C, N, S, DB> {
-    network: N,
-    storage: Arc<S>,
-    trie_db: Arc<DB>,
+pub struct DefaultMemPoolAdapter<C, N, S, DB, M> {
+    network:  N,
+    storage:  Arc<S>,
+    trie_db:  Arc<DB>,
+    metadata: Arc<M>,
 
     addr_nonce:   DashMap<H160, U256>,
     _timeout_gap: AtomicU64,
@@ -124,17 +124,19 @@ pub struct DefaultMemPoolAdapter<C, N, S, DB> {
     pin_c: PhantomData<C>,
 }
 
-impl<C, N, S, DB> DefaultMemPoolAdapter<C, N, S, DB>
+impl<C, N, S, DB, M> DefaultMemPoolAdapter<C, N, S, DB, M>
 where
     C: Crypto,
     N: Rpc + PeerTrust + Gossip + Clone + Unpin + 'static,
     S: Storage,
     DB: cita_trie::DB + 'static,
+    M: MetadataControl + 'static,
 {
     pub fn new(
         network: N,
         storage: Arc<S>,
         trie_db: Arc<DB>,
+        metadata: Arc<M>,
         chain_id: u64,
         timeout_gap: u64,
         gas_limit: u64,
@@ -157,6 +159,7 @@ where
             network,
             storage,
             trie_db,
+            metadata,
 
             addr_nonce: DashMap::new(),
             _timeout_gap: AtomicU64::new(timeout_gap),
@@ -170,15 +173,38 @@ where
             pin_c: PhantomData,
         }
     }
+
+    async fn check_system_script_tx_authorization(
+        &self,
+        ctx: Context,
+        stx: &SignedTransaction,
+    ) -> ProtocolResult<()> {
+        let addr = &stx.sender;
+        let block = self.storage.get_latest_block(ctx.clone()).await?;
+        let metadata = self
+            .metadata
+            .get_metadata_unchecked(ctx, block.header.number + 1);
+
+        if metadata.verifier_list.iter().any(|ve| &ve.address == addr) {
+            return Ok(());
+        }
+
+        Err(MemPoolError::CheckAuthorization {
+            tx_hash:  stx.transaction.hash,
+            err_info: "Invalid system script transaction".to_string(),
+        }
+        .into())
+    }
 }
 
 #[async_trait]
-impl<C, N, S, DB> MemPoolAdapter for DefaultMemPoolAdapter<C, N, S, DB>
+impl<C, N, S, DB, M> MemPoolAdapter for DefaultMemPoolAdapter<C, N, S, DB, M>
 where
     C: Crypto + Send + Sync + 'static,
     N: Rpc + PeerTrust + Gossip + Clone + Unpin + 'static,
     S: Storage + 'static,
     DB: cita_trie::DB + 'static,
+    M: MetadataControl + 'static,
 {
     // #[muta_apm::derive::tracing_span(
     //     kind = "mempool.adapter",
@@ -221,9 +247,13 @@ where
 
     async fn check_authorization(
         &self,
-        _ctx: Context,
+        ctx: Context,
         tx: &SignedTransaction,
     ) -> ProtocolResult<()> {
+        if is_call_system_script(&tx.transaction.unsigned.action) {
+            return self.check_system_script_tx_authorization(ctx, tx).await;
+        }
+
         let addr = &tx.sender;
         if let Some(res) = self.addr_nonce.get(addr) {
             if res.value() >= &tx.transaction.unsigned.nonce {
@@ -237,14 +267,14 @@ where
             }
         }
 
-        let backend = EVMExecutorAdapter::from_root(
+        let backend = AxonExecutorAdapter::from_root(
             **CURRENT_STATE_ROOT.load(),
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
             Default::default(),
         )?;
 
-        let account = EvmExecutor::default().get_account(&backend, addr);
+        let account = AxonExecutor::default().get_account(&backend, addr);
         self.addr_nonce.insert(*addr, account.nonce);
 
         if account.nonce >= tx.transaction.unsigned.nonce {

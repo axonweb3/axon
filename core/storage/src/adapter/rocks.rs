@@ -240,7 +240,7 @@ pub enum RocksAdapterError {
     #[display(fmt = "parameters do not match")]
     InsertParameter,
 
-    #[display(fmt = "batch length dont match")]
+    #[display(fmt = "batch length do not match")]
     BatchLengthMismatch,
 
     #[display(fmt = "Create DB path {}", _0)]

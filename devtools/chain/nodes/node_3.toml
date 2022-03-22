@@ -6,8 +6,7 @@ data_path = "./devtools/chain/data/node_3"
 
 epoch_len = 100_000_000
 
-asset_contract_address = "0xc2fd48d60ae16b3fe6e333a9a13763691970d9373d4fab7cc323d7ba06fa9986"
-metadata_contract_address = "0x336c11f92895e657a26642914af5ec5e3d29d9ddd7f4bf91a022131c41b72352"
+metadata_contract_address = "0xc2fd48d60ae16b3fe6e333a9a13763691970d9373d4fab7cc323d7ba06fa9986"
 crosschain_contract_address = "0xda6db70ce66da4c6433bb447b484fd480e598621638f380f404697cd9f58b0f8"
 
 [rpc]

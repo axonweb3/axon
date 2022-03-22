@@ -45,7 +45,7 @@ where
     async fn process(&self, ctx: Context, msg: Self::Message) -> TrustFeedback {
         let ctx = ctx.mark_network_origin_new_txs();
 
-        let insert_stx = |stx| -> _ {
+        let insert_stx = |stx: SignedTransaction| -> _ {
             let mem_pool = Arc::clone(&self.mem_pool);
             let ctx = ctx.clone();
 
@@ -54,7 +54,10 @@ where
                 common_apm::metrics::mempool::MEMPOOL_COUNTER_STATIC
                     .insert_tx_from_p2p
                     .inc();
-                if mem_pool.insert(ctx, stx).await.is_err() {
+
+                let res = mem_pool.insert(ctx, stx).await;
+
+                if res.is_err() {
                     common_apm::metrics::mempool::MEMPOOL_RESULT_COUNTER_STATIC
                         .insert_tx_from_p2p
                         .failure

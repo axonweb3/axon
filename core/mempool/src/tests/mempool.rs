@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use test::Bencher;
@@ -96,6 +97,36 @@ async fn test_package() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn test_package_multi_types() {
+    let mempool = Arc::new(new_mempool(1024, 0, 0, 0).await);
+
+    // insert txs
+    let evm_txs = default_mock_txs(1024);
+    let sys_txs = mock_sys_txs(5);
+    let mut txs = sys_txs.clone();
+    txs.extend_from_slice(&evm_txs);
+    concurrent_insert(txs.clone(), Arc::clone(&mempool)).await;
+    assert_eq!(mempool.get_tx_cache().system_script_queue_len(), 5);
+
+    let package_txs = mempool
+        .package(Context::new(), 1000000000u64.into(), 10000)
+        .await
+        .unwrap();
+    assert_eq!(
+        sys_txs
+            .iter()
+            .map(|x| &x.transaction.hash)
+            .collect::<HashSet<_>>(),
+        package_txs.iter().take(5).collect::<HashSet<_>>()
+    );
+    assert_eq!(package_txs.len(), 1024 + 5);
+
+    exec_flush(package_txs, Arc::clone(&mempool)).await;
+    assert_eq!(mempool.get_tx_cache().system_script_queue_len(), 0);
+    assert_eq!(mempool.len(), 0);
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn test_flush() {
     let mempool = Arc::new(default_mempool().await);
 
@@ -181,22 +212,6 @@ async fn test_ensure_order_txs() {
     // all txs are not in pool
     ensure_order_txs!(0, 100);
 }
-
-// #[tokio::test]
-// async fn test_sync_propose_txs() {
-//     let mempool = &Arc::new(default_mempool().await);
-
-//     let txs = &default_mock_txs(50);
-//     let (exist_txs, need_sync_txs) = txs.split_at(20);
-//     concurrent_insert(exist_txs.to_vec(), Arc::clone(mempool)).await;
-//     concurrent_broadcast(need_sync_txs.to_vec(), Arc::clone(mempool)).await;
-
-//     let tx_hashes: Vec<Hash> = txs.iter().map(|tx|
-// tx.transaction.hash).collect();     exec_sync_propose_txs(tx_hashes,
-// Arc::clone(mempool)).await;
-
-//     assert_eq!(mempool.get_tx_cache().len(), 50);
-// }
 
 #[rustfmt::skip]
 /// Bench in Intel(R) Core(TM) i7-4770HQ CPU @ 2.20GHz (8 x 2200):

@@ -3,7 +3,7 @@ pub use ethereum::Log;
 pub use batch::*;
 pub use block::*;
 pub use bytes::{Buf, BufMut, Bytes, BytesMut};
-pub use evm::{backend::*, ExitSucceed};
+pub use evm::{backend::*, ExitRevert, ExitSucceed};
 pub use executor::{
     AccessList, AccessListItem, Account, Config, ExecResp, ExecutorContext, ExitReason, TxResp,
 };

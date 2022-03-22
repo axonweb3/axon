@@ -31,7 +31,7 @@ use core_consensus::{
     OverlordConsensusAdapter, OverlordSynchronization, SignedTxsWAL,
 };
 use core_cross_client::DefaultCrossAdapter;
-use core_executor::{EVMExecutorAdapter, EvmExecutor, MPTTrie, RocksTrieDB};
+use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB};
 use core_mempool::{
     DefaultMemPoolAdapter, MemPoolImpl, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
     RPC_PULL_TXS, RPC_RESP_PULL_TXS, RPC_RESP_PULL_TXS_SYNC,
@@ -42,7 +42,7 @@ use core_network::{
 };
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::codec::{hex_decode, ProtocolCodec};
-use protocol::lazy::{ASSET_CONTRACT_ADDRESS, CHAIN_ID, CURRENT_STATE_ROOT};
+use protocol::lazy::{CHAIN_ID, CURRENT_STATE_ROOT};
 #[cfg(unix)]
 use protocol::tokio::signal::unix as os_impl;
 use protocol::tokio::{runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep};
@@ -78,7 +78,7 @@ impl Axon {
                 apm_config.tracing_batch_size,
             );
 
-            log::info!("muta_apm start");
+            log::info!("axon_apm start");
         }
 
         let rt = RuntimeBuilder::new_multi_thread()
@@ -136,8 +136,8 @@ impl Axon {
         )?;
 
         let proposal = Proposal::from(self.genesis.block.clone());
-        let executor = EvmExecutor::default();
-        let mut backend = EVMExecutorAdapter::from_root(
+        let executor = AxonExecutor::default();
+        let mut backend = AxonExecutorAdapter::from_root(
             mpt.commit()?,
             trie_db,
             Arc::clone(&storage),
@@ -249,11 +249,21 @@ impl Axon {
             current_block.header.number + 1
         );
 
+        let metadata_adapter = MetadataAdapterImpl::new(Arc::clone(&storage), Arc::clone(&trie_db));
+        let metadata_controller = Arc::new(MetadataController::new(
+            Arc::new(metadata_adapter),
+            self.config.metadata_contract_address.into(),
+            self.config.epoch_len,
+        ));
+
+        let metadata = metadata_controller.get_metadata(Context::new(), &current_block.header)?;
+
         // Init mempool
-        let mempool_adapter = DefaultMemPoolAdapter::<Secp256k1, _, _, _>::new(
+        let mempool_adapter = DefaultMemPoolAdapter::<Secp256k1, _, _, _, _>::new(
             network_service.handle(),
             Arc::clone(&storage),
             Arc::clone(&trie_db),
+            Arc::clone(&metadata_controller),
             self.genesis.block.header.chain_id,
             config.mempool.timeout_gap,
             self.genesis.block.header.gas_limit.as_u64(),
@@ -302,17 +312,6 @@ impl Axon {
 
         network_service.register_rpc_response(RPC_RESP_PULL_TXS_SYNC)?;
 
-        let metadata_adapter = MetadataAdapterImpl::new(Arc::clone(&storage), Arc::clone(&trie_db));
-        let metadata_controller = Arc::new(MetadataController::new(
-            Arc::new(metadata_adapter),
-            self.config.metadata_contract_address.into(),
-            self.config.epoch_len,
-        ));
-
-        let metadata = metadata_controller.get_metadata(Context::new(), &current_block.header)?;
-        common_apm::metrics::network::NETWORK_TAGGED_CONSENSUS_PEERS
-            .set(metadata.verifier_list.len() as i64);
-
         // Init Consensus
         let validators: Vec<Validator> = metadata
             .verifier_list
@@ -348,8 +347,8 @@ impl Axon {
         } else {
             // Init executor
             let proposal = Proposal::from(current_header.clone());
-            let executor = EvmExecutor::default();
-            let mut backend = EVMExecutorAdapter::from_root(
+            let executor = AxonExecutor::default();
+            let mut backend = AxonExecutorAdapter::from_root(
                 current_header.state_root,
                 Arc::clone(&trie_db),
                 Arc::clone(&storage),
@@ -373,7 +372,6 @@ impl Axon {
 
         CURRENT_STATE_ROOT.swap(Arc::new(current_consensus_status.last_state_root));
         CHAIN_ID.swap(Arc::new(current_header.chain_id));
-        ASSET_CONTRACT_ADDRESS.swap(Arc::new(self.config.asset_contract_address.into()));
 
         // set args in mempool
         mempool.set_args(
@@ -553,7 +551,7 @@ impl Axon {
                 )
                 .await
             {
-                log::error!("muta-consensus: {:?} error", e);
+                log::error!("axon-consensus: {:?} error", e);
             }
         });
 
@@ -623,7 +621,7 @@ impl Axon {
 
 #[derive(Debug, Display, From)]
 pub enum MainError {
-    #[display(fmt = "The muta configuration read failed {:?}", _0)]
+    #[display(fmt = "The axon configuration read failed {:?}", _0)]
     ConfigParse(common_config_parser::ParseError),
 
     #[display(fmt = "{:?}", _0)]
