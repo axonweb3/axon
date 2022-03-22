@@ -9,8 +9,24 @@ on:
   pull_request:
 
 jobs:
+  prologue:
+    name: prologue
+    runs-on: ubuntu-20.04
+    outputs:
+      job_skip: ${{ steps.prologue.outputs.job_skip }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: prologue
+      id: prologue
+      uses: ./.github/actions/ci_prologue
+      with:
+        GITHUB_EVENT_NAME: ${{ github.event_name }}
+        PR_COMMONS_BODY: "${{ github.event.pull_request.body }}"
+        GITHUB_WORKFLOW: ${{ github.workflow }}
   Clippy:
+    needs: prologue
     runs-on: ubuntu-latest
+    if: needs.prologue.outputs.job_skip == 'run'
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
@@ -20,3 +36,4 @@ jobs:
 
       - name: cargo-clippy
         run: make clippy && git diff --exit-code Cargo.lock
+
