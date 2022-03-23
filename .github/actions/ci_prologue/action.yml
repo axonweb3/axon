@@ -1,0 +1,27 @@
+name: 'ci-composite-action'
+description: 'ci-composite-action'
+inputs:
+  GITHUB_EVENT_NAME:  # id of input
+    description: 'Github event'
+    required: true
+  PR_COMMONS_BODY:  # id of input
+    description: 'pr comments body'
+    required: true
+  GITHUB_WORKFLOW:  # id of input
+    description: 'GITHUB_WORKFLOW name'
+    required: true
+outputs:
+  job_skip:
+    description: "The flag for skip run jobs or not"
+    value: ${{ steps.prologue.outputs.job_skip }}
+runs:
+  using: "composite"
+  steps:
+    - id: prologue
+      run: ${{ github.action_path }}/ci_prologue.sh
+      shell: bash
+      env:
+        GITHUB_EVENT_NAME: ${{ inputs.GITHUB_EVENT_NAME }}
+        PR_COMMONS_BODY:  ${{ inputs.PR_COMMONS_BODY }}
+        GITHUB_WORKFLOW:  ${{ inputs.GITHUB_WORKFLOW }}
+
