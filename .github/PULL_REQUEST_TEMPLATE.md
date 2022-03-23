@@ -19,3 +19,8 @@ Ref #
 No Breaking Change
 
 **Special notes for your reviewer**:
+
+Tests #
+
+ci-runs-only:[ Chaos CI,Cargo Clippy,Coverage Test,E2E Tests,Code Format,Unit Tests ]
+
