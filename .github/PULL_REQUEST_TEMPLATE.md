@@ -22,5 +22,5 @@ No Breaking Change
 
 ### CI Switch
 
-ci-runs-only:[ Chaos CI,Cargo Clippy,Coverage Test,E2E Tests,Code Format,Unit Tests ]
+ci-runs-only: [Chaos CI, Cargo Clippy, Coverage Test, E2E Tests, Code Format, Unit Tests]
 
