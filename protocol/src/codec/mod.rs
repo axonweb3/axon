@@ -4,7 +4,6 @@ pub mod executor;
 pub mod receipt;
 pub mod transaction;
 
-use hex_simd::{decode_to_boxed_bytes, encode_to_boxed_str, AsciiCase};
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 
 use crate::types::{Address, Bytes, DBBytes, H160};
@@ -52,7 +51,7 @@ impl Decodable for Address {
 }
 
 pub fn hex_encode<T: AsRef<[u8]>>(src: T) -> String {
-    encode_to_boxed_str(src.as_ref(), AsciiCase::Lower).into_string()
+    faster_hex::hex_string(src.as_ref())
 }
 
 pub fn hex_decode(src: &str) -> ProtocolResult<Vec<u8>> {
@@ -60,9 +59,12 @@ pub fn hex_decode(src: &str) -> ProtocolResult<Vec<u8>> {
         return Ok(Vec::new());
     }
 
-    let res = decode_to_boxed_bytes(src.as_bytes())
+    let src = src.as_bytes();
+    let mut ret = vec![0u8; src.len() / 2];
+    faster_hex::hex_decode(src, &mut ret)
         .map_err(|error| crate::types::TypesError::FromHex { error })?;
-    Ok(res.into())
+
+    Ok(ret)
 }
 
 #[cfg(test)]

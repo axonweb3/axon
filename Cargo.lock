@@ -209,6 +209,7 @@ dependencies = [
  "ethereum",
  "ethereum-types",
  "evm",
+ "faster-hex",
  "getrandom 0.2.5",
  "hasher",
  "hex",

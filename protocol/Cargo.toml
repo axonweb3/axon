@@ -16,6 +16,7 @@ derive_more = "0.99"
 ethereum = "0.11"
 ethereum-types = "0.12"
 evm = { version = "0.33", features = ["with-codec", "with-serde"] }
+faster-hex = "0.6"
 hasher = { version = "0.1", features = ["hash-keccak"] }
 hex-simd = "0.5"
 lazy_static = "1.4"
