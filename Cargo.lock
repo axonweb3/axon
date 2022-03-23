@@ -213,7 +213,6 @@ dependencies = [
  "getrandom 0.2.5",
  "hasher",
  "hex",
- "hex-simd",
  "lazy_static",
  "ophelia",
  "ophelia-secp256k1",
@@ -2533,15 +2532,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
-name = "hex-simd"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe0c75fc22984fd442b0be94ce95ed5f09babbe58df45ec8e71a1aedec6904e6"
-dependencies = [
- "simd-abstraction",
-]
-
-[[package]]
 name = "hmac"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4657,12 +4647,6 @@ dependencies = [
  "digest 0.9.0",
  "rand_core 0.6.3",
 ]
-
-[[package]]
-name = "simd-abstraction"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df70fadc9b3167d59d7301bffe0eee7f0a353024d338e7d25d822c28450ae893"
 
 [[package]]
 name = "slab"

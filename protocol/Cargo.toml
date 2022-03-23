@@ -18,7 +18,6 @@ ethereum-types = "0.12"
 evm = { version = "0.33", features = ["with-codec", "with-serde"] }
 faster-hex = "0.6"
 hasher = { version = "0.1", features = ["hash-keccak"] }
-hex-simd = "0.5"
 lazy_static = "1.4"
 ophelia = "0.3"
 ophelia-secp256k1 = "0.3"
