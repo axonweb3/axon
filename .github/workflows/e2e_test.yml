@@ -15,7 +15,7 @@ jobs:
     outputs:
       job_skip: ${{ steps.prologue.outputs.job_skip }}
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: prologue
       id: prologue
       uses: ./.github/actions/ci_prologue
