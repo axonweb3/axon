@@ -32,7 +32,7 @@ mod benches {
     use std::convert::TryFrom;
 
     use overlord::types::{Vote, VoteType};
-    use rand::{random};
+    use rand::random;
     use test::Bencher;
 
     use protocol::types::{Bytes, H256, Hasher};

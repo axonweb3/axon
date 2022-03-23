@@ -1187,7 +1187,9 @@ dependencies = [
  "log",
  "parking_lot 0.12.0",
  "rand 0.8.5",
+ "ripemd",
  "rlp",
+ "sha2 0.10.2",
  "tempfile",
 ]
 
@@ -3444,14 +3446,14 @@ dependencies = [
 
 [[package]]
 name = "ophelia-secp256k1"
-version = "0.3.7"
+version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3cd88ccf2f536a7d74c7cb20e9cdaad3bd87f1c03a04b6fc1a7cd69f1841c2d7"
+checksum = "1cbdf4e8e13f2c10c254debe4087d97cbe718939a037188b898ca1beab682146"
 dependencies = [
  "lazy_static",
  "ophelia",
  "ophelia-derive",
- "secp256k1",
+ "secp256k1 0.22.1",
 ]
 
 [[package]]
@@ -4172,6 +4174,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ripemd"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1facec54cb5e0dc08553501fa740091086d0259ad0067e0d4103448e4cb22ed3"
+dependencies = [
+ "digest 0.10.3",
+]
+
+[[package]]
 name = "ripemd160"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4404,7 +4415,16 @@ version = "0.20.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97d03ceae636d0fed5bae6a7f4f664354c5f4fcedf6eef053fef17e49f837d0a"
 dependencies = [
- "secp256k1-sys",
+ "secp256k1-sys 0.4.2",
+]
+
+[[package]]
+name = "secp256k1"
+version = "0.22.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "26947345339603ae8395f68e2f3d85a6b0a8ddfe6315818e80b8504415099db0"
+dependencies = [
+ "secp256k1-sys 0.5.0",
 ]
 
 [[package]]
@@ -4412,6 +4432,15 @@ name = "secp256k1-sys"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "957da2573cde917463ece3570eab4a0b3f19de6f1646cde62e6fd3868f566036"
+dependencies = [
+ "cc",
+]
+
+[[package]]
+name = "secp256k1-sys"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "07b5b9d7322572e1f3aeed208668ce87789b3645dbb73082c5ce99a004103a35"
 dependencies = [
  "cc",
 ]
@@ -4881,7 +4910,7 @@ dependencies = [
  "rand 0.8.5",
  "rand_core 0.5.1",
  "ring",
- "secp256k1",
+ "secp256k1 0.20.3",
  "sha2 0.10.2",
  "tokio",
  "tokio-util 0.7.0",
