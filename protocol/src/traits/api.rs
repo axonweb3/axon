@@ -62,6 +62,8 @@ pub trait APIAdapter: Send + Sync {
         number: Option<BlockNumber>,
     ) -> ProtocolResult<Account>;
 
+    async fn get_pending_tx_count(&self, ctx: Context, address: H160) -> ProtocolResult<U256>;
+
     async fn evm_call(
         &self,
         ctx: Context,
@@ -79,7 +81,7 @@ pub trait APIAdapter: Send + Sync {
         &self,
         ctx: Context,
         address: H160,
-        position: Bytes,
+        position: U256,
         state_root: Hash,
     ) -> ProtocolResult<Bytes>;
 }

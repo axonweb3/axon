@@ -8,7 +8,7 @@ use common_crypto::{
     Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey, Signature,
     ToPublicKey, UncompressedPublicKey,
 };
-use core_executor::{EVMExecutorAdapter, EvmExecutor, MPTTrie, RocksTrieDB};
+use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB};
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::codec::{hex_decode, ProtocolCodec};
 use protocol::traits::Executor;
@@ -59,8 +59,8 @@ impl BenchAdapter {
         mpt.commit().unwrap()
     }
 
-    fn init_bachend(&self) -> EVMExecutorAdapter<ImplStorage<RocksAdapter>, RocksTrieDB> {
-        EVMExecutorAdapter::from_root(
+    fn init_bachend(&self) -> AxonExecutorAdapter<ImplStorage<RocksAdapter>, RocksTrieDB> {
+        AxonExecutorAdapter::from_root(
             self.init_mpt(),
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
@@ -137,7 +137,7 @@ fn mock_txs(number: u64) -> Vec<SignedTransaction> {
 
 fn criterion_100_txs(c: &mut Criterion) {
     let txs = mock_txs(100);
-    let executor = EvmExecutor::default();
+    let executor = AxonExecutor::default();
     let mut backend = BenchAdapter::new().init_bachend();
 
     c.bench_function("transfer 100", |b| {
@@ -147,7 +147,7 @@ fn criterion_100_txs(c: &mut Criterion) {
 
 fn criterion_1000_txs(c: &mut Criterion) {
     let txs = mock_txs(1000);
-    let executor = EvmExecutor::default();
+    let executor = AxonExecutor::default();
     let mut backend = BenchAdapter::new().init_bachend();
 
     c.bench_function("transfer 1000", |b| {
@@ -157,7 +157,7 @@ fn criterion_1000_txs(c: &mut Criterion) {
 
 fn criterion_10000_txs(c: &mut Criterion) {
     let txs = mock_txs(10000);
-    let executor = EvmExecutor::default();
+    let executor = AxonExecutor::default();
     let mut backend = BenchAdapter::new().init_bachend();
 
     c.bench_function("transfer 10000", |b| {

@@ -1,0 +1,21 @@
+<html>
+  <body>
+    <div>
+      <button id="getMining">Get mining</button>
+      <div>Mining: <span id="mining"></span></div>
+    </div>
+  </body>
+  <script>
+    document
+      .getElementById("getMining")
+      .addEventListener(
+        "click",
+        () => {
+          ethereum
+            .request({ method: "eth_mining" })
+            .then((result) => {
+              document.getElementById("mining").innerHTML = JSON.stringify(result);
+            });
+        });
+  </script>
+</html>

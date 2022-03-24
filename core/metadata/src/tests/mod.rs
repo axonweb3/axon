@@ -7,7 +7,7 @@ use std::sync::Arc;
 use ethers::core::abi::AbiEncode;
 
 use core_executor::adapter::{MPTTrie, RocksTrieDB};
-use core_executor::{EVMExecutorAdapter, EvmExecutor};
+use core_executor::{AxonExecutor, AxonExecutorAdapter};
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{CommonStorage, Context, Executor, Storage};
@@ -23,7 +23,7 @@ const GENESIS_PATH: &str = "../../devtools/chain/genesis_single_node.json";
 
 lazy_static::lazy_static! {
     static ref METADATA_ADDRESS: H160
-        = H160::from_slice(&Hex::decode("0x4af5ec5e3d29d9ddd7f4bf91a022131c41b72352".to_string()).unwrap());
+        = H160::from_slice(&Hex::decode("0xa13763691970d9373d4fab7cc323d7ba06fa9986".to_string()).unwrap());
 }
 
 struct TestHandle {
@@ -70,8 +70,8 @@ impl TestHandle {
         .unwrap();
 
         let proposal = Proposal::from(genesis.block.clone());
-        let executor = EvmExecutor::default();
-        let mut backend = EVMExecutorAdapter::from_root(
+        let executor = AxonExecutor::default();
+        let mut backend = AxonExecutorAdapter::from_root(
             mpt.commit().unwrap(),
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
@@ -80,6 +80,8 @@ impl TestHandle {
         .unwrap();
 
         let resp = executor.exec(&mut backend, genesis.txs.clone());
+
+        println!("{:?}", resp);
 
         self.state_root = resp.state_root;
         self.storage
@@ -110,27 +112,27 @@ impl TestHandle {
     }
 
     pub fn exec(&mut self, txs: Vec<SignedTransaction>) {
-        let mut backend = EVMExecutorAdapter::from_root(
+        let mut backend = AxonExecutorAdapter::from_root(
             self.state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
             mock_proposal().into(),
         )
         .unwrap();
-        let resp = EvmExecutor::default().exec(&mut backend, txs);
+        let resp = AxonExecutor::default().exec(&mut backend, txs);
         println!("{:?}", resp);
         self.state_root = resp.state_root;
     }
 }
 
-fn mock_header(blocl_number: u64, state: H256) -> Header {
+fn mock_header(block_number: u64, state: H256) -> Header {
     Header {
         prev_hash:                  Default::default(),
         proposer:                   Default::default(),
         transactions_root:          Default::default(),
         signed_txs_hash:            Default::default(),
         timestamp:                  Default::default(),
-        number:                     blocl_number,
+        number:                     block_number,
         gas_limit:                  1000000000u64.into(),
         extra_data:                 Default::default(),
         mixed_hash:                 Default::default(),

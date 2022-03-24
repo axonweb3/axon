@@ -3,7 +3,7 @@ pub use ethereum::Log;
 pub use batch::*;
 pub use block::*;
 pub use bytes::{Buf, BufMut, Bytes, BytesMut};
-pub use evm::{backend::*, ExitSucceed};
+pub use evm::{backend::*, ExitRevert, ExitSucceed};
 pub use executor::{
     AccessList, AccessListItem, Account, Config, ExecResp, ExecutorContext, ExitReason, TxResp,
 };
@@ -32,7 +32,7 @@ pub enum TypesError {
     LengthMismatch { expect: usize, real: usize },
 
     #[display(fmt = "{:?}", error)]
-    FromHex { error: hex_simd::Error },
+    FromHex { error: faster_hex::Error },
 
     #[display(fmt = "{:?} is an invalid address", address)]
     InvalidAddress { address: String },

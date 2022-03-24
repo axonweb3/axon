@@ -25,7 +25,7 @@ use protocol::{
 
 use crate::jsonrpc::{
     r#impl::from_receipt_to_web3_log,
-    web3_types::{Web3Header, Web3SyncStatus},
+    web3_types::{MultiType, Web3Header, Web3SyncStatus},
 };
 
 pub async fn ws_subscription_module<Adapter>(adapter: Arc<Adapter>) -> RpcModule<Sender<RawHub>>
@@ -171,7 +171,7 @@ where
                     let log_len = receipt.logs.len();
                     for hub in self.log_hubs.iter_mut() {
                         match hub.filter.address {
-                            Some(ref s) if s == &receipt.sender => from_receipt_to_web3_log(
+                            Some(ref s) if s.contains(&receipt.sender) => from_receipt_to_web3_log(
                                 index,
                                 hub.filter.topics.as_ref().unwrap_or(&Vec::new()),
                                 &receipt,
@@ -245,8 +245,8 @@ impl<'a> TryFrom<Params<'a>> for Type {
             "newHeads" => Ok(Type::NewHeads),
             "syncing" => Ok(Type::Syncing),
             "logs" => {
-                let filter: LoggerFilter = iter.next()?;
-                Ok(Type::Logs(filter))
+                let filter: RawLoggerFilter = iter.next()?;
+                Ok(Type::Logs(filter.into()))
             }
             _ => Err(CallError::Custom {
                 code:    -1,
@@ -258,9 +258,24 @@ impl<'a> TryFrom<Params<'a>> for Type {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-struct LoggerFilter {
-    address: Option<H160>,
+struct RawLoggerFilter {
+    address: MultiType<H160>,
     topics:  Option<Vec<Hash>>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+struct LoggerFilter {
+    address: Option<Vec<H160>>,
+    topics:  Option<Vec<Hash>>,
+}
+
+impl From<RawLoggerFilter> for LoggerFilter {
+    fn from(src: RawLoggerFilter) -> Self {
+        LoggerFilter {
+            address: src.address.into(),
+            topics:  src.topics,
+        }
+    }
 }
 
 pub struct RawHub {

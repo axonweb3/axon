@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use core_executor::{EVMExecutorAdapter, EvmExecutor, MPTTrie};
+use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie};
 use protocol::traits::{APIAdapter, Context, Executor, ExecutorAdapter, MemPool, Network, Storage};
 use protocol::types::{
-    Account, Block, BlockNumber, Bytes, ExecutorContext, Hash, Header, Proposal, Receipt,
-    SignedTransaction, TxResp, H160, U256,
+    Account, BigEndianHash, Block, BlockNumber, Bytes, ExecutorContext, Hash, Header, Proposal,
+    Receipt, SignedTransaction, TxResp, H160, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
@@ -37,7 +37,7 @@ where
     pub async fn evm_backend(
         &self,
         number: Option<BlockNumber>,
-    ) -> ProtocolResult<EVMExecutorAdapter<S, DB>> {
+    ) -> ProtocolResult<AxonExecutorAdapter<S, DB>> {
         let block = self
             .get_block_by_number(Context::new(), number)
             .await?
@@ -45,7 +45,7 @@ where
         let state_root = block.header.state_root;
         let proposal: Proposal = block.into();
 
-        EVMExecutorAdapter::from_root(
+        AxonExecutorAdapter::from_root(
             state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
@@ -152,6 +152,13 @@ where
         Account::decode(bytes)
     }
 
+    async fn get_pending_tx_count(&self, ctx: Context, address: H160) -> ProtocolResult<U256> {
+        self.mempool
+            .get_tx_count_by_address(ctx, address)
+            .await
+            .map(U256::from)
+    }
+
     async fn evm_call(
         &self,
         _ctx: Context,
@@ -160,14 +167,14 @@ where
         state_root: Hash,
         mock_header: Proposal,
     ) -> ProtocolResult<TxResp> {
-        let mut backend = EVMExecutorAdapter::from_root(
+        let mut backend = AxonExecutorAdapter::from_root(
             state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
             ExecutorContext::from(mock_header),
         )?;
 
-        Ok(EvmExecutor::default().call(&mut backend, address, data))
+        Ok(AxonExecutor::default().call(&mut backend, address, data))
     }
 
     async fn get_code_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>> {
@@ -182,7 +189,7 @@ where
         &self,
         _ctx: Context,
         address: H160,
-        position: Bytes,
+        position: U256,
         state_root: Hash,
     ) -> ProtocolResult<Bytes> {
         let state_mpt_tree = MPTTrie::from_root(state_root, Arc::clone(&self.trie_db))?;
@@ -192,8 +199,12 @@ where
             .ok_or_else(|| APIError::Adapter("Can't find this address".to_string()))?;
 
         let account = Account::decode(raw_account).unwrap();
+
         let storage_mpt_tree = MPTTrie::from_root(account.storage_root, Arc::clone(&self.trie_db))?;
 
-        Ok(storage_mpt_tree.get(&position)?.unwrap_or_default())
+        let hash: Hash = BigEndianHash::from_uint(&position);
+        storage_mpt_tree
+            .get(hash.as_bytes())?
+            .ok_or_else(|| APIError::Adapter("Can't find this position".to_string()).into())
     }
 }

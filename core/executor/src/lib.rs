@@ -3,8 +3,14 @@
 pub mod adapter;
 #[cfg(test)]
 mod debugger;
+mod precompiles;
+mod system;
 #[cfg(test)]
 mod tests;
+mod vm;
+
+pub use crate::adapter::{AxonExecutorAdapter, MPTTrie, RocksTrieDB};
+pub use crate::{system::NATIVE_TOKEN_ISSUE_ADDRESS, vm::code_address};
 
 use std::collections::BTreeMap;
 
@@ -14,22 +20,22 @@ use common_merkle::Merkle;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ApplyBackend, Backend, Executor, ExecutorAdapter as Adapter};
 use protocol::types::{
-    Account, Config, ExecResp, Hasher, SignedTransaction, TransactionAction, TxResp, H160, H256,
+    Account, Config, ExecResp, Hasher, SignedTransaction, TransactionAction, TxResp, H160,
     NIL_DATA, RLP_NULL, U256,
 };
 
-pub use crate::adapter::{EVMExecutorAdapter, MPTTrie, RocksTrieDB};
+use crate::{system::SystemExecutor, vm::EvmExecutor};
 
 #[derive(Default)]
-pub struct EvmExecutor;
+pub struct AxonExecutor;
 
-impl EvmExecutor {
+impl AxonExecutor {
     pub fn new() -> Self {
-        EvmExecutor::default()
+        AxonExecutor::default()
     }
 }
 
-impl Executor for EvmExecutor {
+impl Executor for AxonExecutor {
     // Used for query data API, this function will not modify the world state.
     fn call<B: Backend>(&self, backend: &mut B, addr: H160, data: Vec<u8>) -> TxResp {
         let config = Config::london();
@@ -67,15 +73,23 @@ impl Executor for EvmExecutor {
         let mut hashes = Vec::with_capacity(txs_len);
         let mut gas_use = 0u64;
 
-        txs.into_iter().for_each(|tx| {
+        let evm_executor = EvmExecutor::new();
+        let sys_executor = SystemExecutor::new();
+
+        for tx in txs.into_iter() {
             backend.set_gas_price(tx.transaction.unsigned.gas_price);
-            let mut r = self.inner_exec(backend, tx);
+            let mut r = if is_call_system_script(&tx.transaction.unsigned.action) {
+                sys_executor.inner_exec(backend, tx)
+            } else {
+                evm_executor.inner_exec(backend, tx)
+            };
+
             r.logs = backend.get_logs();
             gas_use += r.gas_used;
 
             hashes.push(Hasher::digest(&r.ret));
             res.push(r);
-        });
+        }
 
         ExecResp {
             state_root:   backend.state_root(),
@@ -100,78 +114,9 @@ impl Executor for EvmExecutor {
     }
 }
 
-impl EvmExecutor {
-    fn inner_exec<B: Backend + ApplyBackend>(
-        &self,
-        backend: &mut B,
-        tx: SignedTransaction,
-    ) -> TxResp {
-        let old_nonce = backend.basic(tx.sender).nonce;
-        let config = Config::london();
-        let metadata = StackSubstateMetadata::new(u64::MAX, &config);
-        let state = MemoryStackState::new(metadata, backend);
-        let precompiles = BTreeMap::new();
-        let mut executor = StackExecutor::new_with_precompiles(state, &config, &precompiles);
-        let (exit_reason, ret) = match tx.transaction.unsigned.action {
-            TransactionAction::Call(addr) => executor.transact_call(
-                tx.sender,
-                addr,
-                tx.transaction.unsigned.value,
-                tx.transaction.unsigned.data.to_vec(),
-                tx.transaction.unsigned.gas_limit.as_u64(),
-                tx.transaction
-                    .unsigned
-                    .access_list
-                    .into_iter()
-                    .map(|x| (x.address, x.slots))
-                    .collect(),
-            ),
-            TransactionAction::Create => {
-                let exit_reason = executor.transact_create(
-                    tx.sender,
-                    tx.transaction.unsigned.value,
-                    tx.transaction.unsigned.data.to_vec(),
-                    tx.transaction.unsigned.gas_limit.as_u64(),
-                    tx.transaction
-                        .unsigned
-                        .access_list
-                        .into_iter()
-                        .map(|x| (x.address, x.slots))
-                        .collect(),
-                );
-
-                (exit_reason, Vec::new())
-            }
-        };
-        let remain_gas = executor.gas();
-        let gas_used = executor.used_gas();
-
-        let code_address = if exit_reason.is_succeed() {
-            let (values, logs) = executor.into_state().deconstruct();
-            backend.apply(values, logs, true);
-            if tx.transaction.unsigned.action == TransactionAction::Create {
-                Some(code_address(&tx.sender, &old_nonce))
-            } else {
-                None
-            }
-        } else {
-            None
-        };
-
-        TxResp {
-            exit_reason,
-            ret,
-            remain_gas,
-            gas_used,
-            logs: vec![],
-            code_address,
-        }
+pub fn is_call_system_script(action: &TransactionAction) -> bool {
+    match action {
+        TransactionAction::Call(addr) => addr == &NATIVE_TOKEN_ISSUE_ADDRESS,
+        TransactionAction::Create => false,
     }
-}
-
-pub fn code_address(sender: &H160, nonce: &U256) -> H256 {
-    let mut stream = rlp::RlpStream::new_list(2);
-    stream.append(sender);
-    stream.append(nonce);
-    Hasher::digest(&stream.out())
 }

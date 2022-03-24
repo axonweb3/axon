@@ -18,8 +18,8 @@ use protocol::types::{
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
 use crate::jsonrpc::web3_types::{
-    BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter,
-    Web3Log, Web3Receipt, Web3SyncStatus, Web3Transaction,
+    BlockId, BlockIdWithPending, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3FeeHistory,
+    Web3Filter, Web3Log, Web3Receipt, Web3SyncStatus, Web3Transaction,
 };
 
 use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
@@ -77,6 +77,8 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             .map_err(|e| Error::Custom(e.to_string()))?
             .hash();
         let stx = SignedTransaction::try_from(utx).map_err(|e| Error::Custom(e.to_string()))?;
+
+        // Todo: add a call system script check here.
         let hash = stx.transaction.hash;
         self.adapter
             .insert_signed_txs(Context::new(), stx)
@@ -190,14 +192,24 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
     }
 
     #[metrics_rpc("eth_getTransactionCount")]
-    async fn get_transaction_count(&self, address: H160, number: BlockId) -> RpcResult<U256> {
-        let account = self
-            .adapter
-            .get_account(Context::new(), address, number.into())
-            .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
-
-        Ok(account.nonce)
+    async fn get_transaction_count(
+        &self,
+        address: H160,
+        number: BlockIdWithPending,
+    ) -> RpcResult<U256> {
+        match number {
+            BlockIdWithPending::BlockId(id) => self
+                .adapter
+                .get_account(Context::new(), address, id.into())
+                .await
+                .map(|account| account.nonce)
+                .map_err(|e| Error::Custom(e.to_string())),
+            BlockIdWithPending::Pending => self
+                .adapter
+                .get_pending_tx_count(Context::new(), address)
+                .await
+                .map_err(|e| Error::Custom(e.to_string())),
+        }
     }
 
     #[metrics_rpc("eth_blockNumber")]
@@ -367,14 +379,14 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             position: BlockPosition,
             topics: &[H256],
             logs: &mut Vec<Web3Log>,
-            address: Option<&H160>,
+            address: Option<&Vec<H160>>,
         ) -> RpcResult<()> {
             let extend_logs = |logs: &mut Vec<Web3Log>, receipts: Vec<Option<Receipt>>| {
                 let mut index = 0;
                 for receipt in receipts.into_iter().flatten() {
                     let log_len = receipt.logs.len();
                     match address {
-                        Some(s) if s == &receipt.sender => {
+                        Some(s) if s.contains(&receipt.sender) => {
                             from_receipt_to_web3_log(index, topics, &receipt, logs)
                         }
                         None => from_receipt_to_web3_log(index, topics, &receipt, logs),
@@ -444,6 +456,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             }
         }
 
+        let address_filter: Option<Vec<H160>> = filter.address.into();
         let mut all_logs = Vec::new();
         match filter.block_hash {
             Some(hash) => {
@@ -452,7 +465,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                     BlockPosition::Hash(hash),
                     &topics,
                     &mut all_logs,
-                    filter.address.as_ref(),
+                    address_filter.as_ref(),
                 )
                 .await?;
             }
@@ -492,7 +505,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                             BlockPosition::Num(n),
                             &topics,
                             &mut all_logs,
-                            filter.address.as_ref(),
+                            address_filter.as_ref(),
                         )
                         .await?;
                     }
@@ -504,7 +517,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                         BlockPosition::Block(latest_block),
                         &topics,
                         &mut all_logs,
-                        filter.address.as_ref(),
+                        address_filter.as_ref(),
                     )
                     .await?;
                 }
@@ -624,7 +637,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
     async fn get_storage_at(
         &self,
         address: H160,
-        position: Hex,
+        position: U256,
         number: BlockId,
     ) -> RpcResult<Hex> {
         let block = self
@@ -635,12 +648,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             .ok_or_else(|| Error::Custom("Can't find this block".to_string()))?;
         let value = self
             .adapter
-            .get_storage_at(
-                Context::new(),
-                address,
-                position.as_bytes(),
-                block.header.state_root,
-            )
+            .get_storage_at(Context::new(), address, position, block.header.state_root)
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 

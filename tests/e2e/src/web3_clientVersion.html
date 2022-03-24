@@ -1,0 +1,21 @@
+<html>
+  <body>
+    <div>
+      <button id="getClientVersion">Get client version</button>
+      <div>Client version: <span id="clientVersion"></span></div>
+    </div>
+  </body>
+  <script>
+    document
+      .getElementById("getClientVersion")
+      .addEventListener(
+        "click",
+        () => {
+          ethereum
+            .request({ method: "web3_clientVersion" })
+            .then((version) => {
+              document.getElementById("clientVersion").innerHTML = version;
+            });
+        });
+  </script>
+</html>

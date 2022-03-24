@@ -22,15 +22,16 @@ use std::sync::Arc;
 use futures::future::try_join_all;
 
 use common_apm::Instant;
+use core_executor::is_call_system_script;
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
 use protocol::types::{Hash, SignedTransaction, H160, H256, U256};
 use protocol::{async_trait, tokio, Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 use crate::context::TxContext;
-use crate::pool::PirorityPool;
+use crate::pool::PriorityPool;
 
 pub struct MemPoolImpl<Adapter> {
-    pool:    PirorityPool,
+    pool:    PriorityPool,
     adapter: Arc<Adapter>,
 }
 
@@ -44,7 +45,7 @@ where
         initial_txs: Vec<SignedTransaction>,
     ) -> Self {
         let mempool = MemPoolImpl {
-            pool:    PirorityPool::new(pool_size).await,
+            pool:    PriorityPool::new(pool_size).await,
             adapter: Arc::new(adapter),
         };
 
@@ -93,7 +94,12 @@ where
         self.pool.insert(stx)
     }
 
-    async fn insert_tx(&self, ctx: Context, tx: SignedTransaction) -> ProtocolResult<()> {
+    async fn insert_tx(
+        &self,
+        ctx: Context,
+        tx: SignedTransaction,
+        is_system_script: bool,
+    ) -> ProtocolResult<()> {
         let tx_hash = &tx.transaction.hash;
         if self.pool.reach_limit() {
             return Err(MemPoolError::ReachLimit(self.pool.pool_size()).into());
@@ -105,7 +111,11 @@ where
             .check_storage_exist(ctx.clone(), tx_hash)
             .await?;
 
-        self.pool.insert(tx.clone())?;
+        if is_system_script {
+            self.pool.insert_system_script_tx(tx.clone())?;
+        } else {
+            self.pool.insert(tx.clone())?;
+        }
 
         if !ctx.is_network_origin_txs() {
             self.adapter.broadcast_tx(ctx, tx).await?;
@@ -154,7 +164,7 @@ where
     }
 
     #[cfg(test)]
-    pub fn get_tx_cache(&self) -> &PirorityPool {
+    pub fn get_tx_cache(&self) -> &PriorityPool {
         &self.pool
     }
 }
@@ -165,7 +175,8 @@ where
     Adapter: MemPoolAdapter + 'static,
 {
     async fn insert(&self, ctx: Context, tx: SignedTransaction) -> ProtocolResult<()> {
-        self.insert_tx(ctx, tx).await
+        let is_call_system_script = is_call_system_script(&tx.transaction.unsigned.action);
+        self.insert_tx(ctx, tx, is_call_system_script).await
     }
 
     async fn package(

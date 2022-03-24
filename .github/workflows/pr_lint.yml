@@ -1,4 +1,7 @@
 name: Conventional PR
+concurrency:
+  group: Conventional PR-${{ github.ref }}
+  cancel-in-progress: true
 on:
   pull_request:
     types: ['opened', 'edited', 'reopened', 'synchronize']

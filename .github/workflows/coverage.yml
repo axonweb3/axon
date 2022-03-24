@@ -1,4 +1,7 @@
 name: Coverage Test
+concurrency:
+  group: Coverage Test-${{ github.ref }}
+  cancel-in-progress: true
 on: 
   push:
     branches:
@@ -6,7 +9,23 @@ on:
   pull_request:
 
 jobs:
+  prologue:
+    name: prologue
+    runs-on: ubuntu-20.04
+    outputs:
+      job_skip: ${{ steps.prologue.outputs.job_skip }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: prologue
+      id: prologue
+      uses: ./.github/actions/ci_prologue
+      with:
+        GITHUB_EVENT_NAME: ${{ github.event_name }}
+        PR_COMMONS_BODY: "${{ github.event.pull_request.body }}"
+        GITHUB_WORKFLOW: ${{ github.workflow }}
   Coverage:
+    needs: prologue
+    if: needs.prologue.outputs.job_skip == 'run'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

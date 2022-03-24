@@ -1,0 +1,68 @@
+<html>
+  <body>
+    <div>
+      <button id="subscribeNewHeads">Subscribe new heads</button>
+      <div>New heads subscription id: <span id="newHeads"></span></div>
+      <button id="subscribeSyncing">Subscribe syncing</button>
+      <div>Syncing subscription id: <span id="syncing"></span></div>
+      <button id="subscribeLogs">Subscribe logs</button>
+      <div>Logs subscription id: <span id="logs"></span></div>
+
+      <input id="unsubscribeId" />
+      <button id="unsubscribe">Unsubscribe</button>
+      <div>Unsubscribe result: <span id="unsubscribeResult"></span></div>
+    </div>
+  </body>
+  <script>
+    function bind(buttonId, eventName, resultId, params) {
+      if (!params) {
+        params = [];
+      }
+      params.unshift(eventName);
+      document
+        .getElementById(buttonId)
+        .addEventListener(
+          "click",
+          () => {
+            ethereum
+              .request({
+                method: "eth_subscribe",
+                params: params,
+              })
+              .then((result) => {
+                document.getElementById(resultId).innerHTML = result;
+              });
+          });
+    }
+
+    bind("subscribeNewHeads", "newHeads", "newHeads");
+    bind("subscribeSyncing", "syncing", "syncing");
+    bind(
+      "subscribeLogs",
+      "logs",
+      "logs",
+      [{
+        "address":"0x8320fe7702b96808f7bbc0d4a888ed1468216cfd",
+        "topics":[
+          "0xd78a0cb8bb633d06981248b816e7bd33c2a35a6089241d099fa519e361cab902",
+        ],
+      }],
+    );
+
+    document
+      .getElementById("unsubscribe")
+      .addEventListener(
+        "click",
+        () => {
+          document.getElementById("unsubscribeResult").innerHTML = "";
+          ethereum
+            .request({
+              method: "eth_unsubscribe",
+              params: [document.getElementById("unsubscribeId").value],
+            })
+            .then((result) => {
+              document.getElementById("unsubscribeResult").innerHTML = result;
+            });
+        });
+  </script>
+</html>
