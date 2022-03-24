@@ -7,11 +7,14 @@ use std::sync::Arc;
 use arc_swap::ArcSwap;
 use beef::lean::Cow;
 use rustracing::sampler::AllSampler;
+use rustracing::ErrorKind;
 use rustracing_jaeger::reporter::JaegerCompactReporter;
 use rustracing_jaeger::span::{
     Span, SpanContextState, SpanContextStateBuilder, SpanSender, TraceId,
 };
 use rustracing_jaeger::AsyncTracer;
+use trackable::error::{ErrorKindExt, TrackableError};
+use trackable::{track, track_panic};
 
 use protocol::tokio::{self, sync::mpsc::channel};
 use protocol::traits::Context;
@@ -77,6 +80,34 @@ impl AxonTracer {
         let span = SpanContext::new(span_state, vec![]);
         ctx.with_value::<Option<SpanContext>>("parent_span_ctx", Some(span))
     }
+
+    pub fn from_str(s: &str) -> Result<TraceId, TrackableError<ErrorKind>> {
+        if s.len() <= 16 {
+            let low =
+                track!(u64::from_str_radix(s, 16).map_err(AxonTracer::from_parse_int_error,))?;
+            Ok(TraceId { high: 0, low })
+        } else if s.len() <= 32 {
+            let (high, low) = s.as_bytes().split_at(s.len() - 16);
+            let high = track!(std::str::from_utf8(high).map_err(AxonTracer::from_utf8_error))?;
+            let high =
+                track!(u64::from_str_radix(high, 16).map_err(AxonTracer::from_parse_int_error,))?;
+
+            let low = track!(std::str::from_utf8(low).map_err(AxonTracer::from_utf8_error))?;
+            let low =
+                track!(u64::from_str_radix(low, 16).map_err(AxonTracer::from_parse_int_error,))?;
+            Ok(TraceId { high, low })
+        } else {
+            track_panic!(ErrorKind::InvalidInput, "s={:?}", s)
+        }
+    }
+
+    fn from_parse_int_error(f: std::num::ParseIntError) -> TrackableError<rustracing::ErrorKind> {
+        TrackableError::new(ErrorKind::InvalidInput, f).into()
+    }
+
+    fn from_utf8_error(f: std::str::Utf8Error) -> TrackableError<rustracing::ErrorKind> {
+        ErrorKind::InvalidInput.cause(f).into()
+    }
 }
 
 pub fn global_tracer_register(service_name: &str, udp_addr: SocketAddr, batch_size: Option<usize>) {
@@ -103,6 +134,8 @@ pub fn global_tracer_register(service_name: &str, udp_addr: SocketAddr, batch_si
         }
     });
 }
+
+pub fn to_trace_id() {}
 
 fn new_jaeger_reporter(service_name: &str, udp_addr: SocketAddr) -> JaegerCompactReporter {
     let mut reporter = JaegerCompactReporter::new(service_name).unwrap();

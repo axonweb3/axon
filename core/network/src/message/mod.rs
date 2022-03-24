@@ -3,7 +3,8 @@
 
 use std::collections::HashMap;
 
-// use common_apm::TraceId;
+use common_apm::tracing::AxonTracer;
+use common_apm::TraceId;
 use prost::Message;
 
 use protocol::types::Bytes;
@@ -15,17 +16,17 @@ use crate::error::{ErrorKind, NetworkError};
 pub struct Headers(HashMap<String, Vec<u8>>);
 
 // TODO: Need to pass trace ids across the network
-// impl Headers {
-//     pub fn set_trace_id(&mut self, id: TraceId) {
-//         self.0
-//             .insert("trace_id".to_owned(), id.to_string().into_bytes());
-//     }
-//
-//     pub fn set_span_id(&mut self, id: u64) {
-//         self.0
-//             .insert("span_id".to_owned(), id.to_be_bytes().to_vec());
-//     }
-// }
+impl Headers {
+    pub fn set_trace_id(&mut self, id: TraceId) {
+        self.0
+            .insert("trace_id".to_owned(), id.to_string().into_bytes());
+    }
+
+    pub fn set_span_id(&mut self, id: u64) {
+        self.0
+            .insert("span_id".to_owned(), id.to_be_bytes().to_vec());
+    }
+}
 
 #[derive(Message)]
 pub struct NetworkMessage {
@@ -48,17 +49,15 @@ impl NetworkMessage {
         }
     }
 
-    pub fn trace_id(&self) -> Option<u32> {
-        // self.headers
-        //     .get("trace_id")
-        //     .map(|id| {
-        //         String::from_utf8(id.to_owned())
-        //             .ok()
-        //             .map(|s| TraceId::from_str(&s).ok())
-        //             .flatten()
-        //     })
-        //     .flatten()
-        None
+    pub fn trace_id(&self) -> Option<TraceId> {
+        self.headers
+            .get("trace_id")
+            .map(|id| {
+                String::from_utf8(id.to_owned())
+                    .ok()
+                    .map(|s| AxonTracer::from_str(&s).unwrap())
+            })
+            .flatten()
     }
 
     pub fn span_id(&self) -> Option<u64> {

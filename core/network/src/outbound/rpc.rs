@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use tentacle::{bytes::Bytes, service::ServiceAsyncControl, SessionId};
 
+use common_apm::tracing::AxonTracer;
 use common_apm::Instant;
 use protocol::traits::{Context, MessageCodec, Priority, Rpc};
 use protocol::{async_trait, tokio, ProtocolResult};
@@ -103,12 +104,12 @@ impl Rpc for NetworkRpc {
 
         let data = msg.encode_msg()?;
         let endpoint = endpoint.extend(&rid.to_string())?;
-        let headers = Headers::default();
-        // if let Some(state) = common_apm::muta_apm::MutaTracer::span_state(&cx) {
-        //     headers.set_trace_id(state.trace_id());
-        //     headers.set_span_id(state.span_id());
-        //     log::info!("no trace id found for rpc {}", endpoint.full_url());
-        // }
+        let mut headers = Headers::default();
+        if let Some(state) = AxonTracer::span_state(&cx) {
+            headers.set_trace_id(state.trace_id());
+            headers.set_span_id(state.span_id());
+            log::info!("no trace id found for rpc {}", endpoint.full_url());
+        }
         common_apm::metrics::network::on_network_message_sent(endpoint.full_url());
 
         let ctx = cx.set_url(endpoint.root());
@@ -167,12 +168,12 @@ impl Rpc for NetworkRpc {
 
         let encoded_resp = resp.encode();
         let endpoint = endpoint.extend(&rid.to_string())?;
-        let headers = Headers::default();
-        // if let Some(state) = common_apm::muta_apm::MutaTracer::span_state(&cx) {
-        //     headers.set_trace_id(state.trace_id());
-        //     headers.set_span_id(state.span_id());
-        //     log::info!("no trace id found for rpc {}", endpoint.full_url());
-        // }
+        let mut headers = Headers::default();
+        if let Some(state) = AxonTracer::span_state(&cx) {
+            headers.set_trace_id(state.trace_id());
+            headers.set_span_id(state.span_id());
+            log::info!("no trace id found for rpc {}", endpoint.full_url());
+        }
         common_apm::metrics::network::on_network_message_sent(endpoint.full_url());
 
         let ctx = cx.set_url(endpoint.root());

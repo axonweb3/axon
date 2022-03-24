@@ -974,6 +974,7 @@ dependencies = [
  "prometheus-static-metric",
  "rustracing 0.5.1 (git+http://github.com/KaoImin/rustracing?branch=main)",
  "rustracing_jaeger 0.7.0 (git+http://github.com/KaoImin/rustracing_jaeger?branch=main)",
+ "trackable 1.2.0",
 ]
 
 [[package]]

@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use common_apm::tracing::AxonTracer;
 use tentacle::secio::PeerId;
 use tentacle::service::{ServiceAsyncControl, TargetProtocol, TargetSession};
 
@@ -28,7 +29,7 @@ impl NetworkGossip {
 
     async fn package_message<M>(
         &self,
-        _ctx: Context,
+        ctx: Context,
         endpoint: &str,
         mut msg: M,
     ) -> ProtocolResult<Bytes>
@@ -37,12 +38,12 @@ impl NetworkGossip {
     {
         let endpoint = endpoint.parse::<Endpoint>()?;
         let data = msg.encode_msg()?;
-        let headers = Headers::default();
-        // if let Some(state) = common_apm::muta_apm::MutaTracer::span_state(&ctx) {
-        //     headers.set_trace_id(state.trace_id());
-        //     headers.set_span_id(state.span_id());
-        //     log::info!("no trace id found for gossip {}", endpoint.full_url());
-        // }
+        let mut headers = Headers::default();
+        if let Some(state) = AxonTracer::span_state(&ctx) {
+            headers.set_trace_id(state.trace_id());
+            headers.set_span_id(state.span_id());
+            log::info!("no trace id found for gossip {}", endpoint.full_url());
+        }
         let msg = NetworkMessage::new(endpoint, data, headers).encode()?;
 
         Ok(msg)
