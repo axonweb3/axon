@@ -1,7 +1,8 @@
 {
   "name": "axon-e2e-tests",
   "scripts": {
-    "test": "jest",
+    "test": "jest -i",
+    "test-single":"jest",
     "lint": "eslint src/*.js ./*.js"
   },
   "dependencies": {

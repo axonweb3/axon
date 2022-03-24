@@ -6,10 +6,7 @@ const pageIds = {
 };
 const goto = async (currentpage, pageName) => {
   try {
-    await Promise.all([
-      currentpage.goto(`${Config.getIns().httpServer}/${pageName}`),
-      currentpage.bringToFront(),
-    ]);
+    await currentpage.goto(`${Config.getIns().httpServer}/${pageName}`);
   } catch (ex) {
     // eslint-disable-next-line no-console
     console.log(ex);

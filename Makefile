@@ -91,7 +91,7 @@ byz-test:
 	CONFIG=./examples/config-2.toml GENESIS=./examples/genesis.toml ./target/debug/examples/muta-chain > /tmp/log 2>&1 &
 	CONFIG=./examples/config-3.toml GENESIS=./examples/genesis.toml ./target/debug/examples/muta-chain > /tmp/log 2>&1 &
 	CONFIG=./examples/config-4.toml GENESIS=./examples/genesis.toml ./target/debug/examples/byzantine_node > /tmp/log 2>&1 &
-	cd byzantine/tests && yarn && ../../tests/e2e/wait-for-it.sh -t 300 localhost:8000 -- yarn run test -i
+	cd byzantine/tests && yarn && ../../tests/e2e/wait-for-it.sh -t 300 localhost:8000 -- yarn run test
 	pkill -2 muta-chain byzantine_node
 
 e2e-test-via-docker:
