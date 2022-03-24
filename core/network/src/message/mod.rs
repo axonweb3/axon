@@ -50,14 +50,11 @@ impl NetworkMessage {
     }
 
     pub fn trace_id(&self) -> Option<TraceId> {
-        self.headers
-            .get("trace_id")
-            .map(|id| {
-                String::from_utf8(id.to_owned())
-                    .ok()
-                    .map(|s| AxonTracer::from_str(&s).unwrap())
-            })
-            .flatten()
+        self.headers.get("trace_id").and_then(|id| {
+            String::from_utf8(id.to_owned())
+                .ok()
+                .map(|s| AxonTracer::str_to_trace(&s).unwrap())
+        })
     }
 
     pub fn span_id(&self) -> Option<u64> {

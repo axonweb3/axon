@@ -81,7 +81,7 @@ impl AxonTracer {
         ctx.with_value::<Option<SpanContext>>("parent_span_ctx", Some(span))
     }
 
-    pub fn from_str(s: &str) -> Result<TraceId, TrackableError<ErrorKind>> {
+    pub fn str_to_trace(s: &str) -> Result<TraceId, TrackableError<ErrorKind>> {
         if s.len() <= 16 {
             let low =
                 track!(u64::from_str_radix(s, 16).map_err(AxonTracer::from_parse_int_error,))?;
@@ -102,11 +102,11 @@ impl AxonTracer {
     }
 
     fn from_parse_int_error(f: std::num::ParseIntError) -> TrackableError<rustracing::ErrorKind> {
-        TrackableError::new(ErrorKind::InvalidInput, f).into()
+        TrackableError::new(ErrorKind::InvalidInput, f)
     }
 
     fn from_utf8_error(f: std::str::Utf8Error) -> TrackableError<rustracing::ErrorKind> {
-        ErrorKind::InvalidInput.cause(f).into()
+        ErrorKind::InvalidInput.cause(f)
     }
 }
 
@@ -135,10 +135,8 @@ pub fn global_tracer_register(service_name: &str, udp_addr: SocketAddr, batch_si
     });
 }
 
-pub fn to_trace_id() {}
-
 fn new_jaeger_reporter(service_name: &str, udp_addr: SocketAddr) -> JaegerCompactReporter {
     let mut reporter = JaegerCompactReporter::new(service_name).unwrap();
     reporter.set_agent_addr(udp_addr);
-    return reporter;
+    reporter
 }

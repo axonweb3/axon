@@ -16,9 +16,9 @@ log = "0.4"
 minstant = "0.1"
 prometheus = "0.13"
 prometheus-static-metric = "0.5"
-trackable = "1.2"
 rustracing = { git = "http://github.com/KaoImin/rustracing", branch = "main" }
 rustracing_jaeger = { git = "http://github.com/KaoImin/rustracing_jaeger", branch = "main" }
+trackable = "1.2"
 
 common-apm-derive = { path = "../apm-derive" }
 protocol = { path = "../../protocol", package = "axon-protocol" }

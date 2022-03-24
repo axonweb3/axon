@@ -47,7 +47,7 @@ impl<M: MessageCodec, H: MessageHandler<Message = M>> Reactor for MessageReactor
         endpoint: Endpoint,
         mut network_message: NetworkMessage,
     ) -> ProtocolResult<()> {
-        let mut ctx = Context::new()
+        let ctx = Context::new()
             .set_session_id(context.remote_peer.session_id)
             .set_remote_peer_id(context.remote_peer.peer_id.clone())
             .set_remote_connected_addr(context.remote_peer.connected_addr.clone());
