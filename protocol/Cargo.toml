@@ -15,7 +15,7 @@ creep = "0.2"
 derive_more = "0.99"
 ethereum = "0.11"
 ethereum-types = "0.12"
-evm = { version = "0.33", features = ["with-codec", "with-serde"] }
+evm = { version = "0.34", features = ["with-codec", "with-serde"] }
 faster-hex = "0.6"
 hasher = { version = "0.1", features = ["hash-keccak"] }
 lazy_static = "1.4"
