@@ -3,7 +3,7 @@
 
 use std::collections::HashMap;
 
-// use common_apm::muta_apm::rustracing_jaeger::span::TraceId;
+// use common_apm::TraceId;
 use prost::Message;
 
 use protocol::types::Bytes;

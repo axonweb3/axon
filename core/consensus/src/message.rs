@@ -108,9 +108,7 @@ impl<C: Consensus + 'static> ProposalMessageHandler<C> {
 impl<C: Consensus + 'static> MessageHandler for ProposalMessageHandler<C> {
     type Message = Proposal;
 
-    // #[muta_apm::derive::tracing_span(name = "handle_proposal", kind =
-    // "consensus.message")]
-    #[trace_span(kind = "consensus.message")]
+    #[trace_span(name = "handle_proposal", kind = "consensus.message")]
     async fn process(&self, ctx: Context, msg: Self::Message) -> TrustFeedback {
         if let Err(e) = self.consensus.set_proposal(ctx, msg.to_vec()).await {
             warn!("set proposal {:?}", e);
@@ -135,9 +133,7 @@ impl<C: Consensus + 'static> VoteMessageHandler<C> {
 impl<C: Consensus + 'static> MessageHandler for VoteMessageHandler<C> {
     type Message = Vote;
 
-    // #[muta_apm::derive::tracing_span(name = "handle_vote", kind =
-    // "consensus.message")]
-    #[trace_span(kind = "consensus.message")]
+    #[trace_span(name = "handle_vote", kind = "consensus.message")]
     async fn process(&self, ctx: Context, msg: Self::Message) -> TrustFeedback {
         if let Err(e) = self.consensus.set_vote(ctx, msg.to_vec()).await {
             warn!("set vote {:?}", e);
@@ -162,9 +158,7 @@ impl<C: Consensus + 'static> QCMessageHandler<C> {
 impl<C: Consensus + 'static> MessageHandler for QCMessageHandler<C> {
     type Message = QC;
 
-    // #[muta_apm::derive::tracing_span(name = "handle_qc", kind =
-    // "consensus.message")]
-    #[trace_span(kind = "consensus.message")]
+    #[trace_span(name = "handle_qc", kind = "consensus.message")]
     async fn process(&self, ctx: Context, msg: Self::Message) -> TrustFeedback {
         if let Err(e) = self.consensus.set_qc(ctx, msg.to_vec()).await {
             warn!("set qc {:?}", e);
@@ -189,9 +183,7 @@ impl<C: Consensus + 'static> ChokeMessageHandler<C> {
 impl<C: Consensus + 'static> MessageHandler for ChokeMessageHandler<C> {
     type Message = Choke;
 
-    // #[muta_apm::derive::tracing_span(name = "handle_choke", kind =
-    // "consensus.message")]
-    #[trace_span(kind = "consensus.message")]
+    #[trace_span(name = "handle_choke", kind = "consensus.message")]
     async fn process(&self, ctx: Context, msg: Self::Message) -> TrustFeedback {
         if let Err(e) = self.consensus.set_choke(ctx, msg.to_vec()).await {
             warn!("set choke {:?}", e);
@@ -216,9 +208,7 @@ impl<Sy: Synchronization + 'static> RemoteHeightMessageHandler<Sy> {
 impl<Sy: Synchronization + 'static> MessageHandler for RemoteHeightMessageHandler<Sy> {
     type Message = BlockNumber;
 
-    // #[muta_apm::derive::tracing_span(name = "handle_remote_height", kind =
-    // "consensus.message")]
-    #[trace_span(kind = "consensus.message")]
+    #[trace_span(name = "handle_remote_height", kind = "consensus.message")]
     async fn process(&self, ctx: Context, remote_height: Self::Message) -> TrustFeedback {
         if let Err(e) = self
             .synchronization
@@ -258,9 +248,7 @@ where
 impl<R: Rpc + 'static, S: Storage + 'static> MessageHandler for PullBlockRpcHandler<R, S> {
     type Message = BlockNumber;
 
-    // #[muta_apm::derive::tracing_span(name = "pull_block_rpc", kind =
-    // "consensus.message")]
-    #[trace_span(kind = "consensus.message")]
+    #[trace_span(name = "pull_block_rpc", kind = "consensus.message")]
     async fn process(&self, ctx: Context, msg: BlockNumber) -> TrustFeedback {
         let ret = match self.storage.get_block(ctx.clone(), msg).await {
             Ok(Some(block)) => Ok(block),
@@ -296,9 +284,7 @@ where
 impl<R: Rpc + 'static, S: Storage + 'static> MessageHandler for PullProofRpcHandler<R, S> {
     type Message = BlockNumber;
 
-    // #[muta_apm::derive::tracing_span(name = "pull_proof_rpc", kind =
-    // "consensus.message")]
-    #[trace_span(kind = "consensus.message")]
+    #[trace_span(name = "pull_proof_rpc", kind = "consensus.message")]
     async fn process(&self, ctx: Context, msg: BlockNumber) -> TrustFeedback {
         let latest_proof = self.storage.get_latest_proof(ctx.clone()).await;
 
@@ -346,9 +332,7 @@ where
 impl<R: Rpc + 'static, S: Storage + 'static> MessageHandler for PullTxsRpcHandler<R, S> {
     type Message = PullTxsRequest;
 
-    // #[muta_apm::derive::tracing_span(name = "pull_txs_rpc", kind =
-    // "consensus.message")]
-    #[trace_span(kind = "consensus.message")]
+    #[trace_span(name = "pull_txs_rpc", kind = "consensus.message")]
     async fn process(&self, ctx: Context, msg: PullTxsRequest) -> TrustFeedback {
         let PullTxsRequest { height, inner } = msg;
 
