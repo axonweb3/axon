@@ -6,6 +6,8 @@ mod ripemd160;
 mod rsa;
 mod secp256r1;
 mod sha256;
+#[cfg(test)]
+mod tests;
 
 use std::collections::BTreeMap;
 

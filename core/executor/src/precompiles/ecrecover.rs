@@ -35,7 +35,7 @@ impl PrecompileContract for EcRecover {
             Some(value) => value,
             None => {
                 return Err(PrecompileFailure::Error {
-                    exit_status: ExitError::InvalidCode,
+                    exit_status: ExitError::Other("Invalid signature".into()),
                 })
             }
         };
@@ -56,7 +56,7 @@ impl PrecompileContract for EcRecover {
         }
 
         Err(PrecompileFailure::Error {
-            exit_status: ExitError::InvalidCode,
+            exit_status: ExitError::Other("Verify signature failed".into()),
         })
     }
 
