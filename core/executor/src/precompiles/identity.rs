@@ -1,17 +1,16 @@
 use evm::executor::stack::{PrecompileFailure, PrecompileOutput};
 use evm::{Context, ExitError, ExitSucceed};
-use sha2::Digest;
 
 use protocol::types::H160;
 
 use crate::precompiles::{precompile_address, PrecompileContract};
 
 #[derive(Default, Clone)]
-pub struct Sha256;
+pub struct Identity;
 
-impl PrecompileContract for Sha256 {
-    const ADDRESS: H160 = precompile_address(0x02);
-    const MIN_GAS: u64 = 60;
+impl PrecompileContract for Identity {
+    const ADDRESS: H160 = precompile_address(0x04);
+    const MIN_GAS: u64 = 15;
 
     fn exec_fn(
         input: &[u8],
@@ -29,19 +28,16 @@ impl PrecompileContract for Sha256 {
             }
         }
 
-        let mut hasher = sha2::Sha256::default();
-        hasher.update(input);
-
         Ok(PrecompileOutput {
             exit_status: ExitSucceed::Returned,
             cost:        gas,
-            output:      hasher.finalize().to_vec(),
+            output:      input.to_vec(),
             logs:        vec![],
         })
     }
 
     fn gas_cost(input: &[u8]) -> u64 {
         let data_word_size = (input.len() + 31) / 32;
-        (data_word_size * 12) as u64 + Self::MIN_GAS
+        (data_word_size * 3) as u64 + Self::MIN_GAS
     }
 }
