@@ -1,6 +1,7 @@
 mod router;
 mod rpc_map;
 
+use common_apm::tracing::AxonTracer;
 use std::convert::TryFrom;
 use std::marker::PhantomData;
 
@@ -46,18 +47,18 @@ impl<M: MessageCodec, H: MessageHandler<Message = M>> Reactor for MessageReactor
         endpoint: Endpoint,
         mut network_message: NetworkMessage,
     ) -> ProtocolResult<()> {
-        let mut ctx = Context::new()
+        let ctx = Context::new()
             .set_session_id(context.remote_peer.session_id)
             .set_remote_peer_id(context.remote_peer.peer_id.clone())
             .set_remote_connected_addr(context.remote_peer.connected_addr.clone());
 
-        // let mut ctx = match (network_message.trace_id(), network_message.span_id()) {
-        //     (Some(trace_id), Some(span_id)) => {
-        // let span_state = common_apm::muta_apm::MutaTracer::new_state(trace_id,
-        // span_id); common_apm::muta_apm::MutaTracer::inject_span_state(ctx,
-        // span_state)     }
-        //     _ => ctx,
-        // };
+        let mut ctx = match (network_message.trace_id(), network_message.span_id()) {
+            (Some(trace_id), Some(span_id)) => {
+                let span_state = AxonTracer::new_state(trace_id, span_id);
+                AxonTracer::inject_span_state(ctx, span_state)
+            }
+            _ => ctx,
+        };
 
         let session_id = context.remote_peer.session_id;
         let _feedback = match endpoint.scheme() {

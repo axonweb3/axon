@@ -968,6 +968,7 @@ dependencies = [
  "prometheus-static-metric",
  "rustracing 0.5.1 (git+http://github.com/KaoImin/rustracing?branch=main)",
  "rustracing_jaeger 0.7.0 (git+http://github.com/KaoImin/rustracing_jaeger?branch=main)",
+ "trackable 1.2.0",
 ]
 
 [[package]]
@@ -1115,6 +1116,7 @@ dependencies = [
  "bit-vec",
  "cita_trie",
  "common-apm",
+ "common-apm-derive",
  "common-crypto",
  "common-logger",
  "common-merkle",
@@ -1216,6 +1218,7 @@ dependencies = [
  "axon-protocol",
  "cita_trie",
  "common-apm",
+ "common-apm-derive",
  "common-crypto",
  "core-executor",
  "criterion",
@@ -1255,6 +1258,7 @@ dependencies = [
  "axon-protocol",
  "bloom-filters",
  "common-apm",
+ "common-apm-derive",
  "derive_more",
  "env_logger",
  "faketime",
@@ -1284,6 +1288,7 @@ dependencies = [
  "cita_trie",
  "clap 3.1.6",
  "common-apm",
+ "common-apm-derive",
  "common-config-parser",
  "common-crypto",
  "common-logger",
@@ -1312,6 +1317,7 @@ dependencies = [
  "axon-protocol",
  "ckb-rocksdb",
  "common-apm",
+ "common-apm-derive",
  "futures",
  "lazy_static",
  "log",

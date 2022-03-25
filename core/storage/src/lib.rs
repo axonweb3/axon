@@ -15,7 +15,7 @@ use arc_swap::ArcSwap;
 
 use common_apm::metrics::storage::on_storage_get_cf;
 use common_apm::Instant;
-// use common_apm::muta_apm;
+use common_apm_derive::trace_span;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{
     CommonStorage, Context, Storage, StorageAdapter, StorageBatchModify, StorageCategory,
@@ -339,7 +339,7 @@ impl_storage_schema_for!(EvmCodeAddressSchema, Hash, Hash, Code);
 
 #[async_trait]
 impl<Adapter: StorageAdapter> CommonStorage for ImplStorage<Adapter> {
-    // #[muta_apm::derive::tracing_span(kind = "storage")]
+    #[trace_span(kind = "storage")]
     async fn insert_block(&self, ctx: Context, block: Block) -> ProtocolResult<()> {
         self.set_block(ctx.clone(), block.clone()).await?;
 
@@ -428,10 +428,10 @@ impl<Adapter: StorageAdapter> CommonStorage for ImplStorage<Adapter> {
 
 #[async_trait]
 impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
-    // #[muta_apm::derive::tracing_span(kind = "storage")]
+    #[trace_span(kind = "storage")]
     async fn insert_transactions(
         &self,
-        _ctx: Context,
+        ctx: Context,
         block_height: u64,
         signed_txs: Vec<SignedTransaction>,
     ) -> ProtocolResult<()> {
@@ -452,10 +452,10 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         Ok(None)
     }
 
-    // #[muta_apm::derive::tracing_span(kind = "storage")]
+    #[trace_span(kind = "storage")]
     async fn get_transactions(
         &self,
-        _ctx: Context,
+        ctx: Context,
         block_height: u64,
         hashes: &[Hash],
     ) -> ProtocolResult<Vec<Option<SignedTransaction>>> {
@@ -589,10 +589,10 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         }
     }
 
-    // #[muta_apm::derive::tracing_span(kind = "storage")]
+    #[trace_span(kind = "storage")]
     async fn insert_receipts(
         &self,
-        _ctx: Context,
+        ctx: Context,
         block_height: u64,
         receipts: Vec<Receipt>,
     ) -> ProtocolResult<()> {
@@ -621,10 +621,10 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         }
     }
 
-    // #[muta_apm::derive::tracing_span(kind = "storage")]
+    #[trace_span(kind = "storage")]
     async fn get_receipts(
         &self,
-        _ctx: Context,
+        ctx: Context,
         block_height: u64,
         hashes: &[Hash],
     ) -> ProtocolResult<Vec<Option<Receipt>>> {

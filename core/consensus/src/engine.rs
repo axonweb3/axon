@@ -11,15 +11,15 @@ use overlord::{Consensus as Engine, Wal};
 use parking_lot::RwLock;
 use rlp::Encodable;
 
-// use common_apm::muta_apm;
 use common_apm::Instant;
+use common_apm_derive::trace_span;
 use common_crypto::BlsPublicKey;
 use common_logger::{json, log};
 use common_merkle::Merkle;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
-    Block, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, Log, MerkleRoot, Metadata, Proof,
+    Block, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, Hex, Log, MerkleRoot, Metadata, Proof,
     Proposal, Receipt, SignedTransaction, TransactionAction, ValidatorExtend, H160, U256,
 };
 use protocol::{
@@ -57,10 +57,7 @@ pub struct ConsensusEngine<Adapter> {
 
 #[async_trait]
 impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<Adapter> {
-    // #[muta_apm::derive::tracing_span(
-    //     kind = "consensus.engine",
-    //     logs = "{'next_number': 'next_number'}"
-    // )]
+    #[trace_span(kind = "consensus.engine", logs = "{next_number: next_number}")]
     async fn get_block(
         &self,
         ctx: Context,
@@ -113,12 +110,13 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         Ok((proposal, Bytes::from(hash.as_bytes().to_vec())))
     }
 
-    // #[muta_apm::derive::tracing_span(
-    //     kind = "consensus.engine",
-    //     logs = "{'next_number': 'next_number', 'hash':
-    // 'Hash::from_bytes(hash.clone()).unwrap().as_hex()', 'txs_len':
-    // 'block.inner.block.ordered_tx_hashes.len()'}"
-    // )]
+    #[trace_span(
+        kind = "consensus.engine",
+        logs = "{
+            next_number: next_number, 
+            hash: Hex::encode(hash.clone()).as_string(), 
+            txs_len: proposal.tx_hashes.len()}"
+    )]
     async fn check_block(
         &self,
         ctx: Context,
@@ -186,11 +184,12 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
     /// **TODO:** the overlord interface and process needs to be changed.
     /// Get the `FixedSignedTxs` from the argument rather than get it from
     /// mempool.
-    // #[muta_apm::derive::tracing_span(
-    //     kind = "consensus.engine",
-    //     logs = "{'current_number': 'current_number', 'txs_len':
-    // 'commit.content.inner.block.ordered_tx_hashes.len()'}"
-    // )]
+    #[trace_span(
+        kind = "consensus.engine",
+        logs = "{
+            current_number: current_number, 
+            txs_len: commit.content.tx_hashes.len()}"
+    )]
     async fn commit(
         &self,
         ctx: Context,
@@ -300,7 +299,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
     }
 
     /// Only signed proposal and aggregated vote will be broadcast to others.
-    // #[muta_apm::derive::tracing_span(kind = "consensus.engine")]
+    #[trace_span(kind = "consensus.engine")]
     async fn broadcast_to_other(
         &self,
         ctx: Context,
@@ -332,10 +331,10 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
     }
 
     /// Only signed vote will be transmit to the relayer.
-    // #[muta_apm::derive::tracing_span(
-    //     kind = "consensus.engine",
-    //     logs = "{'pub_key': 'hex::encode(pub_key.clone())'}"
-    // )]
+    #[trace_span(
+        kind = "consensus.engine",
+        logs = "{pub_key: Hex::encode(pub_key.clone()).as_string()}"
+    )]
     async fn transmit_to_relayer(
         &self,
         ctx: Context,
@@ -372,10 +371,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
 
     /// This function is rarely used, so get the authority list from the
     /// RocksDB.
-    // #[muta_apm::derive::tracing_span(
-    //     kind = "consensus.engine",
-    //     logs = "{'next_number': 'next_number'}"
-    // )]
+    #[trace_span(kind = "consensus.engine", logs = "{next_number: next_number}")]
     async fn get_authority_list(
         &self,
         ctx: Context,
@@ -543,13 +539,10 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         self.check_order_transactions(ctx.clone(), proposal, &signed_txs)
     }
 
-    // #[muta_apm::derive::tracing_span(
-    //     kind = "consensus.engine",
-    //     logs = "{'txs_len': 'signed_txs.len()'}"
-    // )]
+    #[trace_span(kind = "consensus.engine", logs = "{txs_len: signed_txs.len()}")]
     fn check_order_transactions(
         &self,
-        _ctx: Context,
+        ctx: Context,
         proposal: &Proposal,
         signed_txs: &[SignedTransaction],
     ) -> ProtocolResult<()> {

@@ -13,6 +13,7 @@ use futures::{
 use log::{debug, error};
 use parking_lot::Mutex;
 
+use common_apm_derive::trace_span;
 use common_crypto::{Crypto, Secp256k1Recoverable};
 use core_executor::{is_call_system_script, AxonExecutor, AxonExecutorAdapter};
 use protocol::traits::{
@@ -206,10 +207,7 @@ where
     DB: cita_trie::DB + 'static,
     M: MetadataControl + 'static,
 {
-    // #[muta_apm::derive::tracing_span(
-    //     kind = "mempool.adapter",
-    //     logs = "{'txs_len': 'tx_hashes.len()'}"
-    // )]
+    #[trace_span(kind = "mempool.adapter", logs = "{txs_len: tx_hashes.len()}")]
     async fn pull_txs(
         &self,
         ctx: Context,

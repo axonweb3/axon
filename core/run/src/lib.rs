@@ -71,16 +71,6 @@ impl Axon {
     }
 
     pub fn run(mut self) -> ProtocolResult<()> {
-        if let Some(apm_config) = &self.config.apm {
-            global_tracer_register(
-                &apm_config.service_name,
-                apm_config.tracing_address,
-                apm_config.tracing_batch_size,
-            );
-
-            log::info!("axon_apm start");
-        }
-
         let rt = RuntimeBuilder::new_multi_thread()
             .enable_all()
             .build()
@@ -173,6 +163,16 @@ impl Axon {
     }
 
     pub async fn start(self) -> ProtocolResult<()> {
+        if let Some(apm_config) = &self.config.apm {
+            global_tracer_register(
+                &apm_config.service_name,
+                apm_config.tracing_address,
+                apm_config.tracing_batch_size,
+            );
+
+            log::info!("muta_apm start");
+        };
+
         log::info!("node starts");
         observe_listen_port_occupancy(&[self.config.network.listening_address.clone()]).await?;
         let config = self.config.clone();

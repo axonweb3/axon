@@ -3,8 +3,8 @@ use std::time::Duration;
 
 use parking_lot::RwLock;
 
-// use common_apm::muta_apm;
 use common_apm::Instant;
+use common_apm_derive::trace_span;
 use protocol::tokio::{sync::Mutex, time::sleep};
 use protocol::traits::{Context, Synchronization, SynchronizationAdapter};
 use protocol::types::{Block, Proof, Proposal, Receipt, SignedTransaction, U256};
@@ -38,10 +38,7 @@ pub struct OverlordSynchronization<Adapter: SynchronizationAdapter> {
 
 #[async_trait]
 impl<Adapter: SynchronizationAdapter> Synchronization for OverlordSynchronization<Adapter> {
-    // #[muta_apm::derive::tracing_span(
-    //     kind = "consensus.sync",
-    //     logs = "{'remote_number': 'remote_number'}"
-    // )]
+    #[trace_span(kind = "consensus.sync", logs = "{remote_number: remote_number}")]
     async fn receive_remote_block(&self, ctx: Context, remote_number: u64) -> ProtocolResult<()> {
         let syncing_lock = self.syncing.try_lock();
         if syncing_lock.is_err() {
@@ -133,10 +130,13 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         }
     }
 
-    // #[muta_apm::derive::tracing_span(
-    //     kind = "consensus.sync",
-    //     logs = "{'current_number': 'current_number', 'remote_number':
-    // 'remote_number'}" )]
+    #[trace_span(
+        kind = "consensus.sync",
+        logs = "{
+                    current_number: current_number, 
+                    remote_number: remote_number
+                }"
+    )]
     async fn start_sync(
         &self,
         ctx: Context,
@@ -298,7 +298,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         Ok(StatusAgent::new(self.status.inner()))
     }
 
-    // #[muta_apm::derive::tracing_span(kind = "consensus.sync")]
+    #[trace_span(kind = "consensus.sync")]
     async fn commit_block(
         &self,
         ctx: Context,
@@ -374,8 +374,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         Ok(())
     }
 
-    // #[muta_apm::derive::tracing_span(kind = "consensus.sync", logs = "{'number':
-    // 'number'}")]
+    #[trace_span(kind = "consensus.sync", logs = "{number:number}")]
     async fn get_rich_block_from_remote(
         &self,
         ctx: Context,
@@ -397,16 +396,18 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         Ok(RichBlock { block, txs })
     }
 
-    // #[muta_apm::derive::tracing_span(kind = "consensus.sync", logs = "{'number':
-    // 'number'}")]
+    #[trace_span(kind = "consensus.sync", logs = "{number:number}")]
     async fn get_block_from_remote(&self, ctx: Context, number: u64) -> ProtocolResult<Block> {
         self.adapter
             .get_block_from_remote(ctx.clone(), number)
             .await
     }
 
-    // #[muta_apm::derive::tracing_span(kind = "consensus.sync", logs = "{'txs_len':
-    // 'txs.len()'}")]
+    #[trace_span(
+        kind = "consensus.sync",
+        logs = "{txs_len:
+    txs.len()}"
+    )]
     async fn save_chain_data(
         &self,
         ctx: Context,

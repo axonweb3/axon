@@ -6,6 +6,7 @@ use overlord::types::{AggregatedVote, SignedChoke, SignedProposal, SignedVote};
 use overlord::Codec;
 use rlp::Encodable;
 
+use common_apm_derive::trace_span;
 use protocol::traits::{
     Consensus, Context, MessageHandler, Priority, Rpc, Storage, Synchronization, TrustFeedback,
 };
@@ -107,11 +108,10 @@ impl<C: Consensus + 'static> ProposalMessageHandler<C> {
 impl<C: Consensus + 'static> MessageHandler for ProposalMessageHandler<C> {
     type Message = Proposal;
 
-    // #[muta_apm::derive::tracing_span(name = "handle_proposal", kind =
-    // "consensus.message")]
+    #[trace_span(name = "handle_proposal", kind = "consensus.message")]
     async fn process(&self, ctx: Context, msg: Self::Message) -> TrustFeedback {
         if let Err(e) = self.consensus.set_proposal(ctx, msg.to_vec()).await {
-            warn!("set proposal {}", e);
+            warn!("set proposal {:?}", e);
             return TrustFeedback::Worse(e.to_string());
         }
 
@@ -133,11 +133,10 @@ impl<C: Consensus + 'static> VoteMessageHandler<C> {
 impl<C: Consensus + 'static> MessageHandler for VoteMessageHandler<C> {
     type Message = Vote;
 
-    // #[muta_apm::derive::tracing_span(name = "handle_vote", kind =
-    // "consensus.message")]
+    #[trace_span(name = "handle_vote", kind = "consensus.message")]
     async fn process(&self, ctx: Context, msg: Self::Message) -> TrustFeedback {
         if let Err(e) = self.consensus.set_vote(ctx, msg.to_vec()).await {
-            warn!("set vote {}", e);
+            warn!("set vote {:?}", e);
             return TrustFeedback::Worse(e.to_string());
         }
 
@@ -159,11 +158,10 @@ impl<C: Consensus + 'static> QCMessageHandler<C> {
 impl<C: Consensus + 'static> MessageHandler for QCMessageHandler<C> {
     type Message = QC;
 
-    // #[muta_apm::derive::tracing_span(name = "handle_qc", kind =
-    // "consensus.message")]
+    #[trace_span(name = "handle_qc", kind = "consensus.message")]
     async fn process(&self, ctx: Context, msg: Self::Message) -> TrustFeedback {
         if let Err(e) = self.consensus.set_qc(ctx, msg.to_vec()).await {
-            warn!("set qc {}", e);
+            warn!("set qc {:?}", e);
             return TrustFeedback::Worse(e.to_string());
         }
 
@@ -185,11 +183,10 @@ impl<C: Consensus + 'static> ChokeMessageHandler<C> {
 impl<C: Consensus + 'static> MessageHandler for ChokeMessageHandler<C> {
     type Message = Choke;
 
-    // #[muta_apm::derive::tracing_span(name = "handle_choke", kind =
-    // "consensus.message")]
+    #[trace_span(name = "handle_choke", kind = "consensus.message")]
     async fn process(&self, ctx: Context, msg: Self::Message) -> TrustFeedback {
         if let Err(e) = self.consensus.set_choke(ctx, msg.to_vec()).await {
-            warn!("set choke {}", e);
+            warn!("set choke {:?}", e);
             return TrustFeedback::Worse(e.to_string());
         }
 
@@ -211,15 +208,14 @@ impl<Sy: Synchronization + 'static> RemoteHeightMessageHandler<Sy> {
 impl<Sy: Synchronization + 'static> MessageHandler for RemoteHeightMessageHandler<Sy> {
     type Message = BlockNumber;
 
-    // #[muta_apm::derive::tracing_span(name = "handle_remote_height", kind =
-    // "consensus.message")]
+    #[trace_span(name = "handle_remote_height", kind = "consensus.message")]
     async fn process(&self, ctx: Context, remote_height: Self::Message) -> TrustFeedback {
         if let Err(e) = self
             .synchronization
             .receive_remote_block(ctx, remote_height)
             .await
         {
-            warn!("sync: receive remote block {}", e);
+            warn!("sync: receive remote block {:?}", e);
             if e.to_string().contains("timeout") {
                 return TrustFeedback::Bad("sync block timeout".to_owned());
             } else {
@@ -252,8 +248,7 @@ where
 impl<R: Rpc + 'static, S: Storage + 'static> MessageHandler for PullBlockRpcHandler<R, S> {
     type Message = BlockNumber;
 
-    // #[muta_apm::derive::tracing_span(name = "pull_block_rpc", kind =
-    // "consensus.message")]
+    #[trace_span(name = "pull_block_rpc", kind = "consensus.message")]
     async fn process(&self, ctx: Context, msg: BlockNumber) -> TrustFeedback {
         let ret = match self.storage.get_block(ctx.clone(), msg).await {
             Ok(Some(block)) => Ok(block),
@@ -262,7 +257,7 @@ impl<R: Rpc + 'static, S: Storage + 'static> MessageHandler for PullBlockRpcHand
         };
         self.rpc
             .response(ctx, RPC_RESP_SYNC_PULL_BLOCK, ret, Priority::High)
-            .unwrap_or_else(move |e: ProtocolError| warn!("[core_consensus] push block {}", e))
+            .unwrap_or_else(move |e: ProtocolError| warn!("[core_consensus] push block {:?}", e))
             .await;
 
         TrustFeedback::Neutral
@@ -289,8 +284,7 @@ where
 impl<R: Rpc + 'static, S: Storage + 'static> MessageHandler for PullProofRpcHandler<R, S> {
     type Message = BlockNumber;
 
-    // #[muta_apm::derive::tracing_span(name = "pull_proof_rpc", kind =
-    // "consensus.message")]
+    #[trace_span(name = "pull_proof_rpc", kind = "consensus.message")]
     async fn process(&self, ctx: Context, msg: BlockNumber) -> TrustFeedback {
         let latest_proof = self.storage.get_latest_proof(ctx.clone()).await;
 
@@ -311,7 +305,7 @@ impl<R: Rpc + 'static, S: Storage + 'static> MessageHandler for PullProofRpcHand
 
         self.rpc
             .response(ctx, RPC_RESP_SYNC_PULL_PROOF, ret, Priority::High)
-            .unwrap_or_else(move |e: ProtocolError| warn!("[core_consensus] push proof {}", e))
+            .unwrap_or_else(move |e: ProtocolError| warn!("[core_consensus] push proof {:?}", e))
             .await;
 
         TrustFeedback::Neutral
@@ -338,8 +332,7 @@ where
 impl<R: Rpc + 'static, S: Storage + 'static> MessageHandler for PullTxsRpcHandler<R, S> {
     type Message = PullTxsRequest;
 
-    // #[muta_apm::derive::tracing_span(name = "pull_txs_rpc", kind =
-    // "consensus.message")]
+    #[trace_span(name = "pull_txs_rpc", kind = "consensus.message")]
     async fn process(&self, ctx: Context, msg: PullTxsRequest) -> TrustFeedback {
         let PullTxsRequest { height, inner } = msg;
 
@@ -351,7 +344,7 @@ impl<R: Rpc + 'static, S: Storage + 'static> MessageHandler for PullTxsRpcHandle
 
         self.rpc
             .response(ctx, RPC_RESP_SYNC_PULL_TXS, ret, Priority::High)
-            .unwrap_or_else(move |e: ProtocolError| warn!("[core_consensus] push txs {}", e))
+            .unwrap_or_else(move |e: ProtocolError| warn!("[core_consensus] push txs {:?}", e))
             .await;
 
         TrustFeedback::Neutral

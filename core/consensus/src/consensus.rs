@@ -12,6 +12,9 @@ use protocol::{
     async_trait, codec::ProtocolCodec, tokio::sync::Mutex as AsyncMutex, ProtocolResult,
 };
 
+use common_apm::tracing::{AxonTracer, Tag};
+use common_apm_derive::trace_span;
+
 use crate::wal::{ConsensusWal, SignedTxsWAL};
 use crate::{
     engine::ConsensusEngine, status::StatusAgent, util::OverlordCrypto, ConsensusError,
@@ -29,7 +32,7 @@ pub struct OverlordConsensus<Adapter: ConsensusAdapter + 'static> {
 
 #[async_trait]
 impl<Adapter: ConsensusAdapter + 'static> Consensus for OverlordConsensus<Adapter> {
-    // #[muta_apm::derive::tracing_span(kind = "consensus")]
+    #[trace_span(kind = "consensus")]
     async fn set_proposal(&self, ctx: Context, proposal: Vec<u8>) -> ProtocolResult<()> {
         let signed_proposal = SignedProposal::<Proposal>::decode(&proposal)
             .map_err(|_| ConsensusError::DecodeErr(ConsensusType::SignedProposal))?;
@@ -44,17 +47,17 @@ impl<Adapter: ConsensusAdapter + 'static> Consensus for OverlordConsensus<Adapte
     }
 
     async fn set_vote(&self, ctx: Context, vote: Vec<u8>) -> ProtocolResult<()> {
-        // let ctx = match muta_apm::MUTA_TRACER.span("consensus.set_vote", vec![
-        //     muta_apm::rustracing::tag::Tag::new("kind", "consensus"),
-        // ]) {
-        //     Some(mut span) => {
-        //         span.log(|log| {
-        //             log.time(std::time::SystemTime::now());
-        //         });
-        //         ctx.with_value("parent_span_ctx", span.context().cloned())
-        //     }
-        //     None => ctx,
-        // };
+        let ctx = match AxonTracer::default()
+            .span("consensus.set_vote", vec![Tag::new("kind", "consensus")])
+        {
+            Some(mut span) => {
+                span.log(|log| {
+                    log.time(common_apm::Instant::now());
+                });
+                ctx.with_value("parent_span_ctx", span.context().cloned())
+            }
+            None => ctx,
+        };
 
         let signed_vote = SignedVote::decode(&vote)
             .map_err(|_| ConsensusError::DecodeErr(ConsensusType::SignedVote))?;
@@ -68,7 +71,7 @@ impl<Adapter: ConsensusAdapter + 'static> Consensus for OverlordConsensus<Adapte
         Ok(())
     }
 
-    // #[muta_apm::derive::tracing_span(kind = "consensus")]
+    #[trace_span(kind = "consensus")]
     async fn set_qc(&self, ctx: Context, qc: Vec<u8>) -> ProtocolResult<()> {
         let aggregated_vote = AggregatedVote::decode(&qc)
             .map_err(|_| ConsensusError::DecodeErr(ConsensusType::AggregateVote))?;
@@ -82,7 +85,7 @@ impl<Adapter: ConsensusAdapter + 'static> Consensus for OverlordConsensus<Adapte
         Ok(())
     }
 
-    // #[muta_apm::derive::tracing_span(kind = "consensus")]
+    #[trace_span(kind = "consensus")]
     async fn set_choke(&self, ctx: Context, choke: Vec<u8>) -> ProtocolResult<()> {
         let signed_choke = SignedChoke::decode(&choke)
             .map_err(|_| ConsensusError::DecodeErr(ConsensusType::SignedChoke))?;
@@ -230,13 +233,13 @@ impl<T: overlord::Codec> OverlordMsgExt for OverlordMsg<T> {
     }
 }
 
-// #[muta_apm::derive::tracing_span(
-//     kind = "consensus",
-//     logs = "{
-//     'height': 'msg.get_height()',
-//     'round': 'msg.get_round()'
-// }"
-// )]
-pub fn tracing_overlord_message<T: overlord::Codec>(_ctx: Context, msg: &OverlordMsg<T>) {
+#[trace_span(
+    kind = "consensus",
+    logs = "{
+    height: msg.get_height(),
+    round: msg.get_round()
+}"
+)]
+pub fn tracing_overlord_message<T: overlord::Codec>(ctx: Context, msg: &OverlordMsg<T>) {
     let _ = msg;
 }

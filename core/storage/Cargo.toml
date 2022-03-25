@@ -14,6 +14,7 @@ parking_lot = "0.12"
 rocksdb = { version = "0.16", package = "ckb-rocksdb" }
 
 common-apm = { path = "../../common/apm" }
+common-apm-derive = { path = "../../common/apm-derive" }
 protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [dev-dependencies]
