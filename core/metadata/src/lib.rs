@@ -10,8 +10,9 @@ use std::error::Error;
 use std::sync::Arc;
 
 use arc_swap::ArcSwap;
-use ethers::abi::{self, Error as AbiError};
-use ethers::core::abi::{AbiEncode, AbiType, InvalidOutputType, Tokenizable};
+use ethers_core::abi::{
+    self, AbiEncode, AbiType, Error as AbiError, InvalidOutputType, Tokenizable,
+};
 use parking_lot::RwLock;
 
 use protocol::traits::{Context, MetadataControl, MetadataControlAdapter};

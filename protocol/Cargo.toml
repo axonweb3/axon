@@ -13,9 +13,9 @@ bytes = { version = "1.1", features = ["serde"] }
 common-crypto = { path = "../common/crypto" }
 creep = "0.2"
 derive_more = "0.99"
-ethereum = "0.12"
-ethereum-types = "0.12"
-evm = { version = "0.33", features = ["with-codec", "with-serde"] }
+ethereum = { version = "0.12", features = ["with-codec", "with-serde"] }
+ethereum-types = { version = "0.13", features = ["arbitrary", "codec", "rlp", "serialize", "std"] }
+evm = { version = "0.34", features = ["with-serde"] }
 faster-hex = "0.6"
 hasher = { version = "0.1", features = ["hash-keccak"] }
 lazy_static = "1.4"

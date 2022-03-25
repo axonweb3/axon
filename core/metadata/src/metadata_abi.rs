@@ -7,35 +7,35 @@ mod metadatacontract_mod {
     #![allow(dead_code)]
     #![allow(clippy::type_complexity)]
     #![allow(unused_imports)]
-    use ethers::contract::{
+    use ethers_contract::{
         builders::{ContractCall, Event},
         Contract, EthAbiType, EthCall, EthDisplay, Lazy,
     };
-    use ethers::core::{
+    use ethers_core::{
         abi::{Abi, Detokenize, InvalidOutputType, Token, Tokenizable},
         types::*,
     };
-    use ethers::providers::Middleware;
+    use ethers_providers::Middleware;
     #[doc = "MetadataContract was auto-generated with ethers-rs Abigen. More information at: https://github.com/gakonst/ethers-rs"]
     use std::sync::Arc;
 
-    pub static METADATACONTRACT_ABI: ethers::contract::Lazy<ethers::core::abi::Abi> =
-        ethers::contract::Lazy::new(|| {
+    pub static METADATACONTRACT_ABI: ethers_contract::Lazy<ethers_core::abi::Abi> =
+        ethers_contract::Lazy::new(|| {
             serde_json::from_str("[\n  {\n    \"inputs\": [\n      {\n        \"components\": [\n          {\n            \"components\": [\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"start\",\n                \"type\": \"uint64\"\n              },\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"end\",\n                \"type\": \"uint64\"\n              }\n            ],\n            \"internalType\": \"struct MetadataManager.MetadataVersion\",\n            \"name\": \"version\",\n            \"type\": \"tuple\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"epoch\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"gas_limit\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"gas_price\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"interval\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"components\": [\n              {\n                \"internalType\": \"bytes\",\n                \"name\": \"bls_pub_key\",\n                \"type\": \"bytes\"\n              },\n              {\n                \"internalType\": \"bytes\",\n                \"name\": \"pub_key\",\n                \"type\": \"bytes\"\n              },\n              {\n                \"internalType\": \"address\",\n                \"name\": \"address_\",\n                \"type\": \"address\"\n              },\n              {\n                \"internalType\": \"uint32\",\n                \"name\": \"propose_weight\",\n                \"type\": \"uint32\"\n              },\n              {\n                \"internalType\": \"uint32\",\n                \"name\": \"vote_weight\",\n                \"type\": \"uint32\"\n              }\n            ],\n            \"internalType\": \"struct MetadataManager.ValidatorExtend[]\",\n            \"name\": \"verifier_list\",\n            \"type\": \"tuple[]\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"propose_ratio\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"prevote_ratio\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"precommit_ratio\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"brake_ratio\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"tx_num_limit\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"max_tx_size\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"last_checkpoint_block_hash\",\n            \"type\": \"bytes32\"\n          }\n        ],\n        \"internalType\": \"struct MetadataManager.Metadata\",\n        \"name\": \"metadata\",\n        \"type\": \"tuple\"\n      }\n    ],\n    \"name\": \"appendMetadata\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"uint64\",\n        \"name\": \"epoch\",\n        \"type\": \"uint64\"\n      }\n    ],\n    \"name\": \"getMetadata\",\n    \"outputs\": [\n      {\n        \"components\": [\n          {\n            \"components\": [\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"start\",\n                \"type\": \"uint64\"\n              },\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"end\",\n                \"type\": \"uint64\"\n              }\n            ],\n            \"internalType\": \"struct MetadataManager.MetadataVersion\",\n            \"name\": \"version\",\n            \"type\": \"tuple\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"epoch\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"gas_limit\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"gas_price\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"interval\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"components\": [\n              {\n                \"internalType\": \"bytes\",\n                \"name\": \"bls_pub_key\",\n                \"type\": \"bytes\"\n              },\n              {\n                \"internalType\": \"bytes\",\n                \"name\": \"pub_key\",\n                \"type\": \"bytes\"\n              },\n              {\n                \"internalType\": \"address\",\n                \"name\": \"address_\",\n                \"type\": \"address\"\n              },\n              {\n                \"internalType\": \"uint32\",\n                \"name\": \"propose_weight\",\n                \"type\": \"uint32\"\n              },\n              {\n                \"internalType\": \"uint32\",\n                \"name\": \"vote_weight\",\n                \"type\": \"uint32\"\n              }\n            ],\n            \"internalType\": \"struct MetadataManager.ValidatorExtend[]\",\n            \"name\": \"verifier_list\",\n            \"type\": \"tuple[]\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"propose_ratio\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"prevote_ratio\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"precommit_ratio\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"brake_ratio\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"tx_num_limit\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"max_tx_size\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"last_checkpoint_block_hash\",\n            \"type\": \"bytes32\"\n          }\n        ],\n        \"internalType\": \"struct MetadataManager.Metadata\",\n        \"name\": \"\",\n        \"type\": \"tuple\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  }\n]").expect ("invalid abi")
         });
 
     #[derive(Clone)]
-    pub struct MetadataContract<M>(ethers::contract::Contract<M>);
+    pub struct MetadataContract<M>(ethers_contract::Contract<M>);
 
     impl<M> std::ops::Deref for MetadataContract<M> {
-        type Target = ethers::contract::Contract<M>;
+        type Target = ethers_contract::Contract<M>;
 
         fn deref(&self) -> &Self::Target {
             &self.0
         }
     }
 
-    impl<M: ethers::providers::Middleware> std::fmt::Debug for MetadataContract<M> {
+    impl<M: ethers_providers::Middleware> std::fmt::Debug for MetadataContract<M> {
         fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
             f.debug_tuple(stringify!(MetadataContract))
                 .field(&self.address())
@@ -43,15 +43,15 @@ mod metadatacontract_mod {
         }
     }
 
-    impl<'a, M: ethers::providers::Middleware> MetadataContract<M> {
+    impl<'a, M: ethers_providers::Middleware> MetadataContract<M> {
         #[doc = r" Creates a new contract instance with the specified `ethers`"]
-        #[doc = r" client at the given `Address`. The contract derefs to a `ethers::Contract`"]
+        #[doc = r" client at the given `Address`. The contract derefs to a `ethers_contract`"]
         #[doc = r" object"]
-        pub fn new<T: Into<ethers::core::types::Address>>(
+        pub fn new<T: Into<ethers_core::types::Address>>(
             address: T,
             client: ::std::sync::Arc<M>,
         ) -> Self {
-            let contract = ethers::contract::Contract::new(
+            let contract = ethers_contract::Contract::new(
                 address.into(),
                 METADATACONTRACT_ABI.clone(),
                 client,
@@ -63,7 +63,7 @@ mod metadatacontract_mod {
         pub fn append_metadata(
             &self,
             metadata: Metadata,
-        ) -> ethers::contract::builders::ContractCall<M, ()> {
+        ) -> ethers_contract::builders::ContractCall<M, ()> {
             self.0
                 .method_hash([66, 144, 209, 12], (metadata,))
                 .expect("method not found (this should never happen)")
@@ -73,7 +73,7 @@ mod metadatacontract_mod {
         pub fn get_metadata(
             &self,
             epoch: u64,
-        ) -> ethers::contract::builders::ContractCall<M, Metadata> {
+        ) -> ethers_contract::builders::ContractCall<M, Metadata> {
             self.0
                 .method_hash([153, 142, 132, 163], epoch)
                 .expect("method not found (this should never happen)")
@@ -97,29 +97,29 @@ mod metadatacontract_mod {
         pub epoch: u64,
     }
 
-    #[derive(Debug, Clone, PartialEq, Eq, ethers::contract::EthAbiType)]
+    #[derive(Debug, Clone, PartialEq, Eq, ethers_contract::EthAbiType)]
     pub enum MetadataContractCalls {
         AppendMetadata(AppendMetadataCall),
         GetMetadata(GetMetadataCall),
     }
 
-    impl ethers::core::abi::AbiDecode for MetadataContractCalls {
-        fn decode(data: impl AsRef<[u8]>) -> Result<Self, ethers::core::abi::AbiError> {
+    impl ethers_core::abi::AbiDecode for MetadataContractCalls {
+        fn decode(data: impl AsRef<[u8]>) -> Result<Self, ethers_core::abi::AbiError> {
             if let Ok(decoded) =
-                <AppendMetadataCall as ethers::core::abi::AbiDecode>::decode(data.as_ref())
+                <AppendMetadataCall as ethers_core::abi::AbiDecode>::decode(data.as_ref())
             {
                 return Ok(MetadataContractCalls::AppendMetadata(decoded));
             }
             if let Ok(decoded) =
-                <GetMetadataCall as ethers::core::abi::AbiDecode>::decode(data.as_ref())
+                <GetMetadataCall as ethers_core::abi::AbiDecode>::decode(data.as_ref())
             {
                 return Ok(MetadataContractCalls::GetMetadata(decoded));
             }
-            Err(ethers::core::abi::Error::InvalidData.into())
+            Err(ethers_core::abi::Error::InvalidData.into())
         }
     }
 
-    impl ethers::core::abi::AbiEncode for MetadataContractCalls {
+    impl ethers_core::abi::AbiEncode for MetadataContractCalls {
         fn encode(self) -> Vec<u8> {
             match self {
                 MetadataContractCalls::AppendMetadata(element) => element.encode(),
@@ -177,9 +177,9 @@ mod metadatacontract_mod {
     #[doc = "`ValidatorExtend(bytes,bytes,address,uint32,uint32)`"]
     #[derive(Clone, Debug, Default, Eq, PartialEq, EthAbiType)]
     pub struct ValidatorExtend {
-        pub bls_pub_key:    ethers::core::types::Bytes,
-        pub pub_key:        ethers::core::types::Bytes,
-        pub address:        ethers::core::types::Address,
+        pub bls_pub_key:    ethers_core::types::Bytes,
+        pub pub_key:        ethers_core::types::Bytes,
+        pub address:        ethers_core::types::Address,
         pub propose_weight: u32,
         pub vote_weight:    u32,
     }

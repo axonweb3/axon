@@ -37,25 +37,21 @@ impl EvmExecutor {
                     .unsigned
                     .access_list
                     .into_iter()
-                    .map(|x| (x.address, x.slots))
+                    .map(|x| (x.address, x.storage_keys))
                     .collect(),
             ),
-            TransactionAction::Create => {
-                let exit_reason = executor.transact_create(
-                    tx.sender,
-                    tx.transaction.unsigned.value,
-                    tx.transaction.unsigned.data.to_vec(),
-                    tx.transaction.unsigned.gas_limit.as_u64(),
-                    tx.transaction
-                        .unsigned
-                        .access_list
-                        .into_iter()
-                        .map(|x| (x.address, x.slots))
-                        .collect(),
-                );
-
-                (exit_reason, Vec::new())
-            }
+            TransactionAction::Create => executor.transact_create(
+                tx.sender,
+                tx.transaction.unsigned.value,
+                tx.transaction.unsigned.data.to_vec(),
+                tx.transaction.unsigned.gas_limit.as_u64(),
+                tx.transaction
+                    .unsigned
+                    .access_list
+                    .into_iter()
+                    .map(|x| (x.address, x.storage_keys))
+                    .collect(),
+            ),
         };
         let remain_gas = executor.gas();
         let gas_used = executor.used_gas();

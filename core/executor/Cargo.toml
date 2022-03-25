@@ -8,7 +8,7 @@ edition = "2021"
 cita_trie = "3.0"
 crossbeam-channel = "0.5"
 dashmap = "5.2"
-evm = "0.33"
+evm = "0.34"
 futures = "0.3"
 hasher = "0.1"
 lazy_static = "1.4"
@@ -30,9 +30,9 @@ common-crypto = { path = "../../common/crypto" }
 core-storage = { path = "../storage" }
 
 criterion = "0.3"
-ethabi = "16.0"
-ethabi-contract = "16.0"
-ethabi-derive = "16.0"
+ethabi = "17.0"
+ethabi-contract = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
+ethabi-derive = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
 getrandom = "0.2"
 rlp = "0.5"
 tempfile = "3.3"

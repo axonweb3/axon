@@ -8,7 +8,9 @@ edition = "2021"
 arc-swap = "1.5"
 cita_trie = "3.0"
 common-apm = { path = "../../common/apm" }
-ethers = { version = "0.6", features = ["abigen"] }
+ethers-contract = { git = "https://github.com/gakonst/ethers-rs.git", features = ["abigen"], rev = "a43a9b8" }
+ethers-core = { git = "https://github.com/gakonst/ethers-rs.git", rev = "a43a9b8" }
+ethers-providers = { git = "https://github.com/gakonst/ethers-rs.git", rev = "a43a9b8" }
 lazy_static = "1.4"
 parking_lot = "0.12"
 serde_json = "1.0"

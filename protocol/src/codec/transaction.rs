@@ -47,8 +47,8 @@ impl Encodable for UnverifiedTransaction {
         for access in self.unsigned.access_list.iter() {
             s.begin_list(2);
             s.append(&access.address);
-            s.begin_list(access.slots.len());
-            for storage_key in access.slots.iter() {
+            s.begin_list(access.storage_keys.len());
+            for storage_key in access.storage_keys.iter() {
                 s.append(storage_key);
             }
         }
@@ -96,8 +96,8 @@ impl Decodable for UnverifiedTransaction {
             }
 
             access_list.push(AccessListItem {
-                address: accounts.val_at(0)?,
-                slots:   accounts.list_at(1)?,
+                address:      accounts.val_at(0)?,
+                storage_keys: accounts.list_at(1)?,
             });
         }
 

@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::sync::Arc;
 
-use ethers::core::abi::AbiEncode;
+use ethers_core::abi::AbiEncode;
 
 use core_executor::adapter::{MPTTrie, RocksTrieDB};
 use core_executor::{AxonExecutor, AxonExecutorAdapter};
