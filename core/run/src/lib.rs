@@ -163,15 +163,10 @@ impl Axon {
     }
 
     pub async fn start(self) -> ProtocolResult<()> {
-        if let Some(apm_config) = &self.config.apm {
-            global_tracer_register(
-                &apm_config.service_name,
-                apm_config.tracing_address,
-                apm_config.tracing_batch_size,
-            );
-
-            log::info!("muta_apm start");
-        };
+        // Start jaeger
+        Self::run_jaeger(self.config.clone());
+        // Start prometheus http server
+        Self::run_prometheus_server(self.config.clone());
 
         log::info!("node starts");
         observe_listen_port_occupancy(&[self.config.network.listening_address.clone()]).await?;
@@ -514,9 +509,6 @@ impl Axon {
         ));
         let _handles = run_jsonrpc_server(self.config.clone(), api_adapter).await?;
 
-        // Start prometheus http server
-        Self::run_prometheus_server(config);
-
         // Run sync
         tokio::spawn(async move {
             if let Err(e) = synchronization.polling_broadcast().await {
@@ -586,14 +578,35 @@ impl Axon {
         Ok(())
     }
 
+    fn run_jaeger(config: Config) {
+        if let Some(jaeger_config) = config.jaeger {
+            let service_name = match jaeger_config.service_name {
+                Some(name) => name,
+                None => "axon".to_string(),
+            };
+
+            let tracing_address = match jaeger_config.tracing_address {
+                Some(address) => address,
+                None => std::net::SocketAddr::from(([0, 0, 0, 0], 6831)),
+            };
+
+            let tracing_batch_size = jaeger_config.tracing_batch_size.unwrap_or(50);
+
+            global_tracer_register(&service_name, tracing_address, tracing_batch_size);
+            log::info!("jaeger start");
+        };
+    }
+
     fn run_prometheus_server(config: Config) {
-        let prometheus_listening_address = match config.apm {
-            Some(apm_config) => apm_config.prometheus_listening_address,
+        let prometheus_listening_address = match config.prometheus {
+            Some(prometheus_config) => prometheus_config.listening_address.unwrap(),
             None => std::net::SocketAddr::from(([0, 0, 0, 0], 8100)),
         };
         tokio::spawn(async move {
             run_prometheus_server(prometheus_listening_address).await;
         });
+
+        log::info!("prometheus start");
     }
 
     fn panic_log(info: &panic::PanicInfo) {

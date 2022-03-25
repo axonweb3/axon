@@ -137,11 +137,15 @@ impl Default for ConfigLogger {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct ConfigAPM {
-    pub service_name:                 String,
-    pub tracing_address:              SocketAddr,
-    pub tracing_batch_size:           Option<usize>,
-    pub prometheus_listening_address: SocketAddr,
+pub struct ConfigJaeger {
+    pub service_name:       Option<String>,
+    pub tracing_address:    Option<SocketAddr>,
+    pub tracing_batch_size: Option<usize>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct ConfigPrometheus {
+    pub listening_address: Option<SocketAddr>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -176,7 +180,8 @@ pub struct Config {
     pub logger:                      ConfigLogger,
     #[serde(default)]
     pub rocksdb:                     ConfigRocksDB,
-    pub apm:                         Option<ConfigAPM>,
+    pub jaeger:                      Option<ConfigJaeger>,
+    pub prometheus:                  Option<ConfigPrometheus>,
     pub cross_client:                ConfigCrossClient,
     pub epoch_len:                   u64,
     pub metadata_contract_address:   H256,

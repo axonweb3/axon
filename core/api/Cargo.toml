@@ -21,7 +21,6 @@ core-consensus = { path = "../../core/consensus" }
 core-executor = { path = "../../core/executor" }
 protocol = { path = "../../protocol", package = "axon-protocol" }
 
-
 [dev-dependencies]
 fastrand = "1.7"
 json = "0.12"
