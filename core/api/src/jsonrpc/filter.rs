@@ -67,6 +67,7 @@ pub enum FilterChanges {
 pub struct RawLoggerFilter {
     pub from_block: Option<BlockId>,
     pub to_block:   Option<BlockId>,
+    #[serde(default)]
     pub address:    MultiType<H160>,
     pub topics:     Option<Vec<Hash>>,
 }

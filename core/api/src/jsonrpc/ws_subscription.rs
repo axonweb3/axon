@@ -259,6 +259,7 @@ impl<'a> TryFrom<Params<'a>> for Type {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 struct RawLoggerFilter {
+    #[serde(default)]
     address: MultiType<H160>,
     topics:  Option<Vec<Hash>>,
 }

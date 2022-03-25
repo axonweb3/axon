@@ -495,6 +495,7 @@ pub struct Web3Filter {
     pub from_block: Option<BlockId>,
     pub to_block:   Option<BlockId>,
     pub block_hash: Option<H256>,
+    #[serde(default)]
     pub address:    MultiType<H160>,
     pub topics:     Option<Vec<H256>>,
 }
@@ -504,6 +505,12 @@ pub enum MultiType<T> {
     Single(T),
     Multi(Vec<T>),
     Null,
+}
+
+impl<T> Default for MultiType<T> {
+    fn default() -> Self {
+        MultiType::Null
+    }
 }
 
 impl<T> From<MultiType<T>> for Option<Vec<T>> {
