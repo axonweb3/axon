@@ -55,6 +55,6 @@ fn test_ripemd160() {
 
 #[test]
 fn test_identity() {
-	let data = rand_bytes(16);
-	test_precompile!(Identity, &data, data, 18);
+    let data = rand_bytes(16);
+    test_precompile!(Identity, &data, data, 18);
 }
