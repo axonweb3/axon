@@ -20,6 +20,7 @@ macro_rules! test_precompile {
         let resp =
             <$ty as PrecompileContract>::exec_fn($input, Some($gas_limit), &mock_context(), false);
         assert!(resp.is_err());
+		assert_eq!(resp.unwrap_err(), $err);
         assert_eq!(gas_cost, expect_gas_cost);
     };
 }
