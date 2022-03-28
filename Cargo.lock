@@ -1051,7 +1051,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
- "tokio-util 0.7.0",
+ "tokio-util 0.7.1",
 ]
 
 [[package]]
@@ -1166,7 +1166,7 @@ dependencies = [
  "snap",
  "socket2",
  "tentacle",
- "tokio-util 0.7.0",
+ "tokio-util 0.7.1",
  "x25519-dalek",
  "zeroize_derive",
 ]
@@ -4598,7 +4598,7 @@ dependencies = [
  "tentacle-secio",
  "thiserror",
  "tokio",
- "tokio-util 0.7.0",
+ "tokio-util 0.7.1",
  "tokio-yamux",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -4640,7 +4640,7 @@ dependencies = [
  "secp256k1 0.20.3",
  "sha2",
  "tokio",
- "tokio-util 0.7.0",
+ "tokio-util 0.7.1",
  "unsigned-varint",
  "x25519-dalek",
 ]
@@ -4848,16 +4848,16 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.7.0"
+version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64910e1b9c1901aaf5375561e35b9c057d95ff41a44ede043a03e09279eabaf1"
+checksum = "0edfdeb067411dba2044da6d1cb2df793dd35add7888d73c16e3381ded401764"
 dependencies = [
  "bytes",
  "futures-core",
  "futures-sink",
- "log",
  "pin-project-lite",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -4871,7 +4871,7 @@ dependencies = [
  "log",
  "nohash-hasher",
  "tokio",
- "tokio-util 0.7.0",
+ "tokio-util 0.7.1",
 ]
 
 [[package]]
@@ -4894,7 +4894,7 @@ dependencies = [
  "pin-project",
  "pin-project-lite",
  "tokio",
- "tokio-util 0.7.0",
+ "tokio-util 0.7.1",
  "tower-layer",
  "tower-service",
  "tracing",
