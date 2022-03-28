@@ -1,7 +1,7 @@
-const yml = require("yaml");
-const fs = require("fs");
+import yml from "yaml";
+import fs from "fs";
 
-class Config {
+export default class Config {
   constructor() {
     this.axonRpc = { url: "", netWorkName: "", chainId: "" };
     this.acount1 = "";
@@ -31,4 +31,3 @@ class Config {
     return Config.ins;
   }
 }
-module.exports.Config = Config;

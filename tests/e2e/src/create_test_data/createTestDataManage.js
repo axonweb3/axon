@@ -1,10 +1,9 @@
-// eslint-disable-next-line import/no-import-module-exports
-import { Config } from "../../config";
+import Web3 from "web3";
+import fs from "fs";
 
-const Web3 = require("web3");
-const fs = require("fs");
+import Config from "../../config";
 
-const erc20 = require("./ERC20.json");
+import erc20 from "./ERC20.json";
 
 const basePath = "./src/test_data_temp_file";
 const option = { timeout: 1000 * 30 };
@@ -47,7 +46,7 @@ const sendTransaction = async (account, data) => {
   return web3.eth.sendSignedTransaction(transaction.rawTransaction);
 };
 
-const createTransactionData = async () => {
+export async function createTransactionData() {
   const contract = new web3.eth.Contract(erc20.abi);
   const txOptions = { data: erc20.bytecode, arguments: ["TT", "TTT"] };
   const data = contract.deploy(txOptions).encodeABI();
@@ -63,9 +62,9 @@ const createTransactionData = async () => {
   transactionInfo.accountAddress = accountFrom.address;
   transactionInfo.hexBlockNumber = `0x${receipt.blockNumber.toString(16)}`;
   await savejson(`${basePath}/testData_1.json`, transactionInfo);
-};
+}
 
-const readTestDataAsJson = (testFileName) => {
+export function readTestDataAsJson(testFileName) {
   let data;
   try {
     const filePath = `${basePath}/${testFileName}`;
@@ -76,15 +75,13 @@ const readTestDataAsJson = (testFileName) => {
     console.log(err);
   }
   return data;
-};
+}
 
-const resetTestTmpFiles = async () => {
+export async function resetTestTmpFiles() {
   try {
     fs.rmdirSync(basePath, { recursive: true });
     fs.mkdirSync(`${basePath}/`);
   } catch (ex) {
     fs.mkdirSync(`${basePath}/`);
   }
-};
-
-module.exports.testDataManage = { createTransactionData, readTestDataAsJson, resetTestTmpFiles };
+}
