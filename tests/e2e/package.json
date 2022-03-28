@@ -8,11 +8,8 @@
   "dependencies": {
     "@chainsafe/dappeteer": "^2.4.0",
     "jest-environment-node": "^27.5.1",
-    "ethereumjs-tx": "^2.1.2",
-    "js-yaml": "^4.1.0",
     "puppeteer": "^13.4.0",
-    "web3": "^1.7.1",
-    "yaml": "^1.10.2"
+    "web3": "^1.7.1"
   },
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.16.8",

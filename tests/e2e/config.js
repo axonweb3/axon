@@ -1,4 +1,4 @@
-import fs from "fs";
+import configSetting from "./config.json";
 
 export default class Config {
   constructor() {
@@ -8,8 +8,6 @@ export default class Config {
     this.httpServer = "";
     this.hexPrivateKey = "";
     try {
-      const buffer = fs.readFileSync("config.json", "utf8");
-      const configSetting = JSON.parse(buffer);
       // eslint-disable-next-line no-console
       console.log(configSetting.axonRpc);
       this.axonRpc = configSetting.axonRpc;
