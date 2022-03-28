@@ -1,4 +1,3 @@
-import yml from "yaml";
 import fs from "fs";
 
 export default class Config {
@@ -9,8 +8,8 @@ export default class Config {
     this.httpServer = "";
     this.hexPrivateKey = "";
     try {
-      const buffer = fs.readFileSync("config.yaml", "utf8");
-      const configSetting = yml.parse(buffer);
+      const buffer = fs.readFileSync("config.json", "utf8");
+      const configSetting = JSON.parse(buffer);
       // eslint-disable-next-line no-console
       console.log(configSetting.axonRpc);
       this.axonRpc = configSetting.axonRpc;
@@ -21,6 +20,7 @@ export default class Config {
     } catch (err) {
       // eslint-disable-next-line no-console
       console.log(err);
+      throw err;
     }
   }
 

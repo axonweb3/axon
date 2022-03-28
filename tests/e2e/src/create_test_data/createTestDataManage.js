@@ -27,6 +27,7 @@ const savejson = async (filePath, data) => {
     } catch (err) {
       // eslint-disable-next-line no-console
       console.log(`save error ${err}`);
+      throw err;
     }
   }
 };
@@ -79,7 +80,8 @@ export function readTestDataAsJson(testFileName) {
 
 export async function resetTestTmpFiles() {
   try {
-    fs.rmdirSync(basePath, { recursive: true });
+    fs.rmSync(`${basePath}/`, { recursive: true, force: true });
+    // fs.rmdir(`${basePath}/`, { recursive: true });
     fs.mkdirSync(`${basePath}/`);
   } catch (ex) {
     fs.mkdirSync(`${basePath}/`);
