@@ -602,9 +602,7 @@ impl Axon {
             Some(prometheus_config) => prometheus_config.listening_address.unwrap(),
             None => std::net::SocketAddr::from(([0, 0, 0, 0], 8100)),
         };
-        tokio::spawn(async move {
-            run_prometheus_server(prometheus_listening_address).await;
-        });
+        tokio::spawn(run_prometheus_server(prometheus_listening_address));
 
         log::info!("prometheus start");
     }
