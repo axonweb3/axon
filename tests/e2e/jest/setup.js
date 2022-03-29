@@ -1,15 +1,18 @@
 import puppeteer from "puppeteer";
-
 import { launch, setupMetamask, getMetamaskWindow } from "@chainsafe/dappeteer";
+
+import Config from "../config";
+import { resetTestTmpFiles, createTransactionData } from "../src/create_test_data/createTestDataManage";
 
 export const DAPPETEER_DEFAULT_CONFIG = {
   metamaskVersion: "v10.8.1",
-  args: [process.env.HEADLESS ? "--headless=chrome" : ""],
+  args: [process.env.HEADLESS ? "--headless=chrome" : "", process.env.WSL ? "-no-sandbox" : ""],
 };
-
 export default async function setup() {
   const browser = await launch(puppeteer, DAPPETEER_DEFAULT_CONFIG);
   try {
+    await resetTestTmpFiles();
+    await createTransactionData(); // create test data
     await setupMetamask(browser, {});
     global.browser = browser;
   } catch (error) {
@@ -23,9 +26,9 @@ export default async function setup() {
   global.metamask = await getMetamaskWindow(browser);
 
   await metamask.addNetwork({
-    networkName: "Axon",
-    rpc: "http://localhost:8000",
-    chainId: 5,
+    networkName: Config.getIns().axonRpc.netWorkName,
+    rpc: Config.getIns().axonRpc.url,
+    chainId: Config.getIns().axonRpc.chainId,
   });
 
   const page = await browser.newPage();
