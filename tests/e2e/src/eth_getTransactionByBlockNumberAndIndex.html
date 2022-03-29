@@ -1,0 +1,34 @@
+<html>
+
+<body>
+  <button id="btn">eth_getTransactionByBlockNumberAndIndex</button>
+  <div><input type="text" id="param1" value="" /></div>
+  <div><input type="text" id="param2" value="" /></div>
+  <div><input type="text" id="testType" value="" /></div>
+  <div> value: <span id="ret"></span></div>
+  </div>
+</body>
+<script>
+  document.getElementById("btn").addEventListener("click", () => {
+    const param1 = document.getElementById("param1").value;
+    const param2 = document.getElementById("param2").value;
+    const t_type = document.getElementById("testType").value;
+    const params = [];
+    const request_params = { method: "eth_getTransactionByBlockNumberAndIndex", params: params }; //deafult is none params  to request test.
+    if (t_type == "1") {
+      request_params.params.push(param1);
+      request_params.params.push(param2);
+    }
+    if (t_type == "2") {
+      request_params.params.push(param1);
+      request_params.params.push("advantage parameter");
+    }
+    ethereum.request(request_params).then((ret) => {
+      document.getElementById("ret").innerHTML = JSON.stringify(ret);
+    }).catch((error) => {
+      document.getElementById("ret").innerHTML = JSON.stringify(error);
+    });
+  });
+</script>
+
+</html>

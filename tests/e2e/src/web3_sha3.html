@@ -1,0 +1,31 @@
+<html>
+  <body>
+      <button id="btn">web3 sha</button>
+      <div><input type="text" id="param1" value="" /></div>
+      <div><input type="text" id="testType" value="" /></div>
+      <div>sha value: <span id="ret"></span></div>
+    </div>
+  </body>
+  <script>
+    document.getElementById("btn").addEventListener("click", () => {
+      const data = document.getElementById("param1").value;
+      const t_type = document.getElementById("testType").value;
+      const params = [];
+      if (t_type == "1") {
+        params.push(data);
+      }
+      if (t_type == "2") {
+        params.push(data);
+        params.push("advantage parameter");
+      }
+      const request_params = { method: "web3_sha3", params: params }; //deafult is none param  to request test.
+      ethereum.request(request_params).then((ret) => {
+        document.getElementById("ret").innerHTML = ret;
+        console.log(ret);
+      }).catch((error) => {
+        console.log(error);
+        document.getElementById("ret").innerHTML =JSON.stringify(error) ;
+      }); 
+    });
+  </script>
+</html>
