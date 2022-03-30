@@ -4,6 +4,7 @@ use sha2::Digest;
 
 use protocol::types::H160;
 
+use crate::err;
 use crate::precompiles::{precompile_address, PrecompileContract};
 
 #[derive(Default, Clone)]
@@ -23,9 +24,7 @@ impl PrecompileContract for Sha256 {
 
         if let Some(limit) = gas_limit {
             if gas > limit {
-                return Err(PrecompileFailure::Error {
-                    exit_status: ExitError::OutOfGas,
-                });
+                return err!();
             }
         }
 

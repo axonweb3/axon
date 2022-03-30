@@ -23,13 +23,13 @@ impl PrecompileContract for EcPairing {
         _is_static: bool,
     ) -> Result<PrecompileOutput, PrecompileFailure> {
         if input.is_empty() {
-            let mut buf = [0u8; 32];
-            U256::one().to_big_endian(&mut buf);
+            let mut res = [0u8; 32];
+            U256::one().to_big_endian(&mut res);
 
             return Ok(PrecompileOutput {
                 exit_status: ExitSucceed::Returned,
                 cost:        Self::MIN_GAS,
-                output:      buf.to_vec(),
+                output:      res.to_vec(),
                 logs:        Default::default(),
             });
         }
@@ -76,17 +76,17 @@ impl PrecompileContract for EcPairing {
             pairs.push((a, b));
         }
 
-        let mut buf = [0u8; 32];
+        let mut res = [0u8; 32];
         if pairing_batch(&pairs) == Gt::one() {
-            U256::one().to_big_endian(&mut buf);
+            U256::one().to_big_endian(&mut res);
         } else {
-            U256::zero().to_big_endian(&mut buf);
+            U256::zero().to_big_endian(&mut res);
         }
 
         Ok(PrecompileOutput {
             exit_status: ExitSucceed::Returned,
             cost:        Self::MIN_GAS,
-            output:      buf.to_vec(),
+            output:      res.to_vec(),
             logs:        Default::default(),
         })
     }

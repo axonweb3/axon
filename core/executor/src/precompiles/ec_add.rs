@@ -30,20 +30,20 @@ impl PrecompileContract for EcAdd {
         let p1 = read_point(input, 0)?;
         let p2 = read_point(input, 64)?;
 
-        let mut buf = [0u8; 64];
+        let mut res = [0u8; 64];
         if let Some(sum) = AffineG1::from_jacobian(p1 + p2) {
             sum.x()
-                .to_big_endian(&mut buf[0..32])
+                .to_big_endian(&mut res[0..32])
                 .map_err(|_| err!(_, "Invalid sum X"))?;
             sum.y()
-                .to_big_endian(&mut buf[32..64])
+                .to_big_endian(&mut res[32..64])
                 .map_err(|_| err!(_, "Invalid sum Y"))?;
         }
 
         Ok(PrecompileOutput {
             exit_status: ExitSucceed::Returned,
             cost:        Self::MIN_GAS,
-            output:      buf.to_vec(),
+            output:      res.to_vec(),
             logs:        vec![],
         })
     }
