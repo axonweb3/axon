@@ -10,7 +10,7 @@ cita_trie = "3.0"
 crossbeam-queue = "0.3"
 dashmap = { version = "5.2", features = ["rayon"] }
 futures = { version = "0.3", features = [ "async-await" ] }
-indexmap = { version = "1.7", features = ["rayon"] }
+indexmap = { version = "1.8", features = ["rayon"] }
 log = "0.4"
 parking_lot = "0.12"
 rayon = "1.5"
