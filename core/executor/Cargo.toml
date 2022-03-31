@@ -15,12 +15,12 @@ futures = "0.3"
 hasher = "0.1"
 lazy_static = "1.4"
 log = "0.4"
-rug = "1.15"
 parking_lot = "0.12"
 rand = { version = "0.8", features = ["small_rng"] }
 ripemd = "0.1"
 rlp = "0.5"
 rocksdb = { version = "0.16", package = "ckb-rocksdb" }
+rug = "1.15"
 sha2 = "0.10"
 
 common-apm = { path = "../../common/apm" }
