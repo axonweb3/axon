@@ -28,16 +28,20 @@ jobs:
     runs-on: ubuntu-latest
     if: needs.prologue.outputs.job_skip == 'run'
     steps:
-    - uses: actions/checkout@v3
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: '16'
-        cache: 'yarn'
-        cache-dependency-path: 'tests/e2e/yarn.lock'
+      - uses: actions/checkout@v3
+      - uses: lyricwulf/abc@v1
+        with: 
+          linux: m4
+      
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+          cache: 'yarn'
+          cache-dependency-path: 'tests/e2e/yarn.lock'
 
-    - name: E2E Tests Linting
-      run: make e2e-test-lint
+      - name: E2E Tests Linting
+        run: make e2e-test-lint
 
-    - name: E2E Tests
-      run: make e2e-test-ci
+      - name: E2E Tests
+        run: make e2e-test-ci

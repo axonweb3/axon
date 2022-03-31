@@ -20,8 +20,9 @@ impl PrecompileContract for EcRecover {
         _context: &Context,
         _is_static: bool,
     ) -> Result<PrecompileOutput, PrecompileFailure> {
+        let gas = Self::gas_cost(origin_input);
         if let Some(limit) = gas_limit {
-            if limit < Self::gas_cost(origin_input) {
+            if limit < gas {
                 return err!();
             }
         }
@@ -45,7 +46,7 @@ impl PrecompileContract for EcRecover {
 
                 return Ok(PrecompileOutput {
                     exit_status: ExitSucceed::Returned,
-                    cost:        EcRecover::MIN_GAS,
+                    cost:        gas,
                     output:      recover,
                     logs:        vec![],
                 });

@@ -29,6 +29,9 @@ jobs:
     if: needs.prologue.outputs.job_skip == 'run'
     steps:
       - uses: actions/checkout@v3
+      - uses: lyricwulf/abc@v1
+        with: 
+          linux: m4
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal

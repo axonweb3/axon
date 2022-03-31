@@ -21,7 +21,6 @@ impl PrecompileContract for Sha256 {
         _is_static: bool,
     ) -> Result<PrecompileOutput, PrecompileFailure> {
         let gas = Self::gas_cost(input);
-
         if let Some(limit) = gas_limit {
             if gas > limit {
                 return err!();

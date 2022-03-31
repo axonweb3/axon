@@ -85,7 +85,7 @@ impl PrecompileContract for EcPairing {
 
         Ok(PrecompileOutput {
             exit_status: ExitSucceed::Returned,
-            cost:        Self::MIN_GAS,
+            cost:        gas,
             output:      res.to_vec(),
             logs:        Default::default(),
         })

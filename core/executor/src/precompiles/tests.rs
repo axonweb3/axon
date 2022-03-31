@@ -2,10 +2,10 @@ use evm::Context;
 use rand::random;
 use sha2::Digest;
 
-use protocol::codec::hex_decode;
+use protocol::{codec::hex_decode, types::U256};
 
 use crate::precompiles::{
-    Blake2F, EcAdd, EcMul, EcPairing, Identity, PrecompileContract, Ripemd160, Sha256,
+    Blake2F, EcAdd, EcMul, EcPairing, Identity, ModExp, PrecompileContract, Ripemd160, Sha256,
 };
 
 macro_rules! test_precompile {
@@ -60,6 +60,47 @@ fn test_ripemd160() {
 fn test_identity() {
     let data = rand_bytes(16);
     test_precompile!(Identity, &data, data, 18);
+}
+
+#[test]
+fn test_modexp() {
+    let input = &hex_decode(
+        "0000000000000000000000000000000000000000000000000000000000000001\
+			0000000000000000000000000000000000000000000000000000000000000001\
+			0000000000000000000000000000000000000000000000000000000000000001\
+			03\
+			05\
+			07",
+    )
+    .unwrap();
+    let output = vec![5u8];
+    test_precompile!(ModExp, input, output, 200);
+
+    let input = &hex_decode(
+        "0000000000000000000000000000000000000000000000000000000000000020\
+			0000000000000000000000000000000000000000000000000000000000000020\
+			0000000000000000000000000000000000000000000000000000000000000020\
+			000000000000000000000000000000000000000000000000000000000000EA5F\
+			0000000000000000000000000000000000000000000000000000000000000015\
+			0000000000000000000000000000000000000000000000000000000000003874",
+    )
+    .unwrap();
+    let mut output = vec![0u8; 32];
+    U256::from(10055).to_big_endian(&mut output);
+    test_precompile!(ModExp, input, output, 200);
+
+    let input = &hex_decode(
+        "0000000000000000000000000000000000000000000000000000000000000001\
+			0000000000000000000000000000000000000000000000000000000000000020\
+			0000000000000000000000000000000000000000000000000000000000000020\
+			03\
+			fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2e\
+			fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f",
+    )
+    .unwrap();
+    let mut output = vec![0u8; 32];
+    U256::from(1).to_big_endian(&mut output);
+    test_precompile!(ModExp, input, output, 1360);
 }
 
 #[test]
