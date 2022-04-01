@@ -15,11 +15,11 @@
     const t_type = document.getElementById("testType").value;
     const params = [];
     const request_params = { method: "eth_getCode", params: params }; //deafult is none params  to request test.
-    if (t_type == "1") {
+    if (t_type === "1") {
       request_params.params.push(param1);
       request_params.params.push(param2);
     }
-    if (t_type == "2") {
+    if (t_type === "2") {
       request_params.params.push(param1);
       request_params.params.push("advantage parameter");
     }

@@ -11,7 +11,7 @@
 <script>
   document.getElementById("btn").addEventListener("click", () => {
     const param1 = document.getElementById("param1").value;
-    const param2 =new Boolean(document.getElementById("param2").value);
+    const param2 = new Boolean(document.getElementById("param2").value);
     const t_type = document.getElementById("testType").value;
     const params = [];
     const request_params = { method: "eth_getBlockByHash", params: params }; //deafult is none params  to request test.
@@ -19,7 +19,7 @@
       request_params.params.push(param1);
       request_params.params.push(param2);
     }
-    if (t_type == "2") {
+    if (t_type === "2") {
       request_params.params.push(param1);
       request_params.params.push("advantage parameter");
     }
