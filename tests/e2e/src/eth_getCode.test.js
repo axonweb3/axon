@@ -3,6 +3,9 @@ import testDataManage from "./create_test_data/createTestDataManage";
 
 let testDataInfo = null;
 const pageName = "eth_getCode.html";
+beforeEach(async () => {
+  await goto.goto(page, pageName);
+});
 describe("eth_getCode", () => {
   testDataInfo = testDataManage.readTestDataAsJson("testData_1.json");
   /**
@@ -10,7 +13,6 @@ describe("eth_getCode", () => {
    * param2: real number
    */
   it("eth_getCode_1", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -25,7 +27,6 @@ describe("eth_getCode", () => {
    * param2: real number but not belong to the contract.
    */
   it.skip("eth_getCode_2", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -40,7 +41,6 @@ describe("eth_getCode", () => {
   * param2: real number but not exist in the axon.
   */
   it("eth_getCode_3", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -55,7 +55,6 @@ describe("eth_getCode", () => {
  * param2: real number
  */
   it("eth_getCode_4", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -70,7 +69,6 @@ describe("eth_getCode", () => {
   * param2: real number
   */
   it.skip("eth_getCode_5", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -85,7 +83,6 @@ describe("eth_getCode", () => {
   * param2: real decimal numlber
   */
   it("eth_getCode_6", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -100,7 +97,6 @@ describe("eth_getCode", () => {
 * param2: real decimal numlber
 */
   it("eth_getCode_7", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -116,7 +112,6 @@ describe("eth_getCode", () => {
   * param3: more other param
   */
   it("eth_getCode_8", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -130,7 +125,6 @@ describe("eth_getCode", () => {
  * param1: real address
  */
   it("eth_getCode_9", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     await testType.type("1"); // 0: none params 1: common params to request 2: more params
@@ -142,7 +136,6 @@ describe("eth_getCode", () => {
  * none param
  */
   it("eth_getCode_10", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     await testType.type("0"); // 0: none params 1: common params to request 2: more params
     await goto.check(page, "-32603");

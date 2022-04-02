@@ -3,6 +3,9 @@ import testDataManage from "./create_test_data/createTestDataManage";
 
 let testDataInfo = null;
 const pageName = "eth_getStorageAt.html";
+beforeEach(async () => {
+  await goto.goto(page, pageName);
+});
 describe("eth_getStorageAt", () => {
   testDataInfo = testDataManage.readTestDataAsJson("testData_1.json");
 
@@ -12,7 +15,6 @@ describe("eth_getStorageAt", () => {
   * param3: real block number
   */
   it.skip("eth_getStorageAt_1", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -30,7 +32,6 @@ describe("eth_getStorageAt", () => {
   * param3: real block number
   */
   it.skip("eth_getStorageAt_2", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -49,7 +50,6 @@ describe("eth_getStorageAt", () => {
   * param3: real block number
   */
   it.skip("eth_getStorageAt_3", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -67,7 +67,6 @@ describe("eth_getStorageAt", () => {
   * param3: latest
   */
   it.skip("eth_getStorageAt_4", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -85,7 +84,6 @@ describe("eth_getStorageAt", () => {
   * param3: 0xfffffffff, that is not exist block number
   */
   it("eth_getStorageAt_5", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -103,7 +101,6 @@ describe("eth_getStorageAt", () => {
   * param3: none
   */
   it.skip("eth_getStorageAt_6", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -117,7 +114,6 @@ describe("eth_getStorageAt", () => {
   * none param
   */
   it("eth_getStorageAt_7", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     await testType.type("0"); // 0: none params 1: common params to request 2: more params
     await goto.check(page, "-32602");
@@ -128,7 +124,6 @@ describe("eth_getStorageAt", () => {
  * param3: real block number
  */
   it("eth_getStorageAt_8", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -146,7 +141,6 @@ describe("eth_getStorageAt", () => {
  * param3: real block number
  */
   it.skip("eth_getStorageAt_9", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);

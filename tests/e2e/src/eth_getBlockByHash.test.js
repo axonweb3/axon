@@ -3,6 +3,9 @@ import testDataManage from "./create_test_data/createTestDataManage";
 
 let testDataInfo = null;
 const pageName = "eth_getBlockByHash.html";
+beforeEach(async () => {
+  await goto.goto(page, pageName);
+});
 describe("eth_getBlockByHash", () => {
   testDataInfo = testDataManage.readTestDataAsJson("testData_1.json");
   /**
@@ -10,7 +13,6 @@ describe("eth_getBlockByHash", () => {
   * param2: true
   */
   it("eth_getBlockByHash_1", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -25,7 +27,6 @@ describe("eth_getBlockByHash", () => {
   * param2: false
   */
   it("eth_getBlockByHash_2", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -40,7 +41,6 @@ describe("eth_getBlockByHash", () => {
   * param2: false
   */
   it("eth_getBlockByHash_3", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -55,7 +55,6 @@ describe("eth_getBlockByHash", () => {
   * param2: none
   */
   it("eth_getBlockByHash_4", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     await testType.type("3"); // 0: none params 1: common params to request 2: more params 3: less params
@@ -68,7 +67,6 @@ describe("eth_getBlockByHash", () => {
   * param2: none
   */
   it("eth_getBlockByHash_5", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     await testType.type("0"); // 0: none params 1: common params to request 2: more params 3: less params
     await goto.check(page, "-32602");
@@ -79,7 +77,6 @@ describe("eth_getBlockByHash", () => {
   * param2: true
   */
   it("eth_getBlockByHash_6", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -94,7 +91,6 @@ describe("eth_getBlockByHash", () => {
   * param2: true
   */
   it("eth_getBlockByHash_7", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);

@@ -1,12 +1,14 @@
 // eslint-disable-next-line
 import goto from "./goto";
 const pageName = "web3_sha3.html";
+beforeEach(async () => {
+  await goto.goto(page, pageName);
+});
 describe("web3_sha3", () => {
   /**
   * param: 0x68656c6c6f20776f726c64
   */
   test("web3_sha3_1", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     await testType.type("1"); // 0: none params 1: common params to request 2: more params
@@ -18,7 +20,6 @@ describe("web3_sha3", () => {
   * param: ""
   */
   test("web3_sha3_2", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     await testType.type("1"); // 0: none params 1: common params to request 2: more params
@@ -30,7 +31,6 @@ describe("web3_sha3", () => {
   * none param
   */
   test("web3_sha3_3", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     await testType.type("0"); // 0: none params 1: common params to request 2: more params
     await goto.check(page, "-32602");
@@ -41,7 +41,6 @@ describe("web3_sha3", () => {
   *  more param
   */
   test("web3_sha3_4", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     await testType.type("2");
     const param1 = await page.$(goto.pageIds.param1Id);
@@ -53,7 +52,6 @@ describe("web3_sha3", () => {
   *  param: none hexadecimal string 123456
   */
   test("web3_sha3_5", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     await testType.type("1");
     const param1 = await page.$(goto.pageIds.param1Id);
@@ -65,7 +63,6 @@ describe("web3_sha3", () => {
   *  param: legal hexadecimal string without 0x prefix, even length 68656c6c6f20776f726c64
   */
   test("web3_sha3_6", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     await testType.type("1");
     const param1 = await page.$(goto.pageIds.param1Id);
@@ -77,7 +74,6 @@ describe("web3_sha3", () => {
   *  param: legal hexadecimal string with 0x prefix, odd length Ox63646667781
   */
   test("web3_sha3_7", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     await testType.type("2");
     const param1 = await page.$(goto.pageIds.param1Id);

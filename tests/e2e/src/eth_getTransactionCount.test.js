@@ -3,6 +3,9 @@ import testDataManage from "./create_test_data/createTestDataManage";
 
 let testDataInfo = null;
 const pageName = "eth_getTransactionCount.html";
+beforeEach(async () => {
+  await goto.goto(page, pageName);
+});
 describe("eth_getTransactionCount", () => {
   testDataInfo = testDataManage.readTestDataAsJson("testData_1.json");
   /**
@@ -10,7 +13,6 @@ describe("eth_getTransactionCount", () => {
    * param2: real latest number
    */
   it("eth_getTransactionCount_1", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -25,8 +27,6 @@ describe("eth_getTransactionCount", () => {
    * param2: real block number: latest
    */
   it("eth_getTransactionCount_2", async () => {
-    // then test below again
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -41,7 +41,6 @@ describe("eth_getTransactionCount", () => {
  * param2: real block number: latest
  */
   it("eth_getTransactionCount_3", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -56,7 +55,6 @@ describe("eth_getTransactionCount", () => {
 * param2: the block number is not in axon
 */
   it("eth_getTransactionCount_4", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -71,7 +69,6 @@ describe("eth_getTransactionCount", () => {
   * param2: set decimal data without 0x to block number param
   */
   it("eth_getTransactionCount_5", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -86,7 +83,6 @@ describe("eth_getTransactionCount", () => {
   * param2: real address
   */
   it("eth_getTransactionCount_6", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -102,7 +98,6 @@ describe("eth_getTransactionCount", () => {
  * param3: more param
  */
   it("eth_getTransactionCount_7", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
@@ -117,7 +112,6 @@ describe("eth_getTransactionCount", () => {
 * param2: none
 */
   it("eth_getTransactionCount_8", async () => {
-    await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);
     await testType.type("0"); // 0: none params 1: common params to request 2: more params
     await goto.check(page, "-32603");

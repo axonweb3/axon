@@ -3,6 +3,9 @@ import testDataManage from "./create_test_data/createTestDataManage";
 
 let testDataInfo = null;
 const pageName = "eth_getTransactionByBlockNumberAndIndex.html";
+beforeEach(async () => {
+  await goto.goto(page, pageName);
+});
 describe("eth_getTransactionByBlockNumberAndIndex", () => {
   testDataInfo = testDataManage.readTestDataAsJson("testData_1.json");
 });
@@ -12,7 +15,6 @@ describe("eth_getTransactionByBlockNumberAndIndex", () => {
 * param2: the real transaction index
 */
 it("eth_getTransactionByBlockNumberAndIndex_1", async () => {
-  await goto.goto(page, pageName);
   const testType = await page.$(goto.pageIds.testTypeId);
   const param1 = await page.$(goto.pageIds.param1Id);
   const param2 = await page.$(goto.pageIds.param2Id);
@@ -27,7 +29,6 @@ it("eth_getTransactionByBlockNumberAndIndex_1", async () => {
 * param2: error transaction index
 */
 it("eth_getTransactionByBlockNumberAndIndex_1", async () => {
-  await goto.goto(page, pageName);
   const testType = await page.$(goto.pageIds.testTypeId);
   const param1 = await page.$(goto.pageIds.param1Id);
   const param2 = await page.$(goto.pageIds.param2Id);
@@ -42,7 +43,6 @@ it("eth_getTransactionByBlockNumberAndIndex_1", async () => {
 * param2: real transaction index
 */
 it("eth_getTransactionByBlockNumberAndIndex_1", async () => {
-  await goto.goto(page, pageName);
   const testType = await page.$(goto.pageIds.testTypeId);
   const param1 = await page.$(goto.pageIds.param1Id);
   const param2 = await page.$(goto.pageIds.param2Id);
@@ -57,7 +57,6 @@ it("eth_getTransactionByBlockNumberAndIndex_1", async () => {
 * param2: real transaction index
 */
 it("eth_getTransactionByBlockNumberAndIndex_1", async () => {
-  await goto.goto(page, pageName);
   const testType = await page.$(goto.pageIds.testTypeId);
   const param1 = await page.$(goto.pageIds.param1Id);
   const param2 = await page.$(goto.pageIds.param2Id);
@@ -72,7 +71,6 @@ it("eth_getTransactionByBlockNumberAndIndex_1", async () => {
 * param2: none
 */
 it("eth_getTransactionByBlockNumberAndIndex_1", async () => {
-  await goto.goto(page, pageName);
   const testType = await page.$(goto.pageIds.testTypeId);
   const param1 = await page.$(goto.pageIds.param1Id);
   await param1.type(`0x${testDataInfo.blockNumber.toString(16)}`);
@@ -85,7 +83,6 @@ it("eth_getTransactionByBlockNumberAndIndex_1", async () => {
 * param2: none
 */
 it("eth_getTransactionByBlockNumberAndIndex_1", async () => {
-  await goto.goto(page, pageName);
   const testType = await page.$(goto.pageIds.testTypeId);
   await testType.type("0"); // 0: none params 1: common params to request 2: more params
   await goto.check(page, "-32602");
@@ -96,7 +93,6 @@ it("eth_getTransactionByBlockNumberAndIndex_1", async () => {
 * param2: the real number index
 */
 it("eth_getTransactionByBlockNumberAndIndex_1", async () => {
-  await goto.goto(page, pageName);
   const testType = await page.$(goto.pageIds.testTypeId);
   const param1 = await page.$(goto.pageIds.param1Id);
   const param2 = await page.$(goto.pageIds.param2Id);
