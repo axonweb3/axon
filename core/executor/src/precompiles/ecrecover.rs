@@ -4,6 +4,7 @@ use evm::{Context, ExitError, ExitSucceed};
 use common_crypto::{secp256k1_recover, Secp256k1RecoverableSignature, Signature};
 use protocol::types::{Hasher, H160};
 
+use crate::err;
 use crate::precompiles::{precompile_address, PrecompileContract};
 
 #[derive(Default, Clone)]
@@ -19,11 +20,10 @@ impl PrecompileContract for EcRecover {
         _context: &Context,
         _is_static: bool,
     ) -> Result<PrecompileOutput, PrecompileFailure> {
+        let gas = Self::gas_cost(origin_input);
         if let Some(limit) = gas_limit {
-            if limit < Self::gas_cost(origin_input) {
-                return Err(PrecompileFailure::Error {
-                    exit_status: ExitError::OutOfGas,
-                });
+            if limit < gas {
+                return err!();
             }
         }
 
@@ -34,9 +34,7 @@ impl PrecompileContract for EcRecover {
         let sig = match recover_signature(&input) {
             Some(value) => value,
             None => {
-                return Err(PrecompileFailure::Error {
-                    exit_status: ExitError::Other("Invalid signature".into()),
-                })
+                return err!("Invalid signature");
             }
         };
 
@@ -48,16 +46,14 @@ impl PrecompileContract for EcRecover {
 
                 return Ok(PrecompileOutput {
                     exit_status: ExitSucceed::Returned,
-                    cost:        EcRecover::MIN_GAS,
+                    cost:        gas,
                     output:      recover,
                     logs:        vec![],
                 });
             }
         }
 
-        Err(PrecompileFailure::Error {
-            exit_status: ExitError::Other("Verify signature failed".into()),
-        })
+        err!("Verify signature failed")
     }
 
     fn gas_cost(_input: &[u8]) -> u64 {

@@ -3,6 +3,7 @@ use evm::{Context, ExitError, ExitSucceed};
 
 use protocol::types::H160;
 
+use crate::err;
 use crate::precompiles::{precompile_address, PrecompileContract};
 
 #[derive(Default, Clone)]
@@ -19,12 +20,9 @@ impl PrecompileContract for Identity {
         _is_static: bool,
     ) -> Result<PrecompileOutput, PrecompileFailure> {
         let gas = Self::gas_cost(input);
-
         if let Some(limit) = gas_limit {
             if gas > limit {
-                return Err(PrecompileFailure::Error {
-                    exit_status: ExitError::OutOfGas,
-                });
+                return err!();
             }
         }
 

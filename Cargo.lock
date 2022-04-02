@@ -271,6 +271,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "az"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f771a5d1f5503f7f4279a30f3643d3421ba149848b89ecaaec0ea2acf04a5ac4"
+
+[[package]]
 name = "backtrace"
 version = "0.3.64"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1060,6 +1066,7 @@ name = "core-executor"
 version = "0.1.0"
 dependencies = [
  "axon-protocol",
+ "az",
  "cita_trie",
  "ckb-rocksdb",
  "common-apm",
@@ -1082,7 +1089,9 @@ dependencies = [
  "rand 0.8.5",
  "ripemd",
  "rlp",
+ "rug",
  "sha2",
+ "substrate-bn",
  "tempfile",
 ]
 
@@ -1116,11 +1125,9 @@ dependencies = [
  "crossbeam-queue",
  "dashmap",
  "futures",
- "indexmap",
  "log",
  "parking_lot 0.12.0",
  "rand 0.7.3",
- "rayon",
  "rlp",
  "rlp-derive",
 ]
@@ -2173,6 +2180,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "gmp-mpfr-sys"
+version = "1.4.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a146a7357ce9573bdcc416fc4a99b960e166e72d8eaffa7c59966d51866b5bfb"
+dependencies = [
+ "libc",
+ "winapi",
+]
+
+[[package]]
 name = "group"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2469,7 +2486,6 @@ checksum = "282a6247722caba404c065016bbfa522806e51714c34f5dfc3e4a3a46fcb4223"
 dependencies = [
  "autocfg",
  "hashbrown",
- "rayon",
 ]
 
 [[package]]
@@ -2686,6 +2702,9 @@ name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
+dependencies = [
+ "spin",
+]
 
 [[package]]
 name = "lazycell"
@@ -3974,6 +3993,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "rug"
+version = "1.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ac804305677221f4c82469fd7eb8bfe00dd01420aa191197cb87d738520feef"
+dependencies = [
+ "az",
+ "gmp-mpfr-sys",
+ "libc",
+]
+
+[[package]]
 name = "rustc-demangle"
 version = "0.1.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4521,6 +4551,19 @@ name = "strsim"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
+
+[[package]]
+name = "substrate-bn"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72b5bbfa79abbae15dd642ea8176a21a635ff3c00059961d1ea27ad04e5b441c"
+dependencies = [
+ "byteorder",
+ "crunchy",
+ "lazy_static",
+ "rand 0.8.5",
+ "rustc-hex",
+]
 
 [[package]]
 name = "subtle"

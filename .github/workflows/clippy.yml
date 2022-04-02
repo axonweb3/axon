@@ -28,6 +28,9 @@ jobs:
     runs-on: ubuntu-latest
     if: needs.prologue.outputs.job_skip == 'run'
     steps:
+      - uses: lyricwulf/abc@v1
+        with: 
+          linux: m4
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
