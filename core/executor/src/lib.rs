@@ -50,7 +50,7 @@ impl Executor for AxonExecutor {
         let state = MemoryStackState::new(metadata, backend);
         let precompiles = BTreeMap::new();
         let mut executor = StackExecutor::new_with_precompiles(state, &config, &precompiles);
-        let (exit_reason, ret) = if let Some(addr) = &to {
+        let (exit, res) = if let Some(addr) = &to {
             executor.transact_call(
                 from.unwrap_or_default(),
                 *addr,
@@ -70,11 +70,11 @@ impl Executor for AxonExecutor {
         };
 
         TxResp {
-            exit_reason,
-            ret,
-            remain_gas: executor.gas(),
-            gas_used: executor.used_gas(),
-            logs: vec![],
+            exit_reason:  exit,
+            ret:          res,
+            remain_gas:   executor.gas(),
+            gas_used:     executor.used_gas(),
+            logs:         vec![],
             code_address: if to.is_none() {
                 Some(
                     executor
