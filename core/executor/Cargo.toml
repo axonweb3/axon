@@ -10,7 +10,7 @@ bn = { package = "substrate-bn", version = "0.6" }
 cita_trie = "3.0"
 crossbeam-channel = "0.5"
 dashmap = "5.2"
-evm = "0.34"
+evm = "0.35"
 futures = "0.3"
 hasher = "0.1"
 lazy_static = "1.4"
