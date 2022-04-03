@@ -49,6 +49,10 @@ impl<Adapter: APIAdapter> JsonRpcImpl<Adapter> {
         data: Bytes,
         number: Option<u64>,
     ) -> ProtocolResult<TxResp> {
+        if req.from.is_none() && req.to.is_none() {
+            return Err(APIError::RequestPayload("from and to are both None".to_string()).into());
+        }
+
         let header = self
             .adapter
             .get_block_header_by_number(Context::new(), number)
@@ -60,6 +64,7 @@ impl<Adapter: APIAdapter> JsonRpcImpl<Adapter> {
         self.adapter
             .evm_call(
                 Context::new(),
+                req.from,
                 req.to,
                 data.to_vec(),
                 mock_header.state_root,

@@ -29,7 +29,7 @@ where
             header.into(),
         )?;
 
-        Ok(AxonExecutor::default().call(&mut backend, addr, data))
+        Ok(AxonExecutor::default().call(&mut backend, None, Some(addr), data))
     }
 }
 

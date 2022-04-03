@@ -15,6 +15,7 @@ pub use crate::{system::NATIVE_TOKEN_ISSUE_ADDRESS, vm::code_address};
 use std::collections::BTreeMap;
 
 use evm::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadata};
+use evm::CreateScheme;
 
 use common_merkle::Merkle;
 use protocol::codec::ProtocolCodec;
@@ -37,28 +38,52 @@ impl AxonExecutor {
 
 impl Executor for AxonExecutor {
     // Used for query data API, this function will not modify the world state.
-    fn call<B: Backend>(&self, backend: &mut B, addr: H160, data: Vec<u8>) -> TxResp {
+    fn call<B: Backend>(
+        &self,
+        backend: &mut B,
+        from: Option<H160>,
+        to: Option<H160>,
+        data: Vec<u8>,
+    ) -> TxResp {
         let config = Config::london();
         let metadata = StackSubstateMetadata::new(u64::MAX, &config);
         let state = MemoryStackState::new(metadata, backend);
         let precompiles = BTreeMap::new();
         let mut executor = StackExecutor::new_with_precompiles(state, &config, &precompiles);
-        let (exit_reason, ret) = executor.transact_call(
-            Default::default(),
-            addr,
-            U256::default(),
-            data,
-            u64::MAX,
-            Vec::new(),
-        );
+        let (exit_reason, ret) = if let Some(addr) = &to {
+            executor.transact_call(
+                from.unwrap_or_default(),
+                *addr,
+                U256::default(),
+                data,
+                u64::MAX,
+                Vec::new(),
+            )
+        } else {
+            executor.transact_create(
+                from.unwrap_or_default(),
+                U256::default(),
+                data,
+                u64::MAX,
+                Vec::new(),
+            )
+        };
 
         TxResp {
             exit_reason,
             ret,
-            remain_gas: 0,
-            gas_used: 0,
+            remain_gas: executor.gas(),
+            gas_used: executor.used_gas(),
             logs: vec![],
-            code_address: None,
+            code_address: if to.is_none() {
+                Some(
+                    executor
+                        .create_address(CreateScheme::Fixed(from.unwrap()))
+                        .into(),
+                )
+            } else {
+                None
+            },
         }
     }
 

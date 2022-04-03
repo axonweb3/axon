@@ -162,7 +162,8 @@ where
     async fn evm_call(
         &self,
         _ctx: Context,
-        address: H160,
+        from: Option<H160>,
+        to: Option<H160>,
         data: Vec<u8>,
         state_root: Hash,
         mock_header: Proposal,
@@ -174,7 +175,7 @@ where
             ExecutorContext::from(mock_header),
         )?;
 
-        Ok(AxonExecutor::default().call(&mut backend, address, data))
+        Ok(AxonExecutor::default().call(&mut backend, from, to, data))
     }
 
     async fn get_code_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>> {

@@ -257,7 +257,7 @@ pub struct Web3CallRequest {
     #[serde(rename = "type", skip_serializing_if = "Option::is_none")]
     pub transaction_type:         Option<U64>,
     pub from:                     Option<H160>,
-    pub to:                       H160,
+    pub to:                       Option<H160>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub gas_price:                Option<U256>,
     #[serde(skip_serializing_if = "Option::is_none")]
