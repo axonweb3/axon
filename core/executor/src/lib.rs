@@ -78,7 +78,9 @@ impl Executor for AxonExecutor {
             code_address: if to.is_none() {
                 Some(
                     executor
-                        .create_address(CreateScheme::Fixed(from.unwrap()))
+                        .create_address(CreateScheme::Legacy {
+                            caller: from.unwrap(),
+                        })
                         .into(),
                 )
             } else {
