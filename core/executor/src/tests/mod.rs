@@ -172,7 +172,7 @@ fn test_simplestorage() {
     assert_eq!(r.remain_gas, 18446744073709528227);
 
     // let's call SimpleStorage.get() by call
-    let executor = AxonExecutor::new();
+    let executor = AxonExecutor::default();
     let r = executor.call(
         &mut backend,
         None,

@@ -30,12 +30,6 @@ use crate::{system::SystemExecutor, vm::EvmExecutor};
 #[derive(Default)]
 pub struct AxonExecutor;
 
-impl AxonExecutor {
-    pub fn new() -> Self {
-        AxonExecutor::default()
-    }
-}
-
 impl Executor for AxonExecutor {
     // Used for query data API, this function will not modify the world state.
     fn call<B: Backend>(
