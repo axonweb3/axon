@@ -2,7 +2,7 @@ import puppeteer from "puppeteer";
 import { launch, setupMetamask, getMetamaskWindow } from "@chainsafe/dappeteer";
 
 import Config from "../config";
-import { resetTestTmpFiles, createTransactionData } from "../src/create_test_data/createTestDataManage";
+import createTransactionData from "../src/create_test_data/createTestDataManage";
 
 export const DAPPETEER_DEFAULT_CONFIG = {
   metamaskVersion: "v10.8.1",
@@ -11,8 +11,8 @@ export const DAPPETEER_DEFAULT_CONFIG = {
 export default async function setup() {
   const browser = await launch(puppeteer, DAPPETEER_DEFAULT_CONFIG);
   try {
-    await resetTestTmpFiles();
-    await createTransactionData(); // create test data
+    await createTransactionData.resetTestTmpFiles();
+    await createTransactionData.createTransactionData(); // create test data
     await setupMetamask(browser, {});
     global.browser = browser;
   } catch (error) {
