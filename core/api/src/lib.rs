@@ -21,6 +21,9 @@ pub enum APIError {
 
     #[display(fmt = "storage error {:?}", _0)]
     Storage(String),
+
+    #[display(fmt = "Invalid request payload {:?}", _0)]
+    RequestPayload(String),
 }
 
 impl Error for APIError {}

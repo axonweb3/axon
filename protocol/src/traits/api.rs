@@ -67,7 +67,8 @@ pub trait APIAdapter: Send + Sync {
     async fn evm_call(
         &self,
         ctx: Context,
-        address: H160,
+        from: Option<H160>,
+        to: Option<H160>,
         data: Vec<u8>,
         state_root: Hash,
         proposal: Proposal,

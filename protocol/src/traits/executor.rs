@@ -18,7 +18,13 @@ pub trait ExecutorAdapter {
 }
 
 pub trait Executor: Send + Sync {
-    fn call<B: Backend>(&self, backend: &mut B, addr: H160, data: Vec<u8>) -> TxResp;
+    fn call<B: Backend>(
+        &self,
+        backend: &mut B,
+        from: Option<H160>,
+        to: Option<H160>,
+        data: Vec<u8>,
+    ) -> TxResp;
 
     fn exec<B: Backend + ApplyBackend + ExecutorAdapter>(
         &self,
