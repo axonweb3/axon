@@ -73,7 +73,7 @@ impl Executor for AxonExecutor {
                 Some(
                     executor
                         .create_address(CreateScheme::Legacy {
-                            caller: from.unwrap(),
+                            caller: from.unwrap_or_default(),
                         })
                         .into(),
                 )
