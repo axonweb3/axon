@@ -180,6 +180,7 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
         let server = HttpServerBuilder::new()
             .max_request_body_size(config.rpc.max_payload_size as u32)
             .build(addr)
+            .await
             .map_err(|e| APIError::HttpServer(e.to_string()))?;
 
         ret.0 = Some(
