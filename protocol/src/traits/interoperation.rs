@@ -7,7 +7,7 @@ pub trait Interoperation: Sync + Send {
     fn call_ckb_vm(
         &self,
         ctx: Context,
-        code_hash: &H160,
+        code_hash: H160,
         args: &[Bytes],
         max_cycles: u64,
     ) -> ProtocolResult<VMResp>;

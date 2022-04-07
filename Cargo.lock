@@ -1034,6 +1034,7 @@ dependencies = [
  "common-apm",
  "common-crypto",
  "common-merkle",
+ "core-interoperation",
  "core-storage",
  "criterion",
  "crossbeam-channel",

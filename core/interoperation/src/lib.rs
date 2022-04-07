@@ -55,13 +55,13 @@ impl Interoperation for InteroperationImpl {
     fn call_ckb_vm(
         &self,
         _ctx: Context,
-        code_hash: &H160,
+        code_hash: H160,
         args: &[Bytes],
         max_cycles: u64,
     ) -> ProtocolResult<VMResp> {
         let core =
             DefaultMachineBuilder::new(AsmCoreMachine::new(ISA, VERSION1, max_cycles)).build();
-        let program = DISPATCHER.load().get_program(code_hash)?;
+        let program = DISPATCHER.load().get_program(&code_hash)?;
 
         unsafe {
             let mut vm = AsmMachine::new(core, Some(&*Arc::as_ptr(&program.aot)));
