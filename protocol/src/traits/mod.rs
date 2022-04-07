@@ -3,6 +3,7 @@ mod ckb_client;
 mod consensus;
 mod cross_client;
 mod executor;
+mod interoperation;
 mod mempool;
 mod metadata;
 mod network;

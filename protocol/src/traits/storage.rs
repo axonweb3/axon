@@ -1,9 +1,5 @@
-use async_trait::async_trait;
-use derive_more::Display;
-
-use crate::traits::Context;
 use crate::types::{Block, Bytes, Hash, Header, Proof, Receipt, SignedTransaction, H256};
-use crate::{codec::ProtocolCodec, ProtocolResult};
+use crate::{async_trait, codec::ProtocolCodec, traits::Context, Display, ProtocolResult};
 
 #[derive(Debug, Copy, Clone, Display)]
 pub enum StorageCategory {

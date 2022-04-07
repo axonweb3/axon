@@ -1,8 +1,5 @@
-use async_trait::async_trait;
-use creep::Context;
-
 use crate::types::{Header, Transaction, Validator};
-use crate::ProtocolResult;
+use crate::{async_trait, traits::Context, ProtocolResult};
 
 #[async_trait]
 pub trait CkbClient: Send + Sync {
