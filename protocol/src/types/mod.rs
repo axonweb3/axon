@@ -7,6 +7,7 @@ pub use evm::{backend::*, ExitRevert, ExitSucceed};
 pub use executor::{
     AccessList, AccessListItem, Account, Config, ExecResp, ExecutorContext, ExitReason, TxResp,
 };
+pub use interoperation::VMResp;
 pub use primitive::*;
 pub use receipt::*;
 pub use transaction::*;
@@ -14,6 +15,7 @@ pub use transaction::*;
 pub mod batch;
 pub mod block;
 pub mod executor;
+pub mod interoperation;
 pub mod primitive;
 pub mod receipt;
 pub mod transaction;

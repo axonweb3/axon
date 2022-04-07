@@ -18,6 +18,7 @@ pub use consensus::{
 pub use creep::{Cloneable, Context};
 pub use cross_client::{CrossAdapter, CrossClient};
 pub use executor::{ApplyBackend, Backend, Executor, ExecutorAdapter};
+pub use interoperation::Interoperation;
 pub use mempool::{MemPool, MemPoolAdapter};
 pub use metadata::{MetadataControl, MetadataControlAdapter};
 pub use network::{

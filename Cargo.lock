@@ -1077,8 +1077,10 @@ checksum = "5827cebf4670468b8772dd191856768aedcb1b0278a04f989f7766351917b9dc"
 name = "core-interoperation"
 version = "0.1.0"
 dependencies = [
+ "arc-swap 1.5.0",
  "axon-protocol",
  "ckb-vm",
+ "lazy_static",
 ]
 
 [[package]]

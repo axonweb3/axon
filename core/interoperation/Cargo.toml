@@ -6,6 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ckb-vm = { version = "0.21", features = ["asm"] }
+arc-swap = "1.5"
+ckb-vm = { version = "0.21", features = ["aot"] }
+lazy_static = "1.4"
 
 protocol = { path = "../../protocol", package = "axon-protocol" }
