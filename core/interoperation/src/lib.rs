@@ -27,7 +27,7 @@ impl TryFrom<u8> for SignatureType {
 
     fn try_from(s: u8) -> Result<Self, Self::Error> {
         match s {
-            0 => Ok(SignatureType::Ed25519),
+            2 => Ok(SignatureType::Ed25519),
             _ => Err(InteroperationError::InvalidSignatureType(s)),
         }
     }
