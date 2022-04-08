@@ -14,6 +14,7 @@ common-logger = { path = "./common/logger" }
 core-api = { path = "./core/api" }
 core-cli = { path = "./core/cli" }
 core-consensus = { path = "./core/consensus" }
+core-interoperation = { path = "./core/interoperation" }
 core-mempool = { path = "./core/mempool" }
 core-network = { path = "./core/network" }
 core-storage = { path = "./core/storage" }

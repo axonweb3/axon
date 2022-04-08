@@ -1,4 +1,5 @@
 mod blake2_f;
+mod ckb_vm;
 mod ec_add;
 mod ec_mul;
 mod ec_pairing;

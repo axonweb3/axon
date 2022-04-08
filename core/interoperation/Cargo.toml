@@ -1,0 +1,13 @@
+[package]
+name = "core-interoperation"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+arc-swap = "1.5"
+ckb-vm = { version = "0.21", features = ["aot"] }
+lazy_static = "1.4"
+
+protocol = { path = "../../protocol", package = "axon-protocol" }

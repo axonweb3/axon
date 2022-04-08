@@ -1,8 +1,5 @@
-use async_trait::async_trait;
-use creep::Context;
-
 use crate::types::{Block, BlockNumber, Hash, Log, Proof, SignedTransaction};
-use crate::ProtocolResult;
+use crate::{async_trait, traits::Context, ProtocolResult};
 
 #[async_trait]
 pub trait CrossAdapter: Send + Sync {

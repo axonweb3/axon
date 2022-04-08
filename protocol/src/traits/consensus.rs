@@ -1,14 +1,10 @@
 use std::collections::HashMap;
 
-use async_trait::async_trait;
-use bytes::Bytes;
-use creep::Context;
-
 use crate::types::{
-    Address, Block, BlockNumber, ExecResp, Hash, Header, Hex, Log, MerkleRoot, Metadata, Proof,
-    Proposal, Receipt, SignedTransaction, Validator, U256,
+    Address, Block, BlockNumber, Bytes, ExecResp, Hash, Header, Hex, Log, MerkleRoot, Metadata,
+    Proof, Proposal, Receipt, SignedTransaction, Validator, U256,
 };
-use crate::ProtocolResult;
+use crate::{async_trait, traits::Context, ProtocolResult};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum MessageTarget {

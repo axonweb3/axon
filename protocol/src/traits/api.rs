@@ -1,11 +1,8 @@
-use crate::traits::Context;
 use crate::types::{
     Account, Block, BlockNumber, Bytes, Hash, Header, Proposal, Receipt, SignedTransaction, TxResp,
-    H160,
+    H160, U256,
 };
-use crate::ProtocolResult;
-use async_trait::async_trait;
-use ethereum_types::U256;
+use crate::{async_trait, traits::Context, ProtocolResult};
 
 #[async_trait]
 pub trait APIAdapter: Send + Sync {
