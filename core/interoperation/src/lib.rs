@@ -94,9 +94,10 @@ impl ProgramDispatcher {
         let mut inner = HashMap::with_capacity(program_map.len());
 
         for (code_hash, code) in program_map.into_iter() {
-            let aot_code = AotCompilingMachine::load(&code, None, ISA, VERSION1)
-                .and_then(|mut m| m.compile())
-                .map_err(InteroperationError::CkbVM)?;
+            let aot_code =
+                ckb_vm::machine::aot::AotCompilingMachine::load(&code, None, ISA, VERSION1)
+                    .and_then(|mut m| m.compile())
+                    .map_err(InteroperationError::CkbVM)?;
             inner.insert(code_hash, Program::new(code, aot_code));
         }
 
@@ -130,7 +131,7 @@ struct Program {
 
 impl Program {
     #[cfg(not(target_arch = "aarch64"))]
-    fn new(code: Bytes, aot: AotCode) -> Self {
+    fn new(code: Bytes, aot: ckb_vm::machine::asm::AotCode) -> Self {
         Program {
             code,
             aot: Arc::new(aot),
