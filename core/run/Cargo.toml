@@ -30,4 +30,5 @@ core-metadata = { path = "../../core/metadata" }
 core-network = { path = "../../core/network" }
 core-rpc-client = { path = "../../core/rpc-client" }
 core-storage = { path = "../../core/storage" }
+core-interoperation = { path = "../../core/interoperation" }
 protocol = { path = "../../protocol", package = "axon-protocol" }

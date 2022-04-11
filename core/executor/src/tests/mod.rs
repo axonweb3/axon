@@ -7,7 +7,7 @@ use evm::backend::{MemoryAccount, MemoryBackend, MemoryVicinity};
 
 use protocol::types::{
     ExitReason, ExitSucceed, Public, SignatureComponents, SignedTransaction, Transaction,
-    TransactionAction, UnverifiedTransaction, H160, H256, U256,
+    TransactionAction, UnverifiedTransaction, H160, H256, U256, Bytes
 };
 use protocol::{codec::hex_decode, traits::Executor};
 
@@ -43,8 +43,8 @@ fn gen_tx(sender: H160, addr: H160, value: u64, data: Vec<u8>) -> SignedTransact
             },
             signature: Some(SignatureComponents {
                 standard_v: 0,
-                r:          H256::default(),
-                s:          H256::default(),
+                r:          Bytes::default(),
+                s:          Bytes::default(),
             }),
             chain_id:  0u64,
             hash:      H256::default(),

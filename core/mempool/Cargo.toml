@@ -19,6 +19,7 @@ common-apm = { path = "../../common/apm" }
 common-apm-derive = { path = "../../common/apm-derive" }
 common-crypto = { path = "../../common/crypto" }
 core-executor = { path = "../../core/executor" }
+core-interoperation = { path = "../../core/interoperation" }
 protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [dev-dependencies]

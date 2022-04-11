@@ -165,6 +165,19 @@ pub struct ConfigCrossClient {
 }
 
 #[derive(Clone, Debug, Deserialize)]
+pub struct ConfigCkbCryptoPrimitive {
+    pub ed25519_type_hash: H256
+}
+
+impl Into<HashMap<String, H256>> for ConfigCkbCryptoPrimitive {
+    fn into(self) -> HashMap<String, H256> {
+        let mut map = HashMap::new();
+        map.insert(String::from("ed25519"), self.ed25519_type_hash);
+        map
+    }
+}
+
+#[derive(Clone, Debug, Deserialize)]
 pub struct Config {
     // crypto
     pub privkey:   Hex,
@@ -186,6 +199,7 @@ pub struct Config {
     pub epoch_len:                   u64,
     pub metadata_contract_address:   H256,
     pub crosschain_contract_address: H256,
+    pub ckb_crypto_primitive:        ConfigCkbCryptoPrimitive
 }
 
 impl Config {

@@ -16,11 +16,12 @@ use parking_lot::Mutex;
 use common_apm_derive::trace_span;
 use common_crypto::{Crypto, Secp256k1Recoverable};
 use core_executor::{is_call_system_script, AxonExecutor, AxonExecutorAdapter};
+use core_interoperation::{InteroperationImpl, SignatureType, get_crypto_code_hash, gas_to_cycle};
 use protocol::traits::{
     Context, Executor, Gossip, MemPoolAdapter, MetadataControl, PeerTrust, Priority, Rpc, Storage,
-    TrustFeedback,
+    TrustFeedback, Interoperation
 };
-use protocol::types::{recover_intact_pub_key, Hash, MerkleRoot, SignedTransaction, H160, U256};
+use protocol::types::{recover_intact_pub_key, Hash, MerkleRoot, SignedTransaction, H160, U256, Bytes};
 use protocol::{
     async_trait, codec::ProtocolCodec, lazy::CURRENT_STATE_ROOT, tokio, Display, ProtocolError,
     ProtocolErrorKind, ProtocolResult,
@@ -345,17 +346,34 @@ where
         }
 
         // Verify signature
-        Secp256k1Recoverable::verify_signature(
-            stx.transaction.signature_hash().as_bytes(),
-            stx.transaction
-                .signature
-                .clone()
-                .unwrap()
-                .as_bytes()
-                .as_ref(),
-            recover_intact_pub_key(&stx.public.unwrap()).as_bytes(),
-        )
-        .map_err(|err| AdapterError::VerifySignature(err.to_string()))?;
+        let signature = stx.transaction.signature.clone().unwrap();
+        match SignatureType::try_from(signature.standard_v)? {
+            SignatureType::Secp256k1 => {
+                // use original Secp256k1 library to verify
+                Secp256k1Recoverable::verify_signature(
+                    stx.transaction.signature_hash().as_bytes(),
+                    signature.as_bytes().as_ref(),
+                    recover_intact_pub_key(&stx.public.unwrap()).as_bytes(),
+                )
+                .map_err(|err| AdapterError::VerifySignature(err.to_string()))?;
+            },
+            SignatureType::Ed25519 => {
+                let code_hash = get_crypto_code_hash("ed25519")?;
+                let args = [
+                    Bytes::from(Vec::from(stx.transaction.signature_hash().to_fixed_bytes())),
+                    signature.r,
+                    signature.s
+                ];
+                InteroperationImpl::default()
+                    .call_ckb_vm(
+                        Default::default(),
+                        code_hash,
+                        &args,
+                        gas_to_cycle(stx.transaction.unsigned.gas_limit.as_u64())
+                    )
+                    .map_err(|err| AdapterError::VerifySignature(err.to_string()))?;
+            }
+        };
 
         Ok(())
     }

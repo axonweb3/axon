@@ -2,21 +2,11 @@ use evm::executor::stack::{PrecompileFailure, PrecompileOutput};
 use evm::{Context, ExitError, ExitSucceed};
 use rlp::Rlp;
 
-use core_interoperation::InteroperationImpl;
+use core_interoperation::{InteroperationImpl, gas_to_cycle, cycle_to_gas};
 use protocol::{traits::Interoperation, types::H160};
 
 use crate::err;
 use crate::precompiles::{precompile_address, PrecompileContract};
-
-const GAS_TO_CYCLE_COEF: u64 = 6_000;
-
-const fn gas_to_cycle(gas: u64) -> u64 {
-    gas * GAS_TO_CYCLE_COEF
-}
-
-const fn cycle_to_gas(cycle: u64) -> u64 {
-    cycle / GAS_TO_CYCLE_COEF
-}
 
 macro_rules! try_rlp {
     ($rlp_: expr, $func: ident, $pos: expr) => {{

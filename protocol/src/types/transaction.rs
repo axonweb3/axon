@@ -78,17 +78,18 @@ impl UnverifiedTransaction {
 
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
 pub struct SignatureComponents {
-    pub r:          H256,
-    pub s:          H256,
+    pub r:          Bytes,
+    pub s:          Bytes,
     pub standard_v: u8,
 }
 
 impl From<Bytes> for SignatureComponents {
+    // assume that all the bytes data are in Ethereum-like format
     fn from(bytes: Bytes) -> Self {
         debug_assert!(bytes.len() == 65);
         SignatureComponents {
-            r:          H256::from_slice(&bytes[0..32]),
-            s:          H256::from_slice(&bytes[32..64]),
+            r:          Bytes::from(bytes[0..32].to_vec()),
+            s:          Bytes::from(bytes[32..64].to_vec()),
             standard_v: *bytes.as_ref().to_vec().last().unwrap(),
         }
     }
@@ -96,8 +97,8 @@ impl From<Bytes> for SignatureComponents {
 
 impl From<SignatureComponents> for Bytes {
     fn from(sc: SignatureComponents) -> Self {
-        let mut bytes = BytesMut::from(sc.r.as_bytes());
-        bytes.extend_from_slice(sc.s.as_bytes());
+        let mut bytes = BytesMut::from(sc.r.as_ref());
+        bytes.extend_from_slice(sc.s.as_ref());
         bytes.extend_from_slice(&[sc.standard_v]);
         bytes.freeze()
     }

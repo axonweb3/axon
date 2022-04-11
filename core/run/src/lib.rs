@@ -42,6 +42,7 @@ use core_network::{
 };
 use core_rpc_client::RpcClient;
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
+use core_interoperation::{init_crypto_code_hashes, init_dispatcher};
 use protocol::codec::{hex_decode, ProtocolCodec};
 use protocol::lazy::{CHAIN_ID, CURRENT_STATE_ROOT};
 #[cfg(unix)]
@@ -539,6 +540,10 @@ impl Axon {
             precommit_ratio: metadata.precommit_ratio,
             brake_ratio:     metadata.brake_ratio,
         };
+
+        // Init interoperation
+        init_crypto_code_hashes(self.config.ckb_crypto_primitive.clone().into());
+        init_dispatcher(HashMap::new())?;
 
         tokio::spawn(async move {
             if let Err(e) = overlord_consensus

@@ -14,7 +14,7 @@ use protocol::traits::{CommonStorage, Context, Executor, Storage};
 use protocol::types::{
     Account, Address, Header, Hex, Metadata, MetadataVersion, Proposal, Public, RichBlock,
     SignatureComponents, SignedTransaction, Transaction, TransactionAction, UnverifiedTransaction,
-    ValidatorExtend, H160, H256, NIL_DATA, RLP_NULL, U256,
+    ValidatorExtend, H160, H256, NIL_DATA, RLP_NULL, U256, Bytes
 };
 
 use crate::{calc_epoch, metadata_abi as abi, MetadataAdapterImpl, MetadataController, EPOCH_LEN};
@@ -187,8 +187,8 @@ fn mock_signed_tx(nonce: u64, data: Vec<u8>) -> SignedTransaction {
         unsigned:  raw,
         signature: Some(SignatureComponents {
             standard_v: 0,
-            r:          H256::default(),
-            s:          H256::default(),
+            r:          Bytes::default(),
+            s:          Bytes::default(),
         }),
         chain_id:  0,
         hash:      Default::default(),

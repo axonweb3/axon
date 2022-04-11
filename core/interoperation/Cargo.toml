@@ -16,3 +16,13 @@ ckb-vm = { version = "0.21", features = ["aot"] }
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
 ckb-vm = { version = "0.21", features = ["asm"] }
+
+[dev-dependencies]
+hex = "0.4"
+ckb-jsonrpc-types = "0.101"
+ckb-types = "0.101"
+serde_json = "1.0"
+ed25519-dalek = "1.0.1"
+rand = "0.7.0"
+
+async-jsonrpc-client = { version = "0.3.0", default-features = false, features = ["http-async-std"] }
