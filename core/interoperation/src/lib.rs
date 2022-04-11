@@ -3,8 +3,7 @@ use std::error::Error;
 use std::sync::Arc;
 
 use arc_swap::ArcSwap;
-use ckb_vm::machine::aot::AotCompilingMachine;
-use ckb_vm::machine::asm::{AotCode, AsmCoreMachine, AsmMachine};
+use ckb_vm::machine::asm::{AsmCoreMachine, AsmMachine};
 use ckb_vm::machine::{DefaultMachineBuilder, SupportMachine, VERSION1};
 use ckb_vm::{Error as VMError, ISA_B, ISA_IMC, ISA_MOP};
 
@@ -63,17 +62,21 @@ impl Interoperation for InteroperationImpl {
             DefaultMachineBuilder::new(AsmCoreMachine::new(ISA, VERSION1, max_cycles)).build();
         let program = DISPATCHER.load().get_program(&code_hash)?;
 
-        unsafe {
-            let mut vm = AsmMachine::new(core, Some(&*Arc::as_ptr(&program.aot)));
-            let _ = vm
-                .load_program(&program.code, args)
-                .map_err(InteroperationError::CkbVM)?;
+        #[cfg(not(target_arch = "aarch64"))]
+        let aot_code = unsafe { Some(&*Arc::as_ptr(&program.aot)) };
 
-            Ok(VMResp {
-                exit_code: vm.run().map_err(InteroperationError::CkbVM)?,
-                cycles:    vm.machine.cycles(),
-            })
-        }
+        #[cfg(target_arch = "aarch64")]
+        let aot_code = None;
+
+        let mut vm = AsmMachine::new(core, aot_code);
+        let _ = vm
+            .load_program(&program.code, args)
+            .map_err(InteroperationError::CkbVM)?;
+
+        Ok(VMResp {
+            exit_code: vm.run().map_err(InteroperationError::CkbVM)?,
+            cycles:    vm.machine.cycles(),
+        })
     }
 }
 
@@ -86,17 +89,29 @@ pub fn init_dispatcher(program_map: HashMap<H160, Bytes>) -> ProtocolResult<()> 
 struct ProgramDispatcher(HashMap<H160, Program>);
 
 impl ProgramDispatcher {
+    #[cfg(not(target_arch = "aarch64"))]
     fn new(program_map: HashMap<H160, Bytes>) -> ProtocolResult<Self> {
         let mut inner = HashMap::with_capacity(program_map.len());
 
         for (code_hash, code) in program_map.into_iter() {
-            let aot_code = AotCompilingMachine::load(&code, None, ISA, VERSION1)
-                .and_then(|mut m| m.compile())
-                .map_err(InteroperationError::CkbVM)?;
+            let aot_code =
+                ckb_vm::machine::aot::AotCompilingMachine::load(&code, None, ISA, VERSION1)
+                    .and_then(|mut m| m.compile())
+                    .map_err(InteroperationError::CkbVM)?;
             inner.insert(code_hash, Program::new(code, aot_code));
         }
 
         Ok(ProgramDispatcher(inner))
+    }
+
+    #[cfg(target_arch = "aarch64")]
+    fn new(program_map: HashMap<H160, Bytes>) -> ProtocolResult<Self> {
+        Ok(ProgramDispatcher(
+            program_map
+                .into_iter()
+                .map(|kv| (kv.0, Program::new(kv.1)))
+                .collect(),
+        ))
     }
 
     fn get_program(&self, code_hash: &H160) -> ProtocolResult<Program> {
@@ -110,15 +125,22 @@ impl ProgramDispatcher {
 #[derive(Clone)]
 struct Program {
     code: Bytes,
-    aot:  Arc<AotCode>,
+    #[cfg(not(target_arch = "aarch64"))]
+    aot:  Arc<ckb_vm::machine::asm::AotCode>,
 }
 
 impl Program {
-    fn new(code: Bytes, aot: AotCode) -> Self {
+    #[cfg(not(target_arch = "aarch64"))]
+    fn new(code: Bytes, aot: ckb_vm::machine::asm::AotCode) -> Self {
         Program {
             code,
             aot: Arc::new(aot),
         }
+    }
+
+    #[cfg(target_arch = "aarch64")]
+    fn new(code: Bytes) -> Self {
+        Program { code }
     }
 }
 

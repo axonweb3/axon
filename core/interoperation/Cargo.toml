@@ -7,7 +7,12 @@ edition = "2021"
 
 [dependencies]
 arc-swap = "1.5"
-ckb-vm = { version = "0.21", features = ["aot"] }
 lazy_static = "1.4"
 
 protocol = { path = "../../protocol", package = "axon-protocol" }
+
+[target.'cfg(not(target_arch = "aarch64"))'.dependencies]
+ckb-vm = { version = "0.21", features = ["aot"] }
+
+[target.'cfg(target_arch = "aarch64")'.dependencies]
+ckb-vm = { version = "0.21", features = ["asm"] }
