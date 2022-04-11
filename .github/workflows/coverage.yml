@@ -50,7 +50,7 @@ jobs:
           token: ${{secrets.CODECOV_TOKEN}}
 
       - name: archive code coverage results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: code-coverage-report
           path: cobertura.xml
