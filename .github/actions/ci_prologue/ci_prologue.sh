@@ -7,10 +7,9 @@ fun_jobs(){
   echo "$job_list" | sed "s/\[//g" | sed "s/\]//g" | sed "s/,/\n/g" > job_run.txt
   while read -r LINE;
   do
-   
     LINE="$(echo "$LINE" | awk '{gsub(/^\s+|\s+$/,"");print}')"
     echo "LINE is "$LINE
-    if [[ $GITHUB_WORKFLOW == "$LINE"* ]];then
+    if [[ -n $LINE ]] && [[ $GITHUB_WORKFLOW == "$LINE"* ]];then
       echo "job_name is"$LINE
       echo $GITHUB_WORKFLOW
       job_skip="run"
