@@ -16,7 +16,7 @@ use protocol::{Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 lazy_static::lazy_static! {
     static ref DISPATCHER: ArcSwap<ProgramDispatcher> = ArcSwap::from_pointee(ProgramDispatcher::default());
-    static ref CRYPTO_CODE_HASHES: ArcSwap<HashMap<String, H256>> = ArcSwap::from_pointee(HashMap::new());
+    static ref CODE_HASH_MAP: ArcSwap<HashMap<String, H256>> = ArcSwap::from_pointee(HashMap::new());
 }
 
 const ISA: u8 = ISA_IMC | ISA_B | ISA_MOP;
@@ -96,18 +96,29 @@ impl Interoperation for InteroperationImpl {
     }
 }
 
-pub fn init_dispatcher(program_map: HashMap<H256, Bytes>) -> ProtocolResult<()> {
+impl InteroperationImpl {
+    pub fn new(
+        code_hash_map: HashMap<String, H256>,
+        program_map: HashMap<H256, Bytes>,
+    ) -> ProtocolResult<Self> {
+        init_dispatcher(program_map)?;
+        init_code_hashes_map(code_hash_map);
+        Ok(InteroperationImpl::default())
+    }
+}
+
+fn init_dispatcher(program_map: HashMap<H256, Bytes>) -> ProtocolResult<()> {
     DISPATCHER.swap(Arc::new(ProgramDispatcher::new(program_map)?));
     Ok(())
 }
 
-pub fn init_crypto_code_hashes(hashes: HashMap<String, H256>) {
-    CRYPTO_CODE_HASHES.swap(Arc::new(hashes));
+fn init_code_hashes_map(hashes: HashMap<String, H256>) {
+    CODE_HASH_MAP.swap(Arc::new(hashes));
 }
 
 pub fn get_crypto_code_hash(crypto: &str) -> ProtocolResult<H256> {
     let crypto = String::from(crypto);
-    if let Some(code_hash) = CRYPTO_CODE_HASHES.load().get(&crypto) {
+    if let Some(code_hash) = CODE_HASH_MAP.load().get(&crypto) {
         Ok(*code_hash)
     } else {
         Err(InteroperationError::GetCryptoCodeHash(crypto).into())

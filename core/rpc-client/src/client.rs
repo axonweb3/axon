@@ -1,10 +1,3 @@
-use ckb_jsonrpc_types::{
-    BlockNumber, BlockView, HeaderView, OutputsValidator, Transaction, TransactionWithStatus,
-};
-use ckb_types::H256;
-use futures::FutureExt;
-use reqwest::Client;
-
 use std::{
     future::Future,
     io,
@@ -13,6 +6,13 @@ use std::{
         Arc,
     },
 };
+
+use ckb_jsonrpc_types::{
+    BlockNumber, BlockView, HeaderView, OutputsValidator, Transaction, TransactionWithStatus,
+};
+use ckb_types::H256;
+use futures::FutureExt;
+use reqwest::Client;
 
 use protocol::{
     async_trait, tokio,
@@ -158,14 +158,14 @@ impl CkbClient for RpcClient {
     fn build_cross_chain_transfer_transaction(
         &self,
         _ctx: Context,
-        paylod: CrossChainTransferPayload,
+        payload: CrossChainTransferPayload,
     ) -> RPC<TransactionCompletionResponse> {
         jsonrpc!(
             "build_cross_chain_transfer_transaction",
             Target::Mercury,
             self,
             TransactionCompletionResponse,
-            paylod
+            payload
         )
         .boxed()
     }

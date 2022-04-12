@@ -2,9 +2,10 @@ use std::collections::HashMap;
 
 use ckb_jsonrpc_types::TransactionWithStatus;
 use ckb_types::packed::Transaction;
-use ed25519_dalek::Signer;
+use ed25519_dalek::{Keypair, Signer};
 use jsonrpsee_core::client::ClientT;
 use jsonrpsee_http_client::{types::params::ParamsSer, HttpClientBuilder};
+use rand::rngs::ThreadRng;
 use serde_json::json;
 
 use protocol::{codec::hex_decode, tokio, traits::Interoperation, types::H256};
@@ -13,7 +14,7 @@ use crate::{init_dispatcher, InteroperationImpl};
 
 const MAX_CYCLES: u64 = 100_000_000;
 
-#[ignore = "use 47.111.84.118:81 to replace 127.0.0.1 when manually running"]
+#[ignore]
 #[tokio::test]
 async fn test_ckb_ed25519() {
     // fetch contract binary via rpc client
@@ -49,8 +50,8 @@ async fn test_ckb_ed25519() {
     init_dispatcher(map).unwrap();
 
     // test main logic
-    let mut csprng = rand::rngs::ThreadRng::default();
-    let keypair = ed25519_dalek::Keypair::generate(&mut csprng);
+    let mut csprng = ThreadRng::default();
+    let keypair = Keypair::generate(&mut csprng);
     let message = vec![0u8; 32];
     let signature = keypair.sign(&message).to_bytes().to_vec();
     let public_key = keypair.public.to_bytes().to_vec();
