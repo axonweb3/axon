@@ -10,7 +10,7 @@ mod network;
 mod storage;
 
 pub use api::APIAdapter;
-pub use ckb_client::CkbClient;
+pub use ckb_client::{CkbClient, RPC};
 pub use consensus::{
     CommonConsensusAdapter, Consensus, ConsensusAdapter, MessageTarget, NodeInfo, Synchronization,
     SynchronizationAdapter,

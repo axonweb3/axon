@@ -193,6 +193,9 @@ dependencies = [
  "async-trait",
  "bincode",
  "bytes",
+ "ckb-hash",
+ "ckb-jsonrpc-types",
+ "ckb-types",
  "common-crypto",
  "creep",
  "derive_more",
@@ -604,6 +607,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "ckb-client"
+version = "0.1.0"
+dependencies = [
+ "axon-protocol",
+ "ckb-jsonrpc-types",
+ "ckb-types",
+ "futures",
+ "jsonrpc-core",
+ "reqwest",
+ "serde_json",
+]
+
+[[package]]
 name = "ckb-error"
 version = "0.101.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1005,6 +1021,7 @@ version = "0.1.0"
 dependencies = [
  "axon-protocol",
  "cita_trie",
+ "ckb-client",
  "ckb-hash",
  "ckb-jsonrpc-types",
  "ckb-types",
@@ -1159,6 +1176,7 @@ dependencies = [
  "axon-protocol",
  "backtrace",
  "cita_trie",
+ "ckb-client",
  "clap 3.1.8",
  "common-apm",
  "common-apm-derive",

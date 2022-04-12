@@ -9,6 +9,7 @@ use std::time::Duration;
 
 use backtrace::Backtrace;
 
+use ckb_client::RpcClient;
 use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
 use common_apm::{server::run_prometheus_server, tracing::global_tracer_register};
 use common_config_parser::types::Config;
@@ -376,6 +377,11 @@ impl Axon {
             metadata.max_tx_size,
         );
 
+        let ckb_client = RpcClient::new(
+            &self.config.cross_client.ckb_uri,
+            &self.config.cross_client.mercury_uri,
+        );
+
         // start cross chain client
         let cross_client = DefaultCrossAdapter::new(
             self.config.clone(),
@@ -383,6 +389,7 @@ impl Axon {
             Arc::clone(&mempool),
             Arc::clone(&storage),
             Arc::clone(&trie_db),
+            Arc::new(ckb_client),
         );
         let cross_handle = cross_client.handle();
 

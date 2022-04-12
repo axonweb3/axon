@@ -34,6 +34,7 @@ members = [
     "common/pubsub",
 
     "core/api",
+    "core/ckb-client",
     "core/cli",
     "core/consensus",
     "core/cross-client",

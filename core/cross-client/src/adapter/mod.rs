@@ -1,5 +1,3 @@
-mod rpc_client;
-
 use std::{
     fs,
     io::{self, Read, Write},
@@ -22,10 +20,11 @@ use common_crypto::{
 };
 use core_executor::{AxonExecutor, AxonExecutorAdapter};
 use ethabi::RawLog;
-use protocol::traits::{Context, CrossAdapter, CrossClient, Executor, MemPool, Storage};
+use protocol::traits::{CkbClient, Context, CrossAdapter, CrossClient, Executor, MemPool, Storage};
 use protocol::types::{
-    public_to_address, Block, Bytes, Log, Proof, Proposal, Public, SignedTransaction, Transaction,
-    TransactionAction, UnverifiedTransaction, H160, H256, U256,
+    public_to_address, Block, Bytes, CrossChainTransferPayload, Identity, Log, Proof, Proposal,
+    Public, SignedTransaction, SubmitCheckpointPayload, Transaction, TransactionAction,
+    UnverifiedTransaction, H160, H256, U256,
 };
 use protocol::{
     async_trait,
@@ -44,28 +43,29 @@ use self::asset::logs::Burned;
 
 const TWO_THOUSAND: u64 = 2000;
 
-pub struct DefaultCrossAdapter<M, S, DB> {
+pub struct DefaultCrossAdapter<M, S, DB, C> {
     priv_key:       Secp256k1RecoverablePrivateKey,
-    client:         rpc_client::RpcClient,
     config:         ConfigCrossClient,
     tip_number:     BlockNumber,
     current_number: BlockNumber,
-    block_recv:     mpsc::Receiver<Vec<io::Result<BlockView>>>,
-    block_sender:   mpsc::Sender<Vec<io::Result<BlockView>>>,
+    block_recv:     mpsc::Receiver<Vec<ProtocolResult<BlockView>>>,
+    block_sender:   mpsc::Sender<Vec<ProtocolResult<BlockView>>>,
     start_fetch:    bool,
     backup_dir:     PathBuf,
 
-    mempool: Arc<M>,
-    storage: Arc<S>,
-    trie_db: Arc<DB>,
+    mempool:    Arc<M>,
+    storage:    Arc<S>,
+    trie_db:    Arc<DB>,
+    ckb_client: Arc<C>,
 }
 
 #[async_trait]
-impl<M, S, DB> CrossAdapter for DefaultCrossAdapter<M, S, DB>
+impl<M, S, DB, C> CrossAdapter for DefaultCrossAdapter<M, S, DB, C>
 where
     M: MemPool + 'static,
     S: Storage + 'static,
     DB: cita_trie::DB + 'static,
+    C: CkbClient + 'static,
 {
     async fn watch_ckb_client(&self, ctx: Context) -> ProtocolResult<()> {
         Ok(())
@@ -80,11 +80,12 @@ where
     }
 }
 
-impl<M, S, DB> DefaultCrossAdapter<M, S, DB>
+impl<M, S, DB, C> DefaultCrossAdapter<M, S, DB, C>
 where
     M: MemPool + 'static,
     S: Storage + 'static,
     DB: cita_trie::DB + 'static,
+    C: CkbClient + 'static,
 {
     pub fn new(
         config: Config,
@@ -92,15 +93,12 @@ where
         mempool: Arc<M>,
         storage: Arc<S>,
         trie_db: Arc<DB>,
+        ckb_client: Arc<C>,
     ) -> Self {
         let backup_dir = config.data_path.join("cross_client");
         let (sender, recv) = mpsc::channel(256);
         Self {
             priv_key: pk,
-            client: rpc_client::RpcClient::new(
-                &config.cross_client.ckb_uri,
-                &config.cross_client.mercury_uri,
-            ),
             tip_number: 0,
             current_number: std::cmp::max(
                 load_current_number(backup_dir.as_path()),
@@ -115,12 +113,13 @@ where
             mempool,
             storage,
             trie_db,
+            ckb_client,
         }
     }
 
-    pub fn handle(&self) -> CrossAdapterHandle {
+    pub fn handle(&self) -> CrossAdapterHandle<C> {
         CrossAdapterHandle {
-            client: self.client.clone(),
+            client: Arc::<C>::clone(&self.ckb_client),
             config: self.config.clone(),
             pk:     Secp256k1RecoverablePrivateKey::try_from(self.config.pk.as_bytes().as_ref())
                 .unwrap(),
@@ -153,7 +152,11 @@ where
     }
 
     async fn update_tip_number(&mut self) {
-        let tip_header = self.client.get_tip_header().await.unwrap();
+        let tip_header = self
+            .ckb_client
+            .get_tip_header(Context::new())
+            .await
+            .unwrap();
 
         self.tip_number = tip_header.inner.number.into();
 
@@ -175,7 +178,9 @@ where
                     self.current_number + 200,
                 )
             {
-                let task = self.client.get_block_by_number(i.into());
+                let task = self
+                    .ckb_client
+                    .get_block_by_number(Context::new(), i.into());
                 let handle = tokio::spawn(task);
                 tasks.push(handle)
             }
@@ -193,7 +198,7 @@ where
         }
     }
 
-    async fn handle_blocks(&mut self, blocks: Vec<io::Result<BlockView>>) {
+    async fn handle_blocks(&mut self, blocks: Vec<ProtocolResult<BlockView>>) {
         for res in blocks {
             match res {
                 Ok(block) => self.search_tx(block).await,
@@ -201,7 +206,11 @@ where
                     let number = self.current_number + 1;
                     log::info!("get block {} error: {}", number, e);
                     loop {
-                        if let Ok(block) = self.client.get_block_by_number(number.into()).await {
+                        if let Ok(block) = self
+                            .ckb_client
+                            .get_block_by_number(Context::new(), number.into())
+                            .await
+                        {
                             self.search_tx(block.into()).await
                         }
                     }
@@ -252,8 +261,8 @@ where
             let (hash, index) = (input_point.tx_hash(), input_point.index());
 
             let input_tx = self
-                .client
-                .get_transaction(&hash.unpack())
+                .ckb_client
+                .get_transaction(Context::new(), &hash.unpack())
                 .await
                 .expect("get previous tx fail")
                 .unwrap();
@@ -366,14 +375,17 @@ where
 }
 
 #[derive(Clone)]
-pub struct CrossAdapterHandle {
-    client: rpc_client::RpcClient,
+pub struct CrossAdapterHandle<C> {
+    client: Arc<C>,
     config: ConfigCrossClient,
     pk:     Secp256k1RecoverablePrivateKey,
 }
 
 #[async_trait]
-impl CrossClient for CrossAdapterHandle {
+impl<C> CrossClient for CrossAdapterHandle<C>
+where
+    C: CkbClient + 'static,
+{
     async fn set_evm_log(
         &self,
         ctx: Context,
@@ -396,7 +408,7 @@ impl CrossClient for CrossAdapterHandle {
                         recipient_ckb_address,
                     } = burn;
 
-                    let payload = rpc_client::CrossChainTransferPayload {
+                    let payload = CrossChainTransferPayload {
                         sender: "ckt1qzda0cr08m85hc8jlnfp3zer7xulejywt49kt2rr0vthywaa50xwsqdrhpvcu82numz73852ed45cdxn4kcn72cr4338a".to_string(),
                         receiver: String::from_utf8(recipient_ckb_address).unwrap(),
                         udt_hash: self.config.axon_udt_hash.0.into(),
@@ -407,14 +419,18 @@ impl CrossClient for CrossAdapterHandle {
 
                     match self
                         .client
-                        .build_cross_chain_transfer_transaction(payload)
+                        .build_cross_chain_transfer_transaction(Context::new(), payload)
                         .await
                     {
                         Ok(respond) => {
                             let tx = respond.sign(&self.pk);
                             match self
                                 .client
-                                .send_transaction(&tx, Some(OutputsValidator::Passthrough))
+                                .send_transaction(
+                                    Context::new(),
+                                    &tx,
+                                    Some(OutputsValidator::Passthrough),
+                                )
                                 .await
                             {
                                 Ok(tx_hash) => log::info!("set_evm_log send tx hash: {}", tx_hash),
@@ -442,12 +458,9 @@ impl CrossClient for CrossAdapterHandle {
         let mut proof = proof.encode().unwrap().to_vec();
         proposal.append(&mut proof);
 
-        let payload = rpc_client::SubmitCheckpointPayload {
-            node_id:              rpc_client::Identity::new(0, self.config.node_address.0.to_vec()),
-            admin_id:             rpc_client::Identity::new(
-                0,
-                self.config.admin_address.0.to_vec(),
-            ),
+        let payload = SubmitCheckpointPayload {
+            node_id:              Identity::new(0, self.config.node_address.0.to_vec()),
+            admin_id:             Identity::new(0, self.config.admin_address.0.to_vec()),
             period_number:        number,
             checkpoint:           proposal.into(),
             selection_lock_hash:  self.config.selection_lock_hash.0.into(),
@@ -456,14 +469,14 @@ impl CrossClient for CrossAdapterHandle {
 
         match self
             .client
-            .build_submit_checkpoint_transaction(payload)
+            .build_submit_checkpoint_transaction(Context::new(), payload)
             .await
         {
             Ok(respond) => {
                 let tx = respond.sign(&self.pk);
                 match self
                     .client
-                    .send_transaction(&tx, Some(OutputsValidator::Passthrough))
+                    .send_transaction(Context::new(), &tx, Some(OutputsValidator::Passthrough))
                     .await
                 {
                     Ok(tx_hash) => log::info!("set_checkpoint send tx hash: {}", tx_hash),
