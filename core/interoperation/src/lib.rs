@@ -1,3 +1,4 @@
+#[cfg(test)]
 mod tests;
 
 use std::collections::HashMap;
@@ -107,7 +108,7 @@ pub fn init_crypto_code_hashes(hashes: HashMap<String, H256>) {
 pub fn get_crypto_code_hash(crypto: &str) -> ProtocolResult<H256> {
     let crypto = String::from(crypto);
     if let Some(code_hash) = CRYPTO_CODE_HASHES.load().get(&crypto) {
-        Ok(code_hash.clone())
+        Ok(*code_hash)
     } else {
         Err(InteroperationError::GetCryptoCodeHash(crypto).into())
     }

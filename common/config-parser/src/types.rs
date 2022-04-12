@@ -9,6 +9,8 @@ use core_consensus::{DEFAULT_OVERLORD_GAP, DEFAULT_SYNC_TXS_CHUNK_SIZE};
 use core_mempool::{DEFAULT_BROADCAST_TXS_INTERVAL, DEFAULT_BROADCAST_TXS_SIZE};
 use protocol::types::{Hex, H160, H256};
 
+pub const ED25519: &str = "ed25519";
+
 #[derive(Clone, Debug, Deserialize)]
 pub struct ConfigApi {
     pub http_listening_address: Option<SocketAddr>,
@@ -166,13 +168,13 @@ pub struct ConfigCrossClient {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct ConfigCkbCryptoPrimitive {
-    pub ed25519_type_hash: H256
+    pub ed25519_type_hash: H256,
 }
 
-impl Into<HashMap<String, H256>> for ConfigCkbCryptoPrimitive {
-    fn into(self) -> HashMap<String, H256> {
+impl From<ConfigCkbCryptoPrimitive> for HashMap<String, H256> {
+    fn from(cp: ConfigCkbCryptoPrimitive) -> Self {
         let mut map = HashMap::new();
-        map.insert(String::from("ed25519"), self.ed25519_type_hash);
+        map.insert(String::from(ED25519), cp.ed25519_type_hash);
         map
     }
 }
@@ -199,7 +201,7 @@ pub struct Config {
     pub epoch_len:                   u64,
     pub metadata_contract_address:   H256,
     pub crosschain_contract_address: H256,
-    pub ckb_crypto_primitive:        ConfigCkbCryptoPrimitive
+    pub ckb_crypto_primitive:        ConfigCkbCryptoPrimitive,
 }
 
 impl Config {

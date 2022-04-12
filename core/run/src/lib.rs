@@ -32,6 +32,7 @@ use core_consensus::{
 };
 use core_cross_client::DefaultCrossAdapter;
 use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB};
+use core_interoperation::{init_crypto_code_hashes, init_dispatcher, InteroperationImpl};
 use core_mempool::{
     DefaultMemPoolAdapter, MemPoolImpl, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
     RPC_PULL_TXS, RPC_RESP_PULL_TXS, RPC_RESP_PULL_TXS_SYNC,
@@ -42,7 +43,6 @@ use core_network::{
 };
 use core_rpc_client::RpcClient;
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
-use core_interoperation::{init_crypto_code_hashes, init_dispatcher};
 use protocol::codec::{hex_decode, ProtocolCodec};
 use protocol::lazy::{CHAIN_ID, CURRENT_STATE_ROOT};
 #[cfg(unix)]
@@ -254,13 +254,15 @@ impl Axon {
         ));
 
         let metadata = metadata_controller.get_metadata(Context::new(), &current_block.header)?;
+        let interoperation = Arc::new(InteroperationImpl::default());
 
         // Init mempool
-        let mempool_adapter = DefaultMemPoolAdapter::<Secp256k1, _, _, _, _>::new(
+        let mempool_adapter = DefaultMemPoolAdapter::<Secp256k1, _, _, _, _, _>::new(
             network_service.handle(),
             Arc::clone(&storage),
             Arc::clone(&trie_db),
             Arc::clone(&metadata_controller),
+            Arc::clone(&interoperation),
             self.genesis.block.header.chain_id,
             config.mempool.timeout_gap,
             self.genesis.block.header.gas_limit.as_u64(),

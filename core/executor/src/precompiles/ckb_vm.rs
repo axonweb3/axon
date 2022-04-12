@@ -2,7 +2,7 @@ use evm::executor::stack::{PrecompileFailure, PrecompileOutput};
 use evm::{Context, ExitError, ExitSucceed};
 use rlp::Rlp;
 
-use core_interoperation::{InteroperationImpl, gas_to_cycle, cycle_to_gas};
+use core_interoperation::{cycle_to_gas, gas_to_cycle, InteroperationImpl};
 use protocol::{traits::Interoperation, types::H160};
 
 use crate::err;

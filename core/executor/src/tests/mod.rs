@@ -6,8 +6,8 @@ use std::str::FromStr;
 use evm::backend::{MemoryAccount, MemoryBackend, MemoryVicinity};
 
 use protocol::types::{
-    ExitReason, ExitSucceed, Public, SignatureComponents, SignedTransaction, Transaction,
-    TransactionAction, UnverifiedTransaction, H160, H256, U256, Bytes
+    Bytes, ExitReason, ExitSucceed, Public, SignatureComponents, SignedTransaction, Transaction,
+    TransactionAction, UnverifiedTransaction, H160, H256, U256,
 };
 use protocol::{codec::hex_decode, traits::Executor};
 

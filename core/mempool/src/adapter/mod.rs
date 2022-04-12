@@ -16,12 +16,14 @@ use parking_lot::Mutex;
 use common_apm_derive::trace_span;
 use common_crypto::{Crypto, Secp256k1Recoverable};
 use core_executor::{is_call_system_script, AxonExecutor, AxonExecutorAdapter};
-use core_interoperation::{InteroperationImpl, SignatureType, get_crypto_code_hash, gas_to_cycle};
+use core_interoperation::{get_crypto_code_hash, SignatureType};
 use protocol::traits::{
-    Context, Executor, Gossip, MemPoolAdapter, MetadataControl, PeerTrust, Priority, Rpc, Storage,
-    TrustFeedback, Interoperation
+    Context, Executor, Gossip, Interoperation, MemPoolAdapter, MetadataControl, PeerTrust,
+    Priority, Rpc, Storage, TrustFeedback,
 };
-use protocol::types::{recover_intact_pub_key, Hash, MerkleRoot, SignedTransaction, H160, U256, Bytes};
+use protocol::types::{
+    recover_intact_pub_key, Bytes, Hash, MerkleRoot, SignedTransaction, H160, U256,
+};
 use protocol::{
     async_trait, codec::ProtocolCodec, lazy::CURRENT_STATE_ROOT, tokio, Display, ProtocolError,
     ProtocolErrorKind, ProtocolResult,
@@ -108,11 +110,12 @@ impl IntervalTxsBroadcaster {
     }
 }
 
-pub struct DefaultMemPoolAdapter<C, N, S, DB, M> {
-    network:  N,
-    storage:  Arc<S>,
-    trie_db:  Arc<DB>,
-    metadata: Arc<M>,
+pub struct DefaultMemPoolAdapter<C, N, S, DB, M, I> {
+    network:        N,
+    storage:        Arc<S>,
+    trie_db:        Arc<DB>,
+    metadata:       Arc<M>,
+    interoperation: Arc<I>,
 
     addr_nonce:   DashMap<H160, U256>,
     _timeout_gap: AtomicU64,
@@ -126,19 +129,21 @@ pub struct DefaultMemPoolAdapter<C, N, S, DB, M> {
     pin_c: PhantomData<C>,
 }
 
-impl<C, N, S, DB, M> DefaultMemPoolAdapter<C, N, S, DB, M>
+impl<C, N, S, DB, M, I> DefaultMemPoolAdapter<C, N, S, DB, M, I>
 where
     C: Crypto,
     N: Rpc + PeerTrust + Gossip + Clone + Unpin + 'static,
     S: Storage,
     DB: cita_trie::DB + 'static,
     M: MetadataControl + 'static,
+    I: Interoperation + 'static,
 {
     pub fn new(
         network: N,
         storage: Arc<S>,
         trie_db: Arc<DB>,
         metadata: Arc<M>,
+        interoperation: Arc<I>,
         chain_id: u64,
         timeout_gap: u64,
         gas_limit: u64,
@@ -162,6 +167,7 @@ where
             storage,
             trie_db,
             metadata,
+            interoperation,
 
             addr_nonce: DashMap::new(),
             _timeout_gap: AtomicU64::new(timeout_gap),
@@ -200,13 +206,14 @@ where
 }
 
 #[async_trait]
-impl<C, N, S, DB, M> MemPoolAdapter for DefaultMemPoolAdapter<C, N, S, DB, M>
+impl<C, N, S, DB, M, I> MemPoolAdapter for DefaultMemPoolAdapter<C, N, S, DB, M, I>
 where
     C: Crypto + Send + Sync + 'static,
     N: Rpc + PeerTrust + Gossip + Clone + Unpin + 'static,
     S: Storage + 'static,
     DB: cita_trie::DB + 'static,
     M: MetadataControl + 'static,
+    I: Interoperation + 'static,
 {
     #[trace_span(kind = "mempool.adapter", logs = "{txs_len: tx_hashes.len()}")]
     async fn pull_txs(
@@ -356,21 +363,16 @@ where
                     recover_intact_pub_key(&stx.public.unwrap()).as_bytes(),
                 )
                 .map_err(|err| AdapterError::VerifySignature(err.to_string()))?;
-            },
+            }
             SignatureType::Ed25519 => {
                 let code_hash = get_crypto_code_hash("ed25519")?;
                 let args = [
                     Bytes::from(Vec::from(stx.transaction.signature_hash().to_fixed_bytes())),
                     signature.r,
-                    signature.s
+                    signature.s,
                 ];
-                InteroperationImpl::default()
-                    .call_ckb_vm(
-                        Default::default(),
-                        code_hash,
-                        &args,
-                        gas_to_cycle(stx.transaction.unsigned.gas_limit.as_u64())
-                    )
+                self.interoperation
+                    .call_ckb_vm(Default::default(), code_hash, &args, u64::MAX)
                     .map_err(|err| AdapterError::VerifySignature(err.to_string()))?;
             }
         };

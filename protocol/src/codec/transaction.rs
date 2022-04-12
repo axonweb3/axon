@@ -153,7 +153,7 @@ impl Decodable for SignedTransaction {
 mod tests {
     use super::*;
     use crate::codec::hex_decode;
-    use crate::types::{Bytes, TransactionAction, H160, U256, H256};
+    use crate::types::{Bytes, TransactionAction, H160, H256, U256};
     use rand::random;
 
     fn rand_bytes(len: usize) -> Bytes {

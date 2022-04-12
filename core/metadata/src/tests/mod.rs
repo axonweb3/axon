@@ -12,9 +12,9 @@ use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{CommonStorage, Context, Executor, Storage};
 use protocol::types::{
-    Account, Address, Header, Hex, Metadata, MetadataVersion, Proposal, Public, RichBlock,
+    Account, Address, Bytes, Header, Hex, Metadata, MetadataVersion, Proposal, Public, RichBlock,
     SignatureComponents, SignedTransaction, Transaction, TransactionAction, UnverifiedTransaction,
-    ValidatorExtend, H160, H256, NIL_DATA, RLP_NULL, U256, Bytes
+    ValidatorExtend, H160, H256, NIL_DATA, RLP_NULL, U256,
 };
 
 use crate::{calc_epoch, metadata_abi as abi, MetadataAdapterImpl, MetadataController, EPOCH_LEN};
