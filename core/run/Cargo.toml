@@ -16,7 +16,6 @@ serde_derive = "1.0"
 serde_json = "1.0"
 toml = "0.5"
 
-ckb-client = { path = "../../core/ckb-client"}
 common-apm = { path = "../../common/apm" }
 common-apm-derive = { path = "../../common/apm-derive" }
 common-config-parser = { path = "../../common/config-parser" }
@@ -29,5 +28,6 @@ core-executor = { path = "../../core/executor" }
 core-mempool = { path = "../../core/mempool" }
 core-metadata = { path = "../../core/metadata" }
 core-network = { path = "../../core/network" }
+core-rpc-client = { path = "../../core/rpc-client" }
 core-storage = { path = "../../core/storage" }
 protocol = { path = "../../protocol", package = "axon-protocol" }

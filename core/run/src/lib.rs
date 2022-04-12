@@ -9,7 +9,6 @@ use std::time::Duration;
 
 use backtrace::Backtrace;
 
-use ckb_client::RpcClient;
 use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
 use common_apm::{server::run_prometheus_server, tracing::global_tracer_register};
 use common_config_parser::types::Config;
@@ -41,6 +40,7 @@ use core_metadata::{MetadataAdapterImpl, MetadataController};
 use core_network::{
     observe_listen_port_occupancy, NetworkConfig, NetworkService, PeerId, PeerIdExt,
 };
+use core_rpc_client::RpcClient;
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::codec::{hex_decode, ProtocolCodec};
 use protocol::lazy::{CHAIN_ID, CURRENT_STATE_ROOT};

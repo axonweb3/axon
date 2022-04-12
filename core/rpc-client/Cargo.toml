@@ -1,5 +1,5 @@
 [package]
-name = "ckb-client"
+name = "core-rpc-client"
 version = "0.1.0"
 edition = "2021"
 

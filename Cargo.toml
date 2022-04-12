@@ -34,7 +34,7 @@ members = [
     "common/pubsub",
 
     "core/api",
-    "core/ckb-client",
+    
     "core/cli",
     "core/consensus",
     "core/cross-client",
@@ -42,6 +42,7 @@ members = [
     "core/mempool",
     "core/metadata",
     "core/network",
+    "core/rpc-client",
     "core/run",
     "core/storage",
     "devtools/keypair",
