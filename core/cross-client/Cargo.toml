@@ -6,7 +6,7 @@ edition = "2021"
 
 [dependencies]
 cita_trie = "3.0"
-ckb-hash = "0.101"
+ckb-hash = "0.103"
 ckb-jsonrpc-types = "0.101"
 ckb-types = "0.101.3"
 ethabi = "17.0"
