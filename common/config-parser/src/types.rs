@@ -5,10 +5,12 @@ use std::path::PathBuf;
 use serde::Deserialize;
 use tentacle_multiaddr::MultiAddr;
 
-use core_consensus::{DEFAULT_OVERLORD_GAP, DEFAULT_SYNC_TXS_CHUNK_SIZE};
-use core_mempool::{DEFAULT_BROADCAST_TXS_INTERVAL, DEFAULT_BROADCAST_TXS_SIZE};
 use protocol::types::{Hex, H160, H256};
 
+pub const DEFAULT_BROADCAST_TXS_SIZE: usize = 200;
+pub const DEFAULT_BROADCAST_TXS_INTERVAL: u64 = 200; // milliseconds
+pub const DEFAULT_OVERLORD_GAP: usize = 5;
+pub const DEFAULT_SYNC_TXS_CHUNK_SIZE: usize = 5000;
 pub const ED25519: &str = "ed25519";
 
 #[derive(Clone, Debug, Deserialize)]

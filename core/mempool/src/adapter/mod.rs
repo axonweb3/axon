@@ -14,6 +14,7 @@ use log::{debug, error};
 use parking_lot::Mutex;
 
 use common_apm_derive::trace_span;
+use common_config_parser::types::ED25519;
 use common_crypto::{Crypto, Secp256k1Recoverable};
 use core_executor::{is_call_system_script, AxonExecutor, AxonExecutorAdapter};
 use core_interoperation::{get_crypto_code_hash, SignatureType};
@@ -33,9 +34,6 @@ use crate::adapter::message::{
     MsgNewTxs, MsgPullTxs, MsgPushTxs, END_GOSSIP_NEW_TXS, RPC_PULL_TXS,
 };
 use crate::MemPoolError;
-
-pub const DEFAULT_BROADCAST_TXS_SIZE: usize = 200;
-pub const DEFAULT_BROADCAST_TXS_INTERVAL: u64 = 200; // milliseconds
 
 struct IntervalTxsBroadcaster;
 
@@ -365,7 +363,7 @@ where
                 .map_err(|err| AdapterError::VerifySignature(err.to_string()))?;
             }
             SignatureType::Ed25519 => {
-                let code_hash = get_crypto_code_hash("ed25519")?;
+                let code_hash = get_crypto_code_hash(ED25519)?;
                 let args = [
                     Bytes::from(Vec::from(stx.transaction.signature_hash().to_fixed_bytes())),
                     signature.r,

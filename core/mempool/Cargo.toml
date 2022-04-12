@@ -17,6 +17,7 @@ rlp-derive = "0.1"
 
 common-apm = { path = "../../common/apm" }
 common-apm-derive = { path = "../../common/apm-derive" }
+common-config-parser = { path = "../../common/config-parser" }
 common-crypto = { path = "../../common/crypto" }
 core-executor = { path = "../../core/executor" }
 core-interoperation = { path = "../../core/interoperation" }
