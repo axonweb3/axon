@@ -12,6 +12,7 @@ use ckb_types::{
     packed,
     prelude::*,
 };
+use ethabi::RawLog;
 
 use common_config_parser::types::{Config, ConfigCrossClient};
 use common_crypto::{
@@ -19,7 +20,6 @@ use common_crypto::{
     ToPublicKey, UncompressedPublicKey,
 };
 use core_executor::{AxonExecutor, AxonExecutorAdapter};
-use ethabi::RawLog;
 use protocol::traits::{CkbClient, Context, CrossAdapter, CrossClient, Executor, MemPool, Storage};
 use protocol::types::{
     public_to_address, Block, Bytes, CrossChainTransferPayload, Identity, Log, Proof, Proposal,
@@ -38,8 +38,7 @@ ethabi_contract::use_contract!(asset, "./src/adapter/abi/asset.abi");
 
 use asset::events as asset_events;
 use asset::functions as asset_functions;
-
-use self::asset::logs::Burned;
+use asset::logs::Burned;
 
 const TWO_THOUSAND: u64 = 2000;
 
