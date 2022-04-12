@@ -32,6 +32,7 @@ use core_consensus::{
 };
 use core_cross_client::DefaultCrossAdapter;
 use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB};
+use core_interoperation::{init_crypto_code_hashes, init_dispatcher, InteroperationImpl};
 use core_mempool::{
     DefaultMemPoolAdapter, MemPoolImpl, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
     RPC_PULL_TXS, RPC_RESP_PULL_TXS, RPC_RESP_PULL_TXS_SYNC,
@@ -253,13 +254,15 @@ impl Axon {
         ));
 
         let metadata = metadata_controller.get_metadata(Context::new(), &current_block.header)?;
+        let interoperation = Arc::new(InteroperationImpl::default());
 
         // Init mempool
-        let mempool_adapter = DefaultMemPoolAdapter::<Secp256k1, _, _, _, _>::new(
+        let mempool_adapter = DefaultMemPoolAdapter::<Secp256k1, _, _, _, _, _>::new(
             network_service.handle(),
             Arc::clone(&storage),
             Arc::clone(&trie_db),
             Arc::clone(&metadata_controller),
+            Arc::clone(&interoperation),
             self.genesis.block.header.chain_id,
             config.mempool.timeout_gap,
             self.genesis.block.header.gas_limit.as_u64(),
@@ -539,6 +542,10 @@ impl Axon {
             precommit_ratio: metadata.precommit_ratio,
             brake_ratio:     metadata.brake_ratio,
         };
+
+        // Init interoperation
+        init_crypto_code_hashes(self.config.ckb_crypto_primitive.clone().into());
+        init_dispatcher(HashMap::new())?;
 
         tokio::spawn(async move {
             if let Err(e) = overlord_consensus

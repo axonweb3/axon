@@ -3,7 +3,7 @@ use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
 use crate::types::{
     AccessList, AccessListItem, Bytes, BytesMut, SignatureComponents, SignedTransaction,
-    Transaction, TransactionAction, UnverifiedTransaction, H256, U256,
+    Transaction, TransactionAction, UnverifiedTransaction, U256,
 };
 
 impl Encodable for SignatureComponents {
@@ -15,8 +15,8 @@ impl Encodable for SignatureComponents {
 impl Decodable for SignatureComponents {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         let standard_v: u8 = r.val_at(0)?;
-        let r_: H256 = r.val_at(1)?;
-        let s: H256 = r.val_at(2)?;
+        let r_: Bytes = r.val_at(1)?;
+        let s: Bytes = r.val_at(2)?;
 
         Ok(SignatureComponents {
             standard_v,
@@ -153,7 +153,7 @@ impl Decodable for SignedTransaction {
 mod tests {
     use super::*;
     use crate::codec::hex_decode;
-    use crate::types::{Bytes, TransactionAction, H160, U256};
+    use crate::types::{Bytes, TransactionAction, H160, H256, U256};
     use rand::random;
 
     fn rand_bytes(len: usize) -> Bytes {
@@ -176,8 +176,8 @@ mod tests {
     fn mock_sig_component() -> SignatureComponents {
         SignatureComponents {
             standard_v: 4,
-            r:          H256::default(),
-            s:          H256::default(),
+            r:          Bytes::default(),
+            s:          Bytes::default(),
         }
     }
 

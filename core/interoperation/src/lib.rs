@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use std::collections::HashMap;
 use std::error::Error;
 use std::sync::Arc;
@@ -8,16 +11,28 @@ use ckb_vm::machine::{DefaultMachineBuilder, SupportMachine, VERSION1};
 use ckb_vm::{Error as VMError, ISA_B, ISA_IMC, ISA_MOP};
 
 use protocol::traits::{Context, Interoperation};
-use protocol::types::{Bytes, SignedTransaction, VMResp, H160};
+use protocol::types::{Bytes, SignedTransaction, VMResp, H256};
 use protocol::{Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 lazy_static::lazy_static! {
     static ref DISPATCHER: ArcSwap<ProgramDispatcher> = ArcSwap::from_pointee(ProgramDispatcher::default());
+    static ref CRYPTO_CODE_HASHES: ArcSwap<HashMap<String, H256>> = ArcSwap::from_pointee(HashMap::new());
 }
 
 const ISA: u8 = ISA_IMC | ISA_B | ISA_MOP;
 
+const GAS_TO_CYCLE_COEF: u64 = 6_000;
+
+pub const fn gas_to_cycle(gas: u64) -> u64 {
+    gas * GAS_TO_CYCLE_COEF
+}
+
+pub const fn cycle_to_gas(cycle: u64) -> u64 {
+    cycle / GAS_TO_CYCLE_COEF
+}
+
 pub enum SignatureType {
+    Secp256k1,
     Ed25519,
 }
 
@@ -26,6 +41,7 @@ impl TryFrom<u8> for SignatureType {
 
     fn try_from(s: u8) -> Result<Self, Self::Error> {
         match s {
+            0 | 1 => Ok(SignatureType::Secp256k1),
             2 => Ok(SignatureType::Ed25519),
             _ => Err(InteroperationError::InvalidSignatureType(s)),
         }
@@ -54,7 +70,7 @@ impl Interoperation for InteroperationImpl {
     fn call_ckb_vm(
         &self,
         _ctx: Context,
-        code_hash: H160,
+        code_hash: H256,
         args: &[Bytes],
         max_cycles: u64,
     ) -> ProtocolResult<VMResp> {
@@ -80,17 +96,30 @@ impl Interoperation for InteroperationImpl {
     }
 }
 
-pub fn init_dispatcher(program_map: HashMap<H160, Bytes>) -> ProtocolResult<()> {
+pub fn init_dispatcher(program_map: HashMap<H256, Bytes>) -> ProtocolResult<()> {
     DISPATCHER.swap(Arc::new(ProgramDispatcher::new(program_map)?));
     Ok(())
 }
 
+pub fn init_crypto_code_hashes(hashes: HashMap<String, H256>) {
+    CRYPTO_CODE_HASHES.swap(Arc::new(hashes));
+}
+
+pub fn get_crypto_code_hash(crypto: &str) -> ProtocolResult<H256> {
+    let crypto = String::from(crypto);
+    if let Some(code_hash) = CRYPTO_CODE_HASHES.load().get(&crypto) {
+        Ok(*code_hash)
+    } else {
+        Err(InteroperationError::GetCryptoCodeHash(crypto).into())
+    }
+}
+
 #[derive(Default)]
-struct ProgramDispatcher(HashMap<H160, Program>);
+struct ProgramDispatcher(HashMap<H256, Program>);
 
 impl ProgramDispatcher {
     #[cfg(not(target_arch = "aarch64"))]
-    fn new(program_map: HashMap<H160, Bytes>) -> ProtocolResult<Self> {
+    fn new(program_map: HashMap<H256, Bytes>) -> ProtocolResult<Self> {
         let mut inner = HashMap::with_capacity(program_map.len());
 
         for (code_hash, code) in program_map.into_iter() {
@@ -105,7 +134,7 @@ impl ProgramDispatcher {
     }
 
     #[cfg(target_arch = "aarch64")]
-    fn new(program_map: HashMap<H160, Bytes>) -> ProtocolResult<Self> {
+    fn new(program_map: HashMap<H256, Bytes>) -> ProtocolResult<Self> {
         Ok(ProgramDispatcher(
             program_map
                 .into_iter()
@@ -114,7 +143,7 @@ impl ProgramDispatcher {
         ))
     }
 
-    fn get_program(&self, code_hash: &H160) -> ProtocolResult<Program> {
+    fn get_program(&self, code_hash: &H256) -> ProtocolResult<Program> {
         self.0
             .get(code_hash)
             .cloned()
@@ -153,10 +182,13 @@ pub enum InteroperationError {
     MissingSignature,
 
     #[display(fmt = "Cannot get program of code hash {:?}", _0)]
-    GetProgram(H160),
+    GetProgram(H256),
 
     #[display(fmt = "CKB VM run failed {:?}", _0)]
     CkbVM(VMError),
+
+    #[display(fmt = "Unsupported ckb crypto primitive {:?}", _0)]
+    GetCryptoCodeHash(String),
 }
 
 impl Error for InteroperationError {}
