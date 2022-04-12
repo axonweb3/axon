@@ -16,6 +16,7 @@ pub enum ProtocolErrorKind {
     // traits
     API,
     Cli,
+    CkbClient,
     Consensus,
     Contract,
     CrossClient,

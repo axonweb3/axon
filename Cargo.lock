@@ -193,6 +193,9 @@ dependencies = [
  "async-trait",
  "bincode",
  "bytes",
+ "ckb-hash",
+ "ckb-jsonrpc-types",
+ "ckb-types",
  "common-crypto",
  "creep",
  "derive_more",
@@ -1163,6 +1166,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "core-rpc-client"
+version = "0.1.0"
+dependencies = [
+ "axon-protocol",
+ "ckb-jsonrpc-types",
+ "ckb-types",
+ "futures",
+ "jsonrpc-core",
+ "reqwest",
+ "serde_json",
+]
+
+[[package]]
 name = "core-run"
 version = "0.1.0"
 dependencies = [
@@ -1182,6 +1198,7 @@ dependencies = [
  "core-mempool",
  "core-metadata",
  "core-network",
+ "core-rpc-client",
  "core-storage",
  "futures",
  "log",

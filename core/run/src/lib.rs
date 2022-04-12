@@ -40,6 +40,7 @@ use core_metadata::{MetadataAdapterImpl, MetadataController};
 use core_network::{
     observe_listen_port_occupancy, NetworkConfig, NetworkService, PeerId, PeerIdExt,
 };
+use core_rpc_client::RpcClient;
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::codec::{hex_decode, ProtocolCodec};
 use protocol::lazy::{CHAIN_ID, CURRENT_STATE_ROOT};
@@ -376,6 +377,11 @@ impl Axon {
             metadata.max_tx_size,
         );
 
+        let ckb_client = RpcClient::new(
+            &self.config.cross_client.ckb_uri,
+            &self.config.cross_client.mercury_uri,
+        );
+
         // start cross chain client
         let cross_client = DefaultCrossAdapter::new(
             self.config.clone(),
@@ -383,6 +389,7 @@ impl Axon {
             Arc::clone(&mempool),
             Arc::clone(&storage),
             Arc::clone(&trie_db),
+            Arc::new(ckb_client),
         );
         let cross_handle = cross_client.handle();
 
