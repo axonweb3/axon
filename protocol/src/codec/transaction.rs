@@ -9,9 +9,7 @@ use crate::types::{
 
 impl Encodable for SignatureComponents {
     fn rlp_append(&self, s: &mut RlpStream) {
-        let flag = self.is_eth_sig();
-
-        if flag {
+        if self.is_eth_sig() {
             let r = U256::from(&self.r[0..32]);
             let s_ = U256::from(&self.s[0..32]);
             s.append(&self.standard_v).append(&r).append(&s_);
