@@ -1,14 +1,23 @@
 use bytes::BufMut;
+use ethereum_types::BigEndianHash;
 use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
 use crate::types::{
     AccessList, AccessListItem, Bytes, BytesMut, SignatureComponents, SignedTransaction,
-    Transaction, TransactionAction, UnverifiedTransaction, U256,
+    Transaction, TransactionAction, UnverifiedTransaction, H256, U256,
 };
 
 impl Encodable for SignatureComponents {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.append(&self.standard_v).append(&self.r).append(&self.s);
+        let flag = self.is_eth_sig();
+
+        if flag {
+            let r = U256::from(&self.r[0..32]);
+            let s_ = U256::from(&self.s[0..32]);
+            s.append(&self.standard_v).append(&r).append(&s_);
+        } else {
+            s.append(&self.standard_v).append(&self.r).append(&self.s);
+        }
     }
 }
 
@@ -101,10 +110,22 @@ impl Decodable for UnverifiedTransaction {
             });
         }
 
+        let v: u8 = r.val_at(9)?;
+        let eth_tx_flag = v == 0 || v == 1;
         let signature = SignatureComponents {
-            standard_v: r.val_at(9)?,
-            r:          r.val_at(10)?,
-            s:          r.val_at(11)?,
+            standard_v: v,
+            r:          if eth_tx_flag {
+                let tmp: U256 = r.val_at(10)?;
+                Bytes::from(<H256 as BigEndianHash>::from_uint(&tmp).as_bytes().to_vec())
+            } else {
+                r.val_at(10)?
+            },
+            s:          if eth_tx_flag {
+                let tmp: U256 = r.val_at(10)?;
+                Bytes::from(<H256 as BigEndianHash>::from_uint(&tmp).as_bytes().to_vec())
+            } else {
+                r.val_at(10)?
+            },
         };
 
         let utx = UnverifiedTransaction {
@@ -152,9 +173,13 @@ impl Decodable for SignedTransaction {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::codec::hex_decode;
-    use crate::types::{Bytes, TransactionAction, H160, H256, U256};
+
     use rand::random;
+
+    use common_crypto::secp256k1_recover;
+
+    use crate::codec::hex_decode;
+    use crate::types::{Bytes, Public, TransactionAction, H160, H256, U256};
 
     fn rand_bytes(len: usize) -> Bytes {
         Bytes::from((0..len).map(|_| random::<u8>()).collect::<Vec<_>>())
@@ -213,5 +238,19 @@ mod tests {
         let rlp = Rlp::new(&raw[1..]);
         let res = UnverifiedTransaction::decode(&rlp);
         assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_decode_unverified_tx() {
+        let raw = hex_decode("02f8670582010582012c82012c825208945cf83df52a32165a7f392168ac009b168c9e89150180c001a0a68aeb0db4d84cf16da5a6918becefd254654854cfc23f0112ef78154ce84db89f4b0af1cbf12f5bfaec81c3d4d495717d720b574a05092f6b436c2ab255cd35").unwrap();
+        let utx = UnverifiedTransaction::decode(&Rlp::new(&raw[1..])).unwrap();
+        let _public = Public::from_slice(
+            &secp256k1_recover(
+                utx.hash.as_bytes(),
+                utx.signature.clone().unwrap().as_bytes().as_ref(),
+            )
+            .unwrap()
+            .serialize_uncompressed()[1..65],
+        );
     }
 }
