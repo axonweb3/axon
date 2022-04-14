@@ -110,7 +110,7 @@ impl SignatureComponents {
     }
 
     pub fn is_eth_sig(&self) -> bool {
-        self.standard_v == 0 || self.standard_v == 1
+        self.standard_v <= 1
     }
 }
 

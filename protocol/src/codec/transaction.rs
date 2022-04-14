@@ -109,7 +109,7 @@ impl Decodable for UnverifiedTransaction {
         }
 
         let v: u8 = r.val_at(9)?;
-        let eth_tx_flag = v == 0 || v == 1;
+        let eth_tx_flag = v <= 1;
         let signature = SignatureComponents {
             standard_v: v,
             r:          if eth_tx_flag {
