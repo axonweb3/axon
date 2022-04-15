@@ -8,19 +8,19 @@ beforeEach(async () => {
 });
 describe("eth_getTransactionCount", () => {
   testDataInfo = testDataManage.readTestDataAsJson("testData_1.json");
-  /**
-   * param1: real account address
-   * param2: real latest number
-   */
-  it("eth_getTransactionCount_1", async () => {
-    const testType = await page.$(goto.pageIds.testTypeId);
-    const param1 = await page.$(goto.pageIds.param1Id);
-    const param2 = await page.$(goto.pageIds.param2Id);
-    await testType.type("1"); // 0: none params 1: common params to request 2: more params
-    await param1.type(testDataInfo.accountAddress);
-    await param2.type("latest");
-    await goto.check(page, "0x4");
-  });
+  // /**
+  //  * param1: real account address
+  //  * param2: real latest number
+  //  */
+  // it("eth_getTransactionCount_1", async () => {
+  //   const testType = await page.$(goto.pageIds.testTypeId);
+  //   const param1 = await page.$(goto.pageIds.param1Id);
+  //   const param2 = await page.$(goto.pageIds.param2Id);
+  //   await testType.type("1"); // 0: none params 1: common params to request 2: more params
+  //   await param1.type(testDataInfo.accountAddress);
+  //   await param2.type("latest");
+  //   await goto.check(page, "0x4");
+  // });
 
   /**
    * param1: set a contract address
