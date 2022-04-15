@@ -245,7 +245,7 @@ mod tests {
         let _public = Public::from_slice(
             &secp256k1_recover(
                 utx.hash.as_bytes(),
-                utx.signature.clone().unwrap().as_bytes().as_ref(),
+                utx.signature.as_ref().unwrap().as_bytes().as_ref(),
             )
             .unwrap()
             .serialize_uncompressed()[1..65],

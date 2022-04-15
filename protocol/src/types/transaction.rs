@@ -90,7 +90,7 @@ impl From<Bytes> for SignatureComponents {
         SignatureComponents {
             r:          Bytes::from(bytes[0..32].to_vec()),
             s:          Bytes::from(bytes[32..64].to_vec()),
-            standard_v: *bytes.as_ref().to_vec().last().unwrap(),
+            standard_v: bytes[64],
         }
     }
 }
@@ -133,7 +133,7 @@ impl TryFrom<UnverifiedTransaction> for SignedTransaction {
         let public = Public::from_slice(
             &secp256k1_recover(
                 hash.as_bytes(),
-                utx.signature.clone().unwrap().as_bytes().as_ref(),
+                utx.signature.as_ref().unwrap().as_bytes().as_ref(),
             )?
             .serialize_uncompressed()[1..65],
         );
