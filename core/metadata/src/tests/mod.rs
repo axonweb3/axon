@@ -186,7 +186,7 @@ fn mock_signed_tx(nonce: u64, data: Vec<u8>) -> SignedTransaction {
     let tx = UnverifiedTransaction {
         unsigned:  raw,
         signature: Some(SignatureComponents {
-            standard_v: 0,
+            standard_v: 2,
             r:          Bytes::default(),
             s:          Bytes::default(),
         }),

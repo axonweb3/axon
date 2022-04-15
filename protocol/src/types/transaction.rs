@@ -108,6 +108,10 @@ impl SignatureComponents {
     pub fn as_bytes(&self) -> Bytes {
         self.clone().into()
     }
+
+    pub fn is_eth_sig(&self) -> bool {
+        self.standard_v <= 1
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]

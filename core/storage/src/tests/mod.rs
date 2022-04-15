@@ -33,7 +33,7 @@ fn mock_signed_tx() -> SignedTransaction {
             access_list:              vec![],
         },
         signature: Some(SignatureComponents {
-            standard_v: 0,
+            standard_v: 2,
             r:          Default::default(),
             s:          Default::default(),
         }),

@@ -83,7 +83,6 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             .hash();
         let stx = SignedTransaction::try_from(utx).map_err(|e| Error::Custom(e.to_string()))?;
 
-        // Todo: add a call system script check here.
         let hash = stx.transaction.hash;
         self.adapter
             .insert_signed_txs(Context::new(), stx)
