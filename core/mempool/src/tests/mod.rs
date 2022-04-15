@@ -163,7 +163,7 @@ fn check_sig(stx: &SignedTransaction) -> ProtocolResult<()> {
         stx.transaction.signature_hash().as_bytes(),
         stx.transaction
             .signature
-            .clone()
+            .as_ref()
             .unwrap()
             .as_bytes()
             .as_ref(),
