@@ -6,17 +6,18 @@ use std::error::Error;
 use std::sync::Arc;
 
 use arc_swap::ArcSwap;
+use ckb_types::packed::Transaction;
 use ckb_vm::machine::asm::{AsmCoreMachine, AsmMachine};
 use ckb_vm::machine::{DefaultMachineBuilder, SupportMachine, VERSION1};
 use ckb_vm::{Error as VMError, ISA_B, ISA_IMC, ISA_MOP};
 
-use protocol::traits::{Context, Interoperation};
+use protocol::traits::{CkbClient, Context, Interoperation};
 use protocol::types::{Bytes, SignedTransaction, VMResp, H256};
 use protocol::{Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 lazy_static::lazy_static! {
     static ref DISPATCHER: ArcSwap<ProgramDispatcher> = ArcSwap::from_pointee(ProgramDispatcher::default());
-    static ref CODE_HASH_MAP: ArcSwap<HashMap<String, H256>> = ArcSwap::from_pointee(HashMap::new());
+    static ref TRANSACTION_HASH_MAP: ArcSwap<HashMap<u8, H256>> = ArcSwap::from_pointee(HashMap::new());
 }
 
 const ISA: u8 = ISA_IMC | ISA_B | ISA_MOP;
@@ -31,19 +32,16 @@ pub const fn cycle_to_gas(cycle: u64) -> u64 {
     cycle / GAS_TO_CYCLE_COEF
 }
 
-pub enum SignatureType {
-    Secp256k1,
-    Ed25519,
+pub enum BlockchainType {
+    Ethereum,
+    Other(u8),
 }
 
-impl TryFrom<u8> for SignatureType {
-    type Error = InteroperationError;
-
-    fn try_from(s: u8) -> Result<Self, Self::Error> {
+impl From<u8> for BlockchainType {
+    fn from(s: u8) -> Self {
         match s {
-            0 | 1 => Ok(SignatureType::Secp256k1),
-            2 => Ok(SignatureType::Ed25519),
-            _ => Err(InteroperationError::InvalidSignatureType(s)),
+            0 | 1 => BlockchainType::Ethereum,
+            _ => BlockchainType::Other(s),
         }
     }
 }
@@ -57,12 +55,12 @@ impl Interoperation for InteroperationImpl {
         _ctx: Context,
         tx: SignedTransaction,
     ) -> ProtocolResult<()> {
-        let _sig_type = SignatureType::try_from(
+        let _sig_type = BlockchainType::from(
             tx.transaction
                 .signature
                 .ok_or(InteroperationError::MissingSignature)?
                 .standard_v,
-        )?;
+        );
 
         Ok(())
     }
@@ -70,13 +68,13 @@ impl Interoperation for InteroperationImpl {
     fn call_ckb_vm(
         &self,
         _ctx: Context,
-        code_hash: H256,
+        tx_hash: H256,
         args: &[Bytes],
         max_cycles: u64,
     ) -> ProtocolResult<VMResp> {
         let core =
             DefaultMachineBuilder::new(AsmCoreMachine::new(ISA, VERSION1, max_cycles)).build();
-        let program = DISPATCHER.load().get_program(&code_hash)?;
+        let program = DISPATCHER.load().get_program(&tx_hash)?;
 
         #[cfg(not(target_arch = "aarch64"))]
         let aot_code = unsafe { Some(&*Arc::as_ptr(&program.aot)) };
@@ -98,12 +96,40 @@ impl Interoperation for InteroperationImpl {
 
 impl InteroperationImpl {
     pub fn new(
-        code_hash_map: HashMap<String, H256>,
+        transaction_hash_map: HashMap<u8, H256>,
         program_map: HashMap<H256, Bytes>,
     ) -> ProtocolResult<Self> {
         init_dispatcher(program_map)?;
-        init_code_hashes_map(code_hash_map);
+        init_ckb_transaction_hashes(transaction_hash_map);
         Ok(InteroperationImpl::default())
+    }
+
+    pub async fn init_dispatcher_from_rpc<T: CkbClient>(rpc_client: T, tx_hashes: Vec<H256>) {
+        let rpc_tasks = tx_hashes
+            .into_iter()
+            .map(|hash| {
+                let ckb_hash = {
+                    let mut bytes = [0u8; 32];
+                    bytes.copy_from_slice(hash.as_bytes());
+                    bytes.into()
+                };
+                let rpc_task = rpc_client.get_transaction(Default::default(), &ckb_hash);
+                (hash, rpc_task)
+            })
+            .collect::<Vec<_>>();
+        let mut program_map = HashMap::new();
+        for (hash, rpc_task) in rpc_tasks.into_iter() {
+            let contract_binary = {
+                let tx = {
+                    let tx = rpc_task.await.unwrap().unwrap();
+                    Transaction::from(tx.transaction.unwrap().inner).into_view()
+                };
+                let (_, binary) = tx.output_with_data(0).unwrap();
+                binary
+            };
+            program_map.insert(hash, contract_binary);
+        }
+        init_dispatcher(program_map).unwrap();
     }
 }
 
@@ -112,16 +138,15 @@ fn init_dispatcher(program_map: HashMap<H256, Bytes>) -> ProtocolResult<()> {
     Ok(())
 }
 
-fn init_code_hashes_map(hashes: HashMap<String, H256>) {
-    CODE_HASH_MAP.swap(Arc::new(hashes));
+fn init_ckb_transaction_hashes(hashes: HashMap<u8, H256>) {
+    TRANSACTION_HASH_MAP.swap(Arc::new(hashes));
 }
 
-pub fn get_crypto_code_hash(crypto: &str) -> ProtocolResult<H256> {
-    let crypto = String::from(crypto);
-    if let Some(code_hash) = CODE_HASH_MAP.load().get(&crypto) {
-        Ok(*code_hash)
+pub fn get_ckb_transaction_hash(blockchain_id: u8) -> ProtocolResult<H256> {
+    if let Some(tx_hash) = TRANSACTION_HASH_MAP.load().get(&blockchain_id) {
+        Ok(*tx_hash)
     } else {
-        Err(InteroperationError::GetCryptoCodeHash(crypto).into())
+        Err(InteroperationError::GetBlockchainCodeHash(blockchain_id).into())
     }
 }
 
@@ -133,12 +158,12 @@ impl ProgramDispatcher {
     fn new(program_map: HashMap<H256, Bytes>) -> ProtocolResult<Self> {
         let mut inner = HashMap::with_capacity(program_map.len());
 
-        for (code_hash, code) in program_map.into_iter() {
+        for (tx_hash, code) in program_map.into_iter() {
             let aot_code =
                 ckb_vm::machine::aot::AotCompilingMachine::load(&code, None, ISA, VERSION1)
                     .and_then(|mut m| m.compile())
                     .map_err(InteroperationError::CkbVM)?;
-            inner.insert(code_hash, Program::new(code, aot_code));
+            inner.insert(tx_hash, Program::new(code, aot_code));
         }
 
         Ok(ProgramDispatcher(inner))
@@ -154,11 +179,11 @@ impl ProgramDispatcher {
         ))
     }
 
-    fn get_program(&self, code_hash: &H256) -> ProtocolResult<Program> {
+    fn get_program(&self, tx_hash: &H256) -> ProtocolResult<Program> {
         self.0
-            .get(code_hash)
+            .get(tx_hash)
             .cloned()
-            .ok_or_else(|| InteroperationError::GetProgram(*code_hash).into())
+            .ok_or_else(|| InteroperationError::GetProgram(*tx_hash).into())
     }
 }
 
@@ -186,20 +211,17 @@ impl Program {
 
 #[derive(Debug, Display)]
 pub enum InteroperationError {
-    #[display(fmt = "Invalid signature type value v is {:?}", _0)]
-    InvalidSignatureType(u8),
-
     #[display(fmt = "Transaction missing signature")]
     MissingSignature,
 
-    #[display(fmt = "Cannot get program of code hash {:?}", _0)]
+    #[display(fmt = "Cannot get program of transaction hash {:?}", _0)]
     GetProgram(H256),
 
     #[display(fmt = "CKB VM run failed {:?}", _0)]
     CkbVM(VMError),
 
-    #[display(fmt = "Unsupported ckb crypto primitive {:?}", _0)]
-    GetCryptoCodeHash(String),
+    #[display(fmt = "Unsupported blockchain id {:?}", _0)]
+    GetBlockchainCodeHash(u8),
 }
 
 impl Error for InteroperationError {}

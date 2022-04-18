@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 arc-swap = "1.5"
+ckb-types = "0.103"
 lazy_static = "1.4"
 
 protocol = { path = "../../protocol", package = "axon-protocol" }
@@ -18,10 +19,9 @@ ckb-vm = { version = "0.21", features = ["aot"] }
 ckb-vm = { version = "0.21", features = ["asm"] }
 
 [dev-dependencies]
-ckb-jsonrpc-types = "0.103"
-ckb-types = "0.103"
+cardano-serialization-lib = "7.0.0"
+cardano-message-signing = { git = "https://github.com/ashuralyk/message-signing", branch = "rust" }
 ed25519-dalek = "1.0"
-jsonrpsee-http-client = "0.10"
-jsonrpsee-core = "0.10"
 rand = "0.7"
-serde_json = "1.0"
+
+core-rpc-client = { path = "../../core/rpc-client" }
