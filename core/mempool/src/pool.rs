@@ -78,14 +78,22 @@ impl PriorityPool {
     }
 
     pub fn insert(&self, stx: SignedTransaction) -> ProtocolResult<()> {
-        if self.reach_limit() {
-            return Err(MemPoolError::ReachLimit(self.len()).into());
+        if let Err(n) = self
+            .stock_len
+            .fetch_update(Ordering::Acquire, Ordering::Relaxed, |x| {
+                if x > self.co_queue.capacity() {
+                    None
+                } else {
+                    Some(x + 1)
+                }
+            })
+        {
+            return Err(MemPoolError::ReachLimit(n).into());
         }
 
         // This lock is necessary to avoid mismatch error triggered by the concurrent
         // operation of tx insertion and flush.
         let _flushing = self.flush_lock.read();
-        self.stock_len.fetch_add(1, Ordering::Release);
 
         let tx_wrapper = TxWrapper::from(stx);
         let _ = self.co_queue.push(tx_wrapper.ptr());
