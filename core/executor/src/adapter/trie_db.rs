@@ -1,6 +1,4 @@
-use std::path::Path;
-use std::sync::Arc;
-use std::{collections::HashSet, fs, io};
+use std::{collections::HashSet, fs, io, path::Path, sync::Arc};
 
 use dashmap::DashMap;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
@@ -46,6 +44,8 @@ impl RocksTrieDB {
     }
 
     fn inner_get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, RocksTrieDBError> {
+        use cita_trie::DB;
+
         let res = self.cache.get(key);
 
         if res.is_none() {
@@ -55,6 +55,7 @@ impl RocksTrieDB {
 
             if let Some(val) = &ret {
                 self.cache.insert(key.to_owned(), val.clone());
+                self.flush()?;
             }
 
             return Ok(ret);
@@ -294,6 +295,17 @@ mod tests {
         let get_3 = trie.cache_get(&key_1).unwrap();
         assert_eq!(val_3, get_3);
         assert_eq!(trie.cache_len(), 2);
+
+        let val = rand_bytes(16);
+        for _i in 0..198 {
+            let key = rand_bytes(128);
+            trie.insert(key, val.clone()).unwrap();
+        }
+
+        assert_eq!(trie.cache_len(), 200);
+
+        trie.insert(rand_bytes(256), rand_bytes(8)).unwrap();
+        assert_eq!(trie.cache_len(), 100);
 
         dir.close().unwrap();
     }
