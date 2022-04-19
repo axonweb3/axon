@@ -106,7 +106,8 @@ impl cita_trie::DB for RocksTrieDB {
         }
 
         on_storage_put_state(inst.elapsed(), size as f64);
-        Ok(())
+
+        self.flush()
     }
 
     fn insert_batch(&self, keys: Vec<Vec<u8>>, values: Vec<Vec<u8>>) -> Result<(), Self::Error> {
@@ -129,7 +130,8 @@ impl cita_trie::DB for RocksTrieDB {
         let inst = Instant::now();
         self.db.write(&batch).map_err(to_store_err)?;
         on_storage_put_state(inst.elapsed(), total_size as f64);
-        Ok(())
+
+        self.flush()
     }
 
     fn remove(&self, _key: &[u8]) -> Result<(), Self::Error> {
@@ -143,7 +145,7 @@ impl cita_trie::DB for RocksTrieDB {
     fn flush(&self) -> Result<(), Self::Error> {
         let len = self.cache.len();
 
-        if len <= self.cache_size {
+        if len <= self.cache_size * 2 {
             return Ok(());
         }
 
