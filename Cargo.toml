@@ -41,9 +41,6 @@ members = [
     "protocol",
 ]
 
-[profile.release]
-overflow-checks = true
-
 [features]
 default = []
 jemalloc = ["core-run/jemalloc"]
