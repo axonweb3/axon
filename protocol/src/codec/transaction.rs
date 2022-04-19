@@ -119,10 +119,10 @@ impl Decodable for UnverifiedTransaction {
                 r.val_at(10)?
             },
             s:          if eth_tx_flag {
-                let tmp: U256 = r.val_at(10)?;
+                let tmp: U256 = r.val_at(11)?;
                 Bytes::from(<H256 as BigEndianHash>::from_uint(&tmp).as_bytes().to_vec())
             } else {
-                r.val_at(10)?
+                r.val_at(11)?
             },
         };
 
@@ -250,5 +250,8 @@ mod tests {
             .unwrap()
             .serialize_uncompressed()[1..65],
         );
+
+        let sig = utx.signature.unwrap();
+        assert_ne!(sig.s, sig.r);
     }
 }
