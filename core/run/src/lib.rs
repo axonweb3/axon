@@ -658,7 +658,7 @@ impl Axon {
 
     #[cfg(feature = "jemalloc")]
     fn set_profile(is_active: bool) {
-        let _ = JEMALLOC;
+        // let _ = JEMALLOC;
         let _ = b"prof.active\0"
             .name()
             .write(is_active)
