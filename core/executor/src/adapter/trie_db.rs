@@ -1,6 +1,6 @@
 use std::path::Path;
 use std::sync::Arc;
-use std::{fs, io};
+use std::{collections::HashSet, fs, io};
 
 use dashmap::DashMap;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
@@ -165,12 +165,12 @@ fn rand_remove_list<T: Clone>(keys: Vec<T>, num: usize) -> impl Iterator<Item = 
     let mut len = keys.len() - 1;
     let mut idx_list = (0..len).collect::<Vec<_>>();
     let mut rng = SmallRng::seed_from_u64(RAND_SEED);
-    let mut ret = Vec::with_capacity(num);
+    let mut ret = HashSet::with_capacity(num);
 
     for _ in 0..num {
         let tmp = rng.gen_range(0..len);
         let idx = idx_list.remove(tmp);
-        ret.push(idx);
+        ret.insert(idx);
         len -= 1;
     }
 
@@ -232,7 +232,7 @@ mod tests {
 
         for num in 1..10 {
             let res = rand_remove_list(keys.clone(), num);
-            assert_eq!(res.collect::<Vec<&i32>>().len(), num);
+            assert_eq!(res.count(), num);
         }
     }
 
