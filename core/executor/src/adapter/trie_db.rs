@@ -1,6 +1,6 @@
 use std::path::Path;
 use std::sync::Arc;
-use std::{fs, io};
+use std::{collections::HashSet, fs, io};
 
 use dashmap::DashMap;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
@@ -9,7 +9,7 @@ use rocksdb::{Options, WriteBatch, DB};
 
 use common_apm::metrics::storage::{on_storage_get_state, on_storage_put_state};
 use common_apm::Instant;
-use protocol::{types::Bytes, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
+use protocol::{Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 // 49999 is the largest prime number within 50000.
 const RAND_SEED: u64 = 49999;
@@ -99,13 +99,11 @@ impl cita_trie::DB for RocksTrieDB {
         let inst = Instant::now();
         let size = key.len() + value.len();
 
-        {
-            self.cache.insert(key.clone(), value.clone());
-        }
+        self.db.put(&key, &value).map_err(to_store_err)?;
 
-        self.db
-            .put(Bytes::from(key), Bytes::from(value))
-            .map_err(to_store_err)?;
+        {
+            self.cache.insert(key, value);
+        }
 
         on_storage_put_state(inst.elapsed(), size as f64);
         Ok(())
@@ -120,11 +118,11 @@ impl cita_trie::DB for RocksTrieDB {
         let mut batch = WriteBatch::default();
 
         {
-            for (key, val) in keys.iter().zip(values.iter()) {
+            for (key, val) in keys.into_iter().zip(values.into_iter()) {
                 total_size += key.len();
                 total_size += val.len();
-                batch.put(key, val)?;
-                self.cache.insert(key.clone(), val.clone());
+                batch.put(&key, &val)?;
+                self.cache.insert(key, val);
             }
         }
 
@@ -156,27 +154,29 @@ impl cita_trie::DB for RocksTrieDB {
             .collect::<Vec<_>>();
         let remove_list = rand_remove_list(keys, len - self.cache_size);
 
-        for item in remove_list.iter() {
-            self.cache.remove(item);
+        for item in remove_list {
+            self.cache.remove(&item);
         }
         Ok(())
     }
 }
 
-fn rand_remove_list<T: Clone>(keys: Vec<T>, num: usize) -> Vec<T> {
+fn rand_remove_list<T: Clone>(keys: Vec<T>, num: usize) -> impl Iterator<Item = T> {
     let mut len = keys.len() - 1;
     let mut idx_list = (0..len).collect::<Vec<_>>();
     let mut rng = SmallRng::seed_from_u64(RAND_SEED);
-    let mut ret = Vec::with_capacity(num);
+    let mut ret = HashSet::with_capacity(num);
 
     for _ in 0..num {
         let tmp = rng.gen_range(0..len);
         let idx = idx_list.remove(tmp);
-        ret.push(keys[idx].to_owned());
+        ret.insert(idx);
         len -= 1;
     }
 
-    ret
+    keys.into_iter()
+        .enumerate()
+        .filter_map(move |(i, v)| if ret.contains(&i) { Some(v) } else { None })
 }
 
 #[derive(Debug, Display, From)]
@@ -232,7 +232,7 @@ mod tests {
 
         for num in 1..10 {
             let res = rand_remove_list(keys.clone(), num);
-            assert_eq!(res.len(), num);
+            assert_eq!(res.count(), num);
         }
     }
 
