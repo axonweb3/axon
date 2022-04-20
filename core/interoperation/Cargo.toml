@@ -19,7 +19,7 @@ ckb-vm = { version = "0.21", features = ["aot"] }
 ckb-vm = { version = "0.21", features = ["asm"] }
 
 [dev-dependencies]
-cardano-serialization-lib = "7.0.0"
+cardano-serialization-lib = "7.0"
 cardano-message-signing = { git = "https://github.com/ashuralyk/message-signing", branch = "rust" }
 ed25519-dalek = "1.0"
 rand = "0.7"
