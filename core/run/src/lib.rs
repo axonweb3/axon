@@ -255,10 +255,18 @@ impl Axon {
 
         let metadata = metadata_controller.get_metadata(Context::new(), &current_block.header)?;
 
-        let interoperation = Arc::new(InteroperationImpl::new(
-            self.config.interoperability_extension.clone().into(),
-            HashMap::new(),
-        )?);
+        let ckb_client = RpcClient::new(
+            &self.config.cross_client.ckb_uri,
+            &self.config.cross_client.mercury_uri,
+        );
+
+        let interoperation = Arc::new(
+            InteroperationImpl::new(
+                self.config.interoperability_extension.clone().into(),
+                ckb_client.clone(),
+            )
+            .await?,
+        );
 
         // Init mempool
         let mempool_adapter = DefaultMemPoolAdapter::<Secp256k1, _, _, _, _, _>::new(
@@ -383,16 +391,6 @@ impl Axon {
             metadata.gas_limit,
             metadata.max_tx_size,
         );
-
-        let ckb_client = RpcClient::new(
-            &self.config.cross_client.ckb_uri,
-            &self.config.cross_client.mercury_uri,
-        );
-
-        tokio::spawn(InteroperationImpl::init_dispatcher_from_rpc(
-            ckb_client.clone(),
-            self.config.interoperability_extension.get_hashes(),
-        ));
 
         // start cross chain client
         let cross_client = DefaultCrossAdapter::new(

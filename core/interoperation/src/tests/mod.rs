@@ -15,14 +15,10 @@ const MAX_CYCLES: u64 = 100_000_000;
 async fn init_interoperation_handler(
     transaction_hash_map: HashMap<u8, H256>,
 ) -> InteroperationImpl {
-    let tx_hashes = transaction_hash_map
-        .iter()
-        .map(|(_, hash)| *hash)
-        .collect::<Vec<_>>();
     let rpc_client = RpcClient::new("http://127.0.0.1:8114", "http://127.0.0.1:8116");
-    let handler = InteroperationImpl::new(transaction_hash_map, HashMap::new()).unwrap();
-    InteroperationImpl::init_dispatcher_from_rpc(rpc_client, tx_hashes).await;
-    handler
+    InteroperationImpl::new(transaction_hash_map, rpc_client)
+        .await
+        .unwrap()
 }
 
 fn parse_h256(hex_str: &str) -> H256 {
@@ -38,7 +34,7 @@ async fn test_ckb_cardano() {
     // fetch contract binary via rpc client
     let tx_hash = parse_h256("b1af175009413bf9670dffb7b120f0eca52896a9798bda123df9b25ff7d8f721");
     let mut transaction_hash_map = HashMap::new();
-    transaction_hash_map.insert(2u8, tx_hash.clone());
+    transaction_hash_map.insert(2u8, tx_hash);
     let handler = init_interoperation_handler(transaction_hash_map).await;
     assert!(tx_hash == get_ckb_transaction_hash(2u8).unwrap());
 
@@ -72,7 +68,7 @@ async fn test_ckb_cardano() {
 
     // verify signature by Cardano self
     let signature = private_key.sign(message.as_slice());
-    assert!(public_key.verify(&message, &signature) == true);
+    assert!(public_key.verify(&message, &signature));
 
     // run ckv-vm
     let mut pubkey_plus_address = public_key.as_bytes().to_vec();

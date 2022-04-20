@@ -181,13 +181,10 @@ pub struct ConfigInteroperabilityExtension {
 
 impl From<ConfigInteroperabilityExtension> for HashMap<u8, H256> {
     fn from(ie: ConfigInteroperabilityExtension) -> Self {
-        let mut map = HashMap::new();
         ie.blockchain_extension_transaction_hashes
-            .iter()
-            .for_each(|v| {
-                map.insert(v.id, v.tx_hash);
-            });
-        map
+            .into_iter()
+            .map(|v| (v.id, v.tx_hash))
+            .collect()
     }
 }
 

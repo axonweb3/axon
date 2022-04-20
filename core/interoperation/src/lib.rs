@@ -95,42 +95,48 @@ impl Interoperation for InteroperationImpl {
 }
 
 impl InteroperationImpl {
-    pub fn new(
+    pub async fn new<T: CkbClient>(
         transaction_hash_map: HashMap<u8, H256>,
-        program_map: HashMap<H256, Bytes>,
+        rpc_client: T,
     ) -> ProtocolResult<Self> {
-        init_dispatcher(program_map)?;
+        let tx_hashes = transaction_hash_map.iter().map(|(_, v)| *v).collect();
+        init_dispatcher_from_rpc(rpc_client, tx_hashes).await?;
         init_ckb_transaction_hashes(transaction_hash_map);
         Ok(InteroperationImpl::default())
     }
+}
 
-    pub async fn init_dispatcher_from_rpc<T: CkbClient>(rpc_client: T, tx_hashes: Vec<H256>) {
-        let rpc_tasks = tx_hashes
-            .into_iter()
-            .map(|hash| {
-                let ckb_hash = {
-                    let mut bytes = [0u8; 32];
-                    bytes.copy_from_slice(hash.as_bytes());
-                    bytes.into()
-                };
-                let rpc_task = rpc_client.get_transaction(Default::default(), &ckb_hash);
-                (hash, rpc_task)
-            })
-            .collect::<Vec<_>>();
-        let mut program_map = HashMap::new();
-        for (hash, rpc_task) in rpc_tasks.into_iter() {
-            let contract_binary = {
-                let tx = {
-                    let tx = rpc_task.await.unwrap().unwrap();
-                    Transaction::from(tx.transaction.unwrap().inner).into_view()
-                };
-                let (_, binary) = tx.output_with_data(0).unwrap();
-                binary
-            };
-            program_map.insert(hash, contract_binary);
-        }
-        init_dispatcher(program_map).unwrap();
+async fn init_dispatcher_from_rpc<T: CkbClient>(
+    rpc_client: T,
+    tx_hashes: Vec<H256>,
+) -> ProtocolResult<()> {
+    let ckb_hashes = tx_hashes
+        .into_iter()
+        .map(|hash| {
+            let mut bytes = [0u8; 32];
+            bytes.copy_from_slice(hash.as_bytes());
+            bytes.into()
+        })
+        .collect::<Vec<_>>();
+    let transactions = rpc_client
+        .get_txs_by_hashes(Default::default(), ckb_hashes)
+        .await
+        .unwrap()
+        .into_iter()
+        .map(|v| v.unwrap().transaction.unwrap());
+    let mut program_map = HashMap::new();
+    for tx in transactions {
+        let contract_binary = {
+            let tx = Transaction::from(tx.inner).into_view();
+            let (_, binary) = tx.output_with_data(0).unwrap();
+            binary
+        };
+        let mut hash = [0u8; 32];
+        hash.copy_from_slice(tx.hash.as_bytes());
+        program_map.insert(hash.into(), contract_binary);
     }
+    init_dispatcher(program_map)?;
+    Ok(())
 }
 
 fn init_dispatcher(program_map: HashMap<H256, Bytes>) -> ProtocolResult<()> {
