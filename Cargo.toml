@@ -50,4 +50,4 @@ random_leader = ["core-consensus/random_leader"]
 
 [profile.release]
 overflow-checks = true
-debug = true
+opt-level = 3
