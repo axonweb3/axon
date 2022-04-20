@@ -1,5 +1,8 @@
 use std::collections::{BTreeMap, BinaryHeap};
-use std::sync::{atomic::Ordering, Arc};
+use std::sync::{
+    atomic::{AtomicUsize, Ordering},
+    Arc,
+};
 use std::time::Duration;
 
 use crossbeam_queue::ArrayQueue;
@@ -19,6 +22,7 @@ pub struct PriorityPool {
     co_queue:       Arc<ArrayQueue<TxPtr>>,
     real_queue:     Arc<Mutex<BinaryHeap<TxPtr>>>,
     tx_map:         DashMap<Hash, SignedTransaction>,
+    stock_len:      Arc<AtomicUsize>,
 
     flush_lock: Arc<RwLock<()>>,
 }
@@ -31,6 +35,7 @@ impl PriorityPool {
             co_queue:       Arc::new(ArrayQueue::new(size)),
             real_queue:     Arc::new(Mutex::new(BinaryHeap::with_capacity(size * 2))),
             tx_map:         DashMap::new(),
+            stock_len:      Arc::new(AtomicUsize::new(0)),
             flush_lock:     Arc::new(RwLock::new(())),
         };
 
@@ -67,13 +72,23 @@ impl PriorityPool {
 
     pub fn insert_system_script_tx(&self, stx: SignedTransaction) -> ProtocolResult<()> {
         let _flushing = self.flush_lock.read();
+        self.stock_len.fetch_add(1, Ordering::Release);
         self.sys_tx_bucket.insert(stx);
         Ok(())
     }
 
     pub fn insert(&self, stx: SignedTransaction) -> ProtocolResult<()> {
-        if self.reach_limit() {
-            return Err(MemPoolError::ReachLimit(self.tx_map.len()).into());
+        if let Err(n) = self
+            .stock_len
+            .fetch_update(Ordering::Acquire, Ordering::Relaxed, |x| {
+                if x > self.co_queue.capacity() {
+                    None
+                } else {
+                    Some(x + 1)
+                }
+            })
+        {
+            return Err(MemPoolError::ReachLimit(n).into());
         }
 
         // This lock is necessary to avoid mismatch error triggered by the concurrent
@@ -113,7 +128,7 @@ impl PriorityPool {
     }
 
     pub fn len(&self) -> usize {
-        self.tx_map.len()
+        self.stock_len.load(Ordering::Acquire)
     }
 
     pub fn co_queue_len(&self) -> usize {
@@ -144,9 +159,12 @@ impl PriorityPool {
 
     pub fn flush<F: Fn(&SignedTransaction) -> bool>(&self, hashes: &[Hash], nonce_check: F) {
         let _flushing = self.flush_lock.write();
-        let residual = self.get_residual(hashes, nonce_check);
+        let mut reduce_len = 0;
+        let residual = self.get_residual(hashes, nonce_check, &mut reduce_len);
         self.occupied_nonce.clear();
-        self.sys_tx_bucket.flush(hashes);
+        self.sys_tx_bucket.flush(hashes, &mut reduce_len);
+
+        self.stock_len.fetch_sub(reduce_len, Ordering::Release);
 
         let mut q = self.real_queue.lock();
         for tx in residual {
@@ -160,19 +178,29 @@ impl PriorityPool {
         &self,
         hashes: &[Hash],
         nonce_check: F,
+        reduce_len: &mut usize,
     ) -> impl Iterator<Item = SignedTransaction> + '_ {
         let mut q = self.real_queue.lock();
 
         for hash in hashes {
-            self.tx_map.remove(hash);
+            if self.tx_map.remove(hash).is_some() {
+                *reduce_len += 1;
+            }
         }
 
         for tx_ptr in q.drain().chain(pop_all_item(Arc::clone(&self.co_queue))) {
             if tx_ptr.is_dropped() {
                 self.tx_map.remove(tx_ptr.hash());
+                *reduce_len += 1;
             }
         }
-        self.tx_map.retain(|_, v| nonce_check(v));
+        self.tx_map.retain(|_, v| {
+            if nonce_check(v) {
+                return true;
+            }
+            *reduce_len += 1;
+            false
+        });
 
         self.tx_map.iter().map(|kv| kv.value().clone())
     }
@@ -244,10 +272,12 @@ impl SystemScriptTxBucket {
         None
     }
 
-    pub fn flush(&self, hashes: &[Hash]) {
+    pub fn flush(&self, hashes: &[Hash], reduce_len: &mut usize) {
         for hash in hashes.iter() {
             if let Some(data) = self.hash_data_map.remove(hash) {
-                self.tx_buckets.remove(&data.1);
+                if self.tx_buckets.remove(&data.1).is_some() {
+                    *reduce_len += 1;
+                }
             }
         }
     }
