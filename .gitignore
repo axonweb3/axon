@@ -34,3 +34,5 @@ logs/
 free-space
 
 byzantine/tests/node_modules
+
+*.out

@@ -1,13 +1,13 @@
 #![allow(clippy::mutable_key_type)]
 
-use std::collections::HashMap;
-use std::convert::TryFrom;
-use std::panic;
-use std::sync::Arc;
-use std::thread;
-use std::time::Duration;
+use std::{collections::HashMap, convert::TryFrom, panic, sync::Arc, thread, time::Duration};
 
 use backtrace::Backtrace;
+#[cfg(feature = "jemalloc")]
+use {
+    jemalloc_ctl::{Access, AsName},
+    jemallocator::Jemalloc,
+};
 
 use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
 use common_apm::{server::run_prometheus_server, tracing::global_tracer_register};
@@ -56,6 +56,10 @@ use protocol::types::{
 };
 use protocol::{tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
+#[cfg(feature = "jemalloc")]
+#[global_allocator]
+pub static JEMALLOC: Jemalloc = Jemalloc;
+
 #[derive(Debug)]
 pub struct Axon {
     config:     Config,
@@ -73,6 +77,9 @@ impl Axon {
     }
 
     pub fn run(mut self) -> ProtocolResult<()> {
+        #[cfg(feature = "jemalloc")]
+        Self::set_profile(true);
+
         let rt = RuntimeBuilder::new_multi_thread()
             .enable_all()
             .build()
@@ -586,8 +593,14 @@ impl Axon {
 
         tokio::select! {
             _ = ctrl_c_handler => { log::info!("ctrl + c is pressed, quit.") },
-            _ = panic_receiver.recv() => { log::info!("child thraed panic, quit.") },
+            _ = panic_receiver.recv() => { log::info!("child thread panic, quit.") },
         };
+
+        #[cfg(feature = "jemalloc")]
+        {
+            Self::set_profile(false);
+            Self::dump_profile();
+        }
 
         Ok(())
     }
@@ -641,6 +654,23 @@ impl Axon {
             location.line(),
             backtrace,
         );
+    }
+
+    #[cfg(feature = "jemalloc")]
+    fn set_profile(is_active: bool) {
+        let _ = b"prof.active\0"
+            .name()
+            .write(is_active)
+            .map_err(|e| panic!("Set jemalloc profile error {:?}", e));
+    }
+
+    #[cfg(feature = "jemalloc")]
+    fn dump_profile() {
+        let name = b"profile.out\0".as_ref();
+        b"prof.dump\0"
+            .name()
+            .write(name)
+            .expect("Should succeed to dump profile")
     }
 }
 
