@@ -11,7 +11,6 @@ clap = "3.1"
 futures = "0.3"
 jemalloc-ctl = { version = "0.4", package = "tikv-jemalloc-ctl", optional = true }
 jemallocator = { version = "0.4", features = ["profiling", "stats", "unprefixed_malloc_on_supported_platforms"], package = "tikv-jemallocator", optional = true }
-jemallocator-global = { version = "0.4", package = "tikv-jemallocator-global", optional = true }
 log = "0.4"
 rlp = "0.5"
 serde = "1.0"
@@ -37,4 +36,4 @@ core-storage = { path = "../../core/storage" }
 protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [features]
-jemalloc = ["dep:jemallocator", "dep:jemallocator-global", "dep:jemalloc-ctl"]
+jemalloc = ["dep:jemallocator", "dep:jemalloc-ctl"]

@@ -1,16 +1,12 @@
 #![allow(clippy::mutable_key_type)]
-use std::collections::HashMap;
-use std::convert::TryFrom;
-use std::panic;
-use std::sync::Arc;
-use std::thread;
-use std::time::Duration;
+
+use std::{collections::HashMap, convert::TryFrom, panic, sync::Arc, thread, time::Duration};
 
 use backtrace::Backtrace;
 #[cfg(feature = "jemalloc")]
 use {
     jemalloc_ctl::{Access, AsName},
-    jemallocator_global::JEMALLOC,
+    jemallocator::Jemalloc,
 };
 
 use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
@@ -59,6 +55,10 @@ use protocol::types::{
     Account, Address, MerkleRoot, Proposal, RichBlock, Validator, NIL_DATA, RLP_NULL, U256,
 };
 use protocol::{tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
+
+#[cfg(feature = "jemalloc")]
+#[global_allocator]
+pub static JEMALLOC: Jemalloc = Jemalloc;
 
 #[derive(Debug)]
 pub struct Axon {
@@ -658,7 +658,6 @@ impl Axon {
 
     #[cfg(feature = "jemalloc")]
     fn set_profile(is_active: bool) {
-        let _ = JEMALLOC;
         let _ = b"prof.active\0"
             .name()
             .write(is_active)
