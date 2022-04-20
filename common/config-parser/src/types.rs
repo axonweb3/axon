@@ -11,7 +11,6 @@ pub const DEFAULT_BROADCAST_TXS_SIZE: usize = 200;
 pub const DEFAULT_BROADCAST_TXS_INTERVAL: u64 = 200; // milliseconds
 pub const DEFAULT_OVERLORD_GAP: usize = 5;
 pub const DEFAULT_SYNC_TXS_CHUNK_SIZE: usize = 5000;
-pub const ED25519: &str = "ed25519";
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct ConfigApi {
@@ -169,15 +168,32 @@ pub struct ConfigCrossClient {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct ConfigCkbCryptoPrimitive {
-    pub ed25519_type_hash: H256,
+pub struct BlockchainConfig {
+    pub name:    String,
+    pub id:      u8,
+    pub tx_hash: H256,
 }
 
-impl From<ConfigCkbCryptoPrimitive> for HashMap<String, H256> {
-    fn from(cp: ConfigCkbCryptoPrimitive) -> Self {
-        let mut map = HashMap::new();
-        map.insert(String::from(ED25519), cp.ed25519_type_hash);
-        map
+#[derive(Clone, Debug, Deserialize)]
+pub struct ConfigInteroperabilityExtension {
+    pub blockchain_extension_transaction_hashes: Vec<BlockchainConfig>,
+}
+
+impl From<ConfigInteroperabilityExtension> for HashMap<u8, H256> {
+    fn from(ie: ConfigInteroperabilityExtension) -> Self {
+        ie.blockchain_extension_transaction_hashes
+            .into_iter()
+            .map(|v| (v.id, v.tx_hash))
+            .collect()
+    }
+}
+
+impl ConfigInteroperabilityExtension {
+    pub fn get_hashes(&self) -> Vec<H256> {
+        self.blockchain_extension_transaction_hashes
+            .iter()
+            .map(|v| v.tx_hash)
+            .collect()
     }
 }
 
@@ -203,7 +219,7 @@ pub struct Config {
     pub epoch_len:                   u64,
     pub metadata_contract_address:   H256,
     pub crosschain_contract_address: H256,
-    pub ckb_crypto_primitive:        ConfigCkbCryptoPrimitive,
+    pub interoperability_extension:  ConfigInteroperabilityExtension,
 }
 
 impl Config {

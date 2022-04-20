@@ -14,10 +14,9 @@ use log::{debug, error};
 use parking_lot::Mutex;
 
 use common_apm_derive::trace_span;
-use common_config_parser::types::ED25519;
 use common_crypto::{Crypto, Secp256k1Recoverable};
 use core_executor::{is_call_system_script, AxonExecutor, AxonExecutorAdapter};
-use core_interoperation::{get_crypto_code_hash, SignatureType};
+use core_interoperation::{get_ckb_transaction_hash, BlockchainType};
 use protocol::traits::{
     Context, Executor, Gossip, Interoperation, MemPoolAdapter, MetadataControl, PeerTrust,
     Priority, Rpc, Storage, TrustFeedback,
@@ -352,8 +351,8 @@ where
 
         // Verify signature
         let signature = stx.transaction.signature.clone().unwrap();
-        match SignatureType::try_from(signature.standard_v)? {
-            SignatureType::Secp256k1 => {
+        match BlockchainType::from(signature.standard_v) {
+            BlockchainType::Ethereum => {
                 // use original Secp256k1 library to verify
                 Secp256k1Recoverable::verify_signature(
                     stx.transaction.signature_hash().as_bytes(),
@@ -362,15 +361,15 @@ where
                 )
                 .map_err(|err| AdapterError::VerifySignature(err.to_string()))?;
             }
-            SignatureType::Ed25519 => {
-                let code_hash = get_crypto_code_hash(ED25519)?;
+            BlockchainType::Other(blockchain_id) => {
+                let tx_hash = get_ckb_transaction_hash(blockchain_id)?;
                 let args = [
                     Bytes::from(Vec::from(stx.transaction.signature_hash().to_fixed_bytes())),
                     signature.r,
                     signature.s,
                 ];
                 self.interoperation
-                    .call_ckb_vm(Default::default(), code_hash, &args, u64::MAX)
+                    .call_ckb_vm(Default::default(), tx_hash, &args, u64::MAX)
                     .map_err(|err| AdapterError::VerifySignature(err.to_string()))?;
             }
         };
