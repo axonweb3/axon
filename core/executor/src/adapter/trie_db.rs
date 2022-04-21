@@ -12,7 +12,6 @@ use protocol::{Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 // 49999 is the largest prime number within 50000.
 const RAND_SEED: u64 = 49999;
-const DEFAULT_CACHE_SIZE: usize = 128 << 20;
 
 pub struct RocksTrieDB {
     db:         Arc<DB>,
@@ -32,9 +31,8 @@ impl RocksTrieDB {
 
         let mut opts = if let Some(ref file) = config.options_file {
             let cache_size = match config.cache_size {
-                Some(0) => None,
-                Some(size) => Some(size),
-                None => Some(DEFAULT_CACHE_SIZE),
+                0 => None,
+                size => Some(size),
             };
 
             let full_opts = FullOptions::load_from_file(file, cache_size, false)

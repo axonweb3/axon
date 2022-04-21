@@ -21,8 +21,6 @@ use protocol::{
     async_trait, types::Bytes, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
 };
 
-const DEFAULT_CACHE_SIZE: usize = 128 << 20;
-
 #[derive(Debug)]
 pub struct RocksAdapter {
     db: Arc<DB>,
@@ -45,9 +43,8 @@ impl RocksAdapter {
 
         let (mut opts, cf_descriptors) = if let Some(ref file) = config.options_file {
             let cache_size = match config.cache_size {
-                Some(0) => None,
-                Some(size) => Some(size),
-                None => Some(DEFAULT_CACHE_SIZE),
+                0 => None,
+                size => Some(size),
             };
 
             let mut full_opts = FullOptions::load_from_file(file, cache_size, false)

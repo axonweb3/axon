@@ -11,6 +11,7 @@ pub const DEFAULT_BROADCAST_TXS_SIZE: usize = 200;
 pub const DEFAULT_BROADCAST_TXS_INTERVAL: u64 = 200; // milliseconds
 pub const DEFAULT_OVERLORD_GAP: usize = 5;
 pub const DEFAULT_SYNC_TXS_CHUNK_SIZE: usize = 5000;
+pub const DEFAULT_CACHE_SIZE: usize = 128 << 20;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct ConfigApi {
@@ -100,10 +101,15 @@ pub struct ConfigExecutor {
     pub triedb_cache_size: usize,
 }
 
+fn default_cache_size() -> usize {
+    DEFAULT_CACHE_SIZE
+}
+
 #[derive(Clone, Debug, Deserialize)]
 pub struct ConfigRocksDB {
     pub max_open_files: i32,
-    pub cache_size:     Option<usize>,
+    #[serde(default = "default_cache_size")]
+    pub cache_size:     usize,
     pub options_file:   Option<PathBuf>,
 }
 
@@ -111,7 +117,7 @@ impl Default for ConfigRocksDB {
     fn default() -> Self {
         Self {
             max_open_files: 64,
-            cache_size:     None,
+            cache_size:     default_cache_size(),
             options_file:   None,
         }
     }
