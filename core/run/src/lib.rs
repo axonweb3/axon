@@ -52,7 +52,8 @@ use protocol::traits::{
     CommonStorage, Context, Executor, MemPool, MetadataControl, Network, NodeInfo, Storage,
 };
 use protocol::types::{
-    Account, Address, MerkleRoot, Proposal, RichBlock, Validator, NIL_DATA, RLP_NULL};
+    Account, Address, MerkleRoot, Proposal, RichBlock, Validator, NIL_DATA, RLP_NULL,
+};
 use protocol::{tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 #[cfg(feature = "jemalloc")]

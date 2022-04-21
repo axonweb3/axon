@@ -385,13 +385,12 @@ where
     }
 
     fn tag_consensus(&self, _ctx: Context, _pub_keys: Vec<Bytes>) -> ProtocolResult<()> {
-        // let _peer_ids_bytes = pub_keys
-        //     .iter()
-        //     .map(|pk| PeerId::from_pubkey_bytes(pk).map(PeerIdExt::into_bytes_ext))
-        //     .collect::<Result<_, _>>()?;
+        let _peer_ids_bytes = pub_keys
+            .iter()
+            .map(|pk| PeerId::from_pubkey_bytes(pk).map(PeerIdExt::into_bytes_ext))
+            .collect::<Result<_, _>>()?;
 
-        // self.network.tag_consensus(ctx, peer_ids_bytes)
-        Ok(())
+        self.network.tag_consensus(ctx, peer_ids_bytes)
     }
 
     /// this function verify all info in header except proof and roots
