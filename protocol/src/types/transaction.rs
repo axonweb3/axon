@@ -62,7 +62,7 @@ pub struct UnverifiedTransaction {
 
 impl UnverifiedTransaction {
     pub fn hash(mut self) -> Self {
-        let hash = Hasher::digest(&self.rlp_bytes());
+        let hash = self.signature_hash();
         self.hash = hash;
         self
     }
