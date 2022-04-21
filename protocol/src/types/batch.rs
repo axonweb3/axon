@@ -71,12 +71,10 @@ mod tests {
 
         let priv_key = Secp256k1RecoverablePrivateKey::generate(&mut OsRng);
         let pub_key = priv_key.pub_key();
-        let signature = Secp256k1Recoverable::sign_message(
-            utx.hash.as_bytes(),
-            &priv_key.to_bytes(),
-        )
-        .unwrap()
-        .to_bytes();
+        let signature =
+            Secp256k1Recoverable::sign_message(utx.hash.as_bytes(), &priv_key.to_bytes())
+                .unwrap()
+                .to_bytes();
         let pub_key = Public::from_slice(&pub_key.to_uncompressed_bytes()[1..65]);
         utx.signature = Some(signature.into());
 
