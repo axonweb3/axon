@@ -27,9 +27,7 @@ pub struct CurrentStatus {
     pub last_number:                BlockNumber,
     pub last_state_root:            H256,
     pub tx_num_limit:               u64,
-    pub gas_limit:                  U256,
     pub max_tx_size:                U256,
-    pub base_fee_per_gas:           U256,
     pub proof:                      Proof,
     pub last_checkpoint_block_hash: Hash,
 }

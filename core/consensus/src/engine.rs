@@ -20,7 +20,8 @@ use protocol::codec::ProtocolCodec;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
     Block, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, Hex, Log, MerkleRoot, Metadata, Proof,
-    Proposal, Receipt, SignedTransaction, TransactionAction, ValidatorExtend, H160, U256,
+    Proposal, Receipt, SignedTransaction, TransactionAction, ValidatorExtend, BASE_FEE_PER_GAS,
+    H160, MAX_BLOCK_GAS_LIMIT, U256,
 };
 use protocol::{
     async_trait, lazy::CURRENT_STATE_ROOT, tokio::sync::Mutex as AsyncMutex, ProtocolError,
@@ -69,7 +70,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             .get_txs_from_mempool(
                 ctx.clone(),
                 next_number,
-                status.gas_limit,
+                MAX_BLOCK_GAS_LIMIT.into(),
                 status.tx_num_limit,
             )
             .await?;
@@ -85,10 +86,10 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             signed_txs_hash:            digest_signed_transactions(&signed_txs),
             timestamp:                  time_now(),
             number:                     next_number,
-            gas_limit:                  100_000_000_000u64.into(),
+            gas_limit:                  MAX_BLOCK_GAS_LIMIT.into(),
             extra_data:                 Default::default(),
             mixed_hash:                 None,
-            base_fee_per_gas:           status.base_fee_per_gas,
+            base_fee_per_gas:           BASE_FEE_PER_GAS.into(),
             proof:                      status.proof,
             last_checkpoint_block_hash: status.last_checkpoint_block_hash,
             chain_id:                   self.node_info.chain_id,
@@ -646,10 +647,8 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             prev_hash:                  block_hash,
             last_number:                block_number,
             last_state_root:            resp.state_root,
-            gas_limit:                  last_status.gas_limit,
             max_tx_size:                last_status.max_tx_size,
             tx_num_limit:               last_status.tx_num_limit,
-            base_fee_per_gas:           block.header.base_fee_per_gas,
             proof:                      proof.clone(),
             last_checkpoint_block_hash: last_status.last_checkpoint_block_hash,
         };
@@ -661,7 +660,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         self.adapter.set_args(
             ctx,
             resp.state_root,
-            last_status.gas_limit.as_u64(),
+            MAX_BLOCK_GAS_LIMIT,
             last_status.max_tx_size.as_u64(),
         );
 

@@ -8,6 +8,9 @@ use crate::types::{
 
 pub type BlockNumber = u64;
 
+pub const MAX_BLOCK_GAS_LIMIT: u64 = 30_000_000;
+pub const BASE_FEE_PER_GAS: u64 = 0x539;
+
 #[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq)]
 pub struct Proposal {
     pub prev_hash:                  Hash,
