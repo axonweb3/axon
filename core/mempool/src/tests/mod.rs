@@ -147,7 +147,7 @@ async fn new_mempool(
 fn check_hash(tx: &SignedTransaction) -> ProtocolResult<()> {
     assert!(tx.transaction.signature.is_some());
 
-    if Hasher::digest(tx.transaction.signature_hash()) != tx.transaction.hash {
+    if tx.transaction.signature_hash() != tx.transaction.hash {
         return Err(MemPoolError::CheckHash {
             expect: tx.transaction.hash,
             actual: tx.transaction.hash,
