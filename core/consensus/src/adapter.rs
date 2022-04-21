@@ -11,7 +11,8 @@ use core_executor::{AxonExecutor, AxonExecutorAdapter};
 use core_network::{PeerId, PeerIdExt};
 use protocol::traits::{
     CommonConsensusAdapter, ConsensusAdapter, Context, CrossClient, Executor, Gossip, MemPool,
-    MessageTarget, MetadataControl, Network, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
+    MessageTarget, MetadataControl, Network, PeerTrust, Priority, Rpc, Storage,
+    SynchronizationAdapter,
 };
 use protocol::types::{
     BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Hasher, Header, Hex, Log,
