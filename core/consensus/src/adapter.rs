@@ -11,7 +11,7 @@ use core_executor::{AxonExecutor, AxonExecutorAdapter};
 use core_network::{PeerId, PeerIdExt};
 use protocol::traits::{
     CommonConsensusAdapter, ConsensusAdapter, Context, CrossClient, Executor, Gossip, MemPool,
-    MessageTarget, MetadataControl, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
+    MessageTarget, MetadataControl, Network, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
 };
 use protocol::types::{
     BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Hasher, Header, Hex, Log,
@@ -52,7 +52,7 @@ pub struct OverlordConsensusAdapter<
 impl<M, N, S, CS, MT, DB> ConsensusAdapter for OverlordConsensusAdapter<M, N, S, CS, MT, DB>
 where
     M: MemPool + 'static,
-    N: Rpc + PeerTrust + Gossip + 'static,
+    N: Network + Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
     CS: CrossClient + 'static,
     MT: MetadataControl + 'static,
@@ -139,7 +139,7 @@ where
 impl<M, N, S, CS, MT, DB> SynchronizationAdapter for OverlordConsensusAdapter<M, N, S, CS, MT, DB>
 where
     M: MemPool + 'static,
-    N: Rpc + PeerTrust + Gossip + 'static,
+    N: Network + Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
     CS: CrossClient + 'static,
     MT: MetadataControl + 'static,
@@ -238,7 +238,7 @@ where
 impl<M, N, S, CS, MT, DB> CommonConsensusAdapter for OverlordConsensusAdapter<M, N, S, CS, MT, DB>
 where
     M: MemPool + 'static,
-    N: Rpc + PeerTrust + Gossip + 'static,
+    N: Network + Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
     CS: CrossClient + 'static,
     MT: MetadataControl + 'static,
@@ -384,8 +384,8 @@ where
             .set_args(context, state_root, gas_limit, max_tx_size);
     }
 
-    fn tag_consensus(&self, _ctx: Context, _pub_keys: Vec<Bytes>) -> ProtocolResult<()> {
-        let _peer_ids_bytes = pub_keys
+    fn tag_consensus(&self, ctx: Context, pub_keys: Vec<Bytes>) -> ProtocolResult<()> {
+        let peer_ids_bytes = pub_keys
             .iter()
             .map(|pk| PeerId::from_pubkey_bytes(pk).map(PeerIdExt::into_bytes_ext))
             .collect::<Result<_, _>>()?;
