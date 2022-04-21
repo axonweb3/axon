@@ -24,6 +24,7 @@ rug = "1.15"
 sha2 = "0.10"
 
 common-apm = { path = "../../common/apm" }
+common-config-parser = { path = "../../common/config-parser" }
 common-crypto = { path = "../../common/crypto" }
 common-merkle = { path = "../../common/merkle" }
 core-interoperation = { path = "../interoperation" }

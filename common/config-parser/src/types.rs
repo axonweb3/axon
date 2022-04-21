@@ -103,11 +103,17 @@ pub struct ConfigExecutor {
 #[derive(Clone, Debug, Deserialize)]
 pub struct ConfigRocksDB {
     pub max_open_files: i32,
+    pub cache_size:     Option<usize>,
+    pub options_file:   Option<PathBuf>,
 }
 
 impl Default for ConfigRocksDB {
     fn default() -> Self {
-        Self { max_open_files: 64 }
+        Self {
+            max_open_files: 64,
+            cache_size:     None,
+            options_file:   None,
+        }
     }
 }
 

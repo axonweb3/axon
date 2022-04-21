@@ -5,10 +5,13 @@ use std::sync::Arc;
 use std::{fs, io};
 
 use rocksdb::ops::{DeleteCF, GetCF, GetColumnFamilys, IterateCF, OpenCF, PutCF, WriteOps};
-use rocksdb::{ColumnFamily, DBIterator, Options, WriteBatch, DB};
+use rocksdb::{
+    ColumnFamily, ColumnFamilyDescriptor, DBIterator, FullOptions, Options, WriteBatch, DB,
+};
 
 use common_apm::metrics::storage::on_storage_put_cf;
 use common_apm::Instant;
+use common_config_parser::types::ConfigRocksDB;
 use protocol::codec::{hex_encode, ProtocolCodec};
 use protocol::traits::{
     IntoIteratorByRef, StorageAdapter, StorageBatchModify, StorageCategory, StorageIterator,
@@ -18,22 +21,18 @@ use protocol::{
     async_trait, types::Bytes, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
 };
 
+const DEFAULT_CACHE_SIZE: usize = 128 << 20;
+
 #[derive(Debug)]
 pub struct RocksAdapter {
     db: Arc<DB>,
 }
 
 impl RocksAdapter {
-    pub fn new<P: AsRef<Path>>(path: P, max_open_files: i32) -> ProtocolResult<Self> {
+    pub fn new<P: AsRef<Path>>(path: P, config: ConfigRocksDB) -> ProtocolResult<Self> {
         if !path.as_ref().is_dir() {
             fs::create_dir_all(&path).map_err(RocksAdapterError::CreateDB)?;
         }
-
-        let mut opts = Options::default();
-        opts.create_if_missing(true);
-        opts.create_missing_column_families(true);
-        opts.set_max_open_files(max_open_files);
-
         let categories = [
             map_category(StorageCategory::Block),
             map_category(StorageCategory::BlockHeader),
@@ -44,7 +43,39 @@ impl RocksAdapter {
             map_category(StorageCategory::Code),
         ];
 
-        let db = DB::open_cf(&opts, path, categories.iter()).map_err(RocksAdapterError::from)?;
+        let (mut opts, cf_descriptors) = if let Some(ref file) = config.options_file {
+            let cache_size = match config.cache_size {
+                Some(0) => None,
+                Some(size) => Some(size),
+                None => Some(DEFAULT_CACHE_SIZE),
+            };
+
+            let mut full_opts = FullOptions::load_from_file(file, cache_size, false)
+                .map_err(RocksAdapterError::from)?;
+
+            full_opts
+                .complete_column_families(&categories, false)
+                .map_err(RocksAdapterError::from)?;
+            let FullOptions {
+                db_opts,
+                cf_descriptors,
+            } = full_opts;
+            (db_opts, cf_descriptors)
+        } else {
+            let opts = Options::default();
+            let cf_descriptors: Vec<_> = categories
+                .into_iter()
+                .map(|c| ColumnFamilyDescriptor::new(c, Options::default()))
+                .collect();
+            (opts, cf_descriptors)
+        };
+
+        opts.create_if_missing(true);
+        opts.create_missing_column_families(true);
+        opts.set_max_open_files(config.max_open_files);
+
+        let db = DB::open_cf_descriptors(&opts, path, cf_descriptors)
+            .map_err(RocksAdapterError::from)?;
 
         Ok(RocksAdapter { db: Arc::new(db) })
     }

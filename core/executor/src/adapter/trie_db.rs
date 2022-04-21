@@ -3,14 +3,16 @@ use std::{collections::HashSet, fs, io, path::Path, sync::Arc};
 use dashmap::DashMap;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use rocksdb::ops::{Get, Open, Put, WriteOps};
-use rocksdb::{Options, WriteBatch, DB};
+use rocksdb::{FullOptions, Options, WriteBatch, DB};
 
 use common_apm::metrics::storage::{on_storage_get_state, on_storage_put_state};
 use common_apm::Instant;
+use common_config_parser::types::ConfigRocksDB;
 use protocol::{Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 // 49999 is the largest prime number within 50000.
 const RAND_SEED: u64 = 49999;
+const DEFAULT_CACHE_SIZE: usize = 128 << 20;
 
 pub struct RocksTrieDB {
     db:         Arc<DB>,
@@ -21,17 +23,31 @@ pub struct RocksTrieDB {
 impl RocksTrieDB {
     pub fn new<P: AsRef<Path>>(
         path: P,
-        max_open_files: i32,
+        config: ConfigRocksDB,
         cache_size: usize,
     ) -> ProtocolResult<Self> {
         if !path.as_ref().is_dir() {
             fs::create_dir_all(&path).map_err(RocksTrieDBError::CreateDB)?;
         }
 
-        let mut opts = Options::default();
+        let mut opts = if let Some(ref file) = config.options_file {
+            let cache_size = match config.cache_size {
+                Some(0) => None,
+                Some(size) => Some(size),
+                None => Some(DEFAULT_CACHE_SIZE),
+            };
+
+            let full_opts = FullOptions::load_from_file(file, cache_size, false)
+                .map_err(RocksTrieDBError::from)?;
+
+            let FullOptions { db_opts, .. } = full_opts;
+            db_opts
+        } else {
+            Options::default()
+        };
         opts.create_if_missing(true);
         opts.create_missing_column_families(true);
-        opts.set_max_open_files(max_open_files);
+        opts.set_max_open_files(config.max_open_files);
 
         let db = DB::open(&opts, path).map_err(RocksTrieDBError::from)?;
 
@@ -247,7 +263,7 @@ mod tests {
         let val_2 = rand_bytes(256);
 
         let dir = tempfile::tempdir().unwrap();
-        let trie = RocksTrieDB::new(dir.path(), 1024, 100).unwrap();
+        let trie = RocksTrieDB::new(dir.path(), Default::default(), 100).unwrap();
 
         trie.insert(key_1.clone(), val_1.clone()).unwrap();
         trie.insert(key_2.clone(), val_2.clone()).unwrap();
@@ -274,7 +290,7 @@ mod tests {
         let val_2 = rand_bytes(256);
 
         let dir = tempfile::tempdir().unwrap();
-        let trie = RocksTrieDB::new(dir.path(), 1024, 100).unwrap();
+        let trie = RocksTrieDB::new(dir.path(), Default::default(), 100).unwrap();
 
         trie.insert(key_1.clone(), val_1.clone()).unwrap();
         trie.insert(key_2.clone(), val_2.clone()).unwrap();

@@ -15,6 +15,7 @@ rocksdb = { version = "0.16", package = "ckb-rocksdb" }
 
 common-apm = { path = "../../common/apm" }
 common-apm-derive = { path = "../../common/apm-derive" }
+common-config-parser = { path = "../../common/config-parser" }
 protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [dev-dependencies]

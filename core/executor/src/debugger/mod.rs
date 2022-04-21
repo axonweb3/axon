@@ -28,10 +28,10 @@ impl EvmDebugger {
     pub fn new(distribute_address: H160, distribute_amount: U256, db_path: &str) -> Self {
         let mut db_data_path = db_path.to_string();
         db_data_path.push_str("/data");
-        let rocks_adapter = Arc::new(RocksAdapter::new(db_data_path, 1024).unwrap());
+        let rocks_adapter = Arc::new(RocksAdapter::new(db_data_path, Default::default()).unwrap());
         let mut db_state_path = db_path.to_string();
         db_state_path.push_str("/state");
-        let trie = Arc::new(RocksTrieDB::new(db_state_path, 1024, 1000).unwrap());
+        let trie = Arc::new(RocksTrieDB::new(db_state_path, Default::default(), 1000).unwrap());
 
         let mut mpt = MPTTrie::new(Arc::clone(&trie));
 

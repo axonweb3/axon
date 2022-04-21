@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use clap::{crate_version, Arg, ArgMatches, Command};
 
 use common_config_parser::{parse_file, types::Config};
@@ -35,8 +37,14 @@ impl AxonCli {
     }
 
     pub fn start(&self) {
-        let config: Config =
-            parse_file(self.matches.value_of("config_path").unwrap(), false).unwrap();
+        let config_path = self.matches.value_of("config_path").unwrap();
+        let path = Path::new(config_path).parent().unwrap();
+
+        let mut config: Config = parse_file(config_path, false).unwrap();
+
+        if let Some(ref mut f) = config.rocksdb.options_file {
+            *f = path.join(&f)
+        }
         let genesis: RichBlock =
             parse_file(self.matches.value_of("genesis_path").unwrap(), true).unwrap();
 
