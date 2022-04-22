@@ -1120,7 +1120,6 @@ dependencies = [
  "core-storage",
  "criterion",
  "crossbeam-channel",
- "dashmap",
  "ethabi 17.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ethabi-contract",
  "ethabi-derive",
