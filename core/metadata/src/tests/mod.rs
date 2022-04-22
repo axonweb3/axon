@@ -199,7 +199,7 @@ fn mock_signed_tx(nonce: u64, data: Vec<u8>) -> SignedTransaction {
     };
 
     SignedTransaction {
-        transaction: tx.hash(),
+        transaction: tx.calc_hash(),
         sender:      Address::from_hex("0x8ab0cf264df99d83525e9e11c7e4db01558ae1b1")
             .unwrap()
             .0,

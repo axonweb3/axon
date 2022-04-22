@@ -332,12 +332,12 @@ impl ConsensusWal {
 mod tests {
     extern crate test;
 
-    use common_crypto::{Secp256k1Recoverable, Crypto, Secp256k1RecoverablePrivateKey, PrivateKey, ToPublicKey, UncompressedPublicKey, Signature};
+    use common_crypto::{Secp256k1Recoverable, Crypto, Secp256k1RecoverablePrivateKey, PrivateKey, Signature};
     use rand::random;
     use rand::rngs::OsRng;
     use test::Bencher;
 
-    use protocol::types::{TransactionAction, SignatureComponents, UnverifiedTransaction, Bytes, Hash, Transaction, SignedTransaction, Public, public_to_address};
+    use protocol::types::{TransactionAction, SignatureComponents, UnverifiedTransaction, Bytes, Hash, Transaction, SignedTransaction};
 
     use super::*;
 
@@ -368,22 +368,16 @@ mod tests {
             }),
             chain_id:  random::<u64>(),
             hash:      mock_hash(),
-        }.hash();
+        }.calc_hash();
 
         let priv_key = Secp256k1RecoverablePrivateKey::generate(&mut OsRng);
-        let pub_key = priv_key.pub_key();
         let signature =
             Secp256k1Recoverable::sign_message(utx.hash.as_bytes(), &priv_key.to_bytes())
             .unwrap()
             .to_bytes();
-        let pub_key = Public::from_slice(&pub_key.to_uncompressed_bytes()[1..65]);
         utx.signature = Some(signature.into());
 
-        SignedTransaction {
-            transaction: utx,
-            sender:      public_to_address(&pub_key),
-            public:      Some(pub_key),
-        }
+        utx.try_into().unwrap()
     }
 
     pub fn mock_wal_txs(size: usize) -> Vec<SignedTransaction> {
@@ -491,7 +485,7 @@ mod tests {
 
     #[test]
     fn test_wal_txs_codec() {
-        for _ in 0..10 {
+        for _ in 0..1 {
             let mut txs = BatchSignedTxs(mock_wal_txs(100));
             assert_eq!(
                 BatchSignedTxs::decode_msg(txs.encode_msg().unwrap()).unwrap(),

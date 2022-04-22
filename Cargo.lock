@@ -1292,6 +1292,7 @@ dependencies = [
  "common-apm",
  "common-apm-derive",
  "common-config-parser",
+ "common-crypto",
  "futures",
  "lazy_static",
  "log",

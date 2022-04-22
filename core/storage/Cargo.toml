@@ -21,3 +21,4 @@ protocol = { path = "../../protocol", package = "axon-protocol" }
 [dev-dependencies]
 num-traits = "0.2"
 rand = "0.7"
+common-crypto = { path = "../../common/crypto"}

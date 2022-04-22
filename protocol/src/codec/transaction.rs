@@ -143,7 +143,7 @@ impl Decodable for UnverifiedTransaction {
             chain_id,
         };
 
-        Ok(utx.hash())
+        Ok(utx.calc_hash())
     }
 }
 
@@ -160,7 +160,7 @@ impl Decodable for SignedTransaction {
                 let utx: UnverifiedTransaction = r.val_at(0)?;
                 let public = Public::from_slice(
                     &secp256k1_recover(
-                        utx.hash.as_bytes(),
+                        utx.signature_hash().as_bytes(),
                         utx.signature
                             .as_ref()
                             .ok_or(DecoderError::Custom("missing signature"))?
@@ -225,7 +225,7 @@ mod tests {
             hash:      H256::default(),
             signature: Some(mock_sig_component()),
         }
-        .hash()
+        .calc_hash()
     }
 
     fn mock_signed_tx() -> SignedTransaction {
@@ -240,19 +240,7 @@ mod tests {
     fn test_signed_tx_codec() {
         let raw = hex_decode("02f8670582010582012c82012c825208945cf83df52a32165a7f392168ac009b168c9e89150180c001a0a68aeb0db4d84cf16da5a6918becefd254654854cfc23f0112ef78154ce84db89f4b0af1cbf12f5bfaec81c3d4d495717d720b574a05092f6b436c2ab255cd35").unwrap();
         let utx = UnverifiedTransaction::decode(&Rlp::new(&raw[1..])).unwrap();
-        let public = Public::from_slice(
-            &secp256k1_recover(
-                utx.hash.as_bytes(),
-                utx.signature.as_ref().unwrap().as_bytes().as_ref(),
-            )
-            .unwrap()
-            .serialize_uncompressed()[1..65],
-        );
-        let origin = SignedTransaction {
-            transaction: utx,
-            sender:      public_to_address(&public),
-            public:      Some(public),
-        };
+        let origin: SignedTransaction = utx.try_into().unwrap();
         let encode = origin.rlp_bytes().freeze().to_vec();
         let decode: SignedTransaction = rlp::decode(&encode).unwrap();
         assert_eq!(origin, decode);

@@ -38,13 +38,11 @@ mod tests {
 
     use common_crypto::{
         Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey, Signature,
-        ToPublicKey, UncompressedPublicKey,
     };
 
     use crate::codec::ProtocolCodec;
     use crate::types::{
-        public_to_address, Public, SignatureComponents, Transaction, TransactionAction,
-        UnverifiedTransaction,
+        SignatureComponents, Transaction, TransactionAction, UnverifiedTransaction,
     };
 
     fn mock_sign_tx() -> SignedTransaction {
@@ -67,22 +65,18 @@ mod tests {
             chain_id:  random::<u64>(),
             hash:      Default::default(),
         }
-        .hash();
+        .calc_hash();
 
         let priv_key = Secp256k1RecoverablePrivateKey::generate(&mut OsRng);
-        let pub_key = priv_key.pub_key();
-        let signature =
-            Secp256k1Recoverable::sign_message(utx.hash.as_bytes(), &priv_key.to_bytes())
-                .unwrap()
-                .to_bytes();
-        let pub_key = Public::from_slice(&pub_key.to_uncompressed_bytes()[1..65]);
+        let signature = Secp256k1Recoverable::sign_message(
+            utx.signature_hash().as_bytes(),
+            &priv_key.to_bytes(),
+        )
+        .unwrap()
+        .to_bytes();
         utx.signature = Some(signature.into());
 
-        SignedTransaction {
-            transaction: utx,
-            sender:      public_to_address(&pub_key),
-            public:      Some(pub_key),
-        }
+        utx.try_into().unwrap()
     }
 
     #[test]
