@@ -82,7 +82,7 @@ impl RocksTrieDB {
 
     #[cfg(test)]
     fn cache_get(&self, key: &[u8]) -> Option<Vec<u8>> {
-        self.cache.read().get(key).map(|v| v.clone())
+        self.cache.read().get(key).cloned()
     }
 
     #[cfg(test)]
