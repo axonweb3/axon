@@ -1,4 +1,5 @@
 use std::{
+    io,
     sync::{
         atomic::{AtomicU64, Ordering},
         Arc,
@@ -7,6 +8,7 @@ use std::{
 };
 
 use jsonrpsee::{
+    core::Error,
     types::{error::CallError, params::Params, SubscriptionId},
     ws_server::{IdProvider, RpcModule, SubscriptionSink},
 };
@@ -43,14 +45,20 @@ where
         "eth_subscription",
         "eth_subscription",
         "eth_unsubscribe",
-        |params, sink, ctx| {
-            let typ = Type::try_from(params)?;
-            let raw_hub = RawHub { typ, sink };
+        |params, pending, ctx| match Type::try_from(params) {
+            Ok(typ) => {
+                if let Some(sink) = pending.accept() {
+                    let raw_hub = RawHub { typ, sink };
 
-            tokio::spawn(async move {
-                let _ignore = ctx.send(raw_hub).await;
-            });
-            Ok(())
+                    tokio::spawn(async move {
+                        let _ignore = ctx.send(raw_hub).await;
+                    });
+                }
+            }
+            Err(e) => {
+                let e: Error = e.into();
+                pending.reject(e);
+            }
         },
     )
     .unwrap();
@@ -248,11 +256,10 @@ impl<'a> TryFrom<Params<'a>> for Type {
                 let filter: RawLoggerFilter = iter.next()?;
                 Ok(Type::Logs(filter.into()))
             }
-            _ => Err(CallError::Custom {
-                code:    -1,
-                message: format!("invalid method: {}", method),
-                data:    None,
-            }),
+            _ => Err(CallError::from_std_error(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("invalid method: {}", method),
+            ))),
         }
     }
 }
