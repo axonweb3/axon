@@ -34,9 +34,9 @@ struct BenchAdapter {
 impl BenchAdapter {
     fn new() -> Self {
         BenchAdapter {
-            trie_db: Arc::new(RocksTrieDB::new(STATE_PATH, 1000, 1000).unwrap()),
+            trie_db: Arc::new(RocksTrieDB::new(STATE_PATH, Default::default(), 1000).unwrap()),
             storage: Arc::new(ImplStorage::new(Arc::new(
-                RocksAdapter::new(DATA_PATH, 1000).unwrap(),
+                RocksAdapter::new(DATA_PATH, Default::default()).unwrap(),
             ))),
         }
     }

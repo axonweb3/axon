@@ -94,10 +94,7 @@ impl Axon {
     pub async fn create_genesis(&mut self) -> ProtocolResult<()> {
         // Init Block db
         let path_block = self.config.data_path_for_block();
-        let rocks_adapter = Arc::new(RocksAdapter::new(
-            path_block,
-            self.config.rocksdb.max_open_files,
-        )?);
+        let rocks_adapter = Arc::new(RocksAdapter::new(path_block, self.config.rocksdb.clone())?);
         let storage = Arc::new(ImplStorage::new(rocks_adapter));
 
         match storage.get_latest_block(Context::new()).await {
@@ -116,7 +113,7 @@ impl Axon {
         let path_state = self.config.data_path_for_state();
         let trie_db = Arc::new(RocksTrieDB::new(
             path_state,
-            self.config.rocksdb.max_open_files,
+            self.config.rocksdb.clone(),
             self.config.executor.triedb_cache_size,
         )?);
         let mut mpt = MPTTrie::new(Arc::clone(&trie_db));
@@ -186,7 +183,7 @@ impl Axon {
 
         let rocks_adapter = Arc::new(RocksAdapter::new(
             path_block.clone(),
-            config.rocksdb.max_open_files,
+            config.rocksdb.clone(),
         )?);
         let storage = Arc::new(ImplStorage::new(rocks_adapter));
 
@@ -228,7 +225,7 @@ impl Axon {
         let path_state = config.data_path_for_state();
         let trie_db = Arc::new(RocksTrieDB::new(
             path_state,
-            config.rocksdb.max_open_files,
+            config.rocksdb.clone(),
             config.executor.triedb_cache_size,
         )?);
 

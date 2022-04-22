@@ -35,9 +35,13 @@ struct TestHandle {
 impl TestHandle {
     pub async fn new(salt: u64) -> Self {
         let path = "./free-space/".to_string();
-        let storage_adapter =
-            RocksAdapter::new(path.clone() + &salt.to_string() + "/rocks", 1024).unwrap();
-        let trie_db = RocksTrieDB::new(path + &salt.to_string() + "/trie", 1024, 50).unwrap();
+        let storage_adapter = RocksAdapter::new(
+            path.clone() + &salt.to_string() + "/rocks",
+            Default::default(),
+        )
+        .unwrap();
+        let trie_db =
+            RocksTrieDB::new(path + &salt.to_string() + "/trie", Default::default(), 50).unwrap();
 
         let mut handle = TestHandle {
             storage:    Arc::new(ImplStorage::new(Arc::new(storage_adapter))),
