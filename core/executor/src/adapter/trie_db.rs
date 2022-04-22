@@ -1,6 +1,6 @@
-use std::{collections::HashSet, fs, io, path::Path, sync::Arc};
+use std::{collections::HashMap, fs, io, path::Path};
 
-use dashmap::DashMap;
+use parking_lot::RwLock;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
 use rocksdb::ops::{Get, Open, Put, WriteOps};
 use rocksdb::{FullOptions, Options, WriteBatch, DB};
@@ -14,8 +14,8 @@ use protocol::{Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 const RAND_SEED: u64 = 49999;
 
 pub struct RocksTrieDB {
-    db:         Arc<DB>,
-    cache:      DashMap<Vec<u8>, Vec<u8>>,
+    db:         DB,
+    cache:      RwLock<HashMap<Vec<u8>, Vec<u8>>>,
     cache_size: usize,
 }
 
@@ -51,8 +51,8 @@ impl RocksTrieDB {
 
         // Init HashMap with capacity 2 * cache_size to avoid reallocate memory.
         Ok(RocksTrieDB {
-            db: Arc::new(db),
-            cache: DashMap::with_capacity(cache_size + cache_size),
+            db,
+            cache: RwLock::new(HashMap::with_capacity(cache_size + cache_size)),
             cache_size,
         })
     }
@@ -60,7 +60,7 @@ impl RocksTrieDB {
     fn inner_get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, RocksTrieDBError> {
         use cita_trie::DB;
 
-        let res = self.cache.get(key);
+        let res = { self.cache.read().get(key).cloned() };
 
         if res.is_none() {
             let inst = Instant::now();
@@ -68,24 +68,26 @@ impl RocksTrieDB {
             on_storage_get_state(inst.elapsed(), 1.0);
 
             if let Some(val) = &ret {
-                self.cache.insert(key.to_owned(), val.clone());
+                {
+                    self.cache.write().insert(key.to_owned(), val.clone());
+                }
                 self.flush()?;
             }
 
             return Ok(ret);
         }
 
-        Ok(Some(res.unwrap().clone()))
+        Ok(res)
     }
 
     #[cfg(test)]
     fn cache_get(&self, key: &[u8]) -> Option<Vec<u8>> {
-        self.cache.get(key).map(|v| v.value().to_vec())
+        self.cache.read().get(key).map(|v| v.clone())
     }
 
     #[cfg(test)]
     fn cache_len(&self) -> usize {
-        self.cache.len()
+        self.cache.read().len()
     }
 }
 
@@ -97,13 +99,13 @@ impl cita_trie::DB for RocksTrieDB {
     }
 
     fn contains(&self, key: &[u8]) -> Result<bool, Self::Error> {
-        let res = self.cache.contains_key(key);
+        let res = { self.cache.read().contains_key(key) };
 
         if res {
             Ok(true)
         } else {
             if let Some(val) = self.db.get(key).map_err(to_store_err)?.map(|r| r.to_vec()) {
-                self.cache.insert(key.to_owned(), val);
+                self.cache.write().insert(key.to_owned(), val);
                 return Ok(true);
             }
             Ok(false)
@@ -117,7 +119,7 @@ impl cita_trie::DB for RocksTrieDB {
         self.db.put(&key, &value).map_err(to_store_err)?;
 
         {
-            self.cache.insert(key, value);
+            self.cache.write().insert(key, value);
         }
 
         on_storage_put_state(inst.elapsed(), size as f64);
@@ -134,11 +136,12 @@ impl cita_trie::DB for RocksTrieDB {
         let mut batch = WriteBatch::default();
 
         {
+            let mut cache = self.cache.write();
             for (key, val) in keys.into_iter().zip(values.into_iter()) {
                 total_size += key.len();
                 total_size += val.len();
                 batch.put(&key, &val)?;
-                self.cache.insert(key, val);
+                cache.insert(key, val);
             }
         }
 
@@ -158,47 +161,40 @@ impl cita_trie::DB for RocksTrieDB {
     }
 
     fn flush(&self) -> Result<(), Self::Error> {
-        let len = self.cache.len();
+        let len = { self.cache.read().len() };
 
         if len <= self.cache_size * 2 {
             return Ok(());
         }
 
-        let keys = self
-            .cache
-            .iter()
-            .map(|kv| kv.key().clone())
-            .collect::<Vec<_>>();
+        let mut cache = self.cache.write();
 
-        if keys.len() < len - self.cache_size {
-            return Ok(());
-        }
-
-        let remove_list = rand_remove_list(keys, len - self.cache_size);
+        let remove_list = {
+            let keys = cache.iter().map(|(k, _)| k).collect::<Vec<_>>();
+            rand_remove_list(keys, len - self.cache_size)
+        };
 
         for item in remove_list {
-            self.cache.remove(&item);
+            cache.remove(&item);
         }
         Ok(())
     }
 }
 
-fn rand_remove_list<T: Clone>(keys: Vec<T>, num: usize) -> impl Iterator<Item = T> {
+fn rand_remove_list<T: Clone>(keys: Vec<&T>, num: usize) -> impl Iterator<Item = T> {
     let mut len = keys.len() - 1;
     let mut idx_list = (0..len).collect::<Vec<_>>();
     let mut rng = SmallRng::seed_from_u64(RAND_SEED);
-    let mut ret = HashSet::with_capacity(num);
+    let mut ret = Vec::with_capacity(num);
 
     for _ in 0..num {
         let tmp = rng.gen_range(0..len);
         let idx = idx_list.remove(tmp);
-        ret.insert(idx);
+        ret.push(keys[idx].clone());
         len -= 1;
     }
 
-    keys.into_iter()
-        .enumerate()
-        .filter_map(move |(i, v)| if ret.contains(&i) { Some(v) } else { None })
+    ret.into_iter()
 }
 
 #[derive(Debug, Display, From)]

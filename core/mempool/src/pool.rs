@@ -22,7 +22,7 @@ pub struct PriorityPool {
     co_queue:       Arc<ArrayQueue<TxPtr>>,
     real_queue:     Arc<Mutex<BinaryHeap<TxPtr>>>,
     tx_map:         DashMap<Hash, SignedTransaction>,
-    stock_len:      Arc<AtomicUsize>,
+    stock_len:      AtomicUsize,
 
     flush_lock: Arc<RwLock<()>>,
 }
@@ -35,7 +35,7 @@ impl PriorityPool {
             co_queue:       Arc::new(ArrayQueue::new(size)),
             real_queue:     Arc::new(Mutex::new(BinaryHeap::with_capacity(size * 2))),
             tx_map:         DashMap::new(),
-            stock_len:      Arc::new(AtomicUsize::new(0)),
+            stock_len:      AtomicUsize::new(0),
             flush_lock:     Arc::new(RwLock::new(())),
         };
 
