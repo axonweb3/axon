@@ -169,6 +169,11 @@ impl cita_trie::DB for RocksTrieDB {
             .iter()
             .map(|kv| kv.key().clone())
             .collect::<Vec<_>>();
+
+        if keys.len() < len - self.cache_size {
+            return Ok(());
+        }
+
         let remove_list = rand_remove_list(keys, len - self.cache_size);
 
         for item in remove_list {
