@@ -85,12 +85,6 @@ checksum = "c38b6b6b79f671c25e1a3e785b7b82d7562ffc9cd3efdc98627e5668a2472490"
 
 [[package]]
 name = "arc-swap"
-version = "0.4.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dabe5a181f83789739c194cbe5a897dde195078fac08568d09221fd6137a7ba8"
-
-[[package]]
-name = "arc-swap"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c5d78ce20460b82d3fa150275ed9d55e21064fc7951177baacf86a145c4a4b1f"
@@ -180,7 +174,7 @@ dependencies = [
 name = "axon-protocol"
 version = "0.1.0"
 dependencies = [
- "arc-swap 1.5.0",
+ "arc-swap",
  "async-trait",
  "bincode",
  "bytes",
@@ -911,7 +905,7 @@ dependencies = [
 name = "common-apm"
 version = "0.2.1"
 dependencies = [
- "arc-swap 1.5.0",
+ "arc-swap",
  "axon-protocol",
  "axum",
  "beef",
@@ -1051,7 +1045,7 @@ dependencies = [
 name = "core-consensus"
 version = "0.1.0"
 dependencies = [
- "arc-swap 1.5.0",
+ "arc-swap",
  "axon-protocol",
  "bit-vec",
  "cita_trie",
@@ -1159,7 +1153,7 @@ checksum = "5827cebf4670468b8772dd191856768aedcb1b0278a04f989f7766351917b9dc"
 name = "core-interoperation"
 version = "0.1.0"
 dependencies = [
- "arc-swap 1.5.0",
+ "arc-swap",
  "axon-protocol",
  "cardano-message-signing",
  "cardano-serialization-lib",
@@ -1198,7 +1192,7 @@ dependencies = [
 name = "core-metadata"
 version = "0.1.0"
 dependencies = [
- "arc-swap 1.5.0",
+ "arc-swap",
  "axon-protocol",
  "cita_trie",
  "common-apm",
@@ -1292,7 +1286,7 @@ dependencies = [
 name = "core-storage"
 version = "0.1.0"
 dependencies = [
- "arc-swap 1.5.0",
+ "arc-swap",
  "axon-protocol",
  "ckb-rocksdb",
  "common-apm",
@@ -2902,12 +2896,12 @@ checksum = "a94d21414c1f4a51209ad204c1776a3d0765002c76c6abcb602a6f09f1e881c7"
 
 [[package]]
 name = "log4rs"
-version = "1.0.0"
+version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1572a880d1115ff867396eee7ae2bc924554225e67a0d3c85c745b3e60ca211"
+checksum = "893eaf59f4bef8e2e94302adf56385db445a0306b9823582b0b8d5a06d8822f3"
 dependencies = [
  "anyhow",
- "arc-swap 0.4.8",
+ "arc-swap",
  "chrono",
  "derivative",
  "fnv",
@@ -2915,8 +2909,7 @@ dependencies = [
  "libc",
  "log",
  "log-mdc",
- "parking_lot 0.11.2",
- "regex",
+ "parking_lot 0.12.0",
  "serde",
  "serde-value",
  "serde_json",
@@ -3450,7 +3443,7 @@ dependencies = [
  "cfg-if",
  "instant",
  "libc",
- "redox_syscall 0.2.13",
+ "redox_syscall",
  "smallvec",
  "winapi",
 ]
@@ -3463,7 +3456,7 @@ checksum = "995f667a6c822200b0433ac218e05582f0e2efa1b922a3fd2fbaadc5f87bab37"
 dependencies = [
  "cfg-if",
  "libc",
- "redox_syscall 0.2.13",
+ "redox_syscall",
  "smallvec",
  "windows-sys",
 ]
@@ -3995,12 +3988,6 @@ checksum = "678054eb77286b51581ba43620cc911abf02758c91f93f479767aed0f90458b2"
 dependencies = [
  "rand_core 0.3.1",
 ]
-
-[[package]]
-name = "redox_syscall"
-version = "0.1.57"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41cc0f7e4d5d4544e8861606a285bb08d3e70712ccc7d2b84d7c0ccfaf4b05ce"
 
 [[package]]
 name = "redox_syscall"
@@ -4781,7 +4768,7 @@ dependencies = [
  "cfg-if",
  "fastrand",
  "libc",
- "redox_syscall 0.2.13",
+ "redox_syscall",
  "remove_dir_all",
  "winapi",
 ]
@@ -4901,12 +4888,12 @@ dependencies = [
 
 [[package]]
 name = "thread-id"
-version = "3.3.0"
+version = "4.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7fbf4c9d56b320106cd64fd024dadfa0be7cb4706725fc44a7d7ce952d820c1"
+checksum = "5fdfe0627923f7411a43ec9ec9c39c3a9b4151be313e0922042581fb6c9b717f"
 dependencies = [
  "libc",
- "redox_syscall 0.1.57",
+ "redox_syscall",
  "winapi",
 ]
 
