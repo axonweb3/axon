@@ -72,7 +72,7 @@ impl PriorityPool {
 
     pub fn insert_system_script_tx(&self, stx: SignedTransaction) -> ProtocolResult<()> {
         let _flushing = self.flush_lock.read();
-        self.stock_len.fetch_add(1, Ordering::Release);
+        self.stock_len.fetch_add(1, Ordering::AcqRel);
         self.sys_tx_bucket.insert(stx);
         Ok(())
     }
@@ -80,7 +80,7 @@ impl PriorityPool {
     pub fn insert(&self, stx: SignedTransaction) -> ProtocolResult<()> {
         if let Err(n) = self
             .stock_len
-            .fetch_update(Ordering::Acquire, Ordering::Relaxed, |x| {
+            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |x| {
                 if x > self.co_queue.capacity() {
                     None
                 } else {
@@ -164,7 +164,7 @@ impl PriorityPool {
         self.occupied_nonce.clear();
         self.sys_tx_bucket.flush(hashes, &mut reduce_len);
 
-        self.stock_len.fetch_sub(reduce_len, Ordering::Release);
+        self.stock_len.fetch_sub(reduce_len, Ordering::AcqRel);
 
         let mut q = self.real_queue.lock();
         for tx in residual {
