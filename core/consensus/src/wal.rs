@@ -548,6 +548,7 @@ mod tests {
     }
 
     #[bench]
+    #[ignore]
     fn bench_save_wal_16000_txs(b: &mut Bencher) {
         let wal = SignedTxsWAL::new(FULL_TXS_PATH);
         let txs = mock_wal_txs(16000);
