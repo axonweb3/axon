@@ -9,19 +9,19 @@ macro_rules! exec {
 mod adapter;
 mod storage;
 
-use rand::random;
+use rand::{random, rngs::OsRng};
 
+use common_crypto::{
+    Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey, Signature,
+};
 use protocol::types::Bytes;
 use protocol::types::{
     Block, ExitReason, ExitSucceed, Hash, Hasher, Header, Proof, Receipt, SignatureComponents,
     SignedTransaction, Transaction, TransactionAction, UnverifiedTransaction,
 };
 
-const _ADDRESS_STR: &str = "0xCAB8EEA4799C21379C20EF5BAA2CC8AF1BEC475B";
-
 fn mock_signed_tx() -> SignedTransaction {
-    // let nonce = Hasher::digest(Bytes::from("XXXX"));
-    let utx = UnverifiedTransaction {
+    let mut utx = UnverifiedTransaction {
         unsigned:  Transaction {
             nonce:                    Default::default(),
             max_priority_fee_per_gas: Default::default(),
@@ -29,23 +29,27 @@ fn mock_signed_tx() -> SignedTransaction {
             gas_limit:                Default::default(),
             action:                   TransactionAction::Create,
             value:                    Default::default(),
-            data:                     vec![].into(),
+            data:                     Bytes::new(),
             access_list:              vec![],
         },
         signature: Some(SignatureComponents {
-            standard_v: 2,
+            standard_v: 4,
             r:          Default::default(),
             s:          Default::default(),
         }),
         chain_id:  random::<u64>(),
         hash:      Default::default(),
-    };
-
-    SignedTransaction {
-        transaction: utx.hash(),
-        sender:      Default::default(),
-        public:      Default::default(),
     }
+    .calc_hash();
+
+    let priv_key = Secp256k1RecoverablePrivateKey::generate(&mut OsRng);
+    let signature =
+        Secp256k1Recoverable::sign_message(utx.signature_hash().as_bytes(), &priv_key.to_bytes())
+            .unwrap()
+            .to_bytes();
+    utx.signature = Some(signature.into());
+
+    utx.try_into().unwrap()
 }
 
 fn mock_receipt(hash: Hash) -> Receipt {

@@ -33,19 +33,25 @@ batch_msg_type!(BatchBlocks, Block);
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use rand::{random, rngs::OsRng};
+
+    use common_crypto::{
+        Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey, Signature,
+    };
+
     use crate::codec::ProtocolCodec;
     use crate::types::{
-        SignatureComponents, Transaction, TransactionAction, UnverifiedTransaction, U256,
+        SignatureComponents, Transaction, TransactionAction, UnverifiedTransaction,
     };
-    use rand::random;
 
     fn mock_sign_tx() -> SignedTransaction {
-        let utx = UnverifiedTransaction {
+        let mut utx = UnverifiedTransaction {
             unsigned:  Transaction {
-                nonce:                    U256::one(),
-                max_priority_fee_per_gas: U256::one(),
-                gas_price:                U256::one(),
-                gas_limit:                U256::one(),
+                nonce:                    Default::default(),
+                max_priority_fee_per_gas: Default::default(),
+                gas_price:                Default::default(),
+                gas_limit:                Default::default(),
                 action:                   TransactionAction::Create,
                 value:                    Default::default(),
                 data:                     Bytes::new(),
@@ -58,14 +64,19 @@ mod tests {
             }),
             chain_id:  random::<u64>(),
             hash:      Default::default(),
-        };
-        let utx = utx.hash();
-
-        SignedTransaction {
-            transaction: utx,
-            sender:      Default::default(),
-            public:      Default::default(),
         }
+        .calc_hash();
+
+        let priv_key = Secp256k1RecoverablePrivateKey::generate(&mut OsRng);
+        let signature = Secp256k1Recoverable::sign_message(
+            utx.signature_hash().as_bytes(),
+            &priv_key.to_bytes(),
+        )
+        .unwrap()
+        .to_bytes();
+        utx.signature = Some(signature.into());
+
+        utx.try_into().unwrap()
     }
 
     #[test]

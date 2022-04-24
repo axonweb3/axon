@@ -215,15 +215,3 @@ fn bench_insert_40000_txs(b: &mut Bencher) {
         exec!(storage.insert_transactions(Context::new(), height, txs.clone()));
     })
 }
-
-#[bench]
-fn bench_insert_80000_txs(b: &mut Bencher) {
-    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()));
-    let height = 2077;
-
-    let txs = (0..80000).map(|_| mock_signed_tx()).collect::<Vec<_>>();
-
-    b.iter(move || {
-        exec!(storage.insert_transactions(Context::new(), height, txs.clone()));
-    })
-}

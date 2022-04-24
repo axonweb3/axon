@@ -1,10 +1,11 @@
 use bytes::BufMut;
+use common_crypto::secp256k1_recover;
 use ethereum_types::BigEndianHash;
 use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
 use crate::types::{
-    AccessList, AccessListItem, Bytes, BytesMut, SignatureComponents, SignedTransaction,
-    Transaction, TransactionAction, UnverifiedTransaction, H256, U256,
+    public_to_address, AccessList, AccessListItem, Bytes, BytesMut, Public, SignatureComponents,
+    SignedTransaction, Transaction, TransactionAction, UnverifiedTransaction, H256, U256,
 };
 
 impl Encodable for SignatureComponents {
@@ -142,27 +143,40 @@ impl Decodable for UnverifiedTransaction {
             chain_id,
         };
 
-        Ok(utx.hash())
+        Ok(utx.calc_hash())
     }
 }
 
 impl Encodable for SignedTransaction {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(3)
-            .append(&self.transaction)
-            .append(&self.sender)
-            .append(&self.public);
+        s.begin_list(1).append(&self.transaction);
     }
 }
 
 impl Decodable for SignedTransaction {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
-            Prototype::List(3) => Ok(SignedTransaction {
-                transaction: r.val_at(0)?,
-                sender:      r.val_at(1)?,
-                public:      r.val_at(2)?,
-            }),
+            Prototype::List(1) => {
+                let utx: UnverifiedTransaction = r.val_at(0)?;
+                let public = Public::from_slice(
+                    &secp256k1_recover(
+                        utx.signature_hash().as_bytes(),
+                        utx.signature
+                            .as_ref()
+                            .ok_or(DecoderError::Custom("missing signature"))?
+                            .as_bytes()
+                            .as_ref(),
+                    )
+                    .map_err(|_| DecoderError::Custom("recover signature"))?
+                    .serialize_uncompressed()[1..65],
+                );
+
+                Ok(SignedTransaction {
+                    transaction: utx,
+                    sender:      public_to_address(&public),
+                    public:      Some(public),
+                })
+            }
             _ => Err(DecoderError::RlpInconsistentLengthAndData),
         }
     }
@@ -211,7 +225,7 @@ mod tests {
             hash:      H256::default(),
             signature: Some(mock_sig_component()),
         }
-        .hash()
+        .calc_hash()
     }
 
     fn mock_signed_tx() -> SignedTransaction {
@@ -224,7 +238,9 @@ mod tests {
 
     #[test]
     fn test_signed_tx_codec() {
-        let origin = mock_signed_tx();
+        let raw = hex_decode("02f8670582010582012c82012c825208945cf83df52a32165a7f392168ac009b168c9e89150180c001a0a68aeb0db4d84cf16da5a6918becefd254654854cfc23f0112ef78154ce84db89f4b0af1cbf12f5bfaec81c3d4d495717d720b574a05092f6b436c2ab255cd35").unwrap();
+        let utx = UnverifiedTransaction::decode(&Rlp::new(&raw[1..])).unwrap();
+        let origin: SignedTransaction = utx.try_into().unwrap();
         let encode = origin.rlp_bytes().freeze().to_vec();
         let decode: SignedTransaction = rlp::decode(&encode).unwrap();
         assert_eq!(origin, decode);

@@ -13,11 +13,10 @@ use common_crypto::{
     Secp256k1RecoverablePublicKey, Signature, ToPublicKey, UncompressedPublicKey,
 };
 use core_executor::NATIVE_TOKEN_ISSUE_ADDRESS;
-use protocol::codec::ProtocolCodec;
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
 use protocol::types::{
-    public_to_address, recover_intact_pub_key, Bytes, Hash, Hasher, Public, SignedTransaction,
-    Transaction, TransactionAction, UnverifiedTransaction, H256, U256,
+    public_to_address, recover_intact_pub_key, Bytes, Hash, Public, SignedTransaction, Transaction,
+    TransactionAction, UnverifiedTransaction, H256, U256,
 };
 use protocol::{async_trait, tokio, ProtocolResult};
 
@@ -146,11 +145,12 @@ async fn new_mempool(
 
 fn check_hash(tx: &SignedTransaction) -> ProtocolResult<()> {
     assert!(tx.transaction.signature.is_some());
-    let b = tx.transaction.encode()?;
+    let tx_clone = tx.transaction.clone();
+    let calc_hash = tx_clone.calc_hash().hash;
 
-    if Hasher::digest(b) != tx.transaction.hash {
+    if calc_hash != tx.transaction.hash {
         return Err(MemPoolError::CheckHash {
-            expect: tx.transaction.hash,
+            expect: calc_hash,
             actual: tx.transaction.hash,
         }
         .into());
@@ -303,7 +303,7 @@ fn mock_signed_tx(
     let pub_key = Public::from_slice(&pub_key.to_uncompressed_bytes()[1..65]);
 
     SignedTransaction {
-        transaction: tx.hash(),
+        transaction: tx.calc_hash(),
         sender:      public_to_address(&pub_key),
         public:      Some(pub_key),
     }
@@ -337,7 +337,7 @@ fn mock_system_script_signed_tx(
     let pub_key = Public::from_slice(&pub_key.to_uncompressed_bytes()[1..65]);
 
     SignedTransaction {
-        transaction: tx.hash(),
+        transaction: tx.calc_hash(),
         sender:      public_to_address(&pub_key),
         public:      Some(pub_key),
     }

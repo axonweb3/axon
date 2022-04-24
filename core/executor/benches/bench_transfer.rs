@@ -125,7 +125,7 @@ fn mock_transaction(nonce: u64) -> SignedTransaction {
     let pub_key = Public::from_slice(&PRIVITE_KEY.pub_key().to_uncompressed_bytes()[1..65]);
 
     SignedTransaction {
-        transaction: utx.hash(),
+        transaction: utx.calc_hash(),
         sender:      public_to_address(&pub_key),
         public:      Some(pub_key),
     }

@@ -52,7 +52,7 @@ use protocol::traits::{
     CommonStorage, Context, Executor, MemPool, MetadataControl, Network, NodeInfo, Storage,
 };
 use protocol::types::{
-    Account, Address, MerkleRoot, Proposal, RichBlock, Validator, NIL_DATA, RLP_NULL, U256,
+    Account, Address, MerkleRoot, Proposal, RichBlock, Validator, NIL_DATA, RLP_NULL,
 };
 use protocol::{tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
@@ -355,8 +355,6 @@ impl Axon {
                 max_tx_size:                metadata.max_tx_size.into(),
                 tx_num_limit:               metadata.tx_num_limit,
                 last_checkpoint_block_hash: metadata.last_checkpoint_block_hash,
-                gas_limit:                  metadata.gas_limit.into(),
-                base_fee_per_gas:           U256::one(),
                 proof:                      latest_proof,
             }
         } else {
@@ -379,8 +377,6 @@ impl Axon {
                 max_tx_size:                metadata.max_tx_size.into(),
                 tx_num_limit:               metadata.tx_num_limit,
                 last_checkpoint_block_hash: metadata.last_checkpoint_block_hash,
-                gas_limit:                  metadata.gas_limit.into(),
-                base_fee_per_gas:           current_header.base_fee_per_gas,
                 proof:                      storage.get_latest_proof(Context::new()).await?,
             }
         };

@@ -1,3 +1,4 @@
+use bytes::BufMut;
 pub use ethereum::{
     AccessList, AccessListItem, EIP1559TransactionMessage as TransactionMessage, TransactionAction,
     TransactionRecoveryId, TransactionSignature,
@@ -41,6 +42,7 @@ impl std::hash::Hash for Transaction {
 
 impl Transaction {
     pub fn encode(&self, chain_id: u64, signature: Option<SignatureComponents>) -> BytesMut {
+        let mut ret = BytesMut::new();
         let utx = UnverifiedTransaction {
             unsigned: self.clone(),
             chain_id,
@@ -48,7 +50,9 @@ impl Transaction {
             hash: Default::default(),
         };
 
-        utx.rlp_bytes()
+        ret.put_u8(0x02);
+        ret.extend_from_slice(&utx.rlp_bytes());
+        ret
     }
 }
 
@@ -61,14 +65,15 @@ pub struct UnverifiedTransaction {
 }
 
 impl UnverifiedTransaction {
-    pub fn hash(mut self) -> Self {
-        let hash = Hasher::digest(&self.rlp_bytes());
+    pub fn calc_hash(mut self) -> Self {
+        debug_assert!(self.signature.is_some());
+        let hash = Hasher::digest(&self.unsigned.encode(self.chain_id, self.signature.clone()));
         self.hash = hash;
         self
     }
 
     pub fn check_hash(&self) -> bool {
-        Hasher::digest(self.rlp_bytes()) == self.hash
+        Hasher::digest(&self.unsigned.encode(self.chain_id, self.signature.clone())) == self.hash
     }
 
     pub fn signature_hash(&self) -> Hash {
@@ -139,7 +144,7 @@ impl TryFrom<UnverifiedTransaction> for SignedTransaction {
         );
 
         Ok(SignedTransaction {
-            transaction: utx,
+            transaction: utx.calc_hash(),
             sender:      public_to_address(&public),
             public:      Some(public),
         })
