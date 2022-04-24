@@ -44,7 +44,7 @@ const createTestDataMange = {
       nonce,
       maxPriorityFeePerGas: 2500,
       maxFeePerGas: 2500,
-      gasLimit: web3.utils.stringToHex("21000"),
+      gasLimit: 2100000,
       chainId: Config.getIns().axonRpc.chainId,
       data,
     };
