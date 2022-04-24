@@ -19,6 +19,6 @@ common-config-parser = { path = "../../common/config-parser" }
 protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [dev-dependencies]
+common-crypto = { path = "../../common/crypto" }
 num-traits = "0.2"
 rand = "0.7"
-common-crypto = { path = "../../common/crypto"}
