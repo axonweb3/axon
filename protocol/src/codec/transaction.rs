@@ -274,7 +274,7 @@ mod tests {
     }
 
     #[test]
-    fn test() {
+    fn test_calc_tx_hash() {
         let raw = hex_decode("02f8690505030382520894a15da349978753d846eede580c7de8e590c1e5b8872386f26fc1000080c080a097d7a69ce423c2a5814daf71345b49698db5839e092f744e263983b56a992b87a02a5e12966dccbc8e3f6f21ffb528372c915c202381cfcbe3b8cf8ef8af273e99").unwrap();
         let utx = UnverifiedTransaction::decode(&Rlp::new(&raw[1..])).unwrap();
         let hash = utx.calc_hash().hash;
