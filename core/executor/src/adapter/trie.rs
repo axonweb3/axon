@@ -3,6 +3,7 @@ use std::sync::Arc;
 use cita_trie::{PatriciaTrie, Trie, TrieError, DB as TrieDB};
 use hasher::HasherKeccak;
 
+use protocol::codec::hex_encode;
 use protocol::types::{Bytes, Hash, MerkleRoot};
 use protocol::{Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
@@ -55,7 +56,7 @@ impl<DB: TrieDB> MPTTrie<DB> {
         if self.trie.remove(key).map_err(MPTTrieError::from)? {
             Ok(())
         } else {
-            Err(MPTTrieError::RemoveFailed.into())
+            Err(MPTTrieError::RemoveFailed(hex_encode(key)).into())
         }
     }
 
@@ -72,8 +73,8 @@ pub enum MPTTrieError {
     #[display(fmt = "{:?}", _0)]
     Trie(TrieError),
 
-    #[display(fmt = "Remove failed")]
-    RemoveFailed,
+    #[display(fmt = "Remove {:?} failed", _0)]
+    RemoveFailed(String),
 }
 
 impl std::error::Error for MPTTrieError {}
