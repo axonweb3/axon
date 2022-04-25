@@ -29,24 +29,7 @@ impl RocksTrieDB {
             fs::create_dir_all(&path).map_err(RocksTrieDBError::CreateDB)?;
         }
 
-        let mut opts = if let Some(ref file) = config.options_file {
-            let cache_size = match config.cache_size {
-                0 => None,
-                size => Some(size),
-            };
-
-            let full_opts = FullOptions::load_from_file(file, cache_size, false)
-                .map_err(RocksTrieDBError::from)?;
-
-            let FullOptions { db_opts, .. } = full_opts;
-            db_opts
-        } else {
-            Options::default()
-        };
-        opts.create_if_missing(true);
-        opts.create_missing_column_families(true);
-        opts.set_max_open_files(config.max_open_files);
-
+        let opts = rocksdb_opts(config)?;
         let db = DB::open(&opts, path).map_err(RocksTrieDBError::from)?;
 
         // Init HashMap with capacity 2 * cache_size to avoid reallocate memory.
@@ -179,6 +162,27 @@ impl cita_trie::DB for RocksTrieDB {
         }
         Ok(())
     }
+}
+
+fn rocksdb_opts(config: ConfigRocksDB) -> ProtocolResult<Options> {
+    let mut opts = if let Some(ref file) = config.options_file {
+        let cache_size = match config.cache_size {
+            0 => None,
+            size => Some(size),
+        };
+        let full_opts =
+            FullOptions::load_from_file(file, cache_size, false).map_err(RocksTrieDBError::from)?;
+        let FullOptions { db_opts, .. } = full_opts;
+        db_opts
+    } else {
+        Options::default()
+    };
+
+    opts.create_if_missing(true);
+    opts.create_missing_column_families(true);
+    opts.set_max_open_files(config.max_open_files);
+
+    Ok(opts)
 }
 
 fn rand_remove_list<T: Clone>(keys: Vec<&T>, num: usize) -> impl Iterator<Item = T> {

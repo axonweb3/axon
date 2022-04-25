@@ -142,7 +142,7 @@ where
 
         let res = blocking_async!(self, storage, get_code_by_hash, Context::new(), &code_hash);
 
-        res.unwrap().to_vec()
+        res.unwrap_or_default().to_vec()
     }
 
     fn storage(&self, address: H160, index: H256) -> H256 {
@@ -205,6 +205,7 @@ where
                 }
                 Apply::Delete { address } => {
                     let _ = self.trie.remove(address.as_bytes());
+                    self.trie.commit().unwrap();
                 }
             }
         }
@@ -282,12 +283,11 @@ where
             let _ = storage_trie.insert(k.as_bytes(), v.as_bytes());
         });
 
-        let new_storage_root = storage_trie.commit().unwrap_or(RLP_NULL);
         let mut new_account = Account {
             nonce:        basic.nonce,
             balance:      basic.balance,
             code_hash:    old_account.code_hash,
-            storage_root: new_storage_root,
+            storage_root: storage_trie.commit().unwrap_or(RLP_NULL),
         };
 
         if let Some(c) = code {
