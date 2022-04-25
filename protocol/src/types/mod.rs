@@ -35,11 +35,18 @@ pub enum TypesError {
     #[display(fmt = "Expect {:?}, get {:?}.", expect, real)]
     LengthMismatch { expect: usize, real: usize },
 
-    #[display(fmt = "{:?}", error)]
-    FromHex { error: faster_hex::Error },
+    #[display(
+        fmt = "Transaction hash mismatch origin {:?}, computed {:?}",
+        origin,
+        calc
+    )]
+    TxHashMismatch { origin: H256, calc: H256 },
 
-    #[display(fmt = "{:?} is an invalid address", address)]
-    InvalidAddress { address: String },
+    #[display(fmt = "{:?}", _0)]
+    FromHex(faster_hex::Error),
+
+    #[display(fmt = "{:?} is an invalid address", _0)]
+    InvalidAddress(String),
 
     #[display(fmt = "Hex should start with 0x")]
     HexPrefix,

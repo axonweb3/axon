@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use common_crypto::secp256k1_recover;
 
 use crate::types::{Bytes, BytesMut, Hash, Hasher, Public, TypesError, H160, H256, H520, U256};
+use crate::ProtocolResult;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Transaction {
@@ -67,8 +68,18 @@ impl UnverifiedTransaction {
         self
     }
 
-    pub fn check_hash(&self) -> bool {
-        Hasher::digest(&self.unsigned.encode(self.chain_id, self.signature.clone())) == self.hash
+    pub fn check_hash(&self) -> ProtocolResult<()> {
+        let calc_hash =
+            Hasher::digest(&self.unsigned.encode(self.chain_id, self.signature.clone()));
+        if self.hash != calc_hash {
+            return Err(TypesError::TxHashMismatch {
+                origin: self.hash,
+                calc:   calc_hash,
+            }
+            .into());
+        }
+
+        Ok(())
     }
 
     pub fn signature_hash(&self) -> Hash {

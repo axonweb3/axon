@@ -300,10 +300,6 @@ where
             return Err(AdapterError::VerifySignature("missing public key".to_string()).into());
         }
 
-        if !stx.transaction.check_hash() {
-            return Err(AdapterError::VerifyHash.into());
-        }
-
         let fixed_bytes = stx.transaction.encode()?;
         let tx_hash = stx.transaction.hash;
 
@@ -441,9 +437,6 @@ pub enum AdapterError {
 
     #[display(fmt = "adapter: verify signature error {:?}", _0)]
     VerifySignature(String),
-
-    #[display(fmt = "adapter: signed transaction hash mismatch")]
-    VerifyHash,
 }
 
 impl Error for AdapterError {}

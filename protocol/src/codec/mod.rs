@@ -6,7 +6,7 @@ pub mod transaction;
 
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 
-use crate::types::{Address, Bytes, DBBytes, H160};
+use crate::types::{Address, Bytes, DBBytes, TypesError, H160};
 use crate::ProtocolResult;
 
 pub trait ProtocolCodec: Sized + Send {
@@ -61,8 +61,7 @@ pub fn hex_decode(src: &str) -> ProtocolResult<Vec<u8>> {
 
     let src = src.as_bytes();
     let mut ret = vec![0u8; src.len() / 2];
-    faster_hex::hex_decode(src, &mut ret)
-        .map_err(|error| crate::types::TypesError::FromHex { error })?;
+    faster_hex::hex_decode(src, &mut ret).map_err(TypesError::FromHex)?;
 
     Ok(ret)
 }
