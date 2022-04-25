@@ -170,8 +170,8 @@ fn rocksdb_opts(config: ConfigRocksDB) -> ProtocolResult<Options> {
             0 => None,
             size => Some(size),
         };
-        let full_opts = FullOptions::load_from_file(file, cache_size, false)
-            .map_err(RocksTrieDBError::from)?;
+        let full_opts =
+            FullOptions::load_from_file(file, cache_size, false).map_err(RocksTrieDBError::from)?;
         let FullOptions { db_opts, .. } = full_opts;
         db_opts
     } else {
