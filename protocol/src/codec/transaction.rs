@@ -143,8 +143,6 @@ impl Decodable for UnverifiedTransaction {
             chain_id,
         };
 
-        println!("sig hash {:?}", utx.signature_hash());
-
         Ok(utx.calc_hash())
     }
 }
