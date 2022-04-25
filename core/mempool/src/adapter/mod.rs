@@ -300,11 +300,15 @@ where
             return Err(AdapterError::VerifySignature("missing public key".to_string()).into());
         }
 
+        if !stx.transaction.check_hash() {
+            return Err(AdapterError::VerifyHash.into());
+        }
+
         let fixed_bytes = stx.transaction.encode()?;
         let tx_hash = stx.transaction.hash;
 
         // check tx size
-        if fixed_bytes.len() > self.max_tx_size.load(Ordering::SeqCst) {
+        if fixed_bytes.len() > self.max_tx_size.load(Ordering::Acquire) {
             if ctx.is_network_origin_txs() {
                 self.network.report(
                     ctx,
@@ -313,7 +317,7 @@ where
             }
             return Err(MemPoolError::ExceedSizeLimit {
                 tx_hash,
-                max_tx_size: self.max_tx_size.load(Ordering::SeqCst),
+                max_tx_size: self.max_tx_size.load(Ordering::Acquire),
                 size: fixed_bytes.len(),
             }
             .into());
@@ -321,7 +325,7 @@ where
 
         // check gas limit
         let gas_limit_tx = stx.transaction.unsigned.gas_limit;
-        if gas_limit_tx.as_u64() > self.gas_limit.load(Ordering::SeqCst) {
+        if gas_limit_tx.as_u64() > self.gas_limit.load(Ordering::Acquire) {
             if ctx.is_network_origin_txs() {
                 self.network.report(
                     ctx,
@@ -331,7 +335,7 @@ where
             return Err(MemPoolError::ExceedGasLimit {
                 tx_hash,
                 gas_limit_tx: gas_limit_tx.as_u64(),
-                gas_limit_config: self.gas_limit.load(Ordering::SeqCst),
+                gas_limit_config: self.gas_limit.load(Ordering::Acquire),
             }
             .into());
         }
@@ -414,9 +418,9 @@ where
         cycles_limit: u64,
         max_tx_size: u64,
     ) {
-        self.gas_limit.store(cycles_limit, Ordering::Relaxed);
+        self.gas_limit.store(cycles_limit, Ordering::Release);
         self.max_tx_size
-            .store(max_tx_size as usize, Ordering::Relaxed);
+            .store(max_tx_size as usize, Ordering::Release);
         self.addr_nonce.clear();
     }
 
@@ -437,6 +441,9 @@ pub enum AdapterError {
 
     #[display(fmt = "adapter: verify signature error {:?}", _0)]
     VerifySignature(String),
+
+    #[display(fmt = "adapter: signed transaction hash mismatch")]
+    VerifyHash,
 }
 
 impl Error for AdapterError {}

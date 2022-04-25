@@ -94,6 +94,7 @@ mod tests {
     fn test_exec_ctx_codec() {
         let exec_ctx = ExecutorContext::default();
         let bytes = rlp::encode(&exec_ctx);
+        assert_eq!(bytes, exec_ctx.rlp_bytes());
         let decode: ExecutorContext = rlp::decode(bytes.as_ref()).unwrap();
         assert_eq!(exec_ctx, decode);
     }

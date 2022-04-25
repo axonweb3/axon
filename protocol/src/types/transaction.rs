@@ -1,4 +1,3 @@
-use bytes::BufMut;
 pub use ethereum::{
     AccessList, AccessListItem, EIP1559TransactionMessage as TransactionMessage, TransactionAction,
     TransactionRecoveryId, TransactionSignature,
@@ -42,17 +41,13 @@ impl std::hash::Hash for Transaction {
 
 impl Transaction {
     pub fn encode(&self, chain_id: u64, signature: Option<SignatureComponents>) -> BytesMut {
-        let mut ret = BytesMut::new();
-        let utx = UnverifiedTransaction {
+        UnverifiedTransaction {
             unsigned: self.clone(),
             chain_id,
             signature,
             hash: Default::default(),
-        };
-
-        ret.put_u8(0x02);
-        ret.extend_from_slice(&utx.rlp_bytes());
-        ret
+        }
+        .rlp_bytes()
     }
 }
 

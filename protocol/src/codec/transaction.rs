@@ -71,7 +71,7 @@ impl Encodable for UnverifiedTransaction {
         let mut s = RlpStream::new();
         self.rlp_append(&mut s);
         ret.put_u8(0x02);
-        ret.put(s.out());
+        ret.put(s.as_raw());
         ret
     }
 }
@@ -142,6 +142,8 @@ impl Decodable for UnverifiedTransaction {
             signature: Some(signature),
             chain_id,
         };
+
+        println!("sig hash {:?}", utx.signature_hash());
 
         Ok(utx.calc_hash())
     }
@@ -269,5 +271,16 @@ mod tests {
 
         let sig = utx.signature.unwrap();
         assert_ne!(sig.s, sig.r);
+    }
+
+    #[test]
+    fn test() {
+        let raw = hex_decode("02f8690505030382520894a15da349978753d846eede580c7de8e590c1e5b8872386f26fc1000080c080a097d7a69ce423c2a5814daf71345b49698db5839e092f744e263983b56a992b87a02a5e12966dccbc8e3f6f21ffb528372c915c202381cfcbe3b8cf8ef8af273e99").unwrap();
+        let utx = UnverifiedTransaction::decode(&Rlp::new(&raw[1..])).unwrap();
+        let hash = utx.calc_hash().hash;
+        assert_eq!(
+            hash.as_bytes(),
+            hex_decode("4c6d0ffa15709084a4b2b546f32503e4ccf2fb26b6c894df773b2d14b7c96e3f").unwrap()
+        );
     }
 }
