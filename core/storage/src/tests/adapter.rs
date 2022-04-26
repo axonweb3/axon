@@ -35,7 +35,7 @@ fn adapter_insert_test(db: impl StorageAdapter) {
     exec!(db.insert::<TransactionSchema>(tx_key.clone(), stx.clone()));
     let stx = exec!(db.get::<TransactionSchema>(tx_key)).unwrap();
 
-    assert!(stx.transaction.check_hash());
+    assert!(stx.transaction.check_hash().is_ok());
 }
 
 fn adapter_batch_modify_test(db: impl StorageAdapter) {

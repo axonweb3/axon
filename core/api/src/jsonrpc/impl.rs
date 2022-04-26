@@ -79,11 +79,12 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
     #[metrics_rpc("eth_sendRawTransaction")]
     async fn send_raw_transaction(&self, tx: Hex) -> RpcResult<H256> {
         let utx = UnverifiedTransaction::decode(&tx.as_bytes()[1..])
-            .map_err(|e| Error::Custom(e.to_string()))?
-            .calc_hash();
-        let stx = SignedTransaction::try_from(utx).map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| Error::Custom(e.to_string()))?;
+        utx.check_hash().map_err(|e| Error::Custom(e.to_string()))?;
 
+        let stx = SignedTransaction::try_from(utx).map_err(|e| Error::Custom(e.to_string()))?;
         let hash = stx.transaction.hash;
+
         self.adapter
             .insert_signed_txs(Context::new(), stx)
             .await

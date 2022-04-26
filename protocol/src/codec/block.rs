@@ -191,6 +191,7 @@ mod tests {
     fn test_block_codec() {
         let block = Block::default();
         let bytes = rlp::encode(&block);
+        assert_eq!(bytes, block.rlp_bytes());
         let decode: Block = rlp::decode(bytes.as_ref()).unwrap();
         assert_eq!(block, decode);
     }
@@ -199,6 +200,7 @@ mod tests {
     fn test_header_codec() {
         let header = Header::default();
         let bytes = rlp::encode(&header);
+        assert_eq!(bytes, header.rlp_bytes());
         let decode: Header = rlp::decode(bytes.as_ref()).unwrap();
         assert_eq!(header, decode);
     }
