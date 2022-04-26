@@ -144,13 +144,13 @@ impl cita_trie::DB for RocksTrieDB {
     }
 
     fn flush(&self) -> Result<(), Self::Error> {
-        let len = { self.cache.read().len() };
+        let mut cache = self.cache.write();
+
+        let len = cache.len();
 
         if len <= self.cache_size * 2 {
             return Ok(());
         }
-
-        let mut cache = self.cache.write();
 
         let remove_list = {
             let keys = cache.iter().map(|(k, _)| k).collect::<Vec<_>>();
@@ -160,6 +160,7 @@ impl cita_trie::DB for RocksTrieDB {
         for item in remove_list {
             cache.remove(&item);
         }
+
         Ok(())
     }
 }
