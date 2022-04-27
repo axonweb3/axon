@@ -577,7 +577,7 @@ mod tests {
         ));
 
         for stx in default_mock_txs(11).into_iter() {
-            stx_tx.unbounded_send(stx).expect("send stx fail");
+            stx_tx.unbounded_send((None, stx)).expect("send stx fail");
         }
 
         broadcast_signal_rx.next().await;
@@ -605,7 +605,7 @@ mod tests {
         ));
 
         for stx in default_mock_txs(9).into_iter() {
-            stx_tx.unbounded_send(stx).expect("send stx fail");
+            stx_tx.unbounded_send((None, stx)).expect("send stx fail");
         }
 
         broadcast_signal_rx.next().await;
@@ -633,7 +633,7 @@ mod tests {
         ));
 
         for stx in default_mock_txs(19).into_iter() {
-            stx_tx.unbounded_send(stx).expect("send stx fail");
+            stx_tx.unbounded_send((None, stx)).expect("send stx fail");
         }
 
         // Should got two broadcast
