@@ -101,6 +101,17 @@ pub trait Gossip: Send + Sync {
     where
         M: MessageCodec;
 
+    async fn gossip<M>(
+        &self,
+        cx: Context,
+        origin: Option<usize>,
+        end: &str,
+        msg: M,
+        p: Priority,
+    ) -> ProtocolResult<()>
+    where
+        M: MessageCodec;
+
     async fn multicast<'a, M, P>(
         &self,
         cx: Context,

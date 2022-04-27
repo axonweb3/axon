@@ -59,7 +59,12 @@ impl MemPoolAdapter for HashMemPoolAdapter {
         Ok(vec)
     }
 
-    async fn broadcast_tx(&self, _ctx: Context, tx: SignedTransaction) -> ProtocolResult<()> {
+    async fn broadcast_tx(
+        &self,
+        _ctx: Context,
+        _origin: Option<usize>,
+        tx: SignedTransaction,
+    ) -> ProtocolResult<()> {
         self.network_txs.insert(tx.transaction.hash, tx);
         Ok(())
     }
@@ -207,7 +212,7 @@ async fn concurrent_broadcast(
             tokio::spawn(async move {
                 mempool
                     .get_adapter()
-                    .broadcast_tx(Context::new(), tx)
+                    .broadcast_tx(Context::new(), None, tx)
                     .await
                     .unwrap()
             })

@@ -1177,6 +1177,7 @@ dependencies = [
  "common-crypto",
  "core-executor",
  "core-interoperation",
+ "core-network",
  "criterion",
  "crossbeam-queue",
  "dashmap",

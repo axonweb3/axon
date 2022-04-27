@@ -14,7 +14,7 @@ pub trait NetworkContext: Sized {
     fn set_remote_connected_addr(&mut self, addr: ConnectedAddr) -> Self;
     fn rpc_id(&self) -> Result<u64, NetworkError>;
     fn set_rpc_id(&mut self, rid: u64) -> Self;
-    fn url(&self) -> Result<&str, ()>;
+    fn url(&self) -> Result<&str, NetworkError>;
     fn set_url(&mut self, url: String) -> Self;
 }
 
@@ -65,8 +65,14 @@ impl NetworkContext for Context {
         self.with_value::<CtxRpcId>("rpc_id", CtxRpcId(rid))
     }
 
-    fn url(&self) -> Result<&str, ()> {
-        self.get::<String>("url").map(String::as_str).ok_or(())
+    fn url(&self) -> Result<&str, NetworkError> {
+        self.get::<String>("url")
+            .map(String::as_str)
+            .ok_or_else(|| {
+                NetworkError::UnexpectedError(Box::<dyn std::error::Error + Send + Sync>::from(
+                    "not found",
+                ))
+            })
     }
 
     #[must_use]

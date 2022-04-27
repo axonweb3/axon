@@ -22,6 +22,7 @@ use futures::future::try_join_all;
 
 use common_apm::Instant;
 use core_executor::is_call_system_script;
+use core_network::NetworkContext;
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
 use protocol::types::{Hash, SignedTransaction, H160, H256, U256};
 use protocol::{async_trait, tokio, Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
@@ -104,22 +105,30 @@ where
             return Err(MemPoolError::ReachLimit(self.pool.pool_size()).into());
         }
 
-        self.adapter.check_authorization(ctx.clone(), &tx).await?;
-        self.adapter.check_transaction(ctx.clone(), &tx).await?;
-        self.adapter
-            .check_storage_exist(ctx.clone(), tx_hash)
-            .await?;
-
-        if is_system_script {
-            self.pool.insert_system_script_tx(tx.clone())?;
+        if self.pool.contains(tx_hash) {
+            return Ok(());
         } else {
-            self.pool.insert(tx.clone())?;
-        }
+            self.adapter.check_authorization(ctx.clone(), &tx).await?;
+            self.adapter.check_transaction(ctx.clone(), &tx).await?;
+            self.adapter
+                .check_storage_exist(ctx.clone(), tx_hash)
+                .await?;
 
-        if !ctx.is_network_origin_txs() {
-            self.adapter.broadcast_tx(ctx, tx).await?;
-        } else {
-            self.adapter.report_good(ctx);
+            if is_system_script {
+                self.pool.insert_system_script_tx(tx.clone())?;
+            } else {
+                self.pool.insert(tx.clone())?;
+            }
+
+            if !ctx.is_network_origin_txs() {
+                self.adapter.broadcast_tx(ctx, None, tx).await?;
+            } else {
+                let origin = ctx.session_id().unwrap();
+                self.adapter
+                    .broadcast_tx(ctx.clone(), Some(origin.value()), tx)
+                    .await?;
+                self.adapter.report_good(ctx);
+            }
         }
 
         Ok(())

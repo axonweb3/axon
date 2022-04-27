@@ -42,7 +42,12 @@ pub trait MemPoolAdapter: Send + Sync {
         tx_hashes: Vec<Hash>,
     ) -> ProtocolResult<Vec<SignedTransaction>>;
 
-    async fn broadcast_tx(&self, ctx: Context, tx: SignedTransaction) -> ProtocolResult<()>;
+    async fn broadcast_tx(
+        &self,
+        ctx: Context,
+        origin: Option<usize>,
+        tx: SignedTransaction,
+    ) -> ProtocolResult<()>;
 
     async fn check_authorization(&self, ctx: Context, tx: &SignedTransaction)
         -> ProtocolResult<()>;
