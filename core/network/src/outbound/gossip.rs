@@ -166,7 +166,7 @@ impl Gossip for NetworkGossip {
         let target = match origin {
             Some(id) => TargetSession::Filter(Box::new(move |i| {
                 if &Into::<SessionId>::into(id) == i {
-                    return fasle;
+                    return false;
                 }
                 r.next_inner()
             })),

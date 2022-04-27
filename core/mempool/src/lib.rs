@@ -105,29 +105,30 @@ where
             return Err(MemPoolError::ReachLimit(self.pool.pool_size()).into());
         }
 
-        self.adapter.check_authorization(ctx.clone(), &tx).await?;
-        self.adapter.check_transaction(ctx.clone(), &tx).await?;
-        self.adapter
-            .check_storage_exist(ctx.clone(), tx_hash)
-            .await?;
-
-        let gossip = !self.pool.contains(tx_hash);
-
-        if is_system_script {
-            self.pool.insert_system_script_tx(tx.clone())?;
+        if self.pool.contains(tx_hash) {
+            return Ok(());
         } else {
-            self.pool.insert(tx.clone())?;
-        }
-
-        if !ctx.is_network_origin_txs() {
-            self.adapter.broadcast_tx(ctx, None, tx).await?;
-        } else if gossip {
-            let origin = ctx.session_id().unwrap();
+            self.adapter.check_authorization(ctx.clone(), &tx).await?;
+            self.adapter.check_transaction(ctx.clone(), &tx).await?;
             self.adapter
-                .broadcast_tx(ctx, Some(origin.value()), tx)
+                .check_storage_exist(ctx.clone(), tx_hash)
                 .await?;
-        } else {
-            self.adapter.report_good(ctx);
+
+            if is_system_script {
+                self.pool.insert_system_script_tx(tx.clone())?;
+            } else {
+                self.pool.insert(tx.clone())?;
+            }
+
+            if !ctx.is_network_origin_txs() {
+                self.adapter.broadcast_tx(ctx, None, tx).await?;
+            } else {
+                let origin = ctx.session_id().unwrap();
+                self.adapter
+                    .broadcast_tx(ctx.clone(), Some(origin.value()), tx)
+                    .await?;
+                self.adapter.report_good(ctx);
+            }
         }
 
         Ok(())
