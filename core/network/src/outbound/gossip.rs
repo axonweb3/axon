@@ -1,8 +1,15 @@
-use std::sync::Arc;
+use std::sync::{
+    atomic::{AtomicU8, Ordering},
+    Arc,
+};
 
 use common_apm::tracing::AxonTracer;
+use rand::Rng;
 use tentacle::secio::PeerId;
-use tentacle::service::{ServiceAsyncControl, TargetProtocol, TargetSession};
+use tentacle::{
+    service::{ServiceAsyncControl, TargetProtocol, TargetSession},
+    SessionId,
+};
 
 use protocol::traits::{Context, Gossip, MessageCodec, Priority};
 use protocol::{async_trait, tokio, types::Bytes, ProtocolResult};
@@ -59,7 +66,6 @@ impl NetworkGossip {
         match priority {
             Priority::Normal => self
                 .transmitter
-                .clone()
                 .filter_broadcast(
                     target_session,
                     crate::protocols::SupportProtocols::Transmitter.protocol_id(),
@@ -69,7 +75,6 @@ impl NetworkGossip {
                 .unwrap(),
             Priority::High => self
                 .transmitter
-                .clone()
                 .quick_filter_broadcast(
                     target_session,
                     crate::protocols::SupportProtocols::Transmitter.protocol_id(),
@@ -144,6 +149,34 @@ impl Gossip for NetworkGossip {
         Ok(())
     }
 
+    async fn gossip<M>(
+        &self,
+        mut cx: Context,
+        origin: Option<usize>,
+        endpoint: &str,
+        msg: M,
+        priority: Priority,
+    ) -> ProtocolResult<()>
+    where
+        M: MessageCodec,
+    {
+        let msg = self.package_message(cx.clone(), endpoint, msg).await?;
+        let ctx = cx.set_url(endpoint.to_owned());
+        let r = RandomGossip::random();
+        let target = match origin {
+            Some(id) => TargetSession::Filter(Box::new(move |i| {
+                if &Into::<SessionId>::into(id) == i {
+                    return fasle;
+                }
+                r.next_inner()
+            })),
+            None => TargetSession::Filter(Box::new(move |_| r.next_inner())),
+        };
+        self.send_to_sessions(ctx, target, msg, priority).await?;
+        common_apm::metrics::network::on_network_message_sent_all_target(endpoint);
+        Ok(())
+    }
+
     async fn multicast<'a, M, P>(
         &self,
         mut cx: Context,
@@ -166,5 +199,76 @@ impl Gossip for NetworkGossip {
             multicast_count as f64,
         );
         Ok(())
+    }
+}
+
+struct RandomGossip {
+    index: AtomicU8,
+}
+
+impl RandomGossip {
+    fn random() -> Self {
+        Self {
+            index: AtomicU8::new(rand::thread_rng().gen_range(0, 3)),
+        }
+    }
+
+    #[cfg(test)]
+    fn new(index: u8) -> Self {
+        Self {
+            index: AtomicU8::new(index),
+        }
+    }
+
+    fn next_inner(&self) -> bool {
+        let index = self
+            .index
+            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |index| {
+                if index < 2 {
+                    Some(index + 1)
+                } else {
+                    Some(0)
+                }
+            })
+            .unwrap();
+
+        index != 2
+    }
+}
+
+impl Iterator for RandomGossip {
+    type Item = bool;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        Some(self.next_inner())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::RandomGossip;
+
+    #[test]
+    fn test_random_gossip() {
+        let a = RandomGossip::new(0);
+
+        assert_eq!(
+            vec![true, true, false, true, true, false],
+            a.take(6).collect::<Vec<bool>>()
+        );
+
+        let a = RandomGossip::new(1);
+
+        assert_eq!(
+            vec![true, false, true, true, false, true],
+            a.take(6).collect::<Vec<bool>>()
+        );
+
+        let a = RandomGossip::new(2);
+
+        assert_eq!(
+            vec![false, true, true, false, true, true],
+            a.take(6).collect::<Vec<bool>>()
+        );
     }
 }

@@ -21,6 +21,7 @@ common-config-parser = { path = "../../common/config-parser" }
 common-crypto = { path = "../../common/crypto" }
 core-executor = { path = "../../core/executor" }
 core-interoperation = { path = "../../core/interoperation" }
+core-network = { path = "../../core/network" }
 protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [dev-dependencies]

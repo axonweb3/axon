@@ -22,6 +22,7 @@ use futures::future::try_join_all;
 
 use common_apm::Instant;
 use core_executor::is_call_system_script;
+use core_network::NetworkContext;
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
 use protocol::types::{Hash, SignedTransaction, H160, H256, U256};
 use protocol::{async_trait, tokio, Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
@@ -110,6 +111,8 @@ where
             .check_storage_exist(ctx.clone(), tx_hash)
             .await?;
 
+        let gossip = !self.pool.contains(tx_hash);
+
         if is_system_script {
             self.pool.insert_system_script_tx(tx.clone())?;
         } else {
@@ -117,7 +120,12 @@ where
         }
 
         if !ctx.is_network_origin_txs() {
-            self.adapter.broadcast_tx(ctx, tx).await?;
+            self.adapter.broadcast_tx(ctx, None, tx).await?;
+        } else if gossip {
+            let origin = ctx.session_id().unwrap();
+            self.adapter
+                .broadcast_tx(ctx, Some(origin.value()), tx)
+                .await?;
         } else {
             self.adapter.report_good(ctx);
         }

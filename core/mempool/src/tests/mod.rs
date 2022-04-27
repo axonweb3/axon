@@ -207,7 +207,7 @@ async fn concurrent_broadcast(
             tokio::spawn(async move {
                 mempool
                     .get_adapter()
-                    .broadcast_tx(Context::new(), tx)
+                    .broadcast_tx(Context::new(), None, tx)
                     .await
                     .unwrap()
             })

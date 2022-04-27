@@ -3,7 +3,7 @@ use super::TxContext;
 pub mod message;
 
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
-use std::{error::Error, marker::PhantomData, sync::Arc, time::Duration};
+use std::{collections::HashMap, error::Error, marker::PhantomData, sync::Arc, time::Duration};
 
 use dashmap::DashMap;
 use futures::{
@@ -38,7 +38,7 @@ struct IntervalTxsBroadcaster;
 
 impl IntervalTxsBroadcaster {
     pub async fn broadcast<G>(
-        stx_rx: UnboundedReceiver<SignedTransaction>,
+        stx_rx: UnboundedReceiver<(Option<usize>, SignedTransaction)>,
         interval_ms: u64,
         tx_size: usize,
         gossip: G,
@@ -47,17 +47,21 @@ impl IntervalTxsBroadcaster {
         G: Gossip + Clone + Unpin + 'static,
     {
         let mut stx_rx = stx_rx;
-        let mut txs_cache = Vec::with_capacity(tx_size);
+        let mut txs_cache = HashMap::with_capacity(10);
         let mut interval = tokio::time::interval(Duration::from_millis(interval_ms));
         interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
         loop {
             tokio::select! {
                 opt_stx = stx_rx.next() => {
-                    if let Some(stx) = opt_stx {
-                        txs_cache.push(stx);
+                    if let Some((origin, stx)) = opt_stx {
+                        txs_cache.entry(origin).or_insert(Vec::new()).push(stx);
 
-                        if txs_cache.len() == tx_size {
+                        let len: usize = {
+                            txs_cache.values().map(|v| v.len()).sum()
+                        };
+
+                        if len == tx_size {
                             Self::do_broadcast(&mut txs_cache, &gossip, err_tx.clone()).await
                         }
                     } else {
@@ -75,7 +79,7 @@ impl IntervalTxsBroadcaster {
     }
 
     async fn do_broadcast<G>(
-        txs_cache: &mut Vec<SignedTransaction>,
+        txs_cache: &mut HashMap<Option<usize>, Vec<SignedTransaction>>,
         gossip: &G,
         err_tx: UnboundedSender<ProtocolError>,
     ) where
@@ -85,12 +89,6 @@ impl IntervalTxsBroadcaster {
             return;
         }
 
-        let batch_stxs = txs_cache.drain(..).collect::<Vec<_>>();
-        let gossip_msg = MsgNewTxs { batch_stxs };
-
-        let ctx = Context::new();
-        let end = END_GOSSIP_NEW_TXS;
-
         let report_if_err = move |ret: ProtocolResult<()>| {
             if let Err(err) = ret {
                 if err_tx.unbounded_send(err).is_err() {
@@ -99,11 +97,18 @@ impl IntervalTxsBroadcaster {
             }
         };
 
-        report_if_err(
-            gossip
-                .broadcast(ctx, end, gossip_msg, Priority::Normal)
-                .await,
-        )
+        for (origin, batch_stxs) in txs_cache.drain() {
+            let gossip_msg = MsgNewTxs { batch_stxs };
+
+            let ctx = Context::new();
+            let end = END_GOSSIP_NEW_TXS;
+
+            report_if_err(
+                gossip
+                    .gossip(ctx, origin, end, gossip_msg, Priority::Normal)
+                    .await,
+            )
+        }
     }
 }
 
@@ -120,7 +125,7 @@ pub struct DefaultMemPoolAdapter<C, N, S, DB, M, I> {
     max_tx_size:  AtomicUsize,
     chain_id:     u64,
 
-    stx_tx: UnboundedSender<SignedTransaction>,
+    stx_tx: UnboundedSender<(Option<usize>, SignedTransaction)>,
     err_rx: Mutex<UnboundedReceiver<ProtocolError>>,
 
     pin_c: PhantomData<C>,
@@ -232,9 +237,14 @@ where
         Ok(resp_msg.sig_txs)
     }
 
-    async fn broadcast_tx(&self, _ctx: Context, stx: SignedTransaction) -> ProtocolResult<()> {
+    async fn broadcast_tx(
+        &self,
+        _ctx: Context,
+        origin: Option<usize>,
+        stx: SignedTransaction,
+    ) -> ProtocolResult<()> {
         self.stx_tx
-            .unbounded_send(stx)
+            .unbounded_send((origin, stx))
             .map_err(AdapterError::from)?;
 
         if let Some(mut err_rx) = self.err_rx.try_lock() {
@@ -489,6 +499,27 @@ mod tests {
         async fn broadcast<M>(
             &self,
             _: Context,
+            _: &str,
+            mut msg: M,
+            _: Priority,
+        ) -> ProtocolResult<()>
+        where
+            M: MessageCodec,
+        {
+            let bytes = msg.encode_msg().expect("encode message fail");
+            self.msgs.lock().push(bytes);
+
+            self.signal_tx
+                .unbounded_send(())
+                .expect("send broadcast signal fail");
+
+            Ok(())
+        }
+
+        async fn gossip<M>(
+            &self,
+            _: Context,
+            _: Option<usize>,
             _: &str,
             mut msg: M,
             _: Priority,
