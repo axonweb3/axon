@@ -14,11 +14,6 @@ http_listening_address = "127.0.0.1:8004"
 ws_listening_address = "127.0.0.1:8014"
 maxconn = 25000
 max_payload_size = 1048576
-# enable_dump_profile = false
-# [graphql.tls]
-# private_key_file_path = "key.pem"
-# certificate_chain_file_path = "cert.pem"
-
 
 [network]
 listening_address = "/ip4/127.0.0.1/tcp/10004"
@@ -63,12 +58,10 @@ metrics = true
 
 [rocksdb]
 max_open_files = 64
-
-# [apm]
-# service_name = "muta"
-# tracing_address = "127.0.0.1:6831"
-# tracing_batch_size = 50
-
+cache_size = 134217728
+# Provide an options file to tune RocksDB for your workload and your system configuration.
+# More details can be found in [the official tuning guide](https://github.com/facebook/rocksdb/wiki/RocksDB-Tuning-Guide).
+options_file = "default.db-options"
 
 [cross_client]
 axon_udt_hash = "0xf32ec1e3274c27ac4cc018c92efec443847e9b78ba8cbedca36f0fa8c35d1c9e"
