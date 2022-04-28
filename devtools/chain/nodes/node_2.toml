@@ -75,3 +75,8 @@ admin_address = "0x0000000000000000000000000000000000000000"
 node_address = "0x0000000000000000000000000000000000000000"
 selection_lock_hash = "0xf32ec1e3274c27ac4cc018c92efec443847e9b78ba8cbedca36f0fa8c35d1c9e"
 checkpoint_type_hash = "0xf32ec1e3274c27ac4cc018c92efec443847e9b78ba8cbedca36f0fa8c35d1c9e"
+
+[interoperability_extension]
+blockchain_extension_transaction_hashes = [
+    {name = "cardano", id = 2, tx_hash = "0xb1af175009413bf9670dffb7b120f0eca52896a9798bda123df9b25ff7d8f721"}
+]
