@@ -9,7 +9,7 @@
     "@chainsafe/dappeteer": "^2.4.0",
     "ethereumjs-tx": "^2.1.2",
     "jest-environment-node": "^28.0.2",
-    "puppeteer": "^13.6.0",
+    "puppeteer": "^13.7.0",
     "web3": "^1.7.3"
   },
   "devDependencies": {
