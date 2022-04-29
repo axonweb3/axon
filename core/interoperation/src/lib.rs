@@ -112,11 +112,7 @@ async fn init_dispatcher_from_rpc<T: CkbClient>(
 ) -> ProtocolResult<()> {
     let ckb_hashes = tx_hashes
         .into_iter()
-        .map(|hash| {
-            let mut bytes = [0u8; 32];
-            bytes.copy_from_slice(hash.as_bytes());
-            bytes.into()
-        })
+        .map(|hash| ckb_types::H256(hash.0))
         .collect::<Vec<_>>();
     let transactions = loop {
         match rpc_client
@@ -127,23 +123,30 @@ async fn init_dispatcher_from_rpc<T: CkbClient>(
             Err(e) => log::debug!("get tx from ckb err: {}", e),
         }
     };
-    let mut program_map = HashMap::new();
-    for tx in transactions {
-        let contract_binary = {
-            let tx = Transaction::from(tx.inner).into_view();
-            let (_, binary) = tx.output_with_data(0).unwrap();
-            binary
-        };
-        let mut hash = [0u8; 32];
-        hash.copy_from_slice(tx.hash.as_bytes());
-        program_map.insert(hash.into(), contract_binary);
-    }
+  
+    let program_map = transactions
+         .into_iter()
+         .map(|tx| {
+            let contract_binary = Transaction::from(tx.inner)
+                .into_view()
+                .output_with_data(0)
+                .unwrap()
+                .1;
+
+            (H256(tx.hash.0), contract_binary)
+        })
+        .collect::<HashMap<_, _>>();
     init_dispatcher(program_map)?;
     Ok(())
 }
 
 fn init_dispatcher(program_map: HashMap<H256, Bytes>) -> ProtocolResult<()> {
+    let program_num = program_map.len();
     DISPATCHER.swap(Arc::new(ProgramDispatcher::new(program_map)?));
+    log::info!(
+        "[interoperation]: init dispatcher success, program number {:?}",
+        program_num
+    );
     Ok(())
 }
 

@@ -34,9 +34,6 @@ check:
 build:
 	${CARGO} build ${VERBOSE} --release
 
-prod-muta-chain:
-	${CARGO} build ${VERBOSE} --release --example muta-chain
-
 check-fmt:
 	cargo +nightly fmt ${VERBOSE} --all -- --check
 

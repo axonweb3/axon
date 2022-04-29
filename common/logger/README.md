@@ -28,7 +28,7 @@ If `console_show_file_and_line` is `true`, log file and line number will also be
 [2019-12-02T10:05:28.343228+08:00 INFO core_network::peer_manager core/network/src/peer_manager/mod.rs:1035] network: PeerId(QmYSZUy3G5Mf5GSTKfH7LXJeFJrVW59rX1qPPfapuH7AUw): connected peer_ip(s): []
 ```
 
-If `log_to_file` is true, logs like below will be logged to `{log_path}/muta.log`.
+If `log_to_file` is true, logs like below will be logged to `{log_path}/axon.log`.
 It is json format, good for machine understanding.
 
 ```
