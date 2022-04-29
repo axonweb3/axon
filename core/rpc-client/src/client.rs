@@ -48,11 +48,11 @@ macro_rules! jsonrpc {
             let resp = c
                 .send()
                 .await
-                .map_err::<ProtocolError, _>(|_| ProtocolError::new(ProtocolErrorKind::CkbClient, Box::new(Into::<io::Error>::into(io::ErrorKind::ConnectionAborted))))?;
+                .map_err::<ProtocolError, _>(|e| ProtocolError::new(ProtocolErrorKind::CkbClient, Box::new(e)))?;
             let output = resp
                 .json::<jsonrpc_core::response::Output>()
                 .await
-                .map_err::<ProtocolError, _>(|_| ProtocolError::new(ProtocolErrorKind::CkbClient, Box::new(Into::<io::Error>::into(io::ErrorKind::InvalidData))))?;
+                .map_err::<ProtocolError, _>(|e| ProtocolError::new(ProtocolErrorKind::CkbClient, Box::new(e)))?;
 
             match output {
                 jsonrpc_core::response::Output::Success(success) => {

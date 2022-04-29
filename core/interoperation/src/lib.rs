@@ -114,12 +114,19 @@ async fn init_dispatcher_from_rpc<T: CkbClient>(
         .into_iter()
         .map(|hash| ckb_types::H256(hash.0))
         .collect::<Vec<_>>();
-    let program_map = rpc_client
-        .get_txs_by_hashes(Default::default(), ckb_hashes)
-        .await?
-        .into_iter()
-        .map(|v| {
-            let tx = v.unwrap().transaction.unwrap();
+    let transactions = loop {
+        match rpc_client
+            .get_txs_by_hashes(Default::default(), ckb_hashes.clone())
+            .await
+        {
+            Ok(v) => break v.into_iter().map(|v| v.unwrap().transaction.unwrap()),
+            Err(e) => log::debug!("get tx from ckb err: {}", e),
+        }
+    };
+  
+    let program_map = transactions
+         .into_iter()
+         .map(|tx| {
             let contract_binary = Transaction::from(tx.inner)
                 .into_view()
                 .output_with_data(0)
@@ -129,8 +136,8 @@ async fn init_dispatcher_from_rpc<T: CkbClient>(
             (H256(tx.hash.0), contract_binary)
         })
         .collect::<HashMap<_, _>>();
-
-    init_dispatcher(program_map)
+    init_dispatcher(program_map)?;
+    Ok(())
 }
 
 fn init_dispatcher(program_map: HashMap<H256, Bytes>) -> ProtocolResult<()> {
