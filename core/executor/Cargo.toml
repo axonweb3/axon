@@ -19,7 +19,7 @@ rand = { version = "0.8", features = ["small_rng"] }
 ripemd = "0.1"
 rlp = "0.5"
 rocksdb = { version = "0.16", package = "ckb-rocksdb" }
-rug = "1.15"
+rug = "1.16"
 sha2 = "0.10"
 
 common-apm = { path = "../../common/apm" }
