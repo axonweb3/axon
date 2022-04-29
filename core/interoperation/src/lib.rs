@@ -134,7 +134,12 @@ async fn init_dispatcher_from_rpc<T: CkbClient>(
 }
 
 fn init_dispatcher(program_map: HashMap<H256, Bytes>) -> ProtocolResult<()> {
+    let program_num = program_map.len();
     DISPATCHER.swap(Arc::new(ProgramDispatcher::new(program_map)?));
+    log::info!(
+        "[interoperation]: init dispatcher success, program number {:?}",
+        program_num
+    );
     Ok(())
 }
 
