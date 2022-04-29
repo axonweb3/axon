@@ -52,6 +52,7 @@ random_leader = ["core-consensus/random_leader"]
 [profile.release]
 overflow-checks = true
 opt-level = 3
+debug = true
 
 [profile.release-jemalloc]
 inherits = "release"
