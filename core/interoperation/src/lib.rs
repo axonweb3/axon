@@ -123,10 +123,10 @@ async fn init_dispatcher_from_rpc<T: CkbClient>(
             Err(e) => log::debug!("get tx from ckb err: {}", e),
         }
     };
-  
+
     let program_map = transactions
-         .into_iter()
-         .map(|tx| {
+        .into_iter()
+        .map(|tx| {
             let contract_binary = Transaction::from(tx.inner)
                 .into_view()
                 .output_with_data(0)
@@ -136,6 +136,7 @@ async fn init_dispatcher_from_rpc<T: CkbClient>(
             (H256(tx.hash.0), contract_binary)
         })
         .collect::<HashMap<_, _>>();
+
     init_dispatcher(program_map)?;
     Ok(())
 }
