@@ -1162,6 +1162,7 @@ dependencies = [
  "core-rpc-client",
  "ed25519-dalek",
  "lazy_static",
+ "log",
  "rand 0.7.3",
 ]
 

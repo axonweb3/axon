@@ -9,6 +9,7 @@ edition = "2021"
 arc-swap = "1.5"
 ckb-types = "0.103"
 lazy_static = "1.4"
+log = "0.4"
 
 protocol = { path = "../../protocol", package = "axon-protocol" }
 

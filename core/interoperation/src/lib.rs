@@ -118,12 +118,15 @@ async fn init_dispatcher_from_rpc<T: CkbClient>(
             bytes.into()
         })
         .collect::<Vec<_>>();
-    let transactions = rpc_client
-        .get_txs_by_hashes(Default::default(), ckb_hashes)
-        .await
-        .unwrap()
-        .into_iter()
-        .map(|v| v.unwrap().transaction.unwrap());
+    let transactions = loop {
+        match rpc_client
+            .get_txs_by_hashes(Default::default(), ckb_hashes.clone())
+            .await
+        {
+            Ok(v) => break v.into_iter().map(|v| v.unwrap().transaction.unwrap()),
+            Err(e) => log::debug!("get tx from ckb err: {}", e),
+        }
+    };
     let mut program_map = HashMap::new();
     for tx in transactions {
         let contract_binary = {
