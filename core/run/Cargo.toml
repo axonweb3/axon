@@ -9,8 +9,6 @@ backtrace = "0.3"
 cita_trie = "3.0"
 clap = "3.1"
 futures = "0.3"
-jemalloc-ctl = { version = "0.4", package = "tikv-jemalloc-ctl", optional = true }
-jemallocator = { version = "0.4", features = ["profiling", "stats", "unprefixed_malloc_on_supported_platforms"], package = "tikv-jemallocator", optional = true }
 log = "0.4"
 rlp = "0.5"
 serde = "1.0"
@@ -34,6 +32,12 @@ core-network = { path = "../../core/network" }
 core-rpc-client = { path = "../../core/rpc-client" }
 core-storage = { path = "../../core/storage" }
 protocol = { path = "../../protocol", package = "axon-protocol" }
+
+[target.'cfg(all(not(target_env = "msvc"), not(target_os="macos")))'.dependencies]
+jemalloc-ctl = { version = "0.4", package = "tikv-jemalloc-ctl", optional = true }
+jemallocator = { version = "0.4", features = ["profiling", "stats", "unprefixed_malloc_on_supported_platforms"], package = "tikv-jemallocator", optional = true }
+libc = "0.2"
+once_cell = "1.8.0"
 
 [features]
 jemalloc = ["dep:jemallocator", "dep:jemalloc-ctl"]
