@@ -1,5 +1,6 @@
 pub mod api;
 pub mod consensus;
+pub mod mem_tracker;
 pub mod mempool;
 pub mod network;
 pub mod storage;

@@ -22,6 +22,7 @@ members = [
     "common/config-parser",
     "common/crypto",
     "common/logger",
+    "common/memory-tracker",
     "common/merkle",
     "common/pubsub",
 

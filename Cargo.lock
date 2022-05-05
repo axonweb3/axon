@@ -983,6 +983,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "common-memory-tracker"
+version = "0.1.0"
+dependencies = [
+ "axon-protocol",
+ "ckb-rocksdb",
+ "common-apm",
+ "libc",
+ "log",
+ "once_cell",
+ "tikv-jemalloc-ctl",
+]
+
+[[package]]
 name = "common-merkle"
 version = "0.2.1"
 dependencies = [
@@ -1262,6 +1275,7 @@ dependencies = [
  "common-config-parser",
  "common-crypto",
  "common-logger",
+ "common-memory-tracker",
  "core-api",
  "core-consensus",
  "core-cross-client",

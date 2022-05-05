@@ -76,6 +76,10 @@ impl RocksAdapter {
 
         Ok(RocksAdapter { db: Arc::new(db) })
     }
+
+    pub fn inner_db(&self) -> Arc<DB> {
+        Arc::clone(&self.db)
+    }
 }
 
 macro_rules! db {

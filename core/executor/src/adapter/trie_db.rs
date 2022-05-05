@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs, io, path::Path};
+use std::{collections::HashMap, fs, io, path::Path, sync::Arc};
 
 use parking_lot::RwLock;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
@@ -14,7 +14,7 @@ use protocol::{Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 const RAND_SEED: u64 = 49999;
 
 pub struct RocksTrieDB {
-    db:         DB,
+    db:         Arc<DB>,
     cache:      RwLock<HashMap<Vec<u8>, Vec<u8>>>,
     cache_size: usize,
 }
@@ -30,7 +30,7 @@ impl RocksTrieDB {
         }
 
         let opts = rocksdb_opts(config)?;
-        let db = DB::open(&opts, path).map_err(RocksTrieDBError::from)?;
+        let db = Arc::new(DB::open(&opts, path).map_err(RocksTrieDBError::from)?);
 
         // Init HashMap with capacity 2 * cache_size to avoid reallocate memory.
         Ok(RocksTrieDB {
@@ -38,6 +38,10 @@ impl RocksTrieDB {
             cache: RwLock::new(HashMap::with_capacity(cache_size + cache_size)),
             cache_size,
         })
+    }
+
+    pub fn inner_db(&self) -> Arc<DB> {
+        Arc::clone(&self.db)
     }
 
     fn inner_get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, RocksTrieDBError> {

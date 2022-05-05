@@ -3,7 +3,11 @@
 use std::{collections::HashMap, convert::TryFrom, panic, sync::Arc, thread, time::Duration};
 
 use backtrace::Backtrace;
-#[cfg(feature = "jemalloc")]
+#[cfg(all(
+    not(target_env = "msvc"),
+    not(target_os = "macos"),
+    feature = "jemalloc"
+))]
 use {
     jemalloc_ctl::{Access, AsName},
     jemallocator::Jemalloc,
@@ -56,7 +60,11 @@ use protocol::types::{
 };
 use protocol::{tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
-#[cfg(feature = "jemalloc")]
+#[cfg(all(
+    not(target_env = "msvc"),
+    not(target_os = "macos"),
+    feature = "jemalloc"
+))]
 #[global_allocator]
 pub static JEMALLOC: Jemalloc = Jemalloc;
 
@@ -77,7 +85,11 @@ impl Axon {
     }
 
     pub fn run(mut self) -> ProtocolResult<()> {
-        #[cfg(feature = "jemalloc")]
+        #[cfg(all(
+            not(target_env = "msvc"),
+            not(target_os = "macos"),
+            feature = "jemalloc"
+        ))]
         Self::set_profile(true);
 
         let rt = RuntimeBuilder::new_multi_thread()
@@ -173,6 +185,12 @@ impl Axon {
         Self::run_jaeger(self.config.clone());
         // Start prometheus http server
         Self::run_prometheus_server(self.config.clone());
+        #[cfg(all(
+            not(target_env = "msvc"),
+            not(target_os = "macos"),
+            feature = "jemalloc"
+        ))]
+        tokio::spawn(common_memory_tracker::track_current_process());
 
         log::info!("node starts");
         observe_listen_port_occupancy(&[self.config.network.listening_address.clone()]).await?;
@@ -185,6 +203,17 @@ impl Axon {
             path_block.clone(),
             config.rocksdb.clone(),
         )?);
+
+        #[cfg(all(
+            not(target_env = "msvc"),
+            not(target_os = "macos"),
+            feature = "jemalloc"
+        ))]
+        tokio::spawn(common_memory_tracker::track_db_process(
+            "blockdb",
+            rocks_adapter.inner_db(),
+        ));
+
         let storage = Arc::new(ImplStorage::new(rocks_adapter));
 
         // Init network
@@ -228,6 +257,16 @@ impl Axon {
             config.rocksdb.clone(),
             config.executor.triedb_cache_size,
         )?);
+
+        #[cfg(all(
+            not(target_env = "msvc"),
+            not(target_os = "macos"),
+            feature = "jemalloc"
+        ))]
+        tokio::spawn(common_memory_tracker::track_db_process(
+            "triedb",
+            trie_db.inner_db(),
+        ));
 
         // Init full transactions wal
         let txs_wal_path = config.data_path_for_txs_wal().to_str().unwrap().to_string();
@@ -652,7 +691,11 @@ impl Axon {
         );
     }
 
-    #[cfg(feature = "jemalloc")]
+    #[cfg(all(
+        not(target_env = "msvc"),
+        not(target_os = "macos"),
+        feature = "jemalloc"
+    ))]
     fn set_profile(is_active: bool) {
         let _ = b"prof.active\0"
             .name()
@@ -660,7 +703,11 @@ impl Axon {
             .map_err(|e| panic!("Set jemalloc profile error {:?}", e));
     }
 
-    #[cfg(feature = "jemalloc")]
+    #[cfg(all(
+        not(target_env = "msvc"),
+        not(target_os = "macos"),
+        feature = "jemalloc"
+    ))]
     fn dump_profile() {
         let name = b"profile.out\0".as_ref();
         b"prof.dump\0"
