@@ -83,6 +83,25 @@ impl Executor for AxonExecutor {
         }
     }
 
+    fn cache_code<B: Backend + ApplyBackend + Adapter>(
+        &self,
+        backend: &mut B,
+        txs: &Vec<SignedTransaction>,
+    ) {
+        let mut addres: Vec<H160> = Vec::new();
+        for tx in txs.iter() {
+            if !is_call_system_script(&tx.transaction.unsigned.action) {
+                if let TransactionAction::Call(addr) = tx.transaction.unsigned.action {
+                    addres.push(addr);
+                }
+            }
+        }
+
+        for code_addr in addres {
+            backend.code(code_addr);
+        }
+    }
+
     // Function execute returns exit_reason, ret_data and remain_gas.
     fn exec<B: Backend + ApplyBackend + Adapter>(
         &self,
@@ -96,6 +115,8 @@ impl Executor for AxonExecutor {
 
         let evm_executor = EvmExecutor::new();
         let sys_executor = SystemExecutor::new();
+
+        self.cache_code(backend, &txs);
 
         for tx in txs.into_iter() {
             backend.set_gas_price(tx.transaction.unsigned.gas_price);
@@ -111,6 +132,8 @@ impl Executor for AxonExecutor {
             hashes.push(Hasher::digest(&r.ret));
             res.push(r);
         }
+
+        backend.commit();
 
         ExecResp {
             state_root:   backend.state_root(),

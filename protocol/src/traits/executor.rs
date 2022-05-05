@@ -15,6 +15,8 @@ pub trait ExecutorAdapter {
     fn get(&self, key: &[u8]) -> Option<Bytes>;
 
     fn get_ctx(&self) -> ExecutorContext;
+
+    fn commit(&mut self);
 }
 
 pub trait Executor: Send + Sync {
@@ -25,6 +27,12 @@ pub trait Executor: Send + Sync {
         to: Option<H160>,
         data: Vec<u8>,
     ) -> TxResp;
+
+    fn cache_code<B: Backend + ApplyBackend + ExecutorAdapter>(
+        &self,
+        backend: &mut B,
+        txs: &Vec<SignedTransaction>,
+    );
 
     fn exec<B: Backend + ApplyBackend + ExecutorAdapter>(
         &self,

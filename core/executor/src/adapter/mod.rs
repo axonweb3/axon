@@ -58,6 +58,10 @@ where
     fn get(&self, key: &[u8]) -> Option<Bytes> {
         self.trie.get(key).ok().flatten()
     }
+
+    fn commit(&mut self) {
+        self.trie.commit().unwrap();
+    }
 }
 
 impl<S, DB> Backend for AxonExecutorAdapter<S, DB>
@@ -200,12 +204,12 @@ where
                     let is_empty = self.apply(address, basic, code, storage, reset_storage);
                     if is_empty && delete_empty {
                         self.trie.remove(address.as_bytes()).unwrap();
-                        self.trie.commit().unwrap();
+                        // self.trie.commit().unwrap();
                     }
                 }
                 Apply::Delete { address } => {
                     let _ = self.trie.remove(address.as_bytes());
-                    self.trie.commit().unwrap();
+                    // self.trie.commit().unwrap();
                 }
             }
         }
@@ -313,7 +317,7 @@ where
             self.trie
                 .insert(address.as_bytes(), bytes.as_ref())
                 .unwrap();
-            self.trie.commit().unwrap();
+            // self.trie.commit().unwrap();
         }
 
         new_account.balance == U256::zero()
