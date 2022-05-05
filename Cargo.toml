@@ -24,6 +24,7 @@ members = [
     "common/logger",
     "common/merkle",
     "common/pubsub",
+    "common/memory-tracker",
 
     "core/api",
     "core/cli",

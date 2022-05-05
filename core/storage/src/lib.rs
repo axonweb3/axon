@@ -31,8 +31,6 @@ use protocol::{
 
 use crate::cache::StorageCache;
 
-pub use rocksdb::ops::{GetColumnFamilys, GetProperty, GetPropertyCF};
-
 const BATCH_VALUE_DECODE_NUMBER: usize = 1000;
 
 lazy_static::lazy_static! {

@@ -21,6 +21,7 @@ common-apm-derive = { path = "../../common/apm-derive" }
 common-config-parser = { path = "../../common/config-parser" }
 common-crypto = { path = "../../common/crypto" }
 common-logger = { path = "../../common/logger" }
+common-memory-tracker = { path = "../../common/memory-tracker", optional = true }
 core-api = { path = "../../core/api" }
 core-consensus = { path = "../../core/consensus" }
 core-cross-client = { path = "../../core/cross-client" }
@@ -36,8 +37,6 @@ protocol = { path = "../../protocol", package = "axon-protocol" }
 [target.'cfg(all(not(target_env = "msvc"), not(target_os="macos")))'.dependencies]
 jemalloc-ctl = { version = "0.4", package = "tikv-jemalloc-ctl", optional = true }
 jemallocator = { version = "0.4", features = ["profiling", "stats", "unprefixed_malloc_on_supported_platforms"], package = "tikv-jemallocator", optional = true }
-libc = "0.2"
-once_cell = "1.8.0"
 
 [features]
-jemalloc = ["dep:jemallocator", "dep:jemalloc-ctl"]
+jemalloc = ["dep:jemallocator", "dep:jemalloc-ctl", "dep:common-memory-tracker"]

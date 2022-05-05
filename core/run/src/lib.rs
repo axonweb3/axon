@@ -68,13 +68,6 @@ use protocol::{tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolR
 #[global_allocator]
 pub static JEMALLOC: Jemalloc = Jemalloc;
 
-#[cfg(all(
-    not(target_env = "msvc"),
-    not(target_os = "macos"),
-    feature = "jemalloc"
-))]
-mod mem_tracker;
-
 #[derive(Debug)]
 pub struct Axon {
     config:     Config,
@@ -197,7 +190,7 @@ impl Axon {
             not(target_os = "macos"),
             feature = "jemalloc"
         ))]
-        tokio::spawn(mem_tracker::track_current_process());
+        tokio::spawn(common_memory_tracker::track_current_process());
 
         log::info!("node starts");
         observe_listen_port_occupancy(&[self.config.network.listening_address.clone()]).await?;
@@ -216,7 +209,7 @@ impl Axon {
             not(target_os = "macos"),
             feature = "jemalloc"
         ))]
-        tokio::spawn(mem_tracker::track_db_process(
+        tokio::spawn(common_memory_tracker::track_db_process(
             "blockdb",
             rocks_adapter.inner_db(),
         ));
@@ -270,7 +263,10 @@ impl Axon {
             not(target_os = "macos"),
             feature = "jemalloc"
         ))]
-        tokio::spawn(mem_tracker::track_db_process("triedb", trie_db.inner_db()));
+        tokio::spawn(common_memory_tracker::track_db_process(
+            "triedb",
+            trie_db.inner_db(),
+        ));
 
         // Init full transactions wal
         let txs_wal_path = config.data_path_for_txs_wal().to_str().unwrap().to_string();

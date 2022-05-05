@@ -2,8 +2,8 @@ use std::{sync::Arc, time::Duration};
 
 use jemalloc_ctl::{epoch, stats};
 use log::error;
+use rocksdb::ops::{GetColumnFamilys, GetProperty, GetPropertyCF};
 
-use core_storage::{GetColumnFamilys, GetProperty, GetPropertyCF};
 use protocol::tokio;
 
 macro_rules! je_mib {
