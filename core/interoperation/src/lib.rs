@@ -4,6 +4,7 @@ mod tests;
 use std::collections::HashMap;
 use std::error::Error;
 use std::sync::Arc;
+use std::time::Duration;
 
 use arc_swap::ArcSwap;
 use ckb_types::packed::Transaction;
@@ -13,15 +14,15 @@ use ckb_vm::{Error as VMError, ISA_B, ISA_IMC, ISA_MOP};
 
 use protocol::traits::{CkbClient, Context, Interoperation};
 use protocol::types::{Bytes, SignedTransaction, VMResp, H256};
-use protocol::{Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
+use protocol::{tokio::time::sleep, Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 lazy_static::lazy_static! {
     static ref DISPATCHER: ArcSwap<ProgramDispatcher> = ArcSwap::from_pointee(ProgramDispatcher::default());
     static ref TRANSACTION_HASH_MAP: ArcSwap<HashMap<u8, H256>> = ArcSwap::from_pointee(HashMap::new());
 }
 
+const PULL_CKB_TX_INTERVAL: u64 = 10; // second
 const ISA: u8 = ISA_IMC | ISA_B | ISA_MOP;
-
 const GAS_TO_CYCLE_COEF: u64 = 6_000;
 
 pub const fn gas_to_cycle(gas: u64) -> u64 {
@@ -112,35 +113,45 @@ async fn init_dispatcher_from_rpc<T: CkbClient>(
 ) -> ProtocolResult<()> {
     let ckb_hashes = tx_hashes
         .into_iter()
-        .map(|hash| {
-            let mut bytes = [0u8; 32];
-            bytes.copy_from_slice(hash.as_bytes());
-            bytes.into()
-        })
+        .map(|hash| ckb_types::H256(hash.0))
         .collect::<Vec<_>>();
-    let transactions = rpc_client
-        .get_txs_by_hashes(Default::default(), ckb_hashes)
-        .await
-        .unwrap()
+    let transactions = loop {
+        match rpc_client
+            .get_txs_by_hashes(Default::default(), ckb_hashes.clone())
+            .await
+        {
+            Ok(v) => break v.into_iter().map(|v| v.unwrap().transaction.unwrap()),
+            Err(e) => {
+                log::debug!("Get tx from ckb err {:?}", e);
+                sleep(Duration::from_secs(PULL_CKB_TX_INTERVAL)).await;
+            }
+        }
+    };
+
+    let program_map = transactions
         .into_iter()
-        .map(|v| v.unwrap().transaction.unwrap());
-    let mut program_map = HashMap::new();
-    for tx in transactions {
-        let contract_binary = {
-            let tx = Transaction::from(tx.inner).into_view();
-            let (_, binary) = tx.output_with_data(0).unwrap();
-            binary
-        };
-        let mut hash = [0u8; 32];
-        hash.copy_from_slice(tx.hash.as_bytes());
-        program_map.insert(hash.into(), contract_binary);
-    }
+        .map(|tx| {
+            let contract_binary = Transaction::from(tx.inner)
+                .into_view()
+                .output_with_data(0)
+                .unwrap()
+                .1;
+
+            (H256(tx.hash.0), contract_binary)
+        })
+        .collect::<HashMap<_, _>>();
+
     init_dispatcher(program_map)?;
     Ok(())
 }
 
 fn init_dispatcher(program_map: HashMap<H256, Bytes>) -> ProtocolResult<()> {
+    let program_num = program_map.len();
     DISPATCHER.swap(Arc::new(ProgramDispatcher::new(program_map)?));
+    log::info!(
+        "[interoperation]: init dispatcher success, program number {:?}",
+        program_num
+    );
     Ok(())
 }
 
