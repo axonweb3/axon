@@ -214,8 +214,8 @@ where
             "[core_mempool]: flush mempool with {:?} tx_hashes",
             tx_hashes.len(),
         );
+        let rt = tokio::runtime::Handle::current();
         let nonce_check = |tx: &SignedTransaction| -> bool {
-            let rt = tokio::runtime::Handle::current();
             tokio::task::block_in_place(|| {
                 rt.block_on(self.adapter.check_authorization(Context::new(), tx))
                     .is_ok()
