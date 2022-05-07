@@ -59,12 +59,10 @@ impl EvmExecutor {
         let (values, logs) = executor.into_state().deconstruct();
         backend.apply(values, logs, true);
 
-        let code_address = if exit_reason.is_succeed() {
-            if tx.transaction.unsigned.action == TransactionAction::Create {
-                Some(code_address(&tx.sender, &old_nonce))
-            } else {
-                None
-            }
+        let code_address = if tx.transaction.unsigned.action == TransactionAction::Create
+            && exit_reason.is_succeed()
+        {
+            Some(code_address(&tx.sender, &old_nonce))
         } else {
             None
         };
