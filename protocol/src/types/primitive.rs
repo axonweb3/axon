@@ -432,14 +432,6 @@ mod tests {
     }
 
     #[test]
-    fn test_decode_metadata() {
-        let path = "../devtools/chain/metadata.json";
-        let raw = std::fs::read(path).unwrap();
-        let metadata: Metadata = serde_json::from_slice(&raw).unwrap();
-        println!("{:?}", metadata);
-    }
-
-    #[test]
     fn test_hex_decode() {
         let hex = String::from("0x");
         let res = Hex::from_string(hex.clone()).unwrap();

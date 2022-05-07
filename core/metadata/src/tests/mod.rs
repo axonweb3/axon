@@ -208,7 +208,7 @@ fn mock_signed_tx(nonce: u64, data: Vec<u8>) -> SignedTransaction {
 }
 
 fn mock_metadata(epoch: u64, start: u64, end: u64) -> Vec<u8> {
-    let r = BufReader::new(File::open("../../devtools/chain/metadata.json").unwrap());
+    let r = BufReader::new(File::open("./src/tests/metadata.json").unwrap());
     let mut metadata: Metadata = serde_json::from_reader(r).unwrap();
     metadata.epoch = epoch;
     metadata.version.start = start;
