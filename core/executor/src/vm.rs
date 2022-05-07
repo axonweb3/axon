@@ -53,12 +53,13 @@ impl EvmExecutor {
                     .collect(),
             ),
         };
+
         let remain_gas = executor.gas();
         let gas_used = executor.used_gas();
+        let (values, logs) = executor.into_state().deconstruct();
+        backend.apply(values, logs, true);
 
         let code_address = if exit_reason.is_succeed() {
-            let (values, logs) = executor.into_state().deconstruct();
-            backend.apply(values, logs, true);
             if tx.transaction.unsigned.action == TransactionAction::Create {
                 Some(code_address(&tx.sender, &old_nonce))
             } else {
