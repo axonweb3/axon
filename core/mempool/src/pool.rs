@@ -77,11 +77,11 @@ impl PriorityPool {
         Ok(())
     }
 
-    pub fn insert(&self, stx: SignedTransaction) -> ProtocolResult<()> {
+    pub fn insert(&self, stx: SignedTransaction, check_limit: bool) -> ProtocolResult<()> {
         if let Err(n) = self
             .stock_len
             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |x| {
-                if x > self.co_queue.capacity() {
+                if x > self.co_queue.capacity() && check_limit {
                     None
                 } else {
                     Some(x + 1)
@@ -164,7 +164,9 @@ impl PriorityPool {
         self.occupied_nonce.clear();
         self.sys_tx_bucket.flush(hashes, &mut reduce_len);
 
-        self.stock_len.fetch_sub(reduce_len, Ordering::AcqRel);
+        if reduce_len != 0 {
+            self.stock_len.fetch_sub(reduce_len, Ordering::AcqRel);
+        }
 
         let mut q = self.real_queue.lock();
         for tx in residual {
@@ -189,8 +191,7 @@ impl PriorityPool {
         }
 
         for tx_ptr in q.drain().chain(pop_all_item(Arc::clone(&self.co_queue))) {
-            if tx_ptr.is_dropped() {
-                self.tx_map.remove(tx_ptr.hash());
+            if tx_ptr.is_dropped() && self.tx_map.remove(tx_ptr.hash()).is_some() {
                 *reduce_len += 1;
             }
         }
