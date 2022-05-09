@@ -2,7 +2,7 @@ use std::{collections::HashMap, fs, io, path::Path, sync::Arc};
 
 use parking_lot::RwLock;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
-use rocksdb::ops::{Get, Open, Put, WriteOps};
+use rocksdb::ops::{Delete, Get, Open, Put, WriteOps};
 use rocksdb::{FullOptions, Options, WriteBatch, DB};
 
 use common_apm::metrics::storage::{on_storage_get_state, on_storage_put_state};
@@ -139,11 +139,18 @@ impl cita_trie::DB for RocksTrieDB {
         self.flush()
     }
 
-    fn remove(&self, _key: &[u8]) -> Result<(), Self::Error> {
+    fn remove(&self, key: &[u8]) -> Result<(), Self::Error> {
+        self.cache.write().remove(key);
+        let _ = self.db.delete(key);
         Ok(())
     }
 
-    fn remove_batch(&self, _keys: &[Vec<u8>]) -> Result<(), Self::Error> {
+    fn remove_batch(&self, keys: &[Vec<u8>]) -> Result<(), Self::Error> {
+        let mut cache = self.cache.write();
+        keys.iter().for_each(|key| {
+            cache.remove(key);
+            let _ = self.db.delete(key);
+        });
         Ok(())
     }
 
