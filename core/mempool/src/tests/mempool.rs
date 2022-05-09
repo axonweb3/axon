@@ -187,8 +187,8 @@ async fn test_flush_with_concurrent_insert() {
 }
 
 macro_rules! ensure_order_txs {
-    ($in_pool: expr, $out_pool: expr) => {
-        let mempool = &Arc::new(default_mempool().await);
+    ($in_pool: expr, $out_pool: expr, $pool_size: expr) => {
+        let mempool = &Arc::new(new_mempool($pool_size, 0, 0, 0).await);
 
         let txs = &default_mock_txs($in_pool + $out_pool);
         let (in_pool_txs, out_pool_txs) = txs.split_at($in_pool);
@@ -206,11 +206,15 @@ macro_rules! ensure_order_txs {
 #[tokio::test]
 async fn test_ensure_order_txs() {
     // all txs are in pool
-    ensure_order_txs!(100, 0);
+    ensure_order_txs!(100, 0, 100);
     // 50 txs are not in pool
-    ensure_order_txs!(50, 50);
+    ensure_order_txs!(50, 50, 100);
     // all txs are not in pool
-    ensure_order_txs!(0, 100);
+    ensure_order_txs!(0, 100, 100);
+
+    // pool size reach limit
+    ensure_order_txs!(0, 100, 50);
+    ensure_order_txs!(50, 50, 50);
 }
 
 #[rustfmt::skip]

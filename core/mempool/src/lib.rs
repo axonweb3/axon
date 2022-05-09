@@ -91,7 +91,7 @@ where
         self.adapter
             .check_storage_exist(ctx.clone(), &stx.transaction.hash)
             .await?;
-        self.pool.insert(stx)
+        self.pool.insert(stx, true)
     }
 
     async fn insert_tx(
@@ -117,7 +117,7 @@ where
             if is_system_script {
                 self.pool.insert_system_script_tx(tx.clone())?;
             } else {
-                self.pool.insert(tx.clone())?;
+                self.pool.insert(tx.clone(), true)?;
             }
 
             if !ctx.is_network_origin_txs() {
@@ -214,8 +214,8 @@ where
             "[core_mempool]: flush mempool with {:?} tx_hashes",
             tx_hashes.len(),
         );
+        let rt = tokio::runtime::Handle::current();
         let nonce_check = |tx: &SignedTransaction| -> bool {
-            let rt = tokio::runtime::Handle::current();
             tokio::task::block_in_place(|| {
                 rt.block_on(self.adapter.check_authorization(Context::new(), tx))
                     .is_ok()
@@ -295,8 +295,14 @@ where
 
             self.verify_tx_in_parallel(ctx.clone(), txs.clone()).await?;
 
-            for signed_tx in txs.into_iter() {
-                self.pool.insert(signed_tx)?;
+            for signed_tx in txs {
+                let is_call_system_script =
+                    is_call_system_script(&signed_tx.transaction.unsigned.action);
+                if is_call_system_script {
+                    self.pool.insert_system_script_tx(signed_tx)?;
+                } else {
+                    self.pool.insert(signed_tx, false)?;
+                }
             }
 
             self.adapter.report_good(ctx);
