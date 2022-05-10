@@ -1,0 +1,95 @@
+# crypto
+privkey = "0x2df9df719f297aa88bfa2d5278743ac7c6612285716ea5db49a2fb8b6216a4a2"
+
+# db config
+data_path = "./devtools/chain/data8"
+
+epoch_len = 100_000_000
+
+metadata_contract_address = "0xc2fd48d60ae16b3fe6e333a9a13763691970d9373d4fab7cc323d7ba06fa9986"
+crosschain_contract_address = "0xda6db70ce66da4c6433bb447b484fd480e598621638f380f404697cd9f58b0f8"
+
+[rpc]
+http_listening_address = "0.0.0.0:8000"
+ws_listening_address = "0.0.0.0:8010"
+maxconn = 25000
+max_payload_size = 10485760
+client_version = "0.1.0"
+
+[network]
+listening_address = "/ip4/0.0.0.0/tcp/8001"
+rpc_timeout = 10
+
+[consensus]
+overlord_gap = 5
+sync_txs_chunk_size = 5000
+
+[[network.bootstraps]]
+multi_address = "/dns4/axon1/tcp/8001/p2p/QmNk6bBwkLPuqnsrtxpp819XLZY3ymgjs3p1nKtxBVgqxj"
+
+[[network.bootstraps]]
+multi_address = "/dns4/axon2/tcp/8001/p2p/QmaHBJqULbLGDn7Td196goNebH6XMTMMu2sKNNP2DiX9S2"
+
+[[network.bootstraps]]
+multi_address = "/dns4/axon3/tcp/8001/p2p/QmQLufVVmBuHKoYhdDCqUFYVtLYs1quryoaA1mkQYQdWkn"
+
+[[network.bootstraps]]
+multi_address = "/dns4/axon4/tcp/8001/p2p/QmXoSkz4zkHHiFZqmDZQ4gFYtJ72uqtp4m6FX373X4VkRq"
+
+[[network.bootstraps]]
+multi_address = "/dns4/axon5/tcp/8001/p2p/QmQwC19oF4hFeGtdnh6WDDVQW21wrKBmWZQwYDJjgNPN1e"
+
+[[network.bootstraps]]
+multi_address = "/dns4/axon6/tcp/8001/p2p/QmXD1VMW32oL9CXn9vYovTtUsfDrwSQ3ck85VAcTXwShTb"
+
+[[network.bootstraps]]
+multi_address = "/dns4/axon7/tcp/8001/p2p/QmPtrSTykXdJTnSMRqtXUY7Qy7FzvCcd1um1s3qyYprpBc"
+
+[[network.bootstraps]]
+multi_address = "/dns4/axon8/tcp/8001/p2p/QmXVWZ2QgnK4FQhQ9gVagyxzbcaV7XU5qZT8VuBMjqKDar"
+
+[mempool]
+timeout_gap = 20
+pool_size = 20000000
+broadcast_txs_size = 200
+broadcast_txs_interval = 200
+
+[executor]
+light = false
+triedb_cache_size = 2000
+
+[logger]
+filter = "debug"
+log_to_console = true
+console_show_file_and_line = false
+log_path = "logs/"
+log_to_file = true
+file_size_limit = 1073741824 # 1 GiB
+metrics = true
+# you can specify log level for modules with config below
+# modules_level = { "overlord::state::process" = "debug", core_consensus = "error" }
+
+[rocksdb]
+max_open_files = 64
+cache_size = 134217728
+# Provide an options file to tune RocksDB for your workload and your system configuration.
+# More details can be found in [the official tuning guide](https://github.com/facebook/rocksdb/wiki/RocksDB-Tuning-Guide).
+options_file = "default.db-options"
+
+[cross_client]
+axon_udt_hash = "0xf32ec1e3274c27ac4cc018c92efec443847e9b78ba8cbedca36f0fa8c35d1c9e"
+ckb_uri = "http://47.111.84.118:81/"
+mercury_uri = "http://127.0.0.1:8116"
+start_block_number = 4096800
+checkpoint_interval = 1000
+pk = "0x37aa0f893d05914a4def0460c0a984d3611546cfb26924d7a7ca6e0db9950a2d"
+enable = false
+admin_address = "0x0000000000000000000000000000000000000000"
+node_address = "0x0000000000000000000000000000000000000000"
+selection_lock_hash = "0xf32ec1e3274c27ac4cc018c92efec443847e9b78ba8cbedca36f0fa8c35d1c9e"
+checkpoint_type_hash = "0xf32ec1e3274c27ac4cc018c92efec443847e9b78ba8cbedca36f0fa8c35d1c9e"
+
+[interoperability_extension]
+blockchain_extension_transaction_hashes = [
+    {name = "cardano", id = 2, tx_hash = "0xb1af175009413bf9670dffb7b120f0eca52896a9798bda123df9b25ff7d8f721"}
+]
