@@ -61,10 +61,7 @@ impl PriorityPool {
 
     pub fn get_tx_count_by_address(&self, address: H160) -> usize {
         if let Some(set) = self.occupied_nonce.get(&address) {
-            return set
-                .iter()
-                .filter(|tx| !tx.1.is_dropped.load(Ordering::Relaxed))
-                .count();
+            return set.iter().filter(|tx| !tx.1.is_dropped()).count();
         }
 
         0usize
@@ -140,12 +137,13 @@ impl PriorityPool {
         self.tx_map.contains_key(hash) || self.sys_tx_bucket.contains(hash)
     }
 
-    pub fn reach_limit(&self) -> bool {
-        self.len() > self.co_queue.capacity()
-    }
-
-    pub fn pool_size(&self) -> usize {
-        self.co_queue.capacity() / 2
+    pub fn reach_limit(&self) -> Result<usize, usize> {
+        let c = self.len();
+        if c > self.co_queue.capacity() {
+            Err(c)
+        } else {
+            Ok(c)
+        }
     }
 
     pub fn get_by_hash(&self, hash: &Hash) -> Option<SignedTransaction> {
