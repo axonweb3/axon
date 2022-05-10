@@ -85,11 +85,11 @@ impl TxDigest {
     }
 
     pub fn is_dropped(&self) -> bool {
-        self.is_dropped.load(AtomicOrdering::Relaxed)
+        self.is_dropped.load(AtomicOrdering::Acquire)
     }
 
     pub fn set_dropped(&self) {
-        self.is_dropped.swap(true, AtomicOrdering::Acquire);
+        self.is_dropped.swap(true, AtomicOrdering::AcqRel);
     }
 }
 

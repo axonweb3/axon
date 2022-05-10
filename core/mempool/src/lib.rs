@@ -101,8 +101,8 @@ where
         is_system_script: bool,
     ) -> ProtocolResult<()> {
         let tx_hash = &tx.transaction.hash;
-        if self.pool.reach_limit() {
-            return Err(MemPoolError::ReachLimit(self.pool.pool_size()).into());
+        if let Err(i) = self.pool.reach_limit() {
+            return Err(MemPoolError::ReachLimit(i).into());
         }
 
         if self.pool.contains(tx_hash) {
