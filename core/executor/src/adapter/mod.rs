@@ -51,8 +51,8 @@ where
         ret
     }
 
-    fn state_root(&self) -> MerkleRoot {
-        self.trie.root
+    fn commit(&mut self) -> MerkleRoot {
+        self.trie.commit().unwrap()
     }
 
     fn get(&self, key: &[u8]) -> Option<Bytes> {
@@ -243,10 +243,6 @@ where
             storage,
             exec_ctx,
         })
-    }
-
-    pub fn root(&self) -> MerkleRoot {
-        self.trie.root
     }
 
     fn apply<I: IntoIterator<Item = (H256, H256)>>(

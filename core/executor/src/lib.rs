@@ -113,7 +113,7 @@ impl Executor for AxonExecutor {
         }
 
         ExecResp {
-            state_root:   backend.state_root(),
+            state_root:   backend.commit(),
             receipt_root: Merkle::from_hashes(hashes)
                 .get_root_hash()
                 .unwrap_or_default(),

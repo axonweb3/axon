@@ -631,7 +631,11 @@ impl Axon {
             _ = panic_receiver.recv() => { log::info!("child thread panic, quit.") },
         };
 
-        #[cfg(feature = "jemalloc")]
+        #[cfg(all(
+            not(target_env = "msvc"),
+            not(target_os = "macos"),
+            feature = "jemalloc"
+        ))]
         {
             Self::set_profile(false);
             Self::dump_profile();

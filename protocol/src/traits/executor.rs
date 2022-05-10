@@ -10,7 +10,7 @@ pub trait ExecutorAdapter {
 
     fn get_logs(&mut self) -> Vec<Log>;
 
-    fn state_root(&self) -> MerkleRoot;
+    fn commit(&mut self) -> MerkleRoot;
 
     fn get(&self, key: &[u8]) -> Option<Bytes>;
 
