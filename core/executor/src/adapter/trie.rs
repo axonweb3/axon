@@ -101,10 +101,15 @@ mod tests {
 
         mpt.insert(&key_1, &val_1).unwrap();
         mpt.insert(&key_2, &val_2).unwrap();
+        mpt.commit().unwrap();
 
         assert_eq!(mpt.get(&key_1).unwrap(), Some(Bytes::from(val_1)));
         assert_eq!(mpt.get(&key_2).unwrap(), Some(Bytes::from(val_2)));
         assert!(mpt.remove(&key_1).is_ok());
+        assert!(mpt.get(&key_1).unwrap().is_none());
+
+        mpt.commit().unwrap();
+
         assert!(mpt.get(&key_1).unwrap().is_none());
 
         dir.close().unwrap();
