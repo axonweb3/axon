@@ -111,9 +111,11 @@ impl Executor for AxonExecutor {
             hashes.push(Hasher::digest(&r.ret));
             res.push(r);
         }
+        // commit changes by all txs included in this block only once
+        let new_state_root = backend.commit();
 
         ExecResp {
-            state_root:   backend.commit(),
+            state_root:   new_state_root,
             receipt_root: Merkle::from_hashes(hashes)
                 .get_root_hash()
                 .unwrap_or_default(),
