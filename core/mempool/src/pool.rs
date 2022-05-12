@@ -78,7 +78,7 @@ impl PriorityPool {
         if let Err(n) = self
             .stock_len
             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |x| {
-                if x > self.co_queue.capacity() && check_limit {
+                if x >= self.co_queue.capacity() && check_limit {
                     None
                 } else {
                     Some(x + 1)
@@ -93,6 +93,15 @@ impl PriorityPool {
         let _flushing = self.flush_lock.read();
 
         let tx_wrapper = TxWrapper::from(stx);
+
+        // Must flush co_queue here when it's full, otherwise, this tx may can't package
+        // by self, because it will never insert to real_queue
+        if !check_limit && self.co_queue.is_full() {
+            let mut q = self.real_queue.lock();
+            let txs = pop_all_item(Arc::clone(&self.co_queue));
+            txs.for_each(|p_tx| q.push(p_tx));
+        }
+
         let _ = self.co_queue.push(tx_wrapper.ptr());
         self.occupy_nonce(tx_wrapper.ptr());
         self.tx_map
@@ -157,29 +166,22 @@ impl PriorityPool {
 
     pub fn flush<F: Fn(&SignedTransaction) -> bool>(&self, hashes: &[Hash], nonce_check: F) {
         let _flushing = self.flush_lock.write();
-        let mut reduce_len = 0;
-        let residual = self.get_residual(hashes, nonce_check, &mut reduce_len);
         self.occupied_nonce.clear();
+        let mut reduce_len = 0;
+        self.flush_inner(hashes, nonce_check, &mut reduce_len);
         self.sys_tx_bucket.flush(hashes, &mut reduce_len);
 
         if reduce_len != 0 {
             self.stock_len.fetch_sub(reduce_len, Ordering::AcqRel);
         }
-
-        let mut q = self.real_queue.lock();
-        for tx in residual {
-            let tx_wrapper = TxWrapper::from(tx);
-            self.occupy_nonce(tx_wrapper.ptr());
-            q.push(tx_wrapper.ptr());
-        }
     }
 
-    fn get_residual<F: Fn(&SignedTransaction) -> bool>(
+    fn flush_inner<F: Fn(&SignedTransaction) -> bool>(
         &self,
         hashes: &[Hash],
         nonce_check: F,
         reduce_len: &mut usize,
-    ) -> impl Iterator<Item = SignedTransaction> + '_ {
+    ) {
         let mut q = self.real_queue.lock();
 
         for hash in hashes {
@@ -201,7 +203,11 @@ impl PriorityPool {
             false
         });
 
-        self.tx_map.iter().map(|kv| kv.value().clone())
+        for tx in self.tx_map.iter().map(|kv| kv.value().clone()) {
+            let tx_wrapper = TxWrapper::from(tx);
+            self.occupy_nonce(tx_wrapper.ptr());
+            q.push(tx_wrapper.ptr());
+        }
     }
 
     fn occupy_nonce(&self, tx_ptr: TxPtr) {
