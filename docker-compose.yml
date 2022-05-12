@@ -12,7 +12,7 @@ services:
       - ./devtools:/app/devtools
     networks:
       - axon-net
-    command: ./axon -c=/app/devtools/chain/config.toml -g=/app/devtools/chain/genesis.json -m=/app/devtools/chain/metadata.json
+    command: ./axon -c=/app/devtools/chain/config.toml -g=/app/devtools/chain/genesis.json
 
 
 networks:
