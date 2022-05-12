@@ -104,9 +104,9 @@ pub async fn track_current_process() {
 
         if let Ok(memory) = process::get_current_process_memory() {
             // Resident set size, amount of non-swapped physical memory.
-            let rss = memory.resident as i64 / 1024i64 / 1024i64;
+            let rss = memory.resident as i64;
             // Virtual memory size, total amount of memory.
-            let vms = memory.size as i64 / 1024i64 / 1024i64;
+            let vms = memory.size as i64;
 
             metrics!("mem.process", "rss", rss);
             metrics!("mem.process", "vms", vms);
