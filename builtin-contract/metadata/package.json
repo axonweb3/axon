@@ -12,7 +12,7 @@
   "license": "ISC",
   "devDependencies": {
     "@ethereumjs/tx": "^3.5.1",
-    "@nomiclabs/hardhat-ethers": "^2.0.5",
+    "@nomiclabs/hardhat-ethers": "^2.0.6",
     "@nomiclabs/hardhat-waffle": "^2.0.2",
     "chai": "^4.3.6",
     "ethereum-waffle": "^3.4.4",
