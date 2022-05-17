@@ -144,7 +144,7 @@ async fn new_mempool(
     _max_tx_size: u64,
 ) -> MemPoolImpl<HashMemPoolAdapter> {
     let adapter = HashMemPoolAdapter::new();
-    let mempool = MemPoolImpl::new(pool_size, adapter, vec![]).await;
+    let mempool = MemPoolImpl::new(pool_size, 20, adapter, vec![]).await;
     mempool
 }
 
@@ -229,7 +229,10 @@ async fn exec_insert(signed_tx: SignedTransaction, mempool: Arc<MemPoolImpl<Hash
 }
 
 async fn exec_flush(remove_hashes: Vec<Hash>, mempool: Arc<MemPoolImpl<HashMemPoolAdapter>>) {
-    mempool.flush(Context::new(), &remove_hashes).await.unwrap()
+    mempool
+        .flush(Context::new(), &remove_hashes, 0)
+        .await
+        .unwrap()
 }
 
 async fn exec_package(

@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BinaryHeap};
+use std::collections::{BTreeMap, BinaryHeap, HashSet};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
@@ -10,7 +10,7 @@ use dashmap::DashMap;
 use parking_lot::{Mutex, RwLock};
 
 use protocol::tokio::{self, time::sleep};
-use protocol::types::{Bytes, Hash, SignedTransaction, H160, U256};
+use protocol::types::{BlockNumber, Bytes, Hash, SignedTransaction, H160, U256};
 use protocol::ProtocolResult;
 
 use crate::tx_wrapper::{TxPtr, TxWrapper};
@@ -23,20 +23,24 @@ pub struct PriorityPool {
     real_queue:     Arc<Mutex<BinaryHeap<TxPtr>>>,
     tx_map:         DashMap<Hash, SignedTransaction>,
     stock_len:      AtomicUsize,
+    timeout_gap:    Mutex<BTreeMap<BlockNumber, HashSet<Hash>>>,
+    timeout_config: u64,
 
     flush_lock: Arc<RwLock<()>>,
 }
 
 impl PriorityPool {
-    pub async fn new(size: usize) -> Self {
+    pub async fn new(size: usize, timeout_config: u64) -> Self {
         let pool = PriorityPool {
-            sys_tx_bucket:  SystemScriptTxBucket::new(),
+            sys_tx_bucket: SystemScriptTxBucket::new(),
             occupied_nonce: DashMap::new(),
-            co_queue:       Arc::new(ArrayQueue::new(size)),
-            real_queue:     Arc::new(Mutex::new(BinaryHeap::with_capacity(size * 2))),
-            tx_map:         DashMap::new(),
-            stock_len:      AtomicUsize::new(0),
-            flush_lock:     Arc::new(RwLock::new(())),
+            co_queue: Arc::new(ArrayQueue::new(size)),
+            real_queue: Arc::new(Mutex::new(BinaryHeap::with_capacity(size * 2))),
+            tx_map: DashMap::new(),
+            stock_len: AtomicUsize::new(0),
+            timeout_gap: Mutex::new(BTreeMap::new()),
+            timeout_config,
+            flush_lock: Arc::new(RwLock::new(())),
         };
 
         let co_queue = Arc::clone(&pool.co_queue);
@@ -164,11 +168,16 @@ impl PriorityPool {
         }
     }
 
-    pub fn flush<F: Fn(&SignedTransaction) -> bool>(&self, hashes: &[Hash], nonce_check: F) {
+    pub fn flush<F: Fn(&SignedTransaction) -> bool>(
+        &self,
+        hashes: &[Hash],
+        nonce_check: F,
+        number: BlockNumber,
+    ) {
         let _flushing = self.flush_lock.write();
         self.occupied_nonce.clear();
         let mut reduce_len = 0;
-        self.flush_inner(hashes, nonce_check, &mut reduce_len);
+        self.flush_inner(hashes, nonce_check, &mut reduce_len, number);
         self.sys_tx_bucket.flush(hashes, &mut reduce_len);
 
         if reduce_len != 0 {
@@ -181,8 +190,10 @@ impl PriorityPool {
         hashes: &[Hash],
         nonce_check: F,
         reduce_len: &mut usize,
+        number: BlockNumber,
     ) {
         let mut q = self.real_queue.lock();
+        let mut timeout_gap = self.timeout_gap.lock();
 
         for hash in hashes {
             if self.tx_map.remove(hash).is_some() {
@@ -195,18 +206,32 @@ impl PriorityPool {
                 *reduce_len += 1;
             }
         }
+
+        let timeout = if number > self.timeout_config {
+            timeout_gap.remove(&number.saturating_sub(self.timeout_config))
+        } else {
+            None
+        };
+
         self.tx_map.retain(|_, v| {
-            if nonce_check(v) {
+            if nonce_check(v)
+                && timeout
+                    .as_ref()
+                    .map(|set| set.is_empty() || !set.contains(&v.transaction.hash))
+                    .unwrap_or(true)
+            {
                 return true;
             }
             *reduce_len += 1;
             false
         });
 
+        let ptr = timeout_gap.entry(number).or_default();
         for tx in self.tx_map.iter().map(|kv| kv.value().clone()) {
             let tx_wrapper = TxWrapper::from(tx);
             self.occupy_nonce(tx_wrapper.ptr());
             q.push(tx_wrapper.ptr());
+            ptr.insert(tx_wrapper.hash());
         }
     }
 
