@@ -108,7 +108,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                 .await
                 .map_err(|e| Error::Custom(e.to_string()))?
             {
-                Ok(Some(Web3Transaction::create(receipt, stx)))
+                Ok(Some((stx, receipt).into()))
             } else {
                 Err(Error::Custom(format!(
                     "can not get receipt by hash {:?}",

@@ -87,7 +87,7 @@ impl UnverifiedTransaction {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Default, Clone, Debug, Hash, PartialEq, Eq)]
 pub struct SignatureComponents {
     pub r:          Bytes,
     pub s:          Bytes,
