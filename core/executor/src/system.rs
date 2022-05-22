@@ -46,6 +46,7 @@ fn revert_resp(gas_limit: U256) -> TxResp {
         remain_gas:   (gas_limit - 1).as_u64(),
         logs:         vec![],
         code_address: None,
+        removed:      false,
     }
 }
 
@@ -104,6 +105,7 @@ mod native_token {
             remain_gas:   tx.gas_limit.as_u64(),
             logs:         vec![],
             code_address: None,
+            removed:      false,
         }
     }
 }

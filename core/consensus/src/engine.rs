@@ -750,22 +750,29 @@ pub fn generate_receipts_and_logs(
     txs: &[SignedTransaction],
     resp: &ExecResp,
 ) -> (Vec<Receipt>, Vec<Vec<Log>>) {
+    let mut log_index = 0;
     let receipts = txs
         .iter()
         .enumerate()
         .zip(resp.tx_resp.iter())
-        .map(|((idx, tx), res)| Receipt {
-            tx_hash: tx.transaction.hash,
-            block_number,
-            block_hash,
-            tx_index: idx as u32,
-            state_root,
-            used_gas: U256::from(res.gas_used),
-            logs_bloom: Bloom::from(BloomInput::Raw(rlp::encode_list(&res.logs).as_ref())),
-            logs: res.logs.clone(),
-            code_address: res.code_address,
-            sender: tx.sender,
-            ret: res.exit_reason.clone(),
+        .map(|((idx, tx), res)| {
+            let receipt = Receipt {
+                tx_hash: tx.transaction.hash,
+                block_number,
+                block_hash,
+                tx_index: idx as u32,
+                state_root,
+                used_gas: U256::from(res.gas_used),
+                logs_bloom: Bloom::from(BloomInput::Raw(rlp::encode_list(&res.logs).as_ref())),
+                logs: res.logs.clone(),
+                log_index,
+                code_address: res.code_address,
+                sender: tx.sender,
+                ret: res.exit_reason.clone(),
+                removed: res.removed,
+            };
+            log_index += res.logs.len() as u32;
+            receipt
         })
         .collect::<Vec<_>>();
     let logs = receipts.iter().map(|r| r.logs.clone()).collect::<Vec<_>>();

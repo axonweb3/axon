@@ -4,20 +4,21 @@ use crate::types::{ExecutorContext, Log, TxResp, H160, H256, U256};
 
 impl Encodable for TxResp {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(6)
+        s.begin_list(7)
             .append(&bincode::serialize(&self.exit_reason).unwrap())
             .append(&self.ret)
             .append(&self.gas_used)
             .append(&self.remain_gas)
             .append_list(&self.logs)
-            .append(&self.code_address);
+            .append(&self.code_address)
+            .append(&self.removed);
     }
 }
 
 impl Decodable for TxResp {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
-            Prototype::List(6) => Ok(TxResp {
+            Prototype::List(7) => Ok(TxResp {
                 exit_reason:  {
                     let tmp: Vec<u8> = r.val_at(0)?;
                     bincode::deserialize(&tmp)
@@ -28,6 +29,7 @@ impl Decodable for TxResp {
                 remain_gas:   r.val_at(3)?,
                 logs:         r.list_at(4)?,
                 code_address: r.val_at(5)?,
+                removed:      r.val_at(6)?,
             }),
             _ => Err(DecoderError::RlpExpectedToBeList),
         }

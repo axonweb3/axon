@@ -159,15 +159,31 @@ pub struct Web3ReceiptLog {
     pub topics:            Vec<H256>,
     pub data:              Hex,
     pub block_number:      U256,
+    pub block_hash:        Hash,
     pub transaction_hash:  Hash,
     pub transaction_index: Option<U256>,
-    pub block_hash:        Hash,
     pub log_index:         U256,
     pub removed:           bool,
 }
 
 impl Web3Receipt {
     pub fn new(receipt: Receipt, stx: SignedTransaction) -> Web3Receipt {
+        let logs_list = receipt
+            .logs
+            .iter()
+            .map(|log| Web3ReceiptLog {
+                address:           log.address,
+                topics:            log.topics.clone(),
+                data:              Hex::encode(&log.data),
+                block_number:      receipt.block_number.into(),
+                block_hash:        receipt.block_hash,
+                transaction_hash:  receipt.tx_hash,
+                transaction_index: Some(receipt.tx_index.into()),
+                log_index:         U256::zero(),
+                removed:           false,
+            })
+            .collect::<Vec<_>>();
+
         let mut web3_receipt = Web3Receipt {
             block_number:        receipt.block_number.into(),
             block_hash:          receipt.block_hash,
@@ -177,13 +193,13 @@ impl Web3Receipt {
             from:                receipt.sender,
             status:              receipt.status(),
             gas_used:            receipt.used_gas,
-            logs:                vec![],
+            logs:                logs_list,
             logs_bloom:          receipt.logs_bloom,
             state_root:          receipt.state_root,
             to:                  stx.get_to(),
             transaction_hash:    receipt.tx_hash,
             transaction_index:   Some(receipt.tx_index.into()),
-            transaction_type:    Some(0x02u64.into()),
+            transaction_type:    Some(EIP1559_TX_TYPE.into()),
         };
         for item in receipt.logs.into_iter() {
             web3_receipt.logs.push(Web3ReceiptLog {

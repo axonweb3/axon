@@ -62,9 +62,11 @@ fn mock_receipt(hash: Hash) -> Receipt {
         used_gas:     Default::default(),
         logs_bloom:   Default::default(),
         logs:         vec![],
+        log_index:    1,
         code_address: None,
         sender:       Default::default(),
         ret:          ExitReason::Succeed(ExitSucceed::Stopped),
+        removed:      false,
     }
 }
 

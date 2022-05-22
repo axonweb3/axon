@@ -20,6 +20,7 @@ pub struct TxResp {
     pub remain_gas:   u64,
     pub logs:         Vec<Log>,
     pub code_address: Option<Hash>,
+    pub removed:      bool,
 }
 
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
