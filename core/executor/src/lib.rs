@@ -80,6 +80,7 @@ impl Executor for AxonExecutor {
             } else {
                 None
             },
+            removed:      false,
         }
     }
 

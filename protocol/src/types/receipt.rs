@@ -13,9 +13,11 @@ pub struct Receipt {
     pub used_gas:     U256,
     pub logs_bloom:   Bloom,
     pub logs:         Vec<Log>,
+    pub log_index:    u32,
     pub code_address: Option<Hash>,
     pub sender:       H160,
     pub ret:          ExitReason,
+    pub removed:      bool,
 }
 
 impl Default for Receipt {
@@ -29,9 +31,11 @@ impl Default for Receipt {
             used_gas:     Default::default(),
             logs_bloom:   Default::default(),
             logs:         Default::default(),
+            log_index:    Default::default(),
             code_address: Default::default(),
             sender:       Default::default(),
             ret:          ExitReason::Succeed(ExitSucceed::Stopped),
+            removed:      Default::default(),
         }
     }
 }

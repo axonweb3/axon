@@ -74,6 +74,7 @@ impl EvmExecutor {
             gas_used,
             logs: vec![],
             code_address,
+            removed: false,
         }
     }
 }
