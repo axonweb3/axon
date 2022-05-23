@@ -148,6 +148,7 @@ async fn test_flush() {
     let remove_hashes: Vec<Hash> = txs.iter().map(|tx| tx.transaction.hash).collect();
     exec_flush(remove_hashes, Arc::clone(&mempool)).await;
     assert_eq!(mempool.get_tx_cache().len(), 432);
+    assert_eq!(mempool.get_tx_cache().real_queue_len(), 432);
 }
 
 #[tokio::test(flavor = "multi_thread")]

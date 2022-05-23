@@ -24,8 +24,8 @@ impl TxWrapper {
         self.0.hash
     }
 
-    pub fn into_signed_transaction(self) -> SignedTransaction {
-        self.1
+    pub fn into_parts(self) -> (TxPtr, SignedTransaction) {
+        (self.0, self.1)
     }
 }
 
