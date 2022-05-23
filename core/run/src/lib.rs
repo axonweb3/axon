@@ -319,7 +319,6 @@ impl Axon {
             Arc::clone(&metadata_controller),
             Arc::clone(&interoperation),
             self.genesis.block.header.chain_id,
-            config.mempool.timeout_gap,
             self.genesis.block.header.gas_limit.as_u64(),
             config.mempool.pool_size as usize,
             config.mempool.broadcast_txs_size,
@@ -328,6 +327,7 @@ impl Axon {
         let mempool = Arc::new(
             MemPoolImpl::new(
                 config.mempool.pool_size as usize,
+                config.mempool.timeout_gap,
                 mempool_adapter,
                 current_stxs.clone(),
             )

@@ -284,8 +284,15 @@ where
         kind = "consensus.adapter",
         logs = "{flush_txs_len: ordered_tx_hashes.len()}"
     )]
-    async fn flush_mempool(&self, ctx: Context, ordered_tx_hashes: &[Hash]) -> ProtocolResult<()> {
-        self.mempool.flush(ctx, ordered_tx_hashes).await
+    async fn flush_mempool(
+        &self,
+        ctx: Context,
+        ordered_tx_hashes: &[Hash],
+        current_number: BlockNumber,
+    ) -> ProtocolResult<()> {
+        self.mempool
+            .flush(ctx, ordered_tx_hashes, current_number)
+            .await
     }
 
     /// Get a block corresponding to the given number.

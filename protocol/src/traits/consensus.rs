@@ -99,7 +99,12 @@ pub trait CommonConsensusAdapter: Send + Sync {
     ) -> ProtocolResult<()>;
 
     /// Flush the given transactions in the mempool.
-    async fn flush_mempool(&self, ctx: Context, ordered_tx_hashes: &[Hash]) -> ProtocolResult<()>;
+    async fn flush_mempool(
+        &self,
+        ctx: Context,
+        ordered_tx_hashes: &[Hash],
+        current_number: BlockNumber,
+    ) -> ProtocolResult<()>;
 
     /// Get a block corresponding to the given height.
     async fn get_block_by_number(&self, ctx: Context, height: u64) -> ProtocolResult<Block>;

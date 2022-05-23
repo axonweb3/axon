@@ -272,7 +272,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             .await?;
 
         self.adapter
-            .flush_mempool(ctx.clone(), &proposal.tx_hashes)
+            .flush_mempool(ctx.clone(), &proposal.tx_hashes, current_number)
             .await?;
 
         self.txs_wal.remove(current_number.saturating_sub(2))?;
