@@ -16,7 +16,7 @@ pub use consensus::{
     SynchronizationAdapter,
 };
 pub use creep::{Cloneable, Context};
-pub use cross_client::{CrossAdapter, CrossClient};
+pub use cross_client::{CrossAdapter, CrossChain};
 pub use executor::{ApplyBackend, Backend, Executor, ExecutorAdapter};
 pub use interoperation::Interoperation;
 pub use mempool::{MemPool, MemPoolAdapter};
