@@ -12,7 +12,7 @@ pub use adapter::DefaultCrossAdapter;
 use std::sync::Arc;
 
 use protocol::async_trait;
-use protocol::traits::{Context, CrossAdapter, CrossClient};
+use protocol::traits::{Context, CrossAdapter, CrossChain};
 use protocol::types::{Block, BlockNumber, Hash, Log, Proof};
 
 pub struct CrossChainImpl<Adapter> {
@@ -20,7 +20,7 @@ pub struct CrossChainImpl<Adapter> {
 }
 
 #[async_trait]
-impl<Adapter: CrossAdapter + 'static> CrossClient for CrossChainImpl<Adapter> {
+impl<Adapter: CrossAdapter + 'static> CrossChain for CrossChainImpl<Adapter> {
     async fn set_evm_log(
         &self,
         ctx: Context,
