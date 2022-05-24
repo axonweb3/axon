@@ -14,16 +14,17 @@ use ckb_types::{
 };
 use ethabi::RawLog;
 
-use common_config_parser::types::{Config, ConfigCrossClient};
+use common_config_parser::types::{Config, ConfigCrossChain};
 use common_crypto::{
     Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey, Signature,
     ToPublicKey, UncompressedPublicKey,
 };
 use core_executor::{AxonExecutor, AxonExecutorAdapter};
+use protocol::traits::{CkbClient, Context, CrossAdapter, CrossClient, Executor, MemPool, Storage};
 use protocol::types::{
     public_to_address, Block, Bytes, CrossChainTransferPayload, Eip1559Transaction, Identity, Log,
     Proof, Proposal, Public, SignedTransaction, SubmitCheckpointPayload, TransactionAction,
-    UnverifiedTransaction, H160, H256, U256,
+    UnsignedTransaction, UnverifiedTransaction, H160, H256, U256,
 };
 use protocol::{
     async_trait,
@@ -31,10 +32,6 @@ use protocol::{
     lazy::{CHAIN_ID, CURRENT_STATE_ROOT},
     tokio::{self, sync::mpsc},
     ProtocolResult,
-};
-use protocol::{
-    traits::{CkbClient, Context, CrossAdapter, CrossClient, Executor, MemPool, Storage},
-    types::UnsignedTransaction,
 };
 
 ethabi_contract::use_contract!(asset, "./src/adapter/abi/asset.abi");
@@ -47,7 +44,7 @@ const TWO_THOUSAND: u64 = 2000;
 
 pub struct DefaultCrossAdapter<M, S, DB, C> {
     priv_key:       Secp256k1RecoverablePrivateKey,
-    config:         ConfigCrossClient,
+    config:         ConfigCrossChain,
     tip_number:     BlockNumber,
     current_number: BlockNumber,
     block_recv:     mpsc::Receiver<Vec<ProtocolResult<BlockView>>>,
@@ -379,12 +376,12 @@ where
 #[derive(Clone)]
 pub struct CrossAdapterHandle<C> {
     client: Arc<C>,
-    config: ConfigCrossClient,
+    config: ConfigCrossChain,
     pk:     Secp256k1RecoverablePrivateKey,
 }
 
 #[async_trait]
-impl<C> CrossClient for CrossAdapterHandle<C>
+impl<C> CrossChain for CrossAdapterHandle<C>
 where
     C: CkbClient + 'static,
 {

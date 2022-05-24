@@ -164,7 +164,7 @@ pub struct ConfigPrometheus {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct ConfigCrossClient {
+pub struct ConfigCrossChain {
     pub axon_udt_hash:       H256,
     pub ckb_uri:             String,
     pub mercury_uri:         String,
@@ -238,7 +238,7 @@ pub struct Config {
     pub rocksdb:                     ConfigRocksDB,
     pub jaeger:                      Option<ConfigJaeger>,
     pub prometheus:                  Option<ConfigPrometheus>,
-    pub cross_client:                ConfigCrossClient,
+    pub cross_client:                ConfigCrossChain,
     pub epoch_len:                   u64,
     pub metadata_contract_address:   H256,
     pub crosschain_contract_address: H256,
