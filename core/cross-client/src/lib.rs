@@ -6,7 +6,7 @@
 )]
 
 mod adapter;
-mod db;
+mod error;
 mod monitor;
 
 pub use adapter::DefaultCrossAdapter;

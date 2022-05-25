@@ -24,8 +24,8 @@ use common_crypto::{
 use core_executor::{AxonExecutor, AxonExecutorAdapter};
 use protocol::traits::{CkbClient, Context, CrossAdapter, CrossChain, Executor, MemPool, Storage};
 use protocol::types::{
-    public_to_address, Block, Bytes, CrossChainTransferPayload, Identity, Log, Proof, Proposal,
-    Public, SignedTransaction, SubmitCheckpointPayload, Transaction, TransactionAction,
+    public_to_address, Block, Bytes, CrossChainTransferPayload, Hash, Identity, Log, Proof,
+    Proposal, Public, SignedTransaction, SubmitCheckpointPayload, Transaction, TransactionAction,
     UnverifiedTransaction, H160, H256, U256,
 };
 use protocol::{
@@ -43,6 +43,30 @@ use asset::functions as asset_functions;
 use asset::logs::Burned;
 
 const TWO_THOUSAND: u64 = 2000;
+
+trait CrossChainDB {
+    type Error;
+
+    fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, Self::Error>;
+
+    fn insert_determine_record(
+        &self,
+        direct: u8,
+        origin_tx_hash: Hash,
+        relay_tx_hash: Hash,
+    ) -> Result<(), Self::Error>;
+
+    fn insert_batch_record(
+        &self,
+        direct: u8,
+        origin_tx_hashes: Vec<Hash>,
+        relay_tx_hashes: Vec<Hash>,
+    ) -> Result<(), Self::Error>;
+
+    fn insert_pending_request(&self, key: &[u8], val: &[u8]) -> Result<(), Self::Error>;
+
+    fn remove_pending_request(&self, key: &[u8]) -> Result<(), Self::Error>;
+}
 
 pub struct DefaultCrossAdapter<M, S, DB, C> {
     priv_key:       Secp256k1RecoverablePrivateKey,
