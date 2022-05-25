@@ -7,7 +7,7 @@ use rocksdb::{FullOptions, Options, WriteBatch, DB};
 
 use common_config_parser::types::ConfigRocksDB;
 use protocol::types::Hash;
-use protocol::{Display, From, ProtocolResult};
+use protocol::ProtocolResult;
 
 use crate::adapter::CrossChainDB;
 use crate::error::CrossChainError;
@@ -44,7 +44,7 @@ impl CrossChainDB for CrossChainDBImpl {
     ) -> Result<(), Self::Error> {
         let base = vec![direct];
         if origin_tx_hashes.len() != relay_tx_hashes.len() {
-            return Err(CrossChainError::BatchLengthMismatch.into());
+            return Err(CrossChainError::BatchLengthMismatch);
         }
 
         let mut batch = WriteBatch::default();
