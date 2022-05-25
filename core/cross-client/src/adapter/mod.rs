@@ -1,3 +1,5 @@
+mod db;
+
 use std::{
     fs,
     io::{self, Read, Write},
