@@ -1255,6 +1255,7 @@ dependencies = [
  "log",
  "molecule",
  "reqwest",
+ "rlp",
  "serde",
  "serde_json",
  "tokio-util",

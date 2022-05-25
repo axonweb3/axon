@@ -6,6 +6,7 @@
 )]
 
 mod adapter;
+mod codec;
 mod error;
 mod generated;
 mod monitor;

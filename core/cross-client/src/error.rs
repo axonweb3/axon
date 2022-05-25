@@ -4,14 +4,17 @@ use protocol::ProtocolErrorKind;
 
 #[derive(Clone, Debug, Display)]
 pub enum CrossChainError {
-    #[display(fmt = "rocksdb error {}", _0)]
+    #[display(fmt = "Rocksdb error {}", _0)]
     DB(rocksdb::Error),
 
-    #[display(fmt = "create cross chain db error")]
+    #[display(fmt = "Create cross chain db error")]
     CreateDB,
 
-    #[display(fmt = "batch length mismatch")]
+    #[display(fmt = "Batch length mismatch")]
     BatchLengthMismatch,
+
+    #[display(fmt = "Invalid cross direction")]
+    InvalidDirection,
 }
 
 impl std::error::Error for CrossChainError {}
