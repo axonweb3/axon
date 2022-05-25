@@ -7,7 +7,9 @@
 
 mod adapter;
 mod error;
+mod generated;
 mod monitor;
+mod types;
 
 pub use adapter::DefaultCrossAdapter;
 
