@@ -1,7 +1,6 @@
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 
-use crate::error::CrossChainError;
-use crate::types::{Direction, FromCkbRequest, Transfer};
+use crate::types::{Requests, Transfer};
 
 impl Encodable for Transfer {
     fn rlp_append(&self, s: &mut RlpStream) {
@@ -33,14 +32,50 @@ impl Decodable for Transfer {
     }
 }
 
-impl Encodable for FromCkbRequest {
+impl Encodable for Requests {
     fn rlp_append(&self, s: &mut RlpStream) {
         s.append_list(&self.0);
     }
 }
 
-impl Decodable for FromCkbRequest {
+impl Decodable for Requests {
     fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
-        Ok(FromCkbRequest(rlp.as_list()?))
+        Ok(Requests(rlp.as_list()?))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use protocol::types::{Hash, H160};
+    use rand::random;
+
+    use super::*;
+
+    fn random_transfer() -> Transfer {
+        Transfer {
+            direction:      0u8.try_into().unwrap(),
+            tx_hash:        Hash::random(),
+            address:        H160::random(),
+            erc20_address:  H160::random(),
+            sudt_type_hash: Hash::random(),
+            ckb_amount:     random(),
+            sudt_amount:    random(),
+        }
+    }
+
+    #[test]
+    fn test_transfer_codec() {
+        let origin = random_transfer();
+        let raw = rlp::encode(&origin);
+        let decode = rlp::decode::<Transfer>(&raw.freeze()).unwrap();
+        assert_eq!(origin, decode);
+    }
+
+    #[test]
+    fn test_requests_codec() {
+        let origin = Requests((0..10).map(|_| random_transfer()).collect());
+        let raw = rlp::encode(&origin);
+        let decode = rlp::decode::<Requests>(&raw.freeze()).unwrap();
+        assert_eq!(origin, decode);
     }
 }

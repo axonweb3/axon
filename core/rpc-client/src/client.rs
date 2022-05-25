@@ -12,7 +12,7 @@ use ckb_jsonrpc_types::{
 };
 use ckb_types::H256;
 use futures::FutureExt;
-use reqwest::Client;
+use reqwest::{Client, Url};
 
 use protocol::{
     async_trait, tokio,
@@ -69,17 +69,15 @@ macro_rules! jsonrpc {
 #[derive(Clone)]
 pub struct RpcClient {
     raw:         Client,
-    ckb_uri:     reqwest::Url,
-    mercury_uri: reqwest::Url,
+    ckb_uri:     Url,
+    mercury_uri: Url,
     id:          Arc<AtomicU64>,
 }
 
 impl RpcClient {
     pub fn new(ckb_uri: &str, mercury_uri: &str) -> Self {
-        let ckb_uri =
-            reqwest::Url::parse(ckb_uri).expect("ckb uri, e.g. \"http://127.0.0.1:8114\"");
-        let mercury_uri =
-            reqwest::Url::parse(mercury_uri).expect("ckb uri, e.g. \"http://127.0.0.1:8116\"");
+        let ckb_uri = Url::parse(ckb_uri).expect("ckb uri, e.g. \"http://127.0.0.1:8114\"");
+        let mercury_uri = Url::parse(mercury_uri).expect("ckb uri, e.g. \"http://127.0.0.1:8116\"");
         RpcClient {
             raw: Client::new(),
             ckb_uri,

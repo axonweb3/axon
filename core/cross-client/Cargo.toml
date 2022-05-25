@@ -5,6 +5,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+arc-swap = "1.5"
 cita_trie = "3.0"
 ckb-hash = "0.103"
 ckb-jsonrpc-types = "0.103"
@@ -14,6 +15,7 @@ ethabi-contract = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "
 ethabi-derive = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
 futures = "0.3"
 jsonrpc-core = "18.0"
+lazy_static = "1.4"
 log = "0.4"
 molecule = "0.7"
 reqwest = { version = "0.11", features = ["json"] }
@@ -27,3 +29,6 @@ common-config-parser = { path = "../../common/config-parser" }
 common-crypto = { path = "../../common/crypto" }
 core-executor = { path = "../../core/executor" }
 protocol = { path = "../../protocol", package = "axon-protocol" }
+
+[dev-dependencies]
+rand = "0.7"

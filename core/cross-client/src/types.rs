@@ -35,6 +35,4 @@ pub struct Transfer {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct FromCkbRequest(pub Vec<Transfer>);
-
-pub struct FromAxonRequest {}
+pub struct Requests(pub Vec<Transfer>);
