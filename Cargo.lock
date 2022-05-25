@@ -1253,6 +1253,7 @@ dependencies = [
  "futures",
  "jsonrpc-core",
  "log",
+ "molecule",
  "reqwest",
  "serde",
  "serde_json",

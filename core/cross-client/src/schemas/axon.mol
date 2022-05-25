@@ -1,0 +1,88 @@
+array Byte4  [byte; 4];
+array Byte8  [byte; 8];
+array Byte10 [byte; 10];
+array Byte16 [byte; 16];
+array Byte20 [byte; 20];
+array Byte32 [byte; 32];
+array Byte48 [byte; 48];
+
+table Identity {
+	flag:    byte,
+	content: Byte20,
+}
+
+table StakeInfo {
+	identity:         Identity,
+	l2_address:       Byte20,
+	bls_pub_key:      Byte48,
+	stake_amount:     Byte16,
+	inauguration_era: Byte8,
+}
+
+vector Bytes <byte>;
+vector StakeInfoVec <StakeInfo>;
+option IdentityOpt (Identity);
+
+////////////////////
+// selection lock
+////////////////////
+table SelectionLockArgs {
+	omni_lock_hash:       Byte32,
+	checkpoint_lock_hash: Byte32,
+}
+
+////////////////////
+// stake lock
+////////////////////
+table StakeLockArgs {
+	admin_identity: Identity,
+	type_id_hash:   Byte32,
+	node_identity:  IdentityOpt,
+}
+
+table StakeLockCellData {
+	version:              byte,
+	stake_infos:          StakeInfoVec,
+	checkpoint_type_hash: Byte32,
+	sudt_type_hash:       Byte32,
+	quorum_size:          byte,
+}
+
+////////////////////
+// checkpoint lock
+////////////////////
+table CheckpointLockArgs {
+	admin_identity: Identity,
+	type_id_hash:   Byte32,
+}
+
+table CheckpointLockCellData {
+	version:         byte,
+	state:           byte,
+	period:          Byte8,
+	era:             Byte8,
+	block_hash:      Byte32,
+	period_interval: Byte4,
+	era_period:      Byte4,
+	unlock_period:   Byte4,
+	base_reward:     Byte16,
+	half_period:     Byte8,
+	common_ref:      Byte10,
+	sudt_type_hash:  Byte32,
+	stake_type_hash: Byte32,
+	withdrawal_lock_code_hash: Byte32,
+}
+
+table CheckpointLockWitnessLock {
+	proposal: Bytes,
+	proof:    Bytes,
+}
+
+////////////////////
+// withdrawal lock
+////////////////////
+table WithdrawalLockArgs {
+	admin_identity: 		   Identity,
+	checkpoint_cell_type_hash: Byte32,
+	node_identity:             IdentityOpt,
+}
