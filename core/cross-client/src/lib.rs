@@ -1,32 +1,36 @@
-#![allow(
-    dead_code,
-    unused_variables,
-    clippy::needless_return,
-    clippy::derive_partial_eq_without_eq
-)]
+#![allow(dead_code, unused_variables, clippy::derive_partial_eq_without_eq)]
 
 mod adapter;
 mod codec;
 mod error;
 mod generated;
 mod monitor;
+mod pipeline;
 mod types;
 
 pub use adapter::DefaultCrossAdapter;
 
 use std::sync::Arc;
 
-use ckb_types::core::BlockView;
+use arc_swap::ArcSwap;
+use ckb_types::core::TransactionView;
 
 use protocol::async_trait;
 use protocol::tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use protocol::traits::{Context, CrossAdapter, CrossChain};
 use protocol::types::{Block, BlockNumber, Hash, Log, Proof};
 
+pub const CKB_BLOCK_INTERVAL: u64 = 8; // second
+pub const NON_FORK_BLOCK_GAP: u64 = 24;
+
+lazy_static::lazy_static! {
+    pub static ref CKB_TIP: ArcSwap<u64> = ArcSwap::from_pointee(0);
+}
+
 pub struct CrossChainImpl<Adapter> {
     adapter: Arc<Adapter>,
     log_tx:  UnboundedSender<Vec<Log>>,
-    req_tx:  UnboundedSender<Vec<BlockView>>,
+    req_tx:  UnboundedSender<Vec<TransactionView>>,
 }
 
 #[async_trait]

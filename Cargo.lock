@@ -1247,6 +1247,7 @@ dependencies = [
 name = "core-cross-client"
 version = "0.1.0"
 dependencies = [
+ "arc-swap",
  "axon-protocol",
  "cita_trie",
  "ckb-hash",
@@ -1261,8 +1262,10 @@ dependencies = [
  "ethabi-derive",
  "futures",
  "jsonrpc-core",
+ "lazy_static",
  "log",
  "molecule",
+ "rand 0.7.3",
  "reqwest",
  "rlp",
  "serde",
