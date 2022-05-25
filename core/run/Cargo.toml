@@ -35,8 +35,8 @@ core-storage = { path = "../../core/storage" }
 protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [target.'cfg(all(not(target_env = "msvc"), not(target_os="macos")))'.dependencies]
-jemalloc-ctl = { version = "0.4", package = "tikv-jemalloc-ctl", optional = true }
-jemallocator = { version = "0.4", features = ["profiling", "stats", "unprefixed_malloc_on_supported_platforms"], package = "tikv-jemallocator", optional = true }
+jemalloc-ctl = { version = "0.5", package = "tikv-jemalloc-ctl", optional = true }
+jemallocator = { version = "0.5", features = ["profiling", "stats", "unprefixed_malloc_on_supported_platforms"], package = "tikv-jemallocator", optional = true }
 
 [features]
 jemalloc = ["dep:jemallocator", "dep:jemalloc-ctl", "dep:common-memory-tracker"]

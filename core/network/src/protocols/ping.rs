@@ -230,7 +230,7 @@ pub enum PingPayload {
     Pong(u32),
 }
 
-#[derive(Clone, PartialEq, Message)]
+#[derive(Clone, PartialEq, Eq, Message)]
 pub struct PingMessage {
     #[prost(oneof = "PingPayload", tags = "1, 2")]
     pub payload: Option<PingPayload>,
