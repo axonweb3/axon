@@ -1,4 +1,4 @@
-#![allow(dead_code, unused_variables, clippy::needless_return)]
+#![allow(dead_code, unused_variables, clippy::needless_return, clippy::derive_partial_eq_without_eq)]
 
 mod adapter;
 

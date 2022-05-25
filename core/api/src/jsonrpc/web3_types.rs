@@ -476,7 +476,7 @@ impl<'a> Deserialize<'a> for BlockIdWithPending {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Index(usize);
 
 impl Index {
