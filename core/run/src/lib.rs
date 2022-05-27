@@ -100,7 +100,9 @@ impl Axon {
         rt.block_on(async move {
             self.create_genesis().await?;
             self.start().await
-        })
+        })?;
+        rt.shutdown_timeout(std::time::Duration::from_secs(1));
+        Ok(())
     }
 
     pub async fn create_genesis(&mut self) -> ProtocolResult<()> {
