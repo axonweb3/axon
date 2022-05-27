@@ -1257,6 +1257,7 @@ dependencies = [
  "common-config-parser",
  "common-crypto",
  "core-executor",
+ "crossbeam",
  "ethabi 17.1.0",
  "ethabi-contract",
  "ethabi-derive",
@@ -1544,6 +1545,20 @@ checksum = "d00996de9f2f7559f7f4dc286073197f83e92256a59ed395f9aac01fe717da57"
 dependencies = [
  "cast",
  "itertools",
+]
+
+[[package]]
+name = "crossbeam"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ae5588f6b3c3cb05239e90bd110f257254aecd01e4635400391aeae07497845"
+dependencies = [
+ "cfg-if",
+ "crossbeam-channel",
+ "crossbeam-deque",
+ "crossbeam-epoch",
+ "crossbeam-queue",
+ "crossbeam-utils",
 ]
 
 [[package]]

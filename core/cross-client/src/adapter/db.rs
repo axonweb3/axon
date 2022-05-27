@@ -1,5 +1,9 @@
-use rocksdb::ops::{Get, Open, Put, WriteOps};
-use rocksdb::{FullOptions, Options, WriteBatch, DB};
+use std::fs;
+use std::path::Path;
+use std::sync::Arc;
+
+use rocksdb::ops::{Delete, Get, Iterate, Open, Put};
+use rocksdb::{FullOptions, IteratorMode, Options, WriteBatch, DB};
 
 use common_config_parser::types::ConfigRocksDB;
 use protocol::types::Hash;
@@ -14,51 +18,30 @@ pub struct CrossChainDBImpl {
 }
 
 impl CrossChainDB for CrossChainDBImpl {
-    type Error = CrossChainError;
-
-    fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, Self::Error> {
-        Ok(self.db.get(key)?.map(|r| r.to_vec()))
+    fn get(&self, key: &[u8]) -> ProtocolResult<Option<Vec<u8>>> {
+        Ok(self
+            .db
+            .get(key)
+            .map_err(CrossChainError::from)?
+            .map(|r| r.to_vec()))
     }
 
-    fn insert_determine_record(
-        &self,
-        direct: u8,
-        origin_tx_hash: Hash,
-        relay_tx_hash: Hash,
-    ) -> Result<(), Self::Error> {
-        let mut key = vec![direct];
-        key.extend_from_slice(origin_tx_hash.as_bytes());
-        self.db.put(&key, relay_tx_hash.as_bytes())?;
+    fn get_all(&self) -> ProtocolResult<Vec<(Vec<u8>, Vec<u8>)>> {
+        Ok(self
+            .db
+            .iterator(IteratorMode::Start)
+            .map(|(k, v)| (k.as_ref().to_vec(), v.as_ref().to_vec()))
+            .collect())
+    }
+
+    fn insert(&self, key: &[u8], val: &[u8]) -> ProtocolResult<()> {
+        self.db.put(key, val).map_err(CrossChainError::from)?;
         Ok(())
     }
 
-    fn insert_batch_record(
-        &self,
-        direct: u8,
-        origin_tx_hashes: Vec<Hash>,
-        relay_tx_hashes: Vec<Hash>,
-    ) -> Result<(), Self::Error> {
-        let base = vec![direct];
-        if origin_tx_hashes.len() != relay_tx_hashes.len() {
-            return Err(CrossChainError::BatchLengthMismatch);
-        }
-
-        let mut batch = WriteBatch::default();
-        for (origin_hash, relay_hash) in origin_tx_hashes.iter().zip(relay_tx_hashes.iter()) {
-            let mut key = base.clone();
-            key.extend_from_slice(origin_hash.as_bytes());
-            batch.put(&key, relay_hash.as_bytes())?;
-        }
-
-        self.db.write(&batch).map_err(Into::into)
-    }
-
-    fn insert_pending_request(&self, key: &[u8], val: &[u8]) -> Result<(), Self::Error> {
-        self.db.put(key, val).map_err(Into::into)
-    }
-
-    fn remove_pending_request(&self, key: &[u8]) -> Result<(), Self::Error> {
-        self.db.delete(key).map_err(Into::into)
+    fn remove(&self, key: &[u8]) -> ProtocolResult<()> {
+        self.db.delete(key).map_err(CrossChainError::from)?;
+        Ok(())
     }
 }
 

@@ -44,6 +44,52 @@ use asset::logs::Burned;
 
 const TWO_THOUSAND: u64 = 2000;
 
+trait CrossChainDB: Sync + Send {
+    fn get(&self, key: &[u8]) -> ProtocolResult<Option<Vec<u8>>>;
+
+    fn get_all(&self) -> ProtocolResult<Vec<(Vec<u8>, Vec<u8>)>>;
+
+    fn insert(&self, key: &[u8], val: &[u8]) -> ProtocolResult<()>;
+
+    fn remove(&self, key: &[u8]) -> ProtocolResult<()>;
+}
+
+pub struct DefaultCrossChainAdapter<M, DB> {
+    mempool: Arc<M>,
+    db:      Arc<DB>,
+}
+
+#[async_trait]
+impl<M, DB> CrossAdapter for DefaultCrossChainAdapter<M, DB>
+where
+    M: MemPool + 'static,
+    DB: CrossChainDB + 'static,
+{
+    async fn send_axon_tx(&self, ctx: Context, stx: SignedTransaction) -> ProtocolResult<()> {
+        self.mempool.insert(ctx, stx).await
+    }
+
+    async fn send_ckb_tx(
+        &self,
+        ctx: Context,
+        tx: ckb_jsonrpc_types::TransactionView,
+    ) -> ProtocolResult<()> {
+        Ok(())
+    }
+
+    fn insert_in_process(&self, ctx: Context, key: &[u8], val: &[u8]) -> ProtocolResult<()> {
+        self.db.insert(key, val)
+    }
+
+    fn get_all_in_process(&self, ctx: Context) -> ProtocolResult<Vec<(Vec<u8>, Vec<u8>)>> {
+        self.db.get_all()
+    }
+
+    fn remove_in_process(&self, ctx: Context, key: &[u8]) -> ProtocolResult<()> {
+        self.db.remove(key)
+    }
+}
+
 pub struct DefaultCrossAdapter<M, S, DB, C> {
     priv_key:       Secp256k1RecoverablePrivateKey,
     config:         ConfigCrossChain,
@@ -68,15 +114,27 @@ where
     DB: cita_trie::DB + 'static,
     C: CkbClient + 'static,
 {
-    async fn watch_ckb_client(&self, ctx: Context) -> ProtocolResult<()> {
-        Ok(())
-    }
-
     async fn send_axon_tx(&self, ctx: Context, stx: SignedTransaction) -> ProtocolResult<()> {
         self.mempool.insert(ctx, stx).await
     }
 
-    async fn send_ckb_tx(&self, ctx: Context) -> ProtocolResult<()> {
+    async fn send_ckb_tx(
+        &self,
+        ctx: Context,
+        tx: ckb_jsonrpc_types::TransactionView,
+    ) -> ProtocolResult<()> {
+        Ok(())
+    }
+
+    fn insert_in_process(&self, ctx: Context, key: &[u8], val: &[u8]) -> ProtocolResult<()> {
+        Ok(())
+    }
+
+    fn get_all_in_process(&self, ctx: Context) -> ProtocolResult<Vec<(Vec<u8>, Vec<u8>)>> {
+        Ok(vec![])
+    }
+
+    fn remove_in_process(&self, ctx: Context, key: &[u8]) -> ProtocolResult<()> {
         Ok(())
     }
 }
