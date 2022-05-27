@@ -8,19 +8,19 @@ beforeEach(async () => {
 });
 describe("eth_getBlockByHash", () => {
   testDataInfo = testDataManage.readTestDataAsJson("testData_1.json");
-  /**
-  * param1: 0x24e5f68936e20c7d2aef3438937373642bc5ea582e16458f4b1fdad855252876
-  * param2: true
-  */
-  it("eth_getBlockByHash_1", async () => {
-    const testType = await page.$(goto.pageIds.testTypeId);
-    const param1 = await page.$(goto.pageIds.param1Id);
-    const param2 = await page.$(goto.pageIds.param2Id);
-    await testType.type("1"); // 0: none params 1: common params to request 2: more params
-    await param1.type(testDataInfo.blockHash);
-    await param2.type("true");
-    await goto.check(page, "max_priority_fee_per_gas");
-  });
+  // /**
+  // * param1: 0x24e5f68936e20c7d2aef3438937373642bc5ea582e16458f4b1fdad855252876
+  // * param2: true
+  // */
+  // it("eth_getBlockByHash_1", async () => {
+  //   const testType = await page.$(goto.pageIds.testTypeId);
+  //   const param1 = await page.$(goto.pageIds.param1Id);
+  //   const param2 = await page.$(goto.pageIds.param2Id);
+  //   await testType.type("1"); // 0: none params 1: common params to request 2: more params
+  //   await param1.type(testDataInfo.blockHash);
+  //   await param2.type("true");
+  //   await goto.check(page, "max_priority_fee_per_gas");
+  // });
 
   /**
   * param1: 0x24e5f68936e20c7d2aef3438937373642bc5ea582e16458f4b1fdad855252876
