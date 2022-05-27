@@ -16,7 +16,7 @@ const EIP1559_TX_TYPE: u64 = 0x02;
 #[derive(Deserialize, Clone, Debug, PartialEq, Eq)]
 pub enum RichTransactionOrHash {
     Hash(Hash),
-    Rich(SignedTransaction),
+    Rich(Web3Transaction),
 }
 
 impl Serialize for RichTransactionOrHash {
@@ -35,7 +35,7 @@ impl RichTransactionOrHash {
     pub fn get_hash(&self) -> Hash {
         match self {
             RichTransactionOrHash::Hash(hash) => *hash,
-            RichTransactionOrHash::Rich(stx) => stx.transaction.hash,
+            RichTransactionOrHash::Rich(tx) => tx.hash,
         }
     }
 }
@@ -127,6 +127,23 @@ impl From<(SignedTransaction, Receipt)> for Web3Transaction {
             r:                        signature.r.as_ref().into(),
             s:                        signature.s.as_ref().into(),
         }
+    }
+}
+
+impl Web3Transaction {
+    pub fn add_block_number(mut self, block_number: u64) -> Self {
+        self.block_number = Some(block_number.into());
+        self
+    }
+
+    pub fn add_block_hash(mut self, block_hash: H256) -> Self {
+        self.block_hash = Some(block_hash);
+        self
+    }
+
+    pub fn add_tx_index(mut self, index: usize) -> Self {
+        self.transaction_index = Some(index.into());
+        self
     }
 }
 
