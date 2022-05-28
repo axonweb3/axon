@@ -4,19 +4,28 @@ pragma solidity >=0.8.0;
 
 import {IMirrorToken} from "./MirrorToken.sol";
 import {IMetadata} from "./Metadata.sol";
-import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-contract CrossChain is AccessControlEnumerable, EIP712 {
-    bytes32 public constant RELAYER_ROLE = keccak256("RELAYER_ROLE");
+contract CrossChain is AccessControl, EIP712 {
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     address public constant AT_ADDRESS = address(0);
+    bytes32 public constant RELAYER_ROLE = keccak256("RELAYER_ROLE");
+
+    bytes32 public immutable CROSS_FROM_CKB_TYPEHASH;
+
     uint256 private _relayerThreshold;
     address private _metadata;
     address private _wCKB;
     uint256 private _minWCKB;
+    uint256 private _crossFromCKBNonce;
     CKBToAxonRecord[] private _limitTxes;
+    EnumerableSet.AddressSet private _relayers;
 
     mapping(bytes32 => uint256) _limitTxesMap;
     mapping(address => TokenConfig) private _tokenConfigs;
@@ -54,25 +63,16 @@ contract CrossChain is AccessControlEnumerable, EIP712 {
         uint256 length = relayers.length;
         for (uint256 i = 0; i < length; ++i) {
             _setupRole(RELAYER_ROLE, relayers[i]);
+            _relayers.add(relayers[i]);
         }
         _setRoleAdmin(RELAYER_ROLE, RELAYER_ROLE);
 
         _relayerThreshold = threshold;
         _metadata = metadata;
-    }
 
-    function getAndClearlimitTxes()
-        external
-        view
-        returns (CKBToAxonRecord[] memory)
-    {
-        return _limitTxes;
-    }
-
-    function fee(address token, uint256 value) public view returns (uint256) {
-        TokenConfig memory config = _tokenConfigs[token];
-
-        return config.feeRatio;
+        CROSS_FROM_CKB_TYPEHASH = keccak256(
+            "Transaction(bytes32 recordsHash,uint256 nonce)"
+        );
     }
 
     function _amountReachThreshold(address token, uint256 amount)
@@ -101,41 +101,129 @@ contract CrossChain is AccessControlEnumerable, EIP712 {
         _limitTxesMap[record.txHash] = _limitTxes.length;
     }
 
-    function setTokenConfig(address token, TokenConfig calldata config)
-        external
-    {
-        require(
-            hasRole(RELAYER_ROLE, _msgSender()),
-            "CrossChain: must have relayer role"
+    function _crossATFromCKB(CKBToAxonRecord memory record) private {
+        if (record.amount == 0) return;
+
+        payable(record.to).transfer(record.amount);
+        emit CrossFromCKB(record.to, AT_ADDRESS, record.amount);
+    }
+
+    function _crossCKBFromCKB(CKBToAxonRecord memory record) private {
+        if (record.CKBAmount == 0) return;
+
+        IMirrorToken(_wCKB).mint(record.to, record.CKBAmount);
+
+        emit CrossFromCKB(record.to, _wCKB, record.CKBAmount);
+    }
+
+    function _crossSUdtFromCKB(CKBToAxonRecord memory record) private {
+        if (record.amount == 0) return;
+
+        if (isMirrorToken(record.tokenAddress)) {
+            IMirrorToken(record.tokenAddress).mint(record.to, record.amount);
+        } else {
+            IERC20(record.tokenAddress).transfer(record.to, record.amount);
+        }
+
+        emit CrossFromCKB(record.to, record.tokenAddress, record.amount);
+    }
+
+    function _verifyCrossFromCKBSignatures(
+        CKBToAxonRecord[] calldata records,
+        bytes calldata signatures,
+        uint256 nonce
+    ) private view {
+        bytes32 msgHash = _hashTypedDataV4(
+            keccak256(
+                abi.encode(
+                    CROSS_FROM_CKB_TYPEHASH,
+                    keccak256(abi.encode(records)),
+                    nonce
+                )
+            )
         );
 
+        _verifySignature(msgHash, signatures);
+    }
+
+    function _verifySignature(bytes32 hash, bytes calldata signatures)
+        private
+        view
+    {
+        uint256 relayerNumber = signatures.length / 65;
+
+        require(
+            relayerNumber >= _relayerThreshold,
+            "CrossChain: signatures are not enough"
+        );
+
+        uint256 threshold = 0;
+        bool[] memory verified = new bool[](_relayers.length());
+
+        for (uint256 i = 0; i < relayerNumber; ++i) {
+            (address relayerAddress, ECDSA.RecoverError err) = ECDSA.tryRecover(
+                hash,
+                signatures[i * 65:(i + 1) * 65]
+            );
+
+            if (err == ECDSA.RecoverError.NoError) {
+                uint256 relayerIndex = _relayers._inner._indexes[
+                    bytes32(uint256(uint160(relayerAddress)))
+                ];
+
+                if (
+                    hasRole(RELAYER_ROLE, relayerAddress) &&
+                    relayerIndex > 0 &&
+                    !verified[relayerIndex - 1]
+                ) {
+                    verified[relayerIndex - 1] = true;
+                    if (++threshold > _relayerThreshold) {
+                        return;
+                    }
+                }
+            }
+        }
+
+        require(
+            threshold >= _relayerThreshold,
+            "CrossChain: valid signatures are not enough"
+        );
+    }
+
+    function crossFromCKBNonce() public view returns (uint256) {
+        return _crossFromCKBNonce;
+    }
+
+    function getAndClearlimitTxes()
+        external
+        view
+        returns (CKBToAxonRecord[] memory)
+    {
+        return _limitTxes;
+    }
+
+    function fee(address token, uint256 value) public view returns (uint256) {
+        TokenConfig memory config = _tokenConfigs[token];
+
+        return config.feeRatio;
+    }
+
+    function setTokenConfig(address token, TokenConfig calldata config)
+        external
+        onlyRole(RELAYER_ROLE)
+    {
         _tokenConfigs[token] = config;
     }
 
-    function setWCKB(address token) external {
-        require(
-            hasRole(RELAYER_ROLE, _msgSender()),
-            "CrossChain: must have relayer role"
-        );
-
+    function setWCKB(address token) external onlyRole(RELAYER_ROLE) {
         _wCKB = token;
     }
 
-    function setWCKBMin(uint256 amount) external {
-        require(
-            hasRole(RELAYER_ROLE, _msgSender()),
-            "CrossChain: must have relayer role"
-        );
-
+    function setWCKBMin(uint256 amount) external onlyRole(RELAYER_ROLE) {
         _minWCKB = amount;
     }
 
-    function addMirrorToken(address token) public {
-        require(
-            hasRole(RELAYER_ROLE, _msgSender()),
-            "CrossChain: must have relayer role"
-        );
-
+    function addMirrorToken(address token) public onlyRole(RELAYER_ROLE) {
         _mirrorTokens[token] = true;
     }
 
@@ -178,49 +266,19 @@ contract CrossChain is AccessControlEnumerable, EIP712 {
         emit CrossToCKB(lockscript, token, amount, _minWCKB);
     }
 
-    function _verifySignature() private returns (bool) {
-        //TODO
-    }
-
-    function _crossATFromCKB(CKBToAxonRecord memory record) private {
-        if (record.amount == 0) return;
-
-        payable(record.to).transfer(record.amount);
-        emit CrossFromCKB(record.to, AT_ADDRESS, record.amount);
-    }
-
-    function _crossCKBFromCKB(CKBToAxonRecord memory record) private {
-        if (record.CKBAmount == 0) return;
-
-        IMirrorToken(_wCKB).mint(record.to, record.CKBAmount);
-
-        emit CrossFromCKB(record.to, _wCKB, record.CKBAmount);
-    }
-
-    function _crossSUdtFromCKB(CKBToAxonRecord memory record) private {
-        if (record.amount == 0) return;
-
-        if (isMirrorToken(record.tokenAddress)) {
-            IMirrorToken(record.tokenAddress).mint(record.to, record.amount);
-        } else {
-            IERC20(record.tokenAddress).transfer(record.to, record.amount);
-        }
-
-        emit CrossFromCKB(record.to, record.tokenAddress, record.amount);
-    }
-
-    function crossFromCKB(CKBToAxonRecord[] memory records) external {
-        require(
-            hasRole(RELAYER_ROLE, _msgSender()),
-            "CrossChain: must have relayer role"
-        );
-
-        require(_verifySignature(), "CrossChain: verify signatures failed");
-
+    function crossFromCKB(
+        CKBToAxonRecord[] calldata records,
+        bytes calldata signatures,
+        uint256 nonce
+    ) external onlyRole(RELAYER_ROLE) {
         require(
             IMetadata(_metadata).isProposer(_msgSender()),
             "CrossChain: replayer must be proposer"
         );
+
+        require(_crossFromCKBNonce == nonce, "CrossChain: invalid nonce");
+
+        _verifyCrossFromCKBSignatures(records, signatures, nonce);
 
         uint256 length = records.length;
         for (uint256 i = 0; i < length; ++i) {
@@ -255,5 +313,7 @@ contract CrossChain is AccessControlEnumerable, EIP712 {
                 _crossSUdtFromCKB(record);
             }
         }
+
+        _crossFromCKBNonce = SafeMath.add(_crossFromCKBNonce, 1);
     }
 }
