@@ -55,12 +55,16 @@ describe("CrossChain", () => {
         [owner, ...wallets] = await ethers.getSigners();
 
         metadata = await deployMockContract(owner, abi);
+        await metadata.mock.verifierList.returns(
+            [owner.address, wallets[0].address, wallets[1].address, wallets[2].address],
+            1,
+        );
+        await metadata.mock.isProposer.returns(true);
 
         let deployer = await ethers.getContractFactory("CrossChain");
         contract = await deployer
             .connect(owner)
             .deploy(
-                [owner.address, wallets[0].address, wallets[1].address, wallets[2].address],
                 3,
                 metadata.address,
                 'test',
@@ -438,7 +442,7 @@ describe("CrossChain", () => {
 
         await expect(contract.crossFromCKB(records, signatures, nonce))
             .to
-            .revertedWith('CrossChain: replayer must be proposer');
+            .revertedWith('CrossChain: sender must be proposer');
     });
 
     it("cross wckb and sudt should fail while signatures are not enough", async () => {

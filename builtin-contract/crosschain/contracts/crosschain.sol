@@ -15,18 +15,19 @@ contract CrossChain is AccessControl, EIP712 {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     address public constant AT_ADDRESS = address(0);
-    bytes32 public constant RELAYER_ROLE = keccak256("RELAYER_ROLE");
 
     bytes32 public immutable CROSS_FROM_CKB_TYPEHASH;
 
+    uint256 private _epoch = 2**64 - 1;
     uint256 private _relayerThreshold;
     address private _metadata;
     address private _wCKB;
     uint256 private _minWCKB;
     uint256 private _crossFromCKBNonce;
+    address[] private _relayers;
     CKBToAxonRecord[] private _limitTxes;
-    EnumerableSet.AddressSet private _relayers;
 
+    mapping(address => uint256) _relayersMap;
     mapping(bytes32 => uint256) _limitTxesMap;
     mapping(address => TokenConfig) private _tokenConfigs;
     mapping(address => bool) private _mirrorTokens;
@@ -54,25 +55,26 @@ contract CrossChain is AccessControl, EIP712 {
     }
 
     constructor(
-        address[] memory relayers,
         uint256 threshold,
         address metadata,
         string memory name,
         string memory version
     ) EIP712(name, version) {
-        uint256 length = relayers.length;
-        for (uint256 i = 0; i < length; ++i) {
-            _setupRole(RELAYER_ROLE, relayers[i]);
-            _relayers.add(relayers[i]);
-        }
-        _setRoleAdmin(RELAYER_ROLE, RELAYER_ROLE);
-
         _relayerThreshold = threshold;
         _metadata = metadata;
 
         CROSS_FROM_CKB_TYPEHASH = keccak256(
             "Transaction(bytes32 recordsHash,uint256 nonce)"
         );
+    }
+
+    modifier onlyProposer() {
+        require(
+            IMetadata(_metadata).isProposer(_msgSender()),
+            "CrossChain: sender must be proposer"
+        );
+
+        _;
     }
 
     function _amountReachThreshold(address token, uint256 amount)
@@ -132,7 +134,7 @@ contract CrossChain is AccessControl, EIP712 {
         CKBToAxonRecord[] calldata records,
         bytes calldata signatures,
         uint256 nonce
-    ) private view {
+    ) private {
         bytes32 msgHash = _hashTypedDataV4(
             keccak256(
                 abi.encode(
@@ -146,10 +148,23 @@ contract CrossChain is AccessControl, EIP712 {
         _verifySignature(msgHash, signatures);
     }
 
-    function _verifySignature(bytes32 hash, bytes calldata signatures)
-        private
-        view
-    {
+    function _updateRelayers(address[] memory relayers, uint256 epoch) private {
+        if (epoch == _epoch) {
+            return;
+        }
+
+        uint256 length = relayers.length;
+        _relayers = new address[](length);
+        for (uint256 i = 0; i < length; ++i) {
+            _relayers[i] = relayers[i];
+            _relayersMap[relayers[i]] = i + 1;
+        }
+
+        _epoch = epoch;
+    }
+
+    // will update verifiers and epoch first
+    function _verifySignature(bytes32 hash, bytes calldata signatures) private {
         uint256 relayerNumber = signatures.length / 65;
 
         require(
@@ -157,8 +172,12 @@ contract CrossChain is AccessControl, EIP712 {
             "CrossChain: signatures are not enough"
         );
 
+        (address[] memory relayers, uint256 epoch) = IMetadata(_metadata)
+            .verifierList();
+        _updateRelayers(relayers, epoch);
+
+        bool[] memory verified = new bool[](relayers.length);
         uint256 threshold = 0;
-        bool[] memory verified = new bool[](_relayers.length());
 
         for (uint256 i = 0; i < relayerNumber; ++i) {
             (address relayerAddress, ECDSA.RecoverError err) = ECDSA.tryRecover(
@@ -167,13 +186,11 @@ contract CrossChain is AccessControl, EIP712 {
             );
 
             if (err == ECDSA.RecoverError.NoError) {
-                uint256 relayerIndex = _relayers._inner._indexes[
-                    bytes32(uint256(uint160(relayerAddress)))
-                ];
+                uint256 relayerIndex = _relayersMap[relayerAddress];
 
                 if (
-                    hasRole(RELAYER_ROLE, relayerAddress) &&
                     relayerIndex > 0 &&
+                    _relayers[relayerIndex - 1] == relayerAddress &&
                     !verified[relayerIndex - 1]
                 ) {
                     verified[relayerIndex - 1] = true;
@@ -210,20 +227,20 @@ contract CrossChain is AccessControl, EIP712 {
 
     function setTokenConfig(address token, TokenConfig calldata config)
         external
-        onlyRole(RELAYER_ROLE)
+        onlyProposer
     {
         _tokenConfigs[token] = config;
     }
 
-    function setWCKB(address token) external onlyRole(RELAYER_ROLE) {
+    function setWCKB(address token) external onlyProposer {
         _wCKB = token;
     }
 
-    function setWCKBMin(uint256 amount) external onlyRole(RELAYER_ROLE) {
+    function setWCKBMin(uint256 amount) external onlyProposer {
         _minWCKB = amount;
     }
 
-    function addMirrorToken(address token) public onlyRole(RELAYER_ROLE) {
+    function addMirrorToken(address token) public onlyProposer {
         _mirrorTokens[token] = true;
     }
 
@@ -231,6 +248,7 @@ contract CrossChain is AccessControl, EIP712 {
         return _mirrorTokens[token];
     }
 
+    // lock AT on Axon network
     function lockAT(bytes32 lockscript) external payable {
         require(msg.value > 0, "CrossChain: value must be more than 0");
 
@@ -239,6 +257,10 @@ contract CrossChain is AccessControl, EIP712 {
         emit CrossToCKB(lockscript, address(0), msg.value, _minWCKB);
     }
 
+    // tokens are included as follows:
+    // lock simple tokens (ERC20) on Axon network
+    // burn mirror tokens (sUDTs from CKB network) on Axon network
+    // burn wCKB on Axon network
     function crossTokenToCKB(
         bytes32 lockscript,
         address token,
@@ -266,16 +288,18 @@ contract CrossChain is AccessControl, EIP712 {
         emit CrossToCKB(lockscript, token, amount, _minWCKB);
     }
 
+    // all the tokens are included as follows:
+    // unlock simple tokens (ERC20) on Axon network
+    // mint mirror tokens (sUDTs from CKB network) on Axon network
+    // mint wCKB (CKB on CKB network)
+    // unlock AT on Axon network
+    // only proposer can call this method
+    // resubmit the tx by using nonce auto increment
     function crossFromCKB(
         CKBToAxonRecord[] calldata records,
         bytes calldata signatures,
         uint256 nonce
-    ) external onlyRole(RELAYER_ROLE) {
-        require(
-            IMetadata(_metadata).isProposer(_msgSender()),
-            "CrossChain: replayer must be proposer"
-        );
-
+    ) external onlyProposer {
         require(_crossFromCKBNonce == nonce, "CrossChain: invalid nonce");
 
         _verifyCrossFromCKBSignatures(records, signatures, nonce);
