@@ -85,7 +85,7 @@ contract CrossChain is AccessControl, EIP712 {
         return _tokenConfigs[token].threshold <= amount;
     }
 
-    function _deleteLimitTxes(CKBToAxonRecord memory record) private {
+    function _removeLimitTxes(CKBToAxonRecord memory record) private {
         if (_limitTxesMap[record.txHash] == 0) {
             return;
         }
@@ -336,6 +336,8 @@ contract CrossChain is AccessControl, EIP712 {
             } else {
                 _crossSUdtFromCKB(record);
             }
+
+            _removeLimitTxes(record);
         }
 
         _crossFromCKBNonce = SafeMath.add(_crossFromCKBNonce, 1);
