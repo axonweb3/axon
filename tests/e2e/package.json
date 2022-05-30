@@ -9,12 +9,12 @@
     "@chainsafe/dappeteer": "^2.4.0",
     "ethereumjs-tx": "^2.1.2",
     "jest-environment-node": "^28.1.0",
-    "puppeteer": "^14.1.0",
+    "puppeteer": "^14.1.1",
     "web3": "^1.7.3"
   },
   "devDependencies": {
-    "@babel/plugin-transform-modules-commonjs": "^7.17.12",
-    "eslint": "^8.15.0",
+    "@babel/plugin-transform-modules-commonjs": "^7.18.0",
+    "eslint": "^8.16.0",
     "eslint-config-airbnb": "^19.0.4",
     "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-sonarjs": "^0.13.0",

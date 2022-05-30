@@ -366,7 +366,11 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         // If there are transactions in the trasnaction pool that have been on chain
         // after this execution, make sure they are cleaned up.
         self.adapter
-            .flush_mempool(ctx, &rich_block.block.tx_hashes)
+            .flush_mempool(
+                ctx,
+                &rich_block.block.tx_hashes,
+                rich_block.block.header.number,
+            )
             .await?;
 
         Ok(())

@@ -8,19 +8,19 @@ beforeEach(async () => {
 });
 describe("eth_getBlockByNumber", () => {
   testDataInfo = testDataManage.readTestDataAsJson("testData_1.json");
-  /**
-  * param1: real block numer
-  * param2: true
-  */
-  it("eth_getBlockByNumber_1", async () => {
-    const testType = await page.$(goto.pageIds.testTypeId);
-    const param1 = await page.$(goto.pageIds.param1Id);
-    const param2 = await page.$(goto.pageIds.param2Id);
-    await testType.type("1"); // 0: none params 1: common params to request 2: more params
-    await param1.type(testDataInfo.hexBlockNumber);
-    await param2.type("true");
-    await goto.check(page, "max_priority_fee_per_gas");
-  });
+  // /**
+  // * param1: real block numer
+  // * param2: true
+  // */
+  // it("eth_getBlockByNumber_1", async () => {
+  //   const testType = await page.$(goto.pageIds.testTypeId);
+  //   const param1 = await page.$(goto.pageIds.param1Id);
+  //   const param2 = await page.$(goto.pageIds.param2Id);
+  //   await testType.type("1"); // 0: none params 1: common params to request 2: more params
+  //   await param1.type(testDataInfo.hexBlockNumber);
+  //   await param2.type("true");
+  //   await goto.check(page, "max_priority_fee_per_gas");
+  // });
 
   /**
   * param1: real block number

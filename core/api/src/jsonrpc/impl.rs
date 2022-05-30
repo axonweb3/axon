@@ -108,7 +108,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                 .await
                 .map_err(|e| Error::Custom(e.to_string()))?
             {
-                Ok(Some(Web3Transaction::create(receipt, stx)))
+                Ok(Some((stx, receipt).into()))
             } else {
                 Err(Error::Custom(format!(
                     "can not get receipt by hash {:?}",
@@ -135,10 +135,12 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         match block {
             Some(b) => {
                 let capacity = b.tx_hashes.len();
+                let block_number = b.header.number;
+                let block_hash = b.header_hash();
                 let mut ret = Web3Block::from(b);
                 if show_rich_tx {
                     let mut txs = Vec::with_capacity(capacity);
-                    for tx in ret.transactions.iter() {
+                    for (idx, tx) in ret.transactions.iter().enumerate() {
                         let tx = self
                             .adapter
                             .get_transaction_by_hash(Context::new(), tx.get_hash())
@@ -146,7 +148,12 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                             .map_err(|e| Error::Custom(e.to_string()))?
                             .unwrap();
 
-                        txs.push(RichTransactionOrHash::Rich(tx));
+                        txs.push(RichTransactionOrHash::Rich(
+                            Web3Transaction::from(tx)
+                                .add_block_number(block_number)
+                                .add_block_hash(block_hash)
+                                .add_tx_index(idx),
+                        ));
                     }
 
                     ret.transactions = txs;
@@ -173,10 +180,12 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         match block {
             Some(b) => {
                 let capacity = b.tx_hashes.len();
+                let block_number = b.header.number;
+                let block_hash = b.header_hash();
                 let mut ret = Web3Block::from(b);
                 if show_rich_tx {
                     let mut txs = Vec::with_capacity(capacity);
-                    for tx in ret.transactions.iter() {
+                    for (idx, tx) in ret.transactions.iter().enumerate() {
                         let tx = self
                             .adapter
                             .get_transaction_by_hash(Context::new(), tx.get_hash())
@@ -184,7 +193,12 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                             .map_err(|e| Error::Custom(e.to_string()))?
                             .unwrap();
 
-                        txs.push(RichTransactionOrHash::Rich(tx));
+                        txs.push(RichTransactionOrHash::Rich(
+                            Web3Transaction::from(tx)
+                                .add_block_number(block_number)
+                                .add_block_hash(block_hash)
+                                .add_tx_index(idx),
+                        ));
                     }
 
                     ret.transactions = txs;

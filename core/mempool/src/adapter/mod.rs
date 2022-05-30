@@ -119,11 +119,10 @@ pub struct DefaultMemPoolAdapter<C, N, S, DB, M, I> {
     metadata:       Arc<M>,
     interoperation: Arc<I>,
 
-    addr_nonce:   DashMap<H160, U256>,
-    _timeout_gap: AtomicU64,
-    gas_limit:    AtomicU64,
-    max_tx_size:  AtomicUsize,
-    chain_id:     u64,
+    addr_nonce:  DashMap<H160, U256>,
+    gas_limit:   AtomicU64,
+    max_tx_size: AtomicUsize,
+    chain_id:    u64,
 
     stx_tx: UnboundedSender<(Option<usize>, SignedTransaction)>,
     err_rx: Mutex<UnboundedReceiver<ProtocolError>>,
@@ -147,7 +146,6 @@ where
         metadata: Arc<M>,
         interoperation: Arc<I>,
         chain_id: u64,
-        timeout_gap: u64,
         gas_limit: u64,
         max_tx_size: usize,
         broadcast_txs_size: usize,
@@ -172,7 +170,6 @@ where
             interoperation,
 
             addr_nonce: DashMap::new(),
-            _timeout_gap: AtomicU64::new(timeout_gap),
             gas_limit: AtomicU64::new(gas_limit),
             max_tx_size: AtomicUsize::new(max_tx_size),
             chain_id,

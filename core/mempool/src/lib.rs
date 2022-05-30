@@ -24,7 +24,7 @@ use common_apm::Instant;
 use core_executor::is_call_system_script;
 use core_network::NetworkContext;
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
-use protocol::types::{Hash, SignedTransaction, H160, H256, U256};
+use protocol::types::{BlockNumber, Hash, SignedTransaction, H160, H256, U256};
 use protocol::{async_trait, tokio, Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 use crate::context::TxContext;
@@ -41,11 +41,12 @@ where
 {
     pub async fn new(
         pool_size: usize,
+        timeout_gap: u64,
         adapter: Adapter,
         initial_txs: Vec<SignedTransaction>,
     ) -> Self {
         let mempool = MemPoolImpl {
-            pool:    PriorityPool::new(pool_size).await,
+            pool:    PriorityPool::new(pool_size, timeout_gap).await,
             adapter: Arc::new(adapter),
         };
 
@@ -209,7 +210,12 @@ where
         Ok(txs)
     }
 
-    async fn flush(&self, _ctx: Context, tx_hashes: &[Hash]) -> ProtocolResult<()> {
+    async fn flush(
+        &self,
+        _ctx: Context,
+        tx_hashes: &[Hash],
+        current_number: BlockNumber,
+    ) -> ProtocolResult<()> {
         log::info!(
             "[core_mempool]: flush mempool with {:?} tx_hashes",
             tx_hashes.len(),
@@ -221,7 +227,7 @@ where
                     .is_ok()
             })
         };
-        self.pool.flush(tx_hashes, nonce_check);
+        self.pool.flush(tx_hashes, nonce_check, current_number);
         Ok(())
     }
 

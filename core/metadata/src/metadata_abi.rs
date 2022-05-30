@@ -43,6 +43,7 @@ mod metadatacontract_mod {
         }
     }
 
+    #[allow(clippy::extra_unused_lifetimes)]
     impl<'a, M: ethers_providers::Middleware> MetadataContract<M> {
         #[doc = r" Creates a new contract instance with the specified `ethers`"]
         #[doc = r" client at the given `Address`. The contract derefs to a `ethers_contract`"]
