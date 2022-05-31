@@ -15,6 +15,7 @@ contract CrossChain is AccessControl, EIP712 {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     address public constant AT_ADDRESS = address(0);
+    uint256 public constant LIMIT_EXCEED_RETRY = 1 << 0;
 
     bytes32 public immutable CROSS_FROM_CKB_TYPEHASH;
 
@@ -52,6 +53,7 @@ contract CrossChain is AccessControl, EIP712 {
         uint256 amount;
         uint256 CKBAmount;
         bytes32 txHash;
+        uint256 retry;
     }
 
     constructor(
@@ -211,11 +213,7 @@ contract CrossChain is AccessControl, EIP712 {
         return _crossFromCKBNonce;
     }
 
-    function getAndClearlimitTxes()
-        external
-        view
-        returns (CKBToAxonRecord[] memory)
-    {
+    function limitTxes() external view returns (CKBToAxonRecord[] memory) {
         return _limitTxes;
     }
 
@@ -309,24 +307,26 @@ contract CrossChain is AccessControl, EIP712 {
             CKBToAxonRecord memory record = records[i];
             if (record.amount == 0 && record.CKBAmount == 0) continue;
 
-            if (_amountReachThreshold(_wCKB, record.CKBAmount)) {
-                _addLimitTxes(record);
+            if (record.retry & LIMIT_EXCEED_RETRY != LIMIT_EXCEED_RETRY) {
+                if (_amountReachThreshold(_wCKB, record.CKBAmount)) {
+                    _addLimitTxes(record);
 
-                emit CrossFromCKBAlert(record.to, _wCKB, record.CKBAmount);
+                    emit CrossFromCKBAlert(record.to, _wCKB, record.CKBAmount);
 
-                continue;
-            } else if (
-                _amountReachThreshold(record.tokenAddress, record.amount)
-            ) {
-                _addLimitTxes(record);
+                    continue;
+                } else if (
+                    _amountReachThreshold(record.tokenAddress, record.amount)
+                ) {
+                    _addLimitTxes(record);
 
-                emit CrossFromCKBAlert(
-                    record.to,
-                    record.tokenAddress,
-                    record.amount
-                );
+                    emit CrossFromCKBAlert(
+                        record.to,
+                        record.tokenAddress,
+                        record.amount
+                    );
 
-                continue;
+                    continue;
+                }
             }
 
             _crossCKBFromCKB(record);

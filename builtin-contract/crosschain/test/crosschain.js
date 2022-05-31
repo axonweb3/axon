@@ -12,7 +12,7 @@ function hexToBytes(hex) {
 function recordsHash(records) {
     return ethers.utils.keccak256(
         ethers.utils.defaultAbiCoder.encode(
-            ["tuple(address to, address tokenAddress, uint256 amount, uint256 CKBAmount, bytes32 txHash)[]"],
+            ["tuple(address to, address tokenAddress, uint256 amount, uint256 CKBAmount, bytes32 txHash, uint256 retry)[]"],
             [records],
         ),
     );
@@ -366,6 +366,7 @@ describe("CrossChain", () => {
                 amount: 10,
                 CKBAmount: 1000,
                 txHash: lockscript,
+                retry: 0,
             },
             {
                 to: wallet2.address,
@@ -373,6 +374,7 @@ describe("CrossChain", () => {
                 amount: 100,
                 CKBAmount: 100000,
                 txHash: lockscript,
+                retry: 0,
             },
         ];
 
@@ -414,6 +416,7 @@ describe("CrossChain", () => {
                 amount: 10,
                 CKBAmount: 1000,
                 txHash: lockscript,
+                retry: 0,
             },
             {
                 to: wallet2.address,
@@ -421,6 +424,7 @@ describe("CrossChain", () => {
                 amount: 100,
                 CKBAmount: 100000,
                 txHash: lockscript,
+                retry: 0,
             },
         ];
 
@@ -459,6 +463,7 @@ describe("CrossChain", () => {
                 amount: 10,
                 CKBAmount: 1000,
                 txHash: lockscript,
+                retry: 0,
             },
             {
                 to: wallet2.address,
@@ -466,6 +471,7 @@ describe("CrossChain", () => {
                 amount: 100,
                 CKBAmount: 100000,
                 txHash: lockscript,
+                retry: 0,
             },
         ];
 
@@ -501,6 +507,7 @@ describe("CrossChain", () => {
                 amount: 10,
                 CKBAmount: 1000,
                 txHash: lockscript,
+                retry: 0,
             },
             {
                 to: wallet2.address,
@@ -508,6 +515,7 @@ describe("CrossChain", () => {
                 amount: 100,
                 CKBAmount: 100000,
                 txHash: lockscript,
+                retry: 0,
             },
         ];
 
@@ -544,6 +552,7 @@ describe("CrossChain", () => {
                 amount: 10,
                 CKBAmount: 1000,
                 txHash: lockscript,
+                retry: 0,
             },
             {
                 to: wallet2.address,
@@ -551,6 +560,7 @@ describe("CrossChain", () => {
                 amount: 100,
                 CKBAmount: 100000,
                 txHash: lockscript,
+                retry: 0,
             },
         ];
 
@@ -586,18 +596,20 @@ describe("CrossChain", () => {
                 tokenAddress: mirrorToken.address,
                 amount: 1000000000,
                 CKBAmount: 1000,
-                txHash: lockscript,
+                txHash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes('1')),
+                retry: 0,
             },
             {
                 to: wallet2.address,
                 tokenAddress: mirrorToken.address,
                 amount: 100,
                 CKBAmount: 1000000000000,
-                txHash: lockscript,
+                txHash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes('2')),
+                retry: 0,
             },
         ];
 
-        const nonce = await contract.crossFromCKBNonce();
+        let nonce = await contract.crossFromCKBNonce();
 
         const value = {
             recordsHash: recordsHash(records),
@@ -616,6 +628,32 @@ describe("CrossChain", () => {
         await expect(contract.crossFromCKB(records, signatures, nonce))
             .emit(contract, 'CrossFromCKBAlert').withArgs(wallet1.address, mirrorToken.address, 1000000000)
             .emit(contract, 'CrossFromCKBAlert').withArgs(wallet2.address, wckb.address, 1000000000000);
+
+        nonce++;
+
+        const limitTxes = await contract.limitTxes();
+        expect(limitTxes).length(2);
+        expect(limitTxes[0].txHash).equal(records[0].txHash);
+        expect(limitTxes[1].txHash).equal(records[1].txHash);
+
+        records[0].retry = 1;
+        records[1].retry = 1;
+
+        value.recordsHash = recordsHash(records);
+        value.nonce = nonce;
+
+        signatures = '';
+        signatures += (await wallets[0]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
+        signatures += (await wallets[1]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
+        signatures += (await wallets[2]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
+        signatures = '0x' + signatures;
+
+        await expect(contract.crossFromCKB(records, signatures, nonce)).not.reverted;
+
+        expect(await wckb.balanceOf(wallet1.address)).equal(1000);
+        expect(await mirrorToken.balanceOf(wallet1.address)).equal(1000000000);
+        expect(await wckb.balanceOf(wallet2.address)).equal(1000000000000);
+        expect(await mirrorToken.balanceOf(wallet2.address)).equal(100);
     });
 
     it("cross wckb and sudt should fail while nonce is not valid", async () => {
@@ -632,6 +670,7 @@ describe("CrossChain", () => {
                 amount: 10,
                 CKBAmount: 1000,
                 txHash: lockscript,
+                retry: 0,
             },
             {
                 to: wallet2.address,
@@ -639,6 +678,7 @@ describe("CrossChain", () => {
                 amount: 100,
                 CKBAmount: 100000,
                 txHash: lockscript,
+                retry: 0,
             },
         ];
 
@@ -687,6 +727,7 @@ describe("CrossChain", () => {
                 amount: 10,
                 CKBAmount: 1000,
                 txHash: lockscript,
+                retry: 0,
             },
             {
                 to: wallet2.address,
@@ -694,6 +735,7 @@ describe("CrossChain", () => {
                 amount: 100,
                 CKBAmount: 100000,
                 txHash: lockscript,
+                retry: 0,
             },
         ];
 
@@ -745,6 +787,7 @@ describe("CrossChain", () => {
                 amount: 10,
                 CKBAmount: 1000,
                 txHash: lockscript,
+                retry: 0,
             },
             {
                 to: wallet2.address,
@@ -752,6 +795,7 @@ describe("CrossChain", () => {
                 amount: 100,
                 CKBAmount: 100000,
                 txHash: lockscript,
+                retry: 0,
             },
         ];
 
