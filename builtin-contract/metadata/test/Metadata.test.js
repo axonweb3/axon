@@ -42,14 +42,6 @@ describe("Testing MetadataManager", () => {
             tx_num_limit: 55,
             max_tx_size: 400000,
             last_checkpoint_block_hash: hexToBytes("63b9fe46a9217a85203fc0cd7b67f3238ec93889d21fefb7cf11d40a1c3ddd9c"),
-            crossToken: {
-                tokens: [
-                    wallets[11].address,
-                ],
-                typeHashes: [
-                    ethers.utils.keccak256(ethers.utils.toUtf8Bytes('kk')),
-                ],
-            },
         }
     })
 

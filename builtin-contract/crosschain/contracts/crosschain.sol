@@ -32,6 +32,8 @@ contract CrossChain is AccessControl, EIP712 {
     mapping(bytes32 => uint256) _limitTxesMap;
     mapping(address => TokenConfig) private _tokenConfigs;
     mapping(address => bool) private _mirrorTokens;
+    mapping(address => bytes32) private _tokenTypehashMap;
+    mapping(bytes32 => address) private _typehashTokenMap;
 
     event CrossFromCKB(address to, address token, uint256 amount);
     event CrossFromCKBAlert(address to, address token, uint256 amount);
@@ -238,12 +240,29 @@ contract CrossChain is AccessControl, EIP712 {
         _minWCKB = amount;
     }
 
-    function addMirrorToken(address token) public onlyProposer {
+    function addMirrorToken(address token, bytes32 typehash)
+        public
+        onlyProposer
+    {
         _mirrorTokens[token] = true;
+        addToken(token, typehash);
+    }
+
+    function addToken(address token, bytes32 typehash) public onlyProposer {
+        _typehashTokenMap[typehash] = token;
+        _tokenTypehashMap[token] = typehash;
     }
 
     function isMirrorToken(address token) public view returns (bool) {
         return _mirrorTokens[token];
+    }
+
+    function getTypehash(address token) public view returns (bytes32) {
+        return _tokenTypehashMap[token];
+    }
+
+    function getTokenAddress(bytes32 typehash) public view returns (address) {
+        return _typehashTokenMap[typehash];
     }
 
     // lock AT on Axon network

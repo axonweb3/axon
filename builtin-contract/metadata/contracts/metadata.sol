@@ -20,11 +20,6 @@ contract MetadataManager {
         uint32 vote_weight;
     }
 
-    struct CrossToken {
-        address[] tokens;
-        bytes32[] typeHashes;
-    }
-
     struct Metadata {
         MetadataVersion version;
         uint64 epoch;
@@ -39,7 +34,6 @@ contract MetadataManager {
         uint64 tx_num_limit;
         uint64 max_tx_size;
         bytes32 last_checkpoint_block_hash;
-        CrossToken crossToken;
     }
 
     // to store all metadata with epoch as key
@@ -84,7 +78,6 @@ contract MetadataManager {
         target.tx_num_limit = metadata.tx_num_limit;
         target.max_tx_size = metadata.max_tx_size;
         target.last_checkpoint_block_hash = metadata.last_checkpoint_block_hash;
-        target.crossToken = metadata.crossToken;
         for (uint256 i = 0; i < metadata.verifier_list.length; i++) {
             target.verifier_list.push(metadata.verifier_list[i]);
         }

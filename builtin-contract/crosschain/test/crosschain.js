@@ -76,11 +76,11 @@ describe("CrossChain", () => {
 
         wckb = await deployMirrorToken(owner);
         await contract.connect(owner).setWCKB(wckb.address);
-        await contract.connect(owner).addMirrorToken(wckb.address);
+        await contract.connect(owner).addMirrorToken(wckb.address, lockscript);
         await contract.connect(owner).setTokenConfig(wckb.address, [10, 10000000]);
 
         mirrorToken = await deployMirrorToken(owner);
-        await contract.connect(owner).addMirrorToken(mirrorToken.address);
+        await contract.connect(owner).addMirrorToken(mirrorToken.address, lockscript);
         await contract.connect(owner).setTokenConfig(mirrorToken.address, [10, 10000000]);
 
         simpleToken = await deployTestToken(owner);
