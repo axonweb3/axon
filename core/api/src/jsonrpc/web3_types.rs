@@ -53,6 +53,7 @@ pub struct Web3Transaction {
     pub from:                     H160,
     pub to:                       Option<H160>,
     pub value:                    U256,
+    pub gas:                      U256,
     pub gas_price:                U256,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_fee_per_gas:          Option<U256>,
@@ -80,6 +81,7 @@ impl From<SignedTransaction> for Web3Transaction {
             block_hash:               None,
             raw:                      Hex::encode(stx.transaction.encode().unwrap()),
             public_key:               stx.public,
+            gas:                      U256::zero(),
             gas_price:                stx.transaction.unsigned.gas_price,
             max_fee_per_gas:          Some(U256::from(1337u64)),
             max_priority_fee_per_gas: Some(stx.transaction.unsigned.max_priority_fee_per_gas),
@@ -110,6 +112,7 @@ impl From<(SignedTransaction, Receipt)> for Web3Transaction {
             block_hash:               Some(receipt.block_hash),
             raw:                      Hex::encode(stx.transaction.encode().unwrap()),
             public_key:               stx.public,
+            gas:                      receipt.used_gas,
             gas_price:                stx.transaction.unsigned.gas_price,
             max_fee_per_gas:          Some(U256::from(1337u64)),
             max_priority_fee_per_gas: Some(stx.transaction.unsigned.max_priority_fee_per_gas),
