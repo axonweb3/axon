@@ -4,16 +4,14 @@ pragma solidity >=0.8.0;
 
 import {IMirrorToken} from "./MirrorToken.sol";
 import {IMetadata} from "./Metadata.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
+import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-contract CrossChain is AccessControl, EIP712 {
-    using EnumerableSet for EnumerableSet.AddressSet;
-
+contract CrossChain is Context, EIP712 {
     address public constant AT_ADDRESS = address(0);
     uint256 public constant LIMIT_EXCEED_RETRY = 1 << 0;
 
