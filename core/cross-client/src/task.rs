@@ -1,9 +1,15 @@
 use std::sync::Arc;
 
-use crossbeam::queue::ArrayQueue;
+use reqwest::Url;
+
+use protocol::types::{ValidatorExtend, H160};
 
 use crate::types::Requests;
 
-pub struct CrossChainPipeline {
-    queue: Arc<ArrayQueue<Requests>>,
+pub struct RequestCkbTask {
+    address:     H160,
+    validators:  Vec<ValidatorExtend>,
+    mercury_uri: Url,
+    ckb_uri:     Url,
+    requests:    Requests,
 }
