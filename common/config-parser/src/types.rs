@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use serde::Deserialize;
 use tentacle_multiaddr::MultiAddr;
 
-use protocol::types::{Hex, H160, H256};
+use protocol::types::{Hex, H160, H256, U256};
 
 pub const DEFAULT_BROADCAST_TXS_SIZE: usize = 200;
 pub const DEFAULT_BROADCAST_TXS_INTERVAL: u64 = 200; // milliseconds
@@ -210,11 +210,22 @@ impl ConfigInteroperabilityExtension {
 }
 
 #[derive(Clone, Debug, Deserialize)]
+pub struct MnemonicAccountsConfig {
+    pub mnemonic:      String,
+    pub initial_index: Option<u32>,
+    pub path:          Option<String>,
+    pub count:         u32,
+    pub balance:       U256,
+}
+
+#[derive(Clone, Debug, Deserialize)]
 pub struct Config {
     // crypto
     pub privkey:   Hex,
     // db config
     pub data_path: PathBuf,
+
+    pub accounts: MnemonicAccountsConfig,
 
     pub rpc:                         ConfigApi,
     pub network:                     ConfigNetwork,
