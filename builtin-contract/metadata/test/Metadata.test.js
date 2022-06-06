@@ -41,9 +41,17 @@ describe("Testing MetadataManager", () => {
             brake_ratio: 1008,
             tx_num_limit: 55,
             max_tx_size: 400000,
-            last_checkpoint_block_hash: hexToBytes("63b9fe46a9217a85203fc0cd7b67f3238ec93889d21fefb7cf11d40a1c3ddd9c")
+            last_checkpoint_block_hash: hexToBytes("63b9fe46a9217a85203fc0cd7b67f3238ec93889d21fefb7cf11d40a1c3ddd9c"),
         }
     })
+
+    it("`isProposer` should return false while address is not a proposer", async () => {
+        expect(await contract.isProposer(wallets[10].address)).false;
+    });
+
+    it("`isProposer` should return true while address is a proposer", async () => {
+        expect(await contract.isProposer(wallets[0].address)).false;
+    });
 
     it("`getMetadata` failed on non-indexed epoch of 0", async () => {
         await expect(contract.getMetadata(0))
