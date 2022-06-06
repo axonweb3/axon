@@ -88,7 +88,7 @@ describe("CrossChain", () => {
         simpleToken = await deployTestToken(owner);
         await contract.connect(owner).setTokenConfig(simpleToken.address, [10, 10000000]);
 
-        await contract.connect(owner).setTokenConfig(ATAddress, [10, 100]);
+        await contract.connect(owner).setTokenConfig(ATAddress, [10, 200]);
 
         domain = {
             name: 'test',
@@ -96,7 +96,6 @@ describe("CrossChain", () => {
             chainId: (await ethers.provider.getNetwork()).chainId,
             verifyingContract: contract.address
         };
-        // console.log(metadata)
     });
 
     it("user lock AT should success", async () => {
@@ -109,9 +108,9 @@ describe("CrossChain", () => {
 
         await wckb.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
 
-        await expect(contract.connect(wallet).lockAT(lockscript, { value: 100 }))
+        await expect(contract.connect(wallet).lockAT({ value: 100 }))
             .emit(contract, 'CrossToCKB')
-            .withArgs(lockscript, ATAddress, 100, 1);
+            .withArgs(wallet.address, ATAddress, 100, 1);
 
         expect(await wckb.balanceOf(contract.address)).equal(1);
         expect(await ethers.provider.getBalance(contract.address)).equal(100);
@@ -127,7 +126,7 @@ describe("CrossChain", () => {
 
         await wckb.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
 
-        await expect(contract.lockAT(lockscript)).revertedWith('CrossChain: value must be more than 0');
+        await expect(contract.lockAT()).revertedWith('CrossChain: value must be more than 0');
     });
 
     it("user lock AT should fail while the wckb is not enough", async () => {
@@ -139,8 +138,33 @@ describe("CrossChain", () => {
 
         await wckb.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
 
-        await expect(contract.connect(wallet).lockAT(lockscript, { value: 100 }))
+        await expect(contract.connect(wallet).lockAT({ value: 100 }))
             .revertedWith('ERC20: transfer amount exceeds balance');
+    });
+
+    it("user lock AT should alert while the amount is exceed the threshold", async () => {
+        const wallet = ethers.Wallet.createRandom().connect(ethers.provider);
+        await owner.sendTransaction({
+            to: wallet.address,
+            value: ethers.utils.parseEther('1.0'),
+        });
+        await wckb.connect(owner).mint(wallet.address, 1000);
+
+        await wckb.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
+
+        await expect(contract.connect(wallet).lockAT({ value: 200 }))
+            .emit(contract, 'CrossToCKBAlert')
+            .withArgs(wallet.address, ATAddress, 200, 1);
+
+        expect(await wckb.balanceOf(contract.address)).equal(1);
+        expect(await ethers.provider.getBalance(contract.address)).equal(200);
+
+        const limitTxes = await contract.limitTxes();
+        expect(limitTxes).length(1);
+        expect(limitTxes[0].to).equal(wallet.address);
+        expect(limitTxes[0].tokenAddress).equal(ATAddress);
+        expect(limitTxes[0].amount).equal(200);
+        expect(limitTxes[0].minWCKBAmount).equal(1);
     });
 
     it("user lock Token should success", async () => {
@@ -155,9 +179,9 @@ describe("CrossChain", () => {
         await wckb.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
         await simpleToken.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
 
-        await expect(contract.connect(wallet).crossTokenToCKB(lockscript, simpleToken.address, 100))
+        await expect(contract.connect(wallet).crossTokenToCKB(simpleToken.address, 100))
             .emit(contract, 'CrossToCKB')
-            .withArgs(lockscript, simpleToken.address, 100, 1);
+            .withArgs(wallet.address, simpleToken.address, 100, 1);
 
         expect(await wckb.balanceOf(contract.address)).equal(1);
         expect(await simpleToken.balanceOf(contract.address)).equal(100);
@@ -175,7 +199,7 @@ describe("CrossChain", () => {
         await wckb.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
         await simpleToken.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
 
-        await expect(contract.connect(wallet).crossTokenToCKB(lockscript, simpleToken.address, 0))
+        await expect(contract.connect(wallet).crossTokenToCKB(simpleToken.address, 0))
             .revertedWith('CrossChain: amount must be more than 0');
 
     });
@@ -192,7 +216,7 @@ describe("CrossChain", () => {
         await wckb.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
         await simpleToken.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
 
-        await expect(contract.connect(wallet).crossTokenToCKB(lockscript, simpleToken.address, 100))
+        await expect(contract.connect(wallet).crossTokenToCKB(simpleToken.address, 100))
             .revertedWith('ERC20: transfer amount exceeds balance');
     });
 
@@ -207,8 +231,35 @@ describe("CrossChain", () => {
         await wckb.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
         await simpleToken.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
 
-        await expect(contract.connect(wallet).crossTokenToCKB(lockscript, simpleToken.address, 100))
+        await expect(contract.connect(wallet).crossTokenToCKB(simpleToken.address, 100))
             .revertedWith('CrossChain: amount of wckb is insufficient');
+    });
+
+    it("user lock Token should alert while it is exceed the threshold", async () => {
+        const wallet = ethers.Wallet.createRandom().connect(ethers.provider);
+        await owner.sendTransaction({
+            to: wallet.address,
+            value: ethers.utils.parseEther('1.0'),
+        });
+        await simpleToken.connect(owner).transfer(wallet.address, 100000001);
+        await wckb.connect(owner).mint(wallet.address, 1000);
+
+        await wckb.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
+        await simpleToken.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
+
+        await expect(contract.connect(wallet).crossTokenToCKB(simpleToken.address, 10000001))
+            .emit(contract, 'CrossToCKBAlert')
+            .withArgs(wallet.address, simpleToken.address, 10000001, 1);
+
+        expect(await wckb.balanceOf(contract.address)).equal(1);
+        expect(await simpleToken.balanceOf(contract.address)).equal(10000001);
+
+        const limitTxes = await contract.limitTxes();
+        expect(limitTxes).length(1);
+        expect(limitTxes[0].to).equal(wallet.address);
+        expect(limitTxes[0].tokenAddress).equal(simpleToken.address);
+        expect(limitTxes[0].amount).equal(10000001);
+        expect(limitTxes[0].minWCKBAmount).equal(1);
     });
 
     it("user burn ckb should success", async () => {
@@ -221,11 +272,9 @@ describe("CrossChain", () => {
 
         await wckb.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
 
-        // await wckb.connect(owner).transferOwnership(contract.address);
-
-        await expect(contract.connect(wallet).crossTokenToCKB(lockscript, wckb.address, 100))
+        await expect(contract.connect(wallet).crossTokenToCKB(wckb.address, 100))
             .emit(contract, 'CrossToCKB')
-            .withArgs(lockscript, wckb.address, 99, 1);
+            .withArgs(wallet.address, wckb.address, 99, 1);
 
         expect(await wckb.balanceOf(contract.address)).equal(1);
     });
@@ -240,9 +289,7 @@ describe("CrossChain", () => {
 
         await wckb.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
 
-        // await wckb.connect(owner).transferOwnership(contract.address);
-
-        await expect(contract.connect(wallet).crossTokenToCKB(lockscript, wckb.address, 100))
+        await expect(contract.connect(wallet).crossTokenToCKB(wckb.address, 100))
             .revertedWith('ERC20: burn amount exceeds balance');
     });
 
@@ -256,9 +303,7 @@ describe("CrossChain", () => {
 
         await wckb.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
 
-        // await wckb.connect(owner).transferOwnership(contract.address);
-
-        await expect(contract.connect(wallet).crossTokenToCKB(lockscript, wckb.address, 100))
+        await expect(contract.connect(wallet).crossTokenToCKB(wckb.address, 100))
             .revertedWith('ERC20: transfer amount exceeds balance');
     });
 
@@ -272,10 +317,33 @@ describe("CrossChain", () => {
 
         await wckb.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
 
-        // await wckb.connect(owner).transferOwnership(contract.address);
-
-        await expect(contract.connect(wallet).crossTokenToCKB(lockscript, wckb.address, 0))
+        await expect(contract.connect(wallet).crossTokenToCKB(wckb.address, 0))
             .revertedWith('CrossChain: amount must be more than 0');
+    });
+
+    it("user burn ckb should success", async () => {
+        const wallet = ethers.Wallet.createRandom().connect(ethers.provider);
+        await owner.sendTransaction({
+            to: wallet.address,
+            value: ethers.utils.parseEther('1.0'),
+        });
+        await wckb.connect(owner).mint(wallet.address, 100000000);
+
+        await wckb.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
+
+        await expect(contract.connect(wallet).crossTokenToCKB(wckb.address, 20000000))
+            .emit(contract, 'CrossToCKBAlert')
+            .withArgs(wallet.address, wckb.address, 19999999, 1);
+
+        expect(await wckb.balanceOf(contract.address)).equal(1);
+        expect(await wckb.balanceOf(wallet.address)).equal(80000000);
+
+        const limitTxes = await contract.limitTxes();
+        expect(limitTxes).length(1);
+        expect(limitTxes[0].to).equal(wallet.address);
+        expect(limitTxes[0].tokenAddress).equal(wckb.address);
+        expect(limitTxes[0].amount).equal(19999999);
+        expect(limitTxes[0].minWCKBAmount).equal(1);
     });
 
     it("user burn mirror token should success", async () => {
@@ -287,15 +355,13 @@ describe("CrossChain", () => {
 
         await wckb.connect(owner).mint(wallet.address, 1000);
         await wckb.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
-        // await wckb.connect(owner).transferOwnership(contract.address);
 
         await mirrorToken.connect(owner).mint(wallet.address, 1000);
         await mirrorToken.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
-        // await mirrorToken.connect(owner).transferOwnership(contract.address);
 
-        await expect(contract.connect(wallet).crossTokenToCKB(lockscript, mirrorToken.address, 100))
+        await expect(contract.connect(wallet).crossTokenToCKB(mirrorToken.address, 100))
             .emit(contract, 'CrossToCKB')
-            .withArgs(lockscript, mirrorToken.address, 100, 1);
+            .withArgs(wallet.address, mirrorToken.address, 100, 1);
 
         expect(await wckb.balanceOf(contract.address)).equal(1);
         expect(await mirrorToken.balanceOf(wallet.address)).equal(900);
@@ -310,13 +376,11 @@ describe("CrossChain", () => {
 
         await wckb.connect(owner).mint(wallet.address, 1000);
         await wckb.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
-        // await wckb.connect(owner).transferOwnership(contract.address);
 
         await mirrorToken.connect(owner).mint(wallet.address, 1000);
         await mirrorToken.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
-        // await mirrorToken.connect(owner).transferOwnership(contract.address);
 
-        await expect(contract.connect(wallet).crossTokenToCKB(lockscript, mirrorToken.address, 0))
+        await expect(contract.connect(wallet).crossTokenToCKB(mirrorToken.address, 0))
             .revertedWith('CrossChain: amount must be more than 0');
     });
 
@@ -329,9 +393,8 @@ describe("CrossChain", () => {
 
         await mirrorToken.connect(owner).mint(wallet.address, 1000);
         await mirrorToken.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
-        // await mirrorToken.connect(owner).transferOwnership(contract.address);
 
-        await expect(contract.connect(wallet).crossTokenToCKB(lockscript, mirrorToken.address, 100))
+        await expect(contract.connect(wallet).crossTokenToCKB(mirrorToken.address, 100))
             .revertedWith('CrossChain: amount of wckb is insufficient');
     });
 
@@ -344,22 +407,45 @@ describe("CrossChain", () => {
 
         await wckb.connect(owner).mint(wallet.address, 1000);
         await wckb.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
-        // await wckb.connect(owner).transferOwnership(contract.address);
 
         await mirrorToken.connect(owner).mint(wallet.address, 1000);
         await mirrorToken.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
-        // await mirrorToken.connect(owner).transferOwnership(contract.address);
 
-        await expect(contract.connect(wallet).crossTokenToCKB(lockscript, mirrorToken.address, 100000))
+        await expect(contract.connect(wallet).crossTokenToCKB(mirrorToken.address, 100000))
             .revertedWith('ERC20: burn amount exceeds balance');
+    });
+
+    it("user burn mirror token should success", async () => {
+        const wallet = ethers.Wallet.createRandom().connect(ethers.provider);
+        await owner.sendTransaction({
+            to: wallet.address,
+            value: ethers.utils.parseEther('1.0'),
+        });
+
+        await wckb.connect(owner).mint(wallet.address, 1000);
+        await wckb.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
+
+        await mirrorToken.connect(owner).mint(wallet.address, 100000000);
+        await mirrorToken.connect(wallet).approve(contract.address, ethers.constants.MaxUint256);
+
+        await expect(contract.connect(wallet).crossTokenToCKB(mirrorToken.address, 20000000))
+            .emit(contract, 'CrossToCKBAlert')
+            .withArgs(wallet.address, mirrorToken.address, 20000000, 1);
+
+        expect(await wckb.balanceOf(contract.address)).equal(1);
+        expect(await mirrorToken.balanceOf(wallet.address)).equal(80000000);
+
+        const limitTxes = await contract.limitTxes();
+        expect(limitTxes).length(1);
+        expect(limitTxes[0].to).equal(wallet.address);
+        expect(limitTxes[0].tokenAddress).equal(mirrorToken.address);
+        expect(limitTxes[0].amount).equal(20000000);
+        expect(limitTxes[0].minWCKBAmount).equal(1);
     });
 
     it("cross wckb and sudt should success", async () => {
         const wallet1 = ethers.Wallet.createRandom().connect(ethers.provider);
         const wallet2 = ethers.Wallet.createRandom().connect(ethers.provider);
-
-        // await mirrorToken.connect(owner).transferOwnership(contract.address);
-        // await wckb.connect(owner).transferOwnership(contract.address);
 
         const records = [
             {
@@ -408,9 +494,6 @@ describe("CrossChain", () => {
         const wallet1 = ethers.Wallet.createRandom().connect(ethers.provider);
         const wallet2 = ethers.Wallet.createRandom().connect(ethers.provider);
 
-        // await mirrorToken.connect(owner).transferOwnership(contract.address);
-        // await wckb.connect(owner).transferOwnership(contract.address);
-
         const records = [
             {
                 to: wallet1.address,
@@ -455,9 +538,6 @@ describe("CrossChain", () => {
         const wallet1 = ethers.Wallet.createRandom().connect(ethers.provider);
         const wallet2 = ethers.Wallet.createRandom().connect(ethers.provider);
 
-        // await mirrorToken.connect(owner).transferOwnership(contract.address);
-        // await wckb.connect(owner).transferOwnership(contract.address);
-
         const records = [
             {
                 to: wallet1.address,
@@ -498,9 +578,6 @@ describe("CrossChain", () => {
     it("cross wckb and sudt should fail while valid signatures are not enough", async () => {
         const wallet1 = ethers.Wallet.createRandom().connect(ethers.provider);
         const wallet2 = ethers.Wallet.createRandom().connect(ethers.provider);
-
-        // await mirrorToken.connect(owner).transferOwnership(contract.address);
-        // await wckb.connect(owner).transferOwnership(contract.address);
 
         const records = [
             {
@@ -544,9 +621,6 @@ describe("CrossChain", () => {
         const wallet1 = ethers.Wallet.createRandom().connect(ethers.provider);
         const wallet2 = ethers.Wallet.createRandom().connect(ethers.provider);
 
-        // await mirrorToken.connect(owner).transferOwnership(contract.address);
-        // await wckb.connect(owner).transferOwnership(contract.address);
-
         const records = [
             {
                 to: wallet1.address,
@@ -585,85 +659,79 @@ describe("CrossChain", () => {
         await expect(contract.crossFromCKB(records, signatures, nonce)).to.revertedWith('CrossChain: valid signatures are not enough');
     });
 
-    it("cross wckb and sudt should alert while the amount exceed the threshold", async () => {
-        const wallet1 = ethers.Wallet.createRandom().connect(ethers.provider);
-        const wallet2 = ethers.Wallet.createRandom().connect(ethers.provider);
+    // it("cross wckb and sudt should alert while the amount exceed the threshold", async () => {
+    //     const wallet1 = ethers.Wallet.createRandom().connect(ethers.provider);
+    //     const wallet2 = ethers.Wallet.createRandom().connect(ethers.provider);
 
-        // await mirrorToken.connect(owner).transferOwnership(contract.address);
-        // await wckb.connect(owner).transferOwnership(contract.address);
+    //     const records = [
+    //         {
+    //             to: wallet1.address,
+    //             tokenAddress: mirrorToken.address,
+    //             amount: 1000000000,
+    //             CKBAmount: 1000,
+    //             txHash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes('1')),
+    //             retry: 0,
+    //         },
+    //         {
+    //             to: wallet2.address,
+    //             tokenAddress: mirrorToken.address,
+    //             amount: 100,
+    //             CKBAmount: 1000000000000,
+    //             txHash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes('2')),
+    //             retry: 0,
+    //         },
+    //     ];
 
-        const records = [
-            {
-                to: wallet1.address,
-                tokenAddress: mirrorToken.address,
-                amount: 1000000000,
-                CKBAmount: 1000,
-                txHash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes('1')),
-                retry: 0,
-            },
-            {
-                to: wallet2.address,
-                tokenAddress: mirrorToken.address,
-                amount: 100,
-                CKBAmount: 1000000000000,
-                txHash: ethers.utils.keccak256(ethers.utils.toUtf8Bytes('2')),
-                retry: 0,
-            },
-        ];
+    //     let nonce = await contract.crossFromCKBNonce();
 
-        let nonce = await contract.crossFromCKBNonce();
+    //     const value = {
+    //         recordsHash: recordsHash(records),
+    //         nonce: nonce,
+    //     };
 
-        const value = {
-            recordsHash: recordsHash(records),
-            nonce: nonce,
-        };
+    //     let signatures = '';
 
-        let signatures = '';
+    //     await metadata.mock.isProposer.returns(true);
 
-        await metadata.mock.isProposer.returns(true);
+    //     signatures += (await wallets[0]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
+    //     signatures += (await wallets[1]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
+    //     signatures += (await wallets[2]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
+    //     signatures = '0x' + signatures;
 
-        signatures += (await wallets[0]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
-        signatures += (await wallets[1]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
-        signatures += (await wallets[2]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
-        signatures = '0x' + signatures;
+    //     await expect(contract.crossFromCKB(records, signatures, nonce))
+    //         .emit(contract, 'CrossFromCKBAlert').withArgs(wallet1.address, mirrorToken.address, 1000000000)
+    //         .emit(contract, 'CrossFromCKBAlert').withArgs(wallet2.address, wckb.address, 1000000000000);
 
-        await expect(contract.crossFromCKB(records, signatures, nonce))
-            .emit(contract, 'CrossFromCKBAlert').withArgs(wallet1.address, mirrorToken.address, 1000000000)
-            .emit(contract, 'CrossFromCKBAlert').withArgs(wallet2.address, wckb.address, 1000000000000);
+    //     nonce++;
 
-        nonce++;
+    //     const limitTxes = await contract.limitTxes();
+    //     expect(limitTxes).length(2);
+    //     expect(limitTxes[0].txHash).equal(records[0].txHash);
+    //     expect(limitTxes[1].txHash).equal(records[1].txHash);
 
-        const limitTxes = await contract.limitTxes();
-        expect(limitTxes).length(2);
-        expect(limitTxes[0].txHash).equal(records[0].txHash);
-        expect(limitTxes[1].txHash).equal(records[1].txHash);
+    //     records[0].retry = 1;
+    //     records[1].retry = 1;
 
-        records[0].retry = 1;
-        records[1].retry = 1;
+    //     value.recordsHash = recordsHash(records);
+    //     value.nonce = nonce;
 
-        value.recordsHash = recordsHash(records);
-        value.nonce = nonce;
+    //     signatures = '';
+    //     signatures += (await wallets[0]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
+    //     signatures += (await wallets[1]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
+    //     signatures += (await wallets[2]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
+    //     signatures = '0x' + signatures;
 
-        signatures = '';
-        signatures += (await wallets[0]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
-        signatures += (await wallets[1]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
-        signatures += (await wallets[2]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
-        signatures = '0x' + signatures;
+    //     await expect(contract.crossFromCKB(records, signatures, nonce)).not.reverted;
 
-        await expect(contract.crossFromCKB(records, signatures, nonce)).not.reverted;
-
-        expect(await wckb.balanceOf(wallet1.address)).equal(1000);
-        expect(await mirrorToken.balanceOf(wallet1.address)).equal(1000000000);
-        expect(await wckb.balanceOf(wallet2.address)).equal(1000000000000);
-        expect(await mirrorToken.balanceOf(wallet2.address)).equal(100);
-    });
+    //     expect(await wckb.balanceOf(wallet1.address)).equal(1000);
+    //     expect(await mirrorToken.balanceOf(wallet1.address)).equal(1000000000);
+    //     expect(await wckb.balanceOf(wallet2.address)).equal(1000000000000);
+    //     expect(await mirrorToken.balanceOf(wallet2.address)).equal(100);
+    // });
 
     it("cross wckb and sudt should fail while nonce is not valid", async () => {
         const wallet1 = ethers.Wallet.createRandom().connect(ethers.provider);
         const wallet2 = ethers.Wallet.createRandom().connect(ethers.provider);
-
-        // await mirrorToken.connect(owner).transferOwnership(contract.address);
-        // await wckb.connect(owner).transferOwnership(contract.address);
 
         const records = [
             {
@@ -717,10 +785,7 @@ describe("CrossChain", () => {
         await wckb.connect(wallet1).approve(contract.address, ethers.constants.MaxUint256);
         await simpleToken.connect(wallet1).approve(contract.address, ethers.constants.MaxUint256);
 
-        await contract.connect(wallet1).crossTokenToCKB(lockscript, simpleToken.address, 100);
-
-        // await wckb.connect(owner).transferOwnership(contract.address);
-        // await mirrorToken.connect(owner).transferOwnership(contract.address);
+        await contract.connect(wallet1).crossTokenToCKB(simpleToken.address, 100);
 
         const records = [
             {
@@ -776,11 +841,8 @@ describe("CrossChain", () => {
         await wckb.connect(owner).mint(wallet1.address, 1000);
         await wckb.connect(wallet1).approve(contract.address, ethers.constants.MaxUint256);
 
-        await contract.connect(wallet1).lockAT(lockscript, { value: 100 });
+        await contract.connect(wallet1).lockAT({ value: 100 });
         const balance = await ethers.provider.getBalance(wallet1.address);
-
-        // await wckb.connect(owner).transferOwnership(contract.address);
-        // await mirrorToken.connect(owner).transferOwnership(contract.address);
 
         const records = [
             {
