@@ -13,6 +13,8 @@ use {
     jemallocator::Jemalloc,
 };
 
+use ethers_signers::{coins_bip39::English, MnemonicBuilder, Signer};
+
 use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
 use common_apm::{server::run_prometheus_server, tracing::global_tracer_register};
 use common_config_parser::types::Config;
@@ -132,18 +134,27 @@ impl Axon {
         )?);
         let mut mpt = MPTTrie::new(Arc::clone(&trie_db));
 
-        let distribute_address = Address::from_hex("0x8ab0cf264df99d83525e9e11c7e4db01558ae1b1")?;
         let distribute_account = Account {
             nonce:        0u64.into(),
-            balance:      32000001100000000000u128.into(),
+            balance:      self.config.accounts.balance,
             storage_root: RLP_NULL,
             code_hash:    NIL_DATA,
-        };
+        }
+        .encode()?;
 
-        mpt.insert(
-            distribute_address.as_slice(),
-            distribute_account.encode()?.as_ref(),
-        )?;
+        let mut builder =
+            MnemonicBuilder::<English>::default().phrase(self.config.accounts.mnemonic.as_str());
+        let init_index = self.config.accounts.initial_index.unwrap_or(0);
+        for i in init_index..(init_index + self.config.accounts.count) {
+            builder = match &self.config.accounts.path {
+                Some(path) => builder
+                    .derivation_path(&format!("{}{}", path, i))
+                    .map_err(MainError::WalletError)?,
+                None => builder.index(i).map_err(MainError::WalletError)?,
+            };
+            let wallet = builder.build().map_err(MainError::WalletError)?;
+            mpt.insert(wallet.address().as_bytes(), &distribute_account)?;
+        }
 
         let proposal = Proposal::from(self.genesis.block.clone());
         let executor = AxonExecutor::default();
@@ -156,6 +167,7 @@ impl Axon {
         let resp = executor.exec(&mut backend, self.genesis.txs.clone());
 
         self.state_root = resp.state_root;
+        self.genesis.block.header.state_root = self.state_root;
 
         log::info!(
             "Execute the genesis distribute success, genesis state root {:?}, response {:?}",
@@ -742,6 +754,9 @@ pub enum MainError {
 
     #[display(fmt = "{:?}", _0)]
     JSONParse(serde_json::error::Error),
+
+    #[display(fmt = "{:?}", _0)]
+    WalletError(ethers_signers::WalletError),
 
     #[display(fmt = "other error {:?}", _0)]
     Other(String),
