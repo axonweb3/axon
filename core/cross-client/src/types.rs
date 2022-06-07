@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
+use serde::{Deserialize, Serialize};
 
 use protocol::types::{Hash, H160};
 
@@ -115,4 +115,3 @@ mod tests {
         assert_eq!(origin, decode);
     }
 }
-
