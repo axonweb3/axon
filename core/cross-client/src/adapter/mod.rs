@@ -44,7 +44,10 @@ use asset::events as asset_events;
 use asset::functions as asset_functions;
 use asset::logs::Burned;
 
+use crate::error::CrossChainError;
+
 const TWO_THOUSAND: u64 = 2000;
+const MONITOR_CKB_NUMBER_KEY: &str = "MonitorCkbNumberKey";
 
 pub trait CrossChainDB: Sync + Send {
     fn get(&self, key: &[u8]) -> ProtocolResult<Option<Vec<u8>>>;
@@ -93,6 +96,18 @@ where
 
     async fn remove_in_process(&self, ctx: Context, key: &[u8]) -> ProtocolResult<()> {
         self.db.remove(key)
+    }
+
+    async fn update_monitor_ckb_number(&self, ctx: Context, number: u64) -> ProtocolResult<()> {
+        self.db
+            .insert(MONITOR_CKB_NUMBER_KEY.as_bytes(), &number.to_le_bytes())
+    }
+
+    async fn get_monitor_ckb_number(&self) -> ProtocolResult<u64> {
+        match self.db.get(MONITOR_CKB_NUMBER_KEY.as_bytes()) {
+            Ok(Some(bytes)) => Ok(u64::from_le_bytes(fixed_array(&bytes))),
+            _ => Err(CrossChainError::Adapter("Cannot get monitor CKB number".to_string()).into()),
+        }
     }
 
     async fn nonce(&self, address: H160) -> ProtocolResult<U256> {
@@ -167,6 +182,14 @@ where
 
     async fn remove_in_process(&self, ctx: Context, key: &[u8]) -> ProtocolResult<()> {
         Ok(())
+    }
+
+    async fn update_monitor_ckb_number(&self, ctx: Context, number: u64) -> ProtocolResult<()> {
+        Ok(())
+    }
+
+    async fn get_monitor_ckb_number(&self) -> ProtocolResult<u64> {
+        Ok(0)
     }
 
     async fn nonce(&self, address: H160) -> ProtocolResult<U256> {
@@ -608,4 +631,11 @@ fn load_current_number<P: AsRef<Path>>(path: P) -> BlockNumber {
             f.read_exact(&mut buf).map(|_| u64::from_le_bytes(buf)).ok()
         })
         .unwrap_or_default()
+}
+
+pub fn fixed_array<const LEN: usize>(bytes: &[u8]) -> [u8; LEN] {
+    assert_eq!(bytes.len(), LEN);
+    let mut list = [0; LEN];
+    list.copy_from_slice(bytes);
+    list
 }
