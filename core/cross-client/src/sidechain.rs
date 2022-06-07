@@ -32,7 +32,7 @@ impl SidechainTask {
         }
     }
 
-    pub async fn start<C: CkbClient + 'static>(self, client: Arc<C>, block: Block, proof: Proof) {
+    pub async fn run<C: CkbClient + 'static>(self, client: Arc<C>, block: Block, proof: Proof) {
         let number = block.header.number;
         let mut proposal = Proposal::from(block).encode().unwrap().to_vec();
         let mut proof = proof.encode().unwrap().to_vec();
