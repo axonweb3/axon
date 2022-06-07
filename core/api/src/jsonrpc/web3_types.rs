@@ -7,7 +7,7 @@ use core_consensus::SyncStatus as InnerSyncStatus;
 use protocol::codec::ProtocolCodec;
 use protocol::types::{
     AccessList, Block, Bloom, Bytes, Hash, Header, Hex, Public, Receipt, SignedTransaction, H160,
-    H256, U256, U64,
+    H256, MAX_PRIORITY_FEE_PER_GAS, U256, U64,
 };
 
 const EIP1559_TX_TYPE: u64 = 0x02;
@@ -83,7 +83,7 @@ impl From<SignedTransaction> for Web3Transaction {
             public_key:               stx.public,
             gas:                      U256::zero(),
             gas_price:                stx.transaction.unsigned.gas_price,
-            max_fee_per_gas:          Some(U256::from(1337u64)),
+            max_fee_per_gas:          Some(MAX_PRIORITY_FEE_PER_GAS.into()),
             max_priority_fee_per_gas: Some(stx.transaction.unsigned.max_priority_fee_per_gas),
             hash:                     stx.transaction.hash,
             from:                     stx.sender,
@@ -114,7 +114,7 @@ impl From<(SignedTransaction, Receipt)> for Web3Transaction {
             public_key:               stx.public,
             gas:                      receipt.used_gas,
             gas_price:                stx.transaction.unsigned.gas_price,
-            max_fee_per_gas:          Some(U256::from(1337u64)),
+            max_fee_per_gas:          Some(MAX_PRIORITY_FEE_PER_GAS.into()),
             max_priority_fee_per_gas: Some(stx.transaction.unsigned.max_priority_fee_per_gas),
             hash:                     receipt.tx_hash,
             from:                     stx.sender,
