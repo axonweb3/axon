@@ -23,12 +23,12 @@ use common_crypto::{
 };
 use core_executor::{AxonExecutor, AxonExecutorAdapter};
 use protocol::traits::{
-    CkbClient, Context, CrossAdapter, CrossChain, Executor, ExecutorAdapter, MemPool, Storage,
+    Backend, CkbClient, Context, CrossAdapter, CrossChain, Executor, MemPool, Storage,
 };
 use protocol::types::{
-    public_to_address, Account, Block, Bytes, CrossChainTransferPayload, ExecutorContext, Hash,
-    Identity, Log, Proof, Proposal, Public, SignedTransaction, SubmitCheckpointPayload,
-    Transaction, TransactionAction, UnverifiedTransaction, H160, H256, U256,
+    public_to_address, Block, Bytes, CrossChainTransferPayload, ExecutorContext, Identity, Log,
+    Proof, Proposal, Public, SignedTransaction, SubmitCheckpointPayload, Transaction,
+    TransactionAction, UnverifiedTransaction, H160, H256, U256,
 };
 use protocol::{
     async_trait,
@@ -46,7 +46,7 @@ use asset::logs::Burned;
 
 const TWO_THOUSAND: u64 = 2000;
 
-trait CrossChainDB: Sync + Send {
+pub trait CrossChainDB: Sync + Send {
     fn get(&self, key: &[u8]) -> ProtocolResult<Option<Vec<u8>>>;
 
     fn get_all(&self) -> ProtocolResult<Vec<(Vec<u8>, Vec<u8>)>>;
@@ -96,10 +96,7 @@ where
     }
 
     async fn nonce(&self, address: H160) -> ProtocolResult<U256> {
-        Ok(match self.evm_backend().await?.get(address.as_bytes()) {
-            Some(bytes) => Account::decode(bytes)?.nonce,
-            None => U256::zero(),
-        })
+        Ok(self.evm_backend().await?.basic(address).nonce)
     }
 }
 
@@ -110,7 +107,7 @@ where
     TrieDB: cita_trie::DB + 'static,
     DB: CrossChainDB + 'static,
 {
-    pub async fn evm_backend(&self) -> ProtocolResult<AxonExecutorAdapter<S, TrieDB>> {
+    async fn evm_backend(&self) -> ProtocolResult<AxonExecutorAdapter<S, TrieDB>> {
         let block = self.storage.get_latest_block(Context::new()).await?;
         let state_root = block.header.state_root;
         let proposal: Proposal = block.into();

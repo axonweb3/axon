@@ -1,7 +1,6 @@
 #![allow(dead_code, unused_variables, clippy::derive_partial_eq_without_eq)]
 
 mod adapter;
-mod codec;
 mod error;
 mod generated;
 mod monitor;
@@ -18,7 +17,7 @@ use ckb_types::{core::TransactionView, prelude::*};
 use common_crypto::{
     PrivateKey, PublicKey, Secp256k1RecoverablePrivateKey, Signature, ToPublicKey,
 };
-use protocol::tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver};
+use protocol::tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use protocol::traits::{Context, CrossAdapter, CrossChain};
 use protocol::types::{
     Block, BlockNumber, Hash, Hasher, Log, Proof, SignedTransaction, Transaction,
@@ -47,38 +46,25 @@ pub struct CrossChainImpl<Adapter> {
     adapter: Arc<Adapter>,
 }
 
-#[async_trait]
-impl<Adapter: CrossAdapter + 'static> CrossChain for CrossChainImpl<Adapter> {
-    async fn set_evm_log(
-        &self,
-        ctx: Context,
-        block_number: BlockNumber,
-        block_hash: Hash,
-        logs: &[Vec<Log>],
-    ) {
-        for tx_logs in logs.iter() {
-            if let Err(e) = self.log_tx.send(tx_logs.clone()) {
-                log::error!("[cross-chain]: send log to process error {:?}", e);
-            }
-        }
-    }
-
-    async fn set_checkpoint(&self, ctx: Context, block: Block, proof: Proof) {}
-}
-
 impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
-    pub fn new(priv_key: Secp256k1RecoverablePrivateKey, adapter: Arc<Adapter>) -> Self {
+    pub fn new(
+        priv_key: Secp256k1RecoverablePrivateKey,
+        adapter: Arc<Adapter>,
+    ) -> (Self, CrossChainHandler) {
         let address: H160 = Hasher::digest(priv_key.pub_key().to_bytes()).into();
         let (log_tx, log_rx) = unbounded_channel();
         let (req_tx, req_rx) = unbounded_channel();
 
-        CrossChainImpl {
+        let crosschain = CrossChainImpl {
             priv_key,
             address,
             log_rx,
             req_rx,
             adapter,
-        }
+        };
+        let handler = CrossChainHandler(log_tx);
+
+        (crosschain, handler)
     }
 
     pub async fn run(mut self) {
@@ -86,6 +72,8 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
             tokio::select! {
                 Some(logs) = self.log_rx.recv() => {
                     let adapter_clone = Arc::clone(&self.adapter);
+
+
 
                     tokio::spawn(async move {
                         match build_ckb_txs(logs).await {
@@ -95,7 +83,9 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
                                     ctx.clone(),
                                     &rlp::encode(&reqs).freeze(),
                                     stx.pack().as_slice()
-                                );
+                                )
+                                .await
+                                .unwrap();
                                 adapter_clone.send_ckb_tx(ctx, stx.into()).await;
                             },
 
@@ -118,7 +108,9 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
                         Context::new(),
                         &rlp::encode(&reqs).freeze(),
                         &rlp::encode(&stx).freeze()
-                    );
+                    )
+                    .await
+                    .unwrap();
                 }
             }
         }
@@ -161,6 +153,36 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
 
         todo!()
     }
+
+    async fn complete_task(&self, logs: &[Log]) -> ProtocolResult<()> {
+        for log in logs.iter() {
+            // if
+            self.adapter.remove_in_process(Context::new(), &[]).await?;
+        }
+
+        Ok(())
+    }
+}
+
+pub struct CrossChainHandler(UnboundedSender<Vec<Log>>);
+
+#[async_trait]
+impl CrossChain for CrossChainHandler {
+    async fn set_evm_log(
+        &self,
+        ctx: Context,
+        block_number: BlockNumber,
+        block_hash: Hash,
+        logs: &[Vec<Log>],
+    ) {
+        for tx_logs in logs.iter() {
+            if let Err(e) = self.0.send(tx_logs.clone()) {
+                log::error!("[cross-chain]: send log to process error {:?}", e);
+            }
+        }
+    }
+
+    async fn set_checkpoint(&self, ctx: Context, block: Block, proof: Proof) {}
 }
 
 async fn build_ckb_txs(logs: Vec<Log>) -> ProtocolResult<(Requests, TransactionView)> {

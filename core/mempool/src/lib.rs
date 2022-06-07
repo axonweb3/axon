@@ -186,7 +186,7 @@ where
     async fn insert(&self, ctx: Context, tx: SignedTransaction) -> ProtocolResult<()> {
         let is_call_system_script = is_call_system_script(&tx.transaction.unsigned.action)
             || is_call_system_script(&tx.transaction.unsigned.action);
-            
+
         self.insert_tx(ctx, tx, is_call_system_script).await
     }
 
