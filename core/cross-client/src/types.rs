@@ -24,6 +24,12 @@ impl TryFrom<u8> for Direction {
     }
 }
 
+impl Direction {
+    pub fn is_from_ckb(&self) -> bool {
+        self == &Direction::FromCkb
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Transfer {
     pub direction:      Direction,
@@ -77,6 +83,12 @@ impl Encodable for Requests {
 impl Decodable for Requests {
     fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
         Ok(Requests(rlp.as_list()?))
+    }
+}
+
+impl Requests {
+    pub fn direction(&self) -> Direction {
+        self.0[0].direction
     }
 }
 
