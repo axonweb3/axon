@@ -6,7 +6,6 @@ use rocksdb::ops::{Delete, Get, Iterate, Open, Put};
 use rocksdb::{FullOptions, IteratorMode, Options, WriteBatch, DB};
 
 use common_config_parser::types::ConfigRocksDB;
-use protocol::types::Hash;
 use protocol::ProtocolResult;
 
 use crate::adapter::CrossChainDB;
