@@ -30,6 +30,7 @@ use protocol::{async_trait, lazy::CHAIN_ID, tokio, ProtocolResult};
 
 use core_executor::CROSSCHAIN_CONTRACT_ADDRESS;
 
+use crate::error::CrossChainError;
 use crate::types::{Direction, Requests, Transfer};
 use crate::{adapter::fixed_array, monitor::CrossChainMonitor, sidechain::SidechainTask};
 
@@ -86,6 +87,11 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
             adapter,
         };
 
+        crosschain
+            .recover_tasks()
+            .await
+            .expect("Recover crosschain tasks");
+
         (crosschain, handler)
     }
 
@@ -127,6 +133,29 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
                 }
             }
         }
+    }
+
+    async fn recover_tasks(&self) -> ProtocolResult<()> {
+        let ctx = Context::new();
+
+        for item in self.adapter.get_all_in_process(ctx.clone()).await?.iter() {
+            let req: Requests =
+                rlp::decode(&item.0).map_err(|e| CrossChainError::Adapter(e.to_string()))?;
+            let direction = req.direction();
+
+            if direction.is_from_ckb() {
+                let _ = self
+                    .adapter
+                    .send_axon_tx(
+                        ctx.clone(),
+                        rlp::decode(&item.1)
+                            .map_err(|e| CrossChainError::Adapter(e.to_string()))?,
+                    )
+                    .await;
+            }
+        }
+
+        Ok(())
     }
 
     async fn build_axon_txs(&self, txs: Vec<TransactionView>) -> (Requests, SignedTransaction) {
@@ -218,15 +247,24 @@ impl<C: CkbClient + 'static> CrossChain for CrossChainHandler<C> {
     }
 
     async fn set_checkpoint(&self, ctx: Context, block: Block, proof: Proof) {
-        SidechainTask::new(
-            self.priv_key.clone(),
-            self.config.node_address,
-            self.config.admin_address,
-            self.config.selection_lock_hash,
-            self.config.checkpoint_type_hash,
-        )
-        .start(Arc::clone(&self.ckb_client), block, proof)
-        .await
+        let priv_key = self.priv_key.clone();
+        let node_address = self.config.node_address;
+        let admin_address = self.config.admin_address;
+        let selection_lock_hash = self.config.selection_lock_hash;
+        let checkpoint_type_hash = self.config.checkpoint_type_hash;
+        let ckb_client = Arc::clone(&self.ckb_client);
+
+        tokio::spawn(async move {
+            SidechainTask::new(
+                priv_key,
+                node_address,
+                admin_address,
+                selection_lock_hash,
+                checkpoint_type_hash,
+            )
+            .run(Arc::clone(&ckb_client), block, proof)
+            .await
+        });
     }
 }
 
