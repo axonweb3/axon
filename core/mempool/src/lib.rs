@@ -24,7 +24,7 @@ use common_apm::Instant;
 use core_executor::is_call_system_script;
 use core_network::NetworkContext;
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
-use protocol::types::{BlockNumber, Hash, SignedTransaction, H160, H256, U256};
+use protocol::types::{BlockNumber, Hash, SignedTransaction, H160, H256, U256, PackedTxHashes};
 use protocol::{async_trait, tokio, Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 use crate::context::TxContext;
@@ -193,7 +193,7 @@ where
         _ctx: Context,
         gas_limit: U256,
         tx_num_limit: u64,
-    ) -> ProtocolResult<Vec<Hash>> {
+    ) -> ProtocolResult<PackedTxHashes> {
         log::info!(
             "[core_mempool]: {:?} txs in map while package",
             self.pool.len(),

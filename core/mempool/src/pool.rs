@@ -10,7 +10,7 @@ use dashmap::DashMap;
 use parking_lot::{Mutex, RwLock};
 
 use protocol::tokio::{self, time::sleep};
-use protocol::types::{BlockNumber, Bytes, Hash, SignedTransaction, H160, U256};
+use protocol::types::{BlockNumber, Bytes, Hash, PackedTxHashes, SignedTransaction, H160, U256};
 use protocol::ProtocolResult;
 
 use crate::tx_wrapper::{TxPtr, TxWrapper};
@@ -116,17 +116,19 @@ impl PriorityPool {
         Ok(())
     }
 
-    pub fn package(&self, _gas_limit: U256, limit: usize) -> Vec<Hash> {
+    pub fn package(&self, _gas_limit: U256, limit: usize) -> PackedTxHashes {
         let _flushing = self.flush_lock.read();
 
-        let mut ret = self.sys_tx_bucket.package();
+        let mut hashes = self.sys_tx_bucket.package();
+        let call_system_script_count = hashes.len() as u16;
+        
         let mut q = self.real_queue.lock();
         if !self.co_queue.is_empty() {
             let txs = pop_all_item(Arc::clone(&self.co_queue));
             txs.for_each(|p_tx| q.push(p_tx));
         }
 
-        ret.extend(
+        hashes.extend(
             q.iter()
                 .filter_map(|ptr| {
                     if ptr.is_dropped() {
@@ -137,7 +139,12 @@ impl PriorityPool {
                 })
                 .take(limit),
         );
-        ret
+
+        PackedTxHashes {
+            hashes,
+            call_system_script_count,
+            call_crosschain_count: 0,
+        }
     }
 
     pub fn len(&self) -> usize {

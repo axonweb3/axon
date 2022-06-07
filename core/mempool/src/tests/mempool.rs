@@ -117,11 +117,11 @@ async fn test_package_multi_types() {
             .iter()
             .map(|x| &x.transaction.hash)
             .collect::<HashSet<_>>(),
-        package_txs.iter().take(5).collect::<HashSet<_>>()
+        package_txs.hashes.iter().take(5).collect::<HashSet<_>>()
     );
     assert_eq!(package_txs.len(), 1024);
 
-    exec_flush(package_txs, Arc::clone(&mempool)).await;
+    exec_flush(package_txs.hashes, Arc::clone(&mempool)).await;
     assert_eq!(mempool.get_tx_cache().system_script_queue_len(), 0);
     assert_eq!(mempool.len(), 0);
 }

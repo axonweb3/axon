@@ -147,3 +147,10 @@ pub fn is_call_system_script(action: &TransactionAction) -> bool {
         TransactionAction::Create => false,
     }
 }
+
+pub fn is_crosschain_transaction(action: &TransactionAction) -> bool {
+    match action {
+        TransactionAction::Call(addr) => addr == &CROSSCHAIN_CONTRACT_ADDRESS,
+        TransactionAction::Create => false,
+    }
+}
