@@ -16,7 +16,7 @@ use core_executor::NATIVE_TOKEN_ISSUE_ADDRESS;
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
 use protocol::types::{
     public_to_address, recover_intact_pub_key, Bytes, Hash, Public, SignedTransaction, Transaction,
-    TransactionAction, UnverifiedTransaction, H256, U256,
+    TransactionAction, UnverifiedTransaction, H256, U256, PackedTxHashes,
 };
 use protocol::{async_trait, tokio, ProtocolResult};
 
@@ -239,7 +239,7 @@ async fn exec_package(
     mempool: Arc<MemPoolImpl<HashMemPoolAdapter>>,
     cycle_limit: U256,
     tx_num_limit: u64,
-) -> Vec<Hash> {
+) -> PackedTxHashes {
     mempool
         .package(Context::new(), cycle_limit, tx_num_limit)
         .await

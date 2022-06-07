@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::types::{
     Address, Block, BlockNumber, Bytes, ExecResp, Hash, Header, Hex, Log, MerkleRoot, Metadata,
-    Proof, Proposal, Receipt, SignedTransaction, Validator, U256,
+    PackedTxHashes, Proof, Proposal, Receipt, SignedTransaction, Validator, U256,
 };
 use crate::{async_trait, traits::Context, ProtocolResult};
 
@@ -187,7 +187,7 @@ pub trait ConsensusAdapter: CommonConsensusAdapter + Send + Sync {
         height: u64,
         gas_limit: U256,
         tx_num_limit: u64,
-    ) -> ProtocolResult<Vec<Hash>>;
+    ) -> ProtocolResult<PackedTxHashes>;
 
     /// Get the signed transactions corresponding to the given hashes.
     async fn get_full_txs(

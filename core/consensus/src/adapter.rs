@@ -16,7 +16,8 @@ use protocol::traits::{
 };
 use protocol::types::{
     BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Hasher, Header, Hex, Log,
-    MerkleRoot, Metadata, Proof, Proposal, Receipt, SignedTransaction, Validator, U256,
+    MerkleRoot, Metadata, PackedTxHashes, Proof, Proposal, Receipt, SignedTransaction, Validator,
+    U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, tokio::task, ProtocolResult};
 
@@ -66,7 +67,7 @@ where
         _number: u64,
         gas_limit: U256,
         tx_num_limit: u64,
-    ) -> ProtocolResult<Vec<Hash>> {
+    ) -> ProtocolResult<PackedTxHashes> {
         self.mempool.package(ctx, gas_limit, tx_num_limit).await
     }
 
