@@ -15,6 +15,10 @@ pub trait CrossAdapter: Send + Sync {
 
     async fn remove_in_process(&self, ctx: Context, key: &[u8]) -> ProtocolResult<()>;
 
+    async fn update_monitor_ckb_number(&self, ctx: Context, number: u64) -> ProtocolResult<()>;
+
+    async fn get_monitor_ckb_number(&self) -> ProtocolResult<u64>;
+
     async fn nonce(&self, address: H160) -> ProtocolResult<U256>;
 }
 

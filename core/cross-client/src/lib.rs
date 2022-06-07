@@ -18,17 +18,17 @@ use common_crypto::{
     PrivateKey, PublicKey, Secp256k1RecoverablePrivateKey, Signature, ToPublicKey,
 };
 use protocol::tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
-use protocol::traits::{Context, CrossAdapter, CrossChain};
+use protocol::traits::{CkbClient, Context, CrossAdapter, CrossChain};
 use protocol::types::{
     Block, BlockNumber, Hash, Hasher, Log, Proof, SignedTransaction, Transaction,
-    TransactionAction, TypesError, UnverifiedTransaction, H160, MAX_BLOCK_GAS_LIMIT, U256,
+    TransactionAction, TypesError, UnverifiedTransaction, H160, H256, MAX_BLOCK_GAS_LIMIT, U256,
 };
 use protocol::{async_trait, lazy::CHAIN_ID, tokio, ProtocolResult};
 
 use core_executor::CROSSCHAIN_CONTRACT_ADDRESS;
 
-use crate::error::CrossChainError;
-use crate::types::Requests;
+use crate::types::{Direction, Requests, Transfer};
+use crate::{adapter::fixed_array, error::CrossChainError, monitor::CrossChainMonitor};
 
 pub const CKB_BLOCK_INTERVAL: u64 = 8; // second
 pub const NON_FORK_BLOCK_GAP: u64 = 24;
@@ -47,13 +47,33 @@ pub struct CrossChainImpl<Adapter> {
 }
 
 impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
-    pub fn new(
+    pub async fn new<C: CkbClient + 'static>(
         priv_key: Secp256k1RecoverablePrivateKey,
+        acs_code_hash: H256,
+        request_code_hash: H256,
+        start_monitor_number: u64,
+        ckb_client: Arc<C>,
         adapter: Arc<Adapter>,
     ) -> (Self, CrossChainHandler) {
         let address: H160 = Hasher::digest(priv_key.pub_key().to_bytes()).into();
         let (log_tx, log_rx) = unbounded_channel();
         let (req_tx, req_rx) = unbounded_channel();
+        let init_monitor_number = adapter
+            .get_monitor_ckb_number()
+            .await
+            .unwrap_or(start_monitor_number);
+
+        tokio::spawn(async move {
+            CrossChainMonitor::new(
+                ckb_client,
+                req_tx,
+                init_monitor_number,
+                acs_code_hash,
+                request_code_hash,
+            )
+            .run()
+            .await
+        });
 
         let crosschain = CrossChainImpl {
             priv_key,
@@ -72,8 +92,6 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
             tokio::select! {
                 Some(logs) = self.log_rx.recv() => {
                     let adapter_clone = Arc::clone(&self.adapter);
-
-
 
                     tokio::spawn(async move {
                         match build_ckb_txs(logs).await {
@@ -120,6 +138,28 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
         &self,
         txs: Vec<TransactionView>,
     ) -> ProtocolResult<(Requests, SignedTransaction)> {
+        let reqs = txs
+            .iter()
+            .map(|tx| {
+                let type_script = tx.output(2).unwrap().type_().to_opt().unwrap();
+                let request_args = generated::Transfer::new_unchecked(type_script.args().unpack());
+
+                Transfer {
+                    direction:      Direction::FromCkb,
+                    tx_hash:        H256(tx.hash().unpack().0),
+                    address:        H160::from_slice(&request_args.axon_address().raw_data()),
+                    sudt_type_hash: H256(type_script.calc_script_hash().unpack().0),
+                    erc20_address:  H160::from_slice(&request_args.e_r_c20_address().raw_data()),
+                    ckb_amount:     u64::from_le_bytes(fixed_array(
+                        &request_args.ckb_amount().raw_data(),
+                    )),
+                    sudt_amount:    u128::from_le_bytes(fixed_array(
+                        &request_args.s_u_d_t_amount().raw_data(),
+                    )),
+                }
+            })
+            .collect::<Vec<_>>();
+
         let tx = Transaction {
             nonce:                    self.adapter.nonce(self.address).await?,
             max_priority_fee_per_gas: U256::one(),
@@ -151,7 +191,7 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
             .try_into()
             .map_err(|e: TypesError| CrossChainError::Adapter(e.to_string()))?;
 
-        todo!()
+        Ok((Requests(reqs), stx))
     }
 
     async fn complete_task(&self, logs: &[Log]) -> ProtocolResult<()> {
