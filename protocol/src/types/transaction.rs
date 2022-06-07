@@ -191,6 +191,7 @@ impl Eip2930Transaction {
         }
     }
 }
+pub const MAX_PRIORITY_FEE_PER_GAS: u64 = 1337;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Eip1559Transaction {

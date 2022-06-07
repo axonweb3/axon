@@ -7,7 +7,7 @@ use core_consensus::SyncStatus as InnerSyncStatus;
 use protocol::codec::ProtocolCodec;
 use protocol::types::{
     AccessList, Block, Bloom, Bytes, Hash, Header, Hex, Public, Receipt, SignedTransaction, H160,
-    H256, U256, U64,
+    H256, MAX_PRIORITY_FEE_PER_GAS, U256, U64,
 };
 
 const EIP1559_TX_TYPE: u64 = 0x02;

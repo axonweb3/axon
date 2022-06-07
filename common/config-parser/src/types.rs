@@ -177,6 +177,9 @@ pub struct ConfigCrossChain {
     pub node_address:         H160,
     pub selection_lock_hash:  H256,
     pub checkpoint_type_hash: H256,
+
+    pub acs_lock_code_hash:     H256,
+    pub request_type_code_hash: H256,
 }
 
 #[derive(Clone, Debug, Deserialize)]
