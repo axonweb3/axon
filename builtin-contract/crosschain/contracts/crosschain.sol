@@ -36,13 +36,13 @@ contract CrossChain is Context, EIP712 {
     event CrossFromCKB(address to, address token, uint256 amount);
     event CrossFromCKBAlert(address to, address token, uint256 amount);
     event CrossToCKB(
-        address to,
+        string to,
         address token,
         uint256 amount,
         uint256 minWCKBAmount
     );
     event CrossToCKBAlert(
-        address to,
+        string to,
         address token,
         uint256 amount,
         uint256 minWCKBAmount
@@ -63,10 +63,10 @@ contract CrossChain is Context, EIP712 {
     }
 
     struct AxonToCKBRecord {
-        address to;
         address tokenAddress;
         uint256 amount;
         uint256 minWCKBAmount;
+        string to;
     }
 
     constructor(
@@ -281,21 +281,21 @@ contract CrossChain is Context, EIP712 {
     }
 
     // lock AT on Axon network
-    function lockAT() external payable {
+    function lockAT(string memory to) external payable {
         require(msg.value > 0, "CrossChain: value must be more than 0");
 
         IERC20(_wCKB).transferFrom(_msgSender(), address(this), _minWCKB);
 
         if (_amountReachThreshold(address(0), msg.value)) {
             AxonToCKBRecord memory record;
-            record.to = _msgSender();
+            record.to = to;
             record.tokenAddress = AT_ADDRESS;
             record.amount = msg.value;
             record.minWCKBAmount = _minWCKB;
             _addLimitTxes(record);
-            emit CrossToCKBAlert(_msgSender(), address(0), msg.value, _minWCKB);
+            emit CrossToCKBAlert(to, address(0), msg.value, _minWCKB);
         } else {
-            emit CrossToCKB(_msgSender(), address(0), msg.value, _minWCKB);
+            emit CrossToCKB(to, address(0), msg.value, _minWCKB);
         }
     }
 
@@ -303,7 +303,11 @@ contract CrossChain is Context, EIP712 {
     // lock simple tokens (ERC20) on Axon network
     // burn mirror tokens (sUDTs from CKB network) on Axon network
     // burn wCKB on Axon network
-    function crossTokenToCKB(address token, uint256 amount) external {
+    function crossTokenToCKB(
+        string memory to,
+        address token,
+        uint256 amount
+    ) external {
         require(amount > 0, "CrossChain: amount must be more than 0");
 
         require(
@@ -325,14 +329,14 @@ contract CrossChain is Context, EIP712 {
 
         if (_amountReachThreshold(token, amount)) {
             AxonToCKBRecord memory record;
-            record.to = _msgSender();
+            record.to = to;
             record.tokenAddress = token;
             record.amount = amount;
             record.minWCKBAmount = _minWCKB;
             _addLimitTxes(record);
-            emit CrossToCKBAlert(_msgSender(), token, amount, _minWCKB);
+            emit CrossToCKBAlert(to, token, amount, _minWCKB);
         } else {
-            emit CrossToCKB(_msgSender(), token, amount, _minWCKB);
+            emit CrossToCKB(to, token, amount, _minWCKB);
         }
     }
 
