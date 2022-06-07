@@ -22,11 +22,13 @@ use common_crypto::{
     ToPublicKey, UncompressedPublicKey,
 };
 use core_executor::{AxonExecutor, AxonExecutorAdapter};
-use protocol::traits::{CkbClient, Context, CrossAdapter, CrossChain, Executor, MemPool, Storage};
+use protocol::traits::{
+    CkbClient, Context, CrossAdapter, CrossChain, Executor, ExecutorAdapter, MemPool, Storage,
+};
 use protocol::types::{
-    public_to_address, Block, Bytes, CrossChainTransferPayload, Hash, Identity, Log, Proof,
-    Proposal, Public, SignedTransaction, SubmitCheckpointPayload, Transaction, TransactionAction,
-    UnverifiedTransaction, H160, H256, U256,
+    public_to_address, Account, Block, Bytes, CrossChainTransferPayload, ExecutorContext, Hash,
+    Identity, Log, Proof, Proposal, Public, SignedTransaction, SubmitCheckpointPayload,
+    Transaction, TransactionAction, UnverifiedTransaction, H160, H256, U256,
 };
 use protocol::{
     async_trait,
@@ -54,15 +56,19 @@ trait CrossChainDB: Sync + Send {
     fn remove(&self, key: &[u8]) -> ProtocolResult<()>;
 }
 
-pub struct DefaultCrossChainAdapter<M, DB> {
+pub struct DefaultCrossChainAdapter<M, S, TrieDB, DB> {
     mempool: Arc<M>,
+    storage: Arc<S>,
+    trie_db: Arc<TrieDB>,
     db:      Arc<DB>,
 }
 
 #[async_trait]
-impl<M, DB> CrossAdapter for DefaultCrossChainAdapter<M, DB>
+impl<M, S, TrieDB, DB> CrossAdapter for DefaultCrossChainAdapter<M, S, TrieDB, DB>
 where
     M: MemPool + 'static,
+    S: Storage + 'static,
+    TrieDB: cita_trie::DB + 'static,
     DB: CrossChainDB + 'static,
 {
     async fn send_axon_tx(&self, ctx: Context, stx: SignedTransaction) -> ProtocolResult<()> {
@@ -77,16 +83,44 @@ where
         Ok(())
     }
 
-    fn insert_in_process(&self, ctx: Context, key: &[u8], val: &[u8]) -> ProtocolResult<()> {
+    async fn insert_in_process(&self, ctx: Context, key: &[u8], val: &[u8]) -> ProtocolResult<()> {
         self.db.insert(key, val)
     }
 
-    fn get_all_in_process(&self, ctx: Context) -> ProtocolResult<Vec<(Vec<u8>, Vec<u8>)>> {
+    async fn get_all_in_process(&self, ctx: Context) -> ProtocolResult<Vec<(Vec<u8>, Vec<u8>)>> {
         self.db.get_all()
     }
 
-    fn remove_in_process(&self, ctx: Context, key: &[u8]) -> ProtocolResult<()> {
+    async fn remove_in_process(&self, ctx: Context, key: &[u8]) -> ProtocolResult<()> {
         self.db.remove(key)
+    }
+
+    async fn nonce(&self, address: H160) -> ProtocolResult<U256> {
+        Ok(match self.evm_backend().await?.get(address.as_bytes()) {
+            Some(bytes) => Account::decode(bytes)?.nonce,
+            None => U256::zero(),
+        })
+    }
+}
+
+impl<M, S, TrieDB, DB> DefaultCrossChainAdapter<M, S, TrieDB, DB>
+where
+    M: MemPool + 'static,
+    S: Storage + 'static,
+    TrieDB: cita_trie::DB + 'static,
+    DB: CrossChainDB + 'static,
+{
+    pub async fn evm_backend(&self) -> ProtocolResult<AxonExecutorAdapter<S, TrieDB>> {
+        let block = self.storage.get_latest_block(Context::new()).await?;
+        let state_root = block.header.state_root;
+        let proposal: Proposal = block.into();
+
+        AxonExecutorAdapter::from_root(
+            state_root,
+            Arc::clone(&self.trie_db),
+            Arc::clone(&self.storage),
+            ExecutorContext::from(proposal),
+        )
     }
 }
 
@@ -126,16 +160,20 @@ where
         Ok(())
     }
 
-    fn insert_in_process(&self, ctx: Context, key: &[u8], val: &[u8]) -> ProtocolResult<()> {
+    async fn insert_in_process(&self, ctx: Context, key: &[u8], val: &[u8]) -> ProtocolResult<()> {
         Ok(())
     }
 
-    fn get_all_in_process(&self, ctx: Context) -> ProtocolResult<Vec<(Vec<u8>, Vec<u8>)>> {
+    async fn get_all_in_process(&self, ctx: Context) -> ProtocolResult<Vec<(Vec<u8>, Vec<u8>)>> {
         Ok(vec![])
     }
 
-    fn remove_in_process(&self, ctx: Context, key: &[u8]) -> ProtocolResult<()> {
+    async fn remove_in_process(&self, ctx: Context, key: &[u8]) -> ProtocolResult<()> {
         Ok(())
+    }
+
+    async fn nonce(&self, address: H160) -> ProtocolResult<U256> {
+        Ok(U256::zero())
     }
 }
 
