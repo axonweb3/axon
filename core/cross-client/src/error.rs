@@ -7,6 +7,9 @@ pub enum CrossChainError {
     #[display(fmt = "Rocksdb error {}", _0)]
     DB(rocksdb::Error),
 
+    #[display(fmt = "Adapter error {}", _0)]
+    Adapter(String),
+
     #[display(fmt = "Create cross chain db error")]
     CreateDB,
 

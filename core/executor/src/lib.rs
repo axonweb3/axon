@@ -11,7 +11,9 @@ mod tests;
 mod vm;
 
 pub use crate::adapter::{AxonExecutorAdapter, MPTTrie, RocksTrieDB};
-pub use crate::{system::NATIVE_TOKEN_ISSUE_ADDRESS, vm::code_address};
+pub use crate::{
+    system::NATIVE_TOKEN_ISSUE_ADDRESS, vm::code_address, vm::CROSSCHAIN_CONTRACT_ADDRESS,
+};
 
 use std::collections::BTreeMap;
 
