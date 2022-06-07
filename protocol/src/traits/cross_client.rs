@@ -1,6 +1,6 @@
 use ckb_jsonrpc_types::TransactionView;
 
-use crate::types::{Block, BlockNumber, Hash, Log, Proof, SignedTransaction};
+use crate::types::{Block, BlockNumber, Hash, Log, Proof, SignedTransaction, H160, U256};
 use crate::{async_trait, traits::Context, ProtocolResult};
 
 #[async_trait]
@@ -9,11 +9,13 @@ pub trait CrossAdapter: Send + Sync {
 
     async fn send_ckb_tx(&self, ctx: Context, tx: TransactionView) -> ProtocolResult<()>;
 
-    fn insert_in_process(&self, ctx: Context, key: &[u8], val: &[u8]) -> ProtocolResult<()>;
+    async fn insert_in_process(&self, ctx: Context, key: &[u8], val: &[u8]) -> ProtocolResult<()>;
 
-    fn get_all_in_process(&self, ctx: Context) -> ProtocolResult<Vec<(Vec<u8>, Vec<u8>)>>;
+    async fn get_all_in_process(&self, ctx: Context) -> ProtocolResult<Vec<(Vec<u8>, Vec<u8>)>>;
 
-    fn remove_in_process(&self, ctx: Context, key: &[u8]) -> ProtocolResult<()>;
+    async fn remove_in_process(&self, ctx: Context, key: &[u8]) -> ProtocolResult<()>;
+
+    async fn nonce(&self, address: H160) -> ProtocolResult<U256>;
 }
 
 #[async_trait]
