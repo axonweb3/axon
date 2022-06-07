@@ -239,7 +239,7 @@ async fn exec_package(
     mempool: Arc<MemPoolImpl<HashMemPoolAdapter>>,
     cycle_limit: U256,
     tx_num_limit: u64,
-) -> Vec<Hash> {
+) -> PackedTxHashes {
     mempool
         .package(Context::new(), cycle_limit, tx_num_limit)
         .await

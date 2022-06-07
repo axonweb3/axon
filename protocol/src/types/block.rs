@@ -26,6 +26,8 @@ pub struct Proposal {
     pub proof:                      Proof,
     pub last_checkpoint_block_hash: Hash,
     pub chain_id:                   u64,
+    pub call_system_script_count:   u16,
+    pub call_crosschain_count:      u16,
     pub tx_hashes:                  Vec<Hash>,
 }
 
@@ -45,6 +47,8 @@ impl From<Block> for Proposal {
             proof:                      b.header.proof,
             last_checkpoint_block_hash: b.header.last_checkpoint_block_hash,
             chain_id:                   b.header.chain_id,
+            call_system_script_count:   b.header.call_system_script_count,
+            call_crosschain_count:      b.header.call_crosschain_count,
             tx_hashes:                  b.tx_hashes,
         }
     }
@@ -66,8 +70,22 @@ impl From<Header> for Proposal {
             proof:                      h.proof,
             last_checkpoint_block_hash: h.last_checkpoint_block_hash,
             chain_id:                   h.chain_id,
+            call_system_script_count:   h.call_system_script_count,
+            call_crosschain_count:      h.call_crosschain_count,
             tx_hashes:                  vec![],
         }
+    }
+}
+
+pub struct PackedTxHashes {
+    pub hashes:                   Vec<Hash>,
+    pub call_system_script_count: u16,
+    pub call_crosschain_count:    u16,
+}
+
+impl PackedTxHashes {
+    pub fn len(&self) -> usize {
+        self.hashes.len()
     }
 }
 
@@ -105,6 +123,8 @@ impl Block {
             base_fee_per_gas:           proposal.base_fee_per_gas,
             proof:                      proposal.proof,
             last_checkpoint_block_hash: proposal.last_checkpoint_block_hash,
+            call_system_script_count:   proposal.call_system_script_count,
+            call_crosschain_count:      proposal.call_crosschain_count,
             chain_id:                   proposal.chain_id,
         };
 
@@ -139,6 +159,8 @@ pub struct Header {
     pub base_fee_per_gas:           U256,
     pub proof:                      Proof,
     pub last_checkpoint_block_hash: Hash,
+    pub call_system_script_count:   u16,
+    pub call_crosschain_count:      u16,
     pub chain_id:                   u64,
 }
 
@@ -206,6 +228,8 @@ mod tests {
                     base_fee_per_gas:           Default::default(),
                     proof:                      Default::default(),
                     last_checkpoint_block_hash: Default::default(),
+                    call_system_script_count:   0,
+                    call_crosschain_count:      0,
                     chain_id:                   0,
                 },
             },
