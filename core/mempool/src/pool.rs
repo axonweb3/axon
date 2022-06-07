@@ -17,7 +17,7 @@ use crate::tx_wrapper::{TxPtr, TxWrapper};
 use crate::MemPoolError;
 
 pub struct PriorityPool {
-    sys_tx_bucket:  SystemScriptTxBucket,
+    sys_tx_bucket:  BuiltInContractTxBucket,
     occupied_nonce: DashMap<H160, BTreeMap<U256, TxPtr>>,
     co_queue:       Arc<ArrayQueue<TxPtr>>,
     real_queue:     Arc<Mutex<BinaryHeap<TxPtr>>>,
@@ -32,7 +32,7 @@ pub struct PriorityPool {
 impl PriorityPool {
     pub async fn new(size: usize, timeout_config: u64) -> Self {
         let pool = PriorityPool {
-            sys_tx_bucket: SystemScriptTxBucket::new(),
+            sys_tx_bucket: BuiltInContractTxBucket::new(),
             occupied_nonce: DashMap::new(),
             co_queue: Arc::new(ArrayQueue::new(size)),
             real_queue: Arc::new(Mutex::new(BinaryHeap::with_capacity(size * 2))),
@@ -121,7 +121,7 @@ impl PriorityPool {
 
         let mut hashes = self.sys_tx_bucket.package();
         let call_system_script_count = hashes.len() as u16;
-        
+
         let mut q = self.real_queue.lock();
         if !self.co_queue.is_empty() {
             let txs = pop_all_item(Arc::clone(&self.co_queue));
@@ -267,14 +267,14 @@ impl PriorityPool {
     }
 }
 
-struct SystemScriptTxBucket {
+struct BuiltInContractTxBucket {
     hash_data_map: DashMap<Hash, Bytes>,
     tx_buckets:    DashMap<Bytes, BTreeMap<Hash, SignedTransaction>>,
 }
 
-impl SystemScriptTxBucket {
+impl BuiltInContractTxBucket {
     pub fn new() -> Self {
-        SystemScriptTxBucket {
+        BuiltInContractTxBucket {
             hash_data_map: DashMap::new(),
             tx_buckets:    DashMap::new(),
         }

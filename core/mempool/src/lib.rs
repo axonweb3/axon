@@ -21,10 +21,10 @@ use std::sync::Arc;
 use futures::future::try_join_all;
 
 use common_apm::Instant;
-use core_executor::is_call_system_script;
+use core_executor::{is_call_system_script, is_crosschain_transaction};
 use core_network::NetworkContext;
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
-use protocol::types::{BlockNumber, Hash, SignedTransaction, H160, H256, U256, PackedTxHashes};
+use protocol::types::{BlockNumber, Hash, PackedTxHashes, SignedTransaction, H160, H256, U256};
 use protocol::{async_trait, tokio, Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 use crate::context::TxContext;
@@ -184,7 +184,9 @@ where
     Adapter: MemPoolAdapter + 'static,
 {
     async fn insert(&self, ctx: Context, tx: SignedTransaction) -> ProtocolResult<()> {
-        let is_call_system_script = is_call_system_script(tx.transaction.unsigned.action());
+        let is_call_system_script = is_call_system_script(&tx.transaction.unsigned.action)
+            || is_call_system_script(&tx.transaction.unsigned.action);
+            
         self.insert_tx(ctx, tx, is_call_system_script).await
     }
 
