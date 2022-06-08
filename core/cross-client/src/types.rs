@@ -1,9 +1,9 @@
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 use serde::{Deserialize, Serialize};
 
-use protocol::types::{Hash, H160};
+use protocol::types::{H160, H256};
 
-use crate::error::CrossChainError;
+use crate::{crosschain_abi, error::CrossChainError};
 
 #[repr(u8)]
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq)]
@@ -32,12 +32,13 @@ impl Direction {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Transfer {
-    pub direction:     Direction,
-    pub tx_hash:       Hash,
+    pub direction: Direction,
+
     pub address:       H160,
     pub erc20_address: H160,
-    pub ckb_amount:    u64,
     pub sudt_amount:   u128,
+    pub ckb_amount:    u64,
+    pub tx_hash:       H256,
 }
 
 impl Encodable for Transfer {
@@ -86,6 +87,24 @@ impl Decodable for Requests {
 impl Requests {
     pub fn direction(&self) -> Direction {
         self.0[0].direction
+    }
+}
+
+impl From<crosschain_abi::CrossFromCKBFilter> for Requests {
+    fn from(logs: crosschain_abi::CrossFromCKBFilter) -> Self {
+        Requests(
+            logs.records
+                .into_iter()
+                .map(|r| Transfer {
+                    direction:     Direction::FromCkb,
+                    address:       r.0,
+                    erc20_address: r.1,
+                    sudt_amount:   r.2.as_u128(),
+                    ckb_amount:    r.3.as_u64(),
+                    tx_hash:       H256(r.4),
+                })
+                .collect(),
+        )
     }
 }
 

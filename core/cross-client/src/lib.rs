@@ -15,7 +15,8 @@ use std::sync::Arc;
 
 use arc_swap::ArcSwap;
 use ckb_types::{core::TransactionView, prelude::*};
-use ethers_core::abi::{self, AbiEncode, ParamType};
+use ethers_contract::decode_logs;
+use ethers_core::abi::{self, AbiEncode, AbiType, Detokenize, RawLog};
 
 use common_config_parser::types::ConfigCrossChain;
 use common_crypto::{
@@ -46,7 +47,7 @@ lazy_static::lazy_static! {
 pub struct CrossChainImpl<Adapter> {
     priv_key: Secp256k1RecoverablePrivateKey,
     address:  H160,
-    log_rx:   UnboundedReceiver<Vec<Log>>,
+    log_rx:   UnboundedReceiver<Vec<Vec<Log>>>,
     req_rx:   UnboundedReceiver<Vec<TransactionView>>,
 
     adapter: Arc<Adapter>,
@@ -101,26 +102,29 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
         loop {
             tokio::select! {
                 Some(logs) = self.log_rx.recv() => {
-                    let adapter_clone = Arc::clone(&self.adapter);
+                    let (to_ckbs, to_ckb_alerts) = self.classify_logs(logs).await.unwrap();
 
-                    tokio::spawn(async move {
-                        match build_ckb_txs(logs).await {
-                            Ok((reqs, stx)) => {
-                                let ctx = Context::new();
-                                adapter_clone.insert_in_process(
-                                    ctx.clone(),
-                                    &rlp::encode(&reqs).freeze(),
-                                    stx.pack().as_slice()
-                                )
-                                .await
-                                .unwrap();
-                                let _ = adapter_clone.send_ckb_tx(ctx, stx.into()).await;
-                            },
+                    if !to_ckbs.is_empty() {
+                        let adapter_clone = Arc::clone(&self.adapter);
+                        tokio::spawn(async move {
+                            match build_ckb_txs(to_ckbs).await {
+                                Ok((reqs, stx)) => {
+                                    let ctx = Context::new();
+                                    adapter_clone.insert_in_process(
+                                        ctx.clone(),
+                                        &rlp::encode(&reqs).freeze(),
+                                        stx.pack().as_slice()
+                                    )
+                                    .await
+                                    .unwrap();
+                                    let _ = adapter_clone.send_ckb_tx(ctx, stx.into()).await;
+                                },
 
-                            Err(e) => log::error!("[crosschain]: crosschain error {:?}", e),
-                        };
+                                Err(e) => log::error!("[crosschain]: crosschain error {:?}", e),
+                            };
 
-                    });
+                        });
+                    }
                 }
 
                 Some(reqs) = self.req_rx.recv() => {
@@ -242,19 +246,55 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
         (Requests(reqs), stx)
     }
 
-    async fn complete_task(&self, logs: &[Log]) -> ProtocolResult<()> {
+    async fn classify_logs(
+        &self,
+        logs: Vec<Vec<Log>>,
+    ) -> ProtocolResult<(
+        Vec<crosschain_abi::CrossToCKBFilter>,
+        Vec<crosschain_abi::CrossToCKBAlertFilter>,
+    )> {
+        let logs = logs
+            .iter()
+            .map(|inner_logs| {
+                inner_logs
+                    .iter()
+                    .map(|log| RawLog {
+                        topics: log.topics.clone(),
+                        data:   log.data.clone(),
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+
+        let mut to_ckbs = Vec::new();
+        let mut to_ckb_alerts = Vec::new();
+
         for log in logs.iter() {
-            // if
-            self.adapter.remove_in_process(Context::new(), &[]).await?;
+            if log.len() != 1 {
+                continue;
+            }
+
+            if let Ok(event) = decode_logs::<crosschain_abi::CrossFromCKBFilter>(log) {
+                self.adapter
+                    .remove_in_process(
+                        Context::new(),
+                        &rlp::encode::<Requests>(&(event[0].clone().into())),
+                    )
+                    .await?;
+            } else if let Ok(event) = decode_logs::<crosschain_abi::CrossToCKBFilter>(log) {
+                to_ckbs.push(event[0].clone());
+            } else if let Ok(event) = decode_logs::<crosschain_abi::CrossToCKBAlertFilter>(log) {
+                to_ckb_alerts.push(event[0].clone());
+            }
         }
 
-        Ok(())
+        Ok((to_ckbs, to_ckb_alerts))
     }
 }
 
 pub struct CrossChainHandler<C> {
     priv_key:   Secp256k1RecoverablePrivateKey,
-    logs_tx:    UnboundedSender<Vec<Log>>,
+    logs_tx:    UnboundedSender<Vec<Vec<Log>>>,
     config:     ConfigCrossChain,
     ckb_client: Arc<C>,
 }
@@ -268,11 +308,9 @@ impl<C: CkbClient + 'static> CrossChain for CrossChainHandler<C> {
         block_hash: Hash,
         logs: &[Vec<Log>],
     ) {
-        logs.iter().for_each(|tx_log| {
-            if let Err(e) = self.logs_tx.send(tx_log.clone()) {
-                log::error!("[cross-chain]: send log to process error {:?}", e);
-            }
-        })
+        if let Err(e) = self.logs_tx.send(logs.to_vec()) {
+            log::error!("[cross-chain]: send log to process error {:?}", e);
+        }
     }
 
     async fn set_checkpoint(&self, ctx: Context, block: Block, proof: Proof) {
@@ -300,7 +338,7 @@ impl<C: CkbClient + 'static> CrossChain for CrossChainHandler<C> {
 impl<C: CkbClient + 'static> CrossChainHandler<C> {
     fn new(
         priv_key: Secp256k1RecoverablePrivateKey,
-        logs_tx: UnboundedSender<Vec<Log>>,
+        logs_tx: UnboundedSender<Vec<Vec<Log>>>,
         config: ConfigCrossChain,
         ckb_client: Arc<C>,
     ) -> Self {
@@ -314,11 +352,12 @@ impl<C: CkbClient + 'static> CrossChainHandler<C> {
 }
 
 fn decode_resp_nonce(data: &[u8]) -> U256 {
-    let tokens = abi::decode(&[ParamType::FixedBytes(32)], data).unwrap();
-    U256::from_big_endian(&tokens[0].clone().into_fixed_bytes().unwrap())
+    U256::from_tokens(abi::decode(&[U256::param_type()], data).unwrap()).unwrap()
 }
 
-async fn build_ckb_txs(logs: Vec<Log>) -> ProtocolResult<(Requests, TransactionView)> {
+async fn build_ckb_txs(
+    events: Vec<crosschain_abi::CrossToCKBFilter>,
+) -> ProtocolResult<(Requests, TransactionView)> {
     todo!()
 }
 
@@ -339,6 +378,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn gen_abi_binding() {
         ethers_contract::Abigen::new("crosschain", "./crosschain_abi.json")
             .unwrap()

@@ -1,8 +1,6 @@
 use ckb_jsonrpc_types::TransactionView;
 
-use crate::types::{
-    Block, BlockNumber, Hash, Header, Log, Proof, SignedTransaction, TxResp, H160, U256,
-};
+use crate::types::{Block, BlockNumber, Hash, Log, Proof, SignedTransaction, TxResp, H160, U256};
 use crate::{async_trait, traits::Context, ProtocolResult};
 
 #[async_trait]
