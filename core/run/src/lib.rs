@@ -36,7 +36,7 @@ use core_consensus::{
     util::OverlordCrypto, ConsensusWal, DurationConfig, Node, OverlordConsensus,
     OverlordConsensusAdapter, OverlordSynchronization, SignedTxsWAL,
 };
-use core_cross_client::DefaultCrossAdapter;
+use core_cross_client::{CrossChainDBImpl, CrossChainImpl, DefaultCrossChainAdapter};
 use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB};
 use core_interoperation::InteroperationImpl;
 use core_mempool::{
@@ -446,19 +446,29 @@ impl Axon {
         );
 
         // start cross chain client
-        let cross_client = DefaultCrossAdapter::new(
-            self.config.clone(),
-            Secp256k1RecoverablePrivateKey::try_from(hex_privkey.as_ref()).unwrap(),
+        let path_crosschain = self.config.data_path_for_crosschain();
+        let crosschain_db = CrossChainDBImpl::new(path_crosschain, config.rocksdb.clone())?;
+
+        let crosschain_adapter = DefaultCrossChainAdapter::new(
+            // self.config.clone(),
+            // Secp256k1RecoverablePrivateKey::try_from(hex_privkey.as_ref()).unwrap(),
             Arc::clone(&mempool),
             Arc::clone(&storage),
             Arc::clone(&trie_db),
+            Arc::new(crosschain_db),
+        ).await;
+
+        let (crosschain_process, cross_handle) = CrossChainImpl::new(
+            Secp256k1RecoverablePrivateKey::try_from(hex_privkey.as_ref()).unwrap(),
+            config.cross_client.clone(),
             Arc::new(ckb_client),
-        );
-        let cross_handle = cross_client.handle();
+            Arc::new(crosschain_adapter),
+        )
+        .await;
 
         // start cross chain client
         if self.config.cross_client.enable {
-            tokio::spawn(cross_client.run());
+            tokio::spawn(crosschain_process.run());
         }
 
         let consensus_interval = metadata.interval;

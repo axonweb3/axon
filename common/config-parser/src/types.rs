@@ -263,6 +263,13 @@ impl Config {
         path_state
     }
 
+    pub fn data_path_for_crosschain(&self) -> PathBuf {
+        let mut path_state = self.data_path.clone();
+        path_state.push("rocksdb");
+        path_state.push("crosschain");
+        path_state
+    }
+
     pub fn data_path_for_txs_wal(&self) -> PathBuf {
         let mut path_state = self.data_path.clone();
         path_state.push("txs_wal");
