@@ -32,7 +32,7 @@ contract CrossChain is Context, EIP712 {
     mapping(address => bytes32) private _tokenTypehashMap;
     mapping(bytes32 => address) private _typehashTokenMap;
 
-    event CrossFromCKB(CKBToAxonRecord[]);
+    event CrossFromCKB(CKBToAxonRecord[] records);
 
     event CrossToCKB(
         string to,
@@ -91,6 +91,15 @@ contract CrossChain is Context, EIP712 {
         _;
     }
 
+    modifier onlyVerifier() {
+        require(
+            IMetadata(_metadata).isVerifier(_msgSender()),
+            "CrossChain: sender must be verifier"
+        );
+
+        _;
+    }
+
     function _amountReachThreshold(address token, uint256 amount)
         private
         view
@@ -101,7 +110,7 @@ contract CrossChain is Context, EIP712 {
 
     function removeLimitTxes(CKBToAxonRecord memory record)
         external
-        onlyProposer
+        onlyVerifier
     {
         if (_limitTxesMap[record.txHash] == 0) {
             return;
@@ -239,28 +248,28 @@ contract CrossChain is Context, EIP712 {
 
     function setTokenConfig(address token, TokenConfig calldata config)
         external
-        onlyProposer
+        onlyVerifier
     {
         _tokenConfigs[token] = config;
     }
 
-    function setWCKB(address token) external onlyProposer {
+    function setWCKB(address token) external onlyVerifier {
         _wCKB = token;
     }
 
-    function setWCKBMin(uint256 amount) external onlyProposer {
+    function setWCKBMin(uint256 amount) external onlyVerifier {
         _minWCKB = amount;
     }
 
     function addMirrorToken(address token, bytes32 typehash)
         public
-        onlyProposer
+        onlyVerifier
     {
         _mirrorTokens[token] = true;
         addToken(token, typehash);
     }
 
-    function addToken(address token, bytes32 typehash) public onlyProposer {
+    function addToken(address token, bytes32 typehash) public onlyVerifier {
         _typehashTokenMap[typehash] = token;
         _tokenTypehashMap[token] = typehash;
     }
@@ -344,14 +353,11 @@ contract CrossChain is Context, EIP712 {
     // unlock AT on Axon network
     // only proposer can call this method
     // resubmit the tx by using nonce auto increment
-    function crossFromCKB(
-        CKBToAxonRecord[] calldata records,
-        bytes calldata signatures,
-        uint256 nonce
-    ) external onlyProposer {
+    function crossFromCKB(CKBToAxonRecord[] calldata records, uint256 nonce)
+        external
+        onlyVerifier
+    {
         require(_crossFromCKBNonce == nonce, "CrossChain: invalid nonce");
-
-        _verifyCrossFromCKBSignatures(records, signatures, nonce);
 
         uint256 length = records.length;
         for (uint256 i = 0; i < length; ++i) {

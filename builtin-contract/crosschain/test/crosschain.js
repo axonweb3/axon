@@ -59,7 +59,7 @@ describe("CrossChain", () => {
             [owner.address, wallets[0].address, wallets[1].address, wallets[2].address],
             1,
         );
-        await metadata.mock.isProposer.returns(true);
+        await metadata.mock.isVerifier.returns(true);
 
         let deployer = await ethers.getContractFactory("CrossChain");
         contract = await deployer
@@ -473,16 +473,14 @@ describe("CrossChain", () => {
 
         let signatures = '';
 
-        await metadata.mock.isProposer.returns(true);
+        await metadata.mock.isVerifier.returns(true);
 
         signatures += (await wallets[0]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
         signatures += (await wallets[1]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
         signatures += (await wallets[2]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
         signatures = '0x' + signatures;
 
-        await expect(contract.crossFromCKB(records, signatures, nonce))
-            .emit(contract, 'CrossFromCKB')
-            .withArgs(records);
+        await contract.crossFromCKB(records, nonce);
 
         expect(await mirrorToken.balanceOf(wallet1.address)).equal(10);
         expect(await mirrorToken.balanceOf(wallet2.address)).equal(100);
@@ -520,136 +518,136 @@ describe("CrossChain", () => {
 
         let signatures = '';
 
-        await metadata.mock.isProposer.returns(false);
+        await metadata.mock.isVerifier.returns(false);
 
         signatures += (await wallets[0]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
         signatures += (await wallets[1]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
         signatures += (await wallets[2]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
         signatures = '0x' + signatures;
 
-        await expect(contract.crossFromCKB(records, signatures, nonce))
+        await expect(contract.crossFromCKB(records, nonce))
             .to
-            .revertedWith('CrossChain: sender must be proposer');
+            .revertedWith('CrossChain: sender must be verifier');
     });
 
-    it("cross wckb and sudt should fail while signatures are not enough", async () => {
-        const wallet1 = ethers.Wallet.createRandom().connect(ethers.provider);
-        const wallet2 = ethers.Wallet.createRandom().connect(ethers.provider);
+    // it("cross wckb and sudt should fail while signatures are not enough", async () => {
+    //     const wallet1 = ethers.Wallet.createRandom().connect(ethers.provider);
+    //     const wallet2 = ethers.Wallet.createRandom().connect(ethers.provider);
 
-        const records = [
-            {
-                to: wallet1.address,
-                tokenAddress: mirrorToken.address,
-                sUDTAmount: 10,
-                CKBAmount: 1000,
-                txHash: lockscript,
-            },
-            {
-                to: wallet2.address,
-                tokenAddress: mirrorToken.address,
-                sUDTAmount: 100,
-                CKBAmount: 100000,
-                txHash: lockscript,
-            },
-        ];
+    //     const records = [
+    //         {
+    //             to: wallet1.address,
+    //             tokenAddress: mirrorToken.address,
+    //             sUDTAmount: 10,
+    //             CKBAmount: 1000,
+    //             txHash: lockscript,
+    //         },
+    //         {
+    //             to: wallet2.address,
+    //             tokenAddress: mirrorToken.address,
+    //             sUDTAmount: 100,
+    //             CKBAmount: 100000,
+    //             txHash: lockscript,
+    //         },
+    //     ];
 
-        const nonce = await contract.crossFromCKBNonce();
+    //     const nonce = await contract.crossFromCKBNonce();
 
-        const value = {
-            recordsHash: recordsHash(records),
-            nonce: nonce,
-        };
+    //     const value = {
+    //         recordsHash: recordsHash(records),
+    //         nonce: nonce,
+    //     };
 
-        let signatures = '';
+    //     let signatures = '';
 
-        await metadata.mock.isProposer.returns(true);
+    //     await metadata.mock.isProposer.returns(true);
 
-        signatures += (await wallets[0]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
-        signatures += (await wallets[1]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
-        signatures = '0x' + signatures;
+    //     signatures += (await wallets[0]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
+    //     signatures += (await wallets[1]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
+    //     signatures = '0x' + signatures;
 
-        await expect(contract.crossFromCKB(records, signatures, nonce)).to.revertedWith('CrossChain: signatures are not enough');
-    });
+    //     await expect(contract.crossFromCKB(records, signatures, nonce)).to.revertedWith('CrossChain: signatures are not enough');
+    // });
 
-    it("cross wckb and sudt should fail while valid signatures are not enough", async () => {
-        const wallet1 = ethers.Wallet.createRandom().connect(ethers.provider);
-        const wallet2 = ethers.Wallet.createRandom().connect(ethers.provider);
+    // it("cross wckb and sudt should fail while valid signatures are not enough", async () => {
+    //     const wallet1 = ethers.Wallet.createRandom().connect(ethers.provider);
+    //     const wallet2 = ethers.Wallet.createRandom().connect(ethers.provider);
 
-        const records = [
-            {
-                to: wallet1.address,
-                tokenAddress: mirrorToken.address,
-                sUDTAmount: 10,
-                CKBAmount: 1000,
-                txHash: lockscript,
-            },
-            {
-                to: wallet2.address,
-                tokenAddress: mirrorToken.address,
-                sUDTAmount: 100,
-                CKBAmount: 100000,
-                txHash: lockscript,
-            },
-        ];
+    //     const records = [
+    //         {
+    //             to: wallet1.address,
+    //             tokenAddress: mirrorToken.address,
+    //             sUDTAmount: 10,
+    //             CKBAmount: 1000,
+    //             txHash: lockscript,
+    //         },
+    //         {
+    //             to: wallet2.address,
+    //             tokenAddress: mirrorToken.address,
+    //             sUDTAmount: 100,
+    //             CKBAmount: 100000,
+    //             txHash: lockscript,
+    //         },
+    //     ];
 
-        const nonce = await contract.crossFromCKBNonce();
+    //     const nonce = await contract.crossFromCKBNonce();
 
-        const value = {
-            recordsHash: recordsHash(records),
-            nonce: nonce,
-        };
+    //     const value = {
+    //         recordsHash: recordsHash(records),
+    //         nonce: nonce,
+    //     };
 
-        let signatures = '';
+    //     let signatures = '';
 
-        await metadata.mock.isProposer.returns(true);
+    //     await metadata.mock.isProposer.returns(true);
 
-        signatures += (await wallets[0]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
-        signatures += (await wallets[1]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
-        signatures += (await wallets[10]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
-        signatures = '0x' + signatures;
+    //     signatures += (await wallets[0]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
+    //     signatures += (await wallets[1]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
+    //     signatures += (await wallets[10]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
+    //     signatures = '0x' + signatures;
 
-        await expect(contract.crossFromCKB(records, signatures, nonce)).to.revertedWith('CrossChain: valid signatures are not enough');
-    });
+    //     await expect(contract.crossFromCKB(records, signatures, nonce)).to.revertedWith('CrossChain: valid signatures are not enough');
+    // });
 
-    it("cross wckb and sudt should fail while valid different signatures are not enough", async () => {
-        const wallet1 = ethers.Wallet.createRandom().connect(ethers.provider);
-        const wallet2 = ethers.Wallet.createRandom().connect(ethers.provider);
+    // it("cross wckb and sudt should fail while valid different signatures are not enough", async () => {
+    //     const wallet1 = ethers.Wallet.createRandom().connect(ethers.provider);
+    //     const wallet2 = ethers.Wallet.createRandom().connect(ethers.provider);
 
-        const records = [
-            {
-                to: wallet1.address,
-                tokenAddress: mirrorToken.address,
-                sUDTAmount: 10,
-                CKBAmount: 1000,
-                txHash: lockscript,
-            },
-            {
-                to: wallet2.address,
-                tokenAddress: mirrorToken.address,
-                sUDTAmount: 100,
-                CKBAmount: 100000,
-                txHash: lockscript,
-            },
-        ];
+    //     const records = [
+    //         {
+    //             to: wallet1.address,
+    //             tokenAddress: mirrorToken.address,
+    //             sUDTAmount: 10,
+    //             CKBAmount: 1000,
+    //             txHash: lockscript,
+    //         },
+    //         {
+    //             to: wallet2.address,
+    //             tokenAddress: mirrorToken.address,
+    //             sUDTAmount: 100,
+    //             CKBAmount: 100000,
+    //             txHash: lockscript,
+    //         },
+    //     ];
 
-        const nonce = await contract.crossFromCKBNonce();
+    //     const nonce = await contract.crossFromCKBNonce();
 
-        const value = {
-            recordsHash: recordsHash(records),
-            nonce: nonce,
-        };
+    //     const value = {
+    //         recordsHash: recordsHash(records),
+    //         nonce: nonce,
+    //     };
 
-        let signatures = '';
+    //     let signatures = '';
 
-        await metadata.mock.isProposer.returns(true);
+    //     await metadata.mock.isProposer.returns(true);
 
-        signatures += (await wallets[0]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
-        signatures += (await wallets[1]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
-        signatures += (await wallets[1]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
-        signatures = '0x' + signatures;
+    //     signatures += (await wallets[0]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
+    //     signatures += (await wallets[1]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
+    //     signatures += (await wallets[1]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
+    //     signatures = '0x' + signatures;
 
-        await expect(contract.crossFromCKB(records, signatures, nonce)).to.revertedWith('CrossChain: valid signatures are not enough');
-    });
+    //     await expect(contract.crossFromCKB(records, signatures, nonce)).to.revertedWith('CrossChain: valid signatures are not enough');
+    // });
 
     // it("cross wckb and sudt should alert while the amount exceed the threshold", async () => {
     //     const wallet1 = ethers.Wallet.createRandom().connect(ethers.provider);
@@ -751,14 +749,14 @@ describe("CrossChain", () => {
 
         let signatures = '';
 
-        await metadata.mock.isProposer.returns(true);
+        await metadata.mock.isVerifier.returns(true);
 
         signatures += (await wallets[0]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
         signatures += (await wallets[1]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
         signatures += (await wallets[2]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
         signatures = '0x' + signatures;
 
-        await expect(contract.crossFromCKB(records, signatures, nonce))
+        await expect(contract.crossFromCKB(records, nonce))
             .revertedWith('CrossChain: invalid nonce');
     });
 
@@ -803,14 +801,14 @@ describe("CrossChain", () => {
 
         let signatures = '';
 
-        await metadata.mock.isProposer.returns(true);
+        await metadata.mock.isVerifier.returns(true);
 
         signatures += (await wallets[0]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
         signatures += (await wallets[1]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
         signatures += (await wallets[2]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
         signatures = '0x' + signatures;
 
-        await contract.crossFromCKB(records, signatures, nonce);
+        await contract.crossFromCKB(records, nonce);
 
         expect(await simpleToken.balanceOf(wallet1.address)).equal(910);
         expect(await mirrorToken.balanceOf(wallet2.address)).equal(100);
@@ -858,14 +856,14 @@ describe("CrossChain", () => {
 
         let signatures = '';
 
-        await metadata.mock.isProposer.returns(true);
+        await metadata.mock.isVerifier.returns(true);
 
         signatures += (await wallets[0]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
         signatures += (await wallets[1]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
         signatures += (await wallets[2]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
         signatures = '0x' + signatures;
 
-        await contract.crossFromCKB(records, signatures, nonce);
+        await contract.crossFromCKB(records, nonce);
 
         expect(await ethers.provider.getBalance(wallet1.address)).equal(balance.add(10));
         expect(await mirrorToken.balanceOf(wallet2.address)).equal(100);
