@@ -9,6 +9,13 @@ epoch_len = 100_000_000
 metadata_contract_address = "0xc2fd48d60ae16b3fe6e333a9a13763691970d9373d4fab7cc323d7ba06fa9986"
 crosschain_contract_address = "0xda6db70ce66da4c6433bb447b484fd480e598621638f380f404697cd9f58b0f8"
 
+[accounts]
+mnemonic = "test test test test test test test test test test test junk"
+# initial_index = 0
+# path = "m/44'/60'/0'/0"
+count = 10
+balance = "56bc75e2d63100000"
+
 [rpc]
 http_listening_address = "127.0.0.1:8004"
 ws_listening_address = "127.0.0.1:8014"
