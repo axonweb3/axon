@@ -12,7 +12,7 @@ function hexToBytes(hex) {
 function recordsHash(records) {
     return ethers.utils.keccak256(
         ethers.utils.defaultAbiCoder.encode(
-            ["tuple(address to, address tokenAddress, uint256 amount, uint256 CKBAmount, bytes32 txHash, uint256 retry)[]"],
+            ["tuple(address to, address tokenAddress, uint256 sUDTAmount, uint256 CKBAmount, bytes32 txHash)[]"],
             [records],
         ),
     );
@@ -451,18 +451,16 @@ describe("CrossChain", () => {
             {
                 to: wallet1.address,
                 tokenAddress: mirrorToken.address,
-                amount: 10,
+                sUDTAmount: 10,
                 CKBAmount: 1000,
                 txHash: lockscript,
-                retry: 0,
             },
             {
                 to: wallet2.address,
                 tokenAddress: mirrorToken.address,
-                amount: 100,
+                sUDTAmount: 100,
                 CKBAmount: 100000,
                 txHash: lockscript,
-                retry: 0,
             },
         ];
 
@@ -482,7 +480,9 @@ describe("CrossChain", () => {
         signatures += (await wallets[2]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
         signatures = '0x' + signatures;
 
-        await contract.crossFromCKB(records, signatures, nonce);
+        await expect(contract.crossFromCKB(records, signatures, nonce))
+            .emit(contract, 'CrossFromCKB')
+            .withArgs(records);
 
         expect(await mirrorToken.balanceOf(wallet1.address)).equal(10);
         expect(await mirrorToken.balanceOf(wallet2.address)).equal(100);
@@ -498,18 +498,16 @@ describe("CrossChain", () => {
             {
                 to: wallet1.address,
                 tokenAddress: mirrorToken.address,
-                amount: 10,
+                sUDTAmount: 10,
                 CKBAmount: 1000,
                 txHash: lockscript,
-                retry: 0,
             },
             {
                 to: wallet2.address,
                 tokenAddress: mirrorToken.address,
-                amount: 100,
+                sUDTAmount: 100,
                 CKBAmount: 100000,
                 txHash: lockscript,
-                retry: 0,
             },
         ];
 
@@ -542,18 +540,16 @@ describe("CrossChain", () => {
             {
                 to: wallet1.address,
                 tokenAddress: mirrorToken.address,
-                amount: 10,
+                sUDTAmount: 10,
                 CKBAmount: 1000,
                 txHash: lockscript,
-                retry: 0,
             },
             {
                 to: wallet2.address,
                 tokenAddress: mirrorToken.address,
-                amount: 100,
+                sUDTAmount: 100,
                 CKBAmount: 100000,
                 txHash: lockscript,
-                retry: 0,
             },
         ];
 
@@ -583,18 +579,16 @@ describe("CrossChain", () => {
             {
                 to: wallet1.address,
                 tokenAddress: mirrorToken.address,
-                amount: 10,
+                sUDTAmount: 10,
                 CKBAmount: 1000,
                 txHash: lockscript,
-                retry: 0,
             },
             {
                 to: wallet2.address,
                 tokenAddress: mirrorToken.address,
-                amount: 100,
+                sUDTAmount: 100,
                 CKBAmount: 100000,
                 txHash: lockscript,
-                retry: 0,
             },
         ];
 
@@ -625,18 +619,16 @@ describe("CrossChain", () => {
             {
                 to: wallet1.address,
                 tokenAddress: mirrorToken.address,
-                amount: 10,
+                sUDTAmount: 10,
                 CKBAmount: 1000,
                 txHash: lockscript,
-                retry: 0,
             },
             {
                 to: wallet2.address,
                 tokenAddress: mirrorToken.address,
-                amount: 100,
+                sUDTAmount: 100,
                 CKBAmount: 100000,
                 txHash: lockscript,
-                retry: 0,
             },
         ];
 
@@ -737,18 +729,16 @@ describe("CrossChain", () => {
             {
                 to: wallet1.address,
                 tokenAddress: mirrorToken.address,
-                amount: 10,
+                sUDTAmount: 10,
                 CKBAmount: 1000,
                 txHash: lockscript,
-                retry: 0,
             },
             {
                 to: wallet2.address,
                 tokenAddress: mirrorToken.address,
-                amount: 100,
+                sUDTAmount: 100,
                 CKBAmount: 100000,
                 txHash: lockscript,
-                retry: 0,
             },
         ];
 
@@ -791,18 +781,16 @@ describe("CrossChain", () => {
             {
                 to: wallet1.address,
                 tokenAddress: simpleToken.address,
-                amount: 10,
+                sUDTAmount: 10,
                 CKBAmount: 1000,
                 txHash: lockscript,
-                retry: 0,
             },
             {
                 to: wallet2.address,
                 tokenAddress: mirrorToken.address,
-                amount: 100,
+                sUDTAmount: 100,
                 CKBAmount: 100000,
                 txHash: lockscript,
-                retry: 0,
             },
         ];
 
@@ -848,18 +836,16 @@ describe("CrossChain", () => {
             {
                 to: wallet1.address,
                 tokenAddress: ATAddress,
-                amount: 10,
+                sUDTAmount: 10,
                 CKBAmount: 1000,
                 txHash: lockscript,
-                retry: 0,
             },
             {
                 to: wallet2.address,
                 tokenAddress: mirrorToken.address,
-                amount: 100,
+                sUDTAmount: 100,
                 CKBAmount: 100000,
                 txHash: lockscript,
-                retry: 0,
             },
         ];
 

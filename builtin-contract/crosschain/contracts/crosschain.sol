@@ -13,7 +13,6 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract CrossChain is Context, EIP712 {
     address public constant AT_ADDRESS = address(0);
-    uint256 public constant LIMIT_EXCEED_RETRY = 1 << 0;
 
     bytes32 public immutable CROSS_FROM_CKB_TYPEHASH;
 
@@ -33,24 +32,15 @@ contract CrossChain is Context, EIP712 {
     mapping(address => bytes32) private _tokenTypehashMap;
     mapping(bytes32 => address) private _typehashTokenMap;
 
-    event CrossFromCKB(
-        bytes32 txHash,
-        address to,
-        address token,
-        uint256 amount
-    );
-    event CrossFromCKBAlert(
-        bytes32 txHash,
-        address to,
-        address token,
-        uint256 amount
-    );
+    event CrossFromCKB(CKBToAxonRecord[]);
+
     event CrossToCKB(
         string to,
         address token,
         uint256 amount,
         uint256 minWCKBAmount
     );
+
     event CrossToCKBAlert(
         string to,
         address token,
@@ -66,10 +56,9 @@ contract CrossChain is Context, EIP712 {
     struct CKBToAxonRecord {
         address to;
         address tokenAddress;
-        uint256 amount;
+        uint256 sUDTAmount;
         uint256 CKBAmount;
         bytes32 txHash;
-        uint256 retry;
     }
 
     struct AxonToCKBRecord {
@@ -133,35 +122,28 @@ contract CrossChain is Context, EIP712 {
     }
 
     function _crossATFromCKB(CKBToAxonRecord memory record) private {
-        if (record.amount == 0) return;
+        if (record.sUDTAmount == 0) return;
 
-        payable(record.to).transfer(record.amount);
-        emit CrossFromCKB(record.txHash, record.to, AT_ADDRESS, record.amount);
+        payable(record.to).transfer(record.sUDTAmount);
     }
 
     function _crossCKBFromCKB(CKBToAxonRecord memory record) private {
         if (record.CKBAmount == 0) return;
 
         IMirrorToken(_wCKB).mint(record.to, record.CKBAmount);
-
-        emit CrossFromCKB(record.txHash, record.to, _wCKB, record.CKBAmount);
     }
 
     function _crossSUdtFromCKB(CKBToAxonRecord memory record) private {
-        if (record.amount == 0) return;
+        if (record.sUDTAmount == 0) return;
 
         if (isMirrorToken(record.tokenAddress)) {
-            IMirrorToken(record.tokenAddress).mint(record.to, record.amount);
+            IMirrorToken(record.tokenAddress).mint(
+                record.to,
+                record.sUDTAmount
+            );
         } else {
-            IERC20(record.tokenAddress).transfer(record.to, record.amount);
+            IERC20(record.tokenAddress).transfer(record.to, record.sUDTAmount);
         }
-
-        emit CrossFromCKB(
-            record.txHash,
-            record.to,
-            record.tokenAddress,
-            record.amount
-        );
     }
 
     function _verifyCrossFromCKBSignatures(
@@ -374,7 +356,7 @@ contract CrossChain is Context, EIP712 {
         uint256 length = records.length;
         for (uint256 i = 0; i < length; ++i) {
             CKBToAxonRecord memory record = records[i];
-            if (record.amount == 0 && record.CKBAmount == 0) continue;
+            if (record.sUDTAmount == 0 && record.CKBAmount == 0) continue;
 
             _crossCKBFromCKB(record);
 
@@ -386,5 +368,7 @@ contract CrossChain is Context, EIP712 {
         }
 
         _crossFromCKBNonce = SafeMath.add(_crossFromCKBNonce, 1);
+
+        emit CrossFromCKB(records);
     }
 }
