@@ -1,6 +1,7 @@
 #![allow(dead_code, unused_variables, clippy::derive_partial_eq_without_eq)]
 
 mod adapter;
+mod crosschain_abi;
 mod error;
 mod generated;
 mod monitor;
@@ -166,15 +167,14 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
                 let request_args = generated::Transfer::new_unchecked(type_script.args().unpack());
 
                 Transfer {
-                    direction:      Direction::FromCkb,
-                    tx_hash:        H256(tx.hash().unpack().0),
-                    address:        H160::from_slice(&request_args.axon_address().raw_data()),
-                    sudt_type_hash: H256(type_script.calc_script_hash().unpack().0),
-                    erc20_address:  H160::from_slice(&request_args.e_r_c20_address().raw_data()),
-                    ckb_amount:     u64::from_le_bytes(fixed_array(
+                    direction:     Direction::FromCkb,
+                    tx_hash:       H256::from_slice(&tx.hash().raw_data()),
+                    address:       H160::from_slice(&request_args.axon_address().raw_data()),
+                    erc20_address: H160::from_slice(&request_args.e_r_c20_address().raw_data()),
+                    ckb_amount:    u64::from_le_bytes(fixed_array(
                         &request_args.ckb_amount().raw_data(),
                     )),
-                    sudt_amount:    u128::from_le_bytes(fixed_array(
+                    sudt_amount:   u128::from_le_bytes(fixed_array(
                         &request_args.s_u_d_t_amount().raw_data(),
                     )),
                 }
@@ -286,4 +286,31 @@ impl<C: CkbClient + 'static> CrossChainHandler<C> {
 
 async fn build_ckb_txs(logs: Vec<Log>) -> ProtocolResult<(Requests, TransactionView)> {
     todo!()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_raw_data() {
+        let transfer = generated::TransferBuilder::default().build();
+        assert_eq!(
+            transfer.axon_address().raw_data(),
+            H160::default().0.to_vec()
+        );
+
+        let byte32 = ckb_types::packed::Byte32Builder::default().build();
+        assert_eq!(byte32.raw_data(), H256::default().0.to_vec());
+    }
+
+    #[test]
+    fn gen_abi_binding() {
+        ethers_contract::Abigen::new("crosschain", "./crosschain_abi.json")
+            .unwrap()
+            .generate()
+            .unwrap()
+            .write_to_file("src/crosschain_abi.rs")
+            .unwrap();
+    }
 }
