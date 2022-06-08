@@ -3,7 +3,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use rocksdb::ops::{Delete, Get, Iterate, Open, Put};
-use rocksdb::{FullOptions, IteratorMode, Options, WriteBatch, DB};
+use rocksdb::{FullOptions, IteratorMode, Options, DB};
 
 use common_config_parser::types::ConfigRocksDB;
 use protocol::ProtocolResult;

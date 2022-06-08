@@ -9,12 +9,13 @@ mod sidechain;
 mod task;
 mod types;
 
-pub use adapter::DefaultCrossAdapter;
+pub use adapter::DefaultCrossChainAdapter;
 
 use std::sync::Arc;
 
 use arc_swap::ArcSwap;
 use ckb_types::{core::TransactionView, prelude::*};
+use ethers_core::abi::{self, AbiEncode, ParamType};
 
 use common_config_parser::types::ConfigCrossChain;
 use common_crypto::{
@@ -63,7 +64,7 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
         let (req_tx, req_rx) = unbounded_channel();
         let client_clone = Arc::clone(&ckb_client);
         let init_monitor_number = adapter
-            .get_monitor_ckb_number()
+            .get_monitor_ckb_number(Context::new())
             .await
             .unwrap_or(config.start_block_number);
 
@@ -181,8 +182,36 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
             })
             .collect::<Vec<_>>();
 
+        let resp = self
+            .adapter
+            .call_evm(
+                Context::new(),
+                CROSSCHAIN_CONTRACT_ADDRESS,
+                crosschain_abi::CrossFromCKBNonceCall.encode(),
+            )
+            .await
+            .unwrap();
+
+        let call_data = crosschain_abi::CrossFromCKBCall {
+            records: reqs
+                .iter()
+                .map(|req| crosschain_abi::CkbtoAxonRecord {
+                    to:            req.address,
+                    token_address: req.erc20_address,
+                    s_udt_amount:  req.sudt_amount.into(),
+                    ckb_amount:    req.ckb_amount.into(),
+                    tx_hash:       req.tx_hash.0,
+                })
+                .collect(),
+            nonce:   decode_resp_nonce(&resp.ret),
+        };
+
         let tx = Transaction {
-            nonce:                    self.adapter.nonce(self.address).await.unwrap(),
+            nonce:                    self
+                .adapter
+                .nonce(Context::new(), self.address)
+                .await
+                .unwrap(),
             max_priority_fee_per_gas: MAX_PRIORITY_FEE_PER_GAS.into(),
             gas_price:                U256::one(),
             gas_limit:                MAX_BLOCK_GAS_LIMIT.into(),
@@ -282,6 +311,11 @@ impl<C: CkbClient + 'static> CrossChainHandler<C> {
             ckb_client,
         }
     }
+}
+
+fn decode_resp_nonce(data: &[u8]) -> U256 {
+    let tokens = abi::decode(&[ParamType::FixedBytes(32)], data).unwrap();
+    U256::from_big_endian(&tokens[0].clone().into_fixed_bytes().unwrap())
 }
 
 async fn build_ckb_txs(logs: Vec<Log>) -> ProtocolResult<(Requests, TransactionView)> {
