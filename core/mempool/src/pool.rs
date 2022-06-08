@@ -143,7 +143,6 @@ impl PriorityPool {
         PackedTxHashes {
             hashes,
             call_system_script_count,
-            call_crosschain_count: 0,
         }
     }
 

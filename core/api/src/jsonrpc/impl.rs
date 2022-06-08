@@ -774,6 +774,7 @@ fn mock_header_by_call_req(latest_header: Header, call_req: &Web3CallRequest) ->
         },
         proof:                      latest_header.proof,
         last_checkpoint_block_hash: latest_header.last_checkpoint_block_hash,
+        call_system_script_count:   0,
         chain_id:                   latest_header.chain_id,
     }
 }

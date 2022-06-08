@@ -94,7 +94,6 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             last_checkpoint_block_hash: status.last_checkpoint_block_hash,
             chain_id:                   self.node_info.chain_id,
             call_system_script_count:   txs.call_system_script_count,
-            call_crosschain_count:      txs.call_crosschain_count,
             tx_hashes:                  txs.hashes,
         };
 
