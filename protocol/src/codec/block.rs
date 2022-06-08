@@ -10,7 +10,7 @@ use crate::{codec::error::CodecError, lazy::CHAIN_ID, ProtocolError};
 
 impl Encodable for Proposal {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(11)
+        s.begin_list(10)
             .append(&self.prev_hash)
             .append(&self.proposer)
             .append(&self.transactions_root)
@@ -20,7 +20,6 @@ impl Encodable for Proposal {
             .append(&self.proof)
             .append(&self.last_checkpoint_block_hash)
             .append(&self.call_system_script_count)
-            .append(&self.call_crosschain_count)
             .append_list(&self.tx_hashes);
     }
 }
@@ -28,7 +27,7 @@ impl Encodable for Proposal {
 impl Decodable for Proposal {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
-            Prototype::List(11) => Ok(Proposal {
+            Prototype::List(10) => Ok(Proposal {
                 prev_hash:                  r.val_at(0)?,
                 proposer:                   r.val_at(1)?,
                 transactions_root:          r.val_at(2)?,
@@ -43,8 +42,7 @@ impl Decodable for Proposal {
                 last_checkpoint_block_hash: r.val_at(7)?,
                 chain_id:                   **CHAIN_ID.load(),
                 call_system_script_count:   r.val_at(8)?,
-                call_crosschain_count:      r.val_at(9)?,
-                tx_hashes:                  r.list_at(10)?,
+                tx_hashes:                  r.list_at(9)?,
             }),
             _ => Err(DecoderError::RlpInconsistentLengthAndData),
         }
@@ -65,7 +63,7 @@ impl Codec for Proposal {
 
 impl Encodable for Header {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(21)
+        s.begin_list(20)
             .append(&self.prev_hash)
             .append(&self.proposer)
             .append(&self.state_root)
@@ -85,7 +83,6 @@ impl Encodable for Header {
             .append(&self.proof)
             .append(&self.last_checkpoint_block_hash)
             .append(&self.call_system_script_count)
-            .append(&self.call_crosschain_count)
             .append(&self.chain_id);
     }
 }
@@ -113,8 +110,7 @@ impl Decodable for Header {
                 proof:                      r.val_at(16)?,
                 last_checkpoint_block_hash: r.val_at(17)?,
                 call_system_script_count:   r.val_at(18)?,
-                call_crosschain_count:      r.val_at(19)?,
-                chain_id:                   r.val_at(20)?,
+                chain_id:                   r.val_at(19)?,
             }),
             _ => Err(DecoderError::RlpExpectedToBeList),
         }
@@ -224,7 +220,6 @@ mod tests {
     #[test]
     fn test_proposal_codec() {
         let mut proposal = Proposal::default();
-        proposal.call_crosschain_count = 100;
         proposal.gas_limit = 30000000u64.into();
         proposal.base_fee_per_gas = 1337u64.into();
         let bytes = proposal.encode_msg().unwrap();
