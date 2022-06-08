@@ -456,7 +456,8 @@ impl Axon {
             Arc::clone(&storage),
             Arc::clone(&trie_db),
             Arc::new(crosschain_db),
-        ).await;
+        )
+        .await;
 
         let (crosschain_process, cross_handle) = CrossChainImpl::new(
             Secp256k1RecoverablePrivateKey::try_from(hex_privkey.as_ref()).unwrap(),
