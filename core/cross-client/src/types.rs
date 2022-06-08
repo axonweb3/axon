@@ -32,23 +32,21 @@ impl Direction {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Transfer {
-    pub direction:      Direction,
-    pub tx_hash:        Hash,
-    pub address:        H160,
-    pub erc20_address:  H160,
-    pub sudt_type_hash: Hash,
-    pub ckb_amount:     u64,
-    pub sudt_amount:    u128,
+    pub direction:     Direction,
+    pub tx_hash:       Hash,
+    pub address:       H160,
+    pub erc20_address: H160,
+    pub ckb_amount:    u64,
+    pub sudt_amount:   u128,
 }
 
 impl Encodable for Transfer {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(7)
+        s.begin_list(6)
             .append(&(self.direction as u8))
             .append(&self.tx_hash)
             .append(&self.address)
             .append(&self.erc20_address)
-            .append(&self.sudt_type_hash)
             .append(&self.ckb_amount)
             .append(&self.sudt_amount);
     }
@@ -57,16 +55,15 @@ impl Encodable for Transfer {
 impl Decodable for Transfer {
     fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
         Ok(Transfer {
-            direction:      rlp
+            direction:     rlp
                 .val_at::<u8>(0)?
                 .try_into()
                 .map_err(|_| DecoderError::Custom("Invalid transfer direction"))?,
-            tx_hash:        rlp.val_at(1)?,
-            address:        rlp.val_at(2)?,
-            erc20_address:  rlp.val_at(3)?,
-            sudt_type_hash: rlp.val_at(4)?,
-            ckb_amount:     rlp.val_at(5)?,
-            sudt_amount:    rlp.val_at(6)?,
+            tx_hash:       rlp.val_at(1)?,
+            address:       rlp.val_at(2)?,
+            erc20_address: rlp.val_at(3)?,
+            ckb_amount:    rlp.val_at(4)?,
+            sudt_amount:   rlp.val_at(5)?,
         })
     }
 }
@@ -101,13 +98,12 @@ mod tests {
 
     fn random_transfer() -> Transfer {
         Transfer {
-            direction:      0u8.try_into().unwrap(),
-            tx_hash:        Hash::random(),
-            address:        H160::random(),
-            erc20_address:  H160::random(),
-            sudt_type_hash: Hash::random(),
-            ckb_amount:     random(),
-            sudt_amount:    random(),
+            direction:     0u8.try_into().unwrap(),
+            tx_hash:       Hash::random(),
+            address:       H160::random(),
+            erc20_address: H160::random(),
+            ckb_amount:    random(),
+            sudt_amount:   random(),
         }
     }
 

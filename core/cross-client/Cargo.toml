@@ -14,6 +14,9 @@ crossbeam = "0.8"
 ethabi = "17.0"
 ethabi-contract = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
 ethabi-derive = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
+ethers-contract = { git = "https://github.com/gakonst/ethers-rs.git", features = ["abigen"], rev = "a43a9b8" }
+ethers-core = { git = "https://github.com/gakonst/ethers-rs.git", rev = "a43a9b8" }
+ethers-providers = { git = "https://github.com/gakonst/ethers-rs.git", rev = "a43a9b8" }
 futures = "0.3"
 jsonrpc-core = "18.0"
 lazy_static = "1.4"
