@@ -33,8 +33,18 @@ contract CrossChain is Context, EIP712 {
     mapping(address => bytes32) private _tokenTypehashMap;
     mapping(bytes32 => address) private _typehashTokenMap;
 
-    event CrossFromCKB(address to, address token, uint256 amount);
-    event CrossFromCKBAlert(address to, address token, uint256 amount);
+    event CrossFromCKB(
+        bytes32 txHash,
+        address to,
+        address token,
+        uint256 amount
+    );
+    event CrossFromCKBAlert(
+        bytes32 txHash,
+        address to,
+        address token,
+        uint256 amount
+    );
     event CrossToCKB(
         string to,
         address token,
@@ -126,7 +136,7 @@ contract CrossChain is Context, EIP712 {
         if (record.amount == 0) return;
 
         payable(record.to).transfer(record.amount);
-        emit CrossFromCKB(record.to, AT_ADDRESS, record.amount);
+        emit CrossFromCKB(record.txHash, record.to, AT_ADDRESS, record.amount);
     }
 
     function _crossCKBFromCKB(CKBToAxonRecord memory record) private {
@@ -134,7 +144,7 @@ contract CrossChain is Context, EIP712 {
 
         IMirrorToken(_wCKB).mint(record.to, record.CKBAmount);
 
-        emit CrossFromCKB(record.to, _wCKB, record.CKBAmount);
+        emit CrossFromCKB(record.txHash, record.to, _wCKB, record.CKBAmount);
     }
 
     function _crossSUdtFromCKB(CKBToAxonRecord memory record) private {
@@ -146,7 +156,12 @@ contract CrossChain is Context, EIP712 {
             IERC20(record.tokenAddress).transfer(record.to, record.amount);
         }
 
-        emit CrossFromCKB(record.to, record.tokenAddress, record.amount);
+        emit CrossFromCKB(
+            record.txHash,
+            record.to,
+            record.tokenAddress,
+            record.amount
+        );
     }
 
     function _verifyCrossFromCKBSignatures(
