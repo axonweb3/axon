@@ -593,7 +593,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         let is_change_metadata = self.contains_change_metadata(&txs);
         let next_block_number = block_number + 1;
 
-        let (receipts, logs) = generate_receipts_and_logs(
+        let (receipts, mut logs) = generate_receipts_and_logs(
             block_number,
             block_hash,
             block.header.state_root,
@@ -602,6 +602,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         );
 
         // Call cross client
+        let _ = logs.split_off(block.header.call_system_script_count as usize);
         self.adapter
             .notify_block_logs(ctx.clone(), block_number, block_hash, &logs)
             .await;

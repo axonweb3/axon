@@ -78,7 +78,7 @@ macro_rules! package {
         concurrent_insert(txs.clone(), Arc::clone(mempool)).await;
         protocol::tokio::time::sleep(std::time::Duration::from_millis(100)).await;
         let tx_hashes = exec_package(Arc::clone(mempool), CYCLE_LIMIT.into(), $tx_num_limit).await;
-        assert_eq!(tx_hashes.len(), $expect_order);
+        assert_eq!(tx_hashes.hashes.len(), $expect_order);
     };
 }
 
@@ -119,7 +119,7 @@ async fn test_package_multi_types() {
             .collect::<HashSet<_>>(),
         package_txs.hashes.iter().take(5).collect::<HashSet<_>>()
     );
-    assert_eq!(package_txs.len(), 1024);
+    assert_eq!(package_txs.hashes.len(), 1024);
 
     exec_flush(package_txs.hashes, Arc::clone(&mempool)).await;
     assert_eq!(mempool.get_tx_cache().system_script_queue_len(), 0);

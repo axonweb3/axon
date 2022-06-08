@@ -120,7 +120,7 @@ impl PriorityPool {
         let _flushing = self.flush_lock.read();
 
         let mut hashes = self.sys_tx_bucket.package();
-        let call_system_script_count = hashes.len() as u16;
+        let call_system_script_count = hashes.len() as u32;
 
         let mut q = self.real_queue.lock();
         if !self.co_queue.is_empty() {
