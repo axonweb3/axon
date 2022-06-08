@@ -1253,7 +1253,7 @@ dependencies = [
  "ethabi-contract",
  "ethabi-derive",
  "ethers-contract",
- "ethers-core 0.6.0",
+ "ethers-core",
  "ethers-providers",
  "futures",
  "jsonrpc-core",
@@ -1371,7 +1371,7 @@ dependencies = [
  "core-executor",
  "core-storage",
  "ethers-contract",
- "ethers-core 0.6.0",
+ "ethers-core",
  "ethers-providers",
  "lazy_static",
  "parking_lot 0.12.1",
@@ -2055,12 +2055,13 @@ dependencies = [
 
 [[package]]
 name = "ethers-contract"
-version = "0.6.0"
-source = "git+https://github.com/gakonst/ethers-rs.git?rev=a43a9b8#a43a9b8806a13035db5c657406b3542dd0bfc749"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92ebee4ee81c4c59ab2a5a1343f17899f757b0f1826b94565150898e5739c469"
 dependencies = [
  "ethers-contract-abigen",
  "ethers-contract-derive",
- "ethers-core 0.6.0",
+ "ethers-core",
  "ethers-providers",
  "futures-util",
  "hex",
@@ -2073,13 +2074,14 @@ dependencies = [
 
 [[package]]
 name = "ethers-contract-abigen"
-version = "0.6.0"
-source = "git+https://github.com/gakonst/ethers-rs.git?rev=a43a9b8#a43a9b8806a13035db5c657406b3542dd0bfc749"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e67e0bc0805d0c8de61d7a7a21fd7baae2935b2783ec25595a9cd5ed5d2514ad"
 dependencies = [
  "Inflector",
  "cfg-if",
  "dunce",
- "ethers-core 0.6.0",
+ "ethers-core",
  "eyre",
  "getrandom 0.2.6",
  "hex",
@@ -2095,40 +2097,17 @@ dependencies = [
 
 [[package]]
 name = "ethers-contract-derive"
-version = "0.6.0"
-source = "git+https://github.com/gakonst/ethers-rs.git?rev=a43a9b8#a43a9b8806a13035db5c657406b3542dd0bfc749"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6905133eacebc8aeb482482f353f6b2a98d05391512725fd19100a43a592124"
 dependencies = [
  "ethers-contract-abigen",
- "ethers-core 0.6.0",
+ "ethers-core",
  "hex",
  "proc-macro2",
  "quote",
  "serde_json",
  "syn",
-]
-
-[[package]]
-name = "ethers-core"
-version = "0.6.0"
-source = "git+https://github.com/gakonst/ethers-rs.git?rev=a43a9b8#a43a9b8806a13035db5c657406b3542dd0bfc749"
-dependencies = [
- "arrayvec",
- "bytes",
- "cargo_metadata",
- "elliptic-curve",
- "ethabi 17.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "generic-array 0.14.5",
- "hex",
- "k256",
- "once_cell",
- "rand 0.8.5",
- "rlp",
- "rlp-derive",
- "serde",
- "serde_json",
- "syn",
- "thiserror",
- "tiny-keccak",
 ]
 
 [[package]]
@@ -2139,6 +2118,7 @@ checksum = "924f2686b60fd33d9ca61c79751895c220f87b83bc7cbb580062f25ff5ce27f0"
 dependencies = [
  "arrayvec",
  "bytes",
+ "cargo_metadata",
  "chrono",
  "convert_case 0.5.0",
  "elliptic-curve",
@@ -2146,6 +2126,7 @@ dependencies = [
  "generic-array 0.14.5",
  "hex",
  "k256",
+ "once_cell",
  "proc-macro2",
  "rand 0.8.5",
  "rlp",
@@ -2161,17 +2142,19 @@ dependencies = [
 
 [[package]]
 name = "ethers-providers"
-version = "0.6.0"
-source = "git+https://github.com/gakonst/ethers-rs.git?rev=a43a9b8#a43a9b8806a13035db5c657406b3542dd0bfc749"
+version = "0.12.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "960571289f9e19d2290c881c152d761277322d378972475c43aa970d5d516315"
 dependencies = [
  "async-trait",
  "auto_impl",
  "base64 0.13.0",
- "ethers-core 0.6.0",
+ "ethers-core",
  "futures-channel",
  "futures-core",
  "futures-timer",
  "futures-util",
+ "hashers",
  "hex",
  "http",
  "once_cell",
@@ -2204,7 +2187,7 @@ dependencies = [
  "coins-bip39",
  "elliptic-curve",
  "eth-keystore",
- "ethers-core 0.12.0",
+ "ethers-core",
  "hex",
  "rand 0.8.5",
  "sha2 0.9.9",
@@ -2507,6 +2490,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "fxhash"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c31b6d751ae2c7f11320402d34e41349dd1016f8d5d45e48c4312bc8625af50c"
+dependencies = [
+ "byteorder",
+]
+
+[[package]]
 name = "generic-array"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2694,6 +2686,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbbba678b6567f27ce22870d951f4208e1dc2fef64993bd4521b1d497ef8a3aa"
 dependencies = [
  "tiny-keccak",
+]
+
+[[package]]
+name = "hashers"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b2bca93b15ea5a746f220e56587f71e73c6165eab783df9e26590069953e3c30"
+dependencies = [
+ "fxhash",
 ]
 
 [[package]]
