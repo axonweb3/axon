@@ -58,7 +58,7 @@
         ],
         "indexed": false,
         "internalType": "struct CrossChain.CKBToAxonRecord[]",
-        "name": "",
+        "name": "records",
         "type": "tuple[]"
       }
     ],
@@ -222,11 +222,6 @@
         "internalType": "struct CrossChain.CKBToAxonRecord[]",
         "name": "records",
         "type": "tuple[]"
-      },
-      {
-        "internalType": "bytes",
-        "name": "signatures",
-        "type": "bytes"
       },
       {
         "internalType": "uint256",
