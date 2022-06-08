@@ -21,7 +21,7 @@ use std::sync::Arc;
 use futures::future::try_join_all;
 
 use common_apm::Instant;
-use core_executor::{is_call_system_script, is_crosschain_transaction};
+use core_executor::is_call_system_script;
 use core_network::NetworkContext;
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
 use protocol::types::{BlockNumber, Hash, PackedTxHashes, SignedTransaction, H160, H256, U256};
@@ -205,7 +205,7 @@ where
 
         common_apm::metrics::mempool::MEMPOOL_PACKAGE_SIZE_VEC_STATIC
             .package
-            .observe((txs.len()) as f64);
+            .observe((txs.hashes.len()) as f64);
         common_apm::metrics::mempool::MEMPOOL_TIME_STATIC
             .package
             .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));

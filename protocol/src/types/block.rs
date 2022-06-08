@@ -26,7 +26,7 @@ pub struct Proposal {
     pub proof:                      Proof,
     pub last_checkpoint_block_hash: Hash,
     pub chain_id:                   u64,
-    pub call_system_script_count:   u16,
+    pub call_system_script_count:   u32,
     pub tx_hashes:                  Vec<Hash>,
 }
 
@@ -76,13 +76,7 @@ impl From<Header> for Proposal {
 
 pub struct PackedTxHashes {
     pub hashes:                   Vec<Hash>,
-    pub call_system_script_count: u16,
-}
-
-impl PackedTxHashes {
-    pub fn len(&self) -> usize {
-        self.hashes.len()
-    }
+    pub call_system_script_count: u32,
 }
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq)]
@@ -154,7 +148,7 @@ pub struct Header {
     pub base_fee_per_gas:           U256,
     pub proof:                      Proof,
     pub last_checkpoint_block_hash: Hash,
-    pub call_system_script_count:   u16,
+    pub call_system_script_count:   u32,
     pub chain_id:                   u64,
 }
 

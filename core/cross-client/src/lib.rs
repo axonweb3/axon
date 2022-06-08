@@ -9,7 +9,7 @@ mod sidechain;
 mod task;
 mod types;
 
-pub use adapter::DefaultCrossChainAdapter;
+pub use adapter::{CrossChainDBImpl, DefaultCrossChainAdapter};
 
 use std::sync::Arc;
 

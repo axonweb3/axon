@@ -1,5 +1,7 @@
 mod db;
 
+pub use db::CrossChainDBImpl;
+
 use std::sync::Arc;
 
 use core_executor::{AxonExecutor, AxonExecutorAdapter};
@@ -97,6 +99,15 @@ where
     TrieDB: cita_trie::DB + 'static,
     DB: CrossChainDB + 'static,
 {
+    pub async fn new(mempool: Arc<M>, storage: Arc<S>, trie_db: Arc<TrieDB>, db: Arc<DB>) -> Self {
+        DefaultCrossChainAdapter {
+            mempool,
+            storage,
+            trie_db,
+            db,
+        }
+    }
+
     async fn evm_backend(&self) -> ProtocolResult<AxonExecutorAdapter<S, TrieDB>> {
         let block = self.storage.get_latest_block(Context::new()).await?;
         let state_root = block.header.state_root;

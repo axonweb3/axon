@@ -219,9 +219,11 @@ mod tests {
 
     #[test]
     fn test_proposal_codec() {
-        let mut proposal = Proposal::default();
-        proposal.gas_limit = 30000000u64.into();
-        proposal.base_fee_per_gas = 1337u64.into();
+        let mut proposal = Proposal {
+            gas_limit: 30000000u64.into(),
+            base_fee_per_gas: 1337u64.into(),
+            ..Default::default()
+        };
         let bytes = proposal.encode_msg().unwrap();
         let decode: Proposal = Proposal::decode_msg(bytes).unwrap();
         assert_eq!(proposal, decode);
