@@ -726,10 +726,10 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         &self,
         _ctx: Context,
         reqs: RequestTxHashes,
-        relay_tx_hash: Hash,
+        block_hash: Hash,
     ) -> ProtocolResult<()> {
         self.adapter
-            .insert::<CrossChainRecordSchema>(reqs, relay_tx_hash)
+            .insert::<CrossChainRecordSchema>(reqs, block_hash)
             .await
     }
 

@@ -1,6 +1,8 @@
 use ckb_jsonrpc_types::TransactionView;
 
-use crate::types::{Block, BlockNumber, Hash, Log, Proof, SignedTransaction, TxResp, H160, U256};
+use crate::types::{
+    Block, BlockNumber, Hash, Log, Proof, RequestTxHashes, SignedTransaction, TxResp, H160, U256,
+};
 use crate::{async_trait, traits::Context, ProtocolResult};
 
 #[async_trait]
@@ -22,6 +24,16 @@ pub trait CrossAdapter: Send + Sync {
     async fn nonce(&self, ctx: Context, address: H160) -> ProtocolResult<U256>;
 
     async fn call_evm(&self, ctx: Context, addr: H160, data: Vec<u8>) -> ProtocolResult<TxResp>;
+
+    async fn insert_record(
+        &self,
+        ctx: Context,
+        reqs: RequestTxHashes,
+        block_hash: Hash,
+    ) -> ProtocolResult<()>;
+
+    async fn get_record(&self, ctx: Context, reqs: RequestTxHashes)
+        -> ProtocolResult<Option<Hash>>;
 }
 
 #[async_trait]

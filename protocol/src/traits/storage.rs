@@ -122,7 +122,7 @@ pub trait Storage: CommonStorage {
         &self,
         ctx: Context,
         reqs: RequestTxHashes,
-        relay_tx_hash: Hash,
+        block_hash: Hash,
     ) -> ProtocolResult<()>;
 
     async fn get_crosschain_record(
