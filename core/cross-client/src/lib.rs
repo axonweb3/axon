@@ -24,9 +24,9 @@ use common_crypto::{
 use protocol::tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use protocol::traits::{CkbClient, Context, CrossAdapter, CrossChain};
 use protocol::types::{
-    Block, BlockNumber, Hash, Hasher, Log, Proof, SignedTransaction, Transaction,
-    TransactionAction, UnverifiedTransaction, H160, H256, MAX_BLOCK_GAS_LIMIT,
-    MAX_PRIORITY_FEE_PER_GAS, U256,Direction, Requests, Transfer
+    Block, BlockNumber, Direction, Hash, Hasher, Log, Proof, Requests, SignedTransaction,
+    Transaction, TransactionAction, Transfer, UnverifiedTransaction, H160, H256,
+    MAX_BLOCK_GAS_LIMIT, MAX_PRIORITY_FEE_PER_GAS, U256,
 };
 use protocol::{async_trait, lazy::CHAIN_ID, tokio, ProtocolResult};
 

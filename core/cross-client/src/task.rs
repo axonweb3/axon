@@ -1,6 +1,6 @@
 use reqwest::Url;
 
-use protocol::types::{ValidatorExtend, H160, Requests};
+use protocol::types::{Requests, ValidatorExtend, H160};
 
 pub struct RequestCkbTask {
     address:     H160,

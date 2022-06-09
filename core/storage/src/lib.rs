@@ -22,8 +22,8 @@ use protocol::traits::{
     StorageSchema,
 };
 use protocol::types::{
-    Block, BlockNumber, Bytes, DBBytes, Hash, Hasher, Header, Proof, Receipt, SignedTransaction,
-    H256, RequestTxHashes
+    Block, BlockNumber, Bytes, DBBytes, Hash, Hasher, Header, Proof, Receipt, RequestTxHashes,
+    SignedTransaction, H256,
 };
 use protocol::{
     async_trait, tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
@@ -722,13 +722,22 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         }
     }
 
-    async fn insert_crosschain_record(&self, _ctx: Context, reqs: RequestTxHashes, relay_tx_hash: Hash) -> ProtocolResult<()> {
+    async fn insert_crosschain_record(
+        &self,
+        _ctx: Context,
+        reqs: RequestTxHashes,
+        relay_tx_hash: Hash,
+    ) -> ProtocolResult<()> {
         self.adapter
             .insert::<CrossChainRecordSchema>(reqs, relay_tx_hash)
             .await
     }
 
-    async fn get_crosschain_record(&self, _ctx: Context, reqs: RequestTxHashes) -> ProtocolResult<Option<Hash>> {
+    async fn get_crosschain_record(
+        &self,
+        _ctx: Context,
+        reqs: RequestTxHashes,
+    ) -> ProtocolResult<Option<Hash>> {
         self.adapter.get::<CrossChainRecordSchema>(reqs).await
     }
 }
