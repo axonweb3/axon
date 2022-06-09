@@ -1,4 +1,4 @@
-use crate::types::{Block, Bytes, Hash, Header, Proof, Receipt, SignedTransaction, H256};
+use crate::types::{Block, RequestTxHashes, Bytes, Hash, Header, Proof, Receipt, SignedTransaction, H256};
 use crate::{async_trait, codec::ProtocolCodec, traits::Context, Display, ProtocolResult};
 
 #[derive(Debug, Copy, Clone, Display)]
@@ -10,6 +10,7 @@ pub enum StorageCategory {
     Wal,
     HashHeight,
     Code,
+    Crosschain,
 }
 
 pub type StorageIterator<'a, S> = Box<
@@ -114,6 +115,10 @@ pub trait Storage: CommonStorage {
     async fn update_latest_proof(&self, ctx: Context, proof: Proof) -> ProtocolResult<()>;
 
     async fn get_latest_proof(&self, ctx: Context) -> ProtocolResult<Proof>;
+
+    async fn insert_crosschain_record(&self, ctx: Context, reqs: RequestTxHashes, relay_tx_hash: Hash) -> ProtocolResult<()>;
+
+    async fn get_crosschain_record(&self, ctx: Context, reqs: RequestTxHashes) -> ProtocolResult<Option<Hash>>;
 }
 
 #[async_trait]
