@@ -82,6 +82,8 @@ admin_address = "0x0000000000000000000000000000000000000000"
 node_address = "0x0000000000000000000000000000000000000000"
 selection_lock_hash = "0xf32ec1e3274c27ac4cc018c92efec443847e9b78ba8cbedca36f0fa8c35d1c9e"
 checkpoint_type_hash = "0xf32ec1e3274c27ac4cc018c92efec443847e9b78ba8cbedca36f0fa8c35d1c9e"
+acs_lock_code_hash = "0x33823dfb574bbfe453dde89eda4832c49abfb649be639c3c629c0657c7da77fb"
+request_type_code_hash = "0xd8f9afaad8eb3e26a1ef2538bac91d68635502508358ae901941513bfe2edb1d"
 
 
 [interoperability_extension]

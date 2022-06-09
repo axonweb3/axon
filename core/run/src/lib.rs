@@ -153,7 +153,9 @@ impl Axon {
                 None => builder.index(i).map_err(MainError::WalletError)?,
             };
             let wallet = builder.build().map_err(MainError::WalletError)?;
-            mpt.insert(wallet.address().as_bytes(), &distribute_account)?;
+            let addr = wallet.address();
+            println!("{:?}", addr);
+            mpt.insert(addr.as_bytes(), &distribute_account)?;
         }
 
         let proposal = Proposal::from(self.genesis.block.clone());
@@ -234,22 +236,9 @@ impl Axon {
         let network_config = NetworkConfig::new()
             .max_connections(config.network.max_connected_peers)?
             .peer_store_dir(config.data_path.clone().join("peer_store"))
-            // .same_ip_conn_limit(config.network.same_ip_conn_limit)
-            // .inbound_conn_limit(config.network.inbound_conn_limit)?
-            // .allowlist_only(config.network.allowlist_only)
-            // .peer_trust_metric(
-            //     config.network.trust_interval_duration,
-            //     config.network.trust_max_history_duration,
-            // )?
-            // .peer_soft_ban(config.network.soft_ban_duration)
-            // .peer_fatal_ban(config.network.fatal_ban_duration)
-            // .rpc_timeout(config.network.rpc_timeout)
             .ping_interval(config.network.ping_interval)
-            // .selfcheck_interval(config.network.selfcheck_interval)
-            // .max_wait_streams(config.network.max_wait_streams)
             .max_frame_length(config.network.max_frame_length)
             .send_buffer_size(config.network.send_buffer_size)
-            // .write_timeout(config.network.write_timeout)
             .recv_buffer_size(config.network.recv_buffer_size);
 
         let network_privkey = config.privkey.as_string_trim0x();

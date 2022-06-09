@@ -90,3 +90,25 @@ pub fn code_address(sender: &H160, nonce: &U256) -> H256 {
     stream.append(nonce);
     Hasher::digest(&stream.out())
 }
+
+#[cfg(test)]
+mod tests {
+    use protocol::codec::{hex_decode, hex_encode};
+
+    use super::*;
+
+    #[test]
+    fn test_code_address() {
+        let sender = H160::from_slice(
+            hex_decode("8ab0cf264df99d83525e9e11c7e4db01558ae1b1")
+                .unwrap()
+                .as_ref(),
+        );
+        let nonce: U256 = 0u64.into();
+        let addr: H160 = code_address(&sender, &nonce).into();
+        assert_eq!(
+            hex_encode(addr.0).as_str(),
+            "a13763691970d9373d4fab7cc323d7ba06fa9986"
+        );
+    }
+}
