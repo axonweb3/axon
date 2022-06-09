@@ -1,45 +1,6 @@
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
-use serde::{Deserialize, Serialize};
 
-use protocol::types::{H160, H256};
-
-use crate::{crosschain_abi, error::CrossChainError};
-
-#[repr(u8)]
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq)]
-pub enum Direction {
-    FromCkb = 0u8,
-    FromAxon = 1u8,
-}
-
-impl TryFrom<u8> for Direction {
-    type Error = CrossChainError;
-
-    fn try_from(d: u8) -> Result<Self, Self::Error> {
-        match d {
-            0 => Ok(Direction::FromCkb),
-            1 => Ok(Direction::FromAxon),
-            _ => Err(CrossChainError::InvalidDirection),
-        }
-    }
-}
-
-impl Direction {
-    pub fn is_from_ckb(&self) -> bool {
-        self == &Direction::FromCkb
-    }
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct Transfer {
-    pub direction: Direction,
-
-    pub address:       H160,
-    pub erc20_address: H160,
-    pub sudt_amount:   u128,
-    pub ckb_amount:    u64,
-    pub tx_hash:       H256,
-}
+use crate::types::{RequestTxHashes, Requests, Transfer};
 
 impl Encodable for Transfer {
     fn rlp_append(&self, s: &mut RlpStream) {
@@ -69,9 +30,6 @@ impl Decodable for Transfer {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct Requests(pub Vec<Transfer>);
-
 impl Encodable for Requests {
     fn rlp_append(&self, s: &mut RlpStream) {
         s.append_list(&self.0);
@@ -84,33 +42,29 @@ impl Decodable for Requests {
     }
 }
 
-impl Requests {
-    pub fn direction(&self) -> Direction {
-        self.0[0].direction
+impl Encodable for RequestTxHashes {
+    fn rlp_append(&self, s: &mut RlpStream) {
+        s.begin_list(2)
+            .append(&(self.direction as u8))
+            .append_list(&self.tx_hashes);
     }
 }
 
-impl From<crosschain_abi::CrossFromCKBFilter> for Requests {
-    fn from(logs: crosschain_abi::CrossFromCKBFilter) -> Self {
-        Requests(
-            logs.records
-                .into_iter()
-                .map(|r| Transfer {
-                    direction:     Direction::FromCkb,
-                    address:       r.0,
-                    erc20_address: r.1,
-                    sudt_amount:   r.2.as_u128(),
-                    ckb_amount:    r.3.as_u64(),
-                    tx_hash:       H256(r.4),
-                })
-                .collect(),
-        )
+impl Decodable for RequestTxHashes {
+    fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
+        Ok(RequestTxHashes {
+            direction: rlp
+                .val_at::<u8>(0)?
+                .try_into()
+                .map_err(|_| DecoderError::Custom("Invalid transfer direction"))?,
+            tx_hashes: rlp.list_at(1)?,
+        })
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use protocol::types::{Hash, H160};
+    use crate::types::{Hash, H160};
     use rand::random;
 
     use super::*;

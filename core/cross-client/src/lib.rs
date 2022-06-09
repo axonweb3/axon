@@ -7,7 +7,6 @@ mod generated;
 mod monitor;
 mod sidechain;
 mod task;
-mod types;
 
 pub use adapter::{CrossChainDBImpl, DefaultCrossChainAdapter};
 
@@ -25,16 +24,15 @@ use common_crypto::{
 use protocol::tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use protocol::traits::{CkbClient, Context, CrossAdapter, CrossChain};
 use protocol::types::{
-    Block, BlockNumber, Hash, Hasher, Log, Proof, SignedTransaction, Transaction,
-    TransactionAction, UnverifiedTransaction, H160, H256, MAX_BLOCK_GAS_LIMIT,
-    MAX_PRIORITY_FEE_PER_GAS, U256,
+    Block, BlockNumber, Direction, Hash, Hasher, Log, Proof, RequestTxHashes, Requests,
+    SignedTransaction, Transaction, TransactionAction, Transfer, UnverifiedTransaction, H160, H256,
+    MAX_BLOCK_GAS_LIMIT, MAX_PRIORITY_FEE_PER_GAS, U256,
 };
 use protocol::{async_trait, lazy::CHAIN_ID, tokio, ProtocolResult};
 
 use core_executor::CROSSCHAIN_CONTRACT_ADDRESS;
 
 use crate::error::CrossChainError;
-use crate::types::{Direction, Requests, Transfer};
 use crate::{adapter::fixed_array, monitor::CrossChainMonitor, sidechain::SidechainTask};
 
 pub const CKB_BLOCK_INTERVAL: u64 = 8; // second
@@ -47,7 +45,7 @@ lazy_static::lazy_static! {
 pub struct CrossChainImpl<Adapter> {
     priv_key: Secp256k1RecoverablePrivateKey,
     address:  H160,
-    log_rx:   UnboundedReceiver<Vec<Vec<Log>>>,
+    log_rx:   UnboundedReceiver<(Vec<Vec<Log>>, H256)>,
     req_rx:   UnboundedReceiver<Vec<TransactionView>>,
 
     adapter: Arc<Adapter>,
@@ -101,8 +99,8 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
     pub async fn run(mut self) {
         loop {
             tokio::select! {
-                Some(logs) = self.log_rx.recv() => {
-                    let (to_ckbs, to_ckb_alerts) = self.classify_logs(logs).await.unwrap();
+                Some((logs, block_hash)) = self.log_rx.recv() => {
+                    let (to_ckbs, to_ckb_alerts) = self.classify_logs(logs, block_hash).await.unwrap();
 
                     if !to_ckbs.is_empty() {
                         let adapter_clone = Arc::clone(&self.adapter);
@@ -249,6 +247,7 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
     async fn classify_logs(
         &self,
         logs: Vec<Vec<Log>>,
+        block_hash: H256,
     ) -> ProtocolResult<(
         Vec<crosschain_abi::CrossToCKBFilter>,
         Vec<crosschain_abi::CrossToCKBAlertFilter>,
@@ -275,10 +274,24 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
             }
 
             if let Ok(event) = decode_logs::<crosschain_abi::CrossFromCKBFilter>(log) {
-                self.adapter
+                let _ = self
+                    .adapter
                     .remove_in_process(
                         Context::new(),
                         &rlp::encode::<Requests>(&(event[0].clone().into())),
+                    )
+                    .await;
+
+                let hashes = event[0]
+                    .records
+                    .iter()
+                    .map(|r| H256(r.4))
+                    .collect::<Vec<_>>();
+                self.adapter
+                    .insert_record(
+                        Context::new(),
+                        RequestTxHashes::new_from_ckb(hashes),
+                        block_hash,
                     )
                     .await?;
             } else if let Ok(event) = decode_logs::<crosschain_abi::CrossToCKBFilter>(log) {
@@ -294,7 +307,7 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
 
 pub struct CrossChainHandler<C> {
     priv_key:   Secp256k1RecoverablePrivateKey,
-    logs_tx:    UnboundedSender<Vec<Vec<Log>>>,
+    logs_tx:    UnboundedSender<(Vec<Vec<Log>>, H256)>,
     config:     ConfigCrossChain,
     ckb_client: Arc<C>,
 }
@@ -308,7 +321,7 @@ impl<C: CkbClient + 'static> CrossChain for CrossChainHandler<C> {
         block_hash: Hash,
         logs: &[Vec<Log>],
     ) {
-        if let Err(e) = self.logs_tx.send(logs.to_vec()) {
+        if let Err(e) = self.logs_tx.send((logs.to_vec(), block_hash)) {
             log::error!("[cross-chain]: send log to process error {:?}", e);
         }
     }
@@ -338,7 +351,7 @@ impl<C: CkbClient + 'static> CrossChain for CrossChainHandler<C> {
 impl<C: CkbClient + 'static> CrossChainHandler<C> {
     fn new(
         priv_key: Secp256k1RecoverablePrivateKey,
-        logs_tx: UnboundedSender<Vec<Vec<Log>>>,
+        logs_tx: UnboundedSender<(Vec<Vec<Log>>, H256)>,
         config: ConfigCrossChain,
         ckb_client: Arc<C>,
     ) -> Self {
@@ -359,6 +372,24 @@ async fn build_ckb_txs(
     events: Vec<crosschain_abi::CrossToCKBFilter>,
 ) -> ProtocolResult<(Requests, TransactionView)> {
     todo!()
+}
+
+impl From<crosschain_abi::CrossFromCKBFilter> for Requests {
+    fn from(logs: crosschain_abi::CrossFromCKBFilter) -> Self {
+        Requests(
+            logs.records
+                .into_iter()
+                .map(|r| Transfer {
+                    direction:     Direction::FromCkb,
+                    address:       r.0,
+                    erc20_address: r.1,
+                    sudt_amount:   r.2.as_u128(),
+                    ckb_amount:    r.3.as_u64(),
+                    tx_hash:       H256(r.4),
+                })
+                .collect(),
+        )
+    }
 }
 
 #[cfg(test)]
