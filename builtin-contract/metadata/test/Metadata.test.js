@@ -45,14 +45,6 @@ describe("Testing MetadataManager", () => {
         }
     })
 
-    it("`isProposer` should return false while address is not a proposer", async () => {
-        expect(await contract.isProposer(wallets[10].address)).false;
-    });
-
-    it("`isProposer` should return true while address is a proposer", async () => {
-        expect(await contract.isProposer(wallets[0].address)).false;
-    });
-
     it("`getMetadata` failed on non-indexed epoch of 0", async () => {
         await expect(contract.getMetadata(0))
             .to.be.revertedWith("fatal/non-indexed epoch")
@@ -99,6 +91,22 @@ describe("Testing MetadataManager", () => {
         await expect(contract.appendMetadata(metadata))
             .to.be.revertedWith("fatal/discontinuous version")
     })
+
+    it("`isProposer` should return false while address is not a proposer", async () => {
+        expect(await contract.isProposer(wallets[10].address)).false;
+    });
+
+    it("`isProposer` should return true while address is a proposer", async () => {
+        expect(await contract.isProposer(wallets[0].address)).true;
+    });
+
+    it("`isVerifier` should return false while address is not a verifier", async () => {
+        expect(await contract.isVerifier(wallets[10].address)).false;
+    });
+
+    it("`isVerifier` should return true while address is a verifier", async () => {
+        expect(await contract.isVerifier(wallets[0].address)).true;
+    });
 
     // it("`appendMetadata` failed on block.number out of version of [5, 6]", async () => {
     //     metadata.epoch = 2

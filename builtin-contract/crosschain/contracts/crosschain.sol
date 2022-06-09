@@ -13,7 +13,6 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract CrossChain is Context, EIP712 {
     address public constant AT_ADDRESS = address(0);
-    uint256 public constant LIMIT_EXCEED_RETRY = 1 << 0;
 
     bytes32 public immutable CROSS_FROM_CKB_TYPEHASH;
 
@@ -24,7 +23,7 @@ contract CrossChain is Context, EIP712 {
     uint256 private _minWCKB;
     uint256 private _crossFromCKBNonce;
     address[] private _relayers;
-    CKBToAxonRecord[] private _limitTxes;
+    AxonToCKBRecord[] private _limitTxes;
 
     mapping(address => uint256) _relayersMap;
     mapping(bytes32 => uint256) _limitTxesMap;
@@ -33,10 +32,17 @@ contract CrossChain is Context, EIP712 {
     mapping(address => bytes32) private _tokenTypehashMap;
     mapping(bytes32 => address) private _typehashTokenMap;
 
-    event CrossFromCKB(address to, address token, uint256 amount);
-    event CrossFromCKBAlert(address to, address token, uint256 amount);
+    event CrossFromCKB(CKBToAxonRecord[] records);
+
     event CrossToCKB(
-        bytes32 lockscript,
+        string to,
+        address token,
+        uint256 amount,
+        uint256 minWCKBAmount
+    );
+
+    event CrossToCKBAlert(
+        string to,
         address token,
         uint256 amount,
         uint256 minWCKBAmount
@@ -50,10 +56,16 @@ contract CrossChain is Context, EIP712 {
     struct CKBToAxonRecord {
         address to;
         address tokenAddress;
-        uint256 amount;
+        uint256 sUDTAmount;
         uint256 CKBAmount;
         bytes32 txHash;
-        uint256 retry;
+    }
+
+    struct AxonToCKBRecord {
+        address tokenAddress;
+        uint256 amount;
+        uint256 minWCKBAmount;
+        string to;
     }
 
     constructor(
@@ -79,6 +91,15 @@ contract CrossChain is Context, EIP712 {
         _;
     }
 
+    modifier onlyVerifier() {
+        require(
+            IMetadata(_metadata).isVerifier(_msgSender()),
+            "CrossChain: sender must be verifier"
+        );
+
+        _;
+    }
+
     function _amountReachThreshold(address token, uint256 amount)
         private
         view
@@ -87,7 +108,10 @@ contract CrossChain is Context, EIP712 {
         return _tokenConfigs[token].threshold <= amount;
     }
 
-    function _removeLimitTxes(CKBToAxonRecord memory record) private {
+    function removeLimitTxes(CKBToAxonRecord memory record)
+        external
+        onlyVerifier
+    {
         if (_limitTxesMap[record.txHash] == 0) {
             return;
         }
@@ -96,40 +120,39 @@ contract CrossChain is Context, EIP712 {
         delete _limitTxesMap[record.txHash];
     }
 
-    function _addLimitTxes(CKBToAxonRecord memory record) private {
-        if (_limitTxesMap[record.txHash] > 0) {
+    function _addLimitTxes(AxonToCKBRecord memory record) private {
+        bytes32 hash = keccak256(abi.encode(record));
+        if (_limitTxesMap[hash] > 0) {
             return;
         }
 
         _limitTxes.push(record);
-        _limitTxesMap[record.txHash] = _limitTxes.length;
+        _limitTxesMap[hash] = _limitTxes.length;
     }
 
     function _crossATFromCKB(CKBToAxonRecord memory record) private {
-        if (record.amount == 0) return;
+        if (record.sUDTAmount == 0) return;
 
-        payable(record.to).transfer(record.amount);
-        emit CrossFromCKB(record.to, AT_ADDRESS, record.amount);
+        payable(record.to).transfer(record.sUDTAmount);
     }
 
     function _crossCKBFromCKB(CKBToAxonRecord memory record) private {
         if (record.CKBAmount == 0) return;
 
         IMirrorToken(_wCKB).mint(record.to, record.CKBAmount);
-
-        emit CrossFromCKB(record.to, _wCKB, record.CKBAmount);
     }
 
     function _crossSUdtFromCKB(CKBToAxonRecord memory record) private {
-        if (record.amount == 0) return;
+        if (record.sUDTAmount == 0) return;
 
         if (isMirrorToken(record.tokenAddress)) {
-            IMirrorToken(record.tokenAddress).mint(record.to, record.amount);
+            IMirrorToken(record.tokenAddress).mint(
+                record.to,
+                record.sUDTAmount
+            );
         } else {
-            IERC20(record.tokenAddress).transfer(record.to, record.amount);
+            IERC20(record.tokenAddress).transfer(record.to, record.sUDTAmount);
         }
-
-        emit CrossFromCKB(record.to, record.tokenAddress, record.amount);
     }
 
     function _verifyCrossFromCKBSignatures(
@@ -213,7 +236,7 @@ contract CrossChain is Context, EIP712 {
         return _crossFromCKBNonce;
     }
 
-    function limitTxes() external view returns (CKBToAxonRecord[] memory) {
+    function limitTxes() external view returns (AxonToCKBRecord[] memory) {
         return _limitTxes;
     }
 
@@ -225,28 +248,28 @@ contract CrossChain is Context, EIP712 {
 
     function setTokenConfig(address token, TokenConfig calldata config)
         external
-        onlyProposer
+        onlyVerifier
     {
         _tokenConfigs[token] = config;
     }
 
-    function setWCKB(address token) external onlyProposer {
+    function setWCKB(address token) external onlyVerifier {
         _wCKB = token;
     }
 
-    function setWCKBMin(uint256 amount) external onlyProposer {
+    function setWCKBMin(uint256 amount) external onlyVerifier {
         _minWCKB = amount;
     }
 
     function addMirrorToken(address token, bytes32 typehash)
         public
-        onlyProposer
+        onlyVerifier
     {
         _mirrorTokens[token] = true;
         addToken(token, typehash);
     }
 
-    function addToken(address token, bytes32 typehash) public onlyProposer {
+    function addToken(address token, bytes32 typehash) public onlyVerifier {
         _typehashTokenMap[typehash] = token;
         _tokenTypehashMap[token] = typehash;
     }
@@ -264,12 +287,22 @@ contract CrossChain is Context, EIP712 {
     }
 
     // lock AT on Axon network
-    function lockAT(bytes32 lockscript) external payable {
+    function lockAT(string memory to) external payable {
         require(msg.value > 0, "CrossChain: value must be more than 0");
 
         IERC20(_wCKB).transferFrom(_msgSender(), address(this), _minWCKB);
 
-        emit CrossToCKB(lockscript, address(0), msg.value, _minWCKB);
+        if (_amountReachThreshold(address(0), msg.value)) {
+            AxonToCKBRecord memory record;
+            record.to = to;
+            record.tokenAddress = AT_ADDRESS;
+            record.amount = msg.value;
+            record.minWCKBAmount = _minWCKB;
+            _addLimitTxes(record);
+            emit CrossToCKBAlert(to, address(0), msg.value, _minWCKB);
+        } else {
+            emit CrossToCKB(to, address(0), msg.value, _minWCKB);
+        }
     }
 
     // tokens are included as follows:
@@ -277,7 +310,7 @@ contract CrossChain is Context, EIP712 {
     // burn mirror tokens (sUDTs from CKB network) on Axon network
     // burn wCKB on Axon network
     function crossTokenToCKB(
-        bytes32 lockscript,
+        string memory to,
         address token,
         uint256 amount
     ) external {
@@ -300,7 +333,17 @@ contract CrossChain is Context, EIP712 {
 
         IERC20(_wCKB).transferFrom(_msgSender(), address(this), _minWCKB);
 
-        emit CrossToCKB(lockscript, token, amount, _minWCKB);
+        if (_amountReachThreshold(token, amount)) {
+            AxonToCKBRecord memory record;
+            record.to = to;
+            record.tokenAddress = token;
+            record.amount = amount;
+            record.minWCKBAmount = _minWCKB;
+            _addLimitTxes(record);
+            emit CrossToCKBAlert(to, token, amount, _minWCKB);
+        } else {
+            emit CrossToCKB(to, token, amount, _minWCKB);
+        }
     }
 
     // all the tokens are included as follows:
@@ -310,41 +353,16 @@ contract CrossChain is Context, EIP712 {
     // unlock AT on Axon network
     // only proposer can call this method
     // resubmit the tx by using nonce auto increment
-    function crossFromCKB(
-        CKBToAxonRecord[] calldata records,
-        bytes calldata signatures,
-        uint256 nonce
-    ) external onlyProposer {
+    function crossFromCKB(CKBToAxonRecord[] calldata records, uint256 nonce)
+        external
+        onlyVerifier
+    {
         require(_crossFromCKBNonce == nonce, "CrossChain: invalid nonce");
-
-        _verifyCrossFromCKBSignatures(records, signatures, nonce);
 
         uint256 length = records.length;
         for (uint256 i = 0; i < length; ++i) {
             CKBToAxonRecord memory record = records[i];
-            if (record.amount == 0 && record.CKBAmount == 0) continue;
-
-            if (record.retry & LIMIT_EXCEED_RETRY != LIMIT_EXCEED_RETRY) {
-                if (_amountReachThreshold(_wCKB, record.CKBAmount)) {
-                    _addLimitTxes(record);
-
-                    emit CrossFromCKBAlert(record.to, _wCKB, record.CKBAmount);
-
-                    continue;
-                } else if (
-                    _amountReachThreshold(record.tokenAddress, record.amount)
-                ) {
-                    _addLimitTxes(record);
-
-                    emit CrossFromCKBAlert(
-                        record.to,
-                        record.tokenAddress,
-                        record.amount
-                    );
-
-                    continue;
-                }
-            }
+            if (record.sUDTAmount == 0 && record.CKBAmount == 0) continue;
 
             _crossCKBFromCKB(record);
 
@@ -353,10 +371,10 @@ contract CrossChain is Context, EIP712 {
             } else {
                 _crossSUdtFromCKB(record);
             }
-
-            _removeLimitTxes(record);
         }
 
         _crossFromCKBNonce = SafeMath.add(_crossFromCKBNonce, 1);
+
+        emit CrossFromCKB(records);
     }
 }

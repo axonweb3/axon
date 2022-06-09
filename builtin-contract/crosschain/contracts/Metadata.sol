@@ -6,4 +6,6 @@ interface IMetadata {
     function isProposer(address relayer) external returns (bool);
 
     function verifierList() external returns (address[] memory, uint256);
+
+    function isVerifier(address relayer) external returns (bool);
 }

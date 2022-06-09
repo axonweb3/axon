@@ -119,4 +119,17 @@ contract MetadataManager {
 
         return verifier == proposer.address_;
     }
+
+    function isVerifier(address relayer) external view returns (bool) {
+        uint256 length = metadata_set[highest_epoch].verifier_list.length;
+        for (uint256 i = 0; i < length; ++i) {
+            if (
+                metadata_set[highest_epoch].verifier_list[i].address_ == relayer
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
