@@ -3,6 +3,7 @@ pub mod error;
 pub mod executor;
 pub mod receipt;
 pub mod transaction;
+pub mod crosschain;
 
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 

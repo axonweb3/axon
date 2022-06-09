@@ -2,6 +2,7 @@ pub use ethereum::Log;
 
 pub use batch::*;
 pub use block::*;
+pub use crosschain::*;
 pub use bytes::{Buf, BufMut, Bytes, BytesMut};
 pub use ckb_client::*;
 pub use evm::{backend::*, ExitRevert, ExitSucceed};
@@ -21,6 +22,7 @@ pub mod interoperation;
 pub mod primitive;
 pub mod receipt;
 pub mod transaction;
+pub mod crosschain;
 
 use std::error::Error;
 
@@ -62,6 +64,9 @@ pub enum TypesError {
 
     #[display(fmt = "Crypto error {:?}", _0)]
     Crypto(CryptoError),
+
+    #[display(fmt = "Invalid crosschain direction")]
+    InvalidDirection,
 }
 
 impl Error for TypesError {}

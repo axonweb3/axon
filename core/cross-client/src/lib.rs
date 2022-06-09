@@ -7,7 +7,6 @@ mod generated;
 mod monitor;
 mod sidechain;
 mod task;
-mod types;
 
 pub use adapter::{CrossChainDBImpl, DefaultCrossChainAdapter};
 
@@ -27,14 +26,13 @@ use protocol::traits::{CkbClient, Context, CrossAdapter, CrossChain};
 use protocol::types::{
     Block, BlockNumber, Hash, Hasher, Log, Proof, SignedTransaction, Transaction,
     TransactionAction, UnverifiedTransaction, H160, H256, MAX_BLOCK_GAS_LIMIT,
-    MAX_PRIORITY_FEE_PER_GAS, U256,
+    MAX_PRIORITY_FEE_PER_GAS, U256,Direction, Requests, Transfer
 };
 use protocol::{async_trait, lazy::CHAIN_ID, tokio, ProtocolResult};
 
 use core_executor::CROSSCHAIN_CONTRACT_ADDRESS;
 
 use crate::error::CrossChainError;
-use crate::types::{Direction, Requests, Transfer};
 use crate::{adapter::fixed_array, monitor::CrossChainMonitor, sidechain::SidechainTask};
 
 pub const CKB_BLOCK_INTERVAL: u64 = 8; // second
@@ -359,6 +357,24 @@ async fn build_ckb_txs(
     events: Vec<crosschain_abi::CrossToCKBFilter>,
 ) -> ProtocolResult<(Requests, TransactionView)> {
     todo!()
+}
+
+impl From<crosschain_abi::CrossFromCKBFilter> for Requests {
+    fn from(logs: crosschain_abi::CrossFromCKBFilter) -> Self {
+        Requests(
+            logs.records
+                .into_iter()
+                .map(|r| Transfer {
+                    direction:     Direction::FromCkb,
+                    address:       r.0,
+                    erc20_address: r.1,
+                    sudt_amount:   r.2.as_u128(),
+                    ckb_amount:    r.3.as_u64(),
+                    tx_hash:       H256(r.4),
+                })
+                .collect(),
+        )
+    }
 }
 
 #[cfg(test)]
