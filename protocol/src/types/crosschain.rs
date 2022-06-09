@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::types::{TypesError, H160, H256};
 
-
 #[repr(u8)]
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Direction {
@@ -30,7 +29,7 @@ impl Direction {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Transfer {
-    pub direction: Direction,
+    pub direction:     Direction,
     pub address:       H160,
     pub erc20_address: H160,
     pub sudt_amount:   u128,
@@ -49,6 +48,6 @@ impl Requests {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct RequestTxHashes {
-	pub direction: Direction,
-	pub tx_hashes: Vec<H256>,
+    pub direction: Direction,
+    pub tx_hashes: Vec<H256>,
 }

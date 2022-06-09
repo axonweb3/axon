@@ -1,9 +1,6 @@
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 
-use crate::types::{
-    Transfer, Requests, RequestTxHashes,
-};
-
+use crate::types::{RequestTxHashes, Requests, Transfer};
 
 impl Encodable for Transfer {
     fn rlp_append(&self, s: &mut RlpStream) {
@@ -47,7 +44,9 @@ impl Decodable for Requests {
 
 impl Encodable for RequestTxHashes {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(2).append(&(self.direction as u8)).append_list(&self.tx_hashes);
+        s.begin_list(2)
+            .append(&(self.direction as u8))
+            .append_list(&self.tx_hashes);
     }
 }
 
