@@ -90,7 +90,7 @@ impl Encodable for Header {
 impl Decodable for Header {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
-            Prototype::List(21) => Ok(Header {
+            Prototype::List(20) => Ok(Header {
                 prev_hash:                  r.val_at(0)?,
                 proposer:                   r.val_at(1)?,
                 state_root:                 r.val_at(2)?,

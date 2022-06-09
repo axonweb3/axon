@@ -89,7 +89,8 @@ impl<C: CkbClient + 'static> CrossChainMonitor<C> {
         if !list.is_empty() {
             log::info!(
                 "[cross-chain]: Cross from CKB block {:?}, request tx count {:?}",
-                (self.handle_ckb_number..=non_fork_tip), list.len()
+                (self.handle_ckb_number..=non_fork_tip),
+                list.len()
             );
 
             self.req_tx.send(list).unwrap();
