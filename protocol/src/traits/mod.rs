@@ -1,7 +1,7 @@
 mod api;
 mod ckb_client;
 mod consensus;
-mod cross_client;
+mod crosschain;
 mod executor;
 mod interoperation;
 mod mempool;
@@ -16,7 +16,7 @@ pub use consensus::{
     SynchronizationAdapter,
 };
 pub use creep::{Cloneable, Context};
-pub use cross_client::{CrossAdapter, CrossChain};
+pub use crosschain::{CrossAdapter, CrossChain};
 pub use executor::{ApplyBackend, Backend, Executor, ExecutorAdapter};
 pub use interoperation::Interoperation;
 pub use mempool::{MemPool, MemPoolAdapter};

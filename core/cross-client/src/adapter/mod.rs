@@ -6,7 +6,9 @@ use std::sync::Arc;
 
 use core_executor::{AxonExecutor, AxonExecutorAdapter};
 use protocol::traits::{Backend, Context, CrossAdapter, Executor, MemPool, Storage};
-use protocol::types::{ExecutorContext, Proposal, SignedTransaction, TxResp, H160, U256};
+use protocol::types::{
+    ExecutorContext, Proposal, RequestTxHashes, SignedTransaction, TxResp, H160, H256, U256,
+};
 use protocol::{async_trait, ProtocolResult};
 
 use crate::error::CrossChainError;
@@ -89,6 +91,25 @@ where
         )?;
 
         Ok(AxonExecutor::default().call(&mut backend, None, Some(addr), data))
+    }
+
+    async fn insert_record(
+        &self,
+        ctx: Context,
+        reqs: RequestTxHashes,
+        block_hash: H256,
+    ) -> ProtocolResult<()> {
+        self.storage
+            .insert_crosschain_record(ctx, reqs, block_hash)
+            .await
+    }
+
+    async fn get_record(
+        &self,
+        ctx: Context,
+        reqs: RequestTxHashes,
+    ) -> ProtocolResult<Option<H256>> {
+        self.storage.get_crosschain_record(ctx, reqs).await
     }
 }
 

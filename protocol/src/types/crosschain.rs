@@ -51,3 +51,12 @@ pub struct RequestTxHashes {
     pub direction: Direction,
     pub tx_hashes: Vec<H256>,
 }
+
+impl RequestTxHashes {
+    pub fn new_from_ckb(hashes: Vec<H256>) -> Self {
+        RequestTxHashes {
+            direction: Direction::FromCkb,
+            tx_hashes: hashes,
+        }
+    }
+}
