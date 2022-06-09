@@ -134,6 +134,7 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
                     )
                     .await
                     .unwrap();
+                    self.adapter.send_axon_tx(Context::new(), stx).await.unwrap();
                 }
             }
         }
@@ -274,6 +275,11 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
             }
 
             if let Ok(event) = decode_logs::<crosschain_abi::CrossFromCKBFilter>(log) {
+                log::info!(
+                    "[crosschain]: Complete cross from CKB, request count {:?}, axon block hash {:?}",
+                    event[0].records.len(), block_hash
+                );
+
                 let _ = self
                     .adapter
                     .remove_in_process(
