@@ -35,6 +35,7 @@ pub trait MemPool: Send + Sync {
 
     async fn get_tx_count_by_address(&self, ctx: Context, address: H160) -> ProtocolResult<usize>;
 
+    fn get_tx_from_mem(&self, ctx: Context, tx_hash: &Hash) -> Option<SignedTransaction>;
     fn set_args(&self, context: Context, state_root: MerkleRoot, gas_limit: u64, max_tx_size: u64);
 }
 
