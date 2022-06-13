@@ -18,9 +18,9 @@ function recordsHash(records) {
     );
 }
 
-async function deployMirrorToken(owner, crosschain) {
+async function deployMirrorToken(owner) {
     const MirrorToken = await ethers.getContractFactory('MirrorToken');
-    contract = await MirrorToken.connect(owner).deploy("CKB", "CKB", crosschain);
+    contract = await MirrorToken.connect(owner).deploy("CKB", "CKB");
 
     return contract;
 }
@@ -61,29 +61,25 @@ describe("CrossChain", () => {
         );
         await metadata.mock.isVerifier.returns(true);
 
+        wckb = await deployMirrorToken(owner);
+
         let deployer = await ethers.getContractFactory("CrossChain");
-        contract = await deployer
-            .connect(owner)
-            .deploy(
-                3,
-                metadata.address,
-                'test',
-                '1',
-            );
+        contract = await deployer.connect(owner).deploy(metadata.address, wckb.address);
         await contract.deployed();
 
-        await contract.connect(owner).setWCKBMin(1);
-
-        wckb = await deployMirrorToken(owner, contract.address);
-        await contract.connect(owner).setWCKB(wckb.address);
-        await contract.connect(owner).addMirrorToken(wckb.address, lockscript);
         await contract.connect(owner).setTokenConfig(wckb.address, [10, 10000000]);
         await wckb.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MINTER_ROLE')), owner.address);
+        await contract.connect(owner).setWCKBMin(1);
 
-        mirrorToken = await deployMirrorToken(owner, contract.address);
+        await wckb.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MINTER_ROLE')), contract.address);
+        await wckb.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('BURNER_ROLE')), contract.address);
+
+        mirrorToken = await deployMirrorToken(owner);
         await contract.connect(owner).addMirrorToken(mirrorToken.address, lockscript);
         await contract.connect(owner).setTokenConfig(mirrorToken.address, [10, 10000000]);
         await mirrorToken.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MINTER_ROLE')), owner.address);
+        await mirrorToken.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MINTER_ROLE')), contract.address);
+        await mirrorToken.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('BURNER_ROLE')), contract.address);
 
         simpleToken = await deployTestToken(owner);
         await contract.connect(owner).setTokenConfig(simpleToken.address, [10, 10000000]);

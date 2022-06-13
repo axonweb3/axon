@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-contract CrossChain is Context, EIP712 {
+contract CrossChain is Context {
     address public constant AT_ADDRESS = address(0);
 
     bytes32 public immutable CROSS_FROM_CKB_TYPEHASH;
@@ -68,14 +68,10 @@ contract CrossChain is Context, EIP712 {
         string to;
     }
 
-    constructor(
-        uint256 threshold,
-        address metadata,
-        string memory name,
-        string memory version
-    ) EIP712(name, version) {
-        _relayerThreshold = threshold;
+    constructor(address metadata, address wCKB) {
         _metadata = metadata;
+        _wCKB = wCKB;
+        addMirrorToken(_wCKB, bytes32(0));
 
         CROSS_FROM_CKB_TYPEHASH = keccak256(
             "Transaction(bytes32 recordsHash,uint256 nonce)"
@@ -153,24 +149,6 @@ contract CrossChain is Context, EIP712 {
         } else {
             IERC20(record.tokenAddress).transfer(record.to, record.sUDTAmount);
         }
-    }
-
-    function _verifyCrossFromCKBSignatures(
-        CKBToAxonRecord[] calldata records,
-        bytes calldata signatures,
-        uint256 nonce
-    ) private {
-        bytes32 msgHash = _hashTypedDataV4(
-            keccak256(
-                abi.encode(
-                    CROSS_FROM_CKB_TYPEHASH,
-                    keccak256(abi.encode(records)),
-                    nonce
-                )
-            )
-        );
-
-        _verifySignature(msgHash, signatures);
     }
 
     function _updateRelayers(address[] memory relayers, uint256 epoch) private {
@@ -251,10 +229,6 @@ contract CrossChain is Context, EIP712 {
         onlyVerifier
     {
         _tokenConfigs[token] = config;
-    }
-
-    function setWCKB(address token) external onlyVerifier {
-        _wCKB = token;
     }
 
     function setWCKBMin(uint256 amount) external onlyVerifier {

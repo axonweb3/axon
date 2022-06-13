@@ -15,15 +15,8 @@ contract MirrorToken is ERC20, AccessControl, Ownable, IMirrorToken {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
 
-    constructor(
-        string memory name,
-        string memory symbol,
-        address crosschain
-    ) ERC20(name, symbol) {
+    constructor(string memory name, string memory symbol) ERC20(name, symbol) {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-
-        _setupRole(MINTER_ROLE, crosschain);
-        _setupRole(BURNER_ROLE, crosschain);
     }
 
     function mint(address to, uint256 amount)
