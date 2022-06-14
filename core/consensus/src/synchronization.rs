@@ -384,6 +384,14 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
     ) -> ProtocolResult<RichBlock> {
         let block = self.get_block_from_remote(ctx.clone(), number).await?;
 
+        if block.header.number != number {
+            log::error!("[synchronization]: block that doesn't match is found");
+            return Err(crate::ConsensusError::Other(
+                "[synchronization]: block doesn't match request".to_string(),
+            )
+            .into());
+        }
+
         let mut res = std::collections::BTreeMap::new();
         let mut missing = std::collections::HashMap::new();
         let mut missing_list = Vec::with_capacity(block.tx_hashes.len());
@@ -406,16 +414,17 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
                 if let Some(key) = missing.remove(&tx.transaction.hash) {
                     res.insert(key, tx);
                 } else {
-                    return Err(
-                        crate::ConsensusError::Other("Invalid sync tx hash".to_string()).into(),
-                    );
+                    return Err(crate::ConsensusError::Other(
+                        "[synchronization]: Invalid sync tx hash".to_string(),
+                    )
+                    .into());
                 }
             }
         }
 
         if !missing.is_empty() {
             return Err(crate::ConsensusError::Other(
-                "Unable to get a complete list of transactions ".to_string(),
+                "[synchronization]: Unable to get a complete list of transactions ".to_string(),
             )
             .into());
         }
@@ -480,20 +489,6 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             if current_number == remote_number {
                 return Ok(false);
             }
-        }
-
-        let block = self
-            .get_block_from_remote(ctx.clone(), remote_number)
-            .await?;
-
-        log::debug!(
-            "[synchronization] get block from remote success {:?} ",
-            remote_number
-        );
-
-        if block.header.number != remote_number {
-            log::error!("[synchronization]: block that doesn't match is found");
-            return Ok(false);
         }
 
         Ok(true)
