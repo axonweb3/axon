@@ -15,7 +15,7 @@ async function export_deploy() {
         "maxFeePerGas": "0x7d0",
         "gasLimit": "0x3231303030",
         "nonce": "0x5",
-        "data": hexlify(concat([crosschain.bytecode, crosschain.interface.encodeDeploy(metadata, wCKB)])),
+        "data": hexlify(concat([crosschain.bytecode, crosschain.interface.encodeDeploy([metadata, wCKB])])),
         "accessList": [],
         "chainId": 5,
         "type": 2

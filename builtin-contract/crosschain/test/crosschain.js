@@ -155,12 +155,16 @@ describe("CrossChain", () => {
         expect(await wckb.balanceOf(contract.address)).equal(1);
         expect(await ethers.provider.getBalance(contract.address)).equal(200);
 
-        const limitTxes = await contract.limitTxes();
+        let limitTxes = await contract.limitTxes();
         expect(limitTxes).length(1);
         expect(limitTxes[0].to).equal("ckbAddress");
         expect(limitTxes[0].tokenAddress).equal(ATAddress);
         expect(limitTxes[0].amount).equal(200);
         expect(limitTxes[0].minWCKBAmount).equal(1);
+
+        await expect(contract.connect(owner).removeLimitTx(limitTxes[0])).not.reverted;
+        limitTxes = await contract.limitTxes();
+        expect(limitTxes).length(0);
     });
 
     it("user lock Token should success", async () => {
@@ -250,12 +254,16 @@ describe("CrossChain", () => {
         expect(await wckb.balanceOf(contract.address)).equal(1);
         expect(await simpleToken.balanceOf(contract.address)).equal(10000001);
 
-        const limitTxes = await contract.limitTxes();
+        let limitTxes = await contract.limitTxes();
         expect(limitTxes).length(1);
         expect(limitTxes[0].to).equal("ckbAddress");
         expect(limitTxes[0].tokenAddress).equal(simpleToken.address);
         expect(limitTxes[0].amount).equal(10000001);
         expect(limitTxes[0].minWCKBAmount).equal(1);
+
+        await expect(contract.connect(owner).removeLimitTx(limitTxes[0])).not.reverted;
+        limitTxes = await contract.limitTxes();
+        expect(limitTxes).length(0);
     });
 
     it("user burn ckb should success", async () => {
@@ -334,12 +342,16 @@ describe("CrossChain", () => {
         expect(await wckb.balanceOf(contract.address)).equal(1);
         expect(await wckb.balanceOf(wallet.address)).equal(80000000);
 
-        const limitTxes = await contract.limitTxes();
+        let limitTxes = await contract.limitTxes();
         expect(limitTxes).length(1);
         expect(limitTxes[0].to).equal("ckbAddress");
         expect(limitTxes[0].tokenAddress).equal(wckb.address);
         expect(limitTxes[0].amount).equal(19999999);
         expect(limitTxes[0].minWCKBAmount).equal(1);
+
+        await expect(contract.connect(owner).removeLimitTx(limitTxes[0])).not.reverted;
+        limitTxes = await contract.limitTxes();
+        expect(limitTxes).length(0);
     });
 
     it("user burn mirror token should success", async () => {
@@ -431,12 +443,16 @@ describe("CrossChain", () => {
         expect(await wckb.balanceOf(contract.address)).equal(1);
         expect(await mirrorToken.balanceOf(wallet.address)).equal(80000000);
 
-        const limitTxes = await contract.limitTxes();
+        let limitTxes = await contract.limitTxes();
         expect(limitTxes).length(1);
         expect(limitTxes[0].to).equal("ckbAddress");
         expect(limitTxes[0].tokenAddress).equal(mirrorToken.address);
         expect(limitTxes[0].amount).equal(20000000);
         expect(limitTxes[0].minWCKBAmount).equal(1);
+
+        await expect(contract.connect(owner).removeLimitTx(limitTxes[0])).not.reverted;
+        limitTxes = await contract.limitTxes();
+        expect(limitTxes).length(0);
     });
 
     it("cross wckb and sudt should success", async () => {

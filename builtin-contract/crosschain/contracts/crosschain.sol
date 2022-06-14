@@ -4,6 +4,7 @@ pragma solidity >=0.8.0;
 
 import {IMirrorToken} from "./MirrorToken.sol";
 import {IMetadata} from "./Metadata.sol";
+import "./libraries/DataType.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
@@ -12,6 +13,11 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract CrossChain is Context {
+    using DataType for DataType.AxonToCKBRecord;
+    using DataType for DataType.CKBToAxonRecord;
+    using DataType for DataType.TokenConfig;
+    using EnumerableSet for EnumerableSet.Bytes32Set;
+
     address public constant AT_ADDRESS = address(0);
 
     bytes32 public immutable CROSS_FROM_CKB_TYPEHASH;
@@ -23,16 +29,16 @@ contract CrossChain is Context {
     uint256 private _minWCKB;
     uint256 private _crossFromCKBNonce;
     address[] private _relayers;
-    AxonToCKBRecord[] private _limitTxes;
+    EnumerableSet.Bytes32Set private _limitTxes;
 
+    mapping(bytes32 => DataType.AxonToCKBRecord) _limitRecordMap;
     mapping(address => uint256) _relayersMap;
-    mapping(bytes32 => uint256) _limitTxesMap;
-    mapping(address => TokenConfig) private _tokenConfigs;
+    mapping(address => DataType.TokenConfig) private _tokenConfigs;
     mapping(address => bool) private _mirrorTokens;
     mapping(address => bytes32) private _tokenTypehashMap;
     mapping(bytes32 => address) private _typehashTokenMap;
 
-    event CrossFromCKB(CKBToAxonRecord[] records);
+    event CrossFromCKB(DataType.CKBToAxonRecord[] records);
 
     event CrossToCKB(
         string to,
@@ -48,30 +54,10 @@ contract CrossChain is Context {
         uint256 minWCKBAmount
     );
 
-    struct TokenConfig {
-        uint256 feeRatio;
-        uint256 threshold;
-    }
-
-    struct CKBToAxonRecord {
-        address to;
-        address tokenAddress;
-        uint256 sUDTAmount;
-        uint256 CKBAmount;
-        bytes32 txHash;
-    }
-
-    struct AxonToCKBRecord {
-        address tokenAddress;
-        uint256 amount;
-        uint256 minWCKBAmount;
-        string to;
-    }
-
     constructor(address metadata, address wCKB) {
         _metadata = metadata;
         _wCKB = wCKB;
-        addMirrorToken(_wCKB, bytes32(0));
+        _addMirrorToken(_wCKB, bytes32(0));
 
         CROSS_FROM_CKB_TYPEHASH = keccak256(
             "Transaction(bytes32 recordsHash,uint256 nonce)"
@@ -96,6 +82,16 @@ contract CrossChain is Context {
         _;
     }
 
+    function _addToken(address token, bytes32 typehash) private {
+        _typehashTokenMap[typehash] = token;
+        _tokenTypehashMap[token] = typehash;
+    }
+
+    function _addMirrorToken(address token, bytes32 typehash) private {
+        _mirrorTokens[token] = true;
+        _addToken(token, typehash);
+    }
+
     function _amountReachThreshold(address token, uint256 amount)
         private
         view
@@ -104,41 +100,42 @@ contract CrossChain is Context {
         return _tokenConfigs[token].threshold <= amount;
     }
 
-    function removeLimitTxes(CKBToAxonRecord memory record)
+    function removeLimitTx(DataType.AxonToCKBRecord memory record)
         external
         onlyVerifier
     {
-        if (_limitTxesMap[record.txHash] == 0) {
-            return;
-        }
-
-        delete _limitTxes[_limitTxesMap[record.txHash] - 1];
-        delete _limitTxesMap[record.txHash];
-    }
-
-    function _addLimitTxes(AxonToCKBRecord memory record) private {
         bytes32 hash = keccak256(abi.encode(record));
-        if (_limitTxesMap[hash] > 0) {
+        if (!_limitTxes.contains(hash)) {
             return;
         }
 
-        _limitTxes.push(record);
-        _limitTxesMap[hash] = _limitTxes.length;
+        _limitTxes.remove(hash);
+        delete _limitRecordMap[hash];
     }
 
-    function _crossATFromCKB(CKBToAxonRecord memory record) private {
+    function _addLimitTxes(DataType.AxonToCKBRecord memory record) private {
+        bytes32 hash = keccak256(abi.encode(record));
+        if (_limitTxes.contains(hash)) {
+            return;
+        }
+
+        _limitTxes.add(hash);
+        _limitRecordMap[hash] = record;
+    }
+
+    function _crossATFromCKB(DataType.CKBToAxonRecord memory record) private {
         if (record.sUDTAmount == 0) return;
 
         payable(record.to).transfer(record.sUDTAmount);
     }
 
-    function _crossCKBFromCKB(CKBToAxonRecord memory record) private {
+    function _crossCKBFromCKB(DataType.CKBToAxonRecord memory record) private {
         if (record.CKBAmount == 0) return;
 
         IMirrorToken(_wCKB).mint(record.to, record.CKBAmount);
     }
 
-    function _crossSUdtFromCKB(CKBToAxonRecord memory record) private {
+    function _crossSUdtFromCKB(DataType.CKBToAxonRecord memory record) private {
         if (record.sUDTAmount == 0) return;
 
         if (isMirrorToken(record.tokenAddress)) {
@@ -214,17 +211,32 @@ contract CrossChain is Context {
         return _crossFromCKBNonce;
     }
 
-    function limitTxes() external view returns (AxonToCKBRecord[] memory) {
-        return _limitTxes;
+    function limitTxes()
+        external
+        view
+        returns (DataType.AxonToCKBRecord[] memory)
+    {
+        DataType.AxonToCKBRecord[]
+            memory records = new DataType.AxonToCKBRecord[](
+                _limitTxes.length()
+            );
+
+        bytes32[] memory hashes = _limitTxes.values();
+
+        for (uint256 i = 0; i < hashes.length; i++) {
+            records[i] = _limitRecordMap[hashes[i]];
+        }
+
+        return records;
     }
 
     function fee(address token, uint256 value) public view returns (uint256) {
-        TokenConfig memory config = _tokenConfigs[token];
+        DataType.TokenConfig memory config = _tokenConfigs[token];
 
         return config.feeRatio;
     }
 
-    function setTokenConfig(address token, TokenConfig calldata config)
+    function setTokenConfig(address token, DataType.TokenConfig calldata config)
         external
         onlyVerifier
     {
@@ -239,13 +251,11 @@ contract CrossChain is Context {
         public
         onlyVerifier
     {
-        _mirrorTokens[token] = true;
-        addToken(token, typehash);
+        _addMirrorToken(token, typehash);
     }
 
     function addToken(address token, bytes32 typehash) public onlyVerifier {
-        _typehashTokenMap[typehash] = token;
-        _tokenTypehashMap[token] = typehash;
+        _addToken(token, typehash);
     }
 
     function isMirrorToken(address token) public view returns (bool) {
@@ -267,7 +277,7 @@ contract CrossChain is Context {
         IERC20(_wCKB).transferFrom(_msgSender(), address(this), _minWCKB);
 
         if (_amountReachThreshold(address(0), msg.value)) {
-            AxonToCKBRecord memory record;
+            DataType.AxonToCKBRecord memory record;
             record.to = to;
             record.tokenAddress = AT_ADDRESS;
             record.amount = msg.value;
@@ -308,7 +318,7 @@ contract CrossChain is Context {
         IERC20(_wCKB).transferFrom(_msgSender(), address(this), _minWCKB);
 
         if (_amountReachThreshold(token, amount)) {
-            AxonToCKBRecord memory record;
+            DataType.AxonToCKBRecord memory record;
             record.to = to;
             record.tokenAddress = token;
             record.amount = amount;
@@ -327,15 +337,15 @@ contract CrossChain is Context {
     // unlock AT on Axon network
     // only proposer can call this method
     // resubmit the tx by using nonce auto increment
-    function crossFromCKB(CKBToAxonRecord[] calldata records, uint256 nonce)
-        external
-        onlyVerifier
-    {
+    function crossFromCKB(
+        DataType.CKBToAxonRecord[] calldata records,
+        uint256 nonce
+    ) external onlyVerifier {
         require(_crossFromCKBNonce == nonce, "CrossChain: invalid nonce");
 
         uint256 length = records.length;
         for (uint256 i = 0; i < length; ++i) {
-            CKBToAxonRecord memory record = records[i];
+            DataType.CKBToAxonRecord memory record = records[i];
             if (record.sUDTAmount == 0 && record.CKBAmount == 0) continue;
 
             _crossCKBFromCKB(record);
