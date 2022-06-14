@@ -14,6 +14,7 @@ pub use tokio;
 #[derive(Debug, Clone)]
 pub enum ProtocolErrorKind {
     // traits
+    AcsAssember,
     API,
     Cli,
     CkbClient,

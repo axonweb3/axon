@@ -1,3 +1,4 @@
+mod acs_assembler;
 mod api;
 mod ckb_client;
 mod consensus;
@@ -9,6 +10,7 @@ mod metadata;
 mod network;
 mod storage;
 
+pub use acs_assembler::AcsAssembler;
 pub use api::APIAdapter;
 pub use ckb_client::{CkbClient, RPC};
 pub use consensus::{

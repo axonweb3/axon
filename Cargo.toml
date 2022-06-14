@@ -26,6 +26,7 @@ members = [
     "common/merkle",
     "common/pubsub",
 
+    "core/acs-assembler",
     "core/api",
     "core/cli",
     "core/consensus",

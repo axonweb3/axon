@@ -23,6 +23,7 @@ common-config-parser = { path = "../../common/config-parser" }
 common-crypto = { path = "../../common/crypto" }
 common-logger = { path = "../../common/logger" }
 common-memory-tracker = { path = "../../common/memory-tracker", optional = true }
+core-acs-assembler = { path = "../../core/acs-assembler" }
 core-api = { path = "../../core/api" }
 core-consensus = { path = "../../core/consensus" }
 core-cross-client = { path = "../../core/cross-client" }
