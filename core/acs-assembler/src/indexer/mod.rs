@@ -10,7 +10,7 @@ use ckb_types::prelude::{Builder, Entity, Pack, Unpack};
 use jsonrpsee::core::client::ClientT;
 use jsonrpsee::http_client::HttpClient;
 use jsonrpsee::types::ParamsSer;
-use protocol::types::{H160, H256};
+use protocol::types::H256;
 use protocol::ProtocolResult;
 use serde_json::json;
 
@@ -49,7 +49,7 @@ async fn fetch_live_cells(
 
 pub async fn fetch_crosschain_metdata(
     rpc_client: &HttpClient,
-    metadata_typeid_args: H160,
+    metadata_typeid_args: H256,
     axon_chain_id: u8,
 ) -> ProtocolResult<(Metadata, H256, OutPoint)> {
     let metadata_typescript = Script::new_builder()
@@ -73,10 +73,9 @@ pub async fn fetch_crosschain_metdata(
         }
     };
 
-    let metadata =
-        Metadata::from_slice(&ckb_metadata_cell.output_data).map_err(|err| {
-            AcsAssemblerError::MetadataTypeIdError(metadata_typeid_args, err.to_string())
-        })?;
+    let metadata = Metadata::from_slice(&ckb_metadata_cell.output_data).map_err(|err| {
+        AcsAssemblerError::MetadataTypeIdError(metadata_typeid_args, err.to_string())
+    })?;
 
     if u8::from(metadata.chain_id()) != axon_chain_id {
         return Err(AcsAssemblerError::MetadataChainIdError(metadata.chain_id().into()).into());
@@ -93,7 +92,7 @@ pub async fn fetch_crosschain_metdata(
     ))
 }
 
-pub async fn fill_transaction_with_inputs(
+pub async fn fill_transaction_with_inputs_and_changes(
     rpc_client: &HttpClient,
     tx: TransactionView,
     metadata_typeid: H256,
@@ -164,7 +163,7 @@ pub async fn fill_transaction_with_inputs(
         cursor = Some(lock_cells.last_cursor);
     }
 
-    if util::is_offerred_match_required(
+    if !util::is_offerred_match_required(
         &offerred_ckb,
         &required_ckb,
         &offerred_sudt_set,
@@ -208,12 +207,14 @@ pub async fn fill_transaction_with_inputs(
         .unwrap();
     let extra_capacity = acs_lock_output.occupied_capacity(Capacity::zero()).unwrap();
     assert!(
-        real_inputs_capacity.as_u64() > real_outputs_capacity.as_u64() + extra_capacity.as_u64(),
+        real_inputs_capacity.as_u64()
+            > real_outputs_capacity.as_u64() + extra_capacity.as_u64() + fee.as_u64(),
         "internal error"
     );
+    let change_ckb = real_inputs_capacity.as_u64() - real_outputs_capacity.as_u64() - fee.as_u64();
     acs_lock_output = acs_lock_output
         .as_builder()
-        .capacity((real_inputs_capacity.as_u64() - real_outputs_capacity.as_u64()).pack())
+        .capacity(change_ckb.pack())
         .build();
     tx = tx
         .as_advanced_builder()

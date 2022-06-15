@@ -22,7 +22,7 @@ use common_crypto::{
     BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey,
     Secp256k1RecoverablePrivateKey, ToPublicKey, UncompressedPublicKey,
 };
-use core_acs_assembler::AcsAssemblerImpl;
+// use core_acs_assembler::AcsAssemblerImpl;
 use core_api::{jsonrpc::run_jsonrpc_server, DefaultAPIAdapter};
 use core_consensus::message::{
     ChokeMessageHandler, ProposalMessageHandler, PullBlockRpcHandler, PullProofRpcHandler,

@@ -56,8 +56,9 @@ pub fn build_transfer_output_cell(
     (cell, output_data)
 }
 
-pub fn build_transaction_with_outputs(
+pub fn build_transaction_with_outputs_and_celldeps(
     output_cell_and_data: &Vec<(CellOutput, Bytes)>,
+    metadata_outpoint: &OutPoint,
 ) -> TransactionView {
     let mut tx = TransactionView::new_advanced_builder().build();
     for (cell, data) in output_cell_and_data {
@@ -67,32 +68,6 @@ pub fn build_transaction_with_outputs(
             .output_data(data.pack())
             .build();
     }
-    tx
-}
-
-pub fn complete_transaction_with_witnesses_and_celldeps(
-    tx: TransactionView,
-    signature: &[u8; 96],
-    pubkey_list: &[[u8; 48]],
-    metadata_outpoint: &OutPoint,
-) -> TransactionView {
-    let signature = molecule::Signautre::new_unchecked(Bytes::from(signature.to_vec()));
-    let bls_pubkeys = {
-        let pubkey_list = pubkey_list
-            .iter()
-            .map(|pubkey| molecule::BlsPubkey::new_unchecked(Bytes::from(pubkey.to_vec())))
-            .collect::<Vec<_>>();
-        molecule::BlsPubkeyList::new_builder()
-            .set(pubkey_list)
-            .build()
-    };
-    let acs_witness = molecule::Witness::new_builder()
-        .signature(signature)
-        .bls_pubkeys(bls_pubkeys)
-        .build();
-    let witness = WitnessArgs::new_builder()
-        .lock(Some(acs_witness.as_bytes()).pack())
-        .build();
     let mut celldeps = vec![ACS_LOCK_TX_HASH, SUDT_TX_HASH, ACS_REQUEST_TX_HASH]
         .into_iter()
         .map(|tx_hash| {
@@ -113,9 +88,33 @@ pub fn complete_transaction_with_witnesses_and_celldeps(
             .dep_type(DepType::Code.into())
             .build(),
     );
+    tx.as_advanced_builder().cell_deps(celldeps).build()
+}
+
+pub fn complete_transaction_with_witnesses(
+    tx: TransactionView,
+    signature: &[u8; 96],
+    pubkey_list: &[[u8; 48]],
+) -> TransactionView {
+    let signature = molecule::Signautre::new_unchecked(Bytes::from(signature.to_vec()));
+    let bls_pubkeys = {
+        let pubkey_list = pubkey_list
+            .iter()
+            .map(|pubkey| molecule::BlsPubkey::new_unchecked(Bytes::from(pubkey.to_vec())))
+            .collect::<Vec<_>>();
+        molecule::BlsPubkeyList::new_builder()
+            .set(pubkey_list)
+            .build()
+    };
+    let acs_witness = molecule::Witness::new_builder()
+        .signature(signature)
+        .bls_pubkeys(bls_pubkeys)
+        .build();
+    let witness = WitnessArgs::new_builder()
+        .lock(Some(acs_witness.as_bytes()).pack())
+        .build();
     tx.as_advanced_builder()
         .witness(witness.as_bytes().pack())
-        .cell_deps(celldeps)
         .build()
 }
 

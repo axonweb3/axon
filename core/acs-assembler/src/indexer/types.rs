@@ -77,6 +77,7 @@ pub mod ckb {
     };
     use std::convert::From;
 
+    #[derive(Debug)]
     pub struct Cell {
         pub output:       CellOutput,
         pub output_data:  Bytes,

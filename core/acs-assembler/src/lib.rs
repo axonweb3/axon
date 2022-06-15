@@ -1,4 +1,5 @@
 mod indexer;
+#[allow(clippy::all)]
 mod molecule;
 #[cfg(test)]
 mod tests;
@@ -9,6 +10,7 @@ use std::error::Error;
 use std::sync::{Arc, RwLock};
 
 use arc_swap::ArcSwap;
+use ckb_jsonrpc_types::TransactionView as JsonTxView;
 use ckb_types::core::{Capacity, TransactionView};
 use ckb_types::packed::OutPoint;
 use ckb_types::prelude::Entity;
@@ -24,7 +26,7 @@ lazy_static::lazy_static! {
     static ref ACS_METADATA: ArcSwap<CkbMetadata> = ArcSwap::from_pointee(CkbMetadata::default());
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 struct CkbMetadata {
     metadata_outpoint: OutPoint,
     metadata_typeid:   H256,
@@ -43,10 +45,10 @@ impl AcsAssemblerImpl {
     }
 
     pub async fn update_metadata(
-        &mut self,
-        metadata_typeid_args: H160,
+        &self,
+        metadata_typeid_args: H256,
         chain_id: u8,
-    ) -> ProtocolResult<()> {
+    ) -> ProtocolResult<H256> {
         let (metadata, typeid, outpoint) =
             indexer::fetch_crosschain_metdata(&self.rpc_client, metadata_typeid_args, chain_id)
                 .await?;
@@ -60,15 +62,13 @@ impl AcsAssemblerImpl {
             }
             config
         };
-        let ckb_metadata = {
-            CkbMetadata {
-                metadata_outpoint: outpoint,
-                metadata_typeid:   typeid,
-                erc20_config:      erc20_token_config,
-            }
+        let ckb_metadata = CkbMetadata {
+            metadata_outpoint: outpoint,
+            metadata_typeid:   typeid,
+            erc20_config:      erc20_token_config,
         };
         ACS_METADATA.swap(Arc::new(ckb_metadata));
-        Ok(())
+        Ok(typeid)
     }
 }
 
@@ -94,30 +94,39 @@ impl AcsAssembler for AcsAssemblerImpl {
                 }
             })
             .map(|value| {
-                let sudt_lockhash = erc20_tokens.erc20_config.get(&value.erc20_address).unwrap();
+                let mut sudt_lockhash = H256::default();
+                if let Some(lockhash) = erc20_tokens.erc20_config.get(&value.erc20_address) {
+                    sudt_lockhash = *lockhash;
+                }
                 util::build_transfer_output_cell(
                     value.address,
                     value.ckb_amount,
                     value.sudt_amount,
-                    *sudt_lockhash,
+                    sudt_lockhash,
                 )
             })
             .collect::<Vec<_>>();
-        let tx = util::build_transaction_with_outputs(&ckb_transfers);
-        let tx = indexer::fill_transaction_with_inputs(
+        let metadata_outpoint = &ACS_METADATA.load().metadata_outpoint;
+        let tx =
+            util::build_transaction_with_outputs_and_celldeps(&ckb_transfers, &metadata_outpoint);
+        println!(
+            "[with outputs] tx = {}",
+            serde_json::to_string_pretty(&JsonTxView::from(tx.clone())).unwrap()
+        );
+        let tx = indexer::fill_transaction_with_inputs_and_changes(
             &self.rpc_client,
             tx,
             ACS_METADATA.load().metadata_typeid,
-            Capacity::one(),
+            Capacity::bytes(1).unwrap(),
         )
         .await?;
-        let mut hash = [0u8; 32];
-        hash.copy_from_slice(tx.hash().as_slice());
-        ACS_TRANSACTIONS
-            .write()
-            .unwrap()
-            .insert(H256::from(hash), tx);
-        Ok(H256::from(hash))
+        println!(
+            "[with inputs] tx = {}",
+            serde_json::to_string_pretty(&JsonTxView::from(tx.clone())).unwrap()
+        );
+        let hash = H256::from_slice(tx.hash().as_slice());
+        ACS_TRANSACTIONS.write().unwrap().insert(hash, tx);
+        Ok(hash)
     }
 
     fn complete_crosschain_transaction(
@@ -147,13 +156,11 @@ impl AcsAssembler for AcsAssemblerImpl {
                 pubkey
             })
             .collect::<Vec<_>>();
-        let metadata_outpoint = &ACS_METADATA.load().metadata_outpoint;
-        let tx = util::complete_transaction_with_witnesses_and_celldeps(
-            tx,
-            &signature,
-            &pubkey_list,
-            metadata_outpoint,
-        );
+        let tx = util::complete_transaction_with_witnesses(tx, &signature, &pubkey_list);
+        ACS_TRANSACTIONS
+            .write()
+            .unwrap()
+            .insert(H256::from_slice(tx.hash().as_slice()), tx.clone());
         Ok(tx)
     }
 }
@@ -164,7 +171,7 @@ pub enum AcsAssemblerError {
     IndexerRpcError(String),
 
     #[display(fmt = "Cannot get metadata of type_id_args = {:?}, error = {}", _0, _1)]
-    MetadataTypeIdError(H160, String),
+    MetadataTypeIdError(H256, String),
 
     #[display(fmt = "ChainId = {} from metadata isn't equal to Axon", _0)]
     MetadataChainIdError(u8),
