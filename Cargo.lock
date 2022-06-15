@@ -2109,9 +2109,9 @@ dependencies = [
 
 [[package]]
 name = "ethers-core"
-version = "0.12.0"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "924f2686b60fd33d9ca61c79751895c220f87b83bc7cbb580062f25ff5ce27f0"
+checksum = "4536e70feeae231b73ac2221f1339a9a1969dea9cf1d679be26b73a36f14f4e7"
 dependencies = [
  "arrayvec",
  "bytes",
@@ -2126,6 +2126,7 @@ dependencies = [
  "rand 0.8.5",
  "rlp",
  "rlp-derive",
+ "rust_decimal",
  "serde",
  "serde_json",
  "strum",
@@ -2171,16 +2172,16 @@ dependencies = [
 
 [[package]]
 name = "ethers-signers"
-version = "0.12.0"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79758d5efb35f40dd5cbdc44b417a2b34895c4f98278bb596d422d9efca4dc34"
+checksum = "338efd9a6a15986fb7ed13ac7a99fd540666a2d7f475ed624d4f2ffc5ce3ec27"
 dependencies = [
  "async-trait",
  "coins-bip32",
  "coins-bip39",
  "elliptic-curve",
  "eth-keystore",
- "ethers-core 0.12.0",
+ "ethers-core 0.13.0",
  "hex",
  "rand 0.8.5",
  "sha2 0.9.9",
@@ -4509,6 +4510,17 @@ checksum = "f6d5f2436026b4f6e79dc829837d467cc7e9a55ee40e750d716713540715a2df"
 dependencies = [
  "cfg-if",
  "ordered-multimap",
+]
+
+[[package]]
+name = "rust_decimal"
+version = "1.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "34a3bb58e85333f1ab191bf979104b586ebd77475bc6681882825f4532dfe87c"
+dependencies = [
+ "arrayvec",
+ "num-traits",
+ "serde",
 ]
 
 [[package]]
