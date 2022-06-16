@@ -154,7 +154,6 @@ impl Axon {
             };
             let wallet = builder.build().map_err(MainError::WalletError)?;
             let addr = wallet.address();
-            println!("{:?}", addr);
             mpt.insert(addr.as_bytes(), &distribute_account)?;
         }
 

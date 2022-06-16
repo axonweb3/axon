@@ -1273,7 +1273,6 @@ dependencies = [
  "log",
  "molecule",
  "rand 0.7.3",
- "reqwest",
  "rlp",
  "serde",
  "serde_json",
