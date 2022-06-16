@@ -74,6 +74,8 @@ pub trait SynchronizationAdapter: CommonConsensusAdapter + Send + Sync {
         ctx: Context,
         number: BlockNumber,
     ) -> ProtocolResult<Proof>;
+
+    fn get_tx_from_mem(&self, ctx: Context, tx_hash: &Hash) -> Option<SignedTransaction>;
 }
 
 #[async_trait]

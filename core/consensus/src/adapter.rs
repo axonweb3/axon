@@ -234,6 +234,10 @@ where
             .await?;
         Ok(ret)
     }
+
+    fn get_tx_from_mem(&self, ctx: Context, tx_hash: &Hash) -> Option<SignedTransaction> {
+        self.mempool.get_tx_from_mem(ctx, tx_hash)
+    }
 }
 
 #[async_trait]

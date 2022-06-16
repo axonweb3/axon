@@ -8,9 +8,9 @@ edition = "2021"
 arc-swap = "1.5"
 cita_trie = "3.0"
 common-apm = { path = "../../common/apm" }
-ethers-contract = { version = "0.12", features = ["abigen"] }
-ethers-core = "0.12"
-ethers-providers = "0.12"
+ethers-contract = { version = "0.13", features = ["abigen"] }
+ethers-core = "0.13"
+ethers-providers = "0.13"
 lazy_static = "1.4"
 parking_lot = "0.12"
 serde_json = "1.0"

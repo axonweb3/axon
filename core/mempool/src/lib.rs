@@ -323,6 +323,10 @@ where
         Ok(self.pool.get_tx_count_by_address(address))
     }
 
+    fn get_tx_from_mem(&self, _ctx: Context, tx_hash: &Hash) -> Option<SignedTransaction> {
+        self.pool.get_by_hash(tx_hash)
+    }
+
     fn set_args(&self, context: Context, state_root: H256, gas_limit: u64, max_tx_size: u64) {
         self.adapter
             .set_args(context, state_root, gas_limit, max_tx_size);

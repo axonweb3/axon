@@ -4,7 +4,7 @@ const { ethers } = require("hardhat")
 
 async function deployMirrorToken(owner, minter, burner) {
   const MirrorToken = await ethers.getContractFactory('MirrorToken');
-  const mirrorToken = await MirrorToken.connect(owner).deploy('testName', 'testSymbol', owner.address);
+  const mirrorToken = await MirrorToken.connect(owner).deploy('testName', 'testSymbol');
 
   await mirrorToken.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MINTER_ROLE')), minter.address);
   await mirrorToken.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('BURNER_ROLE')), burner.address);

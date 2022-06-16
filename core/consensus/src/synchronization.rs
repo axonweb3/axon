@@ -384,18 +384,55 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
     ) -> ProtocolResult<RichBlock> {
         let block = self.get_block_from_remote(ctx.clone(), number).await?;
 
-        let mut txs = Vec::with_capacity(block.tx_hashes.len());
+        if block.header.number != number {
+            log::error!("[synchronization]: block that doesn't match is found");
+            return Err(crate::ConsensusError::Other(
+                "[synchronization]: block doesn't match request".to_string(),
+            )
+            .into());
+        }
 
-        for tx_hashes in block.tx_hashes.chunks(self.sync_txs_chunk_size) {
+        let mut res = std::collections::BTreeMap::new();
+        let mut missing = std::collections::HashMap::new();
+        let mut missing_list = Vec::with_capacity(block.tx_hashes.len());
+        for (index, hash) in block.tx_hashes.iter().enumerate() {
+            if let Some(tx) = self.adapter.get_tx_from_mem(ctx.clone(), hash) {
+                res.insert(index, tx);
+            } else {
+                missing_list.push(*hash);
+                missing.insert(hash, index);
+            }
+        }
+
+        for tx_hashes in missing_list.chunks(self.sync_txs_chunk_size) {
             let remote_txs = self
                 .adapter
                 .get_txs_from_remote(ctx.clone(), number, tx_hashes)
                 .await?;
 
-            txs.extend(remote_txs);
+            for tx in remote_txs {
+                if let Some(key) = missing.remove(&tx.transaction.hash) {
+                    res.insert(key, tx);
+                } else {
+                    return Err(crate::ConsensusError::Other(
+                        "[synchronization]: Invalid sync tx hash".to_string(),
+                    )
+                    .into());
+                }
+            }
         }
 
-        Ok(RichBlock { block, txs })
+        if !missing.is_empty() {
+            return Err(crate::ConsensusError::Other(
+                "[synchronization]: Unable to get a complete list of transactions ".to_string(),
+            )
+            .into());
+        }
+
+        Ok(RichBlock {
+            block,
+            txs: res.into_values().collect(),
+        })
     }
 
     #[trace_span(kind = "consensus.sync", logs = "{number:number}")]
@@ -452,20 +489,6 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             if current_number == remote_number {
                 return Ok(false);
             }
-        }
-
-        let block = self
-            .get_block_from_remote(ctx.clone(), remote_number)
-            .await?;
-
-        log::debug!(
-            "[synchronization] get block from remote success {:?} ",
-            remote_number
-        );
-
-        if block.header.number != remote_number {
-            log::error!("[synchronization]: block that doesn't match is found");
-            return Ok(false);
         }
 
         Ok(true)
