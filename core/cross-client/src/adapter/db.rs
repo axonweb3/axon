@@ -79,4 +79,5 @@ fn rocksdb_opts(config: ConfigRocksDB) -> ProtocolResult<Options> {
     opts.create_if_missing(true);
     opts.create_missing_column_families(true);
     opts.set_max_open_files(config.max_open_files);
-
+    Ok(opts)
+}

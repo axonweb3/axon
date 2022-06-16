@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::{fmt, str::FromStr};
 
 pub use ethereum_types::{
@@ -350,6 +351,18 @@ pub struct ValidatorExtend {
     pub address:        H160,
     pub propose_weight: u32,
     pub vote_weight:    u32,
+}
+
+impl PartialOrd for ValidatorExtend {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.bls_pub_key.cmp(&other.bls_pub_key))
+    }
+}
+
+impl Ord for ValidatorExtend {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.bls_pub_key.cmp(&other.bls_pub_key)
+    }
 }
 
 impl From<ValidatorExtend> for Validator {

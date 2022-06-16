@@ -10,7 +10,7 @@ use common_apm_derive::trace_span;
 use core_executor::{AxonExecutor, AxonExecutorAdapter};
 use core_network::{PeerId, PeerIdExt};
 use protocol::traits::{
-    CommonConsensusAdapter, ConsensusAdapter, Context, CrossChain, Executor, Gossip, MemPool,
+    CommonConsensusAdapter, ConsensusAdapter, Context, Crosschain, Executor, Gossip, MemPool,
     MessageTarget, MetadataControl, Network, PeerTrust, Priority, Rpc, Storage,
     SynchronizationAdapter,
 };
@@ -35,7 +35,7 @@ pub struct OverlordConsensusAdapter<
     M: MemPool,
     N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage,
-    CS: CrossChain,
+    CS: Crosschain,
     MT: MetadataControl,
     DB: cita_trie::DB,
 > {
@@ -56,7 +56,7 @@ where
     M: MemPool + 'static,
     N: Network + Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
-    CS: CrossChain + 'static,
+    CS: Crosschain + 'static,
     MT: MetadataControl + 'static,
     DB: cita_trie::DB + 'static,
 {
@@ -143,7 +143,7 @@ where
     M: MemPool + 'static,
     N: Network + Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
-    CS: CrossChain + 'static,
+    CS: Crosschain + 'static,
     MT: MetadataControl + 'static,
     DB: cita_trie::DB + 'static,
 {
@@ -246,7 +246,7 @@ where
     M: MemPool + 'static,
     N: Network + Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
-    CS: CrossChain + 'static,
+    CS: Crosschain + 'static,
     MT: MetadataControl + 'static,
     DB: cita_trie::DB + 'static,
 {
@@ -636,7 +636,7 @@ where
     M: MemPool + 'static,
     N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
-    CS: CrossChain + 'static,
+    CS: Crosschain + 'static,
     MT: MetadataControl + 'static,
     DB: cita_trie::DB + 'static,
 {

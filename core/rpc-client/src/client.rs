@@ -8,8 +8,10 @@ use std::{
 };
 
 use ckb_jsonrpc_types::{
-    BlockNumber, BlockView, HeaderView, OutputsValidator, Transaction, TransactionWithStatus,
+    BlockNumber, BlockView, HeaderView, JsonBytes, OutputsValidator, Transaction,
+    TransactionWithStatus, Uint32,
 };
+use ckb_sdk::rpc::ckb_indexer::{Cell, Order, Pagination, SearchKey};
 use ckb_types::H256;
 use futures::FutureExt;
 use reqwest::{Client, Url};
@@ -25,6 +27,7 @@ use protocol::{
 enum Target {
     CKB,
     Mercury,
+    Indexer,
 }
 
 macro_rules! jsonrpc {
@@ -42,6 +45,7 @@ macro_rules! jsonrpc {
         let url = match $id {
             Target::CKB => $self.ckb_uri.clone(),
             Target::Mercury => $self.mercury_uri.clone(),
+            Target::Indexer => $self.indexer_uri.clone(),
         };
         let c = $self.raw.post(url).json(&req_json);
         async {
@@ -71,17 +75,21 @@ pub struct RpcClient {
     raw:         Client,
     ckb_uri:     Url,
     mercury_uri: Url,
+    indexer_uri: Url,
     id:          Arc<AtomicU64>,
 }
 
 impl RpcClient {
-    pub fn new(ckb_uri: &str, mercury_uri: &str) -> Self {
+    pub fn new(ckb_uri: &str, mercury_uri: &str, indexer_uri: &str) -> Self {
         let ckb_uri = Url::parse(ckb_uri).expect("ckb uri, e.g. \"http://127.0.0.1:8114\"");
         let mercury_uri = Url::parse(mercury_uri).expect("ckb uri, e.g. \"http://127.0.0.1:8116\"");
+        let indexer_uri = Url::parse(indexer_uri).expect("ckb uri, e.g. \"http://127.0.0.1:8116\"");
+
         RpcClient {
             raw: Client::new(),
             ckb_uri,
             mercury_uri,
+            indexer_uri,
             id: Arc::new(AtomicU64::new(0)),
         }
     }
@@ -171,14 +179,37 @@ impl CkbClient for RpcClient {
     fn build_submit_checkpoint_transaction(
         &self,
         _ctx: Context,
-        paylod: SubmitCheckpointPayload,
+        payload: SubmitCheckpointPayload,
     ) -> RPC<TransactionCompletionResponse> {
         jsonrpc!(
             "build_submit_checkpoint_transaction",
             Target::Mercury,
             self,
             TransactionCompletionResponse,
-            paylod
+            payload
+        )
+        .boxed()
+    }
+
+    fn fetch_live_cells(
+        &self,
+        _ctx: Context,
+        search_key: SearchKey,
+        limit: u32,
+        cursor: Option<JsonBytes>,
+    ) -> RPC<Pagination<Cell>> {
+        let order = Order::Asc;
+        let limit = Uint32::from(limit);
+
+        jsonrpc!(
+            "get_cells",
+            Target::Indexer,
+            self,
+            Pagination<Cell>,
+            search_key,
+            order,
+            limit,
+            cursor,
         )
         .boxed()
     }

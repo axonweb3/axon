@@ -26,6 +26,7 @@ pub enum ProtocolErrorKind {
     Network,
     Storage,
     Service,
+    TxAssembler,
     Main,
 
     // types

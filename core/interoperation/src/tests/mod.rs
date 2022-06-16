@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use cardano_message_signing::{self as MS, utils::ToBytes};
 use cardano_serialization_lib as Cardano;
@@ -15,8 +16,12 @@ const MAX_CYCLES: u64 = 100_000_000;
 async fn init_interoperation_handler(
     transaction_hash_map: HashMap<u8, H256>,
 ) -> InteroperationImpl {
-    let rpc_client = RpcClient::new("http://127.0.0.1:8114", "http://127.0.0.1:8116");
-    InteroperationImpl::new(transaction_hash_map, rpc_client)
+    let rpc_client = RpcClient::new(
+        "http://127.0.0.1:8114",
+        "http://127.0.0.1:8116",
+        "http://127.0.0.1:8118",
+    );
+    InteroperationImpl::new(transaction_hash_map, Arc::new(rpc_client))
         .await
         .unwrap()
 }

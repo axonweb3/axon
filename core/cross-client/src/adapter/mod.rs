@@ -1,15 +1,23 @@
 mod db;
 
 pub use db::CrossChainDBImpl;
+use protocol::lazy::CURRENT_STATE_ROOT;
 
 use std::sync::Arc;
 
-use core_executor::{AxonExecutor, AxonExecutorAdapter};
-use protocol::traits::{Backend, Context, CrossAdapter, Executor, MemPool, Storage};
+use ckb_types::core::TransactionView;
+
+use common_crypto::{BlsPublicKey, BlsSignature};
+use protocol::traits::{
+    Backend, Context, CrossAdapter, Executor, MemPool, MessageTarget, MetadataControl, Storage,
+    TxAssembler,
+};
 use protocol::types::{
-    ExecutorContext, Proposal, RequestTxHashes, SignedTransaction, TxResp, H160, H256, U256,
+    Metadata, RequestTxHashes, SignedTransaction, Transfer, TxResp, H160, H256, U256,
 };
 use protocol::{async_trait, ProtocolResult};
+
+use core_executor::{AxonExecutor, AxonExecutorAdapter};
 
 use crate::error::CrossChainError;
 
@@ -25,18 +33,22 @@ pub trait CrossChainDB: Sync + Send {
     fn remove(&self, key: &[u8]) -> ProtocolResult<()>;
 }
 
-pub struct DefaultCrossChainAdapter<M, S, TrieDB, DB> {
-    mempool: Arc<M>,
-    storage: Arc<S>,
-    trie_db: Arc<TrieDB>,
-    db:      Arc<DB>,
+pub struct DefaultCrossChainAdapter<M, D, S, A, TrieDB, DB> {
+    mempool:      Arc<M>,
+    metadata:     Arc<D>,
+    storage:      Arc<S>,
+    tx_assembler: Arc<A>,
+    trie_db:      Arc<TrieDB>,
+    db:           Arc<DB>,
 }
 
 #[async_trait]
-impl<M, S, TrieDB, DB> CrossAdapter for DefaultCrossChainAdapter<M, S, TrieDB, DB>
+impl<M, D, S, A, TrieDB, DB> CrossAdapter for DefaultCrossChainAdapter<M, D, S, A, TrieDB, DB>
 where
     M: MemPool + 'static,
+    D: MetadataControl + 'static,
     S: Storage + 'static,
+    A: TxAssembler + 'static,
     TrieDB: cita_trie::DB + 'static,
     DB: CrossChainDB + 'static,
 {
@@ -77,7 +89,7 @@ where
     }
 
     async fn nonce(&self, _ctx: Context, address: H160) -> ProtocolResult<U256> {
-        Ok(self.evm_backend().await?.basic(address).nonce)
+        Ok(self.evm_backend()?.basic(address).nonce)
     }
 
     async fn call_evm(&self, ctx: Context, addr: H160, data: Vec<u8>) -> ProtocolResult<TxResp> {
@@ -111,34 +123,86 @@ where
     ) -> ProtocolResult<Option<H256>> {
         self.storage.get_crosschain_record(ctx, reqs).await
     }
+
+    async fn current_metadata(&self, ctx: Context) -> Metadata {
+        let number = self
+            .storage
+            .get_latest_block_header(ctx.clone())
+            .await
+            .unwrap()
+            .number;
+        self.metadata.get_metadata_unchecked(ctx, number)
+    }
+
+    async fn calc_to_ckb_tx(
+        &self,
+        ctx: Context,
+        transfers: &[Transfer],
+    ) -> ProtocolResult<TransactionView> {
+        self.tx_assembler
+            .generate_crosschain_transaction_digest(ctx, transfers)
+            .await
+    }
+
+    fn build_to_ckb_tx(
+        &self,
+        ctx: Context,
+        digest: H256,
+        bls_signature: &BlsSignature,
+        bls_pubkey_list: &[BlsPublicKey],
+    ) -> ProtocolResult<TransactionView> {
+        self.tx_assembler.complete_crosschain_transaction(
+            ctx,
+            digest,
+            bls_signature,
+            bls_pubkey_list,
+        )
+    }
+
+    async fn transmit(
+        &self,
+        ctx: Context,
+        msg: Vec<u8>,
+        end: &str,
+        target: MessageTarget,
+    ) -> ProtocolResult<()> {
+        Ok(())
+    }
 }
 
-impl<M, S, TrieDB, DB> DefaultCrossChainAdapter<M, S, TrieDB, DB>
+impl<M, D, S, A, TrieDB, DB> DefaultCrossChainAdapter<M, D, S, A, TrieDB, DB>
 where
     M: MemPool + 'static,
+    D: MetadataControl + 'static,
     S: Storage + 'static,
+    A: TxAssembler + 'static,
     TrieDB: cita_trie::DB + 'static,
     DB: CrossChainDB + 'static,
 {
-    pub async fn new(mempool: Arc<M>, storage: Arc<S>, trie_db: Arc<TrieDB>, db: Arc<DB>) -> Self {
+    pub async fn new(
+        mempool: Arc<M>,
+        metadata: Arc<D>,
+        storage: Arc<S>,
+        tx_assembler: Arc<A>,
+        trie_db: Arc<TrieDB>,
+        db: Arc<DB>,
+    ) -> Self {
         DefaultCrossChainAdapter {
             mempool,
+            metadata,
             storage,
+            tx_assembler,
             trie_db,
             db,
         }
     }
 
-    async fn evm_backend(&self) -> ProtocolResult<AxonExecutorAdapter<S, TrieDB>> {
-        let block = self.storage.get_latest_block(Context::new()).await?;
-        let state_root = block.header.state_root;
-        let proposal: Proposal = block.into();
-
+    fn evm_backend(&self) -> ProtocolResult<AxonExecutorAdapter<S, TrieDB>> {
         AxonExecutorAdapter::from_root(
-            state_root,
+            **CURRENT_STATE_ROOT.load(),
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
-            ExecutorContext::from(proposal),
+            Default::default(),
         )
     }
 }

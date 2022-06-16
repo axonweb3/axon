@@ -7,9 +7,11 @@ use protocol::types::{
 
 use crate::precompiles::build_precompile_set;
 
+pub const METADATA_CONTRACT_ADDRESS: H160 = H160([
+    161, 55, 99, 105, 25, 112, 217, 55, 61, 79, 171, 124, 195, 35, 215, 186, 6, 250, 153, 134,
+]);
 pub const CROSSCHAIN_CONTRACT_ADDRESS: H160 = H160([
-    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-    0xff, 0xff, 0xff, 0xff,
+    246, 123, 196, 229, 13, 29, 249, 43, 14, 76, 97, 121, 74, 69, 23, 175, 106, 153, 92, 178,
 ]);
 
 #[derive(Default)]
@@ -110,5 +112,16 @@ mod tests {
             hex_encode(addr.0).as_str(),
             "a13763691970d9373d4fab7cc323d7ba06fa9986"
         );
+
+        let sender = H160::from_slice(
+            hex_decode("6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0")
+                .unwrap()
+                .as_ref(),
+        );
+        let addr: H160 = code_address(&sender, &nonce).into();
+        assert_eq!(
+            hex_encode(addr.0).as_str(),
+            "cd234a471b72ba2f1ccf0a70fcaba648a5eecd8d"
+        )
     }
 }

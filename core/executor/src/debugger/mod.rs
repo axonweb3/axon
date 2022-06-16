@@ -1,5 +1,4 @@
-#![allow(dead_code)]
-
+mod crosschain;
 mod uniswap2;
 
 use std::sync::Arc;
@@ -7,16 +6,19 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use getrandom::getrandom;
 
-use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
-use protocol::codec::ProtocolCodec;
-use protocol::traits::Executor;
+use common_config_parser::parse_file;
 use protocol::types::{
     Account, Eip1559Transaction, ExecResp, ExecutorContext, Hash, Hasher, SignedTransaction,
     UnsignedTransaction, UnverifiedTransaction, H160, H256, NIL_DATA, RLP_NULL, U256,
 };
+use protocol::{codec::ProtocolCodec, traits::Executor};
+
+use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 
 use crate::adapter::{AxonExecutorAdapter, MPTTrie};
 use crate::{AxonExecutor, RocksTrieDB};
+
+const GENESIS_PATH: &str = "../../devtools/chain/genesis_single_node.json";
 
 pub struct EvmDebugger {
     state_root: H256,
@@ -36,7 +38,7 @@ impl EvmDebugger {
         let mut mpt = MPTTrie::new(Arc::clone(&trie));
 
         let distribute_account = Account {
-            nonce:        0u64.into(),
+            nonce:        U256::zero(),
             balance:      distribute_amount,
             storage_root: RLP_NULL,
             code_hash:    NIL_DATA,
@@ -55,12 +57,24 @@ impl EvmDebugger {
         }
     }
 
+    pub fn init_genesis(&mut self) {
+        let genesis: RichBlock = parse_file(GENESIS_PATH, true).unwrap();
+        self.exec(0, genesis.txs);
+    }
+
     pub fn exec(&mut self, number: u64, txs: Vec<SignedTransaction>) -> ExecResp {
         let mut backend = self.backend(number);
         let evm = AxonExecutor::default();
         let res = evm.exec(&mut backend, txs);
         self.state_root = res.state_root;
         res
+    }
+
+    #[allow(dead_code)]
+    pub fn call(&self, number: u64, from: Option<H160>, to: Option<H160>, data: Vec<u8>) -> TxResp {
+        let mut backend = self.backend(number);
+        let evm = AxonExecutor::default();
+        evm.call(&mut backend, from, to, data)
     }
 
     fn backend(&self, number: u64) -> AxonExecutorAdapter<ImplStorage<RocksAdapter>, RocksTrieDB> {

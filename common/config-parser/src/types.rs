@@ -168,6 +168,7 @@ pub struct ConfigCrossChain {
     pub axon_udt_hash:       H256,
     pub ckb_uri:             String,
     pub mercury_uri:         String,
+    pub indexer_uri:         String,
     pub start_block_number:  u64,
     pub pk:                  Hex,
     pub enable:              bool,

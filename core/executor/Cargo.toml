@@ -18,7 +18,7 @@ parking_lot = "0.12"
 rand = { version = "0.8", features = ["small_rng"] }
 ripemd = "0.1"
 rlp = "0.5"
-rocksdb = {version = "0.18", package = "ckb-rocksdb"}
+rocksdb = { version = "0.18", package = "ckb-rocksdb" }
 rug = "1.16"
 sha2 = "0.10"
 
@@ -32,11 +32,14 @@ protocol = { path = "../../protocol", package = "axon-protocol" }
 [dev-dependencies]
 common-crypto = { path = "../../common/crypto" }
 core-storage = { path = "../storage" }
+core-cross-client = { path = "../cross-client" }
 
 criterion = "0.3"
 ethabi = "17.1"
 ethabi-contract = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
 ethabi-derive = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
+ethers-core = "0.13"
+ethers-contract = "0.13"
 getrandom = "0.2"
 rlp = "0.5"
 tempfile = "3.3"

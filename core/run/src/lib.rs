@@ -1,6 +1,6 @@
 #![allow(clippy::mutable_key_type)]
 
-use std::{collections::HashMap, convert::TryFrom, panic, sync::Arc, thread, time::Duration};
+use std::{collections::HashMap, panic::PanicInfo, sync::Arc, time::Duration};
 
 use backtrace::Backtrace;
 #[cfg(all(
@@ -19,8 +19,8 @@ use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
 use common_apm::{server::run_prometheus_server, tracing::global_tracer_register};
 use common_config_parser::types::Config;
 use common_crypto::{
-    BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey,
-    Secp256k1RecoverablePrivateKey, ToPublicKey, UncompressedPublicKey,
+    BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey, ToPublicKey,
+    UncompressedPublicKey,
 };
 use core_api::{jsonrpc::run_jsonrpc_server, DefaultAPIAdapter};
 use core_consensus::message::{
@@ -36,7 +36,10 @@ use core_consensus::{
     util::OverlordCrypto, ConsensusWal, DurationConfig, Node, OverlordConsensus,
     OverlordConsensusAdapter, OverlordSynchronization, SignedTxsWAL,
 };
-use core_cross_client::{CrossChainDBImpl, CrossChainImpl, DefaultCrossChainAdapter};
+use core_cross_client::{
+    CrossChainDBImpl, CrossChainImpl, CrosschainMessageHandler, DefaultCrossChainAdapter,
+    END_GOSSIP_BUILD_CKB_TX, END_GOSSIP_CKB_TX_SIGNATURE,
+};
 use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB};
 use core_interoperation::InteroperationImpl;
 use core_mempool::{
@@ -49,6 +52,7 @@ use core_network::{
 };
 use core_rpc_client::RpcClient;
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
+use core_tx_assembler::{IndexerAdapter, TxAssemblerImpl};
 use protocol::codec::{hex_decode, ProtocolCodec};
 use protocol::lazy::{CHAIN_ID, CURRENT_STATE_ROOT};
 #[cfg(unix)]
@@ -152,9 +156,11 @@ impl Axon {
                     .map_err(MainError::WalletError)?,
                 None => builder.index(i).map_err(MainError::WalletError)?,
             };
-            let wallet = builder.build().map_err(MainError::WalletError)?;
-            let addr = wallet.address();
-            mpt.insert(addr.as_bytes(), &distribute_account)?;
+            let wallet = builder
+                .build()
+                .map_err(MainError::WalletError)?
+                .with_chain_id(self.genesis.block.header.chain_id);
+            mpt.insert(wallet.address().as_bytes(), &distribute_account)?;
         }
 
         let proposal = Proposal::from(self.genesis.block.clone());
@@ -300,10 +306,11 @@ impl Axon {
 
         let metadata = metadata_controller.get_metadata(Context::new(), &current_block.header)?;
 
-        let ckb_client = RpcClient::new(
+        let ckb_client = Arc::new(RpcClient::new(
             &self.config.cross_client.ckb_uri,
             &self.config.cross_client.mercury_uri,
-        );
+            &self.config.cross_client.indexer_uri.clone(),
+        ));
 
         let interoperation = Arc::new(
             InteroperationImpl::new(
@@ -433,24 +440,28 @@ impl Axon {
             metadata.max_tx_size,
         );
 
+        // start ckb tx assembler
+        let indexer_adapter = IndexerAdapter::new(Arc::clone(&ckb_client));
+        let ckb_tx_assembler = Arc::new(TxAssemblerImpl::new(Arc::new(indexer_adapter)));
+
         // start cross chain client
         let path_crosschain = self.config.data_path_for_crosschain();
         let crosschain_db = CrossChainDBImpl::new(path_crosschain, config.rocksdb.clone())?;
 
         let crosschain_adapter = DefaultCrossChainAdapter::new(
-            // self.config.clone(),
-            // Secp256k1RecoverablePrivateKey::try_from(hex_privkey.as_ref()).unwrap(),
             Arc::clone(&mempool),
+            Arc::clone(&metadata_controller),
             Arc::clone(&storage),
+            Arc::clone(&ckb_tx_assembler),
             Arc::clone(&trie_db),
             Arc::new(crosschain_db),
         )
         .await;
 
-        let (crosschain_process, cross_handle) = CrossChainImpl::new(
-            Secp256k1RecoverablePrivateKey::try_from(hex_privkey.as_ref()).unwrap(),
+        let (crosschain_process, cross_handle, crosschain_net_handle) = CrossChainImpl::new(
+            &hex_privkey,
             config.cross_client.clone(),
-            Arc::new(ckb_client),
+            Arc::clone(&ckb_client),
             Arc::new(crosschain_adapter),
         )
         .await;
@@ -524,6 +535,16 @@ impl Axon {
         network_service
             .handle()
             .tag_consensus(Context::new(), peer_ids)?;
+
+        network_service.register_endpoint_handler(
+            END_GOSSIP_CKB_TX_SIGNATURE,
+            CrosschainMessageHandler::new(crosschain_net_handle.clone()),
+        )?;
+
+        network_service.register_endpoint_handler(
+            END_GOSSIP_BUILD_CKB_TX,
+            CrosschainMessageHandler::new(crosschain_net_handle),
+        )?;
 
         // register consensus
         network_service.register_endpoint_handler(
@@ -633,7 +654,7 @@ impl Axon {
         // register channel of panic
         let (panic_sender, mut panic_receiver) = tokio::sync::mpsc::channel::<()>(1);
 
-        panic::set_hook(Box::new(move |info: &panic::PanicInfo| {
+        std::panic::set_hook(Box::new(move |info: &PanicInfo| {
             let panic_sender = panic_sender.clone();
             Self::panic_log(info);
             panic_sender.try_send(()).expect("panic_receiver is droped");
@@ -686,9 +707,9 @@ impl Axon {
         log::info!("prometheus start");
     }
 
-    fn panic_log(info: &panic::PanicInfo) {
+    fn panic_log(info: &PanicInfo) {
         let backtrace = Backtrace::new();
-        let thread = thread::current();
+        let thread = std::thread::current();
         let name = thread.name().unwrap_or("unnamed");
         let location = info.location().unwrap(); // The current implementation always returns Some
         let msg = match info.payload().downcast_ref::<&'static str>() {

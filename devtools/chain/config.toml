@@ -7,7 +7,7 @@ data_path = "./devtools/chain/data"
 epoch_len = 100_000_000
 
 metadata_contract_address = "0xc2fd48d60ae16b3fe6e333a9a13763691970d9373d4fab7cc323d7ba06fa9986"
-crosschain_contract_address = "0xda6db70ce66da4c6433bb447b484fd480e598621638f380f404697cd9f58b0f8"
+crosschain_contract_address = "0x2c3a9349df5b162519b17621f67bc4e50d1df92b0e4c61794a4517af6a995cb2"
 
 [accounts]
 mnemonic = "test test test test test test test test test test test junk"
@@ -74,15 +74,16 @@ listening_address = "0.0.0.0:8100"
 axon_udt_hash = "0xf32ec1e3274c27ac4cc018c92efec443847e9b78ba8cbedca36f0fa8c35d1c9e"
 ckb_uri = "https://mercury-testnet.ckbapp.dev/rpc"
 mercury_uri = "http://127.0.0.1:8116"
-start_block_number = 4096800
+indexer_uri = "http://127.0.0.1:8117"
+start_block_number = 5760719
 checkpoint_interval = 1000
 pk = "0x37aa0f893d05914a4def0460c0a984d3611546cfb26924d7a7ca6e0db9950a2d"
-enable = false
+enable = true
 admin_address = "0x0000000000000000000000000000000000000000"
 node_address = "0x0000000000000000000000000000000000000000"
 selection_lock_hash = "0xf32ec1e3274c27ac4cc018c92efec443847e9b78ba8cbedca36f0fa8c35d1c9e"
 checkpoint_type_hash = "0xf32ec1e3274c27ac4cc018c92efec443847e9b78ba8cbedca36f0fa8c35d1c9e"
-acs_lock_code_hash = "0x33823dfb574bbfe453dde89eda4832c49abfb649be639c3c629c0657c7da77fb"
+acs_lock_code_hash = "0x97e6179be134d47ca10322a1534d8dcb65052de7e099b5556bea924137839bab"
 request_type_code_hash = "0xd8f9afaad8eb3e26a1ef2538bac91d68635502508358ae901941513bfe2edb1d"
 
 

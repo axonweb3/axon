@@ -5,33 +5,48 @@ use ckb_types::core::{BlockView, TransactionView};
 use ckb_types::{packed, prelude::Pack};
 
 use protocol::tokio::{sync::mpsc::UnboundedSender, time};
-use protocol::traits::{CkbClient, Context};
+use protocol::traits::{CkbClient, Context, CrossAdapter};
 use protocol::types::H256;
 
 use crate::{CKB_BLOCK_INTERVAL, CKB_TIP, NON_FORK_BLOCK_GAP};
 
-pub struct CrossChainMonitor<C> {
+pub struct CrossChainMonitor<C, Adapter> {
     ckb_client:        Arc<C>,
     req_tx:            UnboundedSender<Vec<TransactionView>>,
     handle_ckb_number: u64,
     acs_code_hash:     packed::Byte32,
     request_code_hash: packed::Byte32,
+
+    adapter: Arc<Adapter>,
 }
 
-impl<C: CkbClient + 'static> CrossChainMonitor<C> {
-    pub fn new(
+impl<C, Adapter> CrossChainMonitor<C, Adapter>
+where
+    C: CkbClient + 'static,
+    Adapter: CrossAdapter + 'static,
+{
+    pub async fn new(
         client: Arc<C>,
         sender: UnboundedSender<Vec<TransactionView>>,
-        init_number: u64,
+        init_ckb_number: u64,
         acs_code_hash: H256,
         request_code_hash: H256,
+        cross_adapter: Arc<Adapter>,
     ) -> Self {
+        let init_number = cross_adapter
+            .get_monitor_ckb_number(Context::new())
+            .await
+            .unwrap_or(init_ckb_number);
+
+        CKB_TIP.swap(Arc::new(init_number + NON_FORK_BLOCK_GAP));
+
         CrossChainMonitor {
             ckb_client:        client,
             req_tx:            sender,
             handle_ckb_number: init_number,
             acs_code_hash:     acs_code_hash.0.pack(),
             request_code_hash: request_code_hash.0.pack(),
+            adapter:           cross_adapter,
         }
     }
 
@@ -53,11 +68,11 @@ impl<C: CkbClient + 'static> CrossChainMonitor<C> {
 
         let tip_number: u64 = tip_header.inner.number.into();
         let current_tip = **CKB_TIP.load();
+
         if current_tip < tip_number {
             CKB_TIP.swap(Arc::new(tip_number));
+            self.fetch_block().await
         }
-
-        self.fetch_block().await
     }
 
     async fn fetch_block(&mut self) {
@@ -97,6 +112,10 @@ impl<C: CkbClient + 'static> CrossChainMonitor<C> {
         }
 
         self.handle_ckb_number = non_fork_tip + 1;
+        self.adapter
+            .update_monitor_ckb_number(Context::new(), self.handle_ckb_number)
+            .await
+            .unwrap();
     }
 
     fn search_tx(&self, block: BlockView) -> Vec<TransactionView> {
