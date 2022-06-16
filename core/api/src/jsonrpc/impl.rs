@@ -243,13 +243,11 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
 
     #[metrics_rpc("eth_getBalance")]
     async fn get_balance(&self, address: H160, number: BlockId) -> RpcResult<U256> {
-        let account = self
+        Ok(self
             .adapter
             .get_account(Context::new(), address, number.into())
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
-
-        Ok(account.balance)
+            .map_or(U256::zero(), |account| account.balance))
     }
 
     #[metrics_rpc("eth_chainId")]
