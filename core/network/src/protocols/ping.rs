@@ -77,7 +77,7 @@ impl PingHandler {
             let proto_id = context.proto_id;
             if context
                 .filter_broadcast(
-                    TargetSession::Filter(Box::new(move |id| peers.contains(id))),
+                    TargetSession::Multi(Box::new(peers.into_iter())),
                     proto_id,
                     ping_msg,
                 )
