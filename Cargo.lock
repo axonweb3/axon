@@ -1083,7 +1083,7 @@ dependencies = [
  "axon-protocol",
  "common-apm",
  "fut-ret",
- "jsonrpsee",
+ "jsonrpsee 0.14.0",
  "proc-macro2",
  "quote",
  "serde_json",
@@ -1180,24 +1180,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fb4a24b1aaf0fd0ce8b45161144d6f42cd91677fd5940fd431183eb023b3a2b8"
 
 [[package]]
-name = "core-acs-assembler"
-version = "0.1.0"
-dependencies = [
- "arc-swap",
- "axon-protocol",
- "ckb-jsonrpc-types",
- "ckb-types",
- "common-crypto",
- "jsonrpsee",
- "lazy_static",
- "log",
- "molecule",
- "rand 0.7.3",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "core-api"
 version = "0.1.0"
 dependencies = [
@@ -1210,7 +1192,7 @@ dependencies = [
  "core-executor",
  "fastrand",
  "json",
- "jsonrpsee",
+ "jsonrpsee 0.14.0",
  "log",
  "parking_lot 0.12.1",
  "pprof",
@@ -1463,7 +1445,6 @@ dependencies = [
  "common-crypto",
  "common-logger",
  "common-memory-tracker",
- "core-acs-assembler",
  "core-api",
  "core-consensus",
  "core-cross-client",
@@ -1474,6 +1455,7 @@ dependencies = [
  "core-network",
  "core-rpc-client",
  "core-storage",
+ "core-tx-assembler",
  "ethers-signers",
  "futures",
  "log",
@@ -1504,6 +1486,24 @@ dependencies = [
  "num-traits",
  "parking_lot 0.12.1",
  "rand 0.7.3",
+]
+
+[[package]]
+name = "core-tx-assembler"
+version = "0.1.0"
+dependencies = [
+ "arc-swap",
+ "axon-protocol",
+ "ckb-jsonrpc-types",
+ "ckb-types",
+ "common-crypto",
+ "jsonrpsee 0.13.1",
+ "lazy_static",
+ "log",
+ "molecule",
+ "rand 0.7.3",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -3050,17 +3050,45 @@ dependencies = [
 
 [[package]]
 name = "jsonrpsee"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a1f2ab5a60e558e74ea93bcf5164ebc47939a7fff8938fa9b5233bbc63e16061"
+dependencies = [
+ "jsonrpsee-core 0.13.1",
+ "jsonrpsee-http-client",
+ "jsonrpsee-types 0.13.1",
+]
+
+[[package]]
+name = "jsonrpsee"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "11e017217fcd18da0a25296d3693153dd19c8a6aadab330b3595285d075385d1"
 dependencies = [
- "jsonrpsee-core",
- "jsonrpsee-http-client",
+ "jsonrpsee-core 0.14.0",
  "jsonrpsee-http-server",
  "jsonrpsee-proc-macros",
- "jsonrpsee-types",
+ "jsonrpsee-types 0.14.0",
  "jsonrpsee-ws-server",
  "tracing",
+]
+
+[[package]]
+name = "jsonrpsee-core"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e27462b21279edf9a6a91f46ffbe125e9cdc58b901d2e08bf59b31a47d7d0ab"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "beef",
+ "futures-channel",
+ "futures-util",
+ "hyper",
+ "jsonrpsee-types 0.13.1",
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]
@@ -3077,7 +3105,7 @@ dependencies = [
  "futures-util",
  "globset",
  "hyper",
- "jsonrpsee-types",
+ "jsonrpsee-types 0.14.0",
  "lazy_static",
  "parking_lot 0.12.1",
  "rand 0.8.5",
@@ -3100,8 +3128,8 @@ dependencies = [
  "async-trait",
  "hyper",
  "hyper-rustls",
- "jsonrpsee-core",
- "jsonrpsee-types",
+ "jsonrpsee-core 0.13.1",
+ "jsonrpsee-types 0.13.1",
  "rustc-hash",
  "serde",
  "serde_json",
@@ -3119,8 +3147,8 @@ dependencies = [
  "futures-channel",
  "futures-util",
  "hyper",
- "jsonrpsee-core",
- "jsonrpsee-types",
+ "jsonrpsee-core 0.14.0",
+ "jsonrpsee-types 0.14.0",
  "serde",
  "serde_json",
  "tokio",
@@ -3137,6 +3165,20 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "jsonrpsee-types"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8fd11763134104122ddeb0f97e4bbe393058017dfb077db63fbf44b4dd0dd86e"
+dependencies = [
+ "anyhow",
+ "beef",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tracing",
 ]
 
 [[package]]
@@ -3161,8 +3203,8 @@ checksum = "2bd2e4d266774a671f8def3794255b28eddd09b18d76e0b913fa439f34588c0a"
 dependencies = [
  "futures-channel",
  "futures-util",
- "jsonrpsee-core",
- "jsonrpsee-types",
+ "jsonrpsee-core 0.14.0",
+ "jsonrpsee-types 0.14.0",
  "serde_json",
  "soketto",
  "tokio",
@@ -4486,7 +4528,7 @@ dependencies = [
  "percent-encoding",
  "pin-project-lite",
  "rustls",
- "rustls-pemfile 0.3.0",
+ "rustls-pemfile",
  "serde",
  "serde_json",
  "serde_urlencoded",
@@ -4647,18 +4689,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0167bac7a9f490495f3c33013e7722b53cb087ecbe082fb0c6387c96f634ea50"
 dependencies = [
  "openssl-probe",
- "rustls-pemfile 1.0.0",
+ "rustls-pemfile",
  "schannel",
  "security-framework",
-]
-
-[[package]]
-name = "rustls-pemfile"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7522c9de787ff061458fe9a829dc790a3f5b22dc571694fc5883f448b94d9a9"
-dependencies = [
- "base64 0.13.0",
 ]
 
 [[package]]

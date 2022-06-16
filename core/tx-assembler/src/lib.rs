@@ -17,7 +17,7 @@ use ckb_types::prelude::Entity;
 use common_crypto::{BlsPublicKey, BlsSignature, PublicKey, Signature};
 use jsonrpsee::http_client::{HttpClient, HttpClientBuilder};
 
-use protocol::traits::{AcsAssembler, Context};
+use protocol::traits::{Context, TxAssembler};
 use protocol::types::{Direction, Transfer, H160, H256};
 use protocol::{async_trait, Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
@@ -28,28 +28,30 @@ lazy_static::lazy_static! {
 
 #[derive(Default, Debug)]
 struct CkbMetadata {
+    stake_outpoint:    OutPoint,
     metadata_outpoint: OutPoint,
     metadata_typeid:   H256,
     erc20_config:      HashMap<H160, H256>,
 }
 
 #[derive(Clone)]
-pub struct AcsAssemblerImpl {
+pub struct TxAssemblerImpl {
     rpc_client: HttpClient,
 }
 
-impl AcsAssemblerImpl {
-    pub fn new(indexer_url: String) -> AcsAssemblerImpl {
+impl TxAssemblerImpl {
+    pub fn new(indexer_url: String) -> TxAssemblerImpl {
         let rpc_client = HttpClientBuilder::default().build(indexer_url).unwrap();
-        AcsAssemblerImpl { rpc_client }
+        TxAssemblerImpl { rpc_client }
     }
 
     pub async fn update_metadata(
         &self,
         metadata_typeid_args: H256,
+        stake_typeid_args: H256,
         chain_id: u8,
     ) -> ProtocolResult<H256> {
-        let (metadata, typeid, outpoint) =
+        let (metadata, metadata_typeid, metadata_outpoint) =
             indexer::fetch_crosschain_metdata(&self.rpc_client, metadata_typeid_args, chain_id)
                 .await?;
         let erc20_token_config = {
@@ -62,18 +64,21 @@ impl AcsAssemblerImpl {
             }
             config
         };
+        let stake_outpoint =
+            indexer::fetch_axon_stake_outpoint(&self.rpc_client, stake_typeid_args).await?;
         let ckb_metadata = CkbMetadata {
-            metadata_outpoint: outpoint,
-            metadata_typeid:   typeid,
-            erc20_config:      erc20_token_config,
+            stake_outpoint,
+            metadata_outpoint,
+            metadata_typeid,
+            erc20_config: erc20_token_config,
         };
         ACS_METADATA.swap(Arc::new(ckb_metadata));
-        Ok(typeid)
+        Ok(metadata_typeid)
     }
 }
 
 #[async_trait]
-impl AcsAssembler for AcsAssemblerImpl {
+impl TxAssembler for TxAssemblerImpl {
     async fn generate_crosschain_transaction_digest(
         &self,
         _ctx: Context,
@@ -106,9 +111,11 @@ impl AcsAssembler for AcsAssemblerImpl {
                 )
             })
             .collect::<Vec<_>>();
-        let metadata_outpoint = &ACS_METADATA.load().metadata_outpoint;
-        let tx =
-            util::build_transaction_with_outputs_and_celldeps(&ckb_transfers, &metadata_outpoint);
+        let metadata = ACS_METADATA.load();
+        let tx = util::build_transaction_with_outputs_and_celldeps(&ckb_transfers, &[
+            &metadata.metadata_outpoint,
+            &metadata.stake_outpoint,
+        ]);
         println!(
             "[with outputs] tx = {}",
             serde_json::to_string_pretty(&JsonTxView::from(tx.clone())).unwrap()
@@ -140,7 +147,7 @@ impl AcsAssembler for AcsAssemblerImpl {
             if let Some(tx) = ACS_TRANSACTIONS.read().unwrap().get(&digest) {
                 tx.clone()
             } else {
-                return Err(AcsAssemblerError::NoTransactionFound(digest).into());
+                return Err(TxAssemblerError::NoTransactionFound(digest).into());
             }
         };
         let signature = {
@@ -166,11 +173,14 @@ impl AcsAssembler for AcsAssemblerImpl {
 }
 
 #[derive(Debug, Display)]
-pub enum AcsAssemblerError {
+pub enum TxAssemblerError {
     #[display(fmt = "Indexer RPC request error = {}", _0)]
     IndexerRpcError(String),
 
-    #[display(fmt = "Cannot get metadata of type_id_args = {:?}, error = {}", _0, _1)]
+    #[display(fmt = "Cannot get stake cell by type_id_args = {:?}", _0)]
+    StakeTypeIdError(H256),
+
+    #[display(fmt = "Cannot get metadata by type_id_args = {:?}, error = {}", _0, _1)]
     MetadataTypeIdError(H256, String),
 
     #[display(fmt = "ChainId = {} from metadata isn't equal to Axon", _0)]
@@ -183,10 +193,10 @@ pub enum AcsAssemblerError {
     NoTransactionFound(H256),
 }
 
-impl Error for AcsAssemblerError {}
+impl Error for TxAssemblerError {}
 
-impl From<AcsAssemblerError> for ProtocolError {
-    fn from(error: AcsAssemblerError) -> ProtocolError {
-        ProtocolError::new(ProtocolErrorKind::AcsAssember, Box::new(error))
+impl From<TxAssemblerError> for ProtocolError {
+    fn from(error: TxAssemblerError) -> ProtocolError {
+        ProtocolError::new(ProtocolErrorKind::TxAssember, Box::new(error))
     }
 }

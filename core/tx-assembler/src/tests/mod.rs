@@ -7,14 +7,16 @@ use common_crypto::{
     BlsPrivateKey, BlsPublicKey, BlsSignature, HashValue, PrivateKey, ToBlsPublicKey,
 };
 use protocol::tokio;
-use protocol::traits::AcsAssembler;
+use protocol::traits::TxAssembler;
 use protocol::types::{crosschain, H160, H256};
 
-use crate::AcsAssemblerImpl;
+use crate::TxAssemblerImpl;
 
 const INDEXER_URL: &str = "http://47.111.84.118:81/indexer";
 const METADATA_TYPEID_ARGS: ckb_types::H256 =
     h256!("0xc0810210210c06ba233273e94d7fc89b00a705a07fdc0ae4c78e4036582ff336");
+const STAKE_TYPEID_ARGS: ckb_types::H256 =
+    h256!("0x0000000000000000000000000000000000000000000000000000000000000000");
 const METADATA_TYPEID: ckb_types::H256 =
     h256!("0x9d150f92179f315fffe35eb3ef79d9e66bc37de1764b2fe440c264c956facdae");
 const RECEIVE_ADDRESS: ckb_types::H160 = h160!("0x4f696abdf3be58328775de663e07924122d3cf2f");
@@ -35,6 +37,7 @@ fn gen_sig_pubkeys(size: usize, hash: &H256) -> (BlsSignature, Vec<BlsPublicKey>
     (sig, pubkeys)
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_acs_complete_transacion() {
     let transfer = crosschain::Transfer {
@@ -45,10 +48,11 @@ async fn test_acs_complete_transacion() {
         sudt_amount:   0,
         tx_hash:       H256::default(),
     };
-    let acs = AcsAssemblerImpl::new(INDEXER_URL.into());
-    let typeid_args = H256::from_slice(METADATA_TYPEID_ARGS.as_bytes());
+    let acs = TxAssemblerImpl::new(INDEXER_URL.into());
+    let metadata_typeid_args = H256::from_slice(METADATA_TYPEID_ARGS.as_bytes());
+    let stake_typeid_args = H256::from_slice(STAKE_TYPEID_ARGS.as_bytes());
     let typeid = acs
-        .update_metadata(typeid_args, 5)
+        .update_metadata(metadata_typeid_args, stake_typeid_args, 5)
         .await
         .expect("update metadata");
     assert!(typeid == H256::from_slice(METADATA_TYPEID.as_bytes()));
@@ -59,7 +63,7 @@ async fn test_acs_complete_transacion() {
 
     let (signature, pubkeys) = gen_sig_pubkeys(3, &digest);
     let tx = acs
-        .complete_crosschain_transaction(Default::default(), digest.clone(), &signature, &pubkeys)
+        .complete_crosschain_transaction(Default::default(), digest, &signature, &pubkeys)
         .unwrap();
     assert!(digest == H256::from_slice(tx.hash().as_slice()));
     println!(

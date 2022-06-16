@@ -24,6 +24,22 @@ const SUDT_TX_HASH: ckb_types::H256 =
 const ACS_REQUEST_TX_HASH: ckb_types::H256 =
     h256!("0x654a8fa8f5cb500de807e83ae6dabdec6474f738299e28e1470c142f97d56b47");
 
+fn build_script(code_hash: ckb_types::H256, args: &[u8]) -> Script {
+    Script::new_builder()
+        .code_hash(code_hash.pack())
+        .hash_type(ScriptHashType::Type.into())
+        .args(args.pack())
+        .build()
+}
+
+pub fn build_typeid_script(typeid_args: H256) -> Script {
+    build_script(TYPE_ID_CODE_HASH, typeid_args.as_bytes())
+}
+
+pub fn build_acslock_script(metadata_typeid: H256) -> Script {
+    build_script(ACS_LOCK_CODE_HASH, metadata_typeid.as_bytes())
+}
+
 pub fn build_transfer_output_cell(
     secp256k1_lockargs: H160,
     ckb_amount: u64,
@@ -58,7 +74,7 @@ pub fn build_transfer_output_cell(
 
 pub fn build_transaction_with_outputs_and_celldeps(
     output_cell_and_data: &Vec<(CellOutput, Bytes)>,
-    metadata_outpoint: &OutPoint,
+    extra_outpoints: &[&OutPoint],
 ) -> TransactionView {
     let mut tx = TransactionView::new_advanced_builder().build();
     for (cell, data) in output_cell_and_data {
@@ -82,12 +98,14 @@ pub fn build_transaction_with_outputs_and_celldeps(
                 .build()
         })
         .collect::<Vec<_>>();
-    celldeps.push(
-        CellDep::new_builder()
-            .out_point(metadata_outpoint.clone())
-            .dep_type(DepType::Code.into())
-            .build(),
-    );
+    extra_outpoints.iter().for_each(|outpoint| {
+        celldeps.push(
+            CellDep::new_builder()
+                .out_point((*outpoint).clone())
+                .dep_type(DepType::Code.into())
+                .build(),
+        );
+    });
     tx.as_advanced_builder().cell_deps(celldeps).build()
 }
 

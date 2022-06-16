@@ -1,4 +1,3 @@
-mod acs_assembler;
 mod api;
 mod ckb_client;
 mod consensus;
@@ -9,8 +8,8 @@ mod mempool;
 mod metadata;
 mod network;
 mod storage;
+mod tx_assembler;
 
-pub use acs_assembler::AcsAssembler;
 pub use api::APIAdapter;
 pub use ckb_client::{CkbClient, RPC};
 pub use consensus::{
@@ -30,3 +29,4 @@ pub use storage::{
     CommonStorage, IntoIteratorByRef, Storage, StorageAdapter, StorageBatchModify, StorageCategory,
     StorageIterator, StorageSchema,
 };
+pub use tx_assembler::TxAssembler;

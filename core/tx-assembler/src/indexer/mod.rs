@@ -4,8 +4,8 @@ use types::{ckb, Cell, JsonBytes, Order, Pagination, ScriptType, SearchKey, Uint
 use std::collections::HashMap;
 
 use ckb_types::bytes::Bytes;
-use ckb_types::core::{Capacity, ScriptHashType, TransactionView};
-use ckb_types::packed::{CellInput, CellOutput, OutPoint, Script};
+use ckb_types::core::{Capacity, TransactionView};
+use ckb_types::packed::{CellInput, CellOutput, OutPoint};
 use ckb_types::prelude::{Builder, Entity, Pack, Unpack};
 use jsonrpsee::core::client::ClientT;
 use jsonrpsee::http_client::HttpClient;
@@ -16,7 +16,7 @@ use serde_json::json;
 
 use crate::molecule::Metadata;
 use crate::util;
-use crate::AcsAssemblerError;
+use crate::TxAssemblerError;
 
 async fn fetch_live_cells(
     rpc_client: &HttpClient,
@@ -35,7 +35,7 @@ async fn fetch_live_cells(
             ])),
         )
         .await
-        .map_err(|err| AcsAssemblerError::IndexerRpcError(err.to_string()))?;
+        .map_err(|err| TxAssemblerError::IndexerRpcError(err.to_string()))?;
     let ckb_cells = live_cells
         .objects
         .iter()
@@ -47,17 +47,27 @@ async fn fetch_live_cells(
     })
 }
 
+pub async fn fetch_axon_stake_outpoint(
+    rpc_client: &HttpClient,
+    stake_typeid_args: H256,
+) -> ProtocolResult<OutPoint> {
+    let stake_typescript = util::build_typeid_script(stake_typeid_args);
+    let search_key = SearchKey::new(stake_typescript.into(), ScriptType::Type);
+    let stake_cell = fetch_live_cells(rpc_client, search_key, 1, None).await?;
+
+    if let Some(cell) = stake_cell.objects.first() {
+        Ok(cell.out_point.clone())
+    } else {
+        Err(TxAssemblerError::StakeTypeIdError(stake_typeid_args).into())
+    }
+}
+
 pub async fn fetch_crosschain_metdata(
     rpc_client: &HttpClient,
     metadata_typeid_args: H256,
     axon_chain_id: u8,
 ) -> ProtocolResult<(Metadata, H256, OutPoint)> {
-    let metadata_typescript = Script::new_builder()
-        .code_hash(util::TYPE_ID_CODE_HASH.pack())
-        .hash_type(ScriptHashType::Type.into())
-        .args(metadata_typeid_args.as_bytes().pack())
-        .build();
-
+    let metadata_typescript = util::build_typeid_script(metadata_typeid_args);
     let search_key = SearchKey::new(metadata_typescript.clone().into(), ScriptType::Type);
     let metadata_cell = fetch_live_cells(rpc_client, search_key, 1, None).await?;
 
@@ -65,7 +75,7 @@ pub async fn fetch_crosschain_metdata(
         if let Some(cell) = metadata_cell.objects.first() {
             cell
         } else {
-            return Err(AcsAssemblerError::MetadataTypeIdError(
+            return Err(TxAssemblerError::MetadataTypeIdError(
                 metadata_typeid_args,
                 "no metadata found".into(),
             )
@@ -74,11 +84,11 @@ pub async fn fetch_crosschain_metdata(
     };
 
     let metadata = Metadata::from_slice(&ckb_metadata_cell.output_data).map_err(|err| {
-        AcsAssemblerError::MetadataTypeIdError(metadata_typeid_args, err.to_string())
+        TxAssemblerError::MetadataTypeIdError(metadata_typeid_args, err.to_string())
     })?;
 
     if u8::from(metadata.chain_id()) != axon_chain_id {
-        return Err(AcsAssemblerError::MetadataChainIdError(metadata.chain_id().into()).into());
+        return Err(TxAssemblerError::MetadataChainIdError(metadata.chain_id().into()).into());
     }
 
     let hash = metadata_typescript.calc_script_hash().unpack();
@@ -98,12 +108,9 @@ pub async fn fill_transaction_with_inputs_and_changes(
     metadata_typeid: H256,
     fee: Capacity,
 ) -> ProtocolResult<TransactionView> {
-    let acs_lock_script = Script::new_builder()
-        .code_hash(util::ACS_LOCK_CODE_HASH.pack())
-        .hash_type(ScriptHashType::Type.into())
-        .args(Bytes::from(metadata_typeid.as_bytes().to_vec()).pack())
-        .build();
+    let acs_lock_script = util::build_acslock_script(metadata_typeid);
 
+    // prepare offer and require ckb
     let (required_ckb, required_sudt_set, sudt_scripts) =
         util::compute_required_ckb_and_sudt(&tx, fee);
     let mut offerred_ckb = Capacity::zero();
@@ -169,7 +176,7 @@ pub async fn fill_transaction_with_inputs_and_changes(
         &offerred_sudt_set,
         &required_sudt_set,
     ) {
-        return Err(AcsAssemblerError::InsufficientCrosschainCell.into());
+        return Err(TxAssemblerError::InsufficientCrosschainCell.into());
     }
 
     println!(

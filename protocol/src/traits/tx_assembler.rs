@@ -6,7 +6,7 @@ use crate::types::{Transfer, H256};
 use crate::{traits::Context, ProtocolResult};
 
 #[async_trait]
-pub trait AcsAssembler: Sync + Send {
+pub trait TxAssembler: Sync + Send {
     async fn generate_crosschain_transaction_digest(
         &self,
         ctx: Context,
