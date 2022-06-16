@@ -1,7 +1,4 @@
-use std::sync::{
-    atomic::{AtomicU8, Ordering},
-    Arc,
-};
+use std::sync::Arc;
 
 use common_apm::tracing::AxonTracer;
 use rand::Rng;
@@ -121,7 +118,7 @@ impl NetworkGossip {
 
         self.send_to_sessions(
             ctx,
-            TargetSession::Filter(Box::new(move |id| connected.contains(id))),
+            TargetSession::Multi(Box::new(connected.into_iter())),
             data,
             priority,
         )
@@ -162,7 +159,7 @@ impl Gossip for NetworkGossip {
     {
         let msg = self.package_message(cx.clone(), endpoint, msg).await?;
         let ctx = cx.set_url(endpoint.to_owned());
-        let r = RandomGossip::random();
+        let mut r = RandomGossip::random();
         let target = match origin {
             Some(id) => TargetSession::Filter(Box::new(move |i| {
                 if &Into::<SessionId>::into(id) == i {
@@ -203,36 +200,29 @@ impl Gossip for NetworkGossip {
 }
 
 struct RandomGossip {
-    index: AtomicU8,
+    index: u8,
 }
 
 impl RandomGossip {
     fn random() -> Self {
         Self {
-            index: AtomicU8::new(rand::thread_rng().gen_range(0, 3)),
+            index: rand::thread_rng().gen_range(0, 3),
         }
     }
 
     #[cfg(test)]
     fn new(index: u8) -> Self {
-        Self {
-            index: AtomicU8::new(index),
-        }
+        Self { index }
     }
 
-    fn next_inner(&self) -> bool {
-        let index = self
-            .index
-            .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |index| {
-                if index < 2 {
-                    Some(index + 1)
-                } else {
-                    Some(0)
-                }
-            })
-            .unwrap();
-
-        index != 2
+    fn next_inner(&mut self) -> bool {
+        if self.index < 2 {
+            self.index += 1;
+            true
+        } else {
+            self.index = 0;
+            false
+        }
     }
 }
 
