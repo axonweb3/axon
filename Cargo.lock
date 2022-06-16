@@ -1246,7 +1246,7 @@ dependencies = [
  "common-config-parser",
  "common-crypto",
  "core-executor",
- "ethabi 17.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ethabi 17.1.0",
  "ethabi-contract",
  "ethabi-derive",
  "futures",
@@ -1274,7 +1274,7 @@ dependencies = [
  "core-storage",
  "criterion",
  "crossbeam-channel",
- "ethabi 17.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ethabi 17.1.0",
  "ethabi-contract",
  "ethabi-derive",
  "evm",
@@ -1932,8 +1932,7 @@ dependencies = [
 [[package]]
 name = "ethabi"
 version = "17.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b69517146dfab88e9238c00c724fd8e277951c3cc6f22b016d72f422a832213e"
+source = "git+https://github.com/rust-ethereum/ethabi.git?rev=7edf185#7edf185125a9560d43bba0f84432a7cc874a5218"
 dependencies = [
  "ethereum-types",
  "hex",
@@ -1948,8 +1947,9 @@ dependencies = [
 
 [[package]]
 name = "ethabi"
-version = "17.0.0"
-source = "git+https://github.com/rust-ethereum/ethabi.git?rev=7edf185#7edf185125a9560d43bba0f84432a7cc874a5218"
+version = "17.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f186de076b3e77b8e6d73c99d1b52edc2a229e604f4b5eb6992c06c11d79d537"
 dependencies = [
  "ethereum-types",
  "hex",
@@ -1972,7 +1972,7 @@ name = "ethabi-derive"
 version = "17.0.0"
 source = "git+https://github.com/rust-ethereum/ethabi.git?rev=7edf185#7edf185125a9560d43bba0f84432a7cc874a5218"
 dependencies = [
- "ethabi 17.0.0 (git+https://github.com/rust-ethereum/ethabi.git?rev=7edf185)",
+ "ethabi 17.0.0",
  "heck 0.4.0",
  "proc-macro2",
  "quote",
@@ -2092,7 +2092,7 @@ dependencies = [
  "bytes",
  "cargo_metadata",
  "elliptic-curve",
- "ethabi 17.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ethabi 17.1.0",
  "generic-array 0.14.5",
  "hex",
  "k256",
@@ -2118,7 +2118,7 @@ dependencies = [
  "chrono",
  "convert_case 0.5.0",
  "elliptic-curve",
- "ethabi 17.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ethabi 17.1.0",
  "generic-array 0.14.5",
  "hex",
  "k256",

@@ -9,7 +9,7 @@ cita_trie = "3.0"
 ckb-hash = "0.103"
 ckb-jsonrpc-types = "0.103"
 ckb-types = "0.103.0"
-ethabi = "17.0"
+ethabi = "17.1"
 ethabi-contract = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
 ethabi-derive = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
 futures = "0.3"
