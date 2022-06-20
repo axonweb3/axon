@@ -61,7 +61,7 @@ describe("eth_getBalance", () => {
     await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type(testDataInfo.accountAddress);
     await param2.type("0xfffffff");
-    await goto.check(page, "-32001");
+    await goto.check(page, "0x0");
   });
 
   /**
@@ -89,7 +89,7 @@ describe("eth_getBalance", () => {
     await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type("0x3dF82e36a8b27CE05815f88a8021b61aAbeF8B31");
     await param2.type("latest");
-    await goto.check(page, "-32001");
+    await goto.check(page, "0x0");
   });
 
   /**
