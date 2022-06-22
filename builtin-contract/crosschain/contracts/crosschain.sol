@@ -27,7 +27,6 @@ contract CrossChain is Context {
     address private _metadata;
     address private _wCKB;
     uint256 private _minWCKB;
-    uint256 private _crossFromCKBNonce;
     address[] private _relayers;
     EnumerableSet.Bytes32Set private _limitTxes;
 
@@ -207,10 +206,6 @@ contract CrossChain is Context {
         );
     }
 
-    function crossFromCKBNonce() public view returns (uint256) {
-        return _crossFromCKBNonce;
-    }
-
     function limitTxes()
         external
         view
@@ -341,8 +336,6 @@ contract CrossChain is Context {
         DataType.CKBToAxonRecord[] calldata records,
         uint256 nonce
     ) external onlyVerifier {
-        require(_crossFromCKBNonce == nonce, "CrossChain: invalid nonce");
-
         uint256 length = records.length;
         for (uint256 i = 0; i < length; ++i) {
             DataType.CKBToAxonRecord memory record = records[i];
@@ -356,8 +349,6 @@ contract CrossChain is Context {
                 _crossSUdtFromCKB(record);
             }
         }
-
-        _crossFromCKBNonce = SafeMath.add(_crossFromCKBNonce, 1);
 
         emit CrossFromCKB(records);
     }

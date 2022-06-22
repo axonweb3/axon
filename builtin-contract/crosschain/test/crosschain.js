@@ -476,7 +476,7 @@ describe("CrossChain", () => {
             },
         ];
 
-        const nonce = await contract.crossFromCKBNonce();
+        const nonce = 0;
 
         const value = {
             recordsHash: recordsHash(records),
@@ -521,7 +521,7 @@ describe("CrossChain", () => {
             },
         ];
 
-        const nonce = await contract.crossFromCKBNonce();
+        const nonce = 0;
 
         const value = {
             recordsHash: recordsHash(records),
@@ -731,46 +731,46 @@ describe("CrossChain", () => {
     //     expect(await mirrorToken.balanceOf(wallet2.address)).equal(100);
     // });
 
-    it("cross wckb and sudt should fail while nonce is not valid", async () => {
-        const wallet1 = ethers.Wallet.createRandom().connect(ethers.provider);
-        const wallet2 = ethers.Wallet.createRandom().connect(ethers.provider);
+    // it("cross wckb and sudt should fail while nonce is not valid", async () => {
+    //     const wallet1 = ethers.Wallet.createRandom().connect(ethers.provider);
+    //     const wallet2 = ethers.Wallet.createRandom().connect(ethers.provider);
 
-        const records = [
-            {
-                to: wallet1.address,
-                tokenAddress: mirrorToken.address,
-                sUDTAmount: 10,
-                CKBAmount: 1000,
-                txHash: lockscript,
-            },
-            {
-                to: wallet2.address,
-                tokenAddress: mirrorToken.address,
-                sUDTAmount: 100,
-                CKBAmount: 100000,
-                txHash: lockscript,
-            },
-        ];
+    //     const records = [
+    //         {
+    //             to: wallet1.address,
+    //             tokenAddress: mirrorToken.address,
+    //             sUDTAmount: 10,
+    //             CKBAmount: 1000,
+    //             txHash: lockscript,
+    //         },
+    //         {
+    //             to: wallet2.address,
+    //             tokenAddress: mirrorToken.address,
+    //             sUDTAmount: 100,
+    //             CKBAmount: 100000,
+    //             txHash: lockscript,
+    //         },
+    //     ];
 
-        const nonce = 10;
+    //     const nonce = 10;
 
-        const value = {
-            recordsHash: recordsHash(records),
-            nonce: nonce,
-        };
+    //     const value = {
+    //         recordsHash: recordsHash(records),
+    //         nonce: nonce,
+    //     };
 
-        let signatures = '';
+    //     let signatures = '';
 
-        await metadata.mock.isVerifier.returns(true);
+    //     await metadata.mock.isVerifier.returns(true);
 
-        signatures += (await wallets[0]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
-        signatures += (await wallets[1]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
-        signatures += (await wallets[2]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
-        signatures = '0x' + signatures;
+    //     signatures += (await wallets[0]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
+    //     signatures += (await wallets[1]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
+    //     signatures += (await wallets[2]._signTypedData(domain, crossFromCKBTypes, value)).substring(2);
+    //     signatures = '0x' + signatures;
 
-        await expect(contract.crossFromCKB(records, nonce))
-            .revertedWith('CrossChain: invalid nonce');
-    });
+    //     await expect(contract.crossFromCKB(records, nonce))
+    //         .revertedWith('CrossChain: invalid nonce');
+    // });
 
     it("cross wckb and sudt should success", async () => {
         const wallet1 = ethers.Wallet.createRandom().connect(ethers.provider);
@@ -804,7 +804,7 @@ describe("CrossChain", () => {
             },
         ];
 
-        const nonce = await contract.crossFromCKBNonce();
+        const nonce = 0;
 
         const value = {
             recordsHash: recordsHash(records),
@@ -859,7 +859,7 @@ describe("CrossChain", () => {
             },
         ];
 
-        const nonce = await contract.crossFromCKBNonce();
+        const nonce = 0;
 
         const value = {
             recordsHash: recordsHash(records),

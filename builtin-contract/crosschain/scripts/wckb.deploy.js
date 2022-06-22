@@ -12,7 +12,7 @@ async function export_deploy() {
         "maxPriorityFeePerGas": "0x7d0",
         "maxFeePerGas": "0x7d0",
         "gasLimit": "0x3231303030",
-        "nonce": "0x5",
+        "nonce": "0x2",
         "data": hexlify(concat([wckb.bytecode, wckb.interface.encodeDeploy(['wCKB', 'wCKB'])])),
         "accessList": [],
         "chainId": 5,
