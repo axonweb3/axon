@@ -10,7 +10,7 @@
     "ethereumjs-tx": "^2.1.2",
     "jest-environment-node": "^28.1.1",
     "puppeteer": "^14.4.1",
-    "web3": "^1.7.3"
+    "web3": "^1.7.4"
   },
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.18.2",
