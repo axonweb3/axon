@@ -68,18 +68,18 @@ describe("CrossChain", () => {
         await contract.deployed();
 
         await contract.connect(owner).setTokenConfig(wckb.address, [10, 10000000]);
-        await wckb.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MINTER_ROLE')), owner.address);
+        await wckb.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MANAGER_ROLE')), owner.address);
         await contract.connect(owner).setWCKBMin(1);
 
-        await wckb.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MINTER_ROLE')), contract.address);
-        await wckb.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('BURNER_ROLE')), contract.address);
+        await wckb.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MANAGER_ROLE')), contract.address);
+        await wckb.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MANAGER_ROLE')), contract.address);
 
         mirrorToken = await deployMirrorToken(owner);
         await contract.connect(owner).addMirrorToken(mirrorToken.address, lockscript);
         await contract.connect(owner).setTokenConfig(mirrorToken.address, [10, 10000000]);
-        await mirrorToken.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MINTER_ROLE')), owner.address);
-        await mirrorToken.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MINTER_ROLE')), contract.address);
-        await mirrorToken.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('BURNER_ROLE')), contract.address);
+        await mirrorToken.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MANAGER_ROLE')), owner.address);
+        await mirrorToken.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MANAGER_ROLE')), contract.address);
+        await mirrorToken.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MANAGER_ROLE')), contract.address);
 
         simpleToken = await deployTestToken(owner);
         await contract.connect(owner).setTokenConfig(simpleToken.address, [10, 10000000]);

@@ -13,7 +13,7 @@ async function export_grant_role() {
         "maxFeePerGas": "0x539",
         "gasLimit": "0x1c9c380",
         "nonce": "0x5",
-        "data": wckb.interface.encodeFunctionData('grantRole', [ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MINTER_ROLE')), '0xF67Bc4E50d1df92b0E4C61794A4517AF6a995CB2']),
+        "data": wckb.interface.encodeFunctionData('grantRole', [ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MANAGER_ROLE')), '0xF67Bc4E50d1df92b0E4C61794A4517AF6a995CB2']),
         "accessList": [],
         "chainId": 5,
         "type": 2
