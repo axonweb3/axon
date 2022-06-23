@@ -6,8 +6,8 @@ async function deployMirrorToken(owner, minter, burner) {
   const MirrorToken = await ethers.getContractFactory('MirrorToken');
   const mirrorToken = await MirrorToken.connect(owner).deploy('testName', 'testSymbol');
 
-  await mirrorToken.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MINTER_ROLE')), minter.address);
-  await mirrorToken.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('BURNER_ROLE')), burner.address);
+  await mirrorToken.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MANAGER_ROLE')), minter.address);
+  await mirrorToken.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MANAGER_ROLE')), burner.address);
 
   return mirrorToken;
 }
@@ -31,9 +31,6 @@ describe("MirrorToken", () => {
 
     await expect(token.connect(signers[2]).mint(signers[3].address, 10)).reverted;
     expect(await token.connect(owner).balanceOf(signers[3].address)).equal(0);
-
-    await expect(token.connect(burner).mint(signers[3].address, 10)).reverted;
-    expect(await token.connect(owner).balanceOf(signers[3].address)).equal(0);
   });
 
   it("only who has burner role can burn other account's tokens.", async () => {
@@ -43,9 +40,6 @@ describe("MirrorToken", () => {
 
     token.connect(minter).mint(signers[1].address, 10);
     token.connect(burner).burn(signers[1].address, 1);
-    expect(await token.connect(owner).balanceOf(signers[1].address)).equal(9);
-
-    await expect(token.connect(minter).burn(signers[1].address, 5)).reverted;
     expect(await token.connect(owner).balanceOf(signers[1].address)).equal(9);
 
     await expect(token.connect(signers[10]).burn(signers[1].address, 5)).reverted;
