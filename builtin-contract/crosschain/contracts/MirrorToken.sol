@@ -12,8 +12,7 @@ interface IMirrorToken is IERC20 {
 }
 
 contract MirrorToken is ERC20, AccessControl, Ownable, IMirrorToken {
-    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-    bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
+    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
     constructor(string memory name, string memory symbol) ERC20(name, symbol) {
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
@@ -22,7 +21,7 @@ contract MirrorToken is ERC20, AccessControl, Ownable, IMirrorToken {
     function mint(address to, uint256 amount)
         external
         override
-        onlyRole(MINTER_ROLE)
+        onlyRole(MANAGER_ROLE)
     {
         _mint(to, amount);
     }
@@ -30,7 +29,7 @@ contract MirrorToken is ERC20, AccessControl, Ownable, IMirrorToken {
     function burn(address from, uint256 amount)
         external
         override
-        onlyRole(BURNER_ROLE)
+        onlyRole(MANAGER_ROLE)
     {
         _burn(from, amount);
     }
