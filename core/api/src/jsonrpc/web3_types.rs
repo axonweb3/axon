@@ -292,8 +292,8 @@ impl From<Block> for Web3Block {
             timestamp:         b.header.timestamp.into(),
             transactions:      b
                 .tx_hashes
-                .iter()
-                .map(|hash| RichTransactionOrHash::Hash(*hash))
+                .into_iter()
+                .map(RichTransactionOrHash::Hash)
                 .collect(),
             uncles:            vec![],
             mix_hash:          H256::default(),

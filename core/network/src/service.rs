@@ -1,7 +1,3 @@
-#[cfg(unix)]
-use std::os::unix::io::{FromRawFd, IntoRawFd};
-#[cfg(windows)]
-use std::os::windows::io::{FromRawSocket, IntoRawSocket};
 use std::{collections::HashSet, sync::Arc, time::Duration};
 
 use rand::prelude::IteratorRandom;
@@ -278,19 +274,14 @@ impl NetworkService {
         let service_builder = {
             let addr = multiaddr_to_socketaddr(&config.default_listen).unwrap();
             service_builder.tcp_config(move |socket: TcpSocket| {
-                let socket = unsafe {
-                    #[cfg(unix)]
-                    let socket = socket2::Socket::from_raw_fd(socket.into_raw_fd());
-                    #[cfg(windows)]
-                    let socket = socket2::Socket::from_raw_socket(socket.into_raw_socket());
-                    socket
-                };
-                #[cfg(all(unix, not(target_os = "solaris"), not(target_os = "illumos")))]
-                socket.set_reuse_port(true)?;
+                let socket_ref = socket2::SockRef::from(&socket);
 
-                socket.set_reuse_address(true)?;
-                socket.bind(&addr.into())?;
-                Ok(socket.into())
+                #[cfg(all(unix, not(target_os = "solaris"), not(target_os = "illumos")))]
+                socket_ref.set_reuse_port(true)?;
+
+                socket_ref.set_reuse_address(true)?;
+                socket_ref.bind(&addr.into())?;
+                Ok(socket)
             })
         };
 
