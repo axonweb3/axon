@@ -804,9 +804,9 @@ dependencies = [
 
 [[package]]
 name = "ckb-librocksdb-sys"
-version = "7.2.2"
+version = "7.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "513501f0438f31a14944cc4a27546b8b312b468c4b1481f259cf54d7d63a7451"
+checksum = "b7d4676adfc4af87f4bf6c3d8fdcc9ecd0d484aef9e6398f71076773ca55032c"
 dependencies = [
  "bindgen",
  "cc",
@@ -858,9 +858,9 @@ dependencies = [
 
 [[package]]
 name = "ckb-rocksdb"
-version = "0.18.0"
+version = "0.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cbf9eaf41c1f88dc1a7b45a9f70856b2cafce64594f017dc031d4a4b942209ba"
+checksum = "cd348da3d401d48e45249a604d48ecc8d0f0df50c719b09e99e8c23e81f35ed4"
 dependencies = [
  "ckb-librocksdb-sys",
  "libc",
@@ -5222,9 +5222,9 @@ dependencies = [
 
 [[package]]
 name = "tentacle"
-version = "0.4.0-beta.5"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fffc3054674621fb5ff1eab60083fe8b8d1e98d241ea23db613b7cb1ab771600"
+checksum = "b5dce982ed9b672847c08a1feb56e8976586189d1ee617856a7e97fe3d748a26"
 dependencies = [
  "async-trait",
  "bytes",
@@ -5251,9 +5251,9 @@ dependencies = [
 
 [[package]]
 name = "tentacle-multiaddr"
-version = "0.3.2"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "faafcea0d508fc5296ca846ca1f2fcb60d740f53b02e771b407c06ae13e23c90"
+checksum = "895b25a7de42f7bba27b011495a4a48ea7f0591c079f59c8fdb07936ca8aa3d1"
 dependencies = [
  "bs58",
  "bytes",
@@ -5264,9 +5264,9 @@ dependencies = [
 
 [[package]]
 name = "tentacle-secio"
-version = "0.5.4"
+version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a25404f0ad099d7ac35c4873e854a1f9772014b1c42379780f7b9f55fa464913"
+checksum = "5151f7a471124e400ac93c566839de561d8a240c5f7f08ba192d45b2f544fcca"
 dependencies = [
  "bs58",
  "bytes",
@@ -5535,9 +5535,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-yamux"
-version = "0.3.5"
+version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "129b802888b976c5b14aefc5f11d563ed25eaceb74a9e6e03d1d1de50d994cc7"
+checksum = "d4bc9586f041e3ed234f31cd7883cd922b8f7dae2235a9d51c11be421bcbb30d"
 dependencies = [
  "bytes",
  "futures",
