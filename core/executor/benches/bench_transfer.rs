@@ -13,8 +13,8 @@ use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::codec::{hex_decode, ProtocolCodec};
 use protocol::traits::Executor;
 use protocol::types::{
-    public_to_address, Account, Address, ExecutorContext, Hash, Public, SignedTransaction,
-    Transaction, TransactionAction, UnverifiedTransaction, NIL_DATA, RLP_NULL, U256,
+    public_to_address, Account, Address, Eip1559Transaction, ExecutorContext, Hash, Public,
+    SignedTransaction, TransactionAction, UnverifiedTransaction, NIL_DATA, RLP_NULL, U256,
 };
 
 lazy_static::lazy_static! {
@@ -94,7 +94,7 @@ fn time_now() -> u64 {
 }
 
 fn mock_transaction(nonce: u64) -> SignedTransaction {
-    let tx = Transaction {
+    let tx = Eip1559Transaction {
         nonce:                    nonce.into(),
         max_priority_fee_per_gas: 1u64.into(),
         gas_price:                85u64.into(),

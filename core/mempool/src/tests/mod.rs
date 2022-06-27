@@ -15,8 +15,8 @@ use common_crypto::{
 use core_executor::NATIVE_TOKEN_ISSUE_ADDRESS;
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
 use protocol::types::{
-    public_to_address, recover_intact_pub_key, Bytes, Hash, Public, SignedTransaction, Transaction,
-    TransactionAction, UnverifiedTransaction, H256, U256,
+    public_to_address, recover_intact_pub_key, Bytes, Eip1559Transaction, Hash, Public,
+    SignedTransaction, TransactionAction, UnverifiedTransaction, H256, U256,
 };
 use protocol::{async_trait, tokio, ProtocolResult};
 
@@ -266,8 +266,8 @@ async fn exec_get_full_txs(
         .unwrap()
 }
 
-fn mock_transaction(nonce: u64, is_call_system_script: bool) -> Transaction {
-    Transaction {
+fn mock_transaction(nonce: u64, is_call_system_script: bool) -> Eip1559Transaction {
+    Eip1559Transaction {
         nonce:                    nonce.into(),
         gas_limit:                U256::one(),
         max_priority_fee_per_gas: U256::one(),

@@ -16,13 +16,13 @@ use common_crypto::{
 };
 use protocol::types::Bytes;
 use protocol::types::{
-    Block, ExitReason, ExitSucceed, Hash, Hasher, Header, Proof, Receipt, SignatureComponents,
-    SignedTransaction, Transaction, TransactionAction, UnverifiedTransaction,
+    Block, Eip1559Transaction, ExitReason, ExitSucceed, Hash, Hasher, Header, Proof, Receipt,
+    SignatureComponents, SignedTransaction, TransactionAction, UnverifiedTransaction,
 };
 
 fn mock_signed_tx() -> SignedTransaction {
     let mut utx = UnverifiedTransaction {
-        unsigned:  Transaction {
+        unsigned:  Eip1559Transaction {
             nonce:                    Default::default(),
             max_priority_fee_per_gas: Default::default(),
             gas_price:                Default::default(),

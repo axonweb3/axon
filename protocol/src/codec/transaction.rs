@@ -4,8 +4,8 @@ use ethereum_types::BigEndianHash;
 use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
 use crate::types::{
-    public_to_address, AccessList, AccessListItem, Bytes, BytesMut, Public, SignatureComponents,
-    SignedTransaction, Transaction, TransactionAction, UnverifiedTransaction, H256, U256,
+    public_to_address, AccessList, AccessListItem, Bytes, BytesMut, Eip1559Transaction, Public,
+    SignatureComponents, SignedTransaction, TransactionAction, UnverifiedTransaction, H256, U256,
 };
 
 impl Encodable for SignatureComponents {
@@ -128,7 +128,7 @@ impl Decodable for UnverifiedTransaction {
         };
 
         let utx = UnverifiedTransaction {
-            unsigned: Transaction {
+            unsigned: Eip1559Transaction {
                 nonce,
                 max_priority_fee_per_gas,
                 gas_price,
@@ -197,8 +197,8 @@ mod tests {
         Bytes::from((0..len).map(|_| random::<u8>()).collect::<Vec<_>>())
     }
 
-    fn mock_transaction() -> Transaction {
-        Transaction {
+    fn mock_transaction() -> Eip1559Transaction {
+        Eip1559Transaction {
             nonce:                    U256::one(),
             gas_limit:                U256::one(),
             max_priority_fee_per_gas: U256::one(),

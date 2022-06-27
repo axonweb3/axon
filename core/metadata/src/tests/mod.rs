@@ -12,9 +12,9 @@ use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{CommonStorage, Context, Executor, Storage};
 use protocol::types::{
-    Account, Address, Bytes, Header, Hex, Metadata, MetadataVersion, Proposal, Public, RichBlock,
-    SignatureComponents, SignedTransaction, Transaction, TransactionAction, UnverifiedTransaction,
-    ValidatorExtend, H160, H256, NIL_DATA, RLP_NULL, U256,
+    Account, Address, Bytes, Eip1559Transaction, Header, Hex, Metadata, MetadataVersion, Proposal,
+    Public, RichBlock, SignatureComponents, SignedTransaction, TransactionAction,
+    UnverifiedTransaction, ValidatorExtend, H160, H256, NIL_DATA, RLP_NULL, U256,
 };
 
 use crate::{calc_epoch, metadata_abi as abi, MetadataAdapterImpl, MetadataController, EPOCH_LEN};
@@ -172,8 +172,8 @@ fn mock_proposal() -> Proposal {
     }
 }
 
-fn mock_transaction(nonce: u64, data: Vec<u8>) -> Transaction {
-    Transaction {
+fn mock_transaction(nonce: u64, data: Vec<u8>) -> Eip1559Transaction {
+    Eip1559Transaction {
         nonce:                    nonce.into(),
         gas_limit:                100000000u64.into(),
         max_priority_fee_per_gas: U256::one(),

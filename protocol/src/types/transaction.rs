@@ -11,7 +11,7 @@ use crate::types::{Bytes, BytesMut, Hash, Hasher, Public, TypesError, H160, H256
 use crate::ProtocolResult;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct Transaction {
+pub struct Eip1559Transaction {
     pub nonce:                    U256,
     pub max_priority_fee_per_gas: U256,
     pub gas_price:                U256,
@@ -22,7 +22,7 @@ pub struct Transaction {
     pub access_list:              AccessList,
 }
 
-impl std::hash::Hash for Transaction {
+impl std::hash::Hash for Eip1559Transaction {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.nonce.hash(state);
         self.max_priority_fee_per_gas.hash(state);
@@ -40,7 +40,7 @@ impl std::hash::Hash for Transaction {
     }
 }
 
-impl Transaction {
+impl Eip1559Transaction {
     pub fn encode(&self, chain_id: u64, signature: Option<SignatureComponents>) -> BytesMut {
         UnverifiedTransaction {
             unsigned: self.clone(),
@@ -54,7 +54,7 @@ impl Transaction {
 
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
 pub struct UnverifiedTransaction {
-    pub unsigned:  Transaction,
+    pub unsigned:  Eip1559Transaction,
     pub signature: Option<SignatureComponents>,
     pub chain_id:  u64,
     pub hash:      H256,

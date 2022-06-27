@@ -42,12 +42,12 @@ mod tests {
 
     use crate::codec::ProtocolCodec;
     use crate::types::{
-        SignatureComponents, Transaction, TransactionAction, UnverifiedTransaction,
+        Eip1559Transaction, SignatureComponents, TransactionAction, UnverifiedTransaction,
     };
 
     fn mock_sign_tx() -> SignedTransaction {
         let mut utx = UnverifiedTransaction {
-            unsigned:  Transaction {
+            unsigned:  Eip1559Transaction {
                 nonce:                    Default::default(),
                 max_priority_fee_per_gas: Default::default(),
                 gas_price:                Default::default(),

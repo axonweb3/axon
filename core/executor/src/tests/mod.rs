@@ -6,8 +6,8 @@ use std::str::FromStr;
 use evm::backend::{MemoryAccount, MemoryBackend, MemoryVicinity};
 
 use protocol::types::{
-    Bytes, ExitReason, ExitSucceed, Public, SignatureComponents, SignedTransaction, Transaction,
-    TransactionAction, UnverifiedTransaction, H160, H256, U256,
+    Bytes, Eip1559Transaction, ExitReason, ExitSucceed, Public, SignatureComponents,
+    SignedTransaction, TransactionAction, UnverifiedTransaction, H160, H256, U256,
 };
 use protocol::{codec::hex_decode, traits::Executor};
 
@@ -31,7 +31,7 @@ fn gen_vicinity() -> MemoryVicinity {
 fn gen_tx(sender: H160, addr: H160, value: u64, data: Vec<u8>) -> SignedTransaction {
     SignedTransaction {
         transaction: UnverifiedTransaction {
-            unsigned:  Transaction {
+            unsigned:  Eip1559Transaction {
                 nonce:                    U256::default(),
                 max_priority_fee_per_gas: U256::default(),
                 gas_price:                U256::default(),

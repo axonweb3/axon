@@ -337,7 +337,7 @@ mod tests {
     use rand::rngs::OsRng;
     use test::Bencher;
 
-    use protocol::types::{TransactionAction, SignatureComponents, UnverifiedTransaction, Bytes, Hash, Transaction, SignedTransaction};
+    use protocol::types::{TransactionAction, SignatureComponents, UnverifiedTransaction, Bytes, Hash, Eip1559Transaction, SignedTransaction};
 
     use super::*;
 
@@ -351,7 +351,7 @@ mod tests {
     
     fn mock_sign_tx() -> SignedTransaction {   
         let mut utx = UnverifiedTransaction {
-            unsigned:  Transaction {
+            unsigned:  Eip1559Transaction {
                 nonce:                    Default::default(),
                 max_priority_fee_per_gas: Default::default(),
                 gas_price:                Default::default(),

@@ -36,7 +36,7 @@ pub enum TypesError {
     LengthMismatch { expect: usize, real: usize },
 
     #[display(
-        fmt = "Transaction hash mismatch origin {:?}, computed {:?}",
+        fmt = "Eip1559Transaction hash mismatch origin {:?}, computed {:?}",
         origin,
         calc
     )]
