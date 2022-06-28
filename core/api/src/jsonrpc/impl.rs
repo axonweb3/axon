@@ -223,11 +223,19 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                 .await
                 .map(|account| account.nonce)
                 .map_err(|e| Error::Custom(e.to_string())),
-            BlockIdWithPending::Pending => self
-                .adapter
-                .get_pending_tx_count(Context::new(), address)
-                .await
-                .map_err(|e| Error::Custom(e.to_string())),
+            BlockIdWithPending::Pending => {
+                let count = self
+                    .adapter
+                    .get_account(Context::new(), address, BlockId::Latest.into())
+                    .await
+                    .map(|account| account.nonce)
+                    .map_err(|e| Error::Custom(e.to_string()))?;
+                self.adapter
+                    .get_pending_tx_count(Context::new(), address)
+                    .await
+                    .map(|a| a + count)
+                    .map_err(|e| Error::Custom(e.to_string()))
+            }
         }
     }
 
