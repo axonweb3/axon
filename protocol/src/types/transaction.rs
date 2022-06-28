@@ -10,6 +10,142 @@ use common_crypto::secp256k1_recover;
 use crate::types::{Bytes, BytesMut, Hash, Hasher, Public, TypesError, H160, H256, H520, U256};
 use crate::ProtocolResult;
 
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
+pub enum UnsignedTransaction {
+    Legacy(LegacyTransaction),
+    Eip2930(Eip2930Transaction),
+    Eip1559(Eip1559Transaction),
+}
+
+impl UnsignedTransaction {
+    pub fn encode(&self, chain_id: u64, signature: Option<SignatureComponents>) -> BytesMut {
+        UnverifiedTransaction {
+            unsigned: self.clone(),
+            chain_id,
+            signature,
+            hash: Default::default(),
+        }
+        .rlp_bytes()
+    }
+
+    pub fn to(&self) -> Option<H160> {
+        match self {
+            UnsignedTransaction::Legacy(tx) => tx.get_to(),
+            UnsignedTransaction::Eip2930(tx) => tx.get_to(),
+            UnsignedTransaction::Eip1559(tx) => tx.get_to(),
+        }
+    }
+
+    pub fn value(&self) -> U256 {
+        match self {
+            UnsignedTransaction::Legacy(tx) => tx.value,
+            UnsignedTransaction::Eip2930(tx) => tx.value,
+            UnsignedTransaction::Eip1559(tx) => tx.value,
+        }
+    }
+
+    pub fn data(&self) -> Bytes {
+        match self {
+            UnsignedTransaction::Legacy(tx) => tx.data.clone(),
+            UnsignedTransaction::Eip2930(tx) => tx.data.clone(),
+            UnsignedTransaction::Eip1559(tx) => tx.data.clone(),
+        }
+    }
+
+    pub fn gas_price(&self) -> U256 {
+        match self {
+            UnsignedTransaction::Legacy(tx) => tx.gas_price,
+            UnsignedTransaction::Eip2930(tx) => tx.gas_price,
+            UnsignedTransaction::Eip1559(tx) => tx.gas_price,
+        }
+    }
+
+    pub fn gas_limit(&self) -> U256 {
+        match self {
+            UnsignedTransaction::Legacy(tx) => tx.gas_limit,
+            UnsignedTransaction::Eip2930(tx) => tx.gas_limit,
+            UnsignedTransaction::Eip1559(tx) => tx.gas_limit,
+        }
+    }
+
+    pub fn nonce(&self) -> U256 {
+        match self {
+            UnsignedTransaction::Legacy(tx) => tx.nonce,
+            UnsignedTransaction::Eip2930(tx) => tx.nonce,
+            UnsignedTransaction::Eip1559(tx) => tx.nonce,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct LegacyTransaction {
+    pub nonce:     U256,
+    pub gas_price: U256,
+    pub gas_limit: U256,
+    pub action:    TransactionAction,
+    pub value:     U256,
+    pub data:      Bytes,
+}
+
+impl std::hash::Hash for LegacyTransaction {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.nonce.hash(state);
+        self.gas_price.hash(state);
+        self.gas_limit.hash(state);
+        self.value.hash(state);
+        self.data.hash(state);
+        if let TransactionAction::Call(addr) = self.action {
+            addr.hash(state);
+        }
+    }
+}
+
+impl LegacyTransaction {
+    pub fn get_to(&self) -> Option<H160> {
+        match self.action {
+            TransactionAction::Call(to) => Some(to),
+            TransactionAction::Create => None,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct Eip2930Transaction {
+    pub nonce:       U256,
+    pub gas_price:   U256,
+    pub gas_limit:   U256,
+    pub action:      TransactionAction,
+    pub value:       U256,
+    pub data:        Bytes,
+    pub access_list: AccessList,
+}
+
+impl std::hash::Hash for Eip2930Transaction {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.nonce.hash(state);
+        self.gas_price.hash(state);
+        self.gas_limit.hash(state);
+        self.value.hash(state);
+        self.data.hash(state);
+        if let TransactionAction::Call(addr) = self.action {
+            addr.hash(state);
+        }
+
+        for access in self.access_list.iter() {
+            access.address.hash(state);
+        }
+    }
+}
+
+impl Eip2930Transaction {
+    pub fn get_to(&self) -> Option<H160> {
+        match self.action {
+            TransactionAction::Call(to) => Some(to),
+            TransactionAction::Create => None,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Eip1559Transaction {
     pub nonce:                    U256,
@@ -41,20 +177,17 @@ impl std::hash::Hash for Eip1559Transaction {
 }
 
 impl Eip1559Transaction {
-    pub fn encode(&self, chain_id: u64, signature: Option<SignatureComponents>) -> BytesMut {
-        UnverifiedTransaction {
-            unsigned: self.clone(),
-            chain_id,
-            signature,
-            hash: Default::default(),
+    pub fn get_to(&self) -> Option<H160> {
+        match self.action {
+            TransactionAction::Call(to) => Some(to),
+            TransactionAction::Create => None,
         }
-        .rlp_bytes()
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
 pub struct UnverifiedTransaction {
-    pub unsigned:  Eip1559Transaction,
+    pub unsigned:  UnsignedTransaction,
     pub signature: Option<SignatureComponents>,
     pub chain_id:  u64,
     pub hash:      H256,
@@ -84,6 +217,21 @@ impl UnverifiedTransaction {
 
     pub fn signature_hash(&self) -> Hash {
         Hasher::digest(self.unsigned.encode(self.chain_id, None))
+    }
+
+    pub fn recover_public(&self) -> ProtocolResult<Public> {
+        Ok(Public::from_slice(
+            &secp256k1_recover(
+                self.signature_hash().as_bytes(),
+                self.signature
+                    .as_ref()
+                    .ok_or(TypesError::MissingSignature)?
+                    .as_bytes()
+                    .as_ref(),
+            )
+            .map_err(TypesError::Crypto)?
+            .serialize_uncompressed()[1..65],
+        ))
     }
 }
 
@@ -123,6 +271,33 @@ impl SignatureComponents {
     pub fn is_eth_sig(&self) -> bool {
         self.standard_v <= 1
     }
+
+    pub fn add_chain_replay_protection(&self, chain_id: Option<u64>) -> u64 {
+        let id = if let Some(i) = chain_id {
+            35 + i * 2
+        } else {
+            27
+        };
+
+        self.standard_v as u64 + id
+    }
+
+    pub fn extract_standard_v(v: u64) -> u8 {
+        match v {
+            v if v == 27 => 0,
+            v if v == 28 => 1,
+            v if v >= 35 => ((v - 1) % 2) as u8,
+            _ => 4,
+        }
+    }
+
+    pub fn extract_chain_id(v: u64) -> Option<u64> {
+        if v >= 35 {
+            Some((v - 35) / 2 as u64)
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
@@ -159,11 +334,7 @@ impl TryFrom<UnverifiedTransaction> for SignedTransaction {
 
 impl SignedTransaction {
     pub fn get_to(&self) -> Option<H160> {
-        if let TransactionAction::Call(to) = self.transaction.unsigned.action {
-            Some(to)
-        } else {
-            None
-        }
+        self.transaction.unsigned.to()
     }
 }
 

@@ -62,6 +62,9 @@ pub enum TypesError {
 
     #[display(fmt = "Crypto error {:?}", _0)]
     Crypto(CryptoError),
+
+    #[display(fmt = "Missing signature")]
+    MissingSignature,
 }
 
 impl Error for TypesError {}
