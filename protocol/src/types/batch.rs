@@ -70,7 +70,7 @@ mod tests {
 
         let priv_key = Secp256k1RecoverablePrivateKey::generate(&mut OsRng);
         let signature = Secp256k1Recoverable::sign_message(
-            utx.signature_hash().as_bytes(),
+            utx.signature_hash(true).as_bytes(),
             &priv_key.to_bytes(),
         )
         .unwrap()

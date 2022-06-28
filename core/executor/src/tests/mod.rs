@@ -7,7 +7,8 @@ use evm::backend::{MemoryAccount, MemoryBackend, MemoryVicinity};
 
 use protocol::types::{
     Bytes, Eip1559Transaction, ExitReason, ExitSucceed, Public, SignatureComponents,
-    SignedTransaction, TransactionAction, UnverifiedTransaction, H160, H256, U256,
+    SignedTransaction, TransactionAction, UnsignedTransaction, UnverifiedTransaction, H160, H256,
+    U256,
 };
 use protocol::{codec::hex_decode, traits::Executor};
 
@@ -31,7 +32,7 @@ fn gen_vicinity() -> MemoryVicinity {
 fn gen_tx(sender: H160, addr: H160, value: u64, data: Vec<u8>) -> SignedTransaction {
     SignedTransaction {
         transaction: UnverifiedTransaction {
-            unsigned:  Eip1559Transaction {
+            unsigned:  UnsignedTransaction::Eip1559(Eip1559Transaction {
                 nonce:                    U256::default(),
                 max_priority_fee_per_gas: U256::default(),
                 gas_price:                U256::default(),
@@ -40,7 +41,7 @@ fn gen_tx(sender: H160, addr: H160, value: u64, data: Vec<u8>) -> SignedTransact
                 value:                    value.into(),
                 data:                     data.into(),
                 access_list:              Vec::new(),
-            },
+            }),
             signature: Some(SignatureComponents {
                 standard_v: 0,
                 r:          Bytes::default(),
@@ -133,7 +134,9 @@ fn test_simplestorage() {
         0,
         hex_decode(simplestorage_create_code).unwrap(),
     );
-    tx.transaction.unsigned.action = TransactionAction::Create;
+    tx.transaction
+        .unsigned
+        .set_action(TransactionAction::Create);
     let r = executor.inner_exec(&mut backend, tx);
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Returned));
     assert!(r.ret.is_empty());

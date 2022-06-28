@@ -2,7 +2,7 @@ pub use ethereum::{
     AccessList, AccessListItem, EIP1559TransactionMessage as TransactionMessage, TransactionAction,
     TransactionRecoveryId, TransactionSignature,
 };
-use rlp::Encodable;
+use rlp::{Encodable, RlpStream};
 use serde::{Deserialize, Serialize};
 
 use common_crypto::secp256k1_recover;
@@ -18,6 +18,36 @@ pub enum UnsignedTransaction {
 }
 
 impl UnsignedTransaction {
+    pub fn max_priority_fee_per_gas(&self) -> Option<U256> {
+        match self {
+            UnsignedTransaction::Eip1559(tx) => Some(tx.max_priority_fee_per_gas),
+            _ => None,
+        }
+    }
+
+    pub fn set_action(&mut self, action: TransactionAction) {
+        match self {
+            UnsignedTransaction::Legacy(tx) => tx.action = action,
+            UnsignedTransaction::Eip2930(tx) => tx.action = action,
+            UnsignedTransaction::Eip1559(tx) => tx.action = action,
+        }
+    }
+
+    pub fn get_legacy(&self) -> Option<LegacyTransaction> {
+        match self {
+            UnsignedTransaction::Legacy(tx) => Some(tx.clone()),
+            _ => None,
+        }
+    }
+
+    pub fn as_u8(&self) -> u8 {
+        match self {
+            UnsignedTransaction::Legacy(_) => unreachable!(),
+            UnsignedTransaction::Eip2930(_) => 1u8,
+            UnsignedTransaction::Eip1559(_) => 2u8,
+        }
+    }
+
     pub fn encode(&self, chain_id: u64, signature: Option<SignatureComponents>) -> BytesMut {
         UnverifiedTransaction {
             unsigned: self.clone(),
@@ -73,6 +103,22 @@ impl UnsignedTransaction {
             UnsignedTransaction::Legacy(tx) => tx.nonce,
             UnsignedTransaction::Eip2930(tx) => tx.nonce,
             UnsignedTransaction::Eip1559(tx) => tx.nonce,
+        }
+    }
+
+    pub fn action(&self) -> TransactionAction {
+        match self {
+            UnsignedTransaction::Legacy(tx) => tx.action,
+            UnsignedTransaction::Eip2930(tx) => tx.action,
+            UnsignedTransaction::Eip1559(tx) => tx.action,
+        }
+    }
+
+    pub fn access_list(&self) -> AccessList {
+        match self {
+            UnsignedTransaction::Legacy(_) => Vec::new(),
+            UnsignedTransaction::Eip2930(tx) => tx.access_list.clone(),
+            UnsignedTransaction::Eip1559(tx) => tx.access_list.clone(),
         }
     }
 }
@@ -215,14 +261,23 @@ impl UnverifiedTransaction {
         Ok(())
     }
 
-    pub fn signature_hash(&self) -> Hash {
+    /// The `with_chain_id` argument is only used for tests
+    pub fn signature_hash(&self, with_chain_id: bool) -> Hash {
+        if !with_chain_id {
+            if let Some(legacy_tx) = self.unsigned.get_legacy() {
+                let mut s = RlpStream::new();
+                legacy_tx.rlp_encode(&mut s, None, None);
+                return Hasher::digest(s.out());
+            }
+        }
+
         Hasher::digest(self.unsigned.encode(self.chain_id, None))
     }
 
-    pub fn recover_public(&self) -> ProtocolResult<Public> {
+    pub fn recover_public(&self, with_chain_id: bool) -> ProtocolResult<Public> {
         Ok(Public::from_slice(
             &secp256k1_recover(
-                self.signature_hash().as_bytes(),
+                self.signature_hash(with_chain_id).as_bytes(),
                 self.signature
                     .as_ref()
                     .ok_or(TypesError::MissingSignature)?
@@ -293,7 +348,7 @@ impl SignatureComponents {
 
     pub fn extract_chain_id(v: u64) -> Option<u64> {
         if v >= 35 {
-            Some((v - 35) / 2 as u64)
+            Some((v - 35) / 2u64)
         } else {
             None
         }
@@ -315,7 +370,7 @@ impl TryFrom<UnverifiedTransaction> for SignedTransaction {
             return Err(TypesError::Unsigned);
         }
 
-        let hash = utx.signature_hash();
+        let hash = utx.signature_hash(true);
         let public = Public::from_slice(
             &secp256k1_recover(
                 hash.as_bytes(),

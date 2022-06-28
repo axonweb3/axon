@@ -16,7 +16,7 @@ use core_executor::NATIVE_TOKEN_ISSUE_ADDRESS;
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
 use protocol::types::{
     public_to_address, recover_intact_pub_key, Bytes, Eip1559Transaction, Hash, Public,
-    SignedTransaction, TransactionAction, UnverifiedTransaction, H256, U256,
+    SignedTransaction, TransactionAction, UnsignedTransaction, UnverifiedTransaction, H256, U256,
 };
 use protocol::{async_trait, tokio, ProtocolResult};
 
@@ -165,7 +165,7 @@ fn check_hash(tx: &SignedTransaction) -> ProtocolResult<()> {
 
 fn check_sig(stx: &SignedTransaction) -> ProtocolResult<()> {
     Secp256k1Recoverable::verify_signature(
-        stx.transaction.signature_hash().as_bytes(),
+        stx.transaction.signature_hash(true).as_bytes(),
         stx.transaction
             .signature
             .as_ref()
@@ -292,14 +292,14 @@ fn mock_signed_tx(
 ) -> SignedTransaction {
     let raw = mock_transaction(nonce, false);
     let mut tx = UnverifiedTransaction {
-        unsigned:  raw,
+        unsigned:  UnsignedTransaction::Eip1559(raw),
         signature: None,
         chain_id:  random::<u64>(),
         hash:      Default::default(),
     };
 
     let signature = if valid {
-        Secp256k1Recoverable::sign_message(tx.signature_hash().as_bytes(), &priv_key.to_bytes())
+        Secp256k1Recoverable::sign_message(tx.signature_hash(true).as_bytes(), &priv_key.to_bytes())
             .unwrap()
             .to_bytes()
     } else {
@@ -326,14 +326,14 @@ fn mock_system_script_signed_tx(
 ) -> SignedTransaction {
     let raw = mock_transaction(nonce, true);
     let mut tx = UnverifiedTransaction {
-        unsigned:  raw,
+        unsigned:  UnsignedTransaction::Eip1559(raw),
         signature: None,
         chain_id:  random::<u64>(),
         hash:      Default::default(),
     };
 
     let signature = if valid {
-        Secp256k1Recoverable::sign_message(tx.signature_hash().as_bytes(), &priv_key.to_bytes())
+        Secp256k1Recoverable::sign_message(tx.signature_hash(true).as_bytes(), &priv_key.to_bytes())
             .unwrap()
             .to_bytes()
     } else {

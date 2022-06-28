@@ -260,16 +260,16 @@ where
         ctx: Context,
         tx: &SignedTransaction,
     ) -> ProtocolResult<()> {
-        if is_call_system_script(&tx.transaction.unsigned.action) {
+        if is_call_system_script(&tx.transaction.unsigned.action()) {
             return self.check_system_script_tx_authorization(ctx, tx).await;
         }
 
         let addr = &tx.sender;
         if let Some(res) = self.addr_nonce.get(addr) {
-            if res.value() >= &tx.transaction.unsigned.nonce {
+            if res.value() >= &tx.transaction.unsigned.nonce() {
                 return Err(MemPoolError::InvalidNonce {
                     current:  res.value().as_u64(),
-                    tx_nonce: tx.transaction.unsigned.nonce.as_u64(),
+                    tx_nonce: tx.transaction.unsigned.nonce().as_u64(),
                 }
                 .into());
             } else {
@@ -287,10 +287,10 @@ where
         let account = AxonExecutor::default().get_account(&backend, addr);
         self.addr_nonce.insert(*addr, account.nonce);
 
-        if account.nonce >= tx.transaction.unsigned.nonce {
+        if account.nonce >= tx.transaction.unsigned.nonce() {
             return Err(MemPoolError::InvalidNonce {
                 current:  account.nonce.as_u64(),
-                tx_nonce: tx.transaction.unsigned.nonce.as_u64(),
+                tx_nonce: tx.transaction.unsigned.nonce().as_u64(),
             }
             .into());
         }
@@ -327,7 +327,7 @@ where
         }
 
         // check gas limit
-        let gas_limit_tx = stx.transaction.unsigned.gas_limit;
+        let gas_limit_tx = stx.transaction.unsigned.gas_limit();
         if gas_limit_tx.as_u64() > self.gas_limit.load(Ordering::Acquire) {
             if ctx.is_network_origin_txs() {
                 self.network.report(
@@ -362,7 +362,7 @@ where
             BlockchainType::Ethereum => {
                 // use original Secp256k1 library to verify
                 Secp256k1Recoverable::verify_signature(
-                    stx.transaction.signature_hash().as_bytes(),
+                    stx.transaction.signature_hash(true).as_bytes(),
                     signature.as_bytes().as_ref(),
                     recover_intact_pub_key(&stx.public.unwrap()).as_bytes(),
                 )
@@ -371,7 +371,9 @@ where
             BlockchainType::Other(blockchain_id) => {
                 let tx_hash = get_ckb_transaction_hash(blockchain_id)?;
                 let args = [
-                    Bytes::from(Vec::from(stx.transaction.signature_hash().to_fixed_bytes())),
+                    Bytes::from(Vec::from(
+                        stx.transaction.signature_hash(true).to_fixed_bytes(),
+                    )),
                     signature.r,
                     signature.s,
                 ];
