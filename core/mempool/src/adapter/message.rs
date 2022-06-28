@@ -7,7 +7,7 @@ use common_apm::Instant;
 use protocol::{
     async_trait, tokio,
     traits::{Context, MemPool, MessageHandler, Priority, Rpc, TrustFeedback},
-    types::{Hash, SignedTransaction},
+    types::{BatchSignedTxs, Hash, SignedTransaction},
 };
 
 use crate::context::TxContext;
@@ -16,11 +16,6 @@ pub const END_GOSSIP_NEW_TXS: &str = "/gossip/mempool/new_txs";
 pub const RPC_PULL_TXS: &str = "/rpc_call/mempool/pull_txs";
 pub const RPC_RESP_PULL_TXS: &str = "/rpc_resp/mempool/pull_txs";
 pub const RPC_RESP_PULL_TXS_SYNC: &str = "/rpc_resp/mempool/pull_txs_sync";
-
-#[derive(Clone, Debug, RlpEncodable, RlpDecodable)]
-pub struct MsgNewTxs {
-    pub batch_stxs: Vec<SignedTransaction>,
-}
 
 pub struct NewTxsHandler<M> {
     mem_pool: Arc<M>,
@@ -40,7 +35,7 @@ impl<M> MessageHandler for NewTxsHandler<M>
 where
     M: MemPool + 'static,
 {
-    type Message = MsgNewTxs;
+    type Message = BatchSignedTxs;
 
     async fn process(&self, ctx: Context, msg: Self::Message) -> TrustFeedback {
         let ctx = ctx.mark_network_origin_new_txs();
@@ -74,15 +69,10 @@ where
         };
 
         // Concurrently insert them
-        if try_join_all(
-            msg.batch_stxs
-                .into_iter()
-                .map(insert_stx)
-                .collect::<Vec<_>>(),
-        )
-        .await
-        .map(|_| ())
-        .is_err()
+        if try_join_all(msg.inner().into_iter().map(insert_stx).collect::<Vec<_>>())
+            .await
+            .map(|_| ())
+            .is_err()
         {
             log::error!("[core_mempool] mempool batch insert error");
         }
@@ -95,11 +85,6 @@ where
 pub struct MsgPullTxs {
     pub height: Option<u64>,
     pub hashes: Vec<Hash>,
-}
-
-#[derive(Clone, Debug, RlpEncodable, RlpDecodable)]
-pub struct MsgPushTxs {
-    pub sig_txs: Vec<SignedTransaction>,
 }
 
 pub struct PullTxsHandler<N, M> {
@@ -131,10 +116,10 @@ where
                 .mem_pool
                 .get_full_txs(ctx.clone(), msg.height, &msg.hashes)
                 .await
-                .map(|sig_txs| MsgPushTxs { sig_txs });
+                .map(BatchSignedTxs::new);
 
             self.network
-                .response::<MsgPushTxs>(ctx, RPC_RESP_PULL_TXS, ret, Priority::High)
+                .response::<BatchSignedTxs>(ctx, RPC_RESP_PULL_TXS, ret, Priority::High)
                 .await
         };
 

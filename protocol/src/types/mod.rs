@@ -36,7 +36,7 @@ pub enum TypesError {
     LengthMismatch { expect: usize, real: usize },
 
     #[display(
-        fmt = "Transaction hash mismatch origin {:?}, computed {:?}",
+        fmt = "Eip1559Transaction hash mismatch origin {:?}, computed {:?}",
         origin,
         calc
     )]
@@ -62,6 +62,9 @@ pub enum TypesError {
 
     #[display(fmt = "Crypto error {:?}", _0)]
     Crypto(CryptoError),
+
+    #[display(fmt = "Missing signature")]
+    MissingSignature,
 }
 
 impl Error for TypesError {}

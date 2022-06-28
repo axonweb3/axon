@@ -274,7 +274,7 @@ impl SystemScriptTxBucket {
     }
 
     pub fn insert(&self, stx: SignedTransaction) -> bool {
-        let data = stx.transaction.unsigned.data.clone();
+        let data = stx.transaction.unsigned.data();
         self.hash_data_map
             .insert(stx.transaction.hash, data.clone());
         self.tx_buckets

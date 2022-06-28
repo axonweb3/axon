@@ -78,7 +78,7 @@ impl<Adapter: APIAdapter> JsonRpcImpl<Adapter> {
 impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
     #[metrics_rpc("eth_sendRawTransaction")]
     async fn send_raw_transaction(&self, tx: Hex) -> RpcResult<H256> {
-        let utx = UnverifiedTransaction::decode(&tx.as_bytes()[1..])
+        let utx = UnverifiedTransaction::decode(&tx.as_bytes())
             .map_err(|e| Error::Custom(e.to_string()))?;
         utx.check_hash().map_err(|e| Error::Custom(e.to_string()))?;
 

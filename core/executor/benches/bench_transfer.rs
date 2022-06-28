@@ -13,8 +13,9 @@ use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::codec::{hex_decode, ProtocolCodec};
 use protocol::traits::Executor;
 use protocol::types::{
-    public_to_address, Account, Address, ExecutorContext, Hash, Public, SignedTransaction,
-    Transaction, TransactionAction, UnverifiedTransaction, NIL_DATA, RLP_NULL, U256,
+    public_to_address, Account, Address, Eip1559Transaction, ExecutorContext, Hash, Public,
+    SignedTransaction, TransactionAction, UnsignedTransaction, UnverifiedTransaction, NIL_DATA,
+    RLP_NULL, U256,
 };
 
 lazy_static::lazy_static! {
@@ -59,7 +60,7 @@ impl BenchAdapter {
         mpt.commit().unwrap()
     }
 
-    fn init_bachend(&self) -> AxonExecutorAdapter<ImplStorage<RocksAdapter>, RocksTrieDB> {
+    fn init_backend(&self) -> AxonExecutorAdapter<ImplStorage<RocksAdapter>, RocksTrieDB> {
         AxonExecutorAdapter::from_root(
             self.init_mpt(),
             Arc::clone(&self.trie_db),
@@ -94,7 +95,7 @@ fn time_now() -> u64 {
 }
 
 fn mock_transaction(nonce: u64) -> SignedTransaction {
-    let tx = Transaction {
+    let tx = Eip1559Transaction {
         nonce:                    nonce.into(),
         max_priority_fee_per_gas: 1u64.into(),
         gas_price:                85u64.into(),
@@ -110,13 +111,13 @@ fn mock_transaction(nonce: u64) -> SignedTransaction {
     };
 
     let mut utx = UnverifiedTransaction {
-        unsigned:  tx,
+        unsigned:  UnsignedTransaction::Eip1559(tx),
         signature: None,
         chain_id:  0,
         hash:      Default::default(),
     };
 
-    let raw = utx.signature_hash();
+    let raw = utx.signature_hash(true);
     let signature = Secp256k1Recoverable::sign_message(raw.as_bytes(), &PRIVITE_KEY.to_bytes())
         .unwrap()
         .to_bytes();
@@ -138,7 +139,7 @@ fn mock_txs(number: u64) -> Vec<SignedTransaction> {
 fn criterion_100_txs(c: &mut Criterion) {
     let txs = mock_txs(100);
     let executor = AxonExecutor::default();
-    let mut backend = BenchAdapter::new().init_bachend();
+    let mut backend = BenchAdapter::new().init_backend();
 
     c.bench_function("transfer 100", |b| {
         b.iter(|| executor.exec(&mut backend, txs.clone()))
@@ -148,7 +149,7 @@ fn criterion_100_txs(c: &mut Criterion) {
 fn criterion_1000_txs(c: &mut Criterion) {
     let txs = mock_txs(1000);
     let executor = AxonExecutor::default();
-    let mut backend = BenchAdapter::new().init_bachend();
+    let mut backend = BenchAdapter::new().init_backend();
 
     c.bench_function("transfer 1000", |b| {
         b.iter(|| executor.exec(&mut backend, txs.clone()))
@@ -158,7 +159,7 @@ fn criterion_1000_txs(c: &mut Criterion) {
 fn criterion_10000_txs(c: &mut Criterion) {
     let txs = mock_txs(10000);
     let executor = AxonExecutor::default();
-    let mut backend = BenchAdapter::new().init_bachend();
+    let mut backend = BenchAdapter::new().init_backend();
 
     c.bench_function("transfer 10000", |b| {
         b.iter(|| executor.exec(&mut backend, txs.clone()))

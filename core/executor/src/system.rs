@@ -21,7 +21,7 @@ impl SystemExecutor {
         backend: &mut B,
         tx: SignedTransaction,
     ) -> TxResp {
-        match classify_script(&tx.transaction.unsigned.action) {
+        match classify_script(tx.transaction.unsigned.action()) {
             SystemScriptCategory::NativeToken => native_token::call_native_token(backend, tx),
         }
     }
@@ -64,23 +64,25 @@ mod native_token {
         tx: SignedTransaction,
     ) -> TxResp {
         let tx = tx.transaction.unsigned;
+        let tx_data = tx.data();
+        let tx_value = *tx.value();
 
-        if tx.data.len() < 21 || tx.data[0] > 1 {
-            return revert_resp(tx.gas_limit);
+        if tx_data.len() < 21 || tx_data[0] > 1 {
+            return revert_resp(*tx.gas_limit());
         }
 
-        let direction = tx.data[0] == 0u8;
-        let l2_addr = H160::from_slice(&tx.data[1..21]);
+        let direction = tx_data[0] == 0u8;
+        let l2_addr = H160::from_slice(&tx_data[1..21]);
         let mut account = backend.basic(l2_addr);
 
         if direction {
-            account.balance += tx.value;
+            account.balance += tx_value;
         } else {
-            if account.balance < tx.value {
-                return revert_resp(tx.gas_limit);
+            if account.balance < tx_value {
+                return revert_resp(*tx.gas_limit());
             }
 
-            account.balance -= tx.value;
+            account.balance -= tx_value;
         }
 
         backend.apply(
@@ -102,7 +104,7 @@ mod native_token {
             exit_reason:  ExitReason::Succeed(ExitSucceed::Returned),
             ret:          account.balance.encode().unwrap().to_vec(),
             gas_used:     0u64,
-            remain_gas:   tx.gas_limit.as_u64(),
+            remain_gas:   tx.gas_limit().as_u64(),
             logs:         vec![],
             code_address: None,
             removed:      false,

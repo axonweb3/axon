@@ -14,15 +14,15 @@ use rand::{random, rngs::OsRng};
 use common_crypto::{
     Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey, Signature,
 };
-use protocol::types::Bytes;
 use protocol::types::{
-    Block, ExitReason, ExitSucceed, Hash, Hasher, Header, Proof, Receipt, SignatureComponents,
-    SignedTransaction, Transaction, TransactionAction, UnverifiedTransaction,
+    Block, Eip1559Transaction, ExitReason, ExitSucceed, Hash, Hasher, Header, Proof, Receipt,
+    SignatureComponents, SignedTransaction, TransactionAction, UnverifiedTransaction,
 };
+use protocol::types::{Bytes, UnsignedTransaction};
 
 fn mock_signed_tx() -> SignedTransaction {
     let mut utx = UnverifiedTransaction {
-        unsigned:  Transaction {
+        unsigned:  UnsignedTransaction::Eip1559(Eip1559Transaction {
             nonce:                    Default::default(),
             max_priority_fee_per_gas: Default::default(),
             gas_price:                Default::default(),
@@ -31,7 +31,7 @@ fn mock_signed_tx() -> SignedTransaction {
             value:                    Default::default(),
             data:                     Bytes::new(),
             access_list:              vec![],
-        },
+        }),
         signature: Some(SignatureComponents {
             standard_v: 4,
             r:          Default::default(),
@@ -43,10 +43,12 @@ fn mock_signed_tx() -> SignedTransaction {
     .calc_hash();
 
     let priv_key = Secp256k1RecoverablePrivateKey::generate(&mut OsRng);
-    let signature =
-        Secp256k1Recoverable::sign_message(utx.signature_hash().as_bytes(), &priv_key.to_bytes())
-            .unwrap()
-            .to_bytes();
+    let signature = Secp256k1Recoverable::sign_message(
+        utx.signature_hash(true).as_bytes(),
+        &priv_key.to_bytes(),
+    )
+    .unwrap()
+    .to_bytes();
     utx.signature = Some(signature.into());
 
     utx.try_into().unwrap()

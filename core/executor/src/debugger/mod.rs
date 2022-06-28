@@ -11,8 +11,8 @@ use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::codec::ProtocolCodec;
 use protocol::traits::Executor;
 use protocol::types::{
-    Account, ExecResp, ExecutorContext, Hash, Hasher, SignedTransaction, Transaction,
-    UnverifiedTransaction, H160, H256, NIL_DATA, RLP_NULL, U256,
+    Account, Eip1559Transaction, ExecResp, ExecutorContext, Hash, Hasher, SignedTransaction,
+    UnsignedTransaction, UnverifiedTransaction, H160, H256, NIL_DATA, RLP_NULL, U256,
 };
 
 use crate::adapter::{AxonExecutorAdapter, MPTTrie};
@@ -88,9 +88,9 @@ impl EvmDebugger {
     }
 }
 
-pub fn mock_signed_tx(tx: Transaction, sender: H160) -> SignedTransaction {
+pub fn mock_signed_tx(tx: Eip1559Transaction, sender: H160) -> SignedTransaction {
     let utx = UnverifiedTransaction {
-        unsigned:  tx,
+        unsigned:  UnsignedTransaction::Eip1559(tx),
         hash:      Hash::default(),
         chain_id:  5u64,
         signature: None,

@@ -20,6 +20,10 @@ macro_rules! batch_msg_type {
         }
 
         impl $name {
+            pub fn new(inner: Vec<$ty>) -> Self {
+                Self(inner)
+            }
+
             pub fn inner(self) -> Vec<$ty> {
                 self.0
             }
@@ -39,15 +43,17 @@ mod tests {
     use common_crypto::{
         Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey, Signature,
     };
+    use rlp::Encodable;
 
     use crate::codec::ProtocolCodec;
     use crate::types::{
-        SignatureComponents, Transaction, TransactionAction, UnverifiedTransaction,
+        Eip1559Transaction, SignatureComponents, TransactionAction, UnsignedTransaction,
+        UnverifiedTransaction,
     };
 
     fn mock_sign_tx() -> SignedTransaction {
         let mut utx = UnverifiedTransaction {
-            unsigned:  Transaction {
+            unsigned:  UnsignedTransaction::Eip1559(Eip1559Transaction {
                 nonce:                    Default::default(),
                 max_priority_fee_per_gas: Default::default(),
                 gas_price:                Default::default(),
@@ -56,7 +62,7 @@ mod tests {
                 value:                    Default::default(),
                 data:                     Bytes::new(),
                 access_list:              vec![],
-            },
+            }),
             signature: Some(SignatureComponents {
                 standard_v: 4,
                 r:          Default::default(),
@@ -69,7 +75,7 @@ mod tests {
 
         let priv_key = Secp256k1RecoverablePrivateKey::generate(&mut OsRng);
         let signature = Secp256k1Recoverable::sign_message(
-            utx.signature_hash().as_bytes(),
+            utx.signature_hash(true).as_bytes(),
             &priv_key.to_bytes(),
         )
         .unwrap()
@@ -82,7 +88,7 @@ mod tests {
     #[test]
     fn test_codec() {
         let stx = mock_sign_tx();
-        let raw = rlp::encode(&stx);
+        let raw = stx.rlp_bytes();
         let decode = SignedTransaction::decode(raw).unwrap();
         assert_eq!(stx, decode);
     }

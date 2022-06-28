@@ -20,10 +20,9 @@ use common_crypto::{
     ToPublicKey, UncompressedPublicKey,
 };
 use core_executor::{AxonExecutor, AxonExecutorAdapter};
-use protocol::traits::{CkbClient, Context, CrossAdapter, CrossClient, Executor, MemPool, Storage};
 use protocol::types::{
-    public_to_address, Block, Bytes, CrossChainTransferPayload, Identity, Log, Proof, Proposal,
-    Public, SignedTransaction, SubmitCheckpointPayload, Transaction, TransactionAction,
+    public_to_address, Block, Bytes, CrossChainTransferPayload, Eip1559Transaction, Identity, Log,
+    Proof, Proposal, Public, SignedTransaction, SubmitCheckpointPayload, TransactionAction,
     UnverifiedTransaction, H160, H256, U256,
 };
 use protocol::{
@@ -32,6 +31,10 @@ use protocol::{
     lazy::{CHAIN_ID, CURRENT_STATE_ROOT},
     tokio::{self, sync::mpsc},
     ProtocolResult,
+};
+use protocol::{
+    traits::{CkbClient, Context, CrossAdapter, CrossClient, Executor, MemPool, Storage},
+    types::UnsignedTransaction,
 };
 
 ethabi_contract::use_contract!(asset, "./src/adapter/abi/asset.abi");
@@ -294,7 +297,7 @@ where
 
         let input = asset_functions::mint::encode_input(distribution_amount, addr, tx_hash);
 
-        let tx = Transaction {
+        let tx = Eip1559Transaction {
             nonce:                    self.get_nonce(&addr),
             max_priority_fee_per_gas: TWO_THOUSAND.into(),
             gas_price:                TWO_THOUSAND.into(),
@@ -306,12 +309,12 @@ where
         };
 
         let mut utx = UnverifiedTransaction {
-            unsigned:  tx,
+            unsigned:  UnsignedTransaction::Eip1559(tx),
             signature: None,
             chain_id:  **CHAIN_ID.load(),
             hash:      Default::default(),
         };
-        let raw = utx.signature_hash();
+        let raw = utx.signature_hash(true);
         let signature =
             Secp256k1Recoverable::sign_message(raw.as_bytes(), &self.priv_key.to_bytes())
                 .unwrap()

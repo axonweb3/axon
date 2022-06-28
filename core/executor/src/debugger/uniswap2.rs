@@ -33,8 +33,8 @@ fn read_code(path: &str) -> String {
     contents.trim().to_string()
 }
 
-fn construct_tx(action: TransactionAction, value: U256, data: Vec<u8>) -> Transaction {
-    Transaction {
+fn construct_tx(action: TransactionAction, value: U256, data: Vec<u8>) -> Eip1559Transaction {
+    Eip1559Transaction {
         nonce: U256::default(),
         max_priority_fee_per_gas: U256::default(),
         gas_price: U256::default(),
