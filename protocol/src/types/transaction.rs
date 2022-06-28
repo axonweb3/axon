@@ -66,11 +66,11 @@ impl UnsignedTransaction {
         }
     }
 
-    pub fn value(&self) -> U256 {
+    pub fn value(&self) -> &U256 {
         match self {
-            UnsignedTransaction::Legacy(tx) => tx.value,
-            UnsignedTransaction::Eip2930(tx) => tx.value,
-            UnsignedTransaction::Eip1559(tx) => tx.value,
+            UnsignedTransaction::Legacy(tx) => &tx.value,
+            UnsignedTransaction::Eip2930(tx) => &tx.value,
+            UnsignedTransaction::Eip1559(tx) => &tx.value,
         }
     }
 
@@ -82,35 +82,35 @@ impl UnsignedTransaction {
         }
     }
 
-    pub fn gas_price(&self) -> U256 {
+    pub fn gas_price(&self) -> &U256 {
         match self {
-            UnsignedTransaction::Legacy(tx) => tx.gas_price,
-            UnsignedTransaction::Eip2930(tx) => tx.gas_price,
-            UnsignedTransaction::Eip1559(tx) => tx.gas_price,
+            UnsignedTransaction::Legacy(tx) => &tx.gas_price,
+            UnsignedTransaction::Eip2930(tx) => &tx.gas_price,
+            UnsignedTransaction::Eip1559(tx) => &tx.gas_price,
         }
     }
 
-    pub fn gas_limit(&self) -> U256 {
+    pub fn gas_limit(&self) -> &U256 {
         match self {
-            UnsignedTransaction::Legacy(tx) => tx.gas_limit,
-            UnsignedTransaction::Eip2930(tx) => tx.gas_limit,
-            UnsignedTransaction::Eip1559(tx) => tx.gas_limit,
+            UnsignedTransaction::Legacy(tx) => &tx.gas_limit,
+            UnsignedTransaction::Eip2930(tx) => &tx.gas_limit,
+            UnsignedTransaction::Eip1559(tx) => &tx.gas_limit,
         }
     }
 
-    pub fn nonce(&self) -> U256 {
+    pub fn nonce(&self) -> &U256 {
         match self {
-            UnsignedTransaction::Legacy(tx) => tx.nonce,
-            UnsignedTransaction::Eip2930(tx) => tx.nonce,
-            UnsignedTransaction::Eip1559(tx) => tx.nonce,
+            UnsignedTransaction::Legacy(tx) => &tx.nonce,
+            UnsignedTransaction::Eip2930(tx) => &tx.nonce,
+            UnsignedTransaction::Eip1559(tx) => &tx.nonce,
         }
     }
 
-    pub fn action(&self) -> TransactionAction {
+    pub fn action(&self) -> &TransactionAction {
         match self {
-            UnsignedTransaction::Legacy(tx) => tx.action,
-            UnsignedTransaction::Eip2930(tx) => tx.action,
-            UnsignedTransaction::Eip1559(tx) => tx.action,
+            UnsignedTransaction::Legacy(tx) => &tx.action,
+            UnsignedTransaction::Eip2930(tx) => &tx.action,
+            UnsignedTransaction::Eip1559(tx) => &tx.action,
         }
     }
 

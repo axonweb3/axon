@@ -390,14 +390,14 @@ mod tests {
         let tx = UnverifiedTransaction::decode(&Rlp::new(&bytes)).unwrap();
 
         assert!(tx.unsigned.data().is_empty());
-        assert_eq!(tx.unsigned.gas_limit(), U256::from(0x5208u64));
-        assert_eq!(tx.unsigned.gas_price(), U256::from(0x01u64));
-        assert_eq!(tx.unsigned.nonce(), U256::from(0x00u64));
+        assert_eq!(*tx.unsigned.gas_limit(), U256::from(0x5208u64));
+        assert_eq!(*tx.unsigned.gas_price(), U256::from(0x01u64));
+        assert_eq!(*tx.unsigned.nonce(), U256::from(0x00u64));
         assert_eq!(
             tx.unsigned.to().unwrap(),
             H160::from_slice(&hex_decode("095e7baea6a6c7c4c2dfeb977efac326af552d87").unwrap())
         );
-        assert_eq!(tx.unsigned.value(), U256::from(0x0au64));
+        assert_eq!(*tx.unsigned.value(), U256::from(0x0au64));
         assert_eq!(
             public_to_address(&tx.recover_public(false).unwrap()),
             H160::from_slice(&hex_decode("0f65fe9276bc9a24ae7083ae28e2660ef72df99e").unwrap())

@@ -100,8 +100,8 @@ impl Executor for AxonExecutor {
         let sys_executor = SystemExecutor::new();
 
         for tx in txs.into_iter() {
-            backend.set_gas_price(tx.transaction.unsigned.gas_price());
-            let mut r = if is_call_system_script(&tx.transaction.unsigned.action()) {
+            backend.set_gas_price(*tx.transaction.unsigned.gas_price());
+            let mut r = if is_call_system_script(tx.transaction.unsigned.action()) {
                 sys_executor.inner_exec(backend, tx)
             } else {
                 evm_executor.inner_exec(backend, tx)

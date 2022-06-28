@@ -21,7 +21,7 @@ impl SystemExecutor {
         backend: &mut B,
         tx: SignedTransaction,
     ) -> TxResp {
-        match classify_script(&tx.transaction.unsigned.action()) {
+        match classify_script(tx.transaction.unsigned.action()) {
             SystemScriptCategory::NativeToken => native_token::call_native_token(backend, tx),
         }
     }
@@ -65,10 +65,10 @@ mod native_token {
     ) -> TxResp {
         let tx = tx.transaction.unsigned;
         let tx_data = tx.data();
-        let tx_value = tx.value();
+        let tx_value = *tx.value();
 
         if tx_data.len() < 21 || tx_data[0] > 1 {
-            return revert_resp(tx.gas_limit());
+            return revert_resp(*tx.gas_limit());
         }
 
         let direction = tx_data[0] == 0u8;
@@ -79,7 +79,7 @@ mod native_token {
             account.balance += tx_value;
         } else {
             if account.balance < tx_value {
-                return revert_resp(tx.gas_limit());
+                return revert_resp(*tx.gas_limit());
             }
 
             account.balance -= tx_value;

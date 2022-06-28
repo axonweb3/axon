@@ -475,7 +475,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
     fn contains_change_metadata(&self, txs: &[SignedTransaction]) -> bool {
         let action = TransactionAction::Call(self.metadata_address);
         txs.iter()
-            .any(|tx| tx.transaction.unsigned.action() == action)
+            .any(|tx| tx.transaction.unsigned.action() == &action)
     }
 
     async fn inner_check_block(&self, ctx: Context, proposal: &Proposal) -> ProtocolResult<()> {

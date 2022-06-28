@@ -29,8 +29,8 @@ impl EvmExecutor {
         let (exit_reason, ret) = match tx.transaction.unsigned.action() {
             TransactionAction::Call(addr) => executor.transact_call(
                 tx.sender,
-                addr,
-                tx.transaction.unsigned.value(),
+                *addr,
+                *tx.transaction.unsigned.value(),
                 tx.transaction.unsigned.data().to_vec(),
                 tx.transaction.unsigned.gas_limit().as_u64(),
                 tx.transaction
@@ -42,7 +42,7 @@ impl EvmExecutor {
             ),
             TransactionAction::Create => executor.transact_create(
                 tx.sender,
-                tx.transaction.unsigned.value(),
+                *tx.transaction.unsigned.value(),
                 tx.transaction.unsigned.data().to_vec(),
                 tx.transaction.unsigned.gas_limit().as_u64(),
                 tx.transaction
@@ -59,7 +59,7 @@ impl EvmExecutor {
         let (values, logs) = executor.into_state().deconstruct();
         backend.apply(values, logs, true);
 
-        let code_address = if tx.transaction.unsigned.action() == TransactionAction::Create
+        let code_address = if tx.transaction.unsigned.action() == &TransactionAction::Create
             && exit_reason.is_succeed()
         {
             Some(code_address(&tx.sender, &old_nonce))
