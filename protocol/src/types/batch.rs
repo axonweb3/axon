@@ -20,6 +20,10 @@ macro_rules! batch_msg_type {
         }
 
         impl $name {
+            pub fn new(inner: Vec<$ty>) -> Self {
+                Self(inner)
+            }
+
             pub fn inner(self) -> Vec<$ty> {
                 self.0
             }
@@ -39,6 +43,7 @@ mod tests {
     use common_crypto::{
         Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey, Signature,
     };
+    use rlp::Encodable;
 
     use crate::codec::ProtocolCodec;
     use crate::types::{
@@ -83,7 +88,7 @@ mod tests {
     #[test]
     fn test_codec() {
         let stx = mock_sign_tx();
-        let raw = rlp::encode(&stx);
+        let raw = stx.rlp_bytes();
         let decode = SignedTransaction::decode(raw).unwrap();
         assert_eq!(stx, decode);
     }

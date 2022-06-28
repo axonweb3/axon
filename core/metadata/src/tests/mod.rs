@@ -86,8 +86,6 @@ impl TestHandle {
 
         let resp = executor.exec(&mut backend, genesis.txs.clone());
 
-        println!("{:?}", resp);
-
         self.state_root = resp.state_root;
         self.storage
             .update_latest_proof(Context::new(), genesis.block.header.proof.clone())
@@ -125,7 +123,6 @@ impl TestHandle {
         )
         .unwrap();
         let resp = AxonExecutor::default().exec(&mut backend, txs);
-        println!("{:?}", resp);
         self.state_root = resp.state_root;
     }
 }

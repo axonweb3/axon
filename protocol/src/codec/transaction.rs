@@ -284,8 +284,6 @@ impl Decodable for UnverifiedTransaction {
         let raw = r.as_raw();
         let header = raw[0];
 
-        println!("{:?}", (header & 0x80) != 0x00);
-
         if (header & 0x80) != 0x00 {
             return LegacyTransaction::rlp_decode(r);
         }
@@ -299,16 +297,14 @@ impl Decodable for UnverifiedTransaction {
 }
 
 impl Encodable for SignedTransaction {
-    fn rlp_append(&self, _s: &mut RlpStream) {}
-
-    fn rlp_bytes(&self) -> BytesMut {
-        self.transaction.rlp_bytes()
+    fn rlp_append(&self, s: &mut RlpStream) {
+        s.append(&self.transaction.rlp_bytes());
     }
 }
 
 impl Decodable for SignedTransaction {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
-        let utx = UnverifiedTransaction::decode(r)?;
+        let utx = UnverifiedTransaction::decode(&Rlp::new(r.data()?))?;
         let public = Public::from_slice(
             &secp256k1_recover(
                 utx.signature_hash(true).as_bytes(),

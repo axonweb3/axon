@@ -9,8 +9,8 @@ mod tests;
 mod tx_wrapper;
 
 pub use adapter::message::{
-    MsgNewTxs, MsgPullTxs, MsgPushTxs, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
-    RPC_PULL_TXS, RPC_RESP_PULL_TXS, RPC_RESP_PULL_TXS_SYNC,
+    MsgPullTxs, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS, RPC_PULL_TXS, RPC_RESP_PULL_TXS,
+    RPC_RESP_PULL_TXS_SYNC,
 };
 pub use adapter::DefaultMemPoolAdapter;
 

@@ -395,14 +395,14 @@ mod tests {
 
         let wal = SignedTxsWAL::new(FULL_TXS_PATH);
         let txs_01 = mock_wal_txs(100);
-        let hash_01 = Hasher::digest(rlp::encode_list(&txs_01));
+        let hash_01 = Hasher::digest(BatchSignedTxs::new(txs_01.clone()).encode_msg().unwrap());
         wal.save(1u64, hash_01, txs_01.clone()).unwrap();
         let txs_02 = mock_wal_txs(100);
-        let hash_02 = Hasher::digest(rlp::encode_list(&txs_02));
+        let hash_02 = Hasher::digest(BatchSignedTxs::new(txs_02.clone()).encode_msg().unwrap());
         wal.save(3u64, hash_02, txs_02.clone()).unwrap();
 
         let txs_03 = mock_wal_txs(100);
-        let hash_03 = Hasher::digest(rlp::encode_list(&txs_03));
+        let hash_03 = Hasher::digest(BatchSignedTxs::new(txs_03.clone()).encode_msg().unwrap());
         wal.save(3u64, hash_03, txs_03.clone()).unwrap();
 
         let res = wal.load_by_number(3);
@@ -486,9 +486,10 @@ mod tests {
     #[test]
     fn test_wal_txs_codec() {
         for _ in 0..1 {
-            let mut txs = BatchSignedTxs(mock_wal_txs(100));
+            let mut txs = BatchSignedTxs::new(mock_wal_txs(100));
+            let raw = txs.encode_msg().unwrap();
             assert_eq!(
-                BatchSignedTxs::decode_msg(txs.encode_msg().unwrap()).unwrap(),
+                BatchSignedTxs::decode_msg(raw).unwrap(),
                 txs
             );
         }

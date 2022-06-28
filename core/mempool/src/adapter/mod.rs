@@ -22,16 +22,14 @@ use protocol::traits::{
     Priority, Rpc, Storage, TrustFeedback,
 };
 use protocol::types::{
-    recover_intact_pub_key, Bytes, Hash, MerkleRoot, SignedTransaction, H160, U256,
+    recover_intact_pub_key, BatchSignedTxs, Bytes, Hash, MerkleRoot, SignedTransaction, H160, U256,
 };
 use protocol::{
     async_trait, codec::ProtocolCodec, lazy::CURRENT_STATE_ROOT, tokio, Display, ProtocolError,
     ProtocolErrorKind, ProtocolResult,
 };
 
-use crate::adapter::message::{
-    MsgNewTxs, MsgPullTxs, MsgPushTxs, END_GOSSIP_NEW_TXS, RPC_PULL_TXS,
-};
+use crate::adapter::message::{MsgPullTxs, END_GOSSIP_NEW_TXS, RPC_PULL_TXS};
 use crate::MemPoolError;
 
 struct IntervalTxsBroadcaster;
@@ -98,7 +96,7 @@ impl IntervalTxsBroadcaster {
         };
 
         for (origin, batch_stxs) in txs_cache.drain() {
-            let gossip_msg = MsgNewTxs { batch_stxs };
+            let gossip_msg = BatchSignedTxs(batch_stxs);
 
             let ctx = Context::new();
             let end = END_GOSSIP_NEW_TXS;
@@ -228,10 +226,10 @@ where
 
         let resp_msg = self
             .network
-            .call::<MsgPullTxs, MsgPushTxs>(ctx, RPC_PULL_TXS, pull_msg, Priority::High)
+            .call::<MsgPullTxs, BatchSignedTxs>(ctx, RPC_PULL_TXS, pull_msg, Priority::High)
             .await?;
 
-        Ok(resp_msg.sig_txs)
+        Ok(resp_msg.inner())
     }
 
     async fn broadcast_tx(
@@ -464,19 +462,19 @@ impl From<AdapterError> for ProtocolError {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
+    use std::sync::Arc;
 
     use futures::{
         channel::mpsc::{unbounded, UnboundedSender},
         stream::StreamExt,
     };
-    use std::sync::Arc;
-
     use parking_lot::Mutex;
 
     use protocol::{traits::MessageCodec, types::Bytes};
 
-    use super::*;
-    use crate::{adapter::message::MsgNewTxs, tests::default_mock_txs};
+    use crate::tests::default_mock_txs;
 
     #[derive(Clone)]
     struct MockGossip {
@@ -555,7 +553,7 @@ mod tests {
     macro_rules! pop_msg {
         ($msgs:expr) => {{
             let msg = $msgs.pop().expect("should have one message");
-            MsgNewTxs::decode(msg).expect("decode MsgNewTxs fail")
+            BatchSignedTxs::decode_msg(msg).expect("decode MsgNewTxs fail")
         }};
     }
 
@@ -584,7 +582,7 @@ mod tests {
         assert_eq!(msgs.len(), 1, "should only have one message");
 
         let msg = pop_msg!(msgs);
-        assert_eq!(msg.batch_stxs.len(), 10, "should only have 10 stx");
+        assert_eq!(msg.0.len(), 10, "should only have 10 stx");
     }
 
     #[tokio::test]
@@ -612,7 +610,7 @@ mod tests {
         assert_eq!(msgs.len(), 1, "should only have one message");
 
         let msg = pop_msg!(msgs);
-        assert_eq!(msg.batch_stxs.len(), 9, "should only have 9 stx");
+        assert_eq!(msg.0.len(), 9, "should only have 9 stx");
     }
 
     #[tokio::test]
@@ -643,17 +641,9 @@ mod tests {
         assert_eq!(msgs.len(), 2, "should only have two messages");
 
         let msg = pop_msg!(msgs);
-        assert_eq!(
-            msg.batch_stxs.len(),
-            9,
-            "last message should only have 9 stx"
-        );
+        assert_eq!(msg.0.len(), 9, "last message should only have 9 stx");
 
         let msg = pop_msg!(msgs);
-        assert_eq!(
-            msg.batch_stxs.len(),
-            10,
-            "first message should only have 10 stx"
-        );
+        assert_eq!(msg.0.len(), 10, "first message should only have 10 stx");
     }
 }
