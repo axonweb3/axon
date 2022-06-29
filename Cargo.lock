@@ -986,6 +986,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cmake"
+version = "0.1.48"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e8ad8cef104ac57b68b89df3208164d228503abbdce70f6880ffa3d970e7443a"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "coins-bip32"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1384,7 +1393,7 @@ dependencies = [
  "ipnetwork",
  "log",
  "parking_lot 0.12.1",
- "prost 0.10.4",
+ "prost",
  "rand 0.7.3",
  "rlp",
  "serde",
@@ -1715,11 +1724,11 @@ dependencies = [
 
 [[package]]
 name = "debugid"
-version = "0.7.3"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6ee87af31d84ef885378aebca32be3d682b0e0dc119d5b4860a2c5bb5046730"
+checksum = "bef552e6f588e446098f6ba40d89ac146c8c7b64aade83c051ee00bb5d2bc18d"
 dependencies = [
- "uuid",
+ "uuid 1.1.2",
 ]
 
 [[package]]
@@ -1926,7 +1935,7 @@ dependencies = [
  "sha2 0.10.2",
  "sha3 0.10.1",
  "thiserror",
- "uuid",
+ "uuid 0.8.2",
 ]
 
 [[package]]
@@ -1973,7 +1982,7 @@ version = "17.0.0"
 source = "git+https://github.com/rust-ethereum/ethabi.git?rev=7edf185#7edf185125a9560d43bba0f84432a7cc874a5218"
 dependencies = [
  "ethabi 17.0.0",
- "heck 0.4.0",
+ "heck",
  "proc-macro2",
  "quote",
  "syn",
@@ -2684,15 +2693,6 @@ dependencies = [
 
 [[package]]
 name = "heck"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d621efb26863f0e9924c6ac577e8275e5e6b77455db64ffa6c65c904e9e132c"
-dependencies = [
- "unicode-segmentation",
-]
-
-[[package]]
-name = "heck"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2540771e65fc8cb83cd6e8a237f70c319bd5c29f78ed1084ba5d50eeac86f7f9"
@@ -3390,15 +3390,13 @@ dependencies = [
 
 [[package]]
 name = "nix"
-version = "0.23.1"
+version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9f866317acbd3a240710c63f065ffb1e4fd466259045ccb504130b7f668f35c6"
+checksum = "8f17df307904acd05aa8e32e97bb20f2a0df1728bbc2d771ae8f9a90463441e9"
 dependencies = [
  "bitflags",
- "cc",
  "cfg-if",
  "libc",
- "memoffset",
 ]
 
 [[package]]
@@ -3941,9 +3939,9 @@ dependencies = [
 
 [[package]]
 name = "pprof"
-version = "0.7.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c090facb9ab04a4fb15fe27f8861059f195dd0847e6f1042016244e129eddeb2"
+checksum = "1bba88ee898c63351101af3e60c66c5398c517681ce533eef8caff10ecf11ec1"
 dependencies = [
  "backtrace",
  "cfg-if",
@@ -3953,9 +3951,9 @@ dependencies = [
  "nix",
  "once_cell",
  "parking_lot 0.12.1",
- "prost 0.9.0",
+ "prost",
  "prost-build",
- "prost-derive 0.9.0",
+ "prost-derive",
  "smallvec",
  "symbolic-demangle",
  "tempfile",
@@ -4064,55 +4062,34 @@ dependencies = [
 
 [[package]]
 name = "prost"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "444879275cb4fd84958b1a1d5420d15e6fcf7c235fe47f053c9c2a80aceb6001"
-dependencies = [
- "bytes",
- "prost-derive 0.9.0",
-]
-
-[[package]]
-name = "prost"
 version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "71adf41db68aa0daaefc69bb30bcd68ded9b9abaad5d1fbb6304c4fb390e083e"
 dependencies = [
  "bytes",
- "prost-derive 0.10.1",
+ "prost-derive",
 ]
 
 [[package]]
 name = "prost-build"
-version = "0.9.0"
+version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62941722fb675d463659e49c4f3fe1fe792ff24fe5bbaa9c08cd3b98a1c354f5"
+checksum = "8ae5a4388762d5815a9fc0dea33c56b021cdc8dde0c55e0c9ca57197254b0cab"
 dependencies = [
  "bytes",
- "heck 0.3.3",
+ "cfg-if",
+ "cmake",
+ "heck",
  "itertools",
  "lazy_static",
  "log",
  "multimap",
  "petgraph",
- "prost 0.9.0",
+ "prost",
  "prost-types",
  "regex",
  "tempfile",
  "which",
-]
-
-[[package]]
-name = "prost-derive"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f9cc1a3263e07e0bf68e96268f37665207b49560d98739662cdfaae215c720fe"
-dependencies = [
- "anyhow",
- "itertools",
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]
@@ -4130,12 +4107,12 @@ dependencies = [
 
 [[package]]
 name = "prost-types"
-version = "0.9.0"
+version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "534b7a0e836e3c482d2693070f982e39e7611da9695d4d1f5a4b186b51faef0a"
+checksum = "2d0a014229361011dc8e69c8a1ec6c2e8d0f2af7c91e3ea3f5b2170298461e68"
 dependencies = [
  "bytes",
- "prost 0.9.0",
+ "prost",
 ]
 
 [[package]]
@@ -5122,7 +5099,7 @@ version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4faebde00e8ff94316c01800f9054fd2ba77d30d9e922541913051d1d978918b"
 dependencies = [
- "heck 0.4.0",
+ "heck",
  "proc-macro2",
  "quote",
  "rustversion",
@@ -5150,21 +5127,21 @@ checksum = "6bdef32e8150c2a081110b42772ffe7d7c9032b606bc226c8260fd97e0976601"
 
 [[package]]
 name = "symbolic-common"
-version = "8.8.0"
+version = "9.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f551f902d5642e58039aee6a9021a61037926af96e071816361644983966f540"
+checksum = "9ea2ab8b85d27d49d184438b4b77fbd521b385cc9c5c802f60e784f2df25a03d"
 dependencies = [
  "debugid",
  "memmap2",
  "stable_deref_trait",
- "uuid",
+ "uuid 1.1.2",
 ]
 
 [[package]]
 name = "symbolic-demangle"
-version = "8.8.0"
+version = "9.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4564ca7b4e6eb14105aa8bbbce26e080f6b5d9c4373e67167ab31f7b86443750"
+checksum = "7939b15a1c62633d1fce17f8a7b668312eaa2d3b117bf4ced5e6e77870c43b6a"
 dependencies = [
  "cpp_demangle",
  "rustc-demangle",
@@ -5778,12 +5755,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "unicode-segmentation"
-version = "1.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e8820f5d777f6224dc4be3632222971ac30164d4a258d595640799554ebfd99"
-
-[[package]]
 name = "unicode-width"
 version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5853,6 +5824,12 @@ dependencies = [
  "getrandom 0.2.7",
  "serde",
 ]
+
+[[package]]
+name = "uuid"
+version = "1.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd6469f4314d5f1ffec476e05f17cc9a78bc7a27a6a857842170bdf8d6f98d2f"
 
 [[package]]
 name = "vcpkg"
