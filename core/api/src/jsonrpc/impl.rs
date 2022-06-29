@@ -1,10 +1,6 @@
-use std::{
-    path::PathBuf,
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc,
-    },
-};
+use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 use jsonrpsee::core::Error;
 
@@ -254,7 +250,11 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
 
     #[metrics_rpc("eth_call")]
     async fn call(&self, req: Web3CallRequest, number: Option<BlockId>) -> RpcResult<Hex> {
-        let data_bytes = req.data.as_bytes();
+        let data_bytes = req
+            .data
+            .as_ref()
+            .map(|hex| hex.as_bytes())
+            .unwrap_or_default();
         let resp = self
             .call_evm(req, data_bytes, number.unwrap_or_default().into())
             .await
@@ -265,11 +265,21 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
 
     #[metrics_rpc("eth_estimateGas")]
     async fn estimate_gas(&self, req: Web3CallRequest, number: Option<BlockId>) -> RpcResult<U256> {
+        if let Some(gas_limit) = req.gas.as_ref() {
+            if gas_limit == &U256::zero() {
+                return Err(Error::Custom("Gas cannot be zero".to_string()));
+            }
+        }
+
         let num = match number {
             Some(BlockId::Num(n)) => Some(n),
             _ => None,
         };
-        let data_bytes = req.data.as_bytes();
+        let data_bytes = req
+            .data
+            .as_ref()
+            .map(|hex| hex.as_bytes())
+            .unwrap_or_default();
         let resp = self
             .call_evm(req, data_bytes, num)
             .await
