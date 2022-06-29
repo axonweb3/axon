@@ -164,6 +164,7 @@ where
         _ctx: Context,
         from: Option<H160>,
         to: Option<H160>,
+        gas_limit: Option<U256>,
         data: Vec<u8>,
         state_root: Hash,
         mock_header: Proposal,
@@ -174,8 +175,9 @@ where
             Arc::clone(&self.storage),
             ExecutorContext::from(mock_header),
         )?;
+        let gas_limit = gas_limit.map(|gas| gas.as_u64()).unwrap_or(u64::MAX);
 
-        Ok(AxonExecutor::default().call(&mut backend, from, to, data))
+        Ok(AxonExecutor::default().call(&mut backend, gas_limit, from, to, data))
     }
 
     async fn get_code_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>> {
