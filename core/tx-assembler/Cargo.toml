@@ -19,5 +19,5 @@ serde_json = "1.0"
 protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [dev-dependencies]
+core-rpc-client = { path = "../rpc-client" }
 rand = "0.7"
-core-rpc-client = { path = "../rpc-client"}
