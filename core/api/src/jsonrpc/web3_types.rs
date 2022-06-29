@@ -333,6 +333,8 @@ pub struct Web3CallRequest {
 pub enum BlockId {
     Num(u64),
     Latest,
+    Earliest,
+    Pending,
 }
 
 impl Default for BlockId {
@@ -345,7 +347,8 @@ impl From<BlockId> for Option<u64> {
     fn from(id: BlockId) -> Self {
         match id {
             BlockId::Num(num) => Some(num),
-            BlockId::Latest => None,
+            BlockId::Earliest => Some(0),
+            _ => None,
         }
     }
 }
@@ -367,6 +370,8 @@ impl Serialize for BlockId {
         match *self {
             BlockId::Num(ref x) => serializer.serialize_str(&format!("0x{:x}", x)),
             BlockId::Latest => serializer.serialize_str("latest"),
+            BlockId::Earliest => serializer.serialize_str("earliest"),
+            BlockId::Pending => serializer.serialize_str("pending"),
         }
     }
 }
@@ -426,6 +431,8 @@ impl<'a> Visitor<'a> for BlockIdVisitor {
     {
         match value {
             "latest" => Ok(BlockId::Latest),
+            "earliest" => Ok(BlockId::Earliest),
+            "pending" => Ok(BlockId::Pending),
             _ if value.starts_with("0x") => u64::from_str_radix(&value[2..], 16)
                 .map(BlockId::Num)
                 .map_err(|e| Error::custom(format!("Invalid block number: {}", e))),
@@ -440,59 +447,6 @@ impl<'a> Visitor<'a> for BlockIdVisitor {
         E: Error,
     {
         self.visit_str(value.as_ref())
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum BlockIdWithPending {
-    BlockId(BlockId),
-    Pending,
-}
-
-impl<'a> Deserialize<'a> for BlockIdWithPending {
-    fn deserialize<D>(deserializer: D) -> Result<BlockIdWithPending, D::Error>
-    where
-        D: Deserializer<'a>,
-    {
-        pub struct InnerVisitor;
-
-        impl<'a> Visitor<'a> for InnerVisitor {
-            type Value = BlockIdWithPending;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                write!(formatter, "a block number or 'latest' or 'pending' ")
-            }
-
-            fn visit_map<V>(self, visitor: V) -> Result<Self::Value, V::Error>
-            where
-                V: MapAccess<'a>,
-            {
-                BlockIdVisitor
-                    .visit_map(visitor)
-                    .map(BlockIdWithPending::BlockId)
-            }
-
-            fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
-            where
-                E: Error,
-            {
-                match value {
-                    "pending" => Ok(BlockIdWithPending::Pending),
-                    _ => BlockIdVisitor
-                        .visit_str(value)
-                        .map(BlockIdWithPending::BlockId),
-                }
-            }
-
-            fn visit_string<E>(self, value: String) -> Result<Self::Value, E>
-            where
-                E: Error,
-            {
-                self.visit_str(value.as_ref())
-            }
-        }
-
-        deserializer.deserialize_any(InnerVisitor)
     }
 }
 

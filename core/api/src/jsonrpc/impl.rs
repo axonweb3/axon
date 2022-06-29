@@ -15,11 +15,11 @@ use protocol::types::{
     Block, BlockNumber, Bytes, Hash, Hasher, Header, Hex, Receipt, SignedTransaction, TxResp,
     UnverifiedTransaction, H160, H256, H64, U256,
 };
-use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
+use protocol::{async_trait, codec::ProtocolCodec, lazy::CHAIN_ID, ProtocolResult};
 
 use crate::jsonrpc::web3_types::{
-    BlockId, BlockIdWithPending, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3FeeHistory,
-    Web3Filter, Web3Log, Web3Receipt, Web3SyncStatus, Web3Transaction,
+    BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter,
+    Web3Log, Web3Receipt, Web3SyncStatus, Web3Transaction,
 };
 
 use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
@@ -214,21 +214,13 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
     async fn get_transaction_count(
         &self,
         address: H160,
-        number: BlockIdWithPending,
+        number: Option<BlockId>,
     ) -> RpcResult<U256> {
-        match number {
-            BlockIdWithPending::BlockId(id) => self
-                .adapter
-                .get_account(Context::new(), address, id.into())
-                .await
-                .map(|account| account.nonce)
-                .map_err(|e| Error::Custom(e.to_string())),
-            BlockIdWithPending::Pending => self
-                .adapter
-                .get_pending_tx_count(Context::new(), address)
-                .await
-                .map_err(|e| Error::Custom(e.to_string())),
-        }
+        self.adapter
+            .get_account(Context::new(), address, number.unwrap_or_default().into())
+            .await
+            .map(|account| account.nonce)
+            .map_err(|e| Error::Custom(e.to_string()))
     }
 
     #[metrics_rpc("eth_blockNumber")]
@@ -242,22 +234,17 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
     }
 
     #[metrics_rpc("eth_getBalance")]
-    async fn get_balance(&self, address: H160, number: BlockId) -> RpcResult<U256> {
+    async fn get_balance(&self, address: H160, number: Option<BlockId>) -> RpcResult<U256> {
         Ok(self
             .adapter
-            .get_account(Context::new(), address, number.into())
+            .get_account(Context::new(), address, number.unwrap_or_default().into())
             .await
             .map_or(U256::zero(), |account| account.balance))
     }
 
     #[metrics_rpc("eth_chainId")]
     async fn chain_id(&self) -> RpcResult<U256> {
-        self.adapter
-            .get_block_header_by_number(Context::new(), None)
-            .await
-            .map_err(|e| Error::Custom(e.to_string()))?
-            .map(|h| U256::from(h.chain_id))
-            .ok_or_else(|| Error::Custom("Cannot get latest block header".to_string()))
+        Ok((**CHAIN_ID.load()).into())
     }
 
     #[metrics_rpc("net_version")]
@@ -266,10 +253,10 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
     }
 
     #[metrics_rpc("eth_call")]
-    async fn call(&self, req: Web3CallRequest, number: BlockId) -> RpcResult<Hex> {
+    async fn call(&self, req: Web3CallRequest, number: Option<BlockId>) -> RpcResult<Hex> {
         let data_bytes = req.data.as_bytes();
         let resp = self
-            .call_evm(req, data_bytes, number.into())
+            .call_evm(req, data_bytes, number.unwrap_or_default().into())
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
         let call_hex_result = Hex::encode(resp.ret);
@@ -292,10 +279,10 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
     }
 
     #[metrics_rpc("eth_getCode")]
-    async fn get_code(&self, address: H160, number: BlockId) -> RpcResult<Hex> {
+    async fn get_code(&self, address: H160, number: Option<BlockId>) -> RpcResult<Hex> {
         let account = self
             .adapter
-            .get_account(Context::new(), address, number.into())
+            .get_account(Context::new(), address, number.unwrap_or_default().into())
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
@@ -312,7 +299,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
     }
 
     #[metrics_rpc("eth_getBlockTransactionCountByNumber")]
-    async fn get_transaction_count_by_number(&self, number: BlockId) -> RpcResult<U256> {
+    async fn get_block_transaction_count_by_number(&self, number: BlockId) -> RpcResult<U256> {
         let block = self
             .adapter
             .get_block_by_number(Context::new(), number.into())
@@ -498,7 +485,8 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                     let convert = |id: BlockId| -> BlockNumber {
                         match id {
                             BlockId::Num(n) => n,
-                            BlockId::Latest => latest_number,
+                            BlockId::Earliest => 0,
+                            _ => latest_number,
                         }
                     };
 
@@ -655,11 +643,11 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         &self,
         address: H160,
         position: U256,
-        number: BlockId,
+        number: Option<BlockId>,
     ) -> RpcResult<Hex> {
         let block = self
             .adapter
-            .get_block_by_number(Context::new(), number.into())
+            .get_block_by_number(Context::new(), number.unwrap_or_default().into())
             .await
             .map_err(|e| Error::Custom(e.to_string()))?
             .ok_or_else(|| Error::Custom("Can't find this block".to_string()))?;
