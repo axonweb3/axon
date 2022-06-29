@@ -313,7 +313,8 @@ where
             let convert = |id: &BlockId| -> BlockNumber {
                 match id {
                     BlockId::Num(n) => *n,
-                    BlockId::Latest => latest_number,
+                    BlockId::Earliest => 0,
+                    _ => latest_number,
                 }
             };
 

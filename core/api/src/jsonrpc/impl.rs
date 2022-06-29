@@ -18,8 +18,8 @@ use protocol::types::{
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
 use crate::jsonrpc::web3_types::{
-    BlockId, BlockIdWithPending, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3FeeHistory,
-    Web3Filter, Web3Log, Web3Receipt, Web3SyncStatus, Web3Transaction,
+    BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter,
+    Web3Log, Web3Receipt, Web3SyncStatus, Web3Transaction,
 };
 
 use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
@@ -214,29 +214,14 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
     async fn get_transaction_count(
         &self,
         address: H160,
-        number: BlockIdWithPending,
+        number: Option<BlockId>,
     ) -> RpcResult<U256> {
-        match number {
-            BlockIdWithPending::BlockId(id) => self
-                .adapter
-                .get_account(Context::new(), address, id.into())
-                .await
-                .map(|account| account.nonce)
-                .map_err(|e| Error::Custom(e.to_string())),
-            BlockIdWithPending::Pending => {
-                let count = self
-                    .adapter
-                    .get_account(Context::new(), address, BlockId::Latest.into())
-                    .await
-                    .map(|account| account.nonce)
-                    .map_err(|e| Error::Custom(e.to_string()))?;
-                self.adapter
-                    .get_pending_tx_count(Context::new(), address)
-                    .await
-                    .map(|a| a + count)
-                    .map_err(|e| Error::Custom(e.to_string()))
-            }
-        }
+        let number = number.unwrap_or_default();
+        self.adapter
+            .get_account(Context::new(), address, number.into())
+            .await
+            .map(|account| account.nonce)
+            .map_err(|e| Error::Custom(e.to_string()))
     }
 
     #[metrics_rpc("eth_blockNumber")]
@@ -320,7 +305,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
     }
 
     #[metrics_rpc("eth_getBlockTransactionCountByNumber")]
-    async fn get_transaction_count_by_number(&self, number: BlockId) -> RpcResult<U256> {
+    async fn get_block_transaction_count_by_number(&self, number: BlockId) -> RpcResult<U256> {
         let block = self
             .adapter
             .get_block_by_number(Context::new(), number.into())
@@ -506,7 +491,8 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                     let convert = |id: BlockId| -> BlockNumber {
                         match id {
                             BlockId::Num(n) => n,
-                            BlockId::Latest => latest_number,
+                            BlockId::Earliest => 0,
+                            _ => latest_number,
                         }
                     };
 
