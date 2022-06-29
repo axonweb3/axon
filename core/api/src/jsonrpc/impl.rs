@@ -62,6 +62,7 @@ impl<Adapter: APIAdapter> JsonRpcImpl<Adapter> {
                 Context::new(),
                 req.from,
                 req.to,
+                req.gas,
                 data.to_vec(),
                 mock_header.state_root,
                 mock_header.into(),
@@ -268,6 +269,12 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         if let Some(gas_limit) = req.gas.as_ref() {
             if gas_limit == &U256::zero() {
                 return Err(Error::Custom("Gas cannot be zero".to_string()));
+            }
+        }
+
+        if let Some(price) = req.gas_price.as_ref() {
+            if price >= &U256::max_value() {
+                return Err(Error::Custom("Gas price too high".to_string()));
             }
         }
 
