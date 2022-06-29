@@ -2,7 +2,7 @@ use ethers_contract::decode_logs;
 use ethers_core::abi::{AbiEncode, RawLog};
 
 use protocol::types::{
-    Address, Transaction, TransactionAction, H160, H256, MAX_BLOCK_GAS_LIMIT,
+    Address, Eip1559Transaction, TransactionAction, H160, H256, MAX_BLOCK_GAS_LIMIT,
     MAX_PRIORITY_FEE_PER_GAS, U256,
 };
 use protocol::{codec::hex_decode, tokio};
@@ -55,7 +55,7 @@ async fn test_crosschain() {
     clear_data("./free-space");
 }
 
-fn build_axon_txs(to_address: H160) -> Transaction {
+fn build_axon_txs(to_address: H160) -> Eip1559Transaction {
     let call_data = CrossFromCKBCall {
         records: vec![CkbtoAxonRecord {
             to:            to_address,
@@ -67,7 +67,7 @@ fn build_axon_txs(to_address: H160) -> Transaction {
         nonce:   U256::zero(),
     };
 
-    Transaction {
+    Eip1559Transaction {
         nonce:                    6u64.into(),
         max_priority_fee_per_gas: MAX_PRIORITY_FEE_PER_GAS.into(),
         gas_price:                U256::one(),

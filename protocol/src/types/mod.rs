@@ -67,7 +67,7 @@ pub enum TypesError {
 
     #[display(fmt = "Missing signature")]
     MissingSignature,
-    
+
     #[display(fmt = "Invalid crosschain direction")]
     InvalidDirection,
 }

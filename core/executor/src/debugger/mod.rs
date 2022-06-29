@@ -8,8 +8,9 @@ use getrandom::getrandom;
 
 use common_config_parser::parse_file;
 use protocol::types::{
-    Account, Eip1559Transaction, ExecResp, ExecutorContext, Hash, Hasher, SignedTransaction,
-    UnsignedTransaction, UnverifiedTransaction, H160, H256, NIL_DATA, RLP_NULL, U256,
+    Account, Eip1559Transaction, ExecResp, ExecutorContext, Hash, Hasher, RichBlock,
+    SignedTransaction, TxResp, UnsignedTransaction, UnverifiedTransaction, H160, H256, NIL_DATA,
+    RLP_NULL, U256,
 };
 use protocol::{codec::ProtocolCodec, traits::Executor};
 

@@ -10,6 +10,8 @@ use common_crypto::secp256k1_recover;
 use crate::types::{Bytes, BytesMut, Hash, Hasher, Public, TypesError, H160, H256, H520, U256};
 use crate::ProtocolResult;
 
+pub const MAX_PRIORITY_FEE_PER_GAS: u64 = 1337;
+
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
 pub enum UnsignedTransaction {
     Legacy(LegacyTransaction),
@@ -191,7 +193,6 @@ impl Eip2930Transaction {
         }
     }
 }
-pub const MAX_PRIORITY_FEE_PER_GAS: u64 = 1337;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Eip1559Transaction {

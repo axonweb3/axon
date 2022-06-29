@@ -27,9 +27,9 @@ use common_crypto::{
 use protocol::tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use protocol::traits::{CkbClient, Context, CrossAdapter, Crosschain};
 use protocol::types::{
-    Address, Block, BlockNumber, Direction, Hash, Hasher, Log, Proof, RequestTxHashes, Requests,
-    SignedTransaction, Transaction, TransactionAction, Transfer, UnverifiedTransaction, H160, H256,
-    MAX_BLOCK_GAS_LIMIT, MAX_PRIORITY_FEE_PER_GAS, U256,
+    Address, Block, BlockNumber, Direction, Eip1559Transaction, Hash, Hasher, Log, Proof,
+    RequestTxHashes, Requests, SignedTransaction, TransactionAction, Transfer, UnsignedTransaction,
+    UnverifiedTransaction, H160, H256, MAX_BLOCK_GAS_LIMIT, MAX_PRIORITY_FEE_PER_GAS, U256,
 };
 use protocol::{async_trait, lazy::CHAIN_ID, tokio, ProtocolResult};
 
@@ -224,7 +224,7 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
             nonce:   U256::zero(),
         };
 
-        let tx = Transaction {
+        let tx = UnsignedTransaction::Eip1559(Eip1559Transaction {
             nonce:                    self
                 .adapter
                 .nonce(Context::new(), self.address)
@@ -238,7 +238,7 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
             value:                    U256::zero(),
             data:                     AbiEncode::encode(call_data).into(),
             access_list:              vec![],
-        };
+        });
 
         let id = **CHAIN_ID.load();
         let signature = self.priv_key.sign_message(

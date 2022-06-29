@@ -15,8 +15,9 @@ use common_crypto::{
 use core_executor::NATIVE_TOKEN_ISSUE_ADDRESS;
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
 use protocol::types::{
-    public_to_address, recover_intact_pub_key, Bytes, Eip1559Transaction, Hash, Public,
-    SignedTransaction, TransactionAction, UnsignedTransaction, UnverifiedTransaction, H256, U256,
+    public_to_address, recover_intact_pub_key, Bytes, Eip1559Transaction, Hash, PackedTxHashes,
+    Public, SignedTransaction, TransactionAction, UnsignedTransaction, UnverifiedTransaction, H256,
+    U256,
 };
 use protocol::{async_trait, tokio, ProtocolResult};
 
