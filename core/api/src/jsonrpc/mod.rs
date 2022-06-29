@@ -65,10 +65,10 @@ pub trait AxonJsonRpc {
     async fn get_block_transaction_count_by_number(&self, number: BlockId) -> RpcResult<U256>;
 
     #[method(name = "eth_getBalance")]
-    async fn get_balance(&self, address: H160, number: BlockId) -> RpcResult<U256>;
+    async fn get_balance(&self, address: H160, number: Option<BlockId>) -> RpcResult<U256>;
 
     #[method(name = "eth_call")]
-    async fn call(&self, req: Web3CallRequest, number: BlockId) -> RpcResult<Hex>;
+    async fn call(&self, req: Web3CallRequest, number: Option<BlockId>) -> RpcResult<Hex>;
 
     #[method(name = "eth_estimateGas")]
     async fn estimate_gas(&self, req: Web3CallRequest, number: Option<BlockId>) -> RpcResult<U256>;
@@ -80,7 +80,7 @@ pub trait AxonJsonRpc {
     async fn net_version(&self) -> RpcResult<U256>;
 
     #[method(name = "eth_getCode")]
-    async fn get_code(&self, address: H160, number: BlockId) -> RpcResult<Hex>;
+    async fn get_code(&self, address: H160, number: Option<BlockId>) -> RpcResult<Hex>;
 
     #[method(name = "eth_getTransactionReceipt")]
     async fn get_transaction_receipt(&self, hash: H256) -> RpcResult<Option<Web3Receipt>>;
@@ -142,7 +142,7 @@ pub trait AxonJsonRpc {
         &self,
         address: H160,
         position: U256,
-        number: BlockId,
+        number: Option<BlockId>,
     ) -> RpcResult<Hex>;
 
     #[method(name = "eth_coinbase")]
