@@ -183,7 +183,7 @@ where
         &self,
         ctx: Context,
         stx: &SignedTransaction,
-    ) -> ProtocolResult<()> {
+    ) -> ProtocolResult<U256> {
         let addr = &stx.sender;
         let block = self.storage.get_latest_block(ctx.clone()).await?;
         let metadata = self
@@ -191,7 +191,7 @@ where
             .get_metadata_unchecked(ctx, block.header.number + 1);
 
         if metadata.verifier_list.iter().any(|ve| &ve.address == addr) {
-            return Ok(());
+            return Ok(U256::zero());
         }
 
         Err(MemPoolError::CheckAuthorization {
@@ -257,7 +257,7 @@ where
         &self,
         ctx: Context,
         tx: &SignedTransaction,
-    ) -> ProtocolResult<()> {
+    ) -> ProtocolResult<U256> {
         if is_call_system_script(tx.transaction.unsigned.action()) {
             return self.check_system_script_tx_authorization(ctx, tx).await;
         }
@@ -271,7 +271,7 @@ where
                 }
                 .into());
             } else {
-                return Ok(());
+                return Ok(tx.transaction.unsigned.nonce() - res.value());
             }
         }
 
@@ -293,7 +293,7 @@ where
             .into());
         }
 
-        Ok(())
+        Ok(tx.transaction.unsigned.nonce() - account.nonce)
     }
 
     async fn check_transaction(&self, ctx: Context, stx: &SignedTransaction) -> ProtocolResult<()> {
@@ -425,6 +425,10 @@ where
         self.max_tx_size
             .store(max_tx_size as usize, Ordering::Release);
         self.addr_nonce.clear();
+    }
+
+    fn clear_nonce_cache(&self) {
+        self.addr_nonce.clear()
     }
 
     fn report_good(&self, ctx: Context) {

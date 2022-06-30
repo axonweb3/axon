@@ -79,7 +79,12 @@ impl PriorityPool {
         Ok(())
     }
 
-    pub fn insert(&self, stx: SignedTransaction, check_limit: bool) -> ProtocolResult<()> {
+    pub fn insert(
+        &self,
+        stx: SignedTransaction,
+        check_limit: bool,
+        check_nonce: U256,
+    ) -> ProtocolResult<()> {
         if let Err(n) = self
             .stock_len
             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |x| {
@@ -107,11 +112,13 @@ impl PriorityPool {
 
         let (ptr, tx) = TxWrapper::from(stx).into_parts();
 
-        if self.tx_map.insert(ptr.hash, tx).is_some() {
+        let res = self.occupy_nonce(Arc::clone(&ptr), check_nonce);
+
+        if res.is_err() || self.tx_map.insert(ptr.hash, tx).is_some() {
             self.stock_len.fetch_sub(1, Ordering::AcqRel);
+            return res;
         } else {
-            let _ = self.co_queue.push(Arc::clone(&ptr));
-            self.occupy_nonce(ptr);
+            let _ = self.co_queue.push(ptr);
         }
         Ok(())
     }
@@ -238,20 +245,36 @@ impl PriorityPool {
         let ptr = timeout_gap.entry(number).or_default();
         for tx in self.tx_map.iter().map(|kv| kv.value().clone()) {
             let tx_wrapper = TxWrapper::from(tx);
-            self.occupy_nonce(tx_wrapper.ptr());
+            let _ = self.occupy_nonce(tx_wrapper.ptr(), U256::zero());
             q.push(tx_wrapper.ptr());
             ptr.insert(tx_wrapper.hash());
         }
     }
 
-    fn occupy_nonce(&self, tx_ptr: TxPtr) {
-        if let Some(old_ptr) = self
-            .occupied_nonce
-            .entry(tx_ptr.sender)
-            .or_insert_with(BTreeMap::new)
-            .insert(tx_ptr.nonce, tx_ptr)
-        {
-            old_ptr.set_dropped();
+    fn occupy_nonce(&self, tx_ptr: TxPtr, check_nonce: U256) -> ProtocolResult<()> {
+        let entry = &mut *self.occupied_nonce.entry(tx_ptr.sender).or_default();
+        if check_nonce > 1.into() {
+            if entry
+                .get(&(tx_ptr.nonce.saturating_sub(1.into())))
+                .is_some()
+            {
+                if let Some(old_tx) = entry.insert(tx_ptr.nonce, tx_ptr) {
+                    old_tx.set_dropped();
+                }
+                Ok(())
+            } else {
+                let key = entry.keys().rev().next();
+                Err(MemPoolError::InvalidNonce {
+                    current:  key.unwrap_or(&U256::zero()).as_u64(),
+                    tx_nonce: tx_ptr.nonce.as_u64(),
+                }
+                .into())
+            }
+        } else {
+            if let Some(old_tx) = entry.insert(tx_ptr.nonce, tx_ptr) {
+                old_tx.set_dropped();
+            }
+            Ok(())
         }
     }
 

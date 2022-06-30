@@ -187,6 +187,39 @@ async fn test_flush_with_concurrent_insert() {
     }
 }
 
+#[tokio::test(flavor = "multi_thread")]
+async fn test_nonce_insert() {
+    let mempool = Arc::new(new_mempool(1024, 0, 0, 0).await);
+
+    let priv_key = Secp256k1RecoverablePrivateKey::generate(&mut OsRng);
+    let pub_key = priv_key.pub_key();
+    let txs: Vec<SignedTransaction> = (1..4)
+        .map(|i| mock_signed_tx(&priv_key, &pub_key, 0, i as u64, true))
+        .collect();
+
+    let pool = mempool.get_tx_cache();
+
+    let _ = pool.insert(txs[2].clone(), false, 3.into());
+
+    assert_eq!(0, pool.len());
+
+    let _ = pool.insert(txs[1].clone(), false, 2.into());
+
+    assert_eq!(0, pool.len());
+
+    pool.insert(txs[0].clone(), false, 1.into()).unwrap();
+
+    assert_eq!(1, pool.len());
+
+    pool.insert(txs[1].clone(), false, 2.into()).unwrap();
+
+    assert_eq!(2, pool.len());
+
+    pool.insert(txs[2].clone(), false, 3.into()).unwrap();
+
+    assert_eq!(3, pool.len());
+}
+
 macro_rules! ensure_order_txs {
     ($in_pool: expr, $out_pool: expr, $pool_size: expr) => {
         let mempool = &Arc::new(new_mempool($pool_size, 0, 0, 0).await);

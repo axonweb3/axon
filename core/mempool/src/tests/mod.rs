@@ -74,8 +74,8 @@ impl MemPoolAdapter for HashMemPoolAdapter {
         &self,
         _ctx: Context,
         _tx: &SignedTransaction,
-    ) -> ProtocolResult<()> {
-        Ok(())
+    ) -> ProtocolResult<U256> {
+        Ok(U256::zero())
     }
 
     async fn check_transaction(&self, _ctx: Context, tx: &SignedTransaction) -> ProtocolResult<()> {
@@ -99,6 +99,8 @@ impl MemPoolAdapter for HashMemPoolAdapter {
     ) -> ProtocolResult<Vec<Option<SignedTransaction>>> {
         Ok(vec![])
     }
+
+    fn clear_nonce_cache(&self) {}
 
     fn set_args(&self, _context: Context, _state_root: H256, _gas_limit: u64, _max_tx_size: u64) {}
 
@@ -283,7 +285,7 @@ fn mock_transaction(nonce: u64, is_call_system_script: bool) -> Eip1559Transacti
     }
 }
 
-fn mock_signed_tx(
+pub fn mock_signed_tx(
     priv_key: &Secp256k1RecoverablePrivateKey,
     pub_key: &Secp256k1RecoverablePublicKey,
     _timeout: u64,
