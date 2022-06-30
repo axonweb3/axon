@@ -25,7 +25,6 @@ members = [
     "common/memory-tracker",
     "common/merkle",
     "common/pubsub",
-
     "core/api",
     "core/cli",
     "core/consensus",
@@ -37,6 +36,8 @@ members = [
     "core/rpc-client",
     "core/run",
     "core/storage",
+
+    "core/tx-assembler",
     "devtools/keypair",
     
     "protocol",

@@ -98,7 +98,7 @@ impl Interoperation for InteroperationImpl {
 impl InteroperationImpl {
     pub async fn new<T: CkbClient>(
         transaction_hash_map: HashMap<u8, H256>,
-        rpc_client: T,
+        rpc_client: Arc<T>,
     ) -> ProtocolResult<Self> {
         let tx_hashes = transaction_hash_map.iter().map(|(_, v)| *v).collect();
         init_dispatcher_from_rpc(rpc_client, tx_hashes).await?;
@@ -108,7 +108,7 @@ impl InteroperationImpl {
 }
 
 async fn init_dispatcher_from_rpc<T: CkbClient>(
-    rpc_client: T,
+    rpc_client: Arc<T>,
     tx_hashes: Vec<H256>,
 ) -> ProtocolResult<()> {
     let ckb_hashes = tx_hashes

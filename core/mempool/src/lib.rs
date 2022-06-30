@@ -21,10 +21,10 @@ use std::sync::Arc;
 use futures::future::try_join_all;
 
 use common_apm::Instant;
-use core_executor::is_call_system_script;
+use core_executor::{is_call_system_script, is_crosschain_transaction};
 use core_network::NetworkContext;
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
-use protocol::types::{BlockNumber, Hash, SignedTransaction, H160, H256, U256};
+use protocol::types::{BlockNumber, Hash, PackedTxHashes, SignedTransaction, H160, H256, U256};
 use protocol::{async_trait, tokio, Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 use crate::context::TxContext;
@@ -184,7 +184,14 @@ where
     Adapter: MemPoolAdapter + 'static,
 {
     async fn insert(&self, ctx: Context, tx: SignedTransaction) -> ProtocolResult<()> {
-        let is_call_system_script = is_call_system_script(tx.transaction.unsigned.action());
+        let is_call_system_script = is_call_system_script(tx.transaction.unsigned.action())
+            || is_crosschain_transaction(tx.transaction.unsigned.action());
+
+        log::warn!(
+            "[mempool]: is call system script {:?}",
+            is_call_system_script
+        );
+
         self.insert_tx(ctx, tx, is_call_system_script).await
     }
 
@@ -193,7 +200,7 @@ where
         _ctx: Context,
         gas_limit: U256,
         tx_num_limit: u64,
-    ) -> ProtocolResult<Vec<Hash>> {
+    ) -> ProtocolResult<PackedTxHashes> {
         log::info!(
             "[core_mempool]: {:?} txs in map while package",
             self.pool.len(),
@@ -203,7 +210,7 @@ where
 
         common_apm::metrics::mempool::MEMPOOL_PACKAGE_SIZE_VEC_STATIC
             .package
-            .observe((txs.len()) as f64);
+            .observe((txs.hashes.len()) as f64);
         common_apm::metrics::mempool::MEMPOOL_TIME_STATIC
             .package
             .observe(common_apm::metrics::duration_to_sec(inst.elapsed()));

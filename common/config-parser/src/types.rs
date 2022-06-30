@@ -164,10 +164,11 @@ pub struct ConfigPrometheus {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct ConfigCrossClient {
+pub struct ConfigCrossChain {
     pub axon_udt_hash:       H256,
     pub ckb_uri:             String,
     pub mercury_uri:         String,
+    pub indexer_uri:         String,
     pub start_block_number:  u64,
     pub pk:                  Hex,
     pub enable:              bool,
@@ -177,6 +178,9 @@ pub struct ConfigCrossClient {
     pub node_address:         H160,
     pub selection_lock_hash:  H256,
     pub checkpoint_type_hash: H256,
+
+    pub acs_lock_code_hash:     H256,
+    pub request_type_code_hash: H256,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -238,7 +242,7 @@ pub struct Config {
     pub rocksdb:                     ConfigRocksDB,
     pub jaeger:                      Option<ConfigJaeger>,
     pub prometheus:                  Option<ConfigPrometheus>,
-    pub cross_client:                ConfigCrossClient,
+    pub cross_client:                ConfigCrossChain,
     pub epoch_len:                   u64,
     pub metadata_contract_address:   H256,
     pub crosschain_contract_address: H256,
@@ -257,6 +261,13 @@ impl Config {
         let mut path_state = self.data_path.clone();
         path_state.push("rocksdb");
         path_state.push("block_data");
+        path_state
+    }
+
+    pub fn data_path_for_crosschain(&self) -> PathBuf {
+        let mut path_state = self.data_path.clone();
+        path_state.push("rocksdb");
+        path_state.push("crosschain");
         path_state
     }
 

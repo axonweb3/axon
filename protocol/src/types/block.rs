@@ -26,6 +26,7 @@ pub struct Proposal {
     pub proof:                      Proof,
     pub last_checkpoint_block_hash: Hash,
     pub chain_id:                   u64,
+    pub call_system_script_count:   u32,
     pub tx_hashes:                  Vec<Hash>,
 }
 
@@ -45,6 +46,7 @@ impl From<Block> for Proposal {
             proof:                      b.header.proof,
             last_checkpoint_block_hash: b.header.last_checkpoint_block_hash,
             chain_id:                   b.header.chain_id,
+            call_system_script_count:   b.header.call_system_script_count,
             tx_hashes:                  b.tx_hashes,
         }
     }
@@ -66,9 +68,15 @@ impl From<Header> for Proposal {
             proof:                      h.proof,
             last_checkpoint_block_hash: h.last_checkpoint_block_hash,
             chain_id:                   h.chain_id,
+            call_system_script_count:   h.call_system_script_count,
             tx_hashes:                  vec![],
         }
     }
+}
+
+pub struct PackedTxHashes {
+    pub hashes:                   Vec<Hash>,
+    pub call_system_script_count: u32,
 }
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq)]
@@ -105,6 +113,7 @@ impl Block {
             base_fee_per_gas:           proposal.base_fee_per_gas,
             proof:                      proposal.proof,
             last_checkpoint_block_hash: proposal.last_checkpoint_block_hash,
+            call_system_script_count:   proposal.call_system_script_count,
             chain_id:                   proposal.chain_id,
         };
 
@@ -139,6 +148,7 @@ pub struct Header {
     pub base_fee_per_gas:           U256,
     pub proof:                      Proof,
     pub last_checkpoint_block_hash: Hash,
+    pub call_system_script_count:   u32,
     pub chain_id:                   u64,
 }
 
@@ -206,6 +216,7 @@ mod tests {
                     base_fee_per_gas:           Default::default(),
                     proof:                      Default::default(),
                     last_checkpoint_block_hash: Default::default(),
+                    call_system_script_count:   0,
                     chain_id:                   0,
                 },
             },

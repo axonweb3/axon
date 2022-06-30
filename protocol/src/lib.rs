@@ -19,13 +19,14 @@ pub enum ProtocolErrorKind {
     CkbClient,
     Consensus,
     Contract,
-    CrossClient,
+    CrossChain,
     Executor,
     Interoperation,
     Mempool,
     Network,
     Storage,
     Service,
+    TxAssembler,
     Main,
 
     // types

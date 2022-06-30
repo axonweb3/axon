@@ -1,14 +1,16 @@
+use std::{future::Future, pin::Pin};
+
+use ckb_jsonrpc_types::{
+    BlockNumber, BlockView, HeaderView, JsonBytes, OutputsValidator, Transaction,
+    TransactionWithStatus,
+};
+use ckb_sdk::rpc::ckb_indexer::{Cell, Pagination, SearchKey};
+use ckb_types::H256;
+
 use crate::types::{
     CrossChainTransferPayload, SubmitCheckpointPayload, TransactionCompletionResponse,
 };
 use crate::{async_trait, traits::Context as OtherContext, ProtocolResult};
-
-use ckb_jsonrpc_types::{
-    BlockNumber, BlockView, HeaderView, OutputsValidator, Transaction, TransactionWithStatus,
-};
-use ckb_types::H256;
-
-use std::{future::Future, pin::Pin};
 
 pub type RPC<T> = Pin<Box<dyn Future<Output = ProtocolResult<T>> + Send + 'static>>;
 
@@ -42,16 +44,24 @@ pub trait CkbClient: Send + Sync {
     ) -> RPC<Vec<Option<TransactionWithStatus>>>;
 
     // mercury api
-
     fn build_cross_chain_transfer_transaction(
         &self,
         ctx: OtherContext,
-        paylod: CrossChainTransferPayload,
+        payload: CrossChainTransferPayload,
     ) -> RPC<TransactionCompletionResponse>;
 
     fn build_submit_checkpoint_transaction(
         &self,
         ctx: OtherContext,
-        paylod: SubmitCheckpointPayload,
+        payload: SubmitCheckpointPayload,
     ) -> RPC<TransactionCompletionResponse>;
+
+    // indexer api
+    fn fetch_live_cells(
+        &self,
+        ctx: OtherContext,
+        search_key: SearchKey,
+        limit: u32,
+        cursor: Option<JsonBytes>,
+    ) -> RPC<Pagination<Cell>>;
 }

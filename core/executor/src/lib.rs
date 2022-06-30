@@ -11,7 +11,10 @@ mod tests;
 mod vm;
 
 pub use crate::adapter::{AxonExecutorAdapter, MPTTrie, RocksTrieDB};
-pub use crate::{system::NATIVE_TOKEN_ISSUE_ADDRESS, vm::code_address};
+pub use crate::system::NATIVE_TOKEN_ISSUE_ADDRESS;
+pub use crate::vm::{
+    code_address, CROSSCHAIN_CONTRACT_ADDRESS, METADATA_CONTRACT_ADDRESS, WCKB_CONTRACT_ADDRESS,
+};
 
 use std::collections::BTreeMap;
 
@@ -143,6 +146,13 @@ impl Executor for AxonExecutor {
 pub fn is_call_system_script(action: &TransactionAction) -> bool {
     match action {
         TransactionAction::Call(addr) => addr == &NATIVE_TOKEN_ISSUE_ADDRESS,
+        TransactionAction::Create => false,
+    }
+}
+
+pub fn is_crosschain_transaction(action: &TransactionAction) -> bool {
+    match action {
+        TransactionAction::Call(addr) => addr == &CROSSCHAIN_CONTRACT_ADDRESS,
         TransactionAction::Create => false,
     }
 }

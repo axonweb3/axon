@@ -74,8 +74,8 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
                 status.tx_num_limit,
             )
             .await?;
-        let signed_txs = self.adapter.get_full_txs(ctx.clone(), &txs).await?;
-        let order_root = Merkle::from_hashes(txs.clone())
+        let signed_txs = self.adapter.get_full_txs(ctx.clone(), &txs.hashes).await?;
+        let order_root = Merkle::from_hashes(txs.hashes.clone())
             .get_root_hash()
             .unwrap_or_default();
 
@@ -93,7 +93,8 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             proof:                      status.proof,
             last_checkpoint_block_hash: status.last_checkpoint_block_hash,
             chain_id:                   self.node_info.chain_id,
-            tx_hashes:                  txs,
+            call_system_script_count:   txs.call_system_script_count,
+            tx_hashes:                  txs.hashes,
         };
 
         if proposal.number != proposal.proof.number + 1 {
@@ -592,7 +593,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         let is_change_metadata = self.contains_change_metadata(&txs);
         let next_block_number = block_number + 1;
 
-        let (receipts, logs) = generate_receipts_and_logs(
+        let (receipts, mut logs) = generate_receipts_and_logs(
             block_number,
             block_hash,
             block.header.state_root,
@@ -601,6 +602,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         );
 
         // Call cross client
+        let _ = logs.split_off(block.header.call_system_script_count as usize);
         self.adapter
             .notify_block_logs(ctx.clone(), block_number, block_hash, &logs)
             .await;

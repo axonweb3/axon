@@ -5,17 +5,26 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+arc-swap = "1.5"
 cita_trie = "3.0"
 ckb-hash = "0.103"
 ckb-jsonrpc-types = "0.103"
-ckb-types = "0.103.0"
+ckb-sdk = "1.0"
+ckb-types = "0.103"
+crossbeam = "0.8"
 ethabi = "17.1"
 ethabi-contract = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
 ethabi-derive = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
+ethers-contract = { version = "0.13", features = ["abigen"] }
+ethers-core = "0.13"
+ethers-providers = "0.13"
 futures = "0.3"
 jsonrpc-core = "18.0"
+lazy_static = "1.4"
 log = "0.4"
-reqwest = { version = "0.11", features = ["json"] }
+molecule = "0.7"
+rlp = "0.5"
+rocksdb = { version = "0.18", package = "ckb-rocksdb" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio-util = { version = "0.7", features = ["codec"] }
@@ -24,3 +33,6 @@ common-config-parser = { path = "../../common/config-parser" }
 common-crypto = { path = "../../common/crypto" }
 core-executor = { path = "../../core/executor" }
 protocol = { path = "../../protocol", package = "axon-protocol" }
+
+[dev-dependencies]
+rand = "0.7"

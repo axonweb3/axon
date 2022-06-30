@@ -148,6 +148,7 @@ fn mock_header(block_number: u64, state: H256) -> Header {
         nonce:                      Default::default(),
         gas_used:                   U256::one(),
         state_root:                 state,
+        call_system_script_count:   0,
     }
 }
 
@@ -166,6 +167,7 @@ fn mock_proposal() -> Proposal {
         proof:                      Default::default(),
         last_checkpoint_block_hash: Default::default(),
         chain_id:                   Default::default(),
+        call_system_script_count:   1,
         tx_hashes:                  vec![],
     }
 }

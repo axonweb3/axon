@@ -22,8 +22,8 @@ use protocol::traits::{
     StorageSchema,
 };
 use protocol::types::{
-    Block, BlockNumber, Bytes, DBBytes, Hash, Hasher, Header, Proof, Receipt, SignedTransaction,
-    H256,
+    Block, BlockNumber, Bytes, DBBytes, Hash, Hasher, Header, Proof, Receipt, RequestTxHashes,
+    SignedTransaction, H256,
 };
 use protocol::{
     async_trait, tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
@@ -336,6 +336,7 @@ impl_storage_schema_for!(LatestProofSchema, Hash, Proof, Block);
 impl_storage_schema_for!(OverlordWalSchema, Hash, Bytes, Wal);
 impl_storage_schema_for!(EvmCodeSchema, Hash, Bytes, Code);
 impl_storage_schema_for!(EvmCodeAddressSchema, Hash, Hash, Code);
+impl_storage_schema_for!(CrossChainRecordSchema, RequestTxHashes, Hash, Crosschain);
 
 #[async_trait]
 impl<Adapter: StorageAdapter> CommonStorage for ImplStorage<Adapter> {
@@ -719,6 +720,25 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
             let proof = ensure_get!(self, *LATEST_PROOF_KEY, LatestProofSchema);
             Ok(proof)
         }
+    }
+
+    async fn insert_crosschain_record(
+        &self,
+        _ctx: Context,
+        reqs: RequestTxHashes,
+        block_hash: Hash,
+    ) -> ProtocolResult<()> {
+        self.adapter
+            .insert::<CrossChainRecordSchema>(reqs, block_hash)
+            .await
+    }
+
+    async fn get_crosschain_record(
+        &self,
+        _ctx: Context,
+        reqs: RequestTxHashes,
+    ) -> ProtocolResult<Option<Hash>> {
+        self.adapter.get::<CrossChainRecordSchema>(reqs).await
     }
 }
 

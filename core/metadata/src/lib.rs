@@ -11,7 +11,7 @@ use std::sync::Arc;
 
 use arc_swap::ArcSwap;
 use ethers_core::abi::{
-    self, AbiEncode, AbiType, Error as AbiError, InvalidOutputType, Tokenizable,
+    self, AbiEncode, AbiType, Detokenize, Error as AbiError, InvalidOutputType,
 };
 use parking_lot::RwLock;
 
@@ -116,8 +116,8 @@ impl<Adapter: MetadataControlAdapter> MetadataController<Adapter> {
 fn decode_resp_metadata(data: &[u8]) -> ProtocolResult<Metadata> {
     let tokens = abi::decode(&[metadata_abi::Metadata::param_type()], data)
         .map_err(MetadataError::AbiDecode)?;
-    let res = metadata_abi::Metadata::from_token(tokens[0].clone())
-        .map_err(MetadataError::InvalidTokenType)?;
+    let res =
+        metadata_abi::Metadata::from_tokens(tokens).map_err(MetadataError::InvalidTokenType)?;
     Ok(res.into())
 }
 

@@ -10,13 +10,14 @@ use common_apm_derive::trace_span;
 use core_executor::{AxonExecutor, AxonExecutorAdapter};
 use core_network::{PeerId, PeerIdExt};
 use protocol::traits::{
-    CommonConsensusAdapter, ConsensusAdapter, Context, CrossClient, Executor, Gossip, MemPool,
+    CommonConsensusAdapter, ConsensusAdapter, Context, Crosschain, Executor, Gossip, MemPool,
     MessageTarget, MetadataControl, Network, PeerTrust, Priority, Rpc, Storage,
     SynchronizationAdapter,
 };
 use protocol::types::{
     BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Hasher, Header, Hex, Log,
-    MerkleRoot, Metadata, Proof, Proposal, Receipt, SignedTransaction, Validator, U256,
+    MerkleRoot, Metadata, PackedTxHashes, Proof, Proposal, Receipt, SignedTransaction, Validator,
+    U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, tokio::task, ProtocolResult};
 
@@ -34,7 +35,7 @@ pub struct OverlordConsensusAdapter<
     M: MemPool,
     N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage,
-    CS: CrossClient,
+    CS: Crosschain,
     MT: MetadataControl,
     DB: cita_trie::DB,
 > {
@@ -55,7 +56,7 @@ where
     M: MemPool + 'static,
     N: Network + Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
-    CS: CrossClient + 'static,
+    CS: Crosschain + 'static,
     MT: MetadataControl + 'static,
     DB: cita_trie::DB + 'static,
 {
@@ -66,7 +67,7 @@ where
         _number: u64,
         gas_limit: U256,
         tx_num_limit: u64,
-    ) -> ProtocolResult<Vec<Hash>> {
+    ) -> ProtocolResult<PackedTxHashes> {
         self.mempool.package(ctx, gas_limit, tx_num_limit).await
     }
 
@@ -142,7 +143,7 @@ where
     M: MemPool + 'static,
     N: Network + Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
-    CS: CrossClient + 'static,
+    CS: Crosschain + 'static,
     MT: MetadataControl + 'static,
     DB: cita_trie::DB + 'static,
 {
@@ -245,7 +246,7 @@ where
     M: MemPool + 'static,
     N: Network + Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
-    CS: CrossClient + 'static,
+    CS: Crosschain + 'static,
     MT: MetadataControl + 'static,
     DB: cita_trie::DB + 'static,
 {
@@ -635,7 +636,7 @@ where
     M: MemPool + 'static,
     N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
-    CS: CrossClient + 'static,
+    CS: Crosschain + 'static,
     MT: MetadataControl + 'static,
     DB: cita_trie::DB + 'static,
 {

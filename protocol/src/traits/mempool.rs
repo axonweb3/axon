@@ -1,4 +1,4 @@
-use crate::types::{BlockNumber, Hash, MerkleRoot, SignedTransaction, H160, U256};
+use crate::types::{BlockNumber, Hash, MerkleRoot, PackedTxHashes, SignedTransaction, H160, U256};
 use crate::{async_trait, traits::Context, ProtocolResult};
 
 #[async_trait]
@@ -10,7 +10,7 @@ pub trait MemPool: Send + Sync {
         ctx: Context,
         cycles_limit: U256,
         tx_num_limit: u64,
-    ) -> ProtocolResult<Vec<Hash>>;
+    ) -> ProtocolResult<PackedTxHashes>;
 
     async fn flush(
         &self,
