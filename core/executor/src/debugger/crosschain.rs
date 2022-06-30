@@ -8,7 +8,7 @@ use protocol::types::{
 use protocol::{codec::hex_decode, tokio};
 
 use core_cross_client::crosschain_abi::{
-    CkbtoAxonRecord, CrossFromCKBCall, CrossFromCKBFilter, CrossToCKBAlertFilter, CrossToCKBFilter,
+    CkbtoAxonRecord, CrossFromCKBCall, CrossFromCKBFilter, CrossToCKBAlertFilter,
 };
 
 use crate::debugger::{clear_data, mock_efficient_signed_tx, mock_signed_tx, EvmDebugger};
