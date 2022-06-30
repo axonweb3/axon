@@ -1364,6 +1364,7 @@ dependencies = [
  "ckb-hash",
  "ckb-jsonrpc-types",
  "ckb-rocksdb",
+ "ckb-sdk",
  "ckb-types",
  "common-config-parser",
  "common-crypto",

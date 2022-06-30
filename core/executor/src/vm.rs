@@ -10,6 +10,9 @@ use crate::precompiles::build_precompile_set;
 pub const METADATA_CONTRACT_ADDRESS: H160 = H160([
     161, 55, 99, 105, 25, 112, 217, 55, 61, 79, 171, 124, 195, 35, 215, 186, 6, 250, 153, 134,
 ]);
+pub const WCKB_CONTRACT_ADDRESS: H160 = H160([
+    74, 245, 236, 94, 61, 41, 217, 221, 215, 244, 191, 145, 160, 34, 19, 28, 65, 183, 35, 82,
+]);
 pub const CROSSCHAIN_CONTRACT_ADDRESS: H160 = H160([
     246, 123, 196, 229, 13, 29, 249, 43, 14, 76, 97, 121, 74, 69, 23, 175, 106, 153, 92, 178,
 ]);

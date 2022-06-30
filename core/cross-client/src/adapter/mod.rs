@@ -5,12 +5,13 @@ use protocol::lazy::CURRENT_STATE_ROOT;
 
 use std::sync::Arc;
 
+use ckb_jsonrpc_types::OutputsValidator;
 use ckb_types::core::TransactionView;
 
 use common_crypto::{BlsPublicKey, BlsSignature};
 use protocol::traits::{
-    Backend, Context, CrossAdapter, Executor, MemPool, MessageTarget, MetadataControl, Storage,
-    TxAssembler,
+    Backend, CkbClient, Context, CrossAdapter, Executor, MemPool, MessageTarget, MetadataControl,
+    Storage, TxAssembler,
 };
 use protocol::types::{
     Metadata, RequestTxHashes, SignedTransaction, Transfer, TxResp, H160, H256, U256,
@@ -33,17 +34,19 @@ pub trait CrossChainDB: Sync + Send {
     fn remove(&self, key: &[u8]) -> ProtocolResult<()>;
 }
 
-pub struct DefaultCrossChainAdapter<M, D, S, A, TrieDB, DB> {
+pub struct DefaultCrossChainAdapter<M, D, S, A, TrieDB, DB, Rpc> {
     mempool:      Arc<M>,
     metadata:     Arc<D>,
     storage:      Arc<S>,
     tx_assembler: Arc<A>,
     trie_db:      Arc<TrieDB>,
     db:           Arc<DB>,
+    ckb_rpc:      Arc<Rpc>,
 }
 
 #[async_trait]
-impl<M, D, S, A, TrieDB, DB> CrossAdapter for DefaultCrossChainAdapter<M, D, S, A, TrieDB, DB>
+impl<M, D, S, A, TrieDB, DB, Rpc> CrossAdapter
+    for DefaultCrossChainAdapter<M, D, S, A, TrieDB, DB, Rpc>
 where
     M: MemPool + 'static,
     D: MetadataControl + 'static,
@@ -51,6 +54,7 @@ where
     A: TxAssembler + 'static,
     TrieDB: cita_trie::DB + 'static,
     DB: CrossChainDB + 'static,
+    Rpc: CkbClient + 'static,
 {
     async fn send_axon_tx(&self, ctx: Context, stx: SignedTransaction) -> ProtocolResult<()> {
         self.mempool.insert(ctx, stx).await
@@ -61,6 +65,10 @@ where
         ctx: Context,
         tx: ckb_jsonrpc_types::TransactionView,
     ) -> ProtocolResult<()> {
+        let _hash = self
+            .ckb_rpc
+            .send_transaction(ctx, &tx.inner, Some(OutputsValidator::Passthrough))
+            .await?;
         Ok(())
     }
 
@@ -102,7 +110,7 @@ where
             (&header).into(),
         )?;
 
-        Ok(AxonExecutor::default().call(&mut backend, None, Some(addr), data))
+        Ok(AxonExecutor::default().call(&mut backend, u64::MAX, None, Some(addr), data))
     }
 
     async fn insert_record(
@@ -170,7 +178,7 @@ where
     }
 }
 
-impl<M, D, S, A, TrieDB, DB> DefaultCrossChainAdapter<M, D, S, A, TrieDB, DB>
+impl<M, D, S, A, TrieDB, DB, Rpc> DefaultCrossChainAdapter<M, D, S, A, TrieDB, DB, Rpc>
 where
     M: MemPool + 'static,
     D: MetadataControl + 'static,
@@ -178,6 +186,7 @@ where
     A: TxAssembler + 'static,
     TrieDB: cita_trie::DB + 'static,
     DB: CrossChainDB + 'static,
+    Rpc: CkbClient + 'static,
 {
     pub async fn new(
         mempool: Arc<M>,
@@ -186,6 +195,7 @@ where
         tx_assembler: Arc<A>,
         trie_db: Arc<TrieDB>,
         db: Arc<DB>,
+        ckb_rpc: Arc<Rpc>,
     ) -> Self {
         DefaultCrossChainAdapter {
             mempool,
@@ -194,6 +204,7 @@ where
             tx_assembler,
             trie_db,
             db,
+            ckb_rpc,
         }
     }
 

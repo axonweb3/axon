@@ -150,27 +150,52 @@ where
         }
 
         let hash = self.req_records.add_req(reqs.clone());
-        if self.is_leader(&reqs).await {
-            let tx_view = self
-                .adapter
-                .calc_to_ckb_tx(Context::new(), &reqs.0)
-                .await
-                .unwrap();
-            self.req_records
-                .update_tx_hash(&hash, H256(tx_view.hash().unpack().0));
-            self.adapter
-                .transmit(
-                    Context::new(),
-                    CrosschainMessage::TxView(TxViewWrapper::new(hash, tx_view))
-                        .encode()
-                        .unwrap()
-                        .to_vec(),
-                    END_GOSSIP_BUILD_CKB_TX,
-                    MessageTarget::Broadcast,
-                )
-                .await
-                .unwrap();
+
+        if !self.is_leader(&reqs).await {
+            return;
         }
+
+        let ctx = Context::new();
+        let tx_view = self
+            .adapter
+            .calc_to_ckb_tx(ctx.clone(), &reqs.0)
+            .await
+            .unwrap();
+        self.req_records
+            .update_tx_hash(&hash, H256(tx_view.hash().unpack().0));
+
+        let tx_wrapper = TxViewWrapper::new(hash, tx_view);
+
+        if self.validators.len() == 1 {
+            let sig = self.verify_tx_wrapper(&tx_wrapper).unwrap();
+            let comb_sig =
+                BlsSignature::combine(vec![(sig.signature.clone(), sig.bls_pubkey.clone())])
+                    .unwrap();
+
+            let intact_tx = self
+                .adapter
+                .build_to_ckb_tx(ctx.clone(), sig.tx_hash, &comb_sig, &[sig.bls_pubkey])
+                .unwrap();
+
+            self.adapter
+                .send_ckb_tx(ctx.clone(), intact_tx.into())
+                .await
+                .unwrap();
+            return;
+        }
+
+        self.adapter
+            .transmit(
+                ctx.clone(),
+                CrosschainMessage::TxView(tx_wrapper)
+                    .encode()
+                    .unwrap()
+                    .to_vec(),
+                END_GOSSIP_BUILD_CKB_TX,
+                MessageTarget::Broadcast,
+            )
+            .await
+            .unwrap();
     }
 
     fn verify_tx_wrapper(&self, tx: &TxViewWrapper) -> ProtocolResult<CrossChainSignature> {

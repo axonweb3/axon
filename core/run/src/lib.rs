@@ -455,6 +455,7 @@ impl Axon {
             Arc::clone(&ckb_tx_assembler),
             Arc::clone(&trie_db),
             Arc::new(crosschain_db),
+            Arc::clone(&ckb_client),
         )
         .await;
 

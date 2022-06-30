@@ -1,9 +1,8 @@
 pub use crosschain_mod::*;
-
-#[allow(clippy::too_many_arguments)]
-mod crosschain_mod {
+#[allow(clippy::too_many_arguments, non_camel_case_types)]
+pub mod crosschain_mod {
     #![allow(clippy::enum_variant_names)]
-    #![allow(dead_code, non_camel_case_types)]
+    #![allow(dead_code)]
     #![allow(clippy::type_complexity)]
     #![allow(unused_imports)]
     use ethers_contract::{
@@ -19,7 +18,7 @@ mod crosschain_mod {
     use std::sync::Arc;
     pub static CROSSCHAIN_ABI: ethers_contract::Lazy<ethers_core::abi::Abi> =
         ethers_contract::Lazy::new(|| {
-            serde_json::from_str ("[\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"uint256\",\n        \"name\": \"threshold\",\n        \"type\": \"uint256\"\n      },\n      {\n        \"internalType\": \"address\",\n        \"name\": \"metadata\",\n        \"type\": \"address\"\n      },\n      {\n        \"internalType\": \"string\",\n        \"name\": \"name\",\n        \"type\": \"string\"\n      },\n      {\n        \"internalType\": \"string\",\n        \"name\": \"version\",\n        \"type\": \"string\"\n      }\n    ],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"constructor\"\n  },\n  {\n    \"anonymous\": false,\n    \"inputs\": [\n      {\n        \"components\": [\n          {\n            \"internalType\": \"address\",\n            \"name\": \"to\",\n            \"type\": \"address\"\n          },\n          {\n            \"internalType\": \"address\",\n            \"name\": \"tokenAddress\",\n            \"type\": \"address\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"sUDTAmount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"CKBAmount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"txHash\",\n            \"type\": \"bytes32\"\n          }\n        ],\n        \"indexed\": false,\n        \"internalType\": \"struct CrossChain.CKBToAxonRecord[]\",\n        \"name\": \"records\",\n        \"type\": \"tuple[]\"\n      }\n    ],\n    \"name\": \"CrossFromCKB\",\n    \"type\": \"event\"\n  },\n  {\n    \"anonymous\": false,\n    \"inputs\": [\n      {\n        \"indexed\": false,\n        \"internalType\": \"string\",\n        \"name\": \"to\",\n        \"type\": \"string\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"uint256\",\n        \"name\": \"amount\",\n        \"type\": \"uint256\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"uint256\",\n        \"name\": \"minWCKBAmount\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"CrossToCKB\",\n    \"type\": \"event\"\n  },\n  {\n    \"anonymous\": false,\n    \"inputs\": [\n      {\n        \"indexed\": false,\n        \"internalType\": \"string\",\n        \"name\": \"to\",\n        \"type\": \"string\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"uint256\",\n        \"name\": \"amount\",\n        \"type\": \"uint256\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"uint256\",\n        \"name\": \"minWCKBAmount\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"CrossToCKBAlert\",\n    \"type\": \"event\"\n  },\n  {\n    \"inputs\": [],\n    \"name\": \"AT_ADDRESS\",\n    \"outputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"\",\n        \"type\": \"address\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [],\n    \"name\": \"CROSS_FROM_CKB_TYPEHASH\",\n    \"outputs\": [\n      {\n        \"internalType\": \"bytes32\",\n        \"name\": \"\",\n        \"type\": \"bytes32\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"internalType\": \"bytes32\",\n        \"name\": \"typehash\",\n        \"type\": \"bytes32\"\n      }\n    ],\n    \"name\": \"addMirrorToken\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"internalType\": \"bytes32\",\n        \"name\": \"typehash\",\n        \"type\": \"bytes32\"\n      }\n    ],\n    \"name\": \"addToken\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"components\": [\n          {\n            \"internalType\": \"address\",\n            \"name\": \"to\",\n            \"type\": \"address\"\n          },\n          {\n            \"internalType\": \"address\",\n            \"name\": \"tokenAddress\",\n            \"type\": \"address\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"sUDTAmount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"CKBAmount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"txHash\",\n            \"type\": \"bytes32\"\n          }\n        ],\n        \"internalType\": \"struct CrossChain.CKBToAxonRecord[]\",\n        \"name\": \"records\",\n        \"type\": \"tuple[]\"\n      },\n      {\n        \"internalType\": \"uint256\",\n        \"name\": \"nonce\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"crossFromCKB\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [],\n    \"name\": \"crossFromCKBNonce\",\n    \"outputs\": [\n      {\n        \"internalType\": \"uint256\",\n        \"name\": \"\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"string\",\n        \"name\": \"to\",\n        \"type\": \"string\"\n      },\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"internalType\": \"uint256\",\n        \"name\": \"amount\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"crossTokenToCKB\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"internalType\": \"uint256\",\n        \"name\": \"value\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"fee\",\n    \"outputs\": [\n      {\n        \"internalType\": \"uint256\",\n        \"name\": \"\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"bytes32\",\n        \"name\": \"typehash\",\n        \"type\": \"bytes32\"\n      }\n    ],\n    \"name\": \"getTokenAddress\",\n    \"outputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"\",\n        \"type\": \"address\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      }\n    ],\n    \"name\": \"getTypehash\",\n    \"outputs\": [\n      {\n        \"internalType\": \"bytes32\",\n        \"name\": \"\",\n        \"type\": \"bytes32\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      }\n    ],\n    \"name\": \"isMirrorToken\",\n    \"outputs\": [\n      {\n        \"internalType\": \"bool\",\n        \"name\": \"\",\n        \"type\": \"bool\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [],\n    \"name\": \"limitTxes\",\n    \"outputs\": [\n      {\n        \"components\": [\n          {\n            \"internalType\": \"address\",\n            \"name\": \"tokenAddress\",\n            \"type\": \"address\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"amount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"minWCKBAmount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"string\",\n            \"name\": \"to\",\n            \"type\": \"string\"\n          }\n        ],\n        \"internalType\": \"struct CrossChain.AxonToCKBRecord[]\",\n        \"name\": \"\",\n        \"type\": \"tuple[]\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"string\",\n        \"name\": \"to\",\n        \"type\": \"string\"\n      }\n    ],\n    \"name\": \"lockAT\",\n    \"outputs\": [],\n    \"stateMutability\": \"payable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"components\": [\n          {\n            \"internalType\": \"address\",\n            \"name\": \"to\",\n            \"type\": \"address\"\n          },\n          {\n            \"internalType\": \"address\",\n            \"name\": \"tokenAddress\",\n            \"type\": \"address\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"sUDTAmount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"CKBAmount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"txHash\",\n            \"type\": \"bytes32\"\n          }\n        ],\n        \"internalType\": \"struct CrossChain.CKBToAxonRecord\",\n        \"name\": \"record\",\n        \"type\": \"tuple\"\n      }\n    ],\n    \"name\": \"removeLimitTxes\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"components\": [\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"feeRatio\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"threshold\",\n            \"type\": \"uint256\"\n          }\n        ],\n        \"internalType\": \"struct CrossChain.TokenConfig\",\n        \"name\": \"config\",\n        \"type\": \"tuple\"\n      }\n    ],\n    \"name\": \"setTokenConfig\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      }\n    ],\n    \"name\": \"setWCKB\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"uint256\",\n        \"name\": \"amount\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"setWCKBMin\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  }\n]") . expect ("invalid abi")
+            serde_json::from_str ("[\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"metadata\",\n        \"type\": \"address\"\n      },\n      {\n        \"internalType\": \"address\",\n        \"name\": \"wCKB\",\n        \"type\": \"address\"\n      }\n    ],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"constructor\"\n  },\n  {\n    \"anonymous\": false,\n    \"inputs\": [\n      {\n        \"components\": [\n          {\n            \"internalType\": \"address\",\n            \"name\": \"to\",\n            \"type\": \"address\"\n          },\n          {\n            \"internalType\": \"address\",\n            \"name\": \"tokenAddress\",\n            \"type\": \"address\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"sUDTAmount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"CKBAmount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"txHash\",\n            \"type\": \"bytes32\"\n          }\n        ],\n        \"indexed\": false,\n        \"internalType\": \"struct DataType.CKBToAxonRecord[]\",\n        \"name\": \"records\",\n        \"type\": \"tuple[]\"\n      }\n    ],\n    \"name\": \"CrossFromCKB\",\n    \"type\": \"event\"\n  },\n  {\n    \"anonymous\": false,\n    \"inputs\": [\n      {\n        \"indexed\": false,\n        \"internalType\": \"string\",\n        \"name\": \"to\",\n        \"type\": \"string\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"uint256\",\n        \"name\": \"amount\",\n        \"type\": \"uint256\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"uint256\",\n        \"name\": \"minWCKBAmount\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"CrossToCKB\",\n    \"type\": \"event\"\n  },\n  {\n    \"anonymous\": false,\n    \"inputs\": [\n      {\n        \"indexed\": false,\n        \"internalType\": \"string\",\n        \"name\": \"to\",\n        \"type\": \"string\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"uint256\",\n        \"name\": \"amount\",\n        \"type\": \"uint256\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"uint256\",\n        \"name\": \"minWCKBAmount\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"CrossToCKBAlert\",\n    \"type\": \"event\"\n  },\n  {\n    \"inputs\": [],\n    \"name\": \"AT_ADDRESS\",\n    \"outputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"\",\n        \"type\": \"address\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [],\n    \"name\": \"CROSS_FROM_CKB_TYPEHASH\",\n    \"outputs\": [\n      {\n        \"internalType\": \"bytes32\",\n        \"name\": \"\",\n        \"type\": \"bytes32\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"internalType\": \"bytes32\",\n        \"name\": \"typehash\",\n        \"type\": \"bytes32\"\n      }\n    ],\n    \"name\": \"addMirrorToken\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"internalType\": \"bytes32\",\n        \"name\": \"typehash\",\n        \"type\": \"bytes32\"\n      }\n    ],\n    \"name\": \"addToken\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"components\": [\n          {\n            \"internalType\": \"address\",\n            \"name\": \"to\",\n            \"type\": \"address\"\n          },\n          {\n            \"internalType\": \"address\",\n            \"name\": \"tokenAddress\",\n            \"type\": \"address\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"sUDTAmount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"CKBAmount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"txHash\",\n            \"type\": \"bytes32\"\n          }\n        ],\n        \"internalType\": \"struct DataType.CKBToAxonRecord[]\",\n        \"name\": \"records\",\n        \"type\": \"tuple[]\"\n      },\n      {\n        \"internalType\": \"uint256\",\n        \"name\": \"nonce\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"crossFromCKB\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"string\",\n        \"name\": \"to\",\n        \"type\": \"string\"\n      },\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"internalType\": \"uint256\",\n        \"name\": \"amount\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"crossTokenToCKB\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"internalType\": \"uint256\",\n        \"name\": \"value\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"fee\",\n    \"outputs\": [\n      {\n        \"internalType\": \"uint256\",\n        \"name\": \"\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"bytes32\",\n        \"name\": \"typehash\",\n        \"type\": \"bytes32\"\n      }\n    ],\n    \"name\": \"getTokenAddress\",\n    \"outputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"\",\n        \"type\": \"address\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      }\n    ],\n    \"name\": \"getTypehash\",\n    \"outputs\": [\n      {\n        \"internalType\": \"bytes32\",\n        \"name\": \"\",\n        \"type\": \"bytes32\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      }\n    ],\n    \"name\": \"isMirrorToken\",\n    \"outputs\": [\n      {\n        \"internalType\": \"bool\",\n        \"name\": \"\",\n        \"type\": \"bool\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [],\n    \"name\": \"limitTxes\",\n    \"outputs\": [\n      {\n        \"components\": [\n          {\n            \"internalType\": \"address\",\n            \"name\": \"tokenAddress\",\n            \"type\": \"address\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"amount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"minWCKBAmount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"string\",\n            \"name\": \"to\",\n            \"type\": \"string\"\n          }\n        ],\n        \"internalType\": \"struct DataType.AxonToCKBRecord[]\",\n        \"name\": \"\",\n        \"type\": \"tuple[]\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"string\",\n        \"name\": \"to\",\n        \"type\": \"string\"\n      }\n    ],\n    \"name\": \"lockAT\",\n    \"outputs\": [],\n    \"stateMutability\": \"payable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"components\": [\n          {\n            \"internalType\": \"address\",\n            \"name\": \"tokenAddress\",\n            \"type\": \"address\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"amount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"minWCKBAmount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"string\",\n            \"name\": \"to\",\n            \"type\": \"string\"\n          }\n        ],\n        \"internalType\": \"struct DataType.AxonToCKBRecord\",\n        \"name\": \"record\",\n        \"type\": \"tuple\"\n      }\n    ],\n    \"name\": \"removeLimitTx\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"components\": [\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"feeRatio\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"threshold\",\n            \"type\": \"uint256\"\n          }\n        ],\n        \"internalType\": \"struct DataType.TokenConfig\",\n        \"name\": \"config\",\n        \"type\": \"tuple\"\n      }\n    ],\n    \"name\": \"setTokenConfig\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"uint256\",\n        \"name\": \"amount\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"setWCKBMin\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  }\n]\n") . expect ("invalid abi")
         });
     pub struct crosschain<M>(ethers_contract::Contract<M>);
 
@@ -107,15 +106,6 @@ mod crosschain_mod {
                 .expect("method not found (this should never happen)")
         }
 
-        #[doc = "Calls the contract's `crossFromCKBNonce` (0x4ee12cf4) function"]
-        pub fn cross_from_ckb_nonce(
-            &self,
-        ) -> ethers_contract::builders::ContractCall<M, ethers_core::types::U256> {
-            self.0
-                .method_hash([78, 225, 44, 244], ())
-                .expect("method not found (this should never happen)")
-        }
-
         #[doc = "Calls the contract's `crossTokenToCKB` (0xb8f564f8) function"]
         pub fn cross_token_to_ckb(
             &self,
@@ -185,13 +175,13 @@ mod crosschain_mod {
                 .expect("method not found (this should never happen)")
         }
 
-        #[doc = "Calls the contract's `removeLimitTxes` (0xa6fe97fc) function"]
-        pub fn remove_limit_txes(
+        #[doc = "Calls the contract's `removeLimitTx` (0xa01fc87f) function"]
+        pub fn remove_limit_tx(
             &self,
-            record: CkbtoAxonRecord,
+            record: AxonToCKBRecord,
         ) -> ethers_contract::builders::ContractCall<M, ()> {
             self.0
-                .method_hash([166, 254, 151, 252], (record,))
+                .method_hash([160, 31, 200, 127], (record,))
                 .expect("method not found (this should never happen)")
         }
 
@@ -203,16 +193,6 @@ mod crosschain_mod {
         ) -> ethers_contract::builders::ContractCall<M, ()> {
             self.0
                 .method_hash([62, 223, 219, 176], (token, config))
-                .expect("method not found (this should never happen)")
-        }
-
-        #[doc = "Calls the contract's `setWCKB` (0xb26333e1) function"]
-        pub fn set_wckb(
-            &self,
-            token: ethers_core::types::Address,
-        ) -> ethers_contract::builders::ContractCall<M, ()> {
-            self.0
-                .method_hash([178, 99, 51, 225], token)
                 .expect("method not found (this should never happen)")
         }
 
@@ -336,6 +316,7 @@ mod crosschain_mod {
             }
         }
     }
+
     #[doc = "Container type for all input parameters for the `AT_ADDRESS`function with signature `AT_ADDRESS()` and selector `[84, 15, 109, 236]`"]
     #[derive(
         Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
@@ -369,6 +350,7 @@ mod crosschain_mod {
         pub token:    ethers_core::types::Address,
         pub typehash: [u8; 32],
     }
+
     #[doc = "Container type for all input parameters for the `crossFromCKB`function with signature `crossFromCKB((address,address,uint256,uint256,bytes32)[],uint256)` and selector `[107, 35, 253, 32]`"]
     #[derive(
         Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
@@ -381,13 +363,6 @@ mod crosschain_mod {
         pub records: ::std::vec::Vec<CkbtoAxonRecord>,
         pub nonce:   ethers_core::types::U256,
     }
-
-    #[doc = "Container type for all input parameters for the `crossFromCKBNonce`function with signature `crossFromCKBNonce()` and selector `[78, 225, 44, 244]`"]
-    #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
-    )]
-    #[ethcall(name = "crossFromCKBNonce", abi = "crossFromCKBNonce()")]
-    pub struct CrossFromCKBNonceCall;
 
     #[doc = "Container type for all input parameters for the `crossTokenToCKB`function with signature `crossTokenToCKB(string,address,uint256)` and selector `[184, 245, 100, 248]`"]
     #[derive(
@@ -456,16 +431,16 @@ mod crosschain_mod {
         pub to: String,
     }
 
-    #[doc = "Container type for all input parameters for the `removeLimitTxes`function with signature `removeLimitTxes((address,address,uint256,uint256,bytes32))` and selector `[166, 254, 151, 252]`"]
+    #[doc = "Container type for all input parameters for the `removeLimitTx`function with signature `removeLimitTx((address,uint256,uint256,string))` and selector `[160, 31, 200, 127]`"]
     #[derive(
         Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
     )]
     #[ethcall(
-        name = "removeLimitTxes",
-        abi = "removeLimitTxes((address,address,uint256,uint256,bytes32))"
+        name = "removeLimitTx",
+        abi = "removeLimitTx((address,uint256,uint256,string))"
     )]
-    pub struct RemoveLimitTxesCall {
-        pub record: CkbtoAxonRecord,
+    pub struct RemoveLimitTxCall {
+        pub record: AxonToCKBRecord,
     }
 
     #[doc = "Container type for all input parameters for the `setTokenConfig`function with signature `setTokenConfig(address,(uint256,uint256))` and selector `[62, 223, 219, 176]`"]
@@ -479,15 +454,6 @@ mod crosschain_mod {
     pub struct SetTokenConfigCall {
         pub token:  ethers_core::types::Address,
         pub config: TokenConfig,
-    }
-
-    #[doc = "Container type for all input parameters for the `setWCKB`function with signature `setWCKB(address)` and selector `[178, 99, 51, 225]`"]
-    #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
-    )]
-    #[ethcall(name = "setWCKB", abi = "setWCKB(address)")]
-    pub struct SetWCKBCall {
-        pub token: ethers_core::types::Address,
     }
 
     #[doc = "Container type for all input parameters for the `setWCKBMin`function with signature `setWCKBMin(uint256)` and selector `[169, 56, 215, 69]`"]
@@ -506,7 +472,6 @@ mod crosschain_mod {
         AddMirrorToken(AddMirrorTokenCall),
         AddToken(AddTokenCall),
         CrossFromCKB(CrossFromCKBCall),
-        CrossFromCKBNonce(CrossFromCKBNonceCall),
         CrossTokenToCKB(CrossTokenToCKBCall),
         Fee(FeeCall),
         GetTokenAddress(GetTokenAddressCall),
@@ -514,9 +479,8 @@ mod crosschain_mod {
         IsMirrorToken(IsMirrorTokenCall),
         LimitTxes(LimitTxesCall),
         LockAT(LockATCall),
-        RemoveLimitTxes(RemoveLimitTxesCall),
+        RemoveLimitTx(RemoveLimitTxCall),
         SetTokenConfig(SetTokenConfigCall),
-        SetWCKB(SetWCKBCall),
         SetWCKBMin(SetWCKBMinCall),
     }
 
@@ -546,11 +510,6 @@ mod crosschain_mod {
                 <CrossFromCKBCall as ethers_core::abi::AbiDecode>::decode(data.as_ref())
             {
                 return Ok(crosschainCalls::CrossFromCKB(decoded));
-            }
-            if let Ok(decoded) =
-                <CrossFromCKBNonceCall as ethers_core::abi::AbiDecode>::decode(data.as_ref())
-            {
-                return Ok(crosschainCalls::CrossFromCKBNonce(decoded));
             }
             if let Ok(decoded) =
                 <CrossTokenToCKBCall as ethers_core::abi::AbiDecode>::decode(data.as_ref())
@@ -585,18 +544,14 @@ mod crosschain_mod {
                 return Ok(crosschainCalls::LockAT(decoded));
             }
             if let Ok(decoded) =
-                <RemoveLimitTxesCall as ethers_core::abi::AbiDecode>::decode(data.as_ref())
+                <RemoveLimitTxCall as ethers_core::abi::AbiDecode>::decode(data.as_ref())
             {
-                return Ok(crosschainCalls::RemoveLimitTxes(decoded));
+                return Ok(crosschainCalls::RemoveLimitTx(decoded));
             }
             if let Ok(decoded) =
                 <SetTokenConfigCall as ethers_core::abi::AbiDecode>::decode(data.as_ref())
             {
                 return Ok(crosschainCalls::SetTokenConfig(decoded));
-            }
-            if let Ok(decoded) = <SetWCKBCall as ethers_core::abi::AbiDecode>::decode(data.as_ref())
-            {
-                return Ok(crosschainCalls::SetWCKB(decoded));
             }
             if let Ok(decoded) =
                 <SetWCKBMinCall as ethers_core::abi::AbiDecode>::decode(data.as_ref())
@@ -615,7 +570,6 @@ mod crosschain_mod {
                 crosschainCalls::AddMirrorToken(element) => element.encode(),
                 crosschainCalls::AddToken(element) => element.encode(),
                 crosschainCalls::CrossFromCKB(element) => element.encode(),
-                crosschainCalls::CrossFromCKBNonce(element) => element.encode(),
                 crosschainCalls::CrossTokenToCKB(element) => element.encode(),
                 crosschainCalls::Fee(element) => element.encode(),
                 crosschainCalls::GetTokenAddress(element) => element.encode(),
@@ -623,9 +577,8 @@ mod crosschain_mod {
                 crosschainCalls::IsMirrorToken(element) => element.encode(),
                 crosschainCalls::LimitTxes(element) => element.encode(),
                 crosschainCalls::LockAT(element) => element.encode(),
-                crosschainCalls::RemoveLimitTxes(element) => element.encode(),
+                crosschainCalls::RemoveLimitTx(element) => element.encode(),
                 crosschainCalls::SetTokenConfig(element) => element.encode(),
-                crosschainCalls::SetWCKB(element) => element.encode(),
                 crosschainCalls::SetWCKBMin(element) => element.encode(),
             }
         }
@@ -639,7 +592,6 @@ mod crosschain_mod {
                 crosschainCalls::AddMirrorToken(element) => element.fmt(f),
                 crosschainCalls::AddToken(element) => element.fmt(f),
                 crosschainCalls::CrossFromCKB(element) => element.fmt(f),
-                crosschainCalls::CrossFromCKBNonce(element) => element.fmt(f),
                 crosschainCalls::CrossTokenToCKB(element) => element.fmt(f),
                 crosschainCalls::Fee(element) => element.fmt(f),
                 crosschainCalls::GetTokenAddress(element) => element.fmt(f),
@@ -647,9 +599,8 @@ mod crosschain_mod {
                 crosschainCalls::IsMirrorToken(element) => element.fmt(f),
                 crosschainCalls::LimitTxes(element) => element.fmt(f),
                 crosschainCalls::LockAT(element) => element.fmt(f),
-                crosschainCalls::RemoveLimitTxes(element) => element.fmt(f),
+                crosschainCalls::RemoveLimitTx(element) => element.fmt(f),
                 crosschainCalls::SetTokenConfig(element) => element.fmt(f),
-                crosschainCalls::SetWCKB(element) => element.fmt(f),
                 crosschainCalls::SetWCKBMin(element) => element.fmt(f),
             }
         }
@@ -682,12 +633,6 @@ mod crosschain_mod {
     impl ::std::convert::From<CrossFromCKBCall> for crosschainCalls {
         fn from(var: CrossFromCKBCall) -> Self {
             crosschainCalls::CrossFromCKB(var)
-        }
-    }
-
-    impl ::std::convert::From<CrossFromCKBNonceCall> for crosschainCalls {
-        fn from(var: CrossFromCKBNonceCall) -> Self {
-            crosschainCalls::CrossFromCKBNonce(var)
         }
     }
 
@@ -733,21 +678,15 @@ mod crosschain_mod {
         }
     }
 
-    impl ::std::convert::From<RemoveLimitTxesCall> for crosschainCalls {
-        fn from(var: RemoveLimitTxesCall) -> Self {
-            crosschainCalls::RemoveLimitTxes(var)
+    impl ::std::convert::From<RemoveLimitTxCall> for crosschainCalls {
+        fn from(var: RemoveLimitTxCall) -> Self {
+            crosschainCalls::RemoveLimitTx(var)
         }
     }
 
     impl ::std::convert::From<SetTokenConfigCall> for crosschainCalls {
         fn from(var: SetTokenConfigCall) -> Self {
             crosschainCalls::SetTokenConfig(var)
-        }
-    }
-
-    impl ::std::convert::From<SetWCKBCall> for crosschainCalls {
-        fn from(var: SetWCKBCall) -> Self {
-            crosschainCalls::SetWCKB(var)
         }
     }
 

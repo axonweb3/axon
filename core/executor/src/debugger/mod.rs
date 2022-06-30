@@ -7,12 +7,14 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use getrandom::getrandom;
 
 use common_config_parser::parse_file;
+use common_crypto::{PrivateKey, Secp256k1RecoverablePrivateKey, Signature};
+use protocol::codec::{hex_decode, ProtocolCodec};
+use protocol::traits::Executor;
 use protocol::types::{
     Account, Eip1559Transaction, ExecResp, ExecutorContext, Hash, Hasher, RichBlock,
     SignedTransaction, TxResp, UnsignedTransaction, UnverifiedTransaction, H160, H256, NIL_DATA,
     RLP_NULL, U256,
 };
-use protocol::{codec::ProtocolCodec, traits::Executor};
 
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 
@@ -75,7 +77,7 @@ impl EvmDebugger {
     pub fn call(&self, number: u64, from: Option<H160>, to: Option<H160>, data: Vec<u8>) -> TxResp {
         let mut backend = self.backend(number);
         let evm = AxonExecutor::default();
-        evm.call(&mut backend, from, to, data)
+        evm.call(&mut backend, u64::MAX, from, to, data)
     }
 
     fn backend(&self, number: u64) -> AxonExecutorAdapter<ImplStorage<RocksAdapter>, RocksTrieDB> {
@@ -101,6 +103,30 @@ impl EvmDebugger {
         )
         .unwrap()
     }
+}
+
+pub fn mock_efficient_signed_tx(tx: Eip1559Transaction, private_key: &str) -> SignedTransaction {
+    let priv_key =
+        Secp256k1RecoverablePrivateKey::try_from(hex_decode(private_key).unwrap().as_ref())
+            .expect("Invalid secp private key");
+
+    let tx = UnsignedTransaction::Eip1559(tx);
+    let signature = priv_key.sign_message(
+        &Hasher::digest(tx.encode(5u64, None))
+            .as_bytes()
+            .try_into()
+            .unwrap(),
+    );
+
+    let utx = UnverifiedTransaction {
+        unsigned:  tx,
+        hash:      Hash::default(),
+        chain_id:  5u64,
+        signature: Some(signature.to_bytes().into()),
+    }
+    .calc_hash();
+
+    utx.try_into().unwrap()
 }
 
 pub fn mock_signed_tx(tx: Eip1559Transaction, sender: H160) -> SignedTransaction {

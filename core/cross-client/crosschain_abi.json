@@ -2,24 +2,14 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "threshold",
-        "type": "uint256"
-      },
-      {
         "internalType": "address",
         "name": "metadata",
         "type": "address"
       },
       {
-        "internalType": "string",
-        "name": "name",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "version",
-        "type": "string"
+        "internalType": "address",
+        "name": "wCKB",
+        "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
@@ -57,7 +47,7 @@
           }
         ],
         "indexed": false,
-        "internalType": "struct CrossChain.CKBToAxonRecord[]",
+        "internalType": "struct DataType.CKBToAxonRecord[]",
         "name": "records",
         "type": "tuple[]"
       }
@@ -219,7 +209,7 @@
             "type": "bytes32"
           }
         ],
-        "internalType": "struct CrossChain.CKBToAxonRecord[]",
+        "internalType": "struct DataType.CKBToAxonRecord[]",
         "name": "records",
         "type": "tuple[]"
       },
@@ -232,19 +222,6 @@
     "name": "crossFromCKB",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "crossFromCKBNonce",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -378,7 +355,7 @@
             "type": "string"
           }
         ],
-        "internalType": "struct CrossChain.AxonToCKBRecord[]",
+        "internalType": "struct DataType.AxonToCKBRecord[]",
         "name": "",
         "type": "tuple[]"
       }
@@ -405,36 +382,31 @@
         "components": [
           {
             "internalType": "address",
-            "name": "to",
-            "type": "address"
-          },
-          {
-            "internalType": "address",
             "name": "tokenAddress",
             "type": "address"
           },
           {
             "internalType": "uint256",
-            "name": "sUDTAmount",
+            "name": "amount",
             "type": "uint256"
           },
           {
             "internalType": "uint256",
-            "name": "CKBAmount",
+            "name": "minWCKBAmount",
             "type": "uint256"
           },
           {
-            "internalType": "bytes32",
-            "name": "txHash",
-            "type": "bytes32"
+            "internalType": "string",
+            "name": "to",
+            "type": "string"
           }
         ],
-        "internalType": "struct CrossChain.CKBToAxonRecord",
+        "internalType": "struct DataType.AxonToCKBRecord",
         "name": "record",
         "type": "tuple"
       }
     ],
-    "name": "removeLimitTxes",
+    "name": "removeLimitTx",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -459,25 +431,12 @@
             "type": "uint256"
           }
         ],
-        "internalType": "struct CrossChain.TokenConfig",
+        "internalType": "struct DataType.TokenConfig",
         "name": "config",
         "type": "tuple"
       }
     ],
     "name": "setTokenConfig",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      }
-    ],
-    "name": "setWCKB",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
