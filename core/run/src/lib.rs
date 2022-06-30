@@ -395,38 +395,18 @@ impl Axon {
         let current_number = current_block.header.number;
         let latest_proof = storage.get_latest_proof(Context::new()).await?;
 
-        let current_consensus_status = if current_number == 0 {
-            CurrentStatus {
-                prev_hash:                  current_header.hash(),
-                last_number:                current_header.number,
-                last_state_root:            self.state_root,
-                max_tx_size:                metadata.max_tx_size.into(),
-                tx_num_limit:               metadata.tx_num_limit,
-                last_checkpoint_block_hash: metadata.last_checkpoint_block_hash,
-                proof:                      latest_proof,
-            }
-        } else {
-            // Init executor
-            let proposal = Proposal::from(current_header.clone());
-            let executor = AxonExecutor::default();
-            let mut backend = AxonExecutorAdapter::from_root(
-                current_header.state_root,
-                Arc::clone(&trie_db),
-                Arc::clone(&storage),
-                proposal.into(),
-            )?;
-            let _resp = executor.exec(&mut backend, current_stxs.clone());
-            let block_hash = current_header.hash();
-
-            CurrentStatus {
-                prev_hash:                  block_hash,
-                last_number:                current_header.number,
-                last_state_root:            current_header.state_root,
-                max_tx_size:                metadata.max_tx_size.into(),
-                tx_num_limit:               metadata.tx_num_limit,
-                last_checkpoint_block_hash: metadata.last_checkpoint_block_hash,
-                proof:                      storage.get_latest_proof(Context::new()).await?,
-            }
+        let current_consensus_status = CurrentStatus {
+            prev_hash:                  current_header.hash(),
+            last_number:                current_header.number,
+            max_tx_size:                metadata.max_tx_size.into(),
+            tx_num_limit:               metadata.tx_num_limit,
+            last_checkpoint_block_hash: metadata.last_checkpoint_block_hash,
+            proof:                      latest_proof,
+            last_state_root:            if current_number == 0 {
+                self.state_root
+            } else {
+                current_header.state_root
+            },
         };
 
         CURRENT_STATE_ROOT.swap(Arc::new(current_consensus_status.last_state_root));
