@@ -321,7 +321,7 @@ pub struct Web3CallRequest {
     pub max_fee_per_gas:          Option<U256>,
     pub gas:                      Option<U256>,
     pub value:                    Option<U256>,
-    pub data:                     Hex,
+    pub data:                     Option<Hex>,
     pub nonce:                    Option<U256>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub access_list:              Option<AccessList>,

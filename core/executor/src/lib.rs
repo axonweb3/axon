@@ -36,12 +36,13 @@ impl Executor for AxonExecutor {
     fn call<B: Backend>(
         &self,
         backend: &mut B,
+        gas_limit: u64,
         from: Option<H160>,
         to: Option<H160>,
         data: Vec<u8>,
     ) -> TxResp {
         let config = Config::london();
-        let metadata = StackSubstateMetadata::new(u64::MAX, &config);
+        let metadata = StackSubstateMetadata::new(gas_limit, &config);
         let state = MemoryStackState::new(metadata, backend);
         let precompiles = BTreeMap::new();
         let mut executor = StackExecutor::new_with_precompiles(state, &config, &precompiles);
@@ -51,7 +52,7 @@ impl Executor for AxonExecutor {
                 *addr,
                 U256::default(),
                 data,
-                u64::MAX,
+                gas_limit,
                 Vec::new(),
             )
         } else {
