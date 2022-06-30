@@ -315,7 +315,7 @@ impl Axon {
         let interoperation = Arc::new(
             InteroperationImpl::new(
                 self.config.interoperability_extension.clone().into(),
-                ckb_client.clone(),
+                Arc::clone(&ckb_client),
             )
             .await?,
         );
