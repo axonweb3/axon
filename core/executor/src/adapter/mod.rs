@@ -254,8 +254,8 @@ where
         let old_account = match self.trie.get(address.as_bytes()) {
             Ok(Some(raw)) => Account::decode(raw).unwrap(),
             _ => Account {
-                nonce:        U256::one(),
-                balance:      Default::default(),
+                nonce:        U256::zero(),
+                balance:      U256::zero(),
                 storage_root: RLP_NULL,
                 code_hash:    NIL_DATA,
             },
@@ -278,7 +278,7 @@ where
         });
 
         let mut new_account = Account {
-            nonce:        basic.nonce + U256::one(),
+            nonce:        basic.nonce,
             balance:      basic.balance,
             code_hash:    old_account.code_hash,
             storage_root: storage_trie.commit().unwrap_or(RLP_NULL),
