@@ -12,7 +12,7 @@ futures = { version = "0.3", features = ["async-await"] }
 json = "0.12"
 lazy_static = "1.4"
 log = "0.4"
-overlord = "0.3"
+overlord = "0.4"
 parking_lot = "0.12"
 rlp = "0.5"
 rlp-derive = "0.1"
