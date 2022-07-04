@@ -126,7 +126,7 @@ async fn test_crosschain() {
     debugger.init_genesis();
 
     let to = H160::from_slice(&hex_decode("8ab0cf264df99d83525e9e11c7e4db01558ae1b1").unwrap());
-    let stx = mock_signed_tx(build_ckb_to_axon_txs(to), address);
+    let stx = mock_signed_tx(build_ckb_to_axon_tx(to), address);
     let resp = debugger.exec(1, vec![stx]);
 
     let logs: Vec<CrossFromCKBFilter> = decode_logs(
@@ -138,6 +138,8 @@ async fn test_crosschain() {
             .collect::<Vec<_>>(),
     )
     .unwrap();
+
+    println!("{:?}", resp);
 
     assert_eq!(
         logs[0].records[0],
@@ -151,7 +153,7 @@ async fn test_crosschain() {
     );
 
     let priv_key = "37aa0f893d05914a4def0460c0a984d3611546cfb26924d7a7ca6e0db9950a2d";
-    let tx = mock_efficient_signed_tx(build_axon_to_ckb_txs(), priv_key);
+    let tx = mock_efficient_signed_tx(build_axon_to_ckb_tx(), priv_key);
     let resp = debugger.exec(2, vec![tx]);
 
     println!("{:?}", resp);
@@ -168,10 +170,16 @@ async fn test_crosschain() {
 
     println!("{:?}", logs);
 
+    let tx = mock_signed_tx(build_change_limit_tx(), address);
+    let resp = debugger.exec(3, vec![tx]);
+    println!("{:?}", resp);
+
+    assert!(resp.tx_resp[0].exit_reason.is_succeed());
+
     clear_data("./free-space");
 }
 
-fn build_ckb_to_axon_txs(to_address: H160) -> Eip1559Transaction {
+fn build_ckb_to_axon_tx(to_address: H160) -> Eip1559Transaction {
     let call_data = CrossFromCKBCall {
         records: vec![CkbtoAxonRecord {
             to:            to_address,
@@ -183,28 +191,27 @@ fn build_ckb_to_axon_txs(to_address: H160) -> Eip1559Transaction {
         nonce:   U256::zero(),
     };
 
+    build_eip1559_tx(6, AbiEncode::encode(call_data))
+}
+
+fn build_axon_to_ckb_tx() -> Eip1559Transaction {
+    let data = hex_decode("db2b749f000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000076466657266776500000000000000000000000000000000000000000000000000").unwrap();
+    build_eip1559_tx(7, data)
+}
+
+fn build_change_limit_tx() -> Eip1559Transaction {
+    let data = hex_decode("3edfdbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000152d02c7e14af68000000000000000000000000000000000000000000000000000000000000000000000").unwrap();
+    build_eip1559_tx(8, data)
+}
+
+fn build_eip1559_tx(nonce: u64, data: Vec<u8>) -> Eip1559Transaction {
     Eip1559Transaction {
-        nonce:                    6u64.into(),
+        nonce:                    nonce.into(),
         max_priority_fee_per_gas: MAX_PRIORITY_FEE_PER_GAS.into(),
         gas_price:                U256::one(),
         gas_limit:                MAX_BLOCK_GAS_LIMIT.into(),
         action:                   TransactionAction::Call(CROSSCHAIN_CONTRACT_ADDRESS),
         value:                    U256::zero(),
-        data:                     AbiEncode::encode(call_data).into(),
-        access_list:              vec![],
-    }
-}
-
-fn build_axon_to_ckb_txs() -> Eip1559Transaction {
-    let data = hex_decode("db2b749f000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000076466657266776500000000000000000000000000000000000000000000000000").unwrap();
-
-    Eip1559Transaction {
-        nonce:                    7u64.into(),
-        max_priority_fee_per_gas: MAX_PRIORITY_FEE_PER_GAS.into(),
-        gas_price:                U256::one(),
-        gas_limit:                MAX_BLOCK_GAS_LIMIT.into(),
-        action:                   TransactionAction::Call(CROSSCHAIN_CONTRACT_ADDRESS),
-        value:                    100000000000000000u64.into(),
         data:                     data.into(),
         access_list:              vec![],
     }
