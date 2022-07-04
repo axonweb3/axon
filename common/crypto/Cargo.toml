@@ -11,7 +11,7 @@ ophelia-blst = "0.3"
 ophelia-secp256k1 = "0.3"
 
 [dev-dependencies]
-overlord = "0.3"
+overlord = "0.4"
 protocol = { path = "../../protocol", package = "axon-protocol" }
 rand = "0.7"
 rlp = "0.5"
