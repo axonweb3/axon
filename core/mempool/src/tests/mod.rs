@@ -145,8 +145,7 @@ async fn new_mempool(
     _max_tx_size: u64,
 ) -> MemPoolImpl<HashMemPoolAdapter> {
     let adapter = HashMemPoolAdapter::new();
-    let mempool = MemPoolImpl::new(pool_size, 20, adapter, vec![]).await;
-    mempool
+    MemPoolImpl::new(pool_size, 20, adapter, vec![]).await
 }
 
 fn check_hash(tx: &SignedTransaction) -> ProtocolResult<()> {
