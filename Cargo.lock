@@ -2892,6 +2892,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
 
 [[package]]
+name = "hex-simd"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f677fe87e39e644d153887514393a22641085927cae26d28bcc8b34235a3f586"
+dependencies = [
+ "simd-abstraction",
+]
+
+[[package]]
 name = "hmac"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2966,6 +2975,15 @@ name = "humantime"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
+
+[[package]]
+name = "hummer"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c4c5e5a0c617522b7843157e8fc5101451b3ae4cdcb87b8e45031d3ab507527a"
+dependencies = [
+ "hex-simd",
+]
 
 [[package]]
 name = "hyper"
@@ -3862,9 +3880,9 @@ checksum = "21326818e99cfe6ce1e524c2a805c189a99b5ae555a35d19f9a284b427d86afa"
 
 [[package]]
 name = "overlord"
-version = "0.3.2"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "576c01c585b12f1e98398d9baecad9966d899e4ec50c66415dd4fdfff7a66b16"
+checksum = "5967f13dc4d4d57ecc5f3143c823c4404ed96efaf1fc8ee0ce63505f22dc4218"
 dependencies = [
  "async-trait",
  "bit-vec",
@@ -3872,10 +3890,10 @@ dependencies = [
  "creep",
  "derive_more",
  "futures",
- "hex",
+ "hummer",
  "log",
  "muta-apm",
- "parking_lot 0.11.2",
+ "parking_lot 0.12.1",
  "prime_tools",
  "rand_core 0.6.3",
  "rand_pcg 0.3.1",
@@ -5236,6 +5254,12 @@ dependencies = [
  "digest 0.9.0",
  "rand_core 0.6.3",
 ]
+
+[[package]]
+name = "simd-abstraction"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3acaf60982756ce96a00bc9c5b351f14ca2d23e7dc13c10df0a0d9cc036094e3"
 
 [[package]]
 name = "siphasher"
