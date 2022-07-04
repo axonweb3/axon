@@ -90,7 +90,11 @@ where
                     .await
                 {
                     Ok(block) => {
-                        list.append(&mut self.search_tx(block.into()));
+                        list.append(&mut search_tx(
+                            block.into(),
+                            &self.acs_code_hash,
+                            &self.request_code_hash,
+                        ));
                         break;
                     }
                     Err(e) => {
@@ -117,26 +121,30 @@ where
             .await
             .unwrap();
     }
+}
 
-    fn search_tx(&self, block: BlockView) -> Vec<TransactionView> {
-        block
-            .transactions()
-            .into_iter()
-            .filter(|tx| {
-                if tx.is_cellbase() || tx.output_pts().len() < 2 {
-                    return false;
-                }
+pub fn search_tx(
+    block: BlockView,
+    acs_code_hash: &packed::Byte32,
+    request_code_hash: &packed::Byte32,
+) -> Vec<TransactionView> {
+    block
+        .transactions()
+        .into_iter()
+        .filter(|tx| {
+            if tx.is_cellbase() || tx.output_pts().len() < 2 {
+                return false;
+            }
 
-                if tx.output(0).unwrap().lock().code_hash() == self.acs_code_hash {
-                    if let Some(type_script) = tx.output(1).unwrap().type_().to_opt() {
-                        if type_script.code_hash() == self.request_code_hash {
-                            return true;
-                        }
+            if &tx.output(0).unwrap().lock().code_hash() == acs_code_hash {
+                if let Some(type_script) = tx.output(1).unwrap().type_().to_opt() {
+                    if &type_script.code_hash() == request_code_hash {
+                        return true;
                     }
                 }
+            }
 
-                false
-            })
-            .collect()
-    }
+            false
+        })
+        .collect()
 }

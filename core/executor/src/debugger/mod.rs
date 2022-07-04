@@ -9,7 +9,7 @@ use getrandom::getrandom;
 use common_config_parser::parse_file;
 use common_crypto::{PrivateKey, Secp256k1RecoverablePrivateKey, Signature};
 use protocol::codec::{hex_decode, ProtocolCodec};
-use protocol::traits::Executor;
+use protocol::traits::{Backend, Executor};
 use protocol::types::{
     Account, Eip1559Transaction, ExecResp, ExecutorContext, Hash, Hasher, RichBlock,
     SignedTransaction, TxResp, UnsignedTransaction, UnverifiedTransaction, H160, H256, NIL_DATA,
@@ -102,6 +102,10 @@ impl EvmDebugger {
             exec_ctx,
         )
         .unwrap()
+    }
+
+    fn nonce(&self, addr: H160) -> U256 {
+        self.backend(0).basic(addr).nonce
     }
 }
 

@@ -1,3 +1,5 @@
+use ckb_jsonrpc_types::BlockView;
+use ckb_types::{h256, prelude::Pack};
 use ethers_contract::decode_logs;
 use ethers_core::abi::{AbiEncode, RawLog};
 
@@ -10,9 +12,70 @@ use protocol::{codec::hex_decode, tokio};
 use core_cross_client::crosschain_abi::{
     CkbtoAxonRecord, CrossFromCKBCall, CrossFromCKBFilter, CrossToCKBAlertFilter,
 };
+use core_cross_client::{build_axon_txs, monitor::search_tx};
 
 use crate::debugger::{clear_data, mock_efficient_signed_tx, mock_signed_tx, EvmDebugger};
 use crate::CROSSCHAIN_CONTRACT_ADDRESS;
+
+const CKB_BLOCK_5899118: &str = "./src/debugger/block_5899118.json";
+const ACS_CODE_HASH: ckb_types::H256 =
+    h256!("0x97e6179be134d47ca10322a1534d8dcb65052de7e099b5556bea924137839bab");
+const REQUEST_CODE_HASH: ckb_types::H256 =
+    h256!("0xd8f9afaad8eb3e26a1ef2538bac91d68635502508358ae901941513bfe2edb1d");
+
+fn load_block() -> BlockView {
+    let file = std::fs::File::options()
+        .read(true)
+        .open(CKB_BLOCK_5899118)
+        .unwrap();
+
+    serde_json::from_reader(file).unwrap()
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_cross_from_ckb() {
+    use common_crypto::{Secp256k1RecoverablePrivateKey, ToPublicKey, UncompressedPublicKey};
+
+    let self_priv_key =
+        hex_decode("37aa0f893d05914a4def0460c0a984d3611546cfb26924d7a7ca6e0db9950a2d").unwrap();
+    let priv_key = Secp256k1RecoverablePrivateKey::try_from(self_priv_key.as_ref())
+        .expect("Invalid secp private key");
+    let address = Address::from_pubkey_bytes(priv_key.pub_key().to_uncompressed_bytes())
+        .unwrap()
+        .0;
+
+    let mut debugger =
+        EvmDebugger::new(address, 10000000000000000000u64.into(), "./free-space/db2");
+    debugger.init_genesis();
+
+    let (_, stx) = build_axon_txs(
+        search_tx(
+            load_block().into(),
+            &(ACS_CODE_HASH.pack()),
+            &(REQUEST_CODE_HASH.pack()),
+        ),
+        debugger.nonce(address),
+        &priv_key,
+    );
+
+    let resp = debugger.exec(1, vec![stx]);
+
+    println!("{:?}", resp);
+
+    let logs: Vec<CrossFromCKBFilter> = decode_logs(
+        &resp.tx_resp[0]
+            .logs
+            .iter()
+            .skip(1)
+            .map(|l| RawLog::from((l.topics.clone(), l.data.clone())))
+            .collect::<Vec<_>>(),
+    )
+    .unwrap();
+
+    println!("{:?}", logs);
+
+    clear_data("./free-space");
+}
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_crosschain() {
