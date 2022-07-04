@@ -1,7 +1,7 @@
 #![allow(dead_code, unused_variables, clippy::derive_partial_eq_without_eq)]
 
 mod adapter;
-pub mod crosschain_abi;
+mod abi;
 mod error;
 mod generated;
 pub mod monitor;
@@ -12,6 +12,7 @@ pub use adapter::{CrossChainDBImpl, DefaultCrossChainAdapter};
 pub use task::message::{
     CrosschainMessageHandler, END_GOSSIP_BUILD_CKB_TX, END_GOSSIP_CKB_TX_SIGNATURE,
 };
+pub use abi::{crosschain_abi, wckb_abi};
 
 use std::str::FromStr;
 use std::sync::Arc;
@@ -20,7 +21,7 @@ use arc_swap::ArcSwap;
 use ckb_sdk::constants::ONE_CKB;
 use ckb_types::{core::TransactionView, prelude::*};
 use ethers_contract::decode_logs;
-use ethers_core::abi::{self, AbiEncode, AbiType, Detokenize, RawLog};
+use ethers_core::abi::{decode as abi_decode, AbiEncode, AbiType, Detokenize, RawLog};
 
 use common_config_parser::types::ConfigCrossChain;
 use common_crypto::{
@@ -320,7 +321,7 @@ impl<C: CkbClient + 'static> CrosschainHandler<C> {
 }
 
 pub fn decode_resp_nonce(data: &[u8]) -> U256 {
-    U256::from_tokens(abi::decode(&[U256::param_type()], data).unwrap()).unwrap()
+    U256::from_tokens(abi_decode(&[U256::param_type()], data).unwrap()).unwrap()
 }
 
 async fn build_ckb_tx_process(
