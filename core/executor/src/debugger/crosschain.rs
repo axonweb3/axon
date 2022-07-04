@@ -17,16 +17,36 @@ use core_cross_client::{build_axon_txs, monitor::search_tx};
 use crate::debugger::{clear_data, mock_efficient_signed_tx, mock_signed_tx, EvmDebugger};
 use crate::CROSSCHAIN_CONTRACT_ADDRESS;
 
-const CKB_BLOCK_5899118: &str = "./src/debugger/block_5899118.json";
+const CKB_BLOCK_5910757: &str = "./src/debugger/block_5910757.json";
 const ACS_CODE_HASH: ckb_types::H256 =
     h256!("0x97e6179be134d47ca10322a1534d8dcb65052de7e099b5556bea924137839bab");
 const REQUEST_CODE_HASH: ckb_types::H256 =
     h256!("0xd8f9afaad8eb3e26a1ef2538bac91d68635502508358ae901941513bfe2edb1d");
 
+#[tokio::test]
+async fn test() {
+    use protocol::traits::{CkbClient, Context};
+    let client = core_rpc_client::RpcClient::new(
+        "https://mercury-testnet.ckbapp.dev/rpc",
+        "http://127.0.0.1:8116",
+        "http://127.0.0.1:8116",
+    );
+    let block = client
+        .get_block_by_number(Context::new(), 5910757u64.into())
+        .await
+        .unwrap();
+    let file = std::fs::File::options()
+        .create_new(true)
+        .write(true)
+        .open(CKB_BLOCK_5910757)
+        .unwrap();
+    serde_json::to_writer_pretty(file, &block).unwrap();
+}
+
 fn load_block() -> BlockView {
     let file = std::fs::File::options()
         .read(true)
-        .open(CKB_BLOCK_5899118)
+        .open(CKB_BLOCK_5910757)
         .unwrap();
 
     serde_json::from_reader(file).unwrap()
@@ -43,20 +63,21 @@ async fn test_cross_from_ckb() {
     let address = Address::from_pubkey_bytes(priv_key.pub_key().to_uncompressed_bytes())
         .unwrap()
         .0;
+    let to = H160::from_slice(&hex_decode("421871e656E04c9A106A55CEd53Fc9A49560a424").unwrap());
 
     let mut debugger =
         EvmDebugger::new(address, 10000000000000000000u64.into(), "./free-space/db2");
     debugger.init_genesis();
 
-    let (_, stx) = build_axon_txs(
-        search_tx(
-            load_block().into(),
-            &(ACS_CODE_HASH.pack()),
-            &(REQUEST_CODE_HASH.pack()),
-        ),
-        debugger.nonce(address),
-        &priv_key,
+    let ckb_txs = search_tx(
+        load_block().into(),
+        &(ACS_CODE_HASH.pack()),
+        &(REQUEST_CODE_HASH.pack()),
     );
+    let mut ckb_tx_hash = [0u8; 32];
+    ckb_tx_hash.copy_from_slice(&ckb_txs[0].hash().raw_data()[..32]);
+
+    let (_, stx) = build_axon_txs(ckb_txs, debugger.nonce(address), &priv_key);
 
     let resp = debugger.exec(1, vec![stx]);
 
@@ -73,6 +94,17 @@ async fn test_cross_from_ckb() {
     .unwrap();
 
     println!("{:?}", logs);
+
+    assert_eq!(
+        logs[0].records[0],
+        (
+            to,
+            H160::default(),
+            U256::zero(),
+            U256::from(450),
+            ckb_tx_hash
+        )
+    );
 
     clear_data("./free-space");
 }
