@@ -48,10 +48,10 @@ impl error::Error for ParseError {}
 impl fmt::Display for ParseError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            ParseError::IO(e) => return write!(f, "{}", e),
-            ParseError::Deserialize(e) => return write!(f, "{}", e),
-            ParseError::Reqwest(e) => return write!(f, "{}", e),
-            ParseError::Json(e) => return write!(f, "{}", e),
+            ParseError::IO(e) => write!(f, "{}", e),
+            ParseError::Deserialize(e) => write!(f, "{}", e),
+            ParseError::Reqwest(e) => write!(f, "{}", e),
+            ParseError::Json(e) => write!(f, "{}", e),
         }
     }
 }
