@@ -3,8 +3,6 @@ use parking_lot::Mutex;
 
 use protocol::types::{Block, Bytes, Hash, Header, Receipt, SignedTransaction};
 
-const LRU_CAPACITY: usize = 200;
-
 #[derive(Debug)]
 pub struct StorageCache {
     pub blocks:        Mutex<LruCache<u64, Block>>,
@@ -15,15 +13,15 @@ pub struct StorageCache {
     pub receipts:      Mutex<LruCache<Hash, Receipt>>,
 }
 
-impl Default for StorageCache {
-    fn default() -> Self {
+impl StorageCache {
+    pub fn new(size: usize) -> Self {
         StorageCache {
-            blocks:        Mutex::new(LruCache::new(LRU_CAPACITY)),
-            block_numbers: Mutex::new(LruCache::new(LRU_CAPACITY)),
-            headers:       Mutex::new(LruCache::new(LRU_CAPACITY)),
-            transactions:  Mutex::new(LruCache::new(LRU_CAPACITY)),
-            codes:         Mutex::new(LruCache::new(LRU_CAPACITY)),
-            receipts:      Mutex::new(LruCache::new(LRU_CAPACITY)),
+            blocks:        Mutex::new(LruCache::new(size)),
+            block_numbers: Mutex::new(LruCache::new(size)),
+            headers:       Mutex::new(LruCache::new(size)),
+            transactions:  Mutex::new(LruCache::new(size)),
+            codes:         Mutex::new(LruCache::new(size)),
+            receipts:      Mutex::new(LruCache::new(size)),
         }
     }
 }

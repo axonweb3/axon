@@ -11,7 +11,7 @@ pub const DEFAULT_BROADCAST_TXS_SIZE: usize = 200;
 pub const DEFAULT_BROADCAST_TXS_INTERVAL: u64 = 200; // milliseconds
 pub const DEFAULT_OVERLORD_GAP: usize = 5;
 pub const DEFAULT_SYNC_TXS_CHUNK_SIZE: usize = 5000;
-pub const DEFAULT_CACHE_SIZE: usize = 128 << 20;
+pub const DEFAULT_CACHE_SIZE: usize = 100;
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct ConfigApi {

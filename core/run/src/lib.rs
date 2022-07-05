@@ -115,7 +115,7 @@ impl Axon {
         // Init Block db
         let path_block = self.config.data_path_for_block();
         let rocks_adapter = Arc::new(RocksAdapter::new(path_block, self.config.rocksdb.clone())?);
-        let storage = Arc::new(ImplStorage::new(rocks_adapter));
+        let storage = Arc::new(ImplStorage::new(rocks_adapter, Default::default()));
 
         match storage.get_latest_block(Context::new()).await {
             Ok(_) => {
@@ -235,7 +235,10 @@ impl Axon {
             rocks_adapter.inner_db(),
         ));
 
-        let storage = Arc::new(ImplStorage::new(rocks_adapter));
+        let storage = Arc::new(ImplStorage::new(
+            rocks_adapter,
+            self.config.rocksdb.cache_size,
+        ));
 
         // Init network
         let network_config = NetworkConfig::new()
