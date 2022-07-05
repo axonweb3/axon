@@ -241,6 +241,10 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
             } else if let Ok(event) =
                 decode_logs::<crosschain_abi::CrossToCKBFilter>(&[last_log.clone()])
             {
+                log::info!(
+                    "[crosschain]: Complete cross from Axon, axon block hash {:?}",
+                    block_hash
+                );
                 to_ckbs.push(event[0].clone());
             } else if let Ok(event) =
                 decode_logs::<crosschain_abi::CrossToCKBAlertFilter>(&[last_log])
