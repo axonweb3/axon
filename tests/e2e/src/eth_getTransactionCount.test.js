@@ -33,11 +33,11 @@ describe("eth_getTransactionCount", () => {
     await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type(testDataInfo.contractAddress);
     await param2.type("latest");
-    await goto.check(page, "0x1");
+    await goto.check(page, "0x2");
   });
 
   /**
- * param1: the addres is not in axon 0x9EeE8678045C389005EDe68D9A2a548f36342184
+ * param1: the address is not in axon 0x9EeE8678045C389005EDe68D9A2a548f36342184
  * param2: real block number: latest
  */
   it("eth_getTransactionCount_3", async () => {
@@ -47,7 +47,7 @@ describe("eth_getTransactionCount", () => {
     await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type("0x9EeE8678045C389005EDe68D9A2a548f36342184");
     await param2.type("latest");
-    await goto.check(page, "-32001");
+    await goto.check(page, "0x1");
   });
 
   /**
