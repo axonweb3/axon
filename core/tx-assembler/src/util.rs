@@ -11,14 +11,14 @@ use crate::molecule;
 
 pub const TYPE_ID_CODE_HASH: ckb_types::H256 = h256!("0x545950455f4944");
 pub const ACS_LOCK_CODE_HASH: ckb_types::H256 =
-    h256!("0x33823dfb574bbfe453dde89eda4832c49abfb649be639c3c629c0657c7da77fb");
+    h256!("0x97e6179be134d47ca10322a1534d8dcb65052de7e099b5556bea924137839bab");
 pub const SECP256K1_CODE_HASH: ckb_types::H256 =
     h256!("0x9bd7e06f3ecf4be0f2fcd2188b23f1b9fcc88e5d4b65a8637b17723bbda3cce8");
 pub const SUDT_CODE_HASH: ckb_types::H256 =
     h256!("0xc5e5dcf215925f7ef4dfaf5f4b4f105bc321c02776d6e7d52a1db3fcd9d011a4");
 
 const ACS_LOCK_TX_HASH: ckb_types::H256 =
-    h256!("0x36f0b733b056fce35477622a818c930b35c7772ab80cf599e30575635c8fac04");
+    h256!("0x01524e26ec3e3004748cc9ecc6a71924e9ca5d159c7d3d6fd990b2da7017aad7");
 const SUDT_TX_HASH: ckb_types::H256 =
     h256!("0xe12877ebd2c3c364dc46c5c992bcfaf4fee33fa13eebdf82c591fc9825aab769");
 const ACS_REQUEST_TX_HASH: ckb_types::H256 =

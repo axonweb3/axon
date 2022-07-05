@@ -1395,13 +1395,16 @@ dependencies = [
  "axon-protocol",
  "az",
  "cita_trie",
+ "ckb-jsonrpc-types",
  "ckb-rocksdb",
+ "ckb-types",
  "common-apm",
  "common-config-parser",
  "common-crypto",
  "common-merkle",
  "core-cross-client",
  "core-interoperation",
+ "core-rpc-client",
  "core-storage",
  "criterion",
  "crossbeam-channel",
@@ -1421,6 +1424,7 @@ dependencies = [
  "ripemd",
  "rlp",
  "rug",
+ "serde_json",
  "sha2 0.10.2",
  "substrate-bn",
  "tempfile",
@@ -2968,6 +2972,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
+name = "hummer"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "373ca45b03aec340e2090ce8e2f14fb7f0fbfe3500b3daedfe116548bb2776ec"
+dependencies = [
+ "faster-hex",
+]
+
+[[package]]
 name = "hyper"
 version = "0.14.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3123,9 +3136,9 @@ checksum = "879d54834c8c76457ef4293a689b2a8c59b076067ad77b15efafbb05f92a592b"
 
 [[package]]
 name = "ipnetwork"
-version = "0.19.0"
+version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f84f1612606f3753f205a4e9a2efd6fe5b4c573a6269b2cc6c3003d44a0d127"
+checksum = "bf466541e9d546596ee94f9f69590f89473455f88372423e0008fc1a7daf100e"
 dependencies = [
  "serde",
 ]
@@ -3862,9 +3875,9 @@ checksum = "21326818e99cfe6ce1e524c2a805c189a99b5ae555a35d19f9a284b427d86afa"
 
 [[package]]
 name = "overlord"
-version = "0.3.2"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "576c01c585b12f1e98398d9baecad9966d899e4ec50c66415dd4fdfff7a66b16"
+checksum = "3b498a3703a25f7398965c7c21adbda4f15e376a8f24bc3edacd4ab097dfcbb9"
 dependencies = [
  "async-trait",
  "bit-vec",
@@ -3872,10 +3885,10 @@ dependencies = [
  "creep",
  "derive_more",
  "futures",
- "hex",
+ "hummer",
  "log",
  "muta-apm",
- "parking_lot 0.11.2",
+ "parking_lot 0.12.1",
  "prime_tools",
  "rand_core 0.6.3",
  "rand_pcg 0.3.1",

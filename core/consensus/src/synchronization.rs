@@ -120,7 +120,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
 
     pub async fn polling_broadcast(&self) -> ProtocolResult<()> {
         loop {
-            let current_number = self.status.inner().last_number;
+            let current_number = self.status.inner().proof.number;
             if current_number != 0 {
                 self.adapter
                     .broadcast_number(Context::new(), current_number)
@@ -353,8 +353,6 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             last_checkpoint_block_hash: metadata.last_checkpoint_block_hash,
         };
 
-        status_agent.swap(new_status);
-
         self.save_chain_data(
             ctx.clone(),
             rich_block.txs.clone(),
@@ -362,6 +360,8 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             rich_block.block.clone(),
         )
         .await?;
+
+        status_agent.swap(new_status);
 
         // If there are transactions in the trasnaction pool that have been on chain
         // after this execution, make sure they are cleaned up.

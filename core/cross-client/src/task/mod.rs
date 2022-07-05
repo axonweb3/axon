@@ -99,9 +99,11 @@ where
         loop {
             tokio::select! {
                 Some(reqs) = self.reqs_rx.recv() => {
+                    log::info!("[cross-chain]: receive cross to CKB requests, len {}", reqs.0.len());
                     self.handle_reqs(reqs).await;
                 }
                 Some(msg) = self.net_rx.recv() => {
+                    log::info!("[cross-chain]: receive network message {:?}", msg);
                     self.handle_msgs(msg).await;
                 }
             }
