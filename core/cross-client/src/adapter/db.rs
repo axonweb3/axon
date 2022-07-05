@@ -8,7 +8,7 @@ use rocksdb::{FullOptions, IteratorMode, Options, DB};
 use common_config_parser::types::ConfigRocksDB;
 use protocol::ProtocolResult;
 
-use crate::adapter::CrossChainDB;
+use crate::adapter::{CrossChainDB, MONITOR_CKB_NUMBER_KEY};
 use crate::error::CrossChainError;
 
 #[derive(Clone)]
@@ -26,9 +26,12 @@ impl CrossChainDB for CrossChainDBImpl {
     }
 
     fn get_all(&self) -> ProtocolResult<Vec<(Vec<u8>, Vec<u8>)>> {
+        let monitor_key = MONITOR_CKB_NUMBER_KEY.as_bytes();
+
         Ok(self
             .db
             .iterator(IteratorMode::Start)
+            .skip_while(|(k, _v)| k.as_ref() == monitor_key)
             .map(|(k, v)| (k.as_ref().to_vec(), v.as_ref().to_vec()))
             .collect())
     }
