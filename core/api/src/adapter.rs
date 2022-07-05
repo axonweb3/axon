@@ -4,7 +4,7 @@ use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie};
 use protocol::traits::{APIAdapter, Context, Executor, ExecutorAdapter, MemPool, Network, Storage};
 use protocol::types::{
     Account, BigEndianHash, Block, BlockNumber, Bytes, ExecutorContext, Hash, Header, Proposal,
-    Receipt, SignedTransaction, TxResp, H160, U256,
+    Receipt, SignedTransaction, TxResp, H160, NIL_DATA, RLP_NULL, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
@@ -144,12 +144,15 @@ where
         address: H160,
         number: Option<BlockNumber>,
     ) -> ProtocolResult<Account> {
-        let bytes = self
-            .evm_backend(number)
-            .await?
-            .get(address.as_bytes())
-            .ok_or_else(|| APIError::Adapter(format!("Cannot get {:?} account", address)))?;
-        Account::decode(bytes)
+        match self.evm_backend(number).await?.get(address.as_bytes()) {
+            Some(bytes) => Account::decode(bytes),
+            None => Ok(Account {
+                nonce:        U256::zero(),
+                balance:      U256::zero(),
+                storage_root: RLP_NULL,
+                code_hash:    NIL_DATA,
+            }),
+        }
     }
 
     async fn get_pending_tx_count(&self, ctx: Context, address: H160) -> ProtocolResult<U256> {

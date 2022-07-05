@@ -254,8 +254,8 @@ where
         let old_account = match self.trie.get(address.as_bytes()) {
             Ok(Some(raw)) => Account::decode(raw).unwrap(),
             _ => Account {
-                nonce:        Default::default(),
-                balance:      Default::default(),
+                nonce:        U256::zero(),
+                balance:      U256::zero(),
                 storage_root: RLP_NULL,
                 code_hash:    NIL_DATA,
             },

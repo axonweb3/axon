@@ -216,7 +216,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         self.adapter
             .get_account(Context::new(), address, number.unwrap_or_default().into())
             .await
-            .map(|account| account.nonce)
+            .map(|account| account.nonce + U256::one())
             .map_err(|e| Error::Custom(e.to_string()))
     }
 

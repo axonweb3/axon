@@ -61,7 +61,7 @@ impl<DB: TrieDB> MPTTrie<DB> {
 
 #[derive(Debug, Display, From)]
 pub enum MPTTrieError {
-    #[display(fmt = "{:?}", _0)]
+    #[display(fmt = "Trie {:?}", _0)]
     Trie(TrieError),
 
     #[display(fmt = "Remove {:?} failed", _0)]
