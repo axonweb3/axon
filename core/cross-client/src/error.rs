@@ -18,6 +18,9 @@ pub enum CrossChainError {
 
     #[display(fmt = "Invalid cross direction")]
     InvalidDirection,
+
+    #[display(fmt = "Sender error {}", _0)]
+    Sender(String),
 }
 
 impl std::error::Error for CrossChainError {}

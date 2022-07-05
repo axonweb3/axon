@@ -7,8 +7,9 @@ use ckb_types::{packed, prelude::Pack};
 use protocol::tokio::{sync::mpsc::UnboundedSender, time};
 use protocol::traits::{CkbClient, Context, CrossAdapter};
 use protocol::types::H256;
+use protocol::ProtocolResult;
 
-use crate::{CKB_BLOCK_INTERVAL, CKB_TIP, NON_FORK_BLOCK_GAP};
+use crate::{error::CrossChainError, CKB_BLOCK_INTERVAL, CKB_TIP, NON_FORK_BLOCK_GAP};
 
 pub struct CrossChainMonitor<C, Adapter> {
     ckb_client:        Arc<C>,
@@ -54,31 +55,32 @@ where
         let mut interval = time::interval(Duration::from_secs(CKB_BLOCK_INTERVAL));
 
         loop {
-            self.update_tip_number().await;
+            if let Err(e) = self.update_tip_number().await {
+                log::error!("[cross-chain]: monitor error {:?}", e);
+            }
+
             interval.tick().await;
         }
     }
 
-    async fn update_tip_number(&mut self) {
-        let tip_header = self
-            .ckb_client
-            .get_tip_header(Context::new())
-            .await
-            .unwrap();
+    async fn update_tip_number(&mut self) -> ProtocolResult<()> {
+        let tip_header = self.ckb_client.get_tip_header(Context::new()).await?;
 
         let tip_number: u64 = tip_header.inner.number.into();
         let current_tip = **CKB_TIP.load();
 
         if current_tip < tip_number {
             CKB_TIP.swap(Arc::new(tip_number));
-            self.fetch_block().await
+            self.fetch_block().await?;
         }
+
+        Ok(())
     }
 
-    async fn fetch_block(&mut self) {
+    async fn fetch_block(&mut self) -> ProtocolResult<()> {
         let non_fork_tip = **CKB_TIP.load() - NON_FORK_BLOCK_GAP;
         if self.handle_ckb_number > non_fork_tip {
-            return;
+            return Ok(());
         }
 
         let mut list = Vec::new();
@@ -112,14 +114,16 @@ where
                 list.len()
             );
 
-            self.req_tx.send(list).unwrap();
+            self.req_tx
+                .send(list)
+                .map_err(|e| CrossChainError::Sender(e.to_string()))?;
         }
 
         self.handle_ckb_number = non_fork_tip + 1;
         self.adapter
             .update_monitor_ckb_number(Context::new(), self.handle_ckb_number)
-            .await
-            .unwrap();
+            .await?;
+        Ok(())
     }
 }
 
