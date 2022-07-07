@@ -62,7 +62,7 @@ use protocol::traits::{
     CommonStorage, Context, Executor, MemPool, MetadataControl, Network, NodeInfo, Storage,
 };
 use protocol::types::{
-    Account, Address, MerkleRoot, Proposal, RichBlock, Validator, NIL_DATA, RLP_NULL,
+    Account, Address, MerkleRoot, Proposal, RichBlock, Validator, H256, NIL_DATA, RLP_NULL,
 };
 use protocol::{tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
@@ -443,6 +443,15 @@ impl Axon {
         // start ckb tx assembler
         let indexer_adapter = IndexerAdapter::new(Arc::clone(&ckb_client));
         let ckb_tx_assembler = Arc::new(TxAssemblerImpl::new(Arc::new(indexer_adapter)));
+        let metadata_type_id = H256::from_slice(
+            &hex_decode("0xc0810210210c06ba233273e94d7fc89b00a705a07fdc0ae4c78e4036582ff336 ")
+                .unwrap(),
+        );
+        let _ = ckb_tx_assembler.update_metadata(
+            metadata_type_id,
+            Default::default(),
+            current_header.chain_id as u8,
+        );
 
         // start cross chain client
         let path_crosschain = self.config.data_path_for_crosschain();
