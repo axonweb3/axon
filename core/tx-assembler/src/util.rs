@@ -11,14 +11,14 @@ use crate::molecule;
 
 pub const TYPE_ID_CODE_HASH: ckb_types::H256 = h256!("0x545950455f4944");
 pub const ACS_LOCK_CODE_HASH: ckb_types::H256 =
-    h256!("0x97e6179be134d47ca10322a1534d8dcb65052de7e099b5556bea924137839bab");
+    h256!("0xe6716305da395dbd3dc094695b2a6dc9160e186e41102cceac377d78a350c962");
 pub const SECP256K1_CODE_HASH: ckb_types::H256 =
     h256!("0x9bd7e06f3ecf4be0f2fcd2188b23f1b9fcc88e5d4b65a8637b17723bbda3cce8");
 pub const SUDT_CODE_HASH: ckb_types::H256 =
     h256!("0xc5e5dcf215925f7ef4dfaf5f4b4f105bc321c02776d6e7d52a1db3fcd9d011a4");
 
 const ACS_LOCK_TX_HASH: ckb_types::H256 =
-    h256!("0x01524e26ec3e3004748cc9ecc6a71924e9ca5d159c7d3d6fd990b2da7017aad7");
+    h256!("0x65bb542bab44a1769379cca21c70e031d753942b272f7b6ac1b87e95d4325d24");
 const SUDT_TX_HASH: ckb_types::H256 =
     h256!("0xe12877ebd2c3c364dc46c5c992bcfaf4fee33fa13eebdf82c591fc9825aab769");
 const ACS_REQUEST_TX_HASH: ckb_types::H256 =
@@ -46,22 +46,14 @@ pub fn build_transfer_output_cell(
     sudt_amount: u128,
     sudt_lockhash: H256,
 ) -> (CellOutput, Bytes) {
-    let lock_script = Script::new_builder()
-        .code_hash(SECP256K1_CODE_HASH.pack())
-        .hash_type(ScriptHashType::Type.into())
-        .args(Bytes::from(secp256k1_lockargs.as_bytes().to_vec()).pack())
-        .build();
+    let lock_script = build_script(SECP256K1_CODE_HASH, secp256k1_lockargs.as_bytes());
     let mut cell = CellOutput::new_builder()
         .lock(lock_script)
         .build_exact_capacity(Capacity::shannons(ckb_amount))
         .unwrap();
     let mut output_data = Bytes::new();
     if sudt_amount > 0 {
-        let type_script = Script::new_builder()
-            .code_hash(SUDT_CODE_HASH.pack())
-            .hash_type(ScriptHashType::Type.into())
-            .args(Bytes::from(sudt_lockhash.as_bytes().to_vec()).pack())
-            .build();
+        let type_script = build_script(SUDT_CODE_HASH, sudt_lockhash.as_bytes());
         cell = cell
             .as_builder()
             .type_(Some(type_script).pack())

@@ -1,5 +1,4 @@
 #![allow(unused_variables)]
-#![allow(unused_imports)]
 
 mod indexer;
 #[allow(clippy::all)]

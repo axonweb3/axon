@@ -1,11 +1,12 @@
 use std::sync::Arc;
 
-use ckb_jsonrpc_types::TransactionView as JsonTxView;
+use ckb_jsonrpc_types::{Transaction as JsonTx, TransactionView as JsonTxView};
 use ckb_types::{core::Capacity, h160, h256};
 
 use common_crypto::{
     BlsPrivateKey, BlsPublicKey, BlsSignature, HashValue, PrivateKey, ToBlsPublicKey,
 };
+use protocol::traits::CkbClient;
 use protocol::types::{crosschain, H160, H256};
 use protocol::{tokio, traits::TxAssembler};
 
@@ -40,7 +41,7 @@ fn gen_sig_pubkeys(size: usize, hash: &H256) -> (BlsSignature, Vec<BlsPublicKey>
 
 fn adapter() -> Arc<IndexerAdapter<RpcClient>> {
     Arc::new(IndexerAdapter::new(Arc::new(RpcClient::new(
-        "http://127.0.0.1:8114",
+        "http://47.111.84.118:81/",
         "http://127.0.0.1:8116",
         INDEXER_URL,
     ))))
@@ -84,6 +85,16 @@ async fn test_acs_complete_transacion() {
     assert!(digest == tx.hash().raw_data());
     println!(
         "[with signatures] tx = {}",
-        serde_json::to_string_pretty(&JsonTxView::from(tx)).unwrap()
+        serde_json::to_string_pretty(&JsonTxView::from(tx.clone())).unwrap()
     );
+    let rpc = RpcClient::new(
+        "http://47.111.84.118:81/",
+        "http://127.0.0.1:8116",
+        INDEXER_URL,
+    );
+    let result = rpc
+        .send_transaction(Default::default(), &JsonTx::from(tx.data()), None)
+        .await
+        .expect("send ckb");
+    println!("result = {:?}", result);
 }
