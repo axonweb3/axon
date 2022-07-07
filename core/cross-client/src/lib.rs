@@ -193,7 +193,7 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
         let logs = logs.iter().filter_map(|inner_logs| {
             inner_logs.last().cloned().map(|l| RawLog {
                 topics: l.topics.clone(),
-                data:   l.data.clone(),
+                data:   l.data,
             })
         });
 

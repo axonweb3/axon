@@ -87,7 +87,7 @@ async fn test_cross_from_ckb() {
         .logs
         .last()
         .cloned()
-        .map(|l| RawLog::from((l.topics.clone(), l.data.clone())))
+        .map(|l| RawLog::from((l.topics.clone(), l.data)))
         .unwrap()])
     .unwrap();
 
@@ -121,7 +121,7 @@ async fn test_cross_from_ckb() {
         .logs
         .last()
         .cloned()
-        .map(|l| RawLog::from((l.topics.clone(), l.data.clone())))
+        .map(|l| RawLog::from((l.topics.clone(), l.data)))
         .unwrap()])
     .unwrap();
 
