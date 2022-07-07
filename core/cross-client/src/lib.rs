@@ -190,29 +190,18 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
         Vec<crosschain_abi::CrossToCKBFilter>,
         Vec<crosschain_abi::CrossToCKBAlertFilter>,
     )> {
-        let logs = logs.iter().map(|inner_logs| {
-            inner_logs
-                .iter()
-                .map(|log| RawLog {
-                    topics: log.topics.clone(),
-                    data:   log.data.clone(),
-                })
-                .collect::<Vec<_>>()
+        let logs = logs.iter().filter_map(|inner_logs| {
+            inner_logs.last().cloned().map(|l| RawLog {
+                topics: l.topics.clone(),
+                data:   l.data.clone(),
+            })
         });
 
         let mut to_ckbs = Vec::new();
         let mut to_ckb_alerts = Vec::new();
 
         for log in logs {
-            if log.is_empty() {
-                continue;
-            }
-
-            let last_log = log.last().cloned().unwrap();
-
-            if let Ok(event) =
-                decode_logs::<crosschain_abi::CrossFromCKBFilter>(&[last_log.clone()])
-            {
+            if let Ok(event) = decode_logs::<crosschain_abi::CrossFromCKBFilter>(&[log.clone()]) {
                 log::info!(
                     "[crosschain]: Complete cross from CKB, request count {:?}, axon block hash {:?}",
                     event[0].records.len(), block_hash
@@ -239,16 +228,14 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
                     )
                     .await?;
             } else if let Ok(event) =
-                decode_logs::<crosschain_abi::CrossToCKBFilter>(&[last_log.clone()])
+                decode_logs::<crosschain_abi::CrossToCKBFilter>(&[log.clone()])
             {
                 log::info!(
                     "[crosschain]: Complete cross from Axon, axon block hash {:?}",
                     block_hash
                 );
                 to_ckbs.push(event[0].clone());
-            } else if let Ok(event) =
-                decode_logs::<crosschain_abi::CrossToCKBAlertFilter>(&[last_log])
-            {
+            } else if let Ok(event) = decode_logs::<crosschain_abi::CrossToCKBAlertFilter>(&[log]) {
                 to_ckb_alerts.push(event[0].clone());
             }
         }

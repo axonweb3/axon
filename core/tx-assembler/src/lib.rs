@@ -212,9 +212,12 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssemblerImpl<Adapter> {
             return Err(TxAssemblerError::InsufficientCrosschainCell.into());
         }
 
-        println!(
+        log::info!(
             "offered_ckb = {:?}, required_ckb = {:?}, offered_sudt = {:?}, required_sudt = {:?}",
-            offered_ckb, required_ckb, offered_sudt_set, required_sudt_set
+            offered_ckb,
+            required_ckb,
+            offered_sudt_set,
+            required_sudt_set
         );
 
         // fill transaction inputs and build sUDT change outputs
@@ -336,10 +339,12 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssembler for TxAssemblerImpl<Adap
             &metadata.metadata_outpoint,
             &metadata.stake_outpoint,
         ]);
-        println!(
+
+        log::info!(
             "[with outputs] tx = {}",
             serde_json::to_string_pretty(&JsonTxView::from(tx.clone())).unwrap()
         );
+
         let tx = self
             .fill_transaction_with_inputs_and_changes(
                 tx,
@@ -347,12 +352,15 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssembler for TxAssemblerImpl<Adap
                 Capacity::bytes(1).unwrap(),
             )
             .await?;
-        println!(
+
+        log::info!(
             "[with inputs] tx = {}",
             serde_json::to_string_pretty(&JsonTxView::from(tx.clone())).unwrap()
         );
+
         let hash = H256::from_slice(tx.hash().as_slice());
         ACS_TRANSACTIONS.write().unwrap().insert(hash, tx.clone());
+
         Ok(tx)
     }
 

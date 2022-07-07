@@ -32,7 +32,8 @@ impl EvmExecutor {
     ) -> TxResp {
         let old_nonce = backend.basic(tx.sender).nonce;
         let config = Config::london();
-        let metadata = StackSubstateMetadata::new(u64::MAX, &config);
+        let metadata =
+            StackSubstateMetadata::new(tx.transaction.unsigned.gas_limit().as_u64(), &config);
         let state = MemoryStackState::new(metadata, backend);
         let precompiles = build_precompile_set();
         let mut executor = StackExecutor::new_with_precompiles(state, &config, &precompiles);
