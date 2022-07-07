@@ -444,7 +444,7 @@ impl Axon {
         let indexer_adapter = IndexerAdapter::new(Arc::clone(&ckb_client));
         let ckb_tx_assembler = Arc::new(TxAssemblerImpl::new(Arc::new(indexer_adapter)));
         let metadata_type_id = H256::from_slice(
-            &hex_decode("c0810210210c06ba233273e94d7fc89b00a705a07fdc0ae4c78e4036582ff336 ")
+            &hex_decode("c0810210210c06ba233273e94d7fc89b00a705a07fdc0ae4c78e4036582ff336")
                 .unwrap(),
         );
         let _ = ckb_tx_assembler.update_metadata(
@@ -802,6 +802,7 @@ impl From<MainError> for ProtocolError {
 
 #[cfg(test)]
 mod tests {
+    use protocol::codec::hex_decode;
     use protocol::types::RichBlock;
     use std::fs;
 
@@ -810,5 +811,11 @@ mod tests {
         let raw = fs::read("../../devtools/chain/genesis_single_node.json").unwrap();
         let genesis: RichBlock = serde_json::from_slice(&raw).unwrap();
         println!("{:?}", genesis);
+    }
+
+    #[test]
+    fn decode_type_id() {
+        let type_id = hex_decode("c0810210210c06ba233273e94d7fc89b00a705a07fdc0ae4c78e4036582ff336").unwrap();
+        println!("{:?}", type_id);
     }
 }
