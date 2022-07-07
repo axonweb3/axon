@@ -203,6 +203,14 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssemblerImpl<Adapter> {
             cursor = Some(lock_cells.last_cursor);
         }
 
+        log::info!(
+            "[cross-chain] offered_ckb = {:?}, required_ckb = {:?}, offered_sudt = {:?}, required_sudt = {:?}",
+            offered_ckb,
+            required_ckb,
+            offered_sudt_set,
+            required_sudt_set
+        );
+
         if !util::is_offered_match_required(
             &offered_ckb,
             &required_ckb,
@@ -211,14 +219,6 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssemblerImpl<Adapter> {
         ) {
             return Err(TxAssemblerError::InsufficientCrosschainCell.into());
         }
-
-        log::info!(
-            "offered_ckb = {:?}, required_ckb = {:?}, offered_sudt = {:?}, required_sudt = {:?}",
-            offered_ckb,
-            required_ckb,
-            offered_sudt_set,
-            required_sudt_set
-        );
 
         // fill transaction inputs and build sUDT change outputs
         let mut tx = tx.as_advanced_builder().inputs(tx_inputs).build();
