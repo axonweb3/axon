@@ -1,3 +1,6 @@
+#![allow(unused_variables)]
+#![allow(unused_imports)]
+
 mod indexer;
 #[allow(clippy::all)]
 mod molecule;
@@ -32,7 +35,7 @@ lazy_static::lazy_static! {
 
 #[derive(Default, Debug)]
 struct CkbMetadata {
-    stake_outpoint:    packed::OutPoint,
+    // stake_outpoint:    packed::OutPoint,
     metadata_outpoint: packed::OutPoint,
     metadata_typeid:   H256,
     erc20_config:      HashMap<H160, H256>,
@@ -136,10 +139,15 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssemblerImpl<Adapter> {
         fee: Capacity,
     ) -> ProtocolResult<TransactionView> {
         let acs_lock_script = util::build_acs_lock_script(metadata_typeid);
+        let mut acs_lock_output = packed::CellOutput::new_builder()
+            .lock(acs_lock_script.clone())
+            .build_exact_capacity(Capacity::zero())
+            .unwrap();
 
         // prepare offer and require ckb
+        let change_capacity = acs_lock_output.occupied_capacity(Capacity::zero()).unwrap();
         let (required_ckb, required_sudt_set, sudt_scripts) =
-            util::compute_required_ckb_and_sudt(&tx, fee);
+            util::compute_required_ckb_and_sudt(&tx, fee, change_capacity);
         let mut offered_ckb = Capacity::zero();
         let mut offered_sudt_set = HashMap::new();
 
@@ -244,14 +252,18 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssemblerImpl<Adapter> {
         // build CKB change output
         real_inputs_capacity = real_inputs_capacity.safe_add(offered_ckb).unwrap();
         let real_outputs_capacity = tx.outputs_capacity().unwrap();
-        let mut acs_lock_output = packed::CellOutput::new_builder()
-            .lock(acs_lock_script.clone())
-            .build_exact_capacity(Capacity::zero())
-            .unwrap();
-        let extra_capacity = acs_lock_output.occupied_capacity(Capacity::zero()).unwrap();
+
+        log::info!(
+            "[cross-chain] real_inputs_capacity = {:?}, real_outputs_capacity = {:?}, change_capacity = {:?}, fee = {:?}",
+            real_inputs_capacity,
+            real_outputs_capacity,
+            change_capacity,
+            fee
+        );
+
         assert!(
             real_inputs_capacity.as_u64()
-                > real_outputs_capacity.as_u64() + extra_capacity.as_u64() + fee.as_u64(),
+                > real_outputs_capacity.as_u64() + change_capacity.as_u64() + fee.as_u64(),
             "internal error"
         );
         let change_ckb =
@@ -288,9 +300,10 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssemblerImpl<Adapter> {
             }
             config
         };
-        let stake_outpoint = self.fetch_axon_stake_outpoint(stake_typeid_args).await?;
+        // let stake_outpoint =
+        // self.fetch_axon_stake_outpoint(stake_typeid_args).await?;
         let ckb_metadata = CkbMetadata {
-            stake_outpoint,
+            // stake_outpoint,
             metadata_outpoint,
             metadata_typeid,
             erc20_config: erc20_token_config,
@@ -337,7 +350,7 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssembler for TxAssemblerImpl<Adap
         let metadata = ACS_METADATA.load();
         let tx = util::build_transaction_with_outputs_and_celldeps(&ckb_transfers, &[
             &metadata.metadata_outpoint,
-            &metadata.stake_outpoint,
+            // &metadata.stake_outpoint,
         ]);
 
         log::info!(

@@ -139,6 +139,7 @@ pub fn complete_transaction_with_witnesses(
 pub fn compute_required_ckb_and_sudt(
     tx: &TransactionView,
     fee: Capacity,
+    change: Capacity,
 ) -> (
     Capacity,
     HashMap<ckb_types::H256, u128>,
@@ -160,8 +161,9 @@ pub fn compute_required_ckb_and_sudt(
         }
     }
     let required_ckb = {
-        let ckb = tx.outputs_capacity().unwrap();
-        ckb.safe_add(fee).unwrap()
+        let mut ckb = tx.outputs_capacity().unwrap();
+        ckb = ckb.safe_add(fee).unwrap();
+        ckb.safe_add(change).unwrap()
     };
     (required_ckb, required_sudt_set, sudt_scripts)
 }
