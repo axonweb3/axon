@@ -145,9 +145,9 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssemblerImpl<Adapter> {
             .unwrap();
 
         // prepare offer and require ckb
-        let change_capacity = acs_lock_output.occupied_capacity(Capacity::zero()).unwrap();
+        let minimal_change_ckb = acs_lock_output.occupied_capacity(Capacity::zero()).unwrap();
         let (required_ckb, required_sudt_set, sudt_scripts) =
-            util::compute_required_ckb_and_sudt(&tx, fee, change_capacity);
+            util::compute_required_ckb_and_sudt(&tx, fee, minimal_change_ckb);
         let mut offered_ckb = Capacity::zero();
         let mut offered_sudt_set = HashMap::new();
 
@@ -257,20 +257,20 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssemblerImpl<Adapter> {
             "[cross-chain] real_inputs_capacity = {:?}, real_outputs_capacity = {:?}, change_capacity = {:?}, fee = {:?}",
             real_inputs_capacity,
             real_outputs_capacity,
-            change_capacity,
+            minimal_change_ckb,
             fee
         );
 
         assert!(
             real_inputs_capacity.as_u64()
-                > real_outputs_capacity.as_u64() + change_capacity.as_u64() + fee.as_u64(),
+                >= real_outputs_capacity.as_u64() + minimal_change_ckb.as_u64() + fee.as_u64(),
             "internal error"
         );
-        let change_ckb =
+        let real_change_ckb =
             real_inputs_capacity.as_u64() - real_outputs_capacity.as_u64() - fee.as_u64();
         acs_lock_output = acs_lock_output
             .as_builder()
-            .capacity(change_ckb.pack())
+            .capacity(real_change_ckb.pack())
             .build();
         tx = tx
             .as_advanced_builder()

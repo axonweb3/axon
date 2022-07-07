@@ -447,11 +447,13 @@ impl Axon {
             &hex_decode("c0810210210c06ba233273e94d7fc89b00a705a07fdc0ae4c78e4036582ff336")
                 .unwrap(),
         );
-        let _ = ckb_tx_assembler.update_metadata(
-            metadata_type_id,
-            Default::default(),
-            current_header.chain_id as u8,
-        ).await?;
+        let _ = ckb_tx_assembler
+            .update_metadata(
+                metadata_type_id,
+                Default::default(),
+                current_header.chain_id as u8,
+            )
+            .await?;
 
         // start cross chain client
         let path_crosschain = self.config.data_path_for_crosschain();
@@ -815,7 +817,8 @@ mod tests {
 
     #[test]
     fn decode_type_id() {
-        let type_id = hex_decode("c0810210210c06ba233273e94d7fc89b00a705a07fdc0ae4c78e4036582ff336").unwrap();
+        let type_id =
+            hex_decode("c0810210210c06ba233273e94d7fc89b00a705a07fdc0ae4c78e4036582ff336").unwrap();
         println!("{:?}", type_id);
     }
 }

@@ -46,6 +46,7 @@ fn adapter() -> Arc<IndexerAdapter<RpcClient>> {
     ))))
 }
 
+#[ignore]
 #[tokio::test]
 async fn test_acs_complete_transacion() {
     let transfer = crosschain::Transfer {
