@@ -444,7 +444,7 @@ impl Axon {
         let indexer_adapter = IndexerAdapter::new(Arc::clone(&ckb_client));
         let ckb_tx_assembler = Arc::new(TxAssemblerImpl::new(Arc::new(indexer_adapter)));
         let metadata_type_id = H256::from_slice(
-            &hex_decode("0xc0810210210c06ba233273e94d7fc89b00a705a07fdc0ae4c78e4036582ff336 ")
+            &hex_decode("c0810210210c06ba233273e94d7fc89b00a705a07fdc0ae4c78e4036582ff336 ")
                 .unwrap(),
         );
         let _ = ckb_tx_assembler.update_metadata(
