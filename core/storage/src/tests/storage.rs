@@ -13,7 +13,7 @@ use crate::ImplStorage;
 
 #[test]
 fn test_storage_block_insert() {
-    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()));
+    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()), 10);
 
     let height = 100;
     let block = mock_block(height, Hasher::digest(get_random_bytes(10)));
@@ -33,7 +33,7 @@ fn test_storage_block_insert() {
 
 #[test]
 fn test_storage_receipts_insert() {
-    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()));
+    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()), 10);
     let height = 2077;
 
     let mut receipts = Vec::new();
@@ -59,7 +59,7 @@ fn test_storage_receipts_insert() {
 
 #[test]
 fn test_storage_transactions_insert() {
-    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()));
+    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()), 10);
     let height = 2020;
 
     let mut transactions = Vec::new();
@@ -84,7 +84,7 @@ fn test_storage_transactions_insert() {
 
 #[test]
 fn test_storage_latest_proof_insert() {
-    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()));
+    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()), 10);
 
     let block_hash = Hasher::digest(get_random_bytes(10));
     let proof = mock_proof(block_hash);
@@ -97,7 +97,7 @@ fn test_storage_latest_proof_insert() {
 
 #[test]
 fn test_storage_evm_code_insert() {
-    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()));
+    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()), 10);
 
     let code = get_random_bytes(1000);
     let code_hash = Hasher::digest(&code);
@@ -125,7 +125,7 @@ fn test_storage_evm_code_insert() {
 
 #[bench]
 fn bench_insert_10000_receipts(b: &mut Bencher) {
-    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()));
+    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()), 10);
     let height = 2045;
 
     let receipts = (0..10000)
@@ -140,7 +140,7 @@ fn bench_insert_10000_receipts(b: &mut Bencher) {
 
 #[bench]
 fn bench_insert_20000_receipts(b: &mut Bencher) {
-    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()));
+    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()), 10);
     let height = 2045;
 
     let receipts = (0..20000)
@@ -154,7 +154,7 @@ fn bench_insert_20000_receipts(b: &mut Bencher) {
 
 #[bench]
 fn bench_insert_40000_receipts(b: &mut Bencher) {
-    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()));
+    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()), 10);
     let height = 2077;
 
     let receipts = (0..40000)
@@ -168,7 +168,7 @@ fn bench_insert_40000_receipts(b: &mut Bencher) {
 
 #[bench]
 fn bench_insert_80000_receipts(b: &mut Bencher) {
-    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()));
+    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()), 10);
     let height = 2077;
 
     let receipts = (0..80000)
@@ -182,7 +182,7 @@ fn bench_insert_80000_receipts(b: &mut Bencher) {
 
 #[bench]
 fn bench_insert_10000_txs(b: &mut Bencher) {
-    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()));
+    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()), 10);
     let height = 2077;
 
     let txs = (0..10000).map(|_| mock_signed_tx()).collect::<Vec<_>>();
@@ -194,7 +194,7 @@ fn bench_insert_10000_txs(b: &mut Bencher) {
 
 #[bench]
 fn bench_insert_20000_txs(b: &mut Bencher) {
-    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()));
+    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()), 10);
     let height = 2077;
 
     let txs = (0..20000).map(|_| mock_signed_tx()).collect::<Vec<_>>();
@@ -206,7 +206,7 @@ fn bench_insert_20000_txs(b: &mut Bencher) {
 
 #[bench]
 fn bench_insert_40000_txs(b: &mut Bencher) {
-    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()));
+    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()), 10);
     let height = 2077;
 
     let txs = (0..40000).map(|_| mock_signed_tx()).collect::<Vec<_>>();

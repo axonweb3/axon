@@ -45,7 +45,7 @@ impl TestHandle {
             RocksTrieDB::new(path + &salt.to_string() + "/trie", Default::default(), 50).unwrap();
 
         let mut handle = TestHandle {
-            storage:    Arc::new(ImplStorage::new(Arc::new(storage_adapter))),
+            storage:    Arc::new(ImplStorage::new(Arc::new(storage_adapter), 10)),
             trie_db:    Arc::new(trie_db),
             state_root: H256::default(),
         };

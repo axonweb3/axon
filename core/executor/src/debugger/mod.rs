@@ -55,7 +55,7 @@ impl EvmDebugger {
 
         EvmDebugger {
             state_root: mpt.commit().unwrap(),
-            storage:    Arc::new(ImplStorage::new(rocks_adapter)),
+            storage:    Arc::new(ImplStorage::new(rocks_adapter, 10)),
             trie_db:    trie,
         }
     }

@@ -105,10 +105,10 @@ pub struct ImplStorage<Adapter> {
 }
 
 impl<Adapter: StorageAdapter> ImplStorage<Adapter> {
-    pub fn new(adapter: Arc<Adapter>) -> Self {
+    pub fn new(adapter: Arc<Adapter>, cache_size: usize) -> Self {
         Self {
             adapter,
-            cache: Arc::new(StorageCache::default()),
+            cache: Arc::new(StorageCache::new(cache_size)),
             latest_block: ArcSwap::new(Arc::new(None)),
             latest_proof: ArcSwap::new(Arc::new(None)),
         }
