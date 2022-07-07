@@ -147,15 +147,12 @@ where
     }
 
     async fn handle_reqs(&mut self, reqs: Requests) {
-        if !self.validate_power {
+        if !self.is_leader(&reqs).await {
+            log::warn!("[cross-client]: do not have power");
             return;
         }
 
         let hash = self.req_records.add_req(reqs.clone());
-
-        if !self.is_leader(&reqs).await {
-            return;
-        }
 
         let ctx = Context::new();
         let tx_view = self
