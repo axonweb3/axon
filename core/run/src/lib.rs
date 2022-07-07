@@ -451,7 +451,7 @@ impl Axon {
             metadata_type_id,
             Default::default(),
             current_header.chain_id as u8,
-        );
+        ).await?;
 
         // start cross chain client
         let path_crosschain = self.config.data_path_for_crosschain();
