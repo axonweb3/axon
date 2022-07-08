@@ -4,7 +4,7 @@ const { ethers } = require("hardhat")
 
 async function deployMirrorToken(owner, minter, burner) {
   const MirrorToken = await ethers.getContractFactory('MirrorToken');
-  const mirrorToken = await MirrorToken.connect(owner).deploy('testName', 'testSymbol');
+  const mirrorToken = await MirrorToken.connect(owner).deploy('testName', 'testSymbol', 8);
 
   await mirrorToken.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MANAGER_ROLE')), minter.address);
   await mirrorToken.connect(owner).grantRole(ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MANAGER_ROLE')), burner.address);
@@ -19,6 +19,7 @@ describe("MirrorToken", () => {
     const mirrorToken = await deployMirrorToken(owner, owner, owner);
     expect(await mirrorToken.name()).equal('testName');
     expect(await mirrorToken.symbol()).equal('testSymbol');
+    expect(await mirrorToken.decimals()).equal(8);
   });
 
   it("only who has minter role can mint new tokens.", async () => {

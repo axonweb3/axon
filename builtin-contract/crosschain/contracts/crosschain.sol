@@ -2,25 +2,26 @@
 
 pragma solidity >=0.8.0;
 
+import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/utils/Context.sol";
 import {IMirrorToken} from "./MirrorToken.sol";
 import {IMetadata} from "./Metadata.sol";
 import "./libraries/DataType.sol";
-import "@openzeppelin/contracts/utils/Context.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/utils/cryptography/draft-EIP712.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract CrossChain is Context {
     using DataType for DataType.AxonToCKBRecord;
     using DataType for DataType.CKBToAxonRecord;
     using DataType for DataType.TokenConfig;
     using EnumerableSet for EnumerableSet.Bytes32Set;
+    using EnumerableSet for EnumerableSet.AddressSet;
+    using Counters for Counters.Counter;
 
     address public constant AT_ADDRESS = address(0);
-
-    bytes32 public immutable CROSS_FROM_CKB_TYPEHASH;
 
     uint256 private _epoch = 2**64 - 1;
     uint256 private _relayerThreshold;
@@ -29,11 +30,13 @@ contract CrossChain is Context {
     uint256 private _minWCKB;
     address[] private _relayers;
     EnumerableSet.Bytes32Set private _limitTxes;
+    Counters.Counter private _limitSign;
+    EnumerableSet.AddressSet private _whitelist;
+    EnumerableSet.AddressSet private _mirrorTokens;
 
     mapping(bytes32 => DataType.AxonToCKBRecord) _limitRecordMap;
     mapping(address => uint256) _relayersMap;
     mapping(address => DataType.TokenConfig) private _tokenConfigs;
-    mapping(address => bool) private _mirrorTokens;
     mapping(address => bytes32) private _tokenTypehashMap;
     mapping(bytes32 => address) private _typehashTokenMap;
 
@@ -53,14 +56,15 @@ contract CrossChain is Context {
         uint256 minWCKBAmount
     );
 
+    event ChangeTokenConfig(address token, DataType.TokenConfig config);
+
+    event ChangeMinWCKB(uint256 minWCKB);
+
     constructor(address metadata, address wCKB) {
         _metadata = metadata;
         _wCKB = wCKB;
         _addMirrorToken(_wCKB, bytes32(0));
-
-        CROSS_FROM_CKB_TYPEHASH = keccak256(
-            "Transaction(bytes32 recordsHash,uint256 nonce)"
-        );
+        _limitSign.increment();
     }
 
     modifier onlyProposer() {
@@ -87,8 +91,24 @@ contract CrossChain is Context {
     }
 
     function _addMirrorToken(address token, bytes32 typehash) private {
-        _mirrorTokens[token] = true;
+        if (_mirrorTokens.contains(token)) {
+            return;
+        }
+
+        _mirrorTokens.add(token);
         _addToken(token, typehash);
+    }
+
+    function _addWhitelist(address token) private {
+        if (_whitelist.contains(token)) {
+            return;
+        }
+
+        _whitelist.add(token);
+    }
+
+    function _removeWhitelist(address token) private {
+        _whitelist.remove(token);
     }
 
     function _amountReachThreshold(address token, uint256 amount)
@@ -113,6 +133,9 @@ contract CrossChain is Context {
     }
 
     function _addLimitTxes(DataType.AxonToCKBRecord memory record) private {
+        record.limitSign = _limitSign.current();
+        _limitSign.increment();
+
         bytes32 hash = keccak256(abi.encode(record));
         if (_limitTxes.contains(hash)) {
             return;
@@ -206,6 +229,10 @@ contract CrossChain is Context {
         );
     }
 
+    function getWCKBAddress() public view returns (address) {
+        return _wCKB;
+    }
+
     function limitTxes()
         external
         view
@@ -236,10 +263,26 @@ contract CrossChain is Context {
         onlyVerifier
     {
         _tokenConfigs[token] = config;
+
+        emit ChangeTokenConfig(token, _tokenConfigs[token]);
+    }
+
+    function getTokenConfig(address token)
+        public
+        view
+        returns (DataType.TokenConfig memory)
+    {
+        return _tokenConfigs[token];
     }
 
     function setWCKBMin(uint256 amount) external onlyVerifier {
         _minWCKB = amount;
+
+        emit ChangeMinWCKB(_minWCKB);
+    }
+
+    function getWCKBMin() public view returns (uint256) {
+        return _minWCKB;
     }
 
     function addMirrorToken(address token, bytes32 typehash)
@@ -249,12 +292,32 @@ contract CrossChain is Context {
         _addMirrorToken(token, typehash);
     }
 
+    function mirrorTokens() public view returns (address[] memory) {
+        return _mirrorTokens.values();
+    }
+
+    function addWhitelist(address token) public onlyVerifier {
+        _addWhitelist(token);
+    }
+
+    function isWhitelist(address token) public view returns (bool) {
+        return _whitelist.contains(token);
+    }
+
+    function whitelist() public view returns (address[] memory) {
+        return _whitelist.values();
+    }
+
+    function removeWhitelist(address token) public onlyVerifier {
+        _removeWhitelist(token);
+    }
+
     function addToken(address token, bytes32 typehash) public onlyVerifier {
         _addToken(token, typehash);
     }
 
     function isMirrorToken(address token) public view returns (bool) {
-        return _mirrorTokens[token];
+        return _mirrorTokens.contains(token);
     }
 
     function getTypehash(address token) public view returns (bytes32) {
@@ -267,9 +330,13 @@ contract CrossChain is Context {
 
     // lock AT on Axon network
     function lockAT(string memory to) external payable {
+        require(isWhitelist(AT_ADDRESS), "CrossChain: AT not whitelist");
+
         require(msg.value > 0, "CrossChain: value must be more than 0");
 
-        IERC20(_wCKB).transferFrom(_msgSender(), address(this), _minWCKB);
+        if (_minWCKB > 0) {
+            IERC20(_wCKB).transferFrom(_msgSender(), address(this), _minWCKB);
+        }
 
         if (_amountReachThreshold(address(0), msg.value)) {
             DataType.AxonToCKBRecord memory record;
@@ -293,6 +360,8 @@ contract CrossChain is Context {
         address token,
         uint256 amount
     ) external {
+        require(isWhitelist(token), "CrossChain: token not whitelist");
+
         require(amount > 0, "CrossChain: amount must be more than 0");
 
         require(
@@ -310,7 +379,9 @@ contract CrossChain is Context {
             IERC20(token).transferFrom(_msgSender(), address(this), amount);
         }
 
-        IERC20(_wCKB).transferFrom(_msgSender(), address(this), _minWCKB);
+        if (_minWCKB > 0) {
+            IERC20(_wCKB).transferFrom(_msgSender(), address(this), _minWCKB);
+        }
 
         if (_amountReachThreshold(token, amount)) {
             DataType.AxonToCKBRecord memory record;
