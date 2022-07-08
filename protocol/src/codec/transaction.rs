@@ -387,7 +387,7 @@ mod tests {
 
         assert!(tx.unsigned.data().is_empty());
         assert_eq!(*tx.unsigned.gas_limit(), U256::from(0x5208u64));
-        assert_eq!(*tx.unsigned.gas_price(), U256::from(0x01u64));
+        assert_eq!(tx.unsigned.gas_price(), U256::from(0x01u64));
         assert_eq!(*tx.unsigned.nonce(), U256::from(0x00u64));
         assert_eq!(
             tx.unsigned.to().unwrap(),

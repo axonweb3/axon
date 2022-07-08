@@ -65,6 +65,8 @@ where
         ctx: Context,
         tx: ckb_jsonrpc_types::TransactionView,
     ) -> ProtocolResult<()> {
+        log::info!("[cross-chain]: send transaction to ckb {:?}", tx);
+
         let _hash = self
             .ckb_rpc
             .send_transaction(ctx, &tx.inner, Some(OutputsValidator::Passthrough))

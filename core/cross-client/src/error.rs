@@ -1,8 +1,6 @@
-use protocol::Display;
-use protocol::ProtocolError;
-use protocol::ProtocolErrorKind;
+use protocol::{Display, ProtocolError, ProtocolErrorKind};
 
-#[derive(Clone, Debug, Display)]
+#[derive(Debug, Display)]
 pub enum CrossChainError {
     #[display(fmt = "Rocksdb error {}", _0)]
     DB(rocksdb::Error),
@@ -18,6 +16,12 @@ pub enum CrossChainError {
 
     #[display(fmt = "Invalid cross direction")]
     InvalidDirection,
+
+    #[display(fmt = "Sender error {}", _0)]
+    Sender(String),
+
+    #[display(fmt = "Crypto error {}", _0)]
+    Crypto(String),
 }
 
 impl std::error::Error for CrossChainError {}

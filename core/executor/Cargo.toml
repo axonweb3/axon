@@ -9,7 +9,7 @@ az = "1.2"
 bn = { package = "substrate-bn", version = "0.6" }
 cita_trie = "3.0"
 crossbeam-channel = "0.5"
-evm = "0.35"
+evm = { version = "0.35", features = ["tracing"] }
 futures = "0.3"
 hasher = "0.1"
 lazy_static = "1.4"
@@ -30,10 +30,13 @@ core-interoperation = { path = "../interoperation" }
 protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [dev-dependencies]
+ckb-jsonrpc-types = "0.103"
 common-crypto = { path = "../../common/crypto" }
 core-cross-client = { path = "../cross-client" }
+core-rpc-client = { path = "../rpc-client" }
 core-storage = { path = "../storage" }
 
+ckb-types = "0.103"
 criterion = "0.3"
 ethabi = "17.1"
 ethabi-contract = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
@@ -42,6 +45,7 @@ ethers-contract = "0.13"
 ethers-core = "0.13"
 getrandom = "0.2"
 rlp = "0.5"
+serde_json = "1.0"
 tempfile = "3.3"
 
 [[bench]]

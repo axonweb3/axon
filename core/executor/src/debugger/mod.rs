@@ -1,15 +1,18 @@
+#![allow(dead_code)]
+
 mod crosschain;
 mod uniswap2;
 
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use evm::tracing::{Event, EventListener};
 use getrandom::getrandom;
 
 use common_config_parser::parse_file;
 use common_crypto::{PrivateKey, Secp256k1RecoverablePrivateKey, Signature};
 use protocol::codec::{hex_decode, ProtocolCodec};
-use protocol::traits::Executor;
+use protocol::traits::{Backend, Executor};
 use protocol::types::{
     Account, Eip1559Transaction, ExecResp, ExecutorContext, Hash, Hasher, RichBlock,
     SignedTransaction, TxResp, UnsignedTransaction, UnverifiedTransaction, H160, H256, NIL_DATA,
@@ -30,7 +33,7 @@ pub struct EvmDebugger {
 }
 
 impl EvmDebugger {
-    pub fn new(distribute_address: H160, distribute_amount: U256, db_path: &str) -> Self {
+    pub fn new(distribute_addresses: Vec<H160>, distribute_amount: U256, db_path: &str) -> Self {
         let mut db_data_path = db_path.to_string();
         db_data_path.push_str("/data");
         let rocks_adapter = Arc::new(RocksAdapter::new(db_data_path, Default::default()).unwrap());
@@ -40,18 +43,20 @@ impl EvmDebugger {
 
         let mut mpt = MPTTrie::new(Arc::clone(&trie));
 
-        let distribute_account = Account {
-            nonce:        U256::zero(),
-            balance:      distribute_amount,
-            storage_root: RLP_NULL,
-            code_hash:    NIL_DATA,
-        };
+        for distribute_address in distribute_addresses.into_iter() {
+            let distribute_account = Account {
+                nonce:        U256::zero(),
+                balance:      distribute_amount,
+                storage_root: RLP_NULL,
+                code_hash:    NIL_DATA,
+            };
 
-        mpt.insert(
-            distribute_address.as_bytes(),
-            distribute_account.encode().unwrap().as_ref(),
-        )
-        .unwrap();
+            mpt.insert(
+                distribute_address.as_bytes(),
+                distribute_account.encode().unwrap().as_ref(),
+            )
+            .unwrap();
+        }
 
         EvmDebugger {
             state_root: mpt.commit().unwrap(),
@@ -102,6 +107,19 @@ impl EvmDebugger {
             exec_ctx,
         )
         .unwrap()
+    }
+
+    fn nonce(&self, addr: H160) -> U256 {
+        self.backend(0).basic(addr).nonce
+    }
+}
+
+#[derive(Default)]
+pub struct EvmListener;
+
+impl EventListener for EvmListener {
+    fn event(&mut self, event: Event) {
+        println!("EVM event {:?}", event);
     }
 }
 

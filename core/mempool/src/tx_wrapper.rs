@@ -71,7 +71,7 @@ impl From<&SignedTransaction> for TxDigest {
     fn from(stx: &SignedTransaction) -> Self {
         TxDigest {
             hash:       stx.transaction.hash,
-            gas_price:  *stx.transaction.unsigned.gas_price(),
+            gas_price:  stx.transaction.unsigned.gas_price(),
             nonce:      *stx.transaction.unsigned.nonce(),
             sender:     stx.sender,
             is_dropped: AtomicBool::new(false),
