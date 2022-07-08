@@ -34,9 +34,9 @@ common-crypto = { path = "../../common/crypto" }
 core-cross-client = { path = "../cross-client" }
 core-rpc-client = { path = "../rpc-client" }
 core-storage = { path = "../storage" }
+ckb-jsonrpc-types = "0.103"
 
 ckb-types = "0.103"
-ckb-jsonrpc-types = "0.103"
 criterion = "0.3"
 ethabi = "17.1"
 ethabi-contract = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }

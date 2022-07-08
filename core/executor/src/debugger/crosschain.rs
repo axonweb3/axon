@@ -21,26 +21,6 @@ const ACS_CODE_HASH: ckb_types::H256 =
 const REQUEST_CODE_HASH: ckb_types::H256 =
     h256!("0xd8f9afaad8eb3e26a1ef2538bac91d68635502508358ae901941513bfe2edb1d");
 
-#[tokio::test]
-async fn test() {
-    use protocol::traits::{CkbClient, Context};
-    let client = core_rpc_client::RpcClient::new(
-        "https://mercury-testnet.ckbapp.dev/rpc",
-        "http://127.0.0.1:8116",
-        "http://127.0.0.1:8116",
-    );
-    let block = client
-        .get_block_by_number(Context::new(), 5910757u64.into())
-        .await
-        .unwrap();
-    let file = std::fs::File::options()
-        .create_new(true)
-        .write(true)
-        .open(CKB_BLOCK_5910757)
-        .unwrap();
-    serde_json::to_writer_pretty(file, &block).unwrap();
-}
-
 fn load_block() -> BlockView {
     let file = std::fs::File::options()
         .read(true)

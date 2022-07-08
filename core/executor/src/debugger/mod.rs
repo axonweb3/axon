@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 mod crosschain;
 mod uniswap2;
 
