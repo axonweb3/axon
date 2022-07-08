@@ -233,14 +233,7 @@ where
             tx_hashes.len(),
         );
         self.adapter.clear_nonce_cache();
-        let rt = tokio::runtime::Handle::current();
-        let nonce_check = |tx: &SignedTransaction| -> bool {
-            tokio::task::block_in_place(|| {
-                rt.block_on(self.adapter.check_authorization(Context::new(), tx))
-                    .is_ok()
-            })
-        };
-        self.pool.flush(tx_hashes, nonce_check, current_number);
+        self.pool.flush(tx_hashes, current_number);
         Ok(())
     }
 
