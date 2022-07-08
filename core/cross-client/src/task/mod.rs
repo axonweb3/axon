@@ -13,6 +13,7 @@ use protocol::traits::{Context, CrossAdapter, MessageTarget};
 use protocol::types::{Bytes, Hasher, Requests, ValidatorExtend, H160, H256};
 use protocol::{codec::ProtocolCodec, tokio, ProtocolResult};
 
+use crate::error::CrossChainError;
 use crate::task::message::{
     CrossChainSignature, CrosschainMessage, TxViewWrapper, END_GOSSIP_BUILD_CKB_TX,
     END_GOSSIP_CKB_TX_SIGNATURE,
@@ -100,19 +101,25 @@ where
             tokio::select! {
                 Some(reqs) = self.reqs_rx.recv() => {
                     log::info!("[cross-chain]: receive cross to CKB requests, len {}", reqs.0.len());
-                    self.handle_reqs(reqs).await;
+
+                    if let Err(e) = self.handle_reqs(reqs).await {
+                        log::error!("[cross-chain]: handle requests error {:?}", e);
+                    }
                 }
                 Some(msg) = self.net_rx.recv() => {
                     log::info!("[cross-chain]: receive network message {:?}", msg);
-                    self.handle_msgs(msg).await;
+
+                    if let Err(e) = self.handle_msgs(msg).await {
+                        log::error!("[cross-chain]: handle message error {:?}", e);
+                    }
                 }
             }
         }
     }
 
-    async fn handle_msgs(&mut self, msg: CrosschainMessage) {
+    async fn handle_msgs(&mut self, msg: CrosschainMessage) -> ProtocolResult<()> {
         if !self.validate_power {
-            return;
+            return Ok(());
         }
 
         match msg {
@@ -129,8 +136,7 @@ where
                                     .to_vec(),
                             )),
                         )
-                        .await
-                        .unwrap();
+                        .await?;
                 }
             }
 
@@ -144,12 +150,14 @@ where
                 }
             }
         }
+
+        Ok(())
     }
 
-    async fn handle_reqs(&mut self, reqs: Requests) {
+    async fn handle_reqs(&mut self, reqs: Requests) -> ProtocolResult<()> {
         if !self.is_leader(&reqs).await {
             log::warn!("[cross-client]: do not have power");
-            return;
+            return Ok(());
         }
 
         let hash = self.req_records.add_req(reqs.clone());
@@ -157,32 +165,26 @@ where
         log::info!("[cross-chain]: cross to CKB request {:?}", reqs.0);
 
         let ctx = Context::new();
-        let tx_view = self
-            .adapter
-            .calc_to_ckb_tx(ctx.clone(), &reqs.0)
-            .await
-            .unwrap();
+        let tx_view = self.adapter.calc_to_ckb_tx(ctx.clone(), &reqs.0).await?;
         self.req_records
             .update_tx_hash(&hash, H256(tx_view.hash().unpack().0));
 
         let tx_wrapper = TxViewWrapper::new(hash, tx_view);
 
         if self.validators.len() == 1 {
-            let sig = self.verify_tx_wrapper(&tx_wrapper).unwrap();
+            let sig = self.verify_tx_wrapper(&tx_wrapper)?;
             let comb_sig =
                 BlsSignature::combine(vec![(sig.signature.clone(), sig.bls_pubkey.clone())])
-                    .unwrap();
+                    .map_err(|e| CrossChainError::Crypto(e.to_string()))?;
 
-            let intact_tx = self
+            let intact_tx =
+                self.adapter
+                    .build_to_ckb_tx(ctx.clone(), sig.tx_hash, &comb_sig, &[sig.bls_pubkey])?;
+
+            return self
                 .adapter
-                .build_to_ckb_tx(ctx.clone(), sig.tx_hash, &comb_sig, &[sig.bls_pubkey])
-                .unwrap();
-
-            self.adapter
                 .send_ckb_tx(ctx.clone(), intact_tx.into())
-                .await
-                .unwrap();
-            return;
+                .await;
         }
 
         self.adapter
@@ -196,7 +198,6 @@ where
                 MessageTarget::Broadcast,
             )
             .await
-            .unwrap();
     }
 
     fn verify_tx_wrapper(&self, tx: &TxViewWrapper) -> ProtocolResult<CrossChainSignature> {
