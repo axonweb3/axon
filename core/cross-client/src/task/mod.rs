@@ -154,6 +154,8 @@ where
 
         let hash = self.req_records.add_req(reqs.clone());
 
+        log::info!("[cross-chain]: cross to CKB request {:?}", reqs.0);
+
         let ctx = Context::new();
         let tx_view = self
             .adapter
