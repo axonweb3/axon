@@ -45,11 +45,11 @@ pub fn build_transfer_output_cell(
     ckb_amount: u64,
     sudt_amount: u128,
     sudt_lockhash: H256,
-) -> (CellOutput, Bytes) {
+) -> Result<(CellOutput, Bytes), (u64, u64)> {
     let lock_script = build_script(SECP256K1_CODE_HASH, secp256k1_lockargs.as_bytes());
     let mut cell = CellOutput::new_builder()
         .lock(lock_script)
-        .build_exact_capacity(Capacity::shannons(ckb_amount))
+        .build_exact_capacity(Capacity::zero())
         .unwrap();
     let mut output_data = Bytes::new();
     if sudt_amount > 0 {
@@ -57,11 +57,20 @@ pub fn build_transfer_output_cell(
         cell = cell
             .as_builder()
             .type_(Some(type_script).pack())
-            .build_exact_capacity(Capacity::shannons(ckb_amount))
+            .build_exact_capacity(Capacity::zero())
             .unwrap();
         output_data = Bytes::from(sudt_amount.to_le_bytes().to_vec());
     }
-    (cell, output_data)
+    let required_ckb: Capacity = cell.capacity().unpack();
+    if ckb_amount >= required_ckb.as_u64() {
+        cell = cell
+            .as_builder()
+            .capacity(Capacity::shannons(ckb_amount).pack())
+            .build();
+        Ok((cell, output_data))
+    } else {
+        Err((ckb_amount, required_ckb.as_u64()))
+    }
 }
 
 pub fn build_transaction_with_outputs_and_celldeps(
