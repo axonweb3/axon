@@ -53,7 +53,7 @@ async fn test_acs_complete_transacion() {
     let transfer = crosschain::Transfer {
         direction:     crosschain::Direction::FromAxon,
         address:       H160::from_slice(RECEIVE_ADDRESS.as_bytes()),
-        ckb_amount:    Capacity::bytes(50).unwrap().as_u64(),
+        ckb_amount:    Capacity::bytes(65).unwrap().as_u64(),
         erc20_address: H160::default(),
         sudt_amount:   0,
         tx_hash:       H256::default(),
@@ -96,5 +96,5 @@ async fn test_acs_complete_transacion() {
         .send_transaction(Default::default(), &JsonTx::from(tx.data()), None)
         .await
         .expect("send ckb");
-    println!("result = {:?}", result);
+    println!("result = {}", result);
 }

@@ -1,5 +1,3 @@
-#![allow(unused_variables)]
-
 mod indexer;
 #[allow(clippy::all)]
 mod molecule;
@@ -14,7 +12,7 @@ use std::error::Error;
 use std::sync::{Arc, RwLock};
 
 use arc_swap::ArcSwap;
-use ckb_jsonrpc_types::{JsonBytes, TransactionView as JsonTxView};
+use ckb_jsonrpc_types::JsonBytes;
 use ckb_sdk::rpc::ckb_indexer::{Cell, Pagination, ScriptType, SearchKey};
 use ckb_types::core::{Capacity, TransactionView};
 use ckb_types::{bytes::Bytes, packed, prelude::*};
@@ -280,6 +278,7 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssemblerImpl<Adapter> {
         Ok(tx)
     }
 
+    #[allow(unused_variables)]
     pub async fn update_metadata(
         &self,
         metadata_typeid_args: H256,
@@ -345,17 +344,20 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssembler for TxAssemblerImpl<Adap
                     sudt_lockhash,
                 )
             })
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|(offerred_ckb, required_ckb)| {
+                TxAssemblerError::InsufficientWCKB(offerred_ckb, required_ckb)
+            })?;
         let metadata = ACS_METADATA.load();
         let tx = util::build_transaction_with_outputs_and_celldeps(&ckb_transfers, &[
             &metadata.metadata_outpoint,
             // &metadata.stake_outpoint,
         ]);
 
-        log::info!(
-            "[with outputs] tx = {}",
-            serde_json::to_string_pretty(&JsonTxView::from(tx.clone())).unwrap()
-        );
+        // log::info!(
+        //     "[with outputs] tx = {}",
+        //     serde_json::to_string_pretty(&JsonTxView::from(tx.clone())).unwrap()
+        // );
 
         let tx = self
             .fill_transaction_with_inputs_and_changes(
@@ -365,10 +367,10 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssembler for TxAssemblerImpl<Adap
             )
             .await?;
 
-        log::info!(
-            "[with inputs] tx = {}",
-            serde_json::to_string_pretty(&JsonTxView::from(tx.clone())).unwrap()
-        );
+        // log::info!(
+        //     "[with inputs] tx = {}",
+        //     serde_json::to_string_pretty(&JsonTxView::from(tx.clone())).unwrap()
+        // );
 
         let hash = H256::from_slice(tx.hash().as_slice());
         ACS_TRANSACTIONS.write().unwrap().insert(hash, tx.clone());
@@ -431,6 +433,9 @@ pub enum TxAssemblerError {
 
     #[display(fmt = "No transaction found with Hash({})", _0)]
     NoTransactionFound(H256),
+
+    #[display(fmt = "Not enough wCKB to wrap a new generated Cell ({}/{})", _0, _1)]
+    InsufficientWCKB(u64, u64),
 }
 
 impl Error for TxAssemblerError {}
