@@ -30,11 +30,11 @@ core-interoperation = { path = "../interoperation" }
 protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [dev-dependencies]
+ckb-jsonrpc-types = "0.103"
 common-crypto = { path = "../../common/crypto" }
 core-cross-client = { path = "../cross-client" }
 core-rpc-client = { path = "../rpc-client" }
 core-storage = { path = "../storage" }
-ckb-jsonrpc-types = "0.103"
 
 ckb-types = "0.103"
 criterion = "0.3"
