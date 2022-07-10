@@ -1,140 +1,160 @@
-use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
-use std::sync::atomic::{AtomicBool, Ordering as AtomicOrdering};
+use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd, Reverse};
+use std::collections::{btree_map::Entry, BTreeMap};
+use std::ops::Bound::{Excluded, Unbounded};
+use std::sync::atomic::{AtomicU8, Ordering as AtomicOrdering};
 use std::sync::Arc;
 
 use protocol::types::{Hash, SignedTransaction, H160, U256};
 
-pub type TxPtr = Arc<TxDigest>;
+pub type TxPtr = Arc<TxWrapper>;
 
-#[derive(Clone, Debug)]
-pub struct TxWrapper(TxPtr, SignedTransaction);
+#[derive(Debug)]
+pub struct TxWrapper {
+    // 0x00 init
+    // 0x01 package
+    // 0x10 drop
+    state: AtomicU8,
+    tx:    SignedTransaction,
+}
 
 impl From<SignedTransaction> for TxWrapper {
     fn from(stx: SignedTransaction) -> Self {
-        TxWrapper(get_tx_ptr(&stx), stx)
+        TxWrapper {
+            tx:    stx,
+            state: AtomicU8::new(0),
+        }
     }
 }
 
-impl TxWrapper {
-    pub fn ptr(&self) -> TxPtr {
-        Arc::clone(&self.0)
-    }
-
-    pub fn hash(&self) -> Hash {
-        self.0.hash
-    }
-
-    pub fn into_parts(self) -> (TxPtr, SignedTransaction) {
-        (self.0, self.1)
+impl Ord for TxWrapper {
+    fn cmp(&self, other: &Self) -> Ordering {
+        if self.sender() != other.sender() {
+            return Reverse(self.gas_price()).cmp(&Reverse(other.gas_price()));
+        }
+        Reverse(self.nonce()).cmp(&Reverse(other.nonce()))
     }
 }
 
-#[derive(Debug)]
-pub struct TxDigest {
-    pub hash:      Hash,
-    pub gas_price: U256,
-    pub nonce:     U256,
-    pub sender:    H160,
-
-    pub is_dropped: AtomicBool,
-}
-
-impl PartialEq for TxDigest {
+impl PartialEq for TxWrapper {
     fn eq(&self, other: &Self) -> bool {
-        self.hash == other.hash
+        self.hash() == other.hash()
     }
 }
 
-impl Eq for TxDigest {}
+impl Eq for TxWrapper {}
 
-impl PartialOrd for TxDigest {
+impl PartialOrd for TxWrapper {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for TxDigest {
-    fn cmp(&self, other: &Self) -> Ordering {
-        if self.gas_price != other.gas_price {
-            return self.gas_price.cmp(&other.gas_price);
-        }
-
-        match self.nonce.cmp(&other.nonce) {
-            Ordering::Greater => Ordering::Less,
-            Ordering::Less => Ordering::Greater,
-            Ordering::Equal => Ordering::Equal,
-        }
+impl TxWrapper {
+    pub fn hash(&self) -> Hash {
+        self.tx.transaction.hash
     }
-}
 
-impl From<&SignedTransaction> for TxDigest {
-    fn from(stx: &SignedTransaction) -> Self {
-        TxDigest {
-            hash:       stx.transaction.hash,
-            gas_price:  stx.transaction.unsigned.gas_price(),
-            nonce:      *stx.transaction.unsigned.nonce(),
-            sender:     stx.sender,
-            is_dropped: AtomicBool::new(false),
-        }
+    pub fn nonce(&self) -> &U256 {
+        self.tx.transaction.unsigned.nonce()
     }
-}
 
-impl TxDigest {
-    pub fn hash(&self) -> &Hash {
-        &self.hash
+    pub fn sender(&self) -> H160 {
+        self.tx.sender
+    }
+
+    pub fn gas_price(&self) -> U256 {
+        self.tx.transaction.unsigned.gas_price()
+    }
+
+    pub fn raw_tx(&self) -> SignedTransaction {
+        self.tx.clone()
     }
 
     pub fn is_dropped(&self) -> bool {
-        self.is_dropped.load(AtomicOrdering::Acquire)
+        self.state.load(AtomicOrdering::Acquire) & 0x10 == 0x10
     }
 
     pub fn set_dropped(&self) {
-        self.is_dropped.swap(true, AtomicOrdering::AcqRel);
+        self.state.fetch_or(0x10, AtomicOrdering::AcqRel);
+    }
+
+    fn set_package(&self) {
+        self.state.fetch_or(0x01, AtomicOrdering::AcqRel);
+    }
+
+    fn is_package(&self) -> bool {
+        self.state.load(AtomicOrdering::Acquire) & 0x01 == 0x01
     }
 }
 
-fn get_tx_ptr(stx: &SignedTransaction) -> TxPtr {
-    Arc::new(stx.into())
+#[derive(Default)]
+pub struct PendingQueue {
+    queue:         BTreeMap<U256, TxPtr>,
+    // already insert to package list tip nonce
+    pop_tip_nonce: U256,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+impl PendingQueue {
+    pub fn insert(&mut self, tx: TxPtr, nonce_diff: U256) -> bool {
+        let nonce = *tx.nonce();
+        let current_tip = nonce - nonce_diff;
+        if self.pop_tip_nonce < current_tip {
+            self.pop_tip_nonce = current_tip;
+        }
+        match self.queue.entry(nonce) {
+            Entry::Occupied(mut o) => {
+                if o.get().gas_price() < tx.gas_price() {
+                    let old = o.insert(Arc::clone(&tx));
+                    old.set_dropped();
+                    // replace with package list tx
+                    if old.is_package() {
+                        tx.set_package();
+                        return true;
+                    }
+                }
+            }
+            Entry::Vacant(v) => {
+                v.insert(tx);
+            }
+        }
 
-    use std::collections::BinaryHeap;
-
-    use rand::random;
-
-    fn rand_hash() -> Hash {
-        Hash::from_slice(&(0..32).map(|_| random::<u8>()).collect::<Vec<_>>())
+        false
     }
 
-    fn mock_tx_digest(gas_price: u64, nonce: u64) -> Arc<TxDigest> {
-        Arc::new(TxDigest {
-            hash:       rand_hash(),
-            gas_price:  gas_price.into(),
-            nonce:      nonce.into(),
-            sender:     H160::default(),
-            is_dropped: AtomicBool::new(false),
-        })
+    pub fn try_search_package_list(&mut self) -> Vec<TxPtr> {
+        let mut res = Vec::new();
+        let mut current = self.pop_tip_nonce;
+        for (k, v) in self.queue.range((Excluded(current), Unbounded)) {
+            if k == &(current + 1) {
+                current = current + 1;
+                if v.is_package() {
+                    continue;
+                }
+                v.set_package();
+                res.push(Arc::clone(v));
+            } else {
+                break;
+            }
+        }
+        self.pop_tip_nonce = current;
+        res
     }
 
-    #[test]
-    fn test_tx_digest_sort() {
-        let tx_1 = mock_tx_digest(1, 10);
-        let tx_2 = mock_tx_digest(3, 15);
-        let tx_3 = mock_tx_digest(2, 5);
-        let tx_4 = mock_tx_digest(2, 3);
+    pub fn clear_droped(&mut self) {
+        self.queue.retain(|_, v| !v.is_dropped());
 
-        let mut heap = BinaryHeap::new();
-        heap.push(Arc::clone(&tx_1));
-        heap.push(Arc::clone(&tx_3));
-        heap.push(Arc::clone(&tx_2));
-        heap.push(Arc::clone(&tx_4));
+        self.pop_tip_nonce = U256::zero();
+    }
 
-        assert_eq!(heap.pop().unwrap(), tx_2);
-        assert_eq!(heap.pop().unwrap(), tx_4);
-        assert_eq!(heap.pop().unwrap(), tx_3);
-        assert_eq!(heap.pop().unwrap(), tx_1);
+    pub fn count(&self) -> usize {
+        self.queue.values().filter(|tx| !tx.is_dropped()).count()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.queue.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.queue.len()
     }
 }

@@ -92,7 +92,7 @@ where
         self.adapter
             .check_storage_exist(ctx.clone(), &stx.transaction.hash)
             .await?;
-        self.pool.insert(stx, true)
+        self.pool.insert(stx, true, U256::zero())
     }
 
     async fn insert_tx(
@@ -109,7 +109,7 @@ where
         if self.pool.contains(tx_hash) {
             return Ok(());
         } else {
-            self.adapter.check_authorization(ctx.clone(), &tx).await?;
+            let check_nonce = self.adapter.check_authorization(ctx.clone(), &tx).await?;
             self.adapter.check_transaction(ctx.clone(), &tx).await?;
             self.adapter
                 .check_storage_exist(ctx.clone(), tx_hash)
@@ -118,7 +118,7 @@ where
             if is_system_script {
                 self.pool.insert_system_script_tx(tx.clone())?;
             } else {
-                self.pool.insert(tx.clone(), true)?;
+                self.pool.insert(tx.clone(), true, check_nonce)?;
             }
 
             if !ctx.is_network_origin_txs() {
@@ -139,7 +139,7 @@ where
         &self,
         ctx: Context,
         txs: Vec<SignedTransaction>,
-    ) -> ProtocolResult<()> {
+    ) -> ProtocolResult<Vec<U256>> {
         let inst = Instant::now();
         let len = txs.len();
 
@@ -150,26 +150,31 @@ where
                 let ctx = ctx.clone();
 
                 tokio::spawn(async move {
-                    adapter.check_authorization(ctx.clone(), &tx).await?;
+                    let check_nonce = adapter.check_authorization(ctx.clone(), &tx).await?;
                     adapter.check_transaction(ctx.clone(), &tx).await?;
                     adapter
                         .check_storage_exist(ctx.clone(), &tx.transaction.hash)
-                        .await
+                        .await?;
+                    Ok(check_nonce)
                 })
             })
-            .collect::<Vec<_>>();
+            .collect::<Vec<tokio::task::JoinHandle<Result<_, ProtocolError>>>>();
 
-        try_join_all(futs).await.map_err(|e| {
-            log::error!("[mempool] verify batch txs error {:?}", e);
-            MemPoolError::VerifyBatchTransactions
-        })?;
+        let res: Vec<U256> = try_join_all(futs)
+            .await
+            .map_err(|e| {
+                log::error!("[mempool] verify batch txs error {:?}", e);
+                MemPoolError::VerifyBatchTransactions
+            })?
+            .into_iter()
+            .collect::<Result<Vec<U256>, ProtocolError>>()?;
 
         log::info!(
             "[mempool] verify txs done, size {:?} cost {:?}",
             len,
             inst.elapsed()
         );
-        Ok(())
+        Ok(res)
     }
 
     #[cfg(test)]
@@ -227,14 +232,8 @@ where
             "[core_mempool]: flush mempool with {:?} tx_hashes",
             tx_hashes.len(),
         );
-        let rt = tokio::runtime::Handle::current();
-        let nonce_check = |tx: &SignedTransaction| -> bool {
-            tokio::task::block_in_place(|| {
-                rt.block_on(self.adapter.check_authorization(Context::new(), tx))
-                    .is_ok()
-            })
-        };
-        self.pool.flush(tx_hashes, nonce_check, current_number);
+        self.adapter.clear_nonce_cache();
+        self.pool.flush(tx_hashes, current_number);
         Ok(())
     }
 
@@ -306,15 +305,15 @@ where
                 .into());
             }
 
-            self.verify_tx_in_parallel(ctx.clone(), txs.clone()).await?;
+            let check_nonces = self.verify_tx_in_parallel(ctx.clone(), txs.clone()).await?;
 
-            for signed_tx in txs {
+            for (signed_tx, check_nonce) in txs.into_iter().zip(check_nonces.into_iter()) {
                 let is_call_system_script =
                     is_call_system_script(signed_tx.transaction.unsigned.action());
                 if is_call_system_script {
                     self.pool.insert_system_script_tx(signed_tx)?;
                 } else {
-                    self.pool.insert(signed_tx, false)?;
+                    self.pool.insert(signed_tx, false, check_nonce)?;
                 }
             }
 

@@ -55,8 +55,11 @@ pub trait MemPoolAdapter: Send + Sync {
         tx: SignedTransaction,
     ) -> ProtocolResult<()>;
 
-    async fn check_authorization(&self, ctx: Context, tx: &SignedTransaction)
-        -> ProtocolResult<()>;
+    async fn check_authorization(
+        &self,
+        ctx: Context,
+        tx: &SignedTransaction,
+    ) -> ProtocolResult<U256>;
 
     async fn check_transaction(&self, ctx: Context, tx: &SignedTransaction) -> ProtocolResult<()>;
 
@@ -72,6 +75,8 @@ pub trait MemPoolAdapter: Send + Sync {
     ) -> ProtocolResult<Vec<Option<SignedTransaction>>>;
 
     fn set_args(&self, context: Context, state_root: MerkleRoot, gas_limit: u64, max_tx_size: u64);
+
+    fn clear_nonce_cache(&self);
 
     fn report_good(&self, ctx: Context);
 }

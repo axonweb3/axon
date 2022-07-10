@@ -13,16 +13,16 @@ use protocol::tokio::{self, time::sleep};
 use protocol::types::{BlockNumber, Bytes, Hash, PackedTxHashes, SignedTransaction, H160, U256};
 use protocol::ProtocolResult;
 
-use crate::tx_wrapper::{TxPtr, TxWrapper};
+use crate::tx_wrapper::{PendingQueue, TxPtr, TxWrapper};
 use crate::MemPoolError;
 
 pub struct PriorityPool {
     sys_tx_bucket:  BuiltInContractTxBucket,
-    occupied_nonce: DashMap<H160, BTreeMap<U256, TxPtr>>,
-    co_queue:       Arc<ArrayQueue<TxPtr>>,
+    pending_queue:  Arc<DashMap<H160, PendingQueue>>,
+    co_queue:       Arc<ArrayQueue<(TxPtr, U256)>>,
     real_queue:     Arc<Mutex<BinaryHeap<TxPtr>>>,
-    tx_map:         DashMap<Hash, SignedTransaction>,
-    stock_len:      AtomicUsize,
+    tx_map:         DashMap<Hash, TxPtr>,
+    stock_len:      Arc<AtomicUsize>,
     timeout_gap:    Mutex<BTreeMap<BlockNumber, HashSet<Hash>>>,
     timeout_config: u64,
 
@@ -33,11 +33,11 @@ impl PriorityPool {
     pub async fn new(size: usize, timeout_config: u64) -> Self {
         let pool = PriorityPool {
             sys_tx_bucket: BuiltInContractTxBucket::new(),
-            occupied_nonce: DashMap::new(),
+            pending_queue: Arc::new(DashMap::new()),
             co_queue: Arc::new(ArrayQueue::new(size)),
             real_queue: Arc::new(Mutex::new(BinaryHeap::with_capacity(size * 2))),
             tx_map: DashMap::new(),
-            stock_len: AtomicUsize::new(0),
+            stock_len: Arc::new(AtomicUsize::new(0)),
             timeout_gap: Mutex::new(BTreeMap::new()),
             timeout_config,
             flush_lock: Arc::new(RwLock::new(())),
@@ -45,6 +45,8 @@ impl PriorityPool {
 
         let co_queue = Arc::clone(&pool.co_queue);
         let real_queue = Arc::clone(&pool.real_queue);
+        let pending_queues = Arc::clone(&pool.pending_queue);
+        let stock_len = Arc::clone(&pool.stock_len);
         let flush_lock = Arc::clone(&pool.flush_lock);
 
         tokio::spawn(async move {
@@ -53,7 +55,23 @@ impl PriorityPool {
                     let _flushing = flush_lock.read();
                     let mut q = real_queue.lock();
                     let txs = pop_all_item(Arc::clone(&co_queue));
-                    txs.for_each(|p_tx| q.push(p_tx));
+                    for (tx, nonce_diff) in txs {
+                        let mut pending_queue = pending_queues.entry(tx.sender()).or_default();
+
+                        // drop this tx
+                        if pending_queue.len() > 64 {
+                            stock_len.fetch_sub(1, Ordering::AcqRel);
+                            continue;
+                        }
+
+                        // replace with real queue tx
+                        if pending_queue.insert(Arc::clone(&tx), nonce_diff) {
+                            q.push(tx);
+                        }
+
+                        let list = pending_queue.try_search_package_list();
+                        q.extend(list);
+                    }
                 }
 
                 sleep(Duration::from_millis(50)).await;
@@ -64,8 +82,8 @@ impl PriorityPool {
     }
 
     pub fn get_tx_count_by_address(&self, address: H160) -> usize {
-        if let Some(set) = self.occupied_nonce.get(&address) {
-            return set.iter().filter(|tx| !tx.1.is_dropped()).count();
+        if let Some(set) = self.pending_queue.get(&address) {
+            return set.count();
         }
 
         0usize
@@ -79,7 +97,12 @@ impl PriorityPool {
         Ok(())
     }
 
-    pub fn insert(&self, stx: SignedTransaction, check_limit: bool) -> ProtocolResult<()> {
+    pub fn insert(
+        &self,
+        stx: SignedTransaction,
+        check_limit: bool,
+        check_nonce: U256,
+    ) -> ProtocolResult<()> {
         if let Err(n) = self
             .stock_len
             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |x| {
@@ -100,19 +123,19 @@ impl PriorityPool {
         // Must flush co_queue here when it's full, otherwise, this tx may can't package
         // by self, because it will never insert to real_queue
         if !check_limit && self.co_queue.is_full() {
-            let mut q = self.real_queue.lock();
-            let txs = pop_all_item(Arc::clone(&self.co_queue));
-            txs.for_each(|p_tx| q.push(p_tx));
+            self.flush_to_pending_queue()
         }
 
-        let (ptr, tx) = TxWrapper::from(stx).into_parts();
+        let ptr = Arc::new(TxWrapper::from(stx));
 
-        if self.tx_map.insert(ptr.hash, tx).is_some() {
+        if self.tx_map.insert(ptr.hash(), Arc::clone(&ptr)).is_some() {
             self.stock_len.fetch_sub(1, Ordering::AcqRel);
+        } else if check_nonce.is_zero() {
+            self.real_queue.lock().push(ptr);
         } else {
-            let _ = self.co_queue.push(Arc::clone(&ptr));
-            self.occupy_nonce(ptr);
+            let _ = self.co_queue.push((ptr, check_nonce));
         }
+
         Ok(())
     }
 
@@ -122,11 +145,10 @@ impl PriorityPool {
         let mut hashes = self.sys_tx_bucket.package();
         let call_system_script_count = hashes.len() as u32;
 
-        let mut q = self.real_queue.lock();
         if !self.co_queue.is_empty() {
-            let txs = pop_all_item(Arc::clone(&self.co_queue));
-            txs.for_each(|p_tx| q.push(p_tx));
+            self.flush_to_pending_queue()
         }
+        let q = self.real_queue.lock();
 
         hashes.extend(
             q.iter()
@@ -134,7 +156,7 @@ impl PriorityPool {
                     if ptr.is_dropped() {
                         None
                     } else {
-                        Some(ptr.hash)
+                        Some(ptr.hash())
                     }
                 })
                 .take(limit),
@@ -143,6 +165,28 @@ impl PriorityPool {
         PackedTxHashes {
             hashes,
             call_system_script_count,
+        }
+    }
+
+    fn flush_to_pending_queue(&self) {
+        let mut q = self.real_queue.lock();
+        let txs = pop_all_item(Arc::clone(&self.co_queue));
+        for (tx, nonce_diff) in txs {
+            let mut pending_queue = self.pending_queue.entry(tx.sender()).or_default();
+
+            // drop this tx
+            if pending_queue.len() > 64 {
+                self.stock_len.fetch_sub(1, Ordering::AcqRel);
+                continue;
+            }
+
+            // replace with real queue tx
+            if pending_queue.insert(Arc::clone(&tx), nonce_diff) {
+                q.push(tx);
+            }
+
+            let list = pending_queue.try_search_package_list();
+            q.extend(list);
         }
     }
 
@@ -171,22 +215,17 @@ impl PriorityPool {
     pub fn get_by_hash(&self, hash: &Hash) -> Option<SignedTransaction> {
         let _flushing = self.flush_lock.read();
 
-        match self.tx_map.get(hash).map(|r| r.clone()) {
+        match self.tx_map.get(hash).map(|r| r.raw_tx()) {
             Some(tx) => Some(tx),
             None => self.sys_tx_bucket.get_tx_by_hash(hash),
         }
     }
 
-    pub fn flush<F: Fn(&SignedTransaction) -> bool>(
-        &self,
-        hashes: &[Hash],
-        nonce_check: F,
-        number: BlockNumber,
-    ) {
+    pub fn flush(&self, hashes: &[Hash], number: BlockNumber) {
         let _flushing = self.flush_lock.write();
-        self.occupied_nonce.clear();
+        self.flush_to_pending_queue();
         let mut reduce_len = 0;
-        self.flush_inner(hashes, nonce_check, &mut reduce_len, number);
+        self.flush_inner(hashes, &mut reduce_len, number);
         self.sys_tx_bucket.flush(hashes, &mut reduce_len);
 
         if reduce_len != 0 {
@@ -194,24 +233,13 @@ impl PriorityPool {
         }
     }
 
-    fn flush_inner<F: Fn(&SignedTransaction) -> bool>(
-        &self,
-        hashes: &[Hash],
-        nonce_check: F,
-        reduce_len: &mut usize,
-        number: BlockNumber,
-    ) {
+    fn flush_inner(&self, hashes: &[Hash], reduce_len: &mut usize, number: BlockNumber) {
         let mut q = self.real_queue.lock();
         let mut timeout_gap = self.timeout_gap.lock();
 
         for hash in hashes {
-            if self.tx_map.remove(hash).is_some() {
-                *reduce_len += 1;
-            }
-        }
-
-        for tx_ptr in q.drain().chain(pop_all_item(Arc::clone(&self.co_queue))) {
-            if tx_ptr.is_dropped() && self.tx_map.remove(tx_ptr.hash()).is_some() {
+            if let Some((_, ptr)) = self.tx_map.remove(hash) {
+                ptr.set_dropped();
                 *reduce_len += 1;
             }
         }
@@ -223,36 +251,29 @@ impl PriorityPool {
         };
 
         self.tx_map.retain(|_, v| {
-            if nonce_check(v)
+            if !v.is_dropped()
                 && timeout
                     .as_ref()
-                    .map(|set| set.is_empty() || !set.contains(&v.transaction.hash))
+                    .map(|set| set.is_empty() || !set.contains(&v.hash()))
                     .unwrap_or(true)
             {
                 return true;
             }
+
+            v.set_dropped();
             *reduce_len += 1;
             false
         });
 
-        let ptr = timeout_gap.entry(number).or_default();
-        for tx in self.tx_map.iter().map(|kv| kv.value().clone()) {
-            let tx_wrapper = TxWrapper::from(tx);
-            self.occupy_nonce(tx_wrapper.ptr());
-            q.push(tx_wrapper.ptr());
-            ptr.insert(tx_wrapper.hash());
-        }
-    }
+        let keys = self.tx_map.iter().map(|kv| kv.hash());
 
-    fn occupy_nonce(&self, tx_ptr: TxPtr) {
-        if let Some(old_ptr) = self
-            .occupied_nonce
-            .entry(tx_ptr.sender)
-            .or_insert_with(BTreeMap::new)
-            .insert(tx_ptr.nonce, tx_ptr)
-        {
-            old_ptr.set_dropped();
-        }
+        timeout_gap.entry(number).or_default().extend(keys);
+        let retain: Vec<_> = q.drain().filter(|ptr| !ptr.is_dropped()).collect();
+        q.extend(retain);
+        self.pending_queue.retain(|_, v| {
+            v.clear_droped();
+            !v.is_empty()
+        })
     }
 
     #[cfg(test)]

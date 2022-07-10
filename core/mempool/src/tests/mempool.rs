@@ -187,6 +187,95 @@ async fn test_flush_with_concurrent_insert() {
     }
 }
 
+#[tokio::test(flavor = "multi_thread")]
+async fn test_nonce_insert() {
+    let mempool = Arc::new(new_mempool(1024, 0, 0, 0).await);
+
+    let priv_key = Secp256k1RecoverablePrivateKey::generate(&mut OsRng);
+    let pub_key = priv_key.pub_key();
+    let txs: Vec<SignedTransaction> = (1..6)
+        .map(|i| mock_signed_tx(&priv_key, &pub_key, 0, i as u64, true))
+        .collect();
+
+    let replace_tx = {
+        let mut tx = txs[4].clone();
+        match tx.transaction.unsigned {
+            UnsignedTransaction::Eip1559(ref mut p) => p.gas_price = 2.into(),
+            UnsignedTransaction::Eip2930(ref mut p) => p.gas_price = 2.into(),
+            UnsignedTransaction::Legacy(ref mut p) => p.gas_price = 2.into(),
+        }
+        tx.transaction.hash = H256::from_low_u64_le(2);
+
+        tx
+    };
+
+    let pool = mempool.get_tx_cache();
+
+    pool.insert(txs[2].clone(), false, 3.into()).unwrap();
+
+    assert_eq!(1, pool.len());
+    assert_eq!(0, pool.real_queue_len());
+
+    pool.insert(txs[1].clone(), false, 2.into()).unwrap();
+
+    assert_eq!(2, pool.len());
+    assert_eq!(0, pool.real_queue_len());
+
+    pool.insert(txs[0].clone(), false, 1.into()).unwrap();
+
+    assert_eq!(3, pool.len());
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    assert_eq!(3, pool.real_queue_len());
+
+    let list = pool.package(1000.into(), 2);
+
+    assert_eq!(
+        list.hashes,
+        txs[0..2]
+            .iter()
+            .map(|tx| tx.transaction.hash)
+            .collect::<Vec<_>>()
+    );
+
+    pool.flush(&list.hashes, 1);
+    assert_eq!(1, pool.real_queue_len());
+    // here db nonce = 2, so nonce diff = 2
+    pool.insert(txs[3].clone(), false, 2.into()).unwrap();
+    assert_eq!(2, pool.len());
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    assert_eq!(2, pool.real_queue_len());
+
+    let list = pool.package(1000.into(), 2);
+
+    assert_eq!(
+        list.hashes,
+        txs[2..4]
+            .iter()
+            .map(|tx| tx.transaction.hash)
+            .collect::<Vec<_>>()
+    );
+
+    pool.flush(&list.hashes, 2);
+    assert_eq!(0, pool.real_queue_len());
+    // here db nonce = 4, so nonce diff = 1
+    pool.insert(txs[4].clone(), false, 1.into()).unwrap();
+    assert_eq!(1, pool.len());
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    assert_eq!(1, pool.real_queue_len());
+    // replace with high price
+    pool.insert(replace_tx.clone(), false, 1.into()).unwrap();
+    assert_eq!(2, pool.len());
+    tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+    assert_eq!(2, pool.real_queue_len());
+
+    let list = pool.package(1000.into(), 2);
+    assert_eq!(list.hashes, vec![replace_tx.transaction.hash]);
+
+    pool.flush(&list.hashes, 3);
+    assert_eq!(0, pool.len());
+    assert_eq!(0, pool.real_queue_len());
+}
+
 macro_rules! ensure_order_txs {
     ($in_pool: expr, $out_pool: expr, $pool_size: expr) => {
         let mempool = &Arc::new(new_mempool($pool_size, 0, 0, 0).await);
