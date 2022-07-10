@@ -62,7 +62,7 @@ impl TxWrapper {
         self.tx.sender
     }
 
-    pub fn gas_price(&self) -> &U256 {
+    pub fn gas_price(&self) -> U256 {
         self.tx.transaction.unsigned.gas_price()
     }
 
