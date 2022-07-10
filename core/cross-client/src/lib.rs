@@ -1,13 +1,14 @@
 #![allow(dead_code, unused_variables, clippy::derive_partial_eq_without_eq)]
 
+mod abi;
 mod adapter;
-pub mod crosschain_abi;
 mod error;
 mod generated;
-mod monitor;
+pub mod monitor;
 mod sidechain;
 mod task;
 
+pub use abi::{crosschain_abi, wckb_abi};
 pub use adapter::{CrossChainDBImpl, DefaultCrossChainAdapter};
 pub use task::message::{
     CrosschainMessageHandler, END_GOSSIP_BUILD_CKB_TX, END_GOSSIP_CKB_TX_SIGNATURE,
@@ -20,7 +21,7 @@ use arc_swap::ArcSwap;
 use ckb_sdk::constants::ONE_CKB;
 use ckb_types::{core::TransactionView, prelude::*};
 use ethers_contract::decode_logs;
-use ethers_core::abi::{self, AbiEncode, AbiType, Detokenize, RawLog};
+use ethers_core::abi::{decode as abi_decode, AbiEncode, AbiType, Detokenize, RawLog};
 
 use common_config_parser::types::ConfigCrossChain;
 use common_crypto::{
@@ -143,7 +144,8 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
 
                 Some(reqs) = self.req_rx.recv() => {
                     log::info!("[cross-chain]: receive requests {:?} from CKB", reqs);
-                    let (reqs, stx) = self.build_axon_txs(reqs).await;
+                    let nonce = self.nonce(self.address).await;
+                    let (reqs, stx) = build_axon_txs(reqs, nonce, &self.priv_key);
                     self.adapter.insert_in_process(
                         Context::new(),
                         &rlp::encode(&reqs).freeze(),
@@ -180,81 +182,6 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
         Ok(())
     }
 
-    async fn build_axon_txs(&self, txs: Vec<TransactionView>) -> (Requests, SignedTransaction) {
-        let reqs = txs
-            .iter()
-            .map(|tx| {
-                let type_script = tx.output(1).unwrap().type_().to_opt().unwrap();
-                let request_args = generated::Transfer::new_unchecked(type_script.args().unpack());
-
-                Transfer {
-                    direction:     Direction::FromCkb,
-                    tx_hash:       H256::from_slice(&tx.hash().raw_data()),
-                    address:       H160::from_slice(&request_args.axon_address().raw_data()),
-                    erc20_address: H160::from_slice(&request_args.e_r_c20_address().raw_data()),
-                    ckb_amount:    u64::from_le_bytes(fixed_array(
-                        &request_args.ckb_amount().raw_data(),
-                    )),
-                    sudt_amount:   u128::from_le_bytes(fixed_array(
-                        &request_args.s_u_d_t_amount().raw_data(),
-                    )),
-                }
-            })
-            .collect::<Vec<_>>();
-
-        let call_data = crosschain_abi::CrossFromCKBCall {
-            records: reqs
-                .iter()
-                .map(|req| crosschain_abi::CkbtoAxonRecord {
-                    to:            req.address,
-                    token_address: req.erc20_address,
-                    s_udt_amount:  req.sudt_amount.into(),
-                    ckb_amount:    req.ckb_amount.into(),
-                    tx_hash:       req.tx_hash.0,
-                })
-                .collect(),
-            nonce:   U256::zero(),
-        };
-
-        let tx = UnsignedTransaction::Eip1559(Eip1559Transaction {
-            nonce:                    self
-                .adapter
-                .nonce(Context::new(), self.address)
-                .await
-                .unwrap()
-                + 1,
-            max_priority_fee_per_gas: MAX_PRIORITY_FEE_PER_GAS.into(),
-            gas_price:                U256::zero(),
-            gas_limit:                MAX_BLOCK_GAS_LIMIT.into(),
-            action:                   TransactionAction::Call(CROSSCHAIN_CONTRACT_ADDRESS),
-            value:                    U256::zero(),
-            data:                     AbiEncode::encode(call_data).into(),
-            access_list:              vec![],
-        });
-
-        let id = **CHAIN_ID.load();
-        let signature = self.priv_key.sign_message(
-            &Hasher::digest(tx.encode(id, None))
-                .as_bytes()
-                .try_into()
-                .unwrap(),
-        );
-
-        let utx = UnverifiedTransaction {
-            unsigned:  tx,
-            signature: Some(signature.to_bytes().into()),
-            chain_id:  id,
-            hash:      Default::default(),
-        }
-        .calc_hash();
-
-        let stx: SignedTransaction = utx.try_into().unwrap();
-
-        log::info!("[cross-chain]: build cross from CKB transaction {:?}", stx);
-
-        (Requests(reqs), stx)
-    }
-
     async fn classify_logs(
         &self,
         logs: Vec<Vec<Log>>,
@@ -263,29 +190,18 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
         Vec<crosschain_abi::CrossToCKBFilter>,
         Vec<crosschain_abi::CrossToCKBAlertFilter>,
     )> {
-        let logs = logs.iter().map(|inner_logs| {
-            inner_logs
-                .iter()
-                .map(|log| RawLog {
-                    topics: log.topics.clone(),
-                    data:   log.data.clone(),
-                })
-                .collect::<Vec<_>>()
+        let logs = logs.iter().filter_map(|inner_logs| {
+            inner_logs.last().cloned().map(|l| RawLog {
+                topics: l.topics.clone(),
+                data:   l.data,
+            })
         });
 
         let mut to_ckbs = Vec::new();
         let mut to_ckb_alerts = Vec::new();
 
         for log in logs {
-            if log.is_empty() {
-                continue;
-            }
-
-            let last_log = log.last().cloned().unwrap();
-
-            if let Ok(event) =
-                decode_logs::<crosschain_abi::CrossFromCKBFilter>(&[last_log.clone()])
-            {
+            if let Ok(event) = decode_logs::<crosschain_abi::CrossFromCKBFilter>(&[log.clone()]) {
                 log::info!(
                     "[crosschain]: Complete cross from CKB, request count {:?}, axon block hash {:?}",
                     event[0].records.len(), block_hash
@@ -312,17 +228,27 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
                     )
                     .await?;
             } else if let Ok(event) =
-                decode_logs::<crosschain_abi::CrossToCKBFilter>(&[last_log.clone()])
+                decode_logs::<crosschain_abi::CrossToCKBFilter>(&[log.clone()])
             {
+                log::info!(
+                    "[crosschain]: Complete cross from Axon, axon block hash {:?}",
+                    block_hash
+                );
                 to_ckbs.push(event[0].clone());
-            } else if let Ok(event) =
-                decode_logs::<crosschain_abi::CrossToCKBAlertFilter>(&[last_log])
-            {
+            } else if let Ok(event) = decode_logs::<crosschain_abi::CrossToCKBAlertFilter>(&[log]) {
                 to_ckb_alerts.push(event[0].clone());
             }
         }
 
         Ok((to_ckbs, to_ckb_alerts))
+    }
+
+    async fn nonce(&self, address: H160) -> U256 {
+        self.adapter
+            .nonce(Context::new(), self.address)
+            .await
+            .unwrap()
+            + 1
     }
 }
 
@@ -386,7 +312,7 @@ impl<C: CkbClient + 'static> CrosschainHandler<C> {
 }
 
 pub fn decode_resp_nonce(data: &[u8]) -> U256 {
-    U256::from_tokens(abi::decode(&[U256::param_type()], data).unwrap()).unwrap()
+    U256::from_tokens(abi_decode(&[U256::param_type()], data).unwrap()).unwrap()
 }
 
 async fn build_ckb_tx_process(
@@ -414,6 +340,80 @@ async fn build_ckb_tx_process(
             })
             .collect::<Vec<_>>(),
     ));
+}
+
+pub fn build_axon_txs(
+    txs: Vec<TransactionView>,
+    addr_nonce: U256,
+    priv_key: &Secp256k1RecoverablePrivateKey,
+) -> (Requests, SignedTransaction) {
+    let reqs = txs
+        .iter()
+        .map(|tx| {
+            let type_script = tx.output(1).unwrap().type_().to_opt().unwrap();
+            let request_args = generated::Transfer::new_unchecked(type_script.args().unpack());
+
+            Transfer {
+                direction:     Direction::FromCkb,
+                tx_hash:       H256::from_slice(&tx.hash().raw_data()),
+                address:       H160::from_slice(&request_args.axon_address().raw_data()),
+                erc20_address: H160::from_slice(&request_args.e_r_c20_address().raw_data()),
+                ckb_amount:    u64::from_le_bytes(fixed_array(
+                    &request_args.ckb_amount().raw_data(),
+                )),
+                sudt_amount:   u128::from_le_bytes(fixed_array(
+                    &request_args.s_u_d_t_amount().raw_data(),
+                )),
+            }
+        })
+        .collect::<Vec<_>>();
+
+    let call_data = crosschain_abi::CrossFromCKBCall {
+        records: reqs
+            .iter()
+            .map(|req| crosschain_abi::CkbtoAxonRecord {
+                to:            req.address,
+                token_address: req.erc20_address,
+                s_udt_amount:  req.sudt_amount.into(),
+                ckb_amount:    req.ckb_amount.into(),
+                tx_hash:       req.tx_hash.0,
+            })
+            .collect(),
+        nonce:   U256::zero(),
+    };
+
+    let tx = UnsignedTransaction::Eip1559(Eip1559Transaction {
+        nonce:                    addr_nonce,
+        max_priority_fee_per_gas: MAX_PRIORITY_FEE_PER_GAS.into(),
+        gas_price:                U256::zero(),
+        gas_limit:                MAX_BLOCK_GAS_LIMIT.into(),
+        action:                   TransactionAction::Call(CROSSCHAIN_CONTRACT_ADDRESS),
+        value:                    U256::zero(),
+        data:                     AbiEncode::encode(call_data).into(),
+        access_list:              vec![],
+    });
+
+    let id = **CHAIN_ID.load();
+    let signature = priv_key.sign_message(
+        &Hasher::digest(tx.encode(id, None))
+            .as_bytes()
+            .try_into()
+            .unwrap(),
+    );
+
+    let utx = UnverifiedTransaction {
+        unsigned:  tx,
+        signature: Some(signature.to_bytes().into()),
+        chain_id:  id,
+        hash:      Default::default(),
+    }
+    .calc_hash();
+
+    let stx: SignedTransaction = utx.try_into().unwrap();
+
+    log::info!("[cross-chain]: build cross from CKB transaction {:?}", stx);
+
+    (Requests(reqs), stx)
 }
 
 impl From<crosschain_abi::CrossFromCKBFilter> for Requests {

@@ -39,6 +39,7 @@ impl RocksAdapter {
             map_category(StorageCategory::Wal),
             map_category(StorageCategory::HashHeight),
             map_category(StorageCategory::Code),
+            map_category(StorageCategory::Crosschain),
         ];
 
         let (mut opts, cf_descriptors) = if let Some(ref file) = config.options_file {

@@ -60,6 +60,12 @@ pub fn hex_decode(src: &str) -> ProtocolResult<Vec<u8>> {
         return Ok(Vec::new());
     }
 
+    let src = if src.starts_with("0x") {
+        src.split_at(2).1
+    } else {
+        src
+    };
+
     let src = src.as_bytes();
     let mut ret = vec![0u8; src.len() / 2];
     faster_hex::hex_decode(src, &mut ret).map_err(TypesError::FromHex)?;

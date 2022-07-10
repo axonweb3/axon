@@ -12,7 +12,7 @@ use std::error::Error;
 use std::sync::{Arc, RwLock};
 
 use arc_swap::ArcSwap;
-use ckb_jsonrpc_types::{JsonBytes, TransactionView as JsonTxView};
+use ckb_jsonrpc_types::JsonBytes;
 use ckb_sdk::rpc::ckb_indexer::{Cell, Pagination, ScriptType, SearchKey};
 use ckb_types::core::{Capacity, TransactionView};
 use ckb_types::{bytes::Bytes, packed, prelude::*};
@@ -32,7 +32,7 @@ lazy_static::lazy_static! {
 
 #[derive(Default, Debug)]
 struct CkbMetadata {
-    stake_outpoint:    packed::OutPoint,
+    // stake_outpoint:    packed::OutPoint,
     metadata_outpoint: packed::OutPoint,
     metadata_typeid:   H256,
     erc20_config:      HashMap<H160, H256>,
@@ -136,10 +136,15 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssemblerImpl<Adapter> {
         fee: Capacity,
     ) -> ProtocolResult<TransactionView> {
         let acs_lock_script = util::build_acs_lock_script(metadata_typeid);
+        let mut acs_lock_output = packed::CellOutput::new_builder()
+            .lock(acs_lock_script.clone())
+            .build_exact_capacity(Capacity::zero())
+            .unwrap();
 
         // prepare offer and require ckb
+        let minimal_change_ckb = acs_lock_output.occupied_capacity(Capacity::zero()).unwrap();
         let (required_ckb, required_sudt_set, sudt_scripts) =
-            util::compute_required_ckb_and_sudt(&tx, fee);
+            util::compute_required_ckb_and_sudt(&tx, fee, minimal_change_ckb);
         let mut offered_ckb = Capacity::zero();
         let mut offered_sudt_set = HashMap::new();
 
@@ -203,6 +208,14 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssemblerImpl<Adapter> {
             cursor = Some(lock_cells.last_cursor);
         }
 
+        log::info!(
+            "[cross-chain] offered_ckb = {:?}, required_ckb = {:?}, offered_sudt = {:?}, required_sudt = {:?}",
+            offered_ckb,
+            required_ckb,
+            offered_sudt_set,
+            required_sudt_set
+        );
+
         if !util::is_offered_match_required(
             &offered_ckb,
             &required_ckb,
@@ -211,11 +224,6 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssemblerImpl<Adapter> {
         ) {
             return Err(TxAssemblerError::InsufficientCrosschainCell.into());
         }
-
-        println!(
-            "offered_ckb = {:?}, required_ckb = {:?}, offered_sudt = {:?}, required_sudt = {:?}",
-            offered_ckb, required_ckb, offered_sudt_set, required_sudt_set
-        );
 
         // fill transaction inputs and build sUDT change outputs
         let mut tx = tx.as_advanced_builder().inputs(tx_inputs).build();
@@ -241,21 +249,25 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssemblerImpl<Adapter> {
         // build CKB change output
         real_inputs_capacity = real_inputs_capacity.safe_add(offered_ckb).unwrap();
         let real_outputs_capacity = tx.outputs_capacity().unwrap();
-        let mut acs_lock_output = packed::CellOutput::new_builder()
-            .lock(acs_lock_script.clone())
-            .build_exact_capacity(Capacity::zero())
-            .unwrap();
-        let extra_capacity = acs_lock_output.occupied_capacity(Capacity::zero()).unwrap();
+
+        log::info!(
+            "[cross-chain] real_inputs_capacity = {:?}, real_outputs_capacity = {:?}, change_capacity = {:?}, fee = {:?}",
+            real_inputs_capacity,
+            real_outputs_capacity,
+            minimal_change_ckb,
+            fee
+        );
+
         assert!(
             real_inputs_capacity.as_u64()
-                > real_outputs_capacity.as_u64() + extra_capacity.as_u64() + fee.as_u64(),
+                >= real_outputs_capacity.as_u64() + minimal_change_ckb.as_u64() + fee.as_u64(),
             "internal error"
         );
-        let change_ckb =
+        let real_change_ckb =
             real_inputs_capacity.as_u64() - real_outputs_capacity.as_u64() - fee.as_u64();
         acs_lock_output = acs_lock_output
             .as_builder()
-            .capacity(change_ckb.pack())
+            .capacity(real_change_ckb.pack())
             .build();
         tx = tx
             .as_advanced_builder()
@@ -266,6 +278,7 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssemblerImpl<Adapter> {
         Ok(tx)
     }
 
+    #[allow(unused_variables)]
     pub async fn update_metadata(
         &self,
         metadata_typeid_args: H256,
@@ -285,9 +298,10 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssemblerImpl<Adapter> {
             }
             config
         };
-        let stake_outpoint = self.fetch_axon_stake_outpoint(stake_typeid_args).await?;
+        // let stake_outpoint =
+        // self.fetch_axon_stake_outpoint(stake_typeid_args).await?;
         let ckb_metadata = CkbMetadata {
-            stake_outpoint,
+            // stake_outpoint,
             metadata_outpoint,
             metadata_typeid,
             erc20_config: erc20_token_config,
@@ -330,16 +344,21 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssembler for TxAssemblerImpl<Adap
                     sudt_lockhash,
                 )
             })
-            .collect::<Vec<_>>();
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|(offerred_ckb, required_ckb)| {
+                TxAssemblerError::InsufficientWCKB(offerred_ckb, required_ckb)
+            })?;
         let metadata = ACS_METADATA.load();
         let tx = util::build_transaction_with_outputs_and_celldeps(&ckb_transfers, &[
             &metadata.metadata_outpoint,
-            &metadata.stake_outpoint,
+            // &metadata.stake_outpoint,
         ]);
-        println!(
-            "[with outputs] tx = {}",
-            serde_json::to_string_pretty(&JsonTxView::from(tx.clone())).unwrap()
-        );
+
+        // log::info!(
+        //     "[with outputs] tx = {}",
+        //     serde_json::to_string_pretty(&JsonTxView::from(tx.clone())).unwrap()
+        // );
+
         let tx = self
             .fill_transaction_with_inputs_and_changes(
                 tx,
@@ -347,12 +366,15 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssembler for TxAssemblerImpl<Adap
                 Capacity::bytes(1).unwrap(),
             )
             .await?;
-        println!(
-            "[with inputs] tx = {}",
-            serde_json::to_string_pretty(&JsonTxView::from(tx.clone())).unwrap()
-        );
+
+        // log::info!(
+        //     "[with inputs] tx = {}",
+        //     serde_json::to_string_pretty(&JsonTxView::from(tx.clone())).unwrap()
+        // );
+
         let hash = H256::from_slice(tx.hash().as_slice());
         ACS_TRANSACTIONS.write().unwrap().insert(hash, tx.clone());
+
         Ok(tx)
     }
 
@@ -411,6 +433,9 @@ pub enum TxAssemblerError {
 
     #[display(fmt = "No transaction found with Hash({})", _0)]
     NoTransactionFound(H256),
+
+    #[display(fmt = "Not enough wCKB to wrap a new generated Cell ({}/{})", _0, _1)]
+    InsufficientWCKB(u64, u64),
 }
 
 impl Error for TxAssemblerError {}

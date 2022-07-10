@@ -20,18 +20,27 @@ pub enum UnsignedTransaction {
 }
 
 impl UnsignedTransaction {
-    pub fn max_priority_fee_per_gas(&self) -> Option<U256> {
-        match self {
-            UnsignedTransaction::Eip1559(tx) => Some(tx.max_priority_fee_per_gas),
-            _ => None,
-        }
-    }
-
     pub fn set_action(&mut self, action: TransactionAction) {
         match self {
             UnsignedTransaction::Legacy(tx) => tx.action = action,
             UnsignedTransaction::Eip2930(tx) => tx.action = action,
             UnsignedTransaction::Eip1559(tx) => tx.action = action,
+        }
+    }
+
+    pub fn gas_price(&self) -> U256 {
+        match self {
+            UnsignedTransaction::Legacy(tx) => tx.gas_price,
+            UnsignedTransaction::Eip2930(tx) => tx.gas_price,
+            UnsignedTransaction::Eip1559(tx) => tx.gas_price.min(tx.max_priority_fee_per_gas),
+        }
+    }
+
+    pub fn max_priority_fee_per_gas(&self) -> &U256 {
+        match self {
+            UnsignedTransaction::Legacy(tx) => &tx.gas_price,
+            UnsignedTransaction::Eip2930(tx) => &tx.gas_price,
+            UnsignedTransaction::Eip1559(tx) => &tx.max_priority_fee_per_gas,
         }
     }
 
@@ -81,14 +90,6 @@ impl UnsignedTransaction {
             UnsignedTransaction::Legacy(tx) => tx.data.clone(),
             UnsignedTransaction::Eip2930(tx) => tx.data.clone(),
             UnsignedTransaction::Eip1559(tx) => tx.data.clone(),
-        }
-    }
-
-    pub fn gas_price(&self) -> &U256 {
-        match self {
-            UnsignedTransaction::Legacy(tx) => &tx.gas_price,
-            UnsignedTransaction::Eip2930(tx) => &tx.gas_price,
-            UnsignedTransaction::Eip1559(tx) => &tx.gas_price,
         }
     }
 
