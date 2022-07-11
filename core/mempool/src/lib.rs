@@ -192,7 +192,7 @@ where
         let is_call_system_script = is_call_system_script(tx.transaction.unsigned.action())
             || is_crosschain_transaction(tx.transaction.unsigned.action());
 
-        log::warn!(
+        log::debug!(
             "[mempool]: is call system script {:?}",
             is_call_system_script
         );
