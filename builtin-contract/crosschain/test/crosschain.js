@@ -20,7 +20,7 @@ function recordsHash(records) {
 
 async function deployMirrorToken(owner) {
     const MirrorToken = await ethers.getContractFactory('MirrorToken');
-    contract = await MirrorToken.connect(owner).deploy("CKB", "CKB");
+    contract = await MirrorToken.connect(owner).deploy("CKB", "CKB", 8);
 
     return contract;
 }
@@ -85,6 +85,14 @@ describe("CrossChain", () => {
         await contract.connect(owner).setTokenConfig(simpleToken.address, [10, 10000000]);
 
         await contract.connect(owner).setTokenConfig(ATAddress, [10, 200]);
+
+        await contract.connect(owner).addWhitelist(wckb.address);
+
+        await contract.connect(owner).addWhitelist(mirrorToken.address);
+
+        await contract.connect(owner).addWhitelist(ATAddress);
+
+        await contract.connect(owner).addWhitelist(simpleToken.address);
 
         domain = {
             name: 'test',
@@ -466,6 +474,7 @@ describe("CrossChain", () => {
                 sUDTAmount: 10,
                 CKBAmount: 1000,
                 txHash: lockscript,
+                limitSign: 0,
             },
             {
                 to: wallet2.address,
@@ -473,6 +482,7 @@ describe("CrossChain", () => {
                 sUDTAmount: 100,
                 CKBAmount: 100000,
                 txHash: lockscript,
+                limitSign: 0,
             },
         ];
 
@@ -511,6 +521,7 @@ describe("CrossChain", () => {
                 sUDTAmount: 10,
                 CKBAmount: 1000,
                 txHash: lockscript,
+                limitSign: 0,
             },
             {
                 to: wallet2.address,
@@ -518,6 +529,7 @@ describe("CrossChain", () => {
                 sUDTAmount: 100,
                 CKBAmount: 100000,
                 txHash: lockscript,
+                limitSign: 0,
             },
         ];
 
@@ -794,6 +806,7 @@ describe("CrossChain", () => {
                 sUDTAmount: 10,
                 CKBAmount: 1000,
                 txHash: lockscript,
+                limitSign: 0,
             },
             {
                 to: wallet2.address,
@@ -801,6 +814,7 @@ describe("CrossChain", () => {
                 sUDTAmount: 100,
                 CKBAmount: 100000,
                 txHash: lockscript,
+                limitSign: 0,
             },
         ];
 
@@ -849,6 +863,7 @@ describe("CrossChain", () => {
                 sUDTAmount: 10,
                 CKBAmount: 1000,
                 txHash: lockscript,
+                limitSign: 0,
             },
             {
                 to: wallet2.address,
@@ -856,6 +871,7 @@ describe("CrossChain", () => {
                 sUDTAmount: 100,
                 CKBAmount: 100000,
                 txHash: lockscript,
+                limitSign: 0,
             },
         ];
 

@@ -16,11 +16,11 @@ use crate::{IndexerAdapter, TxAssemblerImpl};
 
 const INDEXER_URL: &str = "http://47.111.84.118:81/indexer";
 const METADATA_TYPEID_ARGS: ckb_types::H256 =
-    h256!("0xc0810210210c06ba233273e94d7fc89b00a705a07fdc0ae4c78e4036582ff336");
+    h256!("0x8de2c7322dd816fb245897403bb8fe9e15170231ea6675054b4cf45bc1d01999");
 const STAKE_TYPEID_ARGS: ckb_types::H256 =
     h256!("0x0000000000000000000000000000000000000000000000000000000000000000");
 const METADATA_TYPEID: ckb_types::H256 =
-    h256!("0x9d150f92179f315fffe35eb3ef79d9e66bc37de1764b2fe440c264c956facdae");
+    h256!("0x01b75db2124ce629e18fc88eb9b78b7f9f9f0b1bdc4d287a598c61b9f79fb663");
 const RECEIVE_ADDRESS: ckb_types::H160 = h160!("0x4f696abdf3be58328775de663e07924122d3cf2f");
 
 fn gen_sig_pubkeys(size: usize, hash: &H256) -> (BlsSignature, Vec<BlsPublicKey>) {
@@ -53,7 +53,7 @@ async fn test_acs_complete_transacion() {
     let transfer = crosschain::Transfer {
         direction:     crosschain::Direction::FromAxon,
         address:       H160::from_slice(RECEIVE_ADDRESS.as_bytes()),
-        ckb_amount:    Capacity::bytes(65).unwrap().as_u64(),
+        ckb_amount:    Capacity::bytes(85).unwrap().as_u64(),
         erc20_address: H160::default(),
         sudt_amount:   0,
         tx_hash:       H256::default(),
