@@ -1,6 +1,6 @@
 use crate::types::{
-    Account, Block, BlockNumber, Bytes, Hash, Header, Proposal, Receipt, SignedTransaction, TxResp,
-    H160, U256,
+    Account, Block, BlockNumber, Bytes, Hash, HashWithDirection, Header, Proposal, Receipt,
+    SignedTransaction, TxResp, H160, U256,
 };
 use crate::{async_trait, traits::Context, ProtocolResult};
 
@@ -73,6 +73,12 @@ pub trait APIAdapter: Send + Sync {
     ) -> ProtocolResult<TxResp>;
 
     async fn get_code_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>>;
+
+    async fn get_crosschain_record_by_hash(
+        &self,
+        ctx: Context,
+        hash: &Hash,
+    ) -> ProtocolResult<Option<HashWithDirection>>;
 
     async fn peer_count(&self, ctx: Context) -> ProtocolResult<U256>;
 

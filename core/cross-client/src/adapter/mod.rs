@@ -78,6 +78,10 @@ where
         self.db.insert(key, val)
     }
 
+    async fn get_in_process(&self, ctx: Context, key: &[u8]) -> ProtocolResult<Option<Vec<u8>>> {
+        self.db.get(key)
+    }
+
     async fn get_all_in_process(&self, ctx: Context) -> ProtocolResult<Vec<(Vec<u8>, Vec<u8>)>> {
         self.db.get_all()
     }
@@ -119,19 +123,12 @@ where
         &self,
         ctx: Context,
         reqs: RequestTxHashes,
-        block_hash: H256,
+        relay_tx_hash: H256,
     ) -> ProtocolResult<()> {
+        let dir = reqs.direction;
         self.storage
-            .insert_crosschain_record(ctx, reqs, block_hash)
+            .insert_crosschain_records(ctx, reqs, relay_tx_hash, dir)
             .await
-    }
-
-    async fn get_record(
-        &self,
-        ctx: Context,
-        reqs: RequestTxHashes,
-    ) -> ProtocolResult<Option<H256>> {
-        self.storage.get_crosschain_record(ctx, reqs).await
     }
 
     async fn current_metadata(&self, ctx: Context) -> Metadata {

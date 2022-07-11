@@ -1,3 +1,4 @@
+mod crosschain_types;
 mod filter;
 mod r#impl;
 mod web3_types;
@@ -15,6 +16,7 @@ use protocol::types::{Hash, Hex, H160, H256, U256};
 use protocol::ProtocolResult;
 
 use crate::jsonrpc::{
+    crosschain_types::CrossChainTransaction,
     filter::AxonFilterServer,
     web3_types::{
         BlockId, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter, Web3Log, Web3Receipt,
@@ -159,6 +161,12 @@ pub trait AxonJsonRpc {
 
     #[method(name = "pprof")]
     fn pprof(&self, enable: bool) -> RpcResult<bool>;
+
+    #[method(name = "getCrosschianResult")]
+    async fn get_crosschain_result(
+        &self,
+        tx_hash: H256,
+    ) -> RpcResult<Option<CrossChainTransaction>>;
 }
 
 pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(

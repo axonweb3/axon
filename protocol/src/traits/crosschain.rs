@@ -21,6 +21,8 @@ pub trait CrossAdapter: Send + Sync {
 
     async fn insert_in_process(&self, ctx: Context, key: &[u8], val: &[u8]) -> ProtocolResult<()>;
 
+    async fn get_in_process(&self, ctx: Context, key: &[u8]) -> ProtocolResult<Option<Vec<u8>>>;
+
     async fn get_all_in_process(&self, ctx: Context) -> ProtocolResult<Vec<(Vec<u8>, Vec<u8>)>>;
 
     async fn remove_in_process(&self, ctx: Context, key: &[u8]) -> ProtocolResult<()>;
@@ -39,9 +41,6 @@ pub trait CrossAdapter: Send + Sync {
         reqs: RequestTxHashes,
         block_hash: Hash,
     ) -> ProtocolResult<()>;
-
-    async fn get_record(&self, ctx: Context, reqs: RequestTxHashes)
-        -> ProtocolResult<Option<Hash>>;
 
     async fn current_metadata(&self, ctx: Context) -> Metadata;
 

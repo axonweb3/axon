@@ -1,5 +1,6 @@
 use crate::types::{
-    Block, Bytes, Hash, Header, Proof, Receipt, RequestTxHashes, SignedTransaction, H256,
+    Block, Bytes, Direction, Hash, HashWithDirection, Header, Proof, Receipt, RequestTxHashes,
+    SignedTransaction, H256,
 };
 use crate::{async_trait, codec::ProtocolCodec, traits::Context, Display, ProtocolResult};
 
@@ -118,18 +119,19 @@ pub trait Storage: CommonStorage {
 
     async fn get_latest_proof(&self, ctx: Context) -> ProtocolResult<Proof>;
 
-    async fn insert_crosschain_record(
+    async fn insert_crosschain_records(
         &self,
         ctx: Context,
         reqs: RequestTxHashes,
         block_hash: Hash,
+        direction: Direction,
     ) -> ProtocolResult<()>;
 
     async fn get_crosschain_record(
         &self,
         ctx: Context,
-        reqs: RequestTxHashes,
-    ) -> ProtocolResult<Option<Hash>>;
+        hash: &Hash,
+    ) -> ProtocolResult<Option<HashWithDirection>>;
 }
 
 #[async_trait]
