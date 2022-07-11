@@ -5,8 +5,12 @@ import erc20 from "./ERC20.json";
 
 const basePath = "./src/test_data_temp_file";
 const option = { timeout: 1000 * 30 };
-const web3 = new Web3(new Web3.providers.HttpProvider(Config.getIns().axonRpc.url, option));
-const accountFrom = web3.eth.accounts.privateKeyToAccount(Config.getIns().hexPrivateKey);
+const web3 = new Web3(
+  new Web3.providers.HttpProvider(Config.getIns().axonRpc.url, option)
+);
+const accountFrom = web3.eth.accounts.privateKeyToAccount(
+  Config.getIns().hexPrivateKey
+);
 const transactionInfo = {
   contractAddress: "",
   transactionHash: "",
@@ -17,7 +21,6 @@ const transactionInfo = {
   accountAddress: "",
   topic1: "",
   topic2: "",
-
 };
 const filterIds = {
   filter_id_1: "",
@@ -38,7 +41,7 @@ const createTestDataMange = {
     }
   },
   async sendTransaction(account, data) {
-    const nonce = (await web3.eth.getTransactionCount(accountFrom.address)) + 1;
+    const nonce = await web3.eth.getTransactionCount(accountFrom.address);
     const tx = {
       type: 2,
       nonce,
@@ -55,10 +58,7 @@ const createTestDataMange = {
     const contract = new web3.eth.Contract(erc20.abi);
     const txOptions = { data: erc20.bytecode, arguments: ["TT", "TTT"] };
     const data = contract.deploy(txOptions).encodeABI();
-    const receipt = await this.sendTransaction(
-      accountFrom.address,
-      data,
-    );
+    const receipt = await this.sendTransaction(accountFrom.address, data);
     transactionInfo.contractAddress = receipt.contractAddress;
     transactionInfo.transactionHash = receipt.transactionHash;
     transactionInfo.blockHash = receipt.blockHash;
@@ -66,8 +66,10 @@ const createTestDataMange = {
     transactionInfo.transactionIndex = receipt.transactionIndex;
     transactionInfo.accountAddress = accountFrom.address;
     transactionInfo.hexBlockNumber = `0x${receipt.blockNumber.toString(16)}`;
-    transactionInfo.topic1 = "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0";
-    transactionInfo.topic2 = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+    transactionInfo.topic1 =
+      "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0";
+    transactionInfo.topic2 =
+      "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
     await this.savejson(`${basePath}/testData_1.json`, transactionInfo);
   },
   async writeFilterIds(filterIdIndex, id) {
