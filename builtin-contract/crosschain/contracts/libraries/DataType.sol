@@ -21,5 +21,6 @@ library DataType {
         uint256 amount;
         uint256 minWCKBAmount;
         string to;
+        uint256 limitSign;
     }
 }

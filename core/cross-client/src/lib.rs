@@ -460,7 +460,7 @@ mod tests {
             .unwrap()
             .generate()
             .unwrap()
-            .write_to_file("src/crosschain_abi.rs")
+            .write_to_file("src/abi/crosschain_abi.rs")
             .unwrap();
     }
 }

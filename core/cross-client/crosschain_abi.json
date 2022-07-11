@@ -19,6 +19,50 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "minWCKB",
+        "type": "uint256"
+      }
+    ],
+    "name": "ChangeMinWCKB",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "feeRatio",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "threshold",
+            "type": "uint256"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct DataType.TokenConfig",
+        "name": "config",
+        "type": "tuple"
+      }
+    ],
+    "name": "ChangeTokenConfig",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "components": [
           {
             "internalType": "address",
@@ -53,6 +97,25 @@
       }
     ],
     "name": "CrossFromCKB",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "currentRecordHash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32[]",
+        "name": "remainRecordsHash",
+        "type": "bytes32[]"
+      }
+    ],
+    "name": "CrossLimitRecord",
     "type": "event"
   },
   {
@@ -131,19 +194,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "CROSS_FROM_CKB_TYPEHASH",
-    "outputs": [
-      {
-        "internalType": "bytes32",
-        "name": "",
-        "type": "bytes32"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "address",
@@ -175,6 +225,19 @@
       }
     ],
     "name": "addToken",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "addWhitelist",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -298,12 +361,69 @@
         "type": "address"
       }
     ],
+    "name": "getTokenConfig",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint256",
+            "name": "feeRatio",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "threshold",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct DataType.TokenConfig",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
     "name": "getTypehash",
     "outputs": [
       {
         "internalType": "bytes32",
         "name": "",
         "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getWCKBAddress",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getWCKBMin",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",
@@ -318,6 +438,25 @@
       }
     ],
     "name": "isMirrorToken",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "isWhitelist",
     "outputs": [
       {
         "internalType": "bool",
@@ -353,6 +492,11 @@
             "internalType": "string",
             "name": "to",
             "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "limitSign",
+            "type": "uint256"
           }
         ],
         "internalType": "struct DataType.AxonToCKBRecord[]",
@@ -374,6 +518,19 @@
     "name": "lockAT",
     "outputs": [],
     "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "mirrorTokens",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "",
+        "type": "address[]"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -399,6 +556,11 @@
             "internalType": "string",
             "name": "to",
             "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "limitSign",
+            "type": "uint256"
           }
         ],
         "internalType": "struct DataType.AxonToCKBRecord",
@@ -407,6 +569,19 @@
       }
     ],
     "name": "removeLimitTx",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "removeWhitelist",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -452,6 +627,19 @@
     "name": "setWCKBMin",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "whitelist",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "",
+        "type": "address[]"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   }
 ]
