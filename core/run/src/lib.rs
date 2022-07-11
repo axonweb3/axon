@@ -435,6 +435,7 @@ impl Axon {
                 metadata_type_id,
                 Default::default(),
                 current_header.chain_id as u8,
+                self.config.cross_client.enable,
             )
             .await?;
 

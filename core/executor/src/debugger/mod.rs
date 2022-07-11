@@ -36,9 +36,12 @@ impl EvmDebugger {
     pub fn new(distribute_addresses: Vec<H160>, distribute_amount: U256, db_path: &str) -> Self {
         let mut db_data_path = db_path.to_string();
         db_data_path.push_str("/data");
+        let _ = std::fs::create_dir_all(&db_data_path);
         let rocks_adapter = Arc::new(RocksAdapter::new(db_data_path, Default::default()).unwrap());
+
         let mut db_state_path = db_path.to_string();
         db_state_path.push_str("/state");
+        let _ = std::fs::create_dir_all(&db_state_path);
         let trie = Arc::new(RocksTrieDB::new(db_state_path, Default::default(), 1000).unwrap());
 
         let mut mpt = MPTTrie::new(Arc::clone(&trie));

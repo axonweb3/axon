@@ -62,7 +62,7 @@ async fn test_acs_complete_transacion() {
     let metadata_typeid_args = H256::from_slice(METADATA_TYPEID_ARGS.as_bytes());
     let stake_typeid_args = H256::from_slice(STAKE_TYPEID_ARGS.as_bytes());
     let typeid = acs
-        .update_metadata(metadata_typeid_args, stake_typeid_args, 5)
+        .update_metadata(metadata_typeid_args, stake_typeid_args, 5, true)
         .await
         .expect("update metadata");
     assert!(typeid == H256::from_slice(METADATA_TYPEID.as_bytes()));

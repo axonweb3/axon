@@ -284,7 +284,12 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssemblerImpl<Adapter> {
         metadata_typeid_args: H256,
         stake_typeid_args: H256,
         chain_id: u8,
+        enable: bool,
     ) -> ProtocolResult<H256> {
+        if !enable {
+            return Ok(Default::default());
+        }
+
         let (metadata, metadata_typeid, metadata_outpoint) = self
             .fetch_crosschain_metadata(metadata_typeid_args, chain_id)
             .await?;
