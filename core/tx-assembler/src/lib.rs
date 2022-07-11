@@ -87,7 +87,7 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssemblerImpl<Adapter> {
     pub async fn fetch_crosschain_metadata(
         &self,
         metadata_typeid_args: H256,
-        axon_chain_id: u8,
+        axon_chain_id: u16,
     ) -> ProtocolResult<(Metadata, H256, packed::OutPoint)> {
         let metadata_typescript = util::build_typeid_script(metadata_typeid_args);
         let search_key = SearchKey {
@@ -114,8 +114,13 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssemblerImpl<Adapter> {
             TxAssemblerError::MetadataTypeIdError(metadata_typeid_args, err.to_string())
         })?;
 
-        if u8::from(metadata.chain_id()) != axon_chain_id {
-            return Err(TxAssemblerError::MetadataChainIdError(metadata.chain_id().into()).into());
+        let chain_id = {
+            let mut bytes = [0u8; 2];
+            bytes.copy_from_slice(metadata.chain_id().as_slice());
+            u16::from_le_bytes(bytes)
+        };
+        if chain_id != axon_chain_id {
+            return Err(TxAssemblerError::MetadataChainIdError(chain_id).into());
         }
 
         let hash = metadata_typescript.calc_script_hash().unpack();
@@ -283,7 +288,7 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssemblerImpl<Adapter> {
         &self,
         metadata_typeid_args: H256,
         stake_typeid_args: H256,
-        chain_id: u8,
+        chain_id: u16,
         enable: bool,
     ) -> ProtocolResult<H256> {
         if !enable {
@@ -431,7 +436,7 @@ pub enum TxAssemblerError {
     MetadataTypeIdError(H256, String),
 
     #[display(fmt = "ChainId = {} from metadata isn't equal to Axon", _0)]
-    MetadataChainIdError(u8),
+    MetadataChainIdError(u16),
 
     #[display(fmt = "Not enough cells to response current crosschain requests")]
     InsufficientCrosschainCell,
