@@ -56,6 +56,11 @@ contract CrossChain is Context {
         uint256 minWCKBAmount
     );
 
+    event CrossLimitRecord(
+        bytes32 currentRecordHash,
+        bytes32[] remainRecordsHash
+    );
+
     event ChangeTokenConfig(address token, DataType.TokenConfig config);
 
     event ChangeMinWCKB(uint256 minWCKB);
@@ -123,13 +128,15 @@ contract CrossChain is Context {
         external
         onlyVerifier
     {
-        bytes32 hash = keccak256(abi.encode(record));
-        if (!_limitTxes.contains(hash)) {
+        bytes32 hash_ = keccak256(abi.encode(record));
+        if (!_limitTxes.contains(hash_)) {
             return;
         }
 
-        _limitTxes.remove(hash);
-        delete _limitRecordMap[hash];
+        _limitTxes.remove(hash_);
+        delete _limitRecordMap[hash_];
+
+        emit CrossLimitRecord(hash_, _limitTxes.values());
     }
 
     function _addLimitTxes(DataType.AxonToCKBRecord memory record) private {
