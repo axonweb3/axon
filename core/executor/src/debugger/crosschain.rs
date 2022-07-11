@@ -210,8 +210,7 @@ fn build_axon_to_ckb_tx(nonce: u64) -> Eip1559Transaction {
 
 fn build_change_limit_tx(nonce: u64) -> Eip1559Transaction {
     let data = hex_decode("0x3edfdbb00000000000000000000000004af5ec5e3d29d9ddd7f4bf91a022131c41b72352000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000152d02c7e14af6800000").unwrap();
-    let call: abi::crosschainCalls = AbiDecode::decode(&data).unwrap();
-    println!("change limit call {:?}", call);
+    // let _call: abi::crosschainCalls = AbiDecode::decode(&data).unwrap();
     build_eip1559_tx(nonce, data)
 }
 
