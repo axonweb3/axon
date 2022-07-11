@@ -60,3 +60,9 @@ impl RequestTxHashes {
         }
     }
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct HashWithDirection {
+    pub tx_hash:   H256,
+    pub direction: Direction,
+}

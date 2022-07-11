@@ -10,6 +10,7 @@ mod task;
 
 pub use abi::{crosschain_abi, wckb_abi};
 pub use adapter::{CrossChainDBImpl, DefaultCrossChainAdapter};
+use protocol::codec::ProtocolCodec;
 pub use task::message::{
     CrosschainMessageHandler, END_GOSSIP_BUILD_CKB_TX, END_GOSSIP_CKB_TX_SIGNATURE,
 };
@@ -202,18 +203,14 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
 
         for log in logs {
             if let Ok(event) = decode_logs::<crosschain_abi::CrossFromCKBFilter>(&[log.clone()]) {
-                log::info!(
-                    "[crosschain]: Complete cross from CKB, request count {:?}, axon block hash {:?}",
-                    event[0].records.len(), block_hash
-                );
-
-                let _ = self
-                    .adapter
-                    .remove_in_process(
-                        Context::new(),
-                        &rlp::encode::<Requests>(&(event[0].clone().into())),
-                    )
-                    .await;
+                let key = rlp::encode::<Requests>(&(event[0].clone().into()));
+                let relay_tx = SignedTransaction::decode(
+                    self.adapter
+                        .get_in_process(Context::new(), &key)
+                        .await?
+                        .unwrap(),
+                )?;
+                self.adapter.remove_in_process(Context::new(), &key).await?;
 
                 let hashes = event[0]
                     .records
@@ -224,9 +221,15 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
                     .insert_record(
                         Context::new(),
                         RequestTxHashes::new_from_ckb(hashes),
-                        block_hash,
+                        relay_tx.transaction.hash,
                     )
                     .await?;
+
+                log::info!(
+                    "[crosschain]: Complete cross from CKB, request count {:?}, axon tx hash {:?}",
+                    event[0].records.len(),
+                    relay_tx.transaction.hash
+                );
             } else if let Ok(event) =
                 decode_logs::<crosschain_abi::CrossToCKBFilter>(&[log.clone()])
             {

@@ -1,6 +1,6 @@
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 
-use crate::types::{RequestTxHashes, Requests, Transfer};
+use crate::types::{HashWithDirection, RequestTxHashes, Requests, Transfer};
 
 impl Encodable for Transfer {
     fn rlp_append(&self, s: &mut RlpStream) {
@@ -58,6 +58,26 @@ impl Decodable for RequestTxHashes {
                 .try_into()
                 .map_err(|_| DecoderError::Custom("Invalid transfer direction"))?,
             tx_hashes: rlp.list_at(1)?,
+        })
+    }
+}
+
+impl Encodable for HashWithDirection {
+    fn rlp_append(&self, s: &mut RlpStream) {
+        s.begin_list(2)
+            .append(&self.tx_hash)
+            .append(&(self.direction as u8));
+    }
+}
+
+impl Decodable for HashWithDirection {
+    fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
+        Ok(HashWithDirection {
+            tx_hash:   rlp.val_at(0)?,
+            direction: rlp
+                .val_at::<u8>(0)?
+                .try_into()
+                .map_err(|_| DecoderError::Custom("Invalid transfer direction"))?,
         })
     }
 }

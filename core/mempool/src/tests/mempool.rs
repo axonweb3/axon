@@ -200,7 +200,10 @@ async fn test_nonce_insert() {
     let replace_tx = {
         let mut tx = txs[4].clone();
         match tx.transaction.unsigned {
-            UnsignedTransaction::Eip1559(ref mut p) => p.gas_price = 2.into(),
+            UnsignedTransaction::Eip1559(ref mut p) => {
+                p.gas_price = 2.into();
+                p.max_priority_fee_per_gas = 2.into();
+            }
             UnsignedTransaction::Eip2930(ref mut p) => p.gas_price = 2.into(),
             UnsignedTransaction::Legacy(ref mut p) => p.gas_price = 2.into(),
         }

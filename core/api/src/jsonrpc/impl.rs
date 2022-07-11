@@ -17,8 +17,7 @@ use crate::jsonrpc::web3_types::{
     BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter,
     Web3Log, Web3Receipt, Web3SyncStatus, Web3Transaction,
 };
-
-use crate::jsonrpc::{AxonJsonRpcServer, RpcResult};
+use crate::jsonrpc::{crosschain_types::CrossChainTransaction, AxonJsonRpcServer, RpcResult};
 use crate::APIError;
 
 #[allow(dead_code)]
@@ -739,6 +738,55 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         }
 
         Ok(self.pprof.load(Ordering::Acquire))
+    }
+
+    async fn get_crosschain_result(
+        &self,
+        tx_hash: H256,
+    ) -> RpcResult<Option<CrossChainTransaction>> {
+        let ctx = Context::new();
+        if let Some(hash_with_dir) = self
+            .adapter
+            .get_crosschain_record_by_hash(ctx.clone(), &tx_hash)
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?
+        {
+            if !hash_with_dir.direction.is_from_ckb() {
+                return Ok(Some(CrossChainTransaction {
+                    request_tx_hash: tx_hash,
+                    relay_tx_hash:   hash_with_dir.tx_hash,
+                    direction:       hash_with_dir.direction,
+                    axon_tx:         None,
+                    receipt:         None,
+                }));
+            }
+
+            let hash = hash_with_dir.tx_hash;
+            let stx = self
+                .adapter
+                .get_transaction_by_hash(ctx.clone(), hash)
+                .await
+                .map_err(|e| Error::Custom(e.to_string()))?
+                .ok_or_else(|| {
+                    Error::Custom(format!("Can not get transaction by hash {:?}", hash))
+                })?;
+            let receipt = self
+                .adapter
+                .get_receipt_by_tx_hash(ctx.clone(), hash)
+                .await
+                .map_err(|e| Error::Custom(e.to_string()))?
+                .ok_or_else(|| Error::Custom(format!("Can not get receipt by hash {:?}", hash)))?;
+
+            return Ok(Some(CrossChainTransaction {
+                request_tx_hash: tx_hash,
+                relay_tx_hash:   hash,
+                direction:       hash_with_dir.direction,
+                axon_tx:         Some(Web3Transaction::from((stx.clone(), receipt.clone()))),
+                receipt:         Some(Web3Receipt::new(receipt, stx)),
+            }));
+        }
+
+        Ok(None)
     }
 }
 
