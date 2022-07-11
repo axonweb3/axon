@@ -550,9 +550,9 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
     #[metrics_rpc("eth_feeHistory")]
     async fn fee_history(
         &self,
-        _block_count: u64,
+        _block_count: U256,
         _newest_block: BlockId,
-        _reward_percentiles: Option<Vec<u64>>,
+        _reward_percentiles: Option<Vec<f64>>,
     ) -> RpcResult<Web3FeeHistory> {
         Ok(Web3FeeHistory {
             oldest_block:     U256::from(0),

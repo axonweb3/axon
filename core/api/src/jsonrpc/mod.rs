@@ -108,9 +108,9 @@ pub trait AxonJsonRpc {
     #[method(name = "eth_feeHistory")]
     async fn fee_history(
         &self,
-        block_count: u64,
+        block_count: U256,
         newest_block: BlockId,
-        reward_percentiles: Option<Vec<u64>>,
+        reward_percentiles: Option<Vec<f64>>,
     ) -> RpcResult<Web3FeeHistory>;
 
     #[method(name = "web3_clientVersion")]
