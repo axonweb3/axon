@@ -22,7 +22,7 @@ pub struct PriorityPool {
     co_queue:       Arc<ArrayQueue<(TxPtr, U256)>>,
     real_queue:     Arc<Mutex<BinaryHeap<TxPtr>>>,
     tx_map:         DashMap<Hash, TxPtr>,
-    stock_len:      Arc<AtomicUsize>,
+    stock_len:      AtomicUsize,
     timeout_gap:    Mutex<BTreeMap<BlockNumber, HashSet<Hash>>>,
     timeout_config: u64,
 
@@ -37,7 +37,7 @@ impl PriorityPool {
             co_queue: Arc::new(ArrayQueue::new(size)),
             real_queue: Arc::new(Mutex::new(BinaryHeap::with_capacity(size * 2))),
             tx_map: DashMap::new(),
-            stock_len: Arc::new(AtomicUsize::new(0)),
+            stock_len: AtomicUsize::new(0),
             timeout_gap: Mutex::new(BTreeMap::new()),
             timeout_config,
             flush_lock: Arc::new(RwLock::new(())),
@@ -46,7 +46,6 @@ impl PriorityPool {
         let co_queue = Arc::clone(&pool.co_queue);
         let real_queue = Arc::clone(&pool.real_queue);
         let pending_queues = Arc::clone(&pool.pending_queue);
-        let stock_len = Arc::clone(&pool.stock_len);
         let flush_lock = Arc::clone(&pool.flush_lock);
 
         tokio::spawn(async move {
@@ -60,7 +59,7 @@ impl PriorityPool {
 
                         // drop this tx
                         if pending_queue.len() > 64 {
-                            stock_len.fetch_sub(1, Ordering::AcqRel);
+                            tx.set_dropped();
                             continue;
                         }
 
@@ -176,7 +175,7 @@ impl PriorityPool {
 
             // drop this tx
             if pending_queue.len() > 64 {
-                self.stock_len.fetch_sub(1, Ordering::AcqRel);
+                tx.set_dropped();
                 continue;
             }
 

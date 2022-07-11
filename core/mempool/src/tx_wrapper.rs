@@ -111,6 +111,8 @@ impl PendingQueue {
                         tx.set_package();
                         return true;
                     }
+                } else {
+                    tx.set_dropped();
                 }
             }
             Entry::Vacant(v) => {
