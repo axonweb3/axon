@@ -20,6 +20,10 @@ pub enum UnsignedTransaction {
 }
 
 impl UnsignedTransaction {
+    pub fn is_eip1559(&self) -> bool {
+        matches!(self, UnsignedTransaction::Eip1559(_))
+    }
+
     pub fn set_action(&mut self, action: TransactionAction) {
         match self {
             UnsignedTransaction::Legacy(tx) => tx.action = action,

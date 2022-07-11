@@ -75,6 +75,7 @@ pub struct Web3Transaction {
 impl From<SignedTransaction> for Web3Transaction {
     fn from(stx: SignedTransaction) -> Web3Transaction {
         let signature = stx.transaction.signature.clone().unwrap_or_default();
+        let is_eip1559 = stx.transaction.unsigned.is_eip1559();
         Web3Transaction {
             type_:                    Some(EIP1559_TX_TYPE.into()),
             block_number:             None,
@@ -83,8 +84,16 @@ impl From<SignedTransaction> for Web3Transaction {
             public_key:               stx.public,
             gas:                      U256::zero(),
             gas_price:                stx.transaction.unsigned.gas_price(),
-            max_fee_per_gas:          Some(U256::from(MAX_PRIORITY_FEE_PER_GAS)),
-            max_priority_fee_per_gas: Some(*stx.transaction.unsigned.max_priority_fee_per_gas()),
+            max_fee_per_gas:          if is_eip1559 {
+                Some(U256::from(MAX_PRIORITY_FEE_PER_GAS))
+            } else {
+                None
+            },
+            max_priority_fee_per_gas: if is_eip1559 {
+                Some(*stx.transaction.unsigned.max_priority_fee_per_gas())
+            } else {
+                None
+            },
             hash:                     stx.transaction.hash,
             from:                     stx.sender,
             to:                       stx.get_to(),
@@ -106,6 +115,7 @@ impl From<(SignedTransaction, Receipt)> for Web3Transaction {
     fn from(stx_receipt: (SignedTransaction, Receipt)) -> Self {
         let (stx, receipt) = stx_receipt;
         let signature = stx.transaction.signature.clone().unwrap_or_default();
+        let is_eip1559 = stx.transaction.unsigned.is_eip1559();
         Web3Transaction {
             type_:                    Some(EIP1559_TX_TYPE.into()),
             block_number:             Some(receipt.block_number.into()),
@@ -114,8 +124,16 @@ impl From<(SignedTransaction, Receipt)> for Web3Transaction {
             public_key:               stx.public,
             gas:                      receipt.used_gas,
             gas_price:                stx.transaction.unsigned.gas_price(),
-            max_fee_per_gas:          Some(U256::from(MAX_PRIORITY_FEE_PER_GAS)),
-            max_priority_fee_per_gas: Some(*stx.transaction.unsigned.max_priority_fee_per_gas()),
+            max_fee_per_gas:          if is_eip1559 {
+                Some(U256::from(MAX_PRIORITY_FEE_PER_GAS))
+            } else {
+                None
+            },
+            max_priority_fee_per_gas: if is_eip1559 {
+                Some(*stx.transaction.unsigned.max_priority_fee_per_gas())
+            } else {
+                None
+            },
             hash:                     receipt.tx_hash,
             from:                     stx.sender,
             to:                       stx.get_to(),
