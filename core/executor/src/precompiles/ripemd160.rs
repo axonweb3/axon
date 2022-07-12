@@ -30,7 +30,7 @@ impl PrecompileContract for Ripemd160 {
         let mut ret = [0u8; 32];
         let mut hasher = ripemd::Ripemd160::default();
         hasher.update(input);
-        ret[12..].copy_from_slice(&hasher.finalize().to_vec());
+        ret[12..].copy_from_slice(&hasher.finalize());
 
         Ok(PrecompileOutput {
             exit_status: ExitSucceed::Returned,
@@ -49,19 +49,15 @@ impl PrecompileContract for Ripemd160 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::precompiles::mock_ctx;
-    use protocol::codec::hex_encode;
+    use crate::precompile_test;
 
     #[test]
     fn test_ripemd160() {
-        let input = vec![0xffu8];
-        let res = Ripemd160::exec_fn(&input, None, &mock_ctx(), false).unwrap();
-
-        assert_eq!(res.output.len(), 32);
-        assert_eq!(
-            hex_encode(&res.output[12..]),
-            "2c0c45d3ecab80fe060e5f1d7057cd2f8de5e557"
+        precompile_test!(
+            Ripemd160,
+            "ff",
+            "0000000000000000000000002c0c45d3ecab80fe060e5f1d7057cd2f8de5e557",
+            720
         );
-        assert_eq!(res.cost, 720);
     }
 }

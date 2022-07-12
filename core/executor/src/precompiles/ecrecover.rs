@@ -39,15 +39,15 @@ impl PrecompileContract for EcRecover {
         };
 
         if let Ok(s) = Secp256k1RecoverableSignature::try_from(sig.as_slice()) {
-            if let Ok(p) = secp256k1_recover(&s.to_bytes(), &input[0..32]) {
-                let r = Hasher::digest(&p.serialize_uncompressed());
-                let mut recover = vec![0u8; 12];
-                recover.append(&mut r.as_bytes().to_vec());
+            if let Ok(p) = secp256k1_recover(&input[0..32], &s.to_bytes()) {
+                let r = Hasher::digest(&p.serialize_uncompressed()[1..65]);
+                let mut recover = [0u8; 32];
+                recover[12..].copy_from_slice(&r.as_bytes()[12..]);
 
                 return Ok(PrecompileOutput {
                     exit_status: ExitSucceed::Returned,
                     cost:        gas,
-                    output:      recover,
+                    output:      recover.to_vec(),
                     logs:        vec![],
                 });
             }
@@ -75,4 +75,20 @@ fn recover_signature(input: &[u8]) -> Option<[u8; 65]> {
     ret[64] = v;
 
     Some(ret)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::precompile_test;
+
+    #[test]
+    fn test_ecrecover() {
+        precompile_test!(
+            EcRecover,
+            "47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad000000000000000000000000000000000000000000000000000000000000001b650acf9d3f5f0a2c799776a1254355d5f4061762a237396a99a0e0e3fc2bcd6729514a0dacb2e623ac4abd157cb18163ff942280db4d5caad66ddf941ba12e03", 
+            "000000000000000000000000c08b5542d177ac6686946920409741463a15dddb", 
+            3000
+        );
+    }
 }
