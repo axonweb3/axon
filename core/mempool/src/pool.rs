@@ -237,6 +237,7 @@ impl PriorityPool {
         let mut remove_tip_nonce: HashMap<H160, U256> = HashMap::new();
         for hash in hashes {
             if let Some((_, ptr)) = self.tx_map.remove(hash) {
+                ptr.set_dropped();
                 match remove_tip_nonce.entry(ptr.sender()) {
                     Entry::Occupied(mut v) => {
                         if v.get() < ptr.nonce() {
@@ -252,10 +253,9 @@ impl PriorityPool {
         }
 
         for (k, v) in remove_tip_nonce {
-            self.pending_queue.get_mut(&k).and_then(|mut value| {
+            if let Some(mut value) = self.pending_queue.get_mut(&k) {
                 value.value_mut().set_drop_by_nonce_tip(v);
-                Some(())
-            });
+            }
         }
 
         let timeout = if number > self.timeout_config {
