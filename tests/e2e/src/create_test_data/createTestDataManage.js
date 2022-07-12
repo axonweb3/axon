@@ -55,10 +55,17 @@ const createTestDataMange = {
     return web3.eth.sendSignedTransaction(transaction.rawTransaction);
   },
   async createTransactionData() {
+    console.log("!!!!!!!!!!!start debug!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     const contract = new web3.eth.Contract(erc20.abi);
+    console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     const txOptions = { data: erc20.bytecode, arguments: ["TT", "TTT"] };
+
+    console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     const data = contract.deploy(txOptions).encodeABI();
+
+    console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     const receipt = await this.sendTransaction(accountFrom.address, data);
+    console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     transactionInfo.contractAddress = receipt.contractAddress;
     transactionInfo.transactionHash = receipt.transactionHash;
     transactionInfo.blockHash = receipt.blockHash;
