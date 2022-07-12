@@ -6,9 +6,13 @@ import createTransactionData from "../src/create_test_data/createTestDataManage"
 
 export const DAPPETEER_DEFAULT_CONFIG = {
   metamaskVersion: "v10.8.1",
-  args: [process.env.HEADLESS ? "--headless=chrome" : "", process.env.WSL ? "-no-sandbox" : ""],
+  args: [
+    process.env.HEADLESS ? "--headless=chrome" : "",
+    process.env.WSL ? "-no-sandbox" : "",
+  ],
 };
 export default async function setup() {
+  console.log("begin =======================");
   const browser = await launch(puppeteer, DAPPETEER_DEFAULT_CONFIG);
   try {
     await createTransactionData.resetTestTmpFiles();
