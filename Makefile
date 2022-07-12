@@ -66,7 +66,9 @@ e2e-test:
 	./target/debug/axon --config devtools/chain/config.toml --genesis devtools/chain/genesis_single_node.json > /tmp/log 2>&1 &
 	cd tests/e2e && yarn
 	cd tests/e2e/src && yarn exec http-server &
-	cd tests/e2e && yarn exec wait-on -t 5000 tcp:8000 && yarn exec wait-on -t 5000 tcp:8080 && yarn test
+	# cd tests/e2e && yarn exec wait-on -t 5000 tcp:8000 && yarn exec wait-on -t 5000 tcp:8080 && yarn test
+	cd tests/e2e && yarn exec wait-on -t 5000 tcp:8000 && yarn exec wait-on -t 5000 tcp:8080 
+	cd tests/e2e && echo "begin stop!" && yarn test
 	pkill -2 axon
 	pkill -2 http-server
 
