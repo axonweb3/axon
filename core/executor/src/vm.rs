@@ -30,7 +30,7 @@ impl EvmExecutor {
         backend: &mut B,
         tx: SignedTransaction,
     ) -> TxResp {
-        let old_nonce = backend.basic(tx.sender).nonce;
+        // let old_nonce = backend.basic(tx.sender).nonce;
         let config = Config::london();
         let metadata =
             StackSubstateMetadata::new(tx.transaction.unsigned.gas_limit().as_u64(), &config);
@@ -73,7 +73,7 @@ impl EvmExecutor {
         let code_address = if tx.transaction.unsigned.action() == &TransactionAction::Create
             && exit_reason.is_succeed()
         {
-            Some(code_address(&tx.sender, &old_nonce))
+            Some(code_address(&tx.sender, tx.transaction.unsigned.nonce()))
         } else {
             None
         };
