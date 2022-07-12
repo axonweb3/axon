@@ -14,8 +14,15 @@ export const DAPPETEER_DEFAULT_CONFIG = {
 export default async function setup() {
   console.log("begin =======================");
   const browser = await launch(puppeteer, DAPPETEER_DEFAULT_CONFIG);
+  console.log("!!!!!!!!!try {!!!!!!!!!!!!!!");
   try {
+    console.log(
+      "!!!!!!!!createTransactionData.resetTestTmpFiles()!!!!!!!!!!!!!!!"
+    );
     await createTransactionData.resetTestTmpFiles();
+    console.log(
+      "!!!!!!!!createTransactionData.createTransactionData!!!!!!!!!!!!!!!"
+    );
     await createTransactionData.createTransactionData(); // create test data
     await setupMetamask(browser, {});
     global.browser = browser;
