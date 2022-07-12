@@ -71,7 +71,8 @@ e2e-test:
 	pkill -2 http-server
 
 e2e-test-ci:
-	# cargo build
+	echo "start debug"
+	cargo build
 	rm -rf ./devtools/chain/data
 	./target/debug/axon --config devtools/chain/config.toml --genesis devtools/chain/genesis_single_node.json > /tmp/log 2>&1 &
 	cd tests/e2e && yarn
