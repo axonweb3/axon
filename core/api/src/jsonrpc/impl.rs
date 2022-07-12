@@ -18,9 +18,7 @@ use crate::jsonrpc::web3_types::{
     BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter,
     Web3Log, Web3Receipt, Web3SyncStatus, Web3Transaction,
 };
-use crate::jsonrpc::{
-    crosschain_types::CrossChainTransaction, error, AxonJsonRpcServer, RpcResult,
-};
+use crate::jsonrpc::{crosschain_types::CrossChainTransaction, AxonJsonRpcServer, RpcResult};
 use crate::APIError;
 
 #[allow(dead_code)]
@@ -80,6 +78,19 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
     async fn send_raw_transaction(&self, tx: Hex) -> RpcResult<H256> {
         let utx = UnverifiedTransaction::decode(&tx.as_bytes())
             .map_err(|e| Error::Custom(e.to_string()))?;
+
+        if utx.unsigned.gas_price() == U256::zero() {
+            return Err(Error::Custom(
+                "The transaction gas price is zero".to_string(),
+            ));
+        }
+
+        if utx.unsigned.gas_limit() == &U256::zero() {
+            return Err(Error::Custom(
+                "The transaction gas limit is zero".to_string(),
+            ));
+        }
+
         utx.check_hash().map_err(|e| Error::Custom(e.to_string()))?;
 
         let stx = SignedTransaction::try_from(utx).map_err(|e| Error::Custom(e.to_string()))?;

@@ -8,7 +8,7 @@ const EXEC_ERROR: i32 = -32015;
 
 pub fn vm_err(resp: TxResp) -> Error {
     let data = match resp.exit_reason {
-        ExitReason::Revert(revert) => format!("{:?} 0x{}", revert, hex_encode(&resp.ret)),
+        ExitReason::Revert(_) => format!("0x{}", hex_encode(&resp.ret)),
         ExitReason::Error(err) => format!("{:?}", err),
         ExitReason::Fatal(fatal) => format!("{:?}", fatal),
         _ => unreachable!(),
