@@ -42,6 +42,7 @@ impl Executor for AxonExecutor {
         gas_limit: u64,
         from: Option<H160>,
         to: Option<H160>,
+        value: U256,
         data: Vec<u8>,
     ) -> TxResp {
         let config = Config::london();
@@ -53,19 +54,13 @@ impl Executor for AxonExecutor {
             executor.transact_call(
                 from.unwrap_or_default(),
                 *addr,
-                U256::default(),
+                value,
                 data,
                 gas_limit,
                 Vec::new(),
             )
         } else {
-            executor.transact_create(
-                from.unwrap_or_default(),
-                U256::default(),
-                data,
-                u64::MAX,
-                Vec::new(),
-            )
+            executor.transact_create(from.unwrap_or_default(), value, data, u64::MAX, Vec::new())
         };
 
         TxResp {

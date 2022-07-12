@@ -24,6 +24,7 @@ pub trait Executor: Send + Sync {
         gas_limit: u64,
         from: Option<H160>,
         to: Option<H160>,
+        value: U256,
         data: Vec<u8>,
     ) -> TxResp;
 

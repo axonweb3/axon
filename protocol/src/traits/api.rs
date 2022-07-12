@@ -67,6 +67,7 @@ pub trait APIAdapter: Send + Sync {
         from: Option<H160>,
         to: Option<H160>,
         gas_limit: Option<U256>,
+        value: U256,
         data: Vec<u8>,
         state_root: Hash,
         proposal: Proposal,

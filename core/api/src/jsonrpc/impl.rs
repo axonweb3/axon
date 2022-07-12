@@ -62,6 +62,7 @@ impl<Adapter: APIAdapter> JsonRpcImpl<Adapter> {
                 req.from,
                 req.to,
                 req.gas,
+                req.value.unwrap_or_default(),
                 data.to_vec(),
                 mock_header.state_root,
                 mock_header.into(),

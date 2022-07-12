@@ -82,10 +82,17 @@ impl EvmDebugger {
     }
 
     #[allow(dead_code)]
-    pub fn call(&self, number: u64, from: Option<H160>, to: Option<H160>, data: Vec<u8>) -> TxResp {
+    pub fn call(
+        &self,
+        number: u64,
+        from: Option<H160>,
+        to: Option<H160>,
+        value: U256,
+        data: Vec<u8>,
+    ) -> TxResp {
         let mut backend = self.backend(number);
         let evm = AxonExecutor::default();
-        evm.call(&mut backend, u64::MAX, from, to, data)
+        evm.call(&mut backend, u64::MAX, from, to, value, data)
     }
 
     fn backend(&self, number: u64) -> AxonExecutorAdapter<ImplStorage<RocksAdapter>, RocksTrieDB> {
