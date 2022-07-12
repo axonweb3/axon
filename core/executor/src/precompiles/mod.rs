@@ -113,3 +113,12 @@ pub(crate) fn read_fr(input: &[u8], start: usize) -> Result<Fr, PrecompileFailur
 
     Fr::from_slice(&input[start..(start + 32)]).map_err(|_| err!(_, "Invalid field element"))
 }
+
+#[cfg(test)]
+pub(crate) fn mock_ctx() -> Context {
+    Context {
+        address:        Default::default(),
+        caller:         Default::default(),
+        apparent_value: Default::default(),
+    }
+}

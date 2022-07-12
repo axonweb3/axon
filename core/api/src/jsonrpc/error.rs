@@ -6,6 +6,19 @@ use protocol::types::{ExitReason, TxResp};
 
 const EXEC_ERROR: i32 = -32015;
 
+#[derive(Clone, Debug)]
+pub enum RpcError {
+    VM(TxResp),
+}
+
+impl From<RpcError> for Error {
+    fn from(err: RpcError) -> Self {
+        match err {
+            RpcError::VM(resp) => vm_err(resp),
+        }
+    }
+}
+
 pub fn vm_err(resp: TxResp) -> Error {
     let data = match resp.exit_reason {
         ExitReason::Revert(_) => format!("0x{}", hex_encode(&resp.ret)),
