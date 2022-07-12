@@ -41,7 +41,8 @@ if [[ $GITHUB_EVENT_NAME == "pull_request" ]];then
   fun_pasing_message "$MESSAGE"
 fi
 if [[ $GITHUB_EVENT_NAME == "push" ]];then
-  job_run_list=" [ Chaos CI,Cargo Clippy,Coverage Test,E2E Tests,Conventional PR,Unit Tests] "
+  # job_run_list=" [ Chaos CI,Cargo Clippy,Coverage Test,E2E Tests,Conventional PR,Unit Tests] "
+  job_run_list=" [ E2E Tests] "
   #set reqiured output
   fun_jobs "$job_run_list"
 fi
