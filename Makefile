@@ -73,7 +73,8 @@ e2e-test:
 e2e-test-ci:
 	echo "start debug"
 	# cargo build
-	# rm -rf ./devtools/chain/data
+	rm -rf ./devtools/chain/data
+	./target/debug/axon --config devtools/chain/config.toml --genesis devtools/chain/genesis_single_node.json
 	# ./target/debug/axon --config devtools/chain/config.toml --genesis devtools/chain/genesis_single_node.json > /tmp/log 2>&1 &
 	# cd tests/e2e && yarn
 	# cd tests/e2e/src && yarn exec http-server &
