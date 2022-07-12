@@ -1,11 +1,11 @@
-use evm::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadata};
+use std::collections::BTreeMap;
+
+use evm::executor::stack::{MemoryStackState, PrecompileFn, StackExecutor, StackSubstateMetadata};
 
 use protocol::traits::{ApplyBackend, Backend};
 use protocol::types::{
     Config, Hasher, SignedTransaction, TransactionAction, TxResp, H160, H256, U256,
 };
-
-use crate::precompiles::build_precompile_set;
 
 pub const METADATA_CONTRACT_ADDRESS: H160 = H160([
     161, 55, 99, 105, 25, 112, 217, 55, 61, 79, 171, 124, 195, 35, 215, 186, 6, 250, 153, 134,
@@ -28,15 +28,18 @@ impl EvmExecutor {
     pub fn inner_exec<B: Backend + ApplyBackend>(
         &self,
         backend: &mut B,
+        config: &Config,
+        precompiles: &BTreeMap<H160, PrecompileFn>,
         tx: SignedTransaction,
     ) -> TxResp {
         // let old_nonce = backend.basic(tx.sender).nonce;
-        let config = Config::london();
         let metadata =
-            StackSubstateMetadata::new(tx.transaction.unsigned.gas_limit().as_u64(), &config);
-        let state = MemoryStackState::new(metadata, backend);
-        let precompiles = build_precompile_set();
-        let mut executor = StackExecutor::new_with_precompiles(state, &config, &precompiles);
+            StackSubstateMetadata::new(tx.transaction.unsigned.gas_limit().as_u64(), config);
+        let mut executor = StackExecutor::new_with_precompiles(
+            MemoryStackState::new(metadata, backend),
+            config,
+            precompiles,
+        );
         let (exit_reason, ret) = match tx.transaction.unsigned.action() {
             TransactionAction::Call(addr) => executor.transact_call(
                 tx.sender,

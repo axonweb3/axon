@@ -6,6 +6,8 @@ use crate::types::{
 };
 
 pub trait ExecutorAdapter {
+    fn set_origin(&mut self, origin: H160);
+
     fn set_gas_price(&mut self, gas_price: U256);
 
     fn get_logs(&mut self) -> Vec<Log>;

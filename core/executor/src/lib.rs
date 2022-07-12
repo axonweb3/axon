@@ -29,7 +29,7 @@ use protocol::types::{
     NIL_DATA, RLP_NULL, U256,
 };
 
-use crate::{system::SystemExecutor, vm::EvmExecutor};
+use crate::{precompiles::build_precompile_set, system::SystemExecutor, vm::EvmExecutor};
 
 #[derive(Default)]
 pub struct AxonExecutor;
@@ -97,13 +97,17 @@ impl Executor for AxonExecutor {
 
         let evm_executor = EvmExecutor::new();
         let sys_executor = SystemExecutor::new();
+        let precompiles = build_precompile_set();
+        let config = Config::london();
 
         for tx in txs.into_iter() {
             backend.set_gas_price(tx.transaction.unsigned.gas_price());
+            backend.set_origin(tx.sender);
+
             let mut r = if is_call_system_script(tx.transaction.unsigned.action()) {
                 sys_executor.inner_exec(backend, tx)
             } else {
-                evm_executor.inner_exec(backend, tx)
+                evm_executor.inner_exec(backend, &config, &precompiles, tx)
             };
 
             r.logs = backend.get_logs();

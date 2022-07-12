@@ -41,6 +41,10 @@ where
         self.exec_ctx.clone()
     }
 
+    fn set_origin(&mut self, origin: H160) {
+        self.exec_ctx.origin = origin;
+    }
+
     fn set_gas_price(&mut self, gas_price: U256) {
         self.exec_ctx.gas_price = gas_price;
     }
