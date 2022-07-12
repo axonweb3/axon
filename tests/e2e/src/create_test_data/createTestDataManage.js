@@ -41,7 +41,9 @@ const createTestDataMange = {
     }
   },
   async sendTransaction(account, data) {
-    const nonce = await web3.eth.getTransactionCount(accountFrom.address);
+    // const nonce = await web3.eth.getTransactionCount(accountFrom.address);
+    const nonce = 1;
+    console.log("nonce =======================: %d", nonce);
     const tx = {
       type: 2,
       nonce,
