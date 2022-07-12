@@ -1,4 +1,5 @@
 mod crosschain_types;
+mod error;
 mod filter;
 mod r#impl;
 mod web3_types;

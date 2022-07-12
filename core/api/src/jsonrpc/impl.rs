@@ -13,11 +13,14 @@ use protocol::types::{
 };
 use protocol::{async_trait, codec::ProtocolCodec, lazy::CHAIN_ID, ProtocolResult};
 
+use crate::jsonrpc::error::vm_err;
 use crate::jsonrpc::web3_types::{
     BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter,
     Web3Log, Web3Receipt, Web3SyncStatus, Web3Transaction,
 };
-use crate::jsonrpc::{crosschain_types::CrossChainTransaction, AxonJsonRpcServer, RpcResult};
+use crate::jsonrpc::{
+    crosschain_types::CrossChainTransaction, error, AxonJsonRpcServer, RpcResult,
+};
 use crate::APIError;
 
 #[allow(dead_code)]
@@ -260,8 +263,13 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             .call_evm(req, data_bytes, number.unwrap_or_default().into())
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
-        let call_hex_result = Hex::encode(resp.ret);
-        Ok(call_hex_result)
+
+        if resp.exit_reason.is_succeed() {
+            let call_hex_result = Hex::encode(resp.ret);
+            return Ok(call_hex_result);
+        }
+
+        Err(vm_err(resp))
     }
 
     #[metrics_rpc("eth_estimateGas")]
