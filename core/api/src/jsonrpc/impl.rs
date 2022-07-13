@@ -312,7 +312,11 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
-        Ok(resp.gas_used.into())
+        if resp.exit_reason.is_succeed() {
+            return Ok(resp.gas_used.into());
+        }
+
+        Err(RpcError::VM(resp).into())
     }
 
     #[metrics_rpc("eth_getCode")]
