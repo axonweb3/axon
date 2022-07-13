@@ -2361,7 +2361,7 @@ dependencies = [
 [[package]]
 name = "evm"
 version = "0.35.0"
-source = "git+https://github.com/KaoImin/evm.git?branch=debug#62d8eb3b8fcad10b6f39cce0dc0ed04e689244c4"
+source = "git+https://github.com/KaoImin/evm.git?branch=debug#ab9ac9ed863f9a4c72c161161fac27d0ea3a674d"
 dependencies = [
  "auto_impl 0.5.0",
  "environmental",
@@ -2381,7 +2381,7 @@ dependencies = [
 [[package]]
 name = "evm-core"
 version = "0.35.0"
-source = "git+https://github.com/KaoImin/evm.git?branch=debug#62d8eb3b8fcad10b6f39cce0dc0ed04e689244c4"
+source = "git+https://github.com/KaoImin/evm.git?branch=debug#ab9ac9ed863f9a4c72c161161fac27d0ea3a674d"
 dependencies = [
  "parity-scale-codec",
  "primitive-types",
@@ -2392,7 +2392,7 @@ dependencies = [
 [[package]]
 name = "evm-gasometer"
 version = "0.35.0"
-source = "git+https://github.com/KaoImin/evm.git?branch=debug#62d8eb3b8fcad10b6f39cce0dc0ed04e689244c4"
+source = "git+https://github.com/KaoImin/evm.git?branch=debug#ab9ac9ed863f9a4c72c161161fac27d0ea3a674d"
 dependencies = [
  "environmental",
  "evm-core",
@@ -2403,7 +2403,7 @@ dependencies = [
 [[package]]
 name = "evm-runtime"
 version = "0.35.0"
-source = "git+https://github.com/KaoImin/evm.git?branch=debug#62d8eb3b8fcad10b6f39cce0dc0ed04e689244c4"
+source = "git+https://github.com/KaoImin/evm.git?branch=debug#ab9ac9ed863f9a4c72c161161fac27d0ea3a674d"
 dependencies = [
  "auto_impl 0.5.0",
  "environmental",

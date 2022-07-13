@@ -7,6 +7,8 @@ use protocol::types::{
     Config, Hasher, SignedTransaction, TransactionAction, TxResp, H160, H256, U256,
 };
 
+use crate::adapter::TX_RESP;
+
 pub const METADATA_CONTRACT_ADDRESS: H160 = H160([
     74, 245, 236, 94, 61, 41, 217, 221, 215, 244, 191, 145, 160, 34, 19, 28, 65, 183, 35, 82,
 ]);
@@ -71,8 +73,6 @@ impl EvmExecutor {
         let remain_gas = executor.gas();
         let gas_used = executor.used_gas();
         let (values, logs) = executor.into_state().deconstruct();
-        backend.apply(values, logs, true);
-
         let code_address = if tx.transaction.unsigned.action() == &TransactionAction::Create
             && exit_reason.is_succeed()
         {
@@ -81,7 +81,7 @@ impl EvmExecutor {
             None
         };
 
-        TxResp {
+        let resp = TxResp {
             exit_reason,
             ret,
             remain_gas,
@@ -89,7 +89,16 @@ impl EvmExecutor {
             logs: vec![],
             code_address,
             removed: false,
+        };
+
+        {
+            let mut resp_reg = TX_RESP.lock().unwrap();
+            *resp_reg = resp.clone();
         }
+
+        backend.apply(values, logs, true);
+
+        resp
     }
 }
 
