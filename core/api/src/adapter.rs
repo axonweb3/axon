@@ -167,6 +167,7 @@ where
         _ctx: Context,
         from: Option<H160>,
         to: Option<H160>,
+        gas_price: Option<U256>,
         gas_limit: Option<U256>,
         value: U256,
         data: Vec<u8>,
@@ -175,6 +176,7 @@ where
     ) -> ProtocolResult<TxResp> {
         let mut exec_ctx = ExecutorContext::from(mock_header);
         exec_ctx.origin = from.unwrap_or_default();
+        exec_ctx.gas_price = gas_price.unwrap_or(U256::one());
 
         let mut backend = AxonExecutorAdapter::from_root(
             state_root,

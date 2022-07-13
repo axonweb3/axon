@@ -63,6 +63,7 @@ impl<Adapter: APIAdapter> JsonRpcImpl<Adapter> {
                 Context::new(),
                 req.from,
                 req.to,
+                req.gas_price,
                 req.gas,
                 req.value.unwrap_or_default(),
                 data.to_vec(),
@@ -272,6 +273,14 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
 
     #[metrics_rpc("eth_call")]
     async fn call(&self, req: Web3CallRequest, number: Option<BlockId>) -> RpcResult<Hex> {
+        if req.gas_price.unwrap_or_default() > U256::max_value() {
+            return Err(Error::Custom("The gas price is too large".to_string()));
+        }
+
+        if req.gas.unwrap_or_default() > U256::max_value() {
+            return Err(Error::Custom("The gas limit is too large".to_string()));
+        }
+
         let data_bytes = req
             .data
             .as_ref()
@@ -702,7 +711,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             .adapter
             .get_storage_at(Context::new(), address, position, block.header.state_root)
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .unwrap_or_else(|_| H256::default().as_bytes().to_vec().into());
 
         Ok(Hex::encode(&value))
     }

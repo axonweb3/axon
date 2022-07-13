@@ -66,6 +66,7 @@ pub trait APIAdapter: Send + Sync {
         ctx: Context,
         from: Option<H160>,
         to: Option<H160>,
+        gas_price: Option<U256>,
         gas_limit: Option<U256>,
         value: U256,
         data: Vec<u8>,
