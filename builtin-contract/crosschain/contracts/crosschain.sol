@@ -69,6 +69,7 @@ contract CrossChain is Context {
         _metadata = metadata;
         _wCKB = wCKB;
         _addMirrorToken(_wCKB, bytes32(0));
+        _addWhitelist(_wCKB);
         _limitSign.increment();
     }
 
@@ -86,6 +87,12 @@ contract CrossChain is Context {
             IMetadata(_metadata).isVerifier(_msgSender()),
             "CrossChain: sender must be verifier"
         );
+
+        _;
+    }
+
+    modifier onlyWhitelistToken(address token) {
+        require(isWhitelist(token), "CrossChain: token not whitelist");
 
         _;
     }
@@ -336,9 +343,11 @@ contract CrossChain is Context {
     }
 
     // lock AT on Axon network
-    function lockAT(string memory to) external payable {
-        require(isWhitelist(AT_ADDRESS), "CrossChain: AT not whitelist");
-
+    function lockAT(string memory to)
+        external
+        payable
+        onlyWhitelistToken(AT_ADDRESS)
+    {
         require(msg.value > 0, "CrossChain: value must be more than 0");
 
         if (_minWCKB > 0) {
@@ -366,9 +375,7 @@ contract CrossChain is Context {
         string memory to,
         address token,
         uint256 amount
-    ) external {
-        require(isWhitelist(token), "CrossChain: token not whitelist");
-
+    ) external onlyWhitelistToken(token) {
         require(amount > 0, "CrossChain: amount must be more than 0");
 
         require(
