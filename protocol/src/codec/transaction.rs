@@ -422,7 +422,7 @@ mod tests {
     fn test_legacy_encode() {
         let raw = hex_decode("f885020883011493941c85638e118b37167e9298c2268758e058ddfda08203e8a4f9846e1f00000000000000000000000000000000000000000000000000000000000000012da05595614cb1397fb947b3512af6939c1704c85b49c9ab8c16121e12073350b4ca9fd08cd623473664607cbe7d13dbb11a44f06ad8ce499e585ef91929b6b6e2e7").unwrap();
         let utx = UnverifiedTransaction::decode(&Rlp::new(&raw)).unwrap();
-        
+
         let encode = utx.rlp_bytes();
         let recover = UnverifiedTransaction::decode(&Rlp::new(&encode)).unwrap();
 

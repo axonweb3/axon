@@ -10,7 +10,8 @@ use common_crypto::secp256k1_recover;
 use crate::types::{Bytes, BytesMut, Hash, Hasher, Public, TypesError, H160, H256, H520, U256};
 use crate::ProtocolResult;
 
-pub const MAX_PRIORITY_FEE_PER_GAS: u64 = 1337;
+pub const MAX_PRIORITY_FEE_PER_GAS: u64 = 1_337;
+pub const MIN_TRANSACTION_GAS_LIMIT: u64 = 21_000;
 
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
 pub enum UnsignedTransaction {
