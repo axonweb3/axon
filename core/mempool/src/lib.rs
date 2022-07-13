@@ -360,6 +360,18 @@ pub enum TxType {
 #[derive(Debug, Display)]
 pub enum MemPoolError {
     #[display(
+        fmt = "Tx: {:?} exceeds balance, account balance: {:?}, gas limit: {:?}",
+        tx_hash,
+        account_balance,
+        tx_gas_limit
+    )]
+    ExceedBalance {
+        tx_hash:         Hash,
+        account_balance: U256,
+        tx_gas_limit:    U256,
+    },
+
+    #[display(
         fmt = "Tx: {:?} exceeds size limit, now: {}, limit: {} Bytes",
         tx_hash,
         size,
