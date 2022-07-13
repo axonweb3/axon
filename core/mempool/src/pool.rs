@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BinaryHeap, HashSet};
+use std::collections::{hash_map::Entry, BTreeMap, BinaryHeap, HashMap, HashSet};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
@@ -149,17 +149,15 @@ impl PriorityPool {
         }
         let q = self.real_queue.lock();
 
-        hashes.extend(
-            q.iter()
-                .filter_map(|ptr| {
-                    if ptr.is_dropped() {
-                        None
-                    } else {
-                        Some(ptr.hash())
-                    }
-                })
-                .take(limit),
-        );
+        let mut q_c = q.clone();
+        for _ in 0..limit {
+            while let Some(tx) = q_c.pop() {
+                if !tx.is_dropped() {
+                    hashes.push(tx.hash());
+                    break;
+                }
+            }
+        }
 
         PackedTxHashes {
             hashes,
@@ -236,10 +234,27 @@ impl PriorityPool {
         let mut q = self.real_queue.lock();
         let mut timeout_gap = self.timeout_gap.lock();
 
+        let mut remove_tip_nonce: HashMap<H160, U256> = HashMap::new();
         for hash in hashes {
             if let Some((_, ptr)) = self.tx_map.remove(hash) {
                 ptr.set_dropped();
+                match remove_tip_nonce.entry(ptr.sender()) {
+                    Entry::Occupied(mut v) => {
+                        if v.get() < ptr.nonce() {
+                            v.insert(*ptr.nonce());
+                        }
+                    }
+                    Entry::Vacant(v) => {
+                        v.insert(*ptr.nonce());
+                    }
+                }
                 *reduce_len += 1;
+            }
+        }
+
+        for (k, v) in remove_tip_nonce {
+            if let Some(mut value) = self.pending_queue.get_mut(&k) {
+                value.value_mut().set_drop_by_nonce_tip(v);
             }
         }
 
@@ -267,8 +282,10 @@ impl PriorityPool {
         let keys = self.tx_map.iter().map(|kv| kv.hash());
 
         timeout_gap.entry(number).or_default().extend(keys);
+
         let retain: Vec<_> = q.drain().filter(|ptr| !ptr.is_dropped()).collect();
         q.extend(retain);
+
         self.pending_queue.retain(|_, v| {
             v.clear_droped();
             !v.is_empty()

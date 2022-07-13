@@ -1,6 +1,6 @@
 use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd, Reverse};
 use std::collections::{btree_map::Entry, BTreeMap};
-use std::ops::Bound::{Excluded, Unbounded};
+use std::ops::Bound::{Excluded, Included, Unbounded};
 use std::sync::atomic::{AtomicU8, Ordering as AtomicOrdering};
 use std::sync::Arc;
 
@@ -146,6 +146,12 @@ impl PendingQueue {
         self.queue.retain(|_, v| !v.is_dropped());
 
         self.pop_tip_nonce = U256::zero();
+    }
+
+    pub fn set_drop_by_nonce_tip(&mut self, nonce: U256) {
+        for (_, v) in self.queue.range((Included(0.into()), Included(nonce))) {
+            v.set_dropped();
+        }
     }
 
     pub fn count(&self) -> usize {
