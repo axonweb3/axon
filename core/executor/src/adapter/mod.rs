@@ -211,7 +211,11 @@ where
             };
 
             account.nonce += U256::one();
-            account.balance = account.balance.saturating_sub(resp.gas_used.into());
+            let gas_cost = self
+                .gas_price()
+                .checked_mul(resp.gas_used.into())
+                .unwrap_or_else(U256::max_value);
+            account.balance = account.balance.saturating_sub(gas_cost);
 
             self.trie
                 .insert(origin.as_bytes(), account.encode().unwrap().as_ref())

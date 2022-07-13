@@ -95,6 +95,12 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             ));
         }
 
+        if utx.unsigned.gas_limit() > &self.gas_cap {
+            return Err(Error::Custom(
+                "The transaction gas limit is too large".to_string(),
+            ));
+        }
+
         if utx.unsigned.gas_limit() == &U256::zero() {
             return Err(Error::Custom(
                 "The transaction gas limit is zero".to_string(),
