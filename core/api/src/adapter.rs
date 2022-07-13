@@ -173,11 +173,14 @@ where
         state_root: Hash,
         mock_header: Proposal,
     ) -> ProtocolResult<TxResp> {
+        let mut exec_ctx = ExecutorContext::from(mock_header);
+        exec_ctx.origin = from.unwrap_or_default();
+
         let mut backend = AxonExecutorAdapter::from_root(
             state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
-            ExecutorContext::from(mock_header),
+            exec_ctx,
         )?;
         let gas_limit = gas_limit.map(|gas| gas.as_u64()).unwrap_or(u64::MAX);
 
