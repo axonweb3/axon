@@ -74,8 +74,8 @@ impl LegacyTransaction {
 
         if let Some(sig) = signature {
             rlp.append(&sig.add_chain_replay_protection(chain_id))
-                .append(&sig.r)
-                .append(&sig.s);
+                .append(&U256::from(&sig.r[0..32]))
+                .append(&U256::from(&sig.s[0..32]));
         } else if let Some(id) = chain_id {
             rlp.append(&id).append(&0u8).append(&0u8);
         }
@@ -269,12 +269,11 @@ impl Encodable for UnverifiedTransaction {
         let mut s = RlpStream::new();
         self.rlp_append(&mut s);
 
-        match self.unsigned {
-            UnsignedTransaction::Legacy(_) => (),
-            _ => ret.put_u8(self.unsigned.as_u8()),
-        };
+        if !self.unsigned.is_legacy() {
+            ret.put_u8(self.unsigned.as_u8());
+        }
 
-        ret.put(s.as_raw());
+        ret.put(s.out());
         ret
     }
 }
@@ -417,6 +416,17 @@ mod tests {
         let rlp = Rlp::new(&raw);
         let res = UnverifiedTransaction::decode(&rlp);
         assert!(res.is_ok());
+    }
+
+    #[test]
+    fn test_legacy_encode() {
+        let raw = hex_decode("f885020883011493941c85638e118b37167e9298c2268758e058ddfda08203e8a4f9846e1f00000000000000000000000000000000000000000000000000000000000000012da05595614cb1397fb947b3512af6939c1704c85b49c9ab8c16121e12073350b4ca9fd08cd623473664607cbe7d13dbb11a44f06ad8ce499e585ef91929b6b6e2e7").unwrap();
+        let utx = UnverifiedTransaction::decode(&Rlp::new(&raw)).unwrap();
+        
+        let encode = utx.rlp_bytes();
+        let recover = UnverifiedTransaction::decode(&Rlp::new(&encode)).unwrap();
+
+        assert_eq!(utx, recover);
     }
 
     #[test]
