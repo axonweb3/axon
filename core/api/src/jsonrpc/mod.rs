@@ -181,6 +181,7 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
         Arc::clone(&adapter),
         &config.rpc.client_version,
         config.data_path.clone(),
+        config.rpc.gas_cap,
     )
     .into_rpc();
     rpc.merge(filter).unwrap();

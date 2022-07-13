@@ -307,7 +307,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         status_agent: StatusAgent,
     ) -> ProtocolResult<()> {
         let block = &rich_block.block;
-        let block_hash = block.header_hash();
+        let block_hash = block.hash();
         let resp = self
             .adapter
             .exec(
@@ -344,7 +344,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
 
         let metadata = self.adapter.get_metadata(ctx.clone(), &block.header)?;
         let new_status = CurrentStatus {
-            prev_hash:                  block.header_hash(),
+            prev_hash:                  block.hash(),
             last_number:                block.header.number,
             last_state_root:            resp.state_root,
             tx_num_limit:               metadata.tx_num_limit,

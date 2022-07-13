@@ -401,7 +401,7 @@ impl Axon {
         let latest_proof = storage.get_latest_proof(Context::new()).await?;
 
         let current_consensus_status = CurrentStatus {
-            prev_hash:                  current_header.hash(),
+            prev_hash:                  current_block.hash(),
             last_number:                current_header.number,
             max_tx_size:                metadata.max_tx_size.into(),
             tx_num_limit:               metadata.tx_num_limit,

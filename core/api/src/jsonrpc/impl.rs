@@ -28,15 +28,17 @@ pub struct JsonRpcImpl<Adapter> {
     version: String,
     pprof:   Arc<AtomicBool>,
     path:    PathBuf,
+    gas_cap: U256,
 }
 
 impl<Adapter: APIAdapter> JsonRpcImpl<Adapter> {
-    pub fn new(adapter: Arc<Adapter>, version: &str, path: PathBuf) -> Self {
+    pub fn new(adapter: Arc<Adapter>, version: &str, path: PathBuf, gas_cap: u64) -> Self {
         Self {
             adapter,
             version: version.to_string(),
             pprof: Arc::new(AtomicBool::default()),
             path: path.join("api"),
+            gas_cap: gas_cap.into(),
         }
     }
 
@@ -155,7 +157,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             Some(b) => {
                 let capacity = b.tx_hashes.len();
                 let block_number = b.header.number;
-                let block_hash = b.header_hash();
+                let block_hash = b.hash();
                 let mut ret = Web3Block::from(b);
                 if show_rich_tx {
                     let mut txs = Vec::with_capacity(capacity);
@@ -200,7 +202,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             Some(b) => {
                 let capacity = b.tx_hashes.len();
                 let block_number = b.header.number;
-                let block_hash = b.header_hash();
+                let block_hash = b.hash();
                 let mut ret = Web3Block::from(b);
                 if show_rich_tx {
                     let mut txs = Vec::with_capacity(capacity);
