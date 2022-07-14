@@ -18,8 +18,8 @@ creep = "0.2"
 derive_more = "0.99"
 ethereum = { version = "0.12", features = ["with-codec", "with-serde"] }
 ethereum-types = { version = "0.13", features = ["arbitrary", "codec", "rlp", "serialize", "std"] }
-# evm = { version = "0.35", features = ["with-serde"] }
-evm = { git = "https://github.com/KaoImin/evm.git", branch = "debug", features = ["with-serde"] }
+evm = { version = "0.35", features = ["with-serde"] }
+# evm = { git = "https://github.com/KaoImin/evm.git", branch = "debug", features = ["with-serde"] }
 faster-hex = "0.6"
 hasher = { version = "0.1", features = ["hash-keccak"] }
 lazy_static = "1.4"

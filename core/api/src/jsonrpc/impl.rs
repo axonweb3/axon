@@ -243,11 +243,12 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         address: H160,
         number: Option<BlockId>,
     ) -> RpcResult<U256> {
-        self.adapter
+        Ok(self
+            .adapter
             .get_account(Context::new(), address, number.unwrap_or_default().into())
             .await
-            .map(|account| account.nonce + U256::one())
-            .map_err(|e| Error::Custom(e.to_string()))
+            .map(|account| account.nonce)
+            .unwrap_or_default())
     }
 
     #[metrics_rpc("eth_blockNumber")]

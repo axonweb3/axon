@@ -10,13 +10,13 @@ use protocol::types::{
 use crate::adapter::TX_RESP;
 
 pub const METADATA_CONTRACT_ADDRESS: H160 = H160([
-    74, 245, 236, 94, 61, 41, 217, 221, 215, 244, 191, 145, 160, 34, 19, 28, 65, 183, 35, 82,
+    161, 55, 99, 105, 25, 112, 217, 55, 61, 79, 171, 124, 195, 35, 215, 186, 6, 250, 153, 134,
 ]);
 pub const WCKB_CONTRACT_ADDRESS: H160 = H160([
-    176, 13, 97, 107, 130, 12, 57, 97, 158, 226, 158, 81, 68, 208, 34, 108, 248, 181, 193, 90,
+    74, 245, 236, 94, 61, 41, 217, 221, 215, 244, 191, 145, 160, 34, 19, 28, 65, 183, 35, 82,
 ]);
 pub const CROSSCHAIN_CONTRACT_ADDRESS: H160 = H160([
-    185, 220, 139, 222, 29, 180, 36, 16, 211, 4, 181, 231, 140, 47, 248, 67, 19, 78, 21, 224,
+    246, 123, 196, 229, 13, 29, 249, 43, 14, 76, 97, 121, 74, 69, 23, 175, 106, 153, 92, 178,
 ]);
 
 #[derive(Default)]
@@ -34,7 +34,7 @@ impl EvmExecutor {
         precompiles: &BTreeMap<H160, PrecompileFn>,
         tx: SignedTransaction,
     ) -> TxResp {
-        // let old_nonce = backend.basic(tx.sender).nonce;
+        let old_nonce = backend.basic(tx.sender).nonce;
         let metadata =
             StackSubstateMetadata::new(tx.transaction.unsigned.gas_limit().as_u64(), config);
         let mut executor = StackExecutor::new_with_precompiles(
@@ -76,7 +76,7 @@ impl EvmExecutor {
         let code_address = if tx.transaction.unsigned.action() == &TransactionAction::Create
             && exit_reason.is_succeed()
         {
-            Some(code_address(&tx.sender, tx.transaction.unsigned.nonce()))
+            Some(code_address(&tx.sender, &old_nonce))
         } else {
             None
         };

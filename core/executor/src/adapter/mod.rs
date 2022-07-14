@@ -233,8 +233,6 @@ where
                     storage,
                     reset_storage,
                 } => {
-                    println!("{:?} {:?}", address, basic);
-
                     let is_empty = self.apply(address, basic, code, storage, reset_storage);
                     if is_empty && delete_empty {
                         self.trie.remove(address.as_bytes()).unwrap();

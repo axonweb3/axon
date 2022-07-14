@@ -9,8 +9,8 @@ az = "1.2"
 bn = { package = "substrate-bn", version = "0.6" }
 cita_trie = "3.0"
 crossbeam-channel = "0.5"
-# evm = { version = "0.35", features = ["tracing"] }
-evm = { git = "https://github.com/KaoImin/evm.git", branch = "debug", features = ["tracing"] }
+evm = { version = "0.35", features = ["tracing"] }
+# evm = { git = "https://github.com/KaoImin/evm.git", branch = "debug", features = ["tracing"] }
 futures = "0.3"
 hasher = "0.1"
 lazy_static = "1.4"
