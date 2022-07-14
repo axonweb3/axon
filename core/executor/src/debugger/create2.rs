@@ -5,7 +5,7 @@ use protocol::types::{
 };
 use protocol::{codec::hex_decode, tokio};
 
-use crate::debugger::{mock_signed_tx, EvmDebugger};
+use crate::debugger::EvmDebugger;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_create2_gas() {
