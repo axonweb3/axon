@@ -9,7 +9,7 @@ use evm::Config;
 use protocol::types::{
     Bytes, Eip1559Transaction, ExitReason, ExitSucceed, Public, SignatureComponents,
     SignedTransaction, TransactionAction, UnsignedTransaction, UnverifiedTransaction, H160, H256,
-    U256,
+    MAX_BLOCK_GAS_LIMIT, U256,
 };
 use protocol::{codec::hex_decode, traits::Executor};
 
@@ -89,7 +89,7 @@ fn test_ackermann31() {
     );
     let config = Config::london();
     let precompiles = build_precompile_set();
-    let r = executor.inner_exec(&mut backend, &config, &precompiles, tx);
+    let r = executor.inner_exec(&mut backend, &config, MAX_BLOCK_GAS_LIMIT, &precompiles, tx);
 
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Returned));
     assert_eq!(r.ret, vec![
@@ -143,7 +143,7 @@ fn test_simplestorage() {
     tx.transaction
         .unsigned
         .set_action(TransactionAction::Create);
-    let r = executor.inner_exec(&mut backend, &config, &precompiles, tx);
+    let r = executor.inner_exec(&mut backend, &config, MAX_BLOCK_GAS_LIMIT, &precompiles, tx);
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Returned));
     assert!(r.ret.is_empty());
     assert_eq!(r.remain_gas, 68719375495);
@@ -160,7 +160,7 @@ fn test_simplestorage() {
         hex_decode("60fe47b1000000000000000000000000000000000000000000000000000000000000002a")
             .unwrap(),
     );
-    let r = executor.inner_exec(&mut backend, &config, &precompiles, tx);
+    let r = executor.inner_exec(&mut backend, &config, MAX_BLOCK_GAS_LIMIT, &precompiles, tx);
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Stopped));
     assert!(r.ret.is_empty());
     assert_eq!(r.remain_gas, 68719433227);
@@ -172,7 +172,7 @@ fn test_simplestorage() {
         0,
         hex_decode("6d4ce63c").unwrap(),
     );
-    let r = executor.inner_exec(&mut backend, &config, &precompiles, tx);
+    let r = executor.inner_exec(&mut backend, &config, MAX_BLOCK_GAS_LIMIT, &precompiles, tx);
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Returned));
     // assert_eq!(r.ret, vec![
     //     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

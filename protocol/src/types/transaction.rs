@@ -29,6 +29,14 @@ impl UnsignedTransaction {
         matches!(self, UnsignedTransaction::Eip1559(_))
     }
 
+    pub fn data(&self) -> &[u8] {
+        match self {
+            UnsignedTransaction::Legacy(tx) => tx.data.as_ref(),
+            UnsignedTransaction::Eip2930(tx) => tx.data.as_ref(),
+            UnsignedTransaction::Eip1559(tx) => tx.data.as_ref(),
+        }
+    }
+
     pub fn set_action(&mut self, action: TransactionAction) {
         match self {
             UnsignedTransaction::Legacy(tx) => tx.action = action,
@@ -91,14 +99,6 @@ impl UnsignedTransaction {
             UnsignedTransaction::Legacy(tx) => &tx.value,
             UnsignedTransaction::Eip2930(tx) => &tx.value,
             UnsignedTransaction::Eip1559(tx) => &tx.value,
-        }
-    }
-
-    pub fn data(&self) -> Bytes {
-        match self {
-            UnsignedTransaction::Legacy(tx) => tx.data.clone(),
-            UnsignedTransaction::Eip2930(tx) => tx.data.clone(),
-            UnsignedTransaction::Eip1559(tx) => tx.data.clone(),
         }
     }
 
