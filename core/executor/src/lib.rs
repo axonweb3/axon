@@ -24,16 +24,11 @@ use common_merkle::Merkle;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ApplyBackend, Backend, Executor, ExecutorAdapter as Adapter};
 use protocol::types::{
-    Account, Config, ExecResp, Hasher, SignedTransaction, TransactionAction, TxResp,
-    UnsignedTransaction, H160, NIL_DATA, RLP_NULL, U256,
+    data_gas_cost, Account, Config, ExecResp, Hasher, SignedTransaction, TransactionAction, TxResp,
+    GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160, NIL_DATA, RLP_NULL, U256,
 };
 
 use crate::{precompiles::build_precompile_set, system::SystemExecutor, vm::EvmExecutor};
-
-const GAS_PER_ZERO_BYTE: u64 = 4;
-const GAS_PER_NONZERO_BYTE: u64 = 68;
-const GAS_CALL_TRANSACTION: u64 = 21_000;
-const GAS_CREATE_TRANSACTION: u64 = 32_000;
 
 #[derive(Default)]
 pub struct AxonExecutor;
@@ -121,14 +116,21 @@ impl Executor for AxonExecutor {
             } else {
                 // Deduct pre-pay gas
                 let sender = tx.sender;
-                let gas_limit = pre_gas_limit(&tx.transaction.unsigned);
+                let tx_base_gas = tx.transaction.unsigned.base_gas();
+                let gas_limit = tx
+                    .transaction
+                    .unsigned
+                    .gas_limit()
+                    .as_u64()
+                    .saturating_sub(tx_base_gas);
                 let prepay_gas = tx_gas_price * tx.transaction.unsigned.gas_limit();
                 let mut account = backend.get_account(&sender);
                 account.balance = account.balance.saturating_sub(prepay_gas);
                 backend.save_account(&sender, &account);
 
                 // Execute transaction
-                let res = evm_executor.inner_exec(backend, &config, gas_limit, &precompiles, tx);
+                let res =
+                    evm_executor.inner_exec(backend, &config, gas_limit, &precompiles, tx);
 
                 // Add remain gas
                 let mut account = backend.get_account(&sender);
@@ -138,7 +140,6 @@ impl Executor for AxonExecutor {
                     .checked_add(remain_gas)
                     .unwrap_or_else(U256::max_value);
                 backend.save_account(&sender, &account);
-
                 res
             };
 
@@ -186,29 +187,4 @@ pub fn is_crosschain_transaction(action: &TransactionAction) -> bool {
         TransactionAction::Call(addr) => addr == &CROSSCHAIN_CONTRACT_ADDRESS,
         TransactionAction::Create => false,
     }
-}
-
-fn pre_gas_limit(tx: &UnsignedTransaction) -> u64 {
-    let mut res = match tx.action() {
-        TransactionAction::Call(_) => GAS_CALL_TRANSACTION,
-        TransactionAction::Create => GAS_CREATE_TRANSACTION,
-    };
-
-    res += data_gas_cost(tx.data());
-
-    res.saturating_sub(tx.gas_limit().as_u64())
-}
-
-fn data_gas_cost(data: &[u8]) -> u64 {
-    let mut ret = 0u64;
-
-    data.iter().for_each(|b| {
-        if b == &0u8 {
-            ret += GAS_PER_ZERO_BYTE
-        } else {
-            ret += GAS_PER_NONZERO_BYTE
-        }
-    });
-
-    ret
 }

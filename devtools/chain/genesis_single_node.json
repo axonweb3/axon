@@ -690,7 +690,7 @@
           "Eip1559": {
             "nonce": "0x1",
             "max_priority_fee_per_gas": "0x7d0",
-            "gas_price": "0x7d0",
+            "gas_price": "0x0",
             "gas_limit": "0x3231303030",
             "action": "Create",
             "value": "0x0",
@@ -1590,7 +1590,7 @@
           "Eip1559": {
             "nonce": "0x3",
             "max_priority_fee_per_gas": "0x7d0",
-            "gas_price": "0x7d0",
+            "gas_price": "0x0",
             "gas_limit": "0x3231303030",
             "action": "Create",
             "value": "0x0",
