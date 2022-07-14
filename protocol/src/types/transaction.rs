@@ -21,6 +21,16 @@ pub enum UnsignedTransaction {
 }
 
 impl UnsignedTransaction {
+    pub fn may_cost(&self) -> U256 {
+        if let Some(res) = self.gas_price().checked_mul(*self.gas_limit()) {
+            return res
+                .checked_add(*self.value())
+                .unwrap_or_else(U256::max_value);
+        }
+
+        U256::max_value()
+    }
+
     pub fn is_legacy(&self) -> bool {
         matches!(self, UnsignedTransaction::Legacy(_))
     }
