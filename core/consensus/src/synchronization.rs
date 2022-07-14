@@ -8,7 +8,7 @@ use common_apm_derive::trace_span;
 use protocol::tokio::{sync::Mutex, time::sleep};
 use protocol::traits::{Context, Synchronization, SynchronizationAdapter};
 use protocol::types::{Block, Proof, Proposal, Receipt, SignedTransaction, U256};
-use protocol::{async_trait, ProtocolResult};
+use protocol::{async_trait, lazy::CURRENT_STATE_ROOT, ProtocolResult};
 
 use crate::status::{CurrentStatus, StatusAgent};
 use crate::util::digest_signed_transactions;
@@ -361,6 +361,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         )
         .await?;
 
+        CURRENT_STATE_ROOT.swap(Arc::new(resp.state_root));
         status_agent.swap(new_status);
 
         // If there are transactions in the trasnaction pool that have been on chain
