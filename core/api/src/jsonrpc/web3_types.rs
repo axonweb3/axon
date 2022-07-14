@@ -209,7 +209,8 @@ impl Web3Receipt {
         let logs_list = receipt
             .logs
             .iter()
-            .map(|log| Web3ReceiptLog {
+            .enumerate()
+            .map(|(idx, log)| Web3ReceiptLog {
                 address:           log.address,
                 topics:            log.topics.clone(),
                 data:              Hex::encode(&log.data),
@@ -217,12 +218,12 @@ impl Web3Receipt {
                 block_hash:        receipt.block_hash,
                 transaction_hash:  receipt.tx_hash,
                 transaction_index: Some(receipt.tx_index.into()),
-                log_index:         U256::zero(),
+                log_index:         idx.into(),
                 removed:           false,
             })
             .collect::<Vec<_>>();
 
-        let mut web3_receipt = Web3Receipt {
+        Web3Receipt {
             block_number:        receipt.block_number.into(),
             block_hash:          receipt.block_hash,
             contract_address:    receipt.code_address.map(Into::into),
@@ -238,22 +239,7 @@ impl Web3Receipt {
             transaction_hash:    receipt.tx_hash,
             transaction_index:   Some(receipt.tx_index.into()),
             transaction_type:    Some(EIP1559_TX_TYPE.into()),
-        };
-        for item in receipt.logs.into_iter() {
-            web3_receipt.logs.push(Web3ReceiptLog {
-                address:           item.address,
-                topics:            item.topics,
-                data:              Hex::encode(item.data),
-                block_number:      receipt.block_number.into(),
-                transaction_hash:  receipt.tx_hash,
-                transaction_index: Some(receipt.tx_index.into()),
-                block_hash:        receipt.block_hash,
-                log_index:         receipt.log_index.into(),
-                // Todo: FIXME
-                removed:           false,
-            });
         }
-        web3_receipt
     }
 }
 
