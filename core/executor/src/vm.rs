@@ -69,7 +69,7 @@ impl EvmExecutor {
         };
 
         let remain_gas = executor.gas();
-        let gas_used = executor.used_gas();
+        let gas_used = executor.used_gas() + tx.transaction.unsigned.base_gas();
         let (values, logs) = executor.into_state().deconstruct();
         let code_address = if tx.transaction.unsigned.action() == &TransactionAction::Create
             && exit_reason.is_succeed()

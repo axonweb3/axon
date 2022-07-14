@@ -1,6 +1,6 @@
 #![allow(clippy::mutable_key_type)]
 
-use std::{collections::HashMap, panic::PanicInfo, sync::Arc, time::Duration};
+use std::{collections::HashMap, panic::PanicInfo, str::FromStr, sync::Arc, time::Duration};
 
 use backtrace::Backtrace;
 #[cfg(all(
@@ -55,7 +55,6 @@ use core_network::{
 use core_rpc_client::RpcClient;
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use core_tx_assembler::{IndexerAdapter, TxAssemblerImpl};
-use protocol::codec::{hex_decode, ProtocolCodec};
 use protocol::lazy::{CHAIN_ID, CURRENT_STATE_ROOT};
 #[cfg(unix)]
 use protocol::tokio::signal::unix as os_impl;
@@ -65,6 +64,10 @@ use protocol::traits::{
 };
 use protocol::types::{
     Account, Address, MerkleRoot, Proposal, RichBlock, Validator, H256, NIL_DATA, RLP_NULL,
+};
+use protocol::{
+    codec::{hex_decode, ProtocolCodec},
+    types::H160,
 };
 use protocol::{tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
@@ -147,6 +150,9 @@ impl Axon {
             code_hash:    NIL_DATA,
         }
         .encode()?;
+
+        let genesis_sender = H160::from_str("8ab0cf264df99d83525e9e11c7e4db01558ae1b1").unwrap();
+        mpt.insert(genesis_sender.as_bytes(), &distribute_account)?;
 
         let mut builder =
             MnemonicBuilder::<English>::default().phrase(self.config.accounts.mnemonic.as_str());
