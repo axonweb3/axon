@@ -527,10 +527,10 @@
   resolved "https://registry.yarnpkg.com/@noble/secp256k1/-/secp256k1-1.6.1.tgz#6e58c353bda64f9f1ec6d4067af127e6528d5be6"
   integrity sha512-htMgIaLATi5B4nQc6Y/0UF8hCpdGSsIQEptVpOBFfb75rC7K9tp9+rGogAXb/vWPwtzoBP2i8Ur/0PAieDI1vQ==
 
-"@nomiclabs/hardhat-ethers@^2.0.6":
-  version "2.0.6"
-  resolved "https://registry.yarnpkg.com/@nomiclabs/hardhat-ethers/-/hardhat-ethers-2.0.6.tgz#1c695263d5b46a375dcda48c248c4fba9dfe2fc2"
-  integrity sha512-q2Cjp20IB48rEn2NPjR1qxsIQBvFVYW9rFRCFq+bC4RUrn1Ljz3g4wM8uSlgIBZYBi2JMXxmOzFqHraczxq4Ng==
+"@nomiclabs/hardhat-ethers@^2.1.0":
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/@nomiclabs/hardhat-ethers/-/hardhat-ethers-2.1.0.tgz#9b7dc94d669ad9dc286b94f6f2f1513118c7027b"
+  integrity sha512-vlW90etB3675QWG7tMrHaDoTa7ymMB7irM4DAQ98g8zJoe9YqEggeDnbO6v5b+BLth/ty4vN6Ko/kaqRN1krHw==
 
 "@nomiclabs/hardhat-waffle@^2.0.2":
   version "2.0.3"
