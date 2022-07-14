@@ -409,8 +409,8 @@ where
     /// this function verify all info in header except proof and roots
     #[trace_span(kind = "consensus.adapter")]
     async fn verify_block_header(&self, ctx: Context, proposal: &Proposal) -> ProtocolResult<()> {
-        let previous_block_header = self
-            .get_block_header_by_number(ctx.clone(), proposal.number - 1)
+        let previous_block = self
+            .get_block_by_number(ctx.clone(), proposal.number - 1)
             .await
             .map_err(|e| {
                 log::error!(
@@ -420,7 +420,7 @@ where
                 e
             })?;
 
-        let previous_block_hash = previous_block_header.hash();
+        let previous_block_hash = previous_block.hash();
 
         if previous_block_hash != proposal.prev_hash {
             log::error!(

@@ -39,15 +39,15 @@ impl PrecompileContract for EcRecover {
         };
 
         if let Ok(s) = Secp256k1RecoverableSignature::try_from(sig.as_slice()) {
-            if let Ok(p) = secp256k1_recover(&s.to_bytes(), &input[0..32]) {
-                let r = Hasher::digest(&p.serialize_uncompressed());
-                let mut recover = vec![0u8; 12];
-                recover.append(&mut r.as_bytes().to_vec());
+            if let Ok(p) = secp256k1_recover(&input[0..32], &s.to_bytes()) {
+                let r = Hasher::digest(&p.serialize_uncompressed()[1..65]);
+                let mut recover = [0u8; 32];
+                recover[12..].copy_from_slice(&r.as_bytes()[12..]);
 
                 return Ok(PrecompileOutput {
                     exit_status: ExitSucceed::Returned,
                     cost:        gas,
-                    output:      recover,
+                    output:      recover.to_vec(),
                     logs:        vec![],
                 });
             }

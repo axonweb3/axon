@@ -5,7 +5,7 @@ pub use block::*;
 pub use bytes::{Buf, BufMut, Bytes, BytesMut};
 pub use ckb_client::*;
 pub use crosschain::*;
-pub use evm::{backend::*, ExitRevert, ExitSucceed};
+pub use evm::{backend::*, ExitError, ExitRevert, ExitSucceed};
 pub use executor::{
     AccessList, AccessListItem, Account, Config, ExecResp, ExecutorContext, ExitReason, TxResp,
 };

@@ -1,11 +1,13 @@
-use evm::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadata};
+use std::collections::BTreeMap;
+
+use evm::executor::stack::{MemoryStackState, PrecompileFn, StackExecutor, StackSubstateMetadata};
 
 use protocol::traits::{ApplyBackend, Backend};
 use protocol::types::{
     Config, Hasher, SignedTransaction, TransactionAction, TxResp, H160, H256, U256,
 };
 
-use crate::precompiles::build_precompile_set;
+use crate::adapter::TX_RESP;
 
 pub const METADATA_CONTRACT_ADDRESS: H160 = H160([
     161, 55, 99, 105, 25, 112, 217, 55, 61, 79, 171, 124, 195, 35, 215, 186, 6, 250, 153, 134,
@@ -28,15 +30,18 @@ impl EvmExecutor {
     pub fn inner_exec<B: Backend + ApplyBackend>(
         &self,
         backend: &mut B,
+        config: &Config,
+        precompiles: &BTreeMap<H160, PrecompileFn>,
         tx: SignedTransaction,
     ) -> TxResp {
         let old_nonce = backend.basic(tx.sender).nonce;
-        let config = Config::london();
         let metadata =
-            StackSubstateMetadata::new(tx.transaction.unsigned.gas_limit().as_u64(), &config);
-        let state = MemoryStackState::new(metadata, backend);
-        let precompiles = build_precompile_set();
-        let mut executor = StackExecutor::new_with_precompiles(state, &config, &precompiles);
+            StackSubstateMetadata::new(tx.transaction.unsigned.gas_limit().as_u64(), config);
+        let mut executor = StackExecutor::new_with_precompiles(
+            MemoryStackState::new(metadata, backend),
+            config,
+            precompiles,
+        );
         let (exit_reason, ret) = match tx.transaction.unsigned.action() {
             TransactionAction::Call(addr) => executor.transact_call(
                 tx.sender,
@@ -68,8 +73,6 @@ impl EvmExecutor {
         let remain_gas = executor.gas();
         let gas_used = executor.used_gas();
         let (values, logs) = executor.into_state().deconstruct();
-        backend.apply(values, logs, true);
-
         let code_address = if tx.transaction.unsigned.action() == &TransactionAction::Create
             && exit_reason.is_succeed()
         {
@@ -78,7 +81,7 @@ impl EvmExecutor {
             None
         };
 
-        TxResp {
+        let resp = TxResp {
             exit_reason,
             ret,
             remain_gas,
@@ -86,7 +89,16 @@ impl EvmExecutor {
             logs: vec![],
             code_address,
             removed: false,
+        };
+
+        {
+            let mut resp_reg = TX_RESP.lock().unwrap();
+            *resp_reg = resp.clone();
         }
+
+        backend.apply(values, logs, true);
+
+        resp
     }
 }
 
@@ -95,6 +107,17 @@ pub fn code_address(sender: &H160, nonce: &U256) -> H256 {
     stream.append(sender);
     stream.append(nonce);
     Hasher::digest(&stream.out())
+}
+
+pub fn decode_revert_msg(input: &[u8]) -> String {
+    String::from_iter(input.iter().filter_map(|i| {
+        let c = *i as char;
+        if c.is_control() {
+            None
+        } else {
+            Some(c)
+        }
+    }))
 }
 
 #[cfg(test)]

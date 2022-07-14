@@ -167,20 +167,26 @@ where
         _ctx: Context,
         from: Option<H160>,
         to: Option<H160>,
+        gas_price: Option<U256>,
         gas_limit: Option<U256>,
+        value: U256,
         data: Vec<u8>,
         state_root: Hash,
         mock_header: Proposal,
     ) -> ProtocolResult<TxResp> {
+        let mut exec_ctx = ExecutorContext::from(mock_header);
+        exec_ctx.origin = from.unwrap_or_default();
+        exec_ctx.gas_price = gas_price.unwrap_or_else(U256::one);
+
         let mut backend = AxonExecutorAdapter::from_root(
             state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
-            ExecutorContext::from(mock_header),
+            exec_ctx,
         )?;
         let gas_limit = gas_limit.map(|gas| gas.as_u64()).unwrap_or(u64::MAX);
 
-        Ok(AxonExecutor::default().call(&mut backend, gas_limit, from, to, data))
+        Ok(AxonExecutor::default().call(&mut backend, gas_limit, from, to, value, data))
     }
 
     async fn get_code_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>> {

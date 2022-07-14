@@ -289,7 +289,7 @@ pub struct Web3Block {
 impl From<Block> for Web3Block {
     fn from(b: Block) -> Self {
         Web3Block {
-            hash:              b.header_hash(),
+            hash:              b.hash(),
             number:            b.header.number.into(),
             author:            b.header.proposer,
             parent_hash:       b.header.prev_hash,

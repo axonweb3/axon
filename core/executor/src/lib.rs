@@ -13,7 +13,8 @@ mod vm;
 pub use crate::adapter::{AxonExecutorAdapter, MPTTrie, RocksTrieDB};
 pub use crate::system::NATIVE_TOKEN_ISSUE_ADDRESS;
 pub use crate::vm::{
-    code_address, CROSSCHAIN_CONTRACT_ADDRESS, METADATA_CONTRACT_ADDRESS, WCKB_CONTRACT_ADDRESS,
+    code_address, decode_revert_msg, CROSSCHAIN_CONTRACT_ADDRESS, METADATA_CONTRACT_ADDRESS,
+    WCKB_CONTRACT_ADDRESS,
 };
 
 use std::collections::BTreeMap;
@@ -29,7 +30,7 @@ use protocol::types::{
     NIL_DATA, RLP_NULL, U256,
 };
 
-use crate::{system::SystemExecutor, vm::EvmExecutor};
+use crate::{precompiles::build_precompile_set, system::SystemExecutor, vm::EvmExecutor};
 
 #[derive(Default)]
 pub struct AxonExecutor;
@@ -42,6 +43,7 @@ impl Executor for AxonExecutor {
         gas_limit: u64,
         from: Option<H160>,
         to: Option<H160>,
+        value: U256,
         data: Vec<u8>,
     ) -> TxResp {
         let config = Config::london();
@@ -53,19 +55,13 @@ impl Executor for AxonExecutor {
             executor.transact_call(
                 from.unwrap_or_default(),
                 *addr,
-                U256::default(),
+                value,
                 data,
                 gas_limit,
                 Vec::new(),
             )
         } else {
-            executor.transact_create(
-                from.unwrap_or_default(),
-                U256::default(),
-                data,
-                u64::MAX,
-                Vec::new(),
-            )
+            executor.transact_create(from.unwrap_or_default(), value, data, u64::MAX, Vec::new())
         };
 
         TxResp {
@@ -102,13 +98,17 @@ impl Executor for AxonExecutor {
 
         let evm_executor = EvmExecutor::new();
         let sys_executor = SystemExecutor::new();
+        let precompiles = build_precompile_set();
+        let config = Config::london();
 
         for tx in txs.into_iter() {
             backend.set_gas_price(tx.transaction.unsigned.gas_price());
+            backend.set_origin(tx.sender);
+
             let mut r = if is_call_system_script(tx.transaction.unsigned.action()) {
                 sys_executor.inner_exec(backend, tx)
             } else {
-                evm_executor.inner_exec(backend, tx)
+                evm_executor.inner_exec(backend, &config, &precompiles, tx)
             };
 
             r.logs = backend.get_logs();

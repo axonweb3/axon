@@ -23,6 +23,20 @@ pub struct TxResp {
     pub removed:      bool,
 }
 
+impl Default for TxResp {
+    fn default() -> Self {
+        TxResp {
+            exit_reason:  ExitReason::Succeed(ExitSucceed::Stopped),
+            gas_used:     u64::default(),
+            remain_gas:   u64::default(),
+            removed:      false,
+            ret:          vec![],
+            logs:         vec![],
+            code_address: None,
+        }
+    }
+}
+
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct ExecutorContext {
     pub block_number:           U256,

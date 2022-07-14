@@ -589,7 +589,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
     ) -> ProtocolResult<()> {
         let block = Block::new(proposal, resp.clone());
         let block_number = block.header.number;
-        let block_hash = block.header_hash();
+        let block_hash = block.hash();
         let is_change_metadata = self.contains_change_metadata(&txs);
         let next_block_number = block_number + 1;
 

@@ -264,7 +264,7 @@ where
 
         let addr = &tx.sender;
         if let Some(res) = self.addr_nonce.get(addr) {
-            if res.value() >= tx.transaction.unsigned.nonce() {
+            if tx.transaction.unsigned.nonce() < res.value() {
                 return Err(MemPoolError::InvalidNonce {
                     current:  res.value().as_u64(),
                     tx_nonce: tx.transaction.unsigned.nonce().as_u64(),
@@ -285,7 +285,7 @@ where
         let account = AxonExecutor::default().get_account(&backend, addr);
         self.addr_nonce.insert(*addr, account.nonce);
 
-        if &account.nonce >= tx.transaction.unsigned.nonce() {
+        if &account.nonce > tx.transaction.unsigned.nonce() {
             return Err(MemPoolError::InvalidNonce {
                 current:  account.nonce.as_u64(),
                 tx_nonce: tx.transaction.unsigned.nonce().as_u64(),

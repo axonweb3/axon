@@ -267,27 +267,27 @@ where
         let (start, time) = self.blocks_hub.get_mut(id).unwrap();
         let latest = self
             .adapter
-            .get_block_header_by_number(Context::new(), None)
+            .get_block_by_number(Context::new(), None)
             .await
             .unwrap()
             .unwrap();
 
-        let mut block_hashes = Vec::with_capacity((latest.number - *start) as usize);
+        let mut block_hashes = Vec::with_capacity((latest.header.number - *start) as usize);
 
-        for number in *start + 1..latest.number {
-            let header = self
+        for number in *start + 1..latest.header.number {
+            let block = self
                 .adapter
-                .get_block_header_by_number(Context::new(), Some(number))
+                .get_block_by_number(Context::new(), Some(number))
                 .await
                 .unwrap()
                 .unwrap();
 
-            block_hashes.push(header.hash());
+            block_hashes.push(block.hash());
         }
 
         block_hashes.push(latest.hash());
 
-        *start = latest.number;
+        *start = latest.header.number;
         *time = Instant::now();
 
         block_hashes

@@ -123,8 +123,9 @@ impl Block {
         }
     }
 
-    pub fn header_hash(&self) -> Hash {
-        self.header.hash()
+    pub fn hash(&self) -> Hash {
+        let proposal = Proposal::from(self.clone());
+        Hasher::digest(proposal.encode().unwrap())
     }
 }
 
@@ -153,10 +154,6 @@ pub struct Header {
 }
 
 impl Header {
-    pub fn hash(&self) -> Hash {
-        Hasher::digest(self.encode().unwrap())
-    }
-
     pub fn size(&self) -> usize {
         self.encode().unwrap().len()
     }

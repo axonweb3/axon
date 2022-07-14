@@ -24,6 +24,8 @@ pub struct ConfigApi {
     pub enable_dump_profile:    Option<bool>,
     #[serde(default)]
     pub client_version:         String,
+    #[serde(default = "default_gas_cap")]
+    pub gas_cap:                u64,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -282,4 +284,8 @@ impl Config {
         path_state.push("consensus_wal");
         path_state
     }
+}
+
+fn default_gas_cap() -> u64 {
+    25_000_000
 }

@@ -1,4 +1,5 @@
 mod crosschain_types;
+mod error;
 mod filter;
 mod r#impl;
 mod web3_types;
@@ -108,9 +109,9 @@ pub trait AxonJsonRpc {
     #[method(name = "eth_feeHistory")]
     async fn fee_history(
         &self,
-        block_count: u64,
+        block_count: U256,
         newest_block: BlockId,
-        reward_percentiles: Option<Vec<u64>>,
+        reward_percentiles: Option<Vec<f64>>,
     ) -> RpcResult<Web3FeeHistory>;
 
     #[method(name = "web3_clientVersion")]
@@ -180,6 +181,7 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
         Arc::clone(&adapter),
         &config.rpc.client_version,
         config.data_path.clone(),
+        config.rpc.gas_cap,
     )
     .into_rpc();
     rpc.merge(filter).unwrap();
@@ -187,6 +189,7 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
     if let Some(addr) = config.rpc.http_listening_address {
         let server = HttpServerBuilder::new()
             .max_request_body_size(config.rpc.max_payload_size as u32)
+            .max_response_body_size(config.rpc.max_payload_size as u32)
             .build(addr)
             .await
             .map_err(|e| APIError::HttpServer(e.to_string()))?;
@@ -200,6 +203,7 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
 
     if let Some(addr) = config.rpc.ws_listening_address {
         let server = WsServerBuilder::new()
+            .max_request_body_size(config.rpc.max_payload_size as u32)
             .max_request_body_size(config.rpc.max_payload_size as u32)
             .max_connections(config.rpc.maxconn as u64)
             .set_id_provider(HexIdProvider::default())

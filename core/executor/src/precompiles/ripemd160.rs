@@ -27,13 +27,15 @@ impl PrecompileContract for Ripemd160 {
             }
         }
 
+        let mut ret = [0u8; 32];
         let mut hasher = ripemd::Ripemd160::default();
         hasher.update(input);
+        ret[12..].copy_from_slice(&hasher.finalize());
 
         Ok(PrecompileOutput {
             exit_status: ExitSucceed::Returned,
             cost:        gas,
-            output:      hasher.finalize().to_vec(),
+            output:      ret.to_vec(),
             logs:        vec![],
         })
     }

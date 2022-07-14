@@ -502,6 +502,11 @@
         "internalType": "struct DataType.AxonToCKBRecord[]",
         "name": "",
         "type": "tuple[]"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "",
+        "type": "bytes32[]"
       }
     ],
     "stateMutability": "view",

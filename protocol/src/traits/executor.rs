@@ -6,6 +6,8 @@ use crate::types::{
 };
 
 pub trait ExecutorAdapter {
+    fn set_origin(&mut self, origin: H160);
+
     fn set_gas_price(&mut self, gas_price: U256);
 
     fn get_logs(&mut self) -> Vec<Log>;
@@ -24,6 +26,7 @@ pub trait Executor: Send + Sync {
         gas_limit: u64,
         from: Option<H160>,
         to: Option<H160>,
+        value: U256,
         data: Vec<u8>,
     ) -> TxResp;
 

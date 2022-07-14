@@ -126,7 +126,7 @@ impl PendingQueue {
     pub fn try_search_package_list(&mut self) -> Vec<TxPtr> {
         let mut res = Vec::new();
         let mut current = self.pop_tip_nonce;
-        for (k, v) in self.queue.range((Excluded(current), Unbounded)) {
+        for (k, v) in self.queue.range((Included(current), Unbounded)) {
             if k == &(current + 1) {
                 current = current + 1;
                 if v.is_package() {
@@ -149,7 +149,7 @@ impl PendingQueue {
     }
 
     pub fn set_drop_by_nonce_tip(&mut self, nonce: U256) {
-        for (_, v) in self.queue.range((Included(0.into()), Included(nonce))) {
+        for (_, v) in self.queue.range((Included(0.into()), Excluded(nonce))) {
             v.set_dropped();
         }
     }

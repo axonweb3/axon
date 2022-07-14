@@ -4,15 +4,20 @@ mod trie_db;
 pub use trie::MPTTrie;
 pub use trie_db::RocksTrieDB;
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use evm::backend::{Apply, Basic};
 
 use protocol::traits::{ApplyBackend, Backend, Context, ExecutorAdapter, Storage};
 use protocol::types::{
-    Account, Bytes, ExecutorContext, Hasher, Log, MerkleRoot, H160, H256, NIL_DATA, RLP_NULL, U256,
+    Account, Bytes, ExecutorContext, Hasher, Log, MerkleRoot, TxResp, H160, H256, NIL_DATA,
+    RLP_NULL, U256,
 };
 use protocol::{codec::ProtocolCodec, ProtocolResult};
+
+lazy_static::lazy_static! {
+    pub static ref TX_RESP: Mutex<TxResp> = Mutex::new(TxResp::default());
+}
 
 macro_rules! blocking_async {
     ($self_: ident, $adapter: ident, $method: ident$ (, $args: expr)*) => {{
@@ -39,6 +44,10 @@ where
 {
     fn get_ctx(&self) -> ExecutorContext {
         self.exec_ctx.clone()
+    }
+
+    fn set_origin(&mut self, origin: H160) {
+        self.exec_ctx.origin = origin;
     }
 
     fn set_gas_price(&mut self, gas_price: U256) {
@@ -188,6 +197,33 @@ where
         I: IntoIterator<Item = (H256, H256)>,
         L: IntoIterator<Item = Log>,
     {
+        let origin = self.origin();
+        let resp = { TX_RESP.lock().unwrap().clone() };
+        if !resp.exit_reason.is_succeed() {
+            let mut account = match self.trie.get(origin.as_bytes()) {
+                Ok(Some(raw)) => Account::decode(raw).unwrap(),
+                _ => Account {
+                    nonce:        U256::zero(),
+                    balance:      U256::zero(),
+                    storage_root: RLP_NULL,
+                    code_hash:    NIL_DATA,
+                },
+            };
+
+            account.nonce += U256::one();
+            let gas_cost = self
+                .gas_price()
+                .checked_mul(resp.gas_used.into())
+                .unwrap_or_else(U256::max_value);
+            account.balance = account.balance.saturating_sub(gas_cost);
+
+            self.trie
+                .insert(origin.as_bytes(), account.encode().unwrap().as_ref())
+                .unwrap();
+
+            return;
+        }
+
         for apply in values.into_iter() {
             match apply {
                 Apply::Modify {

@@ -9,7 +9,7 @@ use core_consensus::SYNC_STATUS;
 use protocol::traits::{APIAdapter, Context};
 use protocol::types::{
     Block, BlockNumber, Bytes, Hash, Hasher, Header, Hex, Receipt, SignedTransaction, TxResp,
-    UnverifiedTransaction, H160, H256, H64, U256,
+    UnverifiedTransaction, H160, H256, H64, MIN_TRANSACTION_GAS_LIMIT, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, lazy::CHAIN_ID, ProtocolResult};
 
@@ -17,7 +17,9 @@ use crate::jsonrpc::web3_types::{
     BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter,
     Web3Log, Web3Receipt, Web3SyncStatus, Web3Transaction,
 };
-use crate::jsonrpc::{crosschain_types::CrossChainTransaction, AxonJsonRpcServer, RpcResult};
+use crate::jsonrpc::{
+    crosschain_types::CrossChainTransaction, error::RpcError, AxonJsonRpcServer, RpcResult,
+};
 use crate::APIError;
 
 #[allow(dead_code)]
@@ -26,15 +28,17 @@ pub struct JsonRpcImpl<Adapter> {
     version: String,
     pprof:   Arc<AtomicBool>,
     path:    PathBuf,
+    gas_cap: U256,
 }
 
 impl<Adapter: APIAdapter> JsonRpcImpl<Adapter> {
-    pub fn new(adapter: Arc<Adapter>, version: &str, path: PathBuf) -> Self {
+    pub fn new(adapter: Arc<Adapter>, version: &str, path: PathBuf, gas_cap: u64) -> Self {
         Self {
             adapter,
             version: version.to_string(),
             pprof: Arc::new(AtomicBool::default()),
             path: path.join("api"),
+            gas_cap: gas_cap.into(),
         }
     }
 
@@ -61,7 +65,9 @@ impl<Adapter: APIAdapter> JsonRpcImpl<Adapter> {
                 Context::new(),
                 req.from,
                 req.to,
+                req.gas_price,
                 req.gas,
+                req.value.unwrap_or_default(),
                 data.to_vec(),
                 mock_header.state_root,
                 mock_header.into(),
@@ -76,6 +82,31 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
     async fn send_raw_transaction(&self, tx: Hex) -> RpcResult<H256> {
         let utx = UnverifiedTransaction::decode(&tx.as_bytes())
             .map_err(|e| Error::Custom(e.to_string()))?;
+
+        if utx.unsigned.gas_price() == U256::zero() {
+            return Err(Error::Custom(
+                "The transaction gas price is zero".to_string(),
+            ));
+        }
+
+        if *utx.unsigned.gas_limit() < MIN_TRANSACTION_GAS_LIMIT.into() {
+            return Err(Error::Custom(
+                "The transaction gas limit less than 21000".to_string(),
+            ));
+        }
+
+        if utx.unsigned.gas_limit() > &self.gas_cap {
+            return Err(Error::Custom(
+                "The transaction gas limit is too large".to_string(),
+            ));
+        }
+
+        if utx.unsigned.gas_limit() == &U256::zero() {
+            return Err(Error::Custom(
+                "The transaction gas limit is zero".to_string(),
+            ));
+        }
+
         utx.check_hash().map_err(|e| Error::Custom(e.to_string()))?;
 
         let stx = SignedTransaction::try_from(utx).map_err(|e| Error::Custom(e.to_string()))?;
@@ -132,7 +163,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             Some(b) => {
                 let capacity = b.tx_hashes.len();
                 let block_number = b.header.number;
-                let block_hash = b.header_hash();
+                let block_hash = b.hash();
                 let mut ret = Web3Block::from(b);
                 if show_rich_tx {
                     let mut txs = Vec::with_capacity(capacity);
@@ -177,7 +208,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             Some(b) => {
                 let capacity = b.tx_hashes.len();
                 let block_number = b.header.number;
-                let block_hash = b.header_hash();
+                let block_hash = b.hash();
                 let mut ret = Web3Block::from(b);
                 if show_rich_tx {
                     let mut txs = Vec::with_capacity(capacity);
@@ -212,11 +243,12 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         address: H160,
         number: Option<BlockId>,
     ) -> RpcResult<U256> {
-        self.adapter
+        Ok(self
+            .adapter
             .get_account(Context::new(), address, number.unwrap_or_default().into())
             .await
-            .map(|account| account.nonce + U256::one())
-            .map_err(|e| Error::Custom(e.to_string()))
+            .map(|account| account.nonce)
+            .unwrap_or_default())
     }
 
     #[metrics_rpc("eth_blockNumber")]
@@ -250,6 +282,14 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
 
     #[metrics_rpc("eth_call")]
     async fn call(&self, req: Web3CallRequest, number: Option<BlockId>) -> RpcResult<Hex> {
+        if req.gas_price.unwrap_or_default() > U256::max_value() {
+            return Err(Error::Custom("The gas price is too large".to_string()));
+        }
+
+        if req.gas.unwrap_or_default() > U256::max_value() {
+            return Err(Error::Custom("The gas limit is too large".to_string()));
+        }
+
         let data_bytes = req
             .data
             .as_ref()
@@ -259,8 +299,13 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             .call_evm(req, data_bytes, number.unwrap_or_default().into())
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
-        let call_hex_result = Hex::encode(resp.ret);
-        Ok(call_hex_result)
+
+        if resp.exit_reason.is_succeed() {
+            let call_hex_result = Hex::encode(resp.ret);
+            return Ok(call_hex_result);
+        }
+
+        Err(RpcError::VM(resp).into())
     }
 
     #[metrics_rpc("eth_estimateGas")]
@@ -291,7 +336,11 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
-        Ok(resp.gas_used.into())
+        if resp.exit_reason.is_succeed() {
+            return Ok(resp.gas_used.into());
+        }
+
+        Err(RpcError::VM(resp).into())
     }
 
     #[metrics_rpc("eth_getCode")]
@@ -550,9 +599,9 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
     #[metrics_rpc("eth_feeHistory")]
     async fn fee_history(
         &self,
-        _block_count: u64,
+        _block_count: U256,
         _newest_block: BlockId,
-        _reward_percentiles: Option<Vec<u64>>,
+        _reward_percentiles: Option<Vec<f64>>,
     ) -> RpcResult<Web3FeeHistory> {
         Ok(Web3FeeHistory {
             oldest_block:     U256::from(0),
@@ -671,7 +720,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             .adapter
             .get_storage_at(Context::new(), address, position, block.header.state_root)
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .unwrap_or_else(|_| H256::default().as_bytes().to_vec().into());
 
         Ok(Hex::encode(&value))
     }
