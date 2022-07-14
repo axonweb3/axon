@@ -17,8 +17,6 @@ pub use crate::vm::{
     WCKB_CONTRACT_ADDRESS,
 };
 
-use std::collections::BTreeMap;
-
 use evm::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadata};
 use evm::CreateScheme;
 
@@ -54,8 +52,15 @@ impl Executor for AxonExecutor {
         let config = Config::london();
         let metadata = StackSubstateMetadata::new(gas_limit, &config);
         let state = MemoryStackState::new(metadata, backend);
-        let precompiles = BTreeMap::new();
+        let precompiles = build_precompile_set();
         let mut executor = StackExecutor::new_with_precompiles(state, &config, &precompiles);
+
+        let base_gas = if to.is_some() {
+            GAS_CALL_TRANSACTION + data_gas_cost(&data)
+        } else {
+            GAS_CREATE_TRANSACTION + data_gas_cost(&data)
+        };
+
         let (exit, res) = if let Some(addr) = &to {
             executor.transact_call(
                 from.unwrap_or_default(),
@@ -73,7 +78,7 @@ impl Executor for AxonExecutor {
             exit_reason:  exit,
             ret:          res,
             remain_gas:   executor.gas(),
-            gas_used:     executor.used_gas(),
+            gas_used:     executor.used_gas() + base_gas,
             logs:         vec![],
             code_address: if to.is_none() {
                 Some(
@@ -184,14 +189,20 @@ pub fn is_crosschain_transaction(action: &TransactionAction) -> bool {
 }
 
 fn pre_gas_limit(tx: &UnsignedTransaction) -> u64 {
+    let mut res = match tx.action() {
+        TransactionAction::Call(_) => GAS_CALL_TRANSACTION,
+        TransactionAction::Create => GAS_CREATE_TRANSACTION,
+    };
+
+    res += data_gas_cost(tx.data());
+
+    res.saturating_sub(tx.gas_limit().as_u64())
+}
+
+fn data_gas_cost(data: &[u8]) -> u64 {
     let mut ret = 0u64;
 
-    match tx.action() {
-        TransactionAction::Call(_) => ret += GAS_CALL_TRANSACTION,
-        TransactionAction::Create => ret += GAS_CREATE_TRANSACTION,
-    }
-
-    tx.data().iter().for_each(|b| {
+    data.iter().for_each(|b| {
         if b == &0u8 {
             ret += GAS_PER_ZERO_BYTE
         } else {
@@ -199,5 +210,5 @@ fn pre_gas_limit(tx: &UnsignedTransaction) -> u64 {
         }
     });
 
-    tx.gas_limit().as_u64().saturating_sub(ret)
+    ret
 }
