@@ -129,8 +129,7 @@ impl Executor for AxonExecutor {
                 backend.save_account(&sender, &account);
 
                 // Execute transaction
-                let res =
-                    evm_executor.inner_exec(backend, &config, gas_limit, &precompiles, tx);
+                let res = evm_executor.inner_exec(backend, &config, gas_limit, &precompiles, tx);
 
                 // Add remain gas
                 let mut account = backend.get_account(&sender);
