@@ -100,13 +100,13 @@ pub struct JsonRpcFilter {
 impl AxonFilterServer for JsonRpcFilter {
     async fn new_filter(&self, filter: RawLoggerFilter) -> RpcResult<U256> {
         if let Some(BlockId::Pending) = filter.from_block {
-            return Err(Error::Custom(format!(
-                "Invalid from_block and to_block union"
-            )));
+            return Err(Error::Custom(
+                "Invalid from_block and to_block union".to_string(),
+            ));
         }
         match filter.to_block {
             Some(BlockId::Earliest) | Some(BlockId::Num(0)) => {
-                return Err(Error::Custom(format!("Invalid to_block")))
+                return Err(Error::Custom("Invalid to_block".to_string()))
             }
             _ => (),
         }

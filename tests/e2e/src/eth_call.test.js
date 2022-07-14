@@ -97,10 +97,7 @@ describe("eth_call", () => {
     await param5.type("0x50");
     await param6.type("0x06fdde03");
     await param7.type("latest");
-    await goto.check(
-      page,
-      "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000025454000000000000000000000000000000000000000000000000000000000000",
-    );
+    await goto.check(page, "-32603");
   }, 100000);
 
   /**
@@ -129,7 +126,7 @@ describe("eth_call", () => {
     await param5.type("0x0");
     await param6.type("0x06fdde03");
     await param7.type("latest");
-    await goto.check(page, "0x");
+    await goto.check(page, "-32603");
   }, 100000);
 
   /**
@@ -419,7 +416,7 @@ describe("eth_call", () => {
     await param5.type("0x0");
     await param6.type("0x06fdde03");
     await param7.type("latest");
-    await goto.check(page, "0x");
+    await goto.check(page, "-32603");
   }, 100000);
   /**
    * param1: from is none
