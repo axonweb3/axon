@@ -293,10 +293,15 @@ where
             .into());
         }
 
+        let expect_cost = tx
+            .transaction
+            .unsigned
+            .gas_price()
+            .checked_mul(*tx.transaction.unsigned.gas_limit())
+            .unwrap_or_else(U256::max_value);
+
         if account.balance
-            < tx.transaction
-                .unsigned
-                .gas_limit()
+            < expect_cost
                 .checked_add(*tx.transaction.unsigned.value())
                 .unwrap_or_else(U256::max_value)
         {

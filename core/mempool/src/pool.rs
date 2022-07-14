@@ -315,7 +315,7 @@ impl BuiltInContractTxBucket {
     }
 
     pub fn insert(&self, stx: SignedTransaction) -> bool {
-        let data = stx.transaction.unsigned.data();
+        let data: Bytes = stx.transaction.unsigned.data().to_vec().into();
         self.hash_data_map
             .insert(stx.transaction.hash, data.clone());
         self.tx_buckets
