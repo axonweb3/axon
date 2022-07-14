@@ -53,7 +53,7 @@ impl Executor for AxonExecutor {
         let base_gas = if to.is_some() {
             GAS_CALL_TRANSACTION + data_gas_cost(&data)
         } else {
-            GAS_CREATE_TRANSACTION + data_gas_cost(&data)
+            GAS_CREATE_TRANSACTION + GAS_CALL_TRANSACTION + data_gas_cost(&data)
         };
 
         let (exit, res) = if let Some(addr) = &to {
