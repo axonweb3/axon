@@ -163,7 +163,7 @@ fn test_simplestorage() {
     let r = executor.inner_exec(&mut backend, &config, &precompiles, tx);
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Stopped));
     assert!(r.ret.is_empty());
-    assert_eq!(r.remain_gas, 68719455532);
+    assert_eq!(r.remain_gas, 68719433227);
 
     // let's call SimpleStorage.get() by exec
     let tx = gen_tx(
@@ -173,12 +173,12 @@ fn test_simplestorage() {
         hex_decode("6d4ce63c").unwrap(),
     );
     let r = executor.inner_exec(&mut backend, &config, &precompiles, tx);
-    assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Stopped));
+    assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Returned));
     // assert_eq!(r.ret, vec![
     //     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     // 0, 0, 0, 0, 0, 0,     0, 42
     // ]);
-    assert_eq!(r.remain_gas, 68719455672);
+    assert_eq!(r.remain_gas, 68719453348);
 
     // let's call SimpleStorage.get() by call
     let executor = AxonExecutor::default();
@@ -190,7 +190,7 @@ fn test_simplestorage() {
         U256::default(),
         hex_decode("6d4ce63c").unwrap(),
     );
-    assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Stopped));
+    assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Returned));
     // assert_eq!(r.ret, vec![
     //     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     // 0, 0, 0, 0, 0, 0, 0,     0, 42

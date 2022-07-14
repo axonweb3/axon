@@ -77,6 +77,7 @@ impl EvmDebugger {
         let mut backend = self.backend(number);
         let evm = AxonExecutor::default();
         let res = evm.exec(&mut backend, txs);
+        println!("{:?}", res);
         self.state_root = res.state_root;
         res
     }

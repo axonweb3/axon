@@ -63,6 +63,8 @@ async fn test_cross_from_ckb() {
     let (_, stx) = build_axon_txs(ckb_txs, debugger.nonce(address), &priv_key);
     let resp = debugger.exec(1, vec![stx]);
 
+    println!("{:?}", resp);
+
     let logs: Vec<abi::CrossFromCKBFilter> = decode_logs(&[resp.tx_resp[0]
         .logs
         .last()

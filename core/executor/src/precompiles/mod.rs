@@ -113,22 +113,3 @@ pub(crate) fn read_fr(input: &[u8], start: usize) -> Result<Fr, PrecompileFailur
 
     Fr::from_slice(&input[start..(start + 32)]).map_err(|_| err!(_, "Invalid field element"))
 }
-
-#[cfg(test)]
-pub(crate) fn mock_ctx() -> Context {
-    Context {
-        address:        Default::default(),
-        caller:         Default::default(),
-        apparent_value: Default::default(),
-    }
-}
-
-#[macro_export]
-macro_rules! precompile_test {
-    ($impl_: ident, $input: expr, $output: expr, $cost: expr) => {{
-        let input = protocol::codec::hex_decode($input).unwrap();
-        let res = $impl_::exec_fn(&input, None, &$crate::precompiles::mock_ctx(), false).unwrap();
-        assert_eq!(protocol::codec::hex_encode(&res.output), $output);
-        assert_eq!(res.cost, $cost);
-    }};
-}

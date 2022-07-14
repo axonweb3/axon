@@ -45,19 +45,3 @@ impl PrecompileContract for Ripemd160 {
         (data_word_size * 120) as u64 + Self::MIN_GAS
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::precompile_test;
-
-    #[test]
-    fn test_ripemd160() {
-        precompile_test!(
-            Ripemd160,
-            "ff",
-            "0000000000000000000000002c0c45d3ecab80fe060e5f1d7057cd2f8de5e557",
-            720
-        );
-    }
-}
