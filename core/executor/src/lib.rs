@@ -66,7 +66,7 @@ impl Executor for AxonExecutor {
                 Vec::new(),
             )
         } else {
-            executor.transact_create(from.unwrap_or_default(), value, data, u64::MAX, Vec::new())
+            executor.transact_create(from.unwrap_or_default(), value, data, gas_limit, Vec::new())
         };
 
         TxResp {

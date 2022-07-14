@@ -4,7 +4,8 @@ use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie};
 use protocol::traits::{APIAdapter, Context, Executor, ExecutorAdapter, MemPool, Network, Storage};
 use protocol::types::{
     Account, BigEndianHash, Block, BlockNumber, Bytes, ExecutorContext, Hash, HashWithDirection,
-    Header, Proposal, Receipt, SignedTransaction, TxResp, H160, NIL_DATA, RLP_NULL, U256,
+    Header, Proposal, Receipt, SignedTransaction, TxResp, H160, MAX_BLOCK_GAS_LIMIT, NIL_DATA,
+    RLP_NULL, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
@@ -184,7 +185,9 @@ where
             Arc::clone(&self.storage),
             exec_ctx,
         )?;
-        let gas_limit = gas_limit.map(|gas| gas.as_u64()).unwrap_or(u64::MAX);
+        let gas_limit = gas_limit
+            .map(|gas| gas.as_u64())
+            .unwrap_or(MAX_BLOCK_GAS_LIMIT);
 
         Ok(AxonExecutor::default().call(&mut backend, gas_limit, from, to, value, data))
     }
