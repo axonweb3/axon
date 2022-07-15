@@ -129,8 +129,6 @@ impl PriorityPool {
 
         if self.tx_map.insert(ptr.hash(), Arc::clone(&ptr)).is_some() {
             self.stock_len.fetch_sub(1, Ordering::AcqRel);
-        } else if check_nonce.is_zero() {
-            self.real_queue.lock().push(ptr);
         } else {
             let _ = self.co_queue.push((ptr, check_nonce));
         }

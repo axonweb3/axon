@@ -193,7 +193,7 @@ async fn test_nonce_insert() {
 
     let priv_key = Secp256k1RecoverablePrivateKey::generate(&mut OsRng);
     let pub_key = priv_key.pub_key();
-    let txs: Vec<SignedTransaction> = (1..6)
+    let txs: Vec<SignedTransaction> = (0..5)
         .map(|i| mock_signed_tx(&priv_key, &pub_key, 0, i as u64, true))
         .collect();
 
@@ -214,17 +214,17 @@ async fn test_nonce_insert() {
 
     let pool = mempool.get_tx_cache();
 
-    pool.insert(txs[2].clone(), false, 3.into()).unwrap();
+    pool.insert(txs[2].clone(), false, 2.into()).unwrap();
 
     assert_eq!(1, pool.len());
     assert_eq!(0, pool.real_queue_len());
 
-    pool.insert(txs[1].clone(), false, 2.into()).unwrap();
+    pool.insert(txs[1].clone(), false, 1.into()).unwrap();
 
     assert_eq!(2, pool.len());
     assert_eq!(0, pool.real_queue_len());
 
-    pool.insert(txs[0].clone(), false, 1.into()).unwrap();
+    pool.insert(txs[0].clone(), false, 0.into()).unwrap();
 
     assert_eq!(3, pool.len());
     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
@@ -242,8 +242,8 @@ async fn test_nonce_insert() {
 
     pool.flush(&list.hashes, 1);
     assert_eq!(1, pool.real_queue_len());
-    // here db nonce = 2, so nonce diff = 2
-    pool.insert(txs[3].clone(), false, 2.into()).unwrap();
+    // here db nonce = 1, so nonce diff = 1
+    pool.insert(txs[3].clone(), false, 1.into()).unwrap();
     assert_eq!(2, pool.len());
     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
     assert_eq!(2, pool.real_queue_len());
@@ -261,12 +261,12 @@ async fn test_nonce_insert() {
     pool.flush(&list.hashes, 2);
     assert_eq!(0, pool.real_queue_len());
     // here db nonce = 4, so nonce diff = 1
-    pool.insert(txs[4].clone(), false, 1.into()).unwrap();
+    pool.insert(txs[4].clone(), false, 0.into()).unwrap();
     assert_eq!(1, pool.len());
     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
     assert_eq!(1, pool.real_queue_len());
     // replace with high price
-    pool.insert(replace_tx.clone(), false, 1.into()).unwrap();
+    pool.insert(replace_tx.clone(), false, 0.into()).unwrap();
     assert_eq!(2, pool.len());
     tokio::time::sleep(std::time::Duration::from_secs(1)).await;
     assert_eq!(2, pool.real_queue_len());
