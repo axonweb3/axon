@@ -23,11 +23,7 @@ impl From<RpcError> for Error {
 
 pub fn vm_err(resp: TxResp) -> Error {
     let data = match resp.exit_reason {
-        ExitReason::Revert(_) => format!(
-            "0x{}, {}",
-            hex_encode(&resp.ret),
-            decode_revert_msg(&resp.ret)
-        ),
+        ExitReason::Revert(_) => format!("0x{}", hex_encode(&resp.ret),),
         ExitReason::Error(err) => format!("{:?}", err),
         ExitReason::Fatal(fatal) => format!("{:?}", fatal),
         _ => unreachable!(),
@@ -35,7 +31,7 @@ pub fn vm_err(resp: TxResp) -> Error {
 
     into_rpc_err(ErrorObject::owned(
         EXEC_ERROR,
-        "VM execution error.",
+        decode_revert_msg(&resp.ret),
         Some(data),
     ))
 }
