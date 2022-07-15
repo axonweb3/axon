@@ -17,8 +17,6 @@ pub use crate::vm::{
     WCKB_CONTRACT_ADDRESS,
 };
 
-use std::collections::BTreeMap;
-
 use evm::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadata};
 use evm::CreateScheme;
 
@@ -26,8 +24,8 @@ use common_merkle::Merkle;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ApplyBackend, Backend, Executor, ExecutorAdapter as Adapter};
 use protocol::types::{
-    Account, Config, ExecResp, Hasher, SignedTransaction, TransactionAction, TxResp, H160,
-    NIL_DATA, RLP_NULL, U256,
+    data_gas_cost, Account, Config, ExecResp, Hasher, SignedTransaction, TransactionAction, TxResp,
+    GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160, NIL_DATA, RLP_NULL, U256,
 };
 
 use crate::{precompiles::build_precompile_set, system::SystemExecutor, vm::EvmExecutor};
@@ -49,8 +47,15 @@ impl Executor for AxonExecutor {
         let config = Config::london();
         let metadata = StackSubstateMetadata::new(gas_limit, &config);
         let state = MemoryStackState::new(metadata, backend);
-        let precompiles = BTreeMap::new();
+        let precompiles = build_precompile_set();
         let mut executor = StackExecutor::new_with_precompiles(state, &config, &precompiles);
+
+        let base_gas = if to.is_some() {
+            GAS_CALL_TRANSACTION + data_gas_cost(&data)
+        } else {
+            GAS_CREATE_TRANSACTION + GAS_CALL_TRANSACTION + data_gas_cost(&data)
+        };
+
         let (exit, res) = if let Some(addr) = &to {
             executor.transact_call(
                 from.unwrap_or_default(),
@@ -61,14 +66,14 @@ impl Executor for AxonExecutor {
                 Vec::new(),
             )
         } else {
-            executor.transact_create(from.unwrap_or_default(), value, data, u64::MAX, Vec::new())
+            executor.transact_create(from.unwrap_or_default(), value, data, gas_limit, Vec::new())
         };
 
         TxResp {
             exit_reason:  exit,
             ret:          res,
             remain_gas:   executor.gas(),
-            gas_used:     executor.used_gas(),
+            gas_used:     executor.used_gas() + base_gas,
             logs:         vec![],
             code_address: if to.is_none() {
                 Some(
@@ -102,13 +107,39 @@ impl Executor for AxonExecutor {
         let config = Config::london();
 
         for tx in txs.into_iter() {
-            backend.set_gas_price(tx.transaction.unsigned.gas_price());
+            let tx_gas_price = tx.transaction.unsigned.gas_price();
+            backend.set_gas_price(tx_gas_price);
             backend.set_origin(tx.sender);
 
             let mut r = if is_call_system_script(tx.transaction.unsigned.action()) {
                 sys_executor.inner_exec(backend, tx)
             } else {
-                evm_executor.inner_exec(backend, &config, &precompiles, tx)
+                // Deduct pre-pay gas
+                let sender = tx.sender;
+                let tx_base_gas = tx.transaction.unsigned.base_gas();
+                let gas_limit = tx
+                    .transaction
+                    .unsigned
+                    .gas_limit()
+                    .as_u64()
+                    .saturating_sub(tx_base_gas);
+                let prepay_gas = tx_gas_price * tx.transaction.unsigned.gas_limit();
+                let mut account = backend.get_account(&sender);
+                account.balance = account.balance.saturating_sub(prepay_gas);
+                backend.save_account(&sender, &account);
+
+                // Execute transaction
+                let res = evm_executor.inner_exec(backend, &config, gas_limit, &precompiles, tx);
+
+                // Add remain gas
+                let mut account = backend.get_account(&sender);
+                let remain_gas = U256::from(res.remain_gas) * tx_gas_price;
+                account.balance = account
+                    .balance
+                    .checked_add(remain_gas)
+                    .unwrap_or_else(U256::max_value);
+                backend.save_account(&sender, &account);
+                res
             };
 
             r.logs = backend.get_logs();

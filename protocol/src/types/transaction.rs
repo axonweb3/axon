@@ -10,6 +10,10 @@ use common_crypto::secp256k1_recover;
 use crate::types::{Bytes, BytesMut, Hash, Hasher, Public, TypesError, H160, H256, H520, U256};
 use crate::ProtocolResult;
 
+pub const GAS_PER_ZERO_BYTE: u64 = 4;
+pub const GAS_PER_NONZERO_BYTE: u64 = 68;
+pub const GAS_CALL_TRANSACTION: u64 = 21_000;
+pub const GAS_CREATE_TRANSACTION: u64 = 32_000;
 pub const MAX_PRIORITY_FEE_PER_GAS: u64 = 1_337;
 pub const MIN_TRANSACTION_GAS_LIMIT: u64 = 21_000;
 
@@ -21,12 +25,39 @@ pub enum UnsignedTransaction {
 }
 
 impl UnsignedTransaction {
+    pub fn may_cost(&self) -> U256 {
+        if let Some(res) = self.gas_price().checked_mul(*self.gas_limit()) {
+            return res
+                .checked_add(*self.value())
+                .unwrap_or_else(U256::max_value);
+        }
+
+        U256::max_value()
+    }
+
+    pub fn base_gas(&self) -> u64 {
+        let base = match self.action() {
+            TransactionAction::Call(_) => GAS_CALL_TRANSACTION,
+            TransactionAction::Create => GAS_CREATE_TRANSACTION + GAS_CALL_TRANSACTION,
+        };
+
+        base + data_gas_cost(self.data())
+    }
+
     pub fn is_legacy(&self) -> bool {
         matches!(self, UnsignedTransaction::Legacy(_))
     }
 
     pub fn is_eip1559(&self) -> bool {
         matches!(self, UnsignedTransaction::Eip1559(_))
+    }
+
+    pub fn data(&self) -> &[u8] {
+        match self {
+            UnsignedTransaction::Legacy(tx) => tx.data.as_ref(),
+            UnsignedTransaction::Eip2930(tx) => tx.data.as_ref(),
+            UnsignedTransaction::Eip1559(tx) => tx.data.as_ref(),
+        }
     }
 
     pub fn set_action(&mut self, action: TransactionAction) {
@@ -91,14 +122,6 @@ impl UnsignedTransaction {
             UnsignedTransaction::Legacy(tx) => &tx.value,
             UnsignedTransaction::Eip2930(tx) => &tx.value,
             UnsignedTransaction::Eip1559(tx) => &tx.value,
-        }
-    }
-
-    pub fn data(&self) -> Bytes {
-        match self {
-            UnsignedTransaction::Legacy(tx) => tx.data.clone(),
-            UnsignedTransaction::Eip2930(tx) => tx.data.clone(),
-            UnsignedTransaction::Eip1559(tx) => tx.data.clone(),
         }
     }
 
@@ -416,4 +439,18 @@ pub fn recover_intact_pub_key(public: &Public) -> H520 {
     let mut inner = vec![4u8];
     inner.extend_from_slice(public.as_bytes());
     H520::from_slice(&inner[0..65])
+}
+
+pub fn data_gas_cost(data: &[u8]) -> u64 {
+    let mut ret = 0u64;
+
+    data.iter().for_each(|b| {
+        if b == &0u8 {
+            ret += GAS_PER_ZERO_BYTE
+        } else {
+            ret += GAS_PER_NONZERO_BYTE
+        }
+    });
+
+    ret
 }

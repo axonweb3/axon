@@ -7,8 +7,6 @@ use protocol::types::{
     Config, Hasher, SignedTransaction, TransactionAction, TxResp, H160, H256, U256,
 };
 
-use crate::adapter::TX_RESP;
-
 pub const METADATA_CONTRACT_ADDRESS: H160 = H160([
     161, 55, 99, 105, 25, 112, 217, 55, 61, 79, 171, 124, 195, 35, 215, 186, 6, 250, 153, 134,
 ]);
@@ -31,12 +29,12 @@ impl EvmExecutor {
         &self,
         backend: &mut B,
         config: &Config,
+        gas_limit: u64,
         precompiles: &BTreeMap<H160, PrecompileFn>,
         tx: SignedTransaction,
     ) -> TxResp {
         let old_nonce = backend.basic(tx.sender).nonce;
-        let metadata =
-            StackSubstateMetadata::new(tx.transaction.unsigned.gas_limit().as_u64(), config);
+        let metadata = StackSubstateMetadata::new(gas_limit, config);
         let mut executor = StackExecutor::new_with_precompiles(
             MemoryStackState::new(metadata, backend),
             config,
@@ -71,7 +69,7 @@ impl EvmExecutor {
         };
 
         let remain_gas = executor.gas();
-        let gas_used = executor.used_gas();
+        let gas_used = executor.used_gas() + tx.transaction.unsigned.base_gas();
         let (values, logs) = executor.into_state().deconstruct();
         let code_address = if tx.transaction.unsigned.action() == &TransactionAction::Create
             && exit_reason.is_succeed()
@@ -90,11 +88,6 @@ impl EvmExecutor {
             code_address,
             removed: false,
         };
-
-        {
-            let mut resp_reg = TX_RESP.lock().unwrap();
-            *resp_reg = resp.clone();
-        }
 
         backend.apply(values, logs, true);
 

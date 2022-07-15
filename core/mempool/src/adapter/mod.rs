@@ -293,13 +293,7 @@ where
             .into());
         }
 
-        if account.balance
-            < tx.transaction
-                .unsigned
-                .gas_limit()
-                .checked_add(*tx.transaction.unsigned.value())
-                .unwrap_or_else(U256::max_value)
-        {
+        if account.balance < tx.transaction.unsigned.may_cost() {
             return Err(MemPoolError::ExceedBalance {
                 tx_hash:         tx.transaction.hash,
                 account_balance: account.balance,

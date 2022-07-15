@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+mod create2;
 mod crosschain;
 mod uniswap2;
 
@@ -15,8 +16,8 @@ use protocol::codec::{hex_decode, ProtocolCodec};
 use protocol::traits::{Backend, Executor};
 use protocol::types::{
     Account, Eip1559Transaction, ExecResp, ExecutorContext, Hash, Hasher, RichBlock,
-    SignedTransaction, TxResp, UnsignedTransaction, UnverifiedTransaction, H160, H256, NIL_DATA,
-    RLP_NULL, U256,
+    SignedTransaction, TxResp, UnsignedTransaction, UnverifiedTransaction, H160, H256,
+    MAX_BLOCK_GAS_LIMIT, NIL_DATA, RLP_NULL, U256,
 };
 
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
@@ -77,7 +78,6 @@ impl EvmDebugger {
         let mut backend = self.backend(number);
         let evm = AxonExecutor::default();
         let res = evm.exec(&mut backend, txs);
-        println!("{:?}", res);
         self.state_root = res.state_root;
         res
     }
@@ -93,7 +93,7 @@ impl EvmDebugger {
     ) -> TxResp {
         let mut backend = self.backend(number);
         let evm = AxonExecutor::default();
-        evm.call(&mut backend, u64::MAX, from, to, value, data)
+        evm.call(&mut backend, MAX_BLOCK_GAS_LIMIT, from, to, value, data)
     }
 
     fn backend(&self, number: u64) -> AxonExecutorAdapter<ImplStorage<RocksAdapter>, RocksTrieDB> {
