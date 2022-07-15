@@ -108,7 +108,7 @@ impl Rpc for NetworkRpc {
         if let Some(state) = AxonTracer::span_state(&cx) {
             headers.set_trace_id(state.trace_id());
             headers.set_span_id(state.span_id());
-            log::info!("no trace id found for rpc {}", endpoint.full_url());
+            log::debug!("no trace id found for rpc {}", endpoint.full_url());
         }
         common_apm::metrics::network::on_network_message_sent(endpoint.full_url());
 
@@ -172,7 +172,7 @@ impl Rpc for NetworkRpc {
         if let Some(state) = AxonTracer::span_state(&cx) {
             headers.set_trace_id(state.trace_id());
             headers.set_span_id(state.span_id());
-            log::info!("no trace id found for rpc {}", endpoint.full_url());
+            log::debug!("no trace id found for rpc {}", endpoint.full_url());
         }
         common_apm::metrics::network::on_network_message_sent(endpoint.full_url());
 

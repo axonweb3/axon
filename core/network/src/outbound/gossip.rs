@@ -46,7 +46,7 @@ impl NetworkGossip {
         if let Some(state) = AxonTracer::span_state(&ctx) {
             headers.set_trace_id(state.trace_id());
             headers.set_span_id(state.span_id());
-            log::info!("no trace id found for gossip {}", endpoint.full_url());
+            log::debug!("no trace id found for gossip {}", endpoint.full_url());
         }
         let msg = NetworkMessage::new(endpoint, data, headers).encode()?;
 
