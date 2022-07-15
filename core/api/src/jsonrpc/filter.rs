@@ -70,7 +70,7 @@ pub struct RawLoggerFilter {
     pub to_block:   Option<BlockId>,
     #[serde(default)]
     pub address:    MultiType<H160>,
-    pub topics:     Option<Vec<Hash>>,
+    pub topics:     Option<Vec<MultiType<Hash>>>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -87,7 +87,13 @@ impl From<RawLoggerFilter> for LoggerFilter {
             from_block: src.from_block,
             to_block:   src.to_block,
             address:    src.address.into(),
-            topics:     src.topics,
+            topics:     src.topics.map(|s| {
+                s.into_iter()
+                    .take(4)
+                    .flat_map(Into::<Option<Vec<H256>>>::into)
+                    .flatten()
+                    .collect()
+            }),
         }
     }
 }
