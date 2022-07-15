@@ -116,29 +116,28 @@ impl Executor for AxonExecutor {
             } else {
                 // Deduct pre-pay gas
                 let sender = tx.sender;
-                let tx_base_gas = tx.transaction.unsigned.base_gas();
-                let gas_limit = tx
-                    .transaction
-                    .unsigned
-                    .gas_limit()
-                    .as_u64()
-                    .saturating_sub(tx_base_gas);
-                let prepay_gas = tx_gas_price * tx.transaction.unsigned.gas_limit();
+                // let tx_base_gas = tx.transaction.unsigned.base_gas();
+                let gas_limit = tx.transaction.unsigned.gas_limit();
+                // .saturating_sub(tx_base_gas);
+                let prepay_gas = tx_gas_price * gas_limit;
                 let mut account = backend.get_account(&sender);
                 account.balance = account.balance.saturating_sub(prepay_gas);
                 backend.save_account(&sender, &account);
 
                 // Execute transaction
-                let res = evm_executor.inner_exec(backend, &config, gas_limit, &precompiles, tx);
+                let res =
+                    evm_executor.inner_exec(backend, &config, gas_limit.as_u64(), &precompiles, tx);
 
                 // Add remain gas
-                let mut account = backend.get_account(&sender);
-                let remain_gas = U256::from(res.remain_gas) * tx_gas_price;
-                account.balance = account
-                    .balance
-                    .checked_add(remain_gas)
-                    .unwrap_or_else(U256::max_value);
-                backend.save_account(&sender, &account);
+                if res.remain_gas != 0 {
+                    let mut account = backend.get_account(&sender);
+                    let remain_gas = U256::from(res.remain_gas) * tx_gas_price;
+                    account.balance = account
+                        .balance
+                        .checked_add(remain_gas)
+                        .unwrap_or_else(U256::max_value);
+                    backend.save_account(&sender, &account);
+                }
                 res
             };
 
