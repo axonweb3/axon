@@ -6,16 +6,13 @@
     </div>
   </body>
   <script>
-    document
-      .getElementById("getFeeHistory")
-      .addEventListener(
-        "click",
-        () => {
-          ethereum
-            .request({ method: "eth_feeHistory", params: [1, "latest", []] })
-            .then((result) => {
-              document.getElementById("feeHistory").innerHTML = JSON.stringify(result);
-            });
+    document.getElementById("getFeeHistory").addEventListener("click", () => {
+      ethereum
+        .request({ method: "eth_feeHistory", params: ["0x1", "latest", []] })
+        .then((result) => {
+          document.getElementById("feeHistory").innerHTML =
+            JSON.stringify(result);
         });
+    });
   </script>
 </html>

@@ -64,6 +64,7 @@ pub enum FilterChanges {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct RawLoggerFilter {
     pub from_block: Option<BlockId>,
     pub to_block:   Option<BlockId>,
@@ -98,6 +99,17 @@ pub struct JsonRpcFilter {
 #[async_trait]
 impl AxonFilterServer for JsonRpcFilter {
     async fn new_filter(&self, filter: RawLoggerFilter) -> RpcResult<U256> {
+        if let Some(BlockId::Pending) = filter.from_block {
+            return Err(Error::Custom(
+                "Invalid from_block and to_block union".to_string(),
+            ));
+        }
+        match filter.to_block {
+            Some(BlockId::Earliest) | Some(BlockId::Num(0)) => {
+                return Err(Error::Custom("Invalid to_block".to_string()))
+            }
+            _ => (),
+        }
         let (tx, rx) = oneshot::channel();
 
         self.sender
@@ -216,8 +228,25 @@ where
 
     async fn handle(&mut self, cmd: Command) {
         match cmd {
-            Command::NewLogs((filter, sender)) => {
+            Command::NewLogs((mut filter, sender)) => {
                 self.id += 1;
+                let header = self
+                    .adapter
+                    .get_block_header_by_number(Context::new(), None)
+                    .await
+                    .unwrap()
+                    .unwrap();
+                let from = filter.from_block.clone().unwrap_or_default();
+
+                match from {
+                    BlockId::Num(n) => {
+                        if n < header.number {
+                            filter.from_block = Some(BlockId::Num(header.number));
+                        }
+                    }
+                    _ => filter.from_block = Some(BlockId::Num(header.number)),
+                }
+
                 self.logs_hub
                     .insert(self.id.into(), (filter, Instant::now()));
                 sender.send(self.id.into()).unwrap()
@@ -324,22 +353,23 @@ where
                     .as_ref()
                     .map(convert)
                     .unwrap_or(latest_number),
-                filter
-                    .to_block
-                    .as_ref()
-                    .map(convert)
-                    .unwrap_or(latest_number),
+                std::cmp::min(
+                    filter
+                        .to_block
+                        .as_ref()
+                        .map(convert)
+                        .unwrap_or(latest_number),
+                    latest_number,
+                ),
             )
         };
 
         if start > latest_number {
-            return Err(Error::Custom(format!("Invalid from_block {}", start)));
+            return Ok(Vec::new());
         }
 
         let extend_logs = |logs: &mut Vec<Web3Log>, receipts: Vec<Option<Receipt>>| {
-            let mut index = 0;
-            for receipt in receipts.into_iter().flatten() {
-                let log_len = receipt.logs.len();
+            for (index, receipt) in receipts.into_iter().flatten().enumerate() {
                 match filter.address {
                     Some(ref s) if s.contains(&receipt.sender) => {
                         from_receipt_to_web3_log(index, topics, &receipt, logs)
@@ -347,7 +377,6 @@ where
                     None => from_receipt_to_web3_log(index, topics, &receipt, logs),
                     _ => (),
                 }
-                index += log_len;
             }
         };
 

@@ -557,7 +557,10 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
 
                     (
                         filter.from_block.map(convert).unwrap_or(latest_number),
-                        filter.to_block.map(convert).unwrap_or(latest_number),
+                        std::cmp::min(
+                            filter.to_block.map(convert).unwrap_or(latest_number),
+                            latest_number,
+                        ),
                     )
                 };
 
@@ -882,8 +885,8 @@ pub fn from_receipt_to_web3_log(
     receipt: &Receipt,
     logs: &mut Vec<Web3Log>,
 ) {
-    for log in &receipt.logs {
-        for (idx, topic) in log.topics.iter().enumerate() {
+    for (log_idex, log) in receipt.logs.iter().enumerate() {
+        for topic in log.topics.iter() {
             if topics.is_empty() || topics.contains(topic) {
                 let web3_log = Web3Log {
                     address:           receipt.sender,
@@ -892,11 +895,12 @@ pub fn from_receipt_to_web3_log(
                     block_hash:        Some(receipt.block_hash),
                     block_number:      Some(receipt.block_number.into()),
                     transaction_hash:  Some(receipt.tx_hash),
-                    transaction_index: Some(receipt.tx_index.into()),
-                    log_index:         Some((index + idx).into()),
+                    transaction_index: Some(index.into()),
+                    log_index:         Some(log_idex.into()),
                     removed:           false,
                 };
                 logs.push(web3_log);
+                break;
             }
         }
     }

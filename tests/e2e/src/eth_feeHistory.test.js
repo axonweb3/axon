@@ -19,5 +19,5 @@ describe("eth_feeHistory", () => {
       oldestBlock: "0x0",
       reward: null,
     });
-  });
+  }, 100000);
 });

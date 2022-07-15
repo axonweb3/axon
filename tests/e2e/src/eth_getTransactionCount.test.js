@@ -33,13 +33,13 @@ describe("eth_getTransactionCount", () => {
     await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type(testDataInfo.contractAddress);
     await param2.type("latest");
-    await goto.check(page, "0x2");
+    await goto.check(page, "0x1");
   });
 
   /**
- * param1: the address is not in axon 0x9EeE8678045C389005EDe68D9A2a548f36342184
- * param2: real block number: latest
- */
+   * param1: the address is not in axon 0x9EeE8678045C389005EDe68D9A2a548f36342184
+   * param2: real block number: latest
+   */
   it("eth_getTransactionCount_3", async () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
@@ -47,13 +47,13 @@ describe("eth_getTransactionCount", () => {
     await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type("0x9EeE8678045C389005EDe68D9A2a548f36342184");
     await param2.type("latest");
-    await goto.check(page, "0x1");
+    await goto.check(page, "0x0");
   });
 
   /**
-* param1: real address
-* param2: the block number is not in axon
-*/
+   * param1: real address
+   * param2: the block number is not in axon
+   */
   it("eth_getTransactionCount_4", async () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
@@ -61,13 +61,13 @@ describe("eth_getTransactionCount", () => {
     await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type(testDataInfo.contractAddress);
     await param2.type("0xfffff");
-    await goto.check(page, "-32001");
+    await goto.check(page, "0x0");
   });
 
   /**
-  * param1: real address
-  * param2: set decimal data without 0x to block number param
-  */
+   * param1: real address
+   * param2: set decimal data without 0x to block number param
+   */
   it("eth_getTransactionCount_5", async () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
@@ -79,9 +79,9 @@ describe("eth_getTransactionCount", () => {
   });
 
   /**
-  * param1: illegal address
-  * param2: real address
-  */
+   * param1: illegal address
+   * param2: real address
+   */
   it("eth_getTransactionCount_6", async () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
@@ -93,10 +93,10 @@ describe("eth_getTransactionCount", () => {
   });
 
   /**
- * param1: real address
- * param2: real address
- * param3: more param
- */
+   * param1: real address
+   * param2: real address
+   * param3: more param
+   */
   it("eth_getTransactionCount_7", async () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
@@ -108,9 +108,9 @@ describe("eth_getTransactionCount", () => {
   });
 
   /**
-* param1: none
-* param2: none
-*/
+   * param1: none
+   * param2: none
+   */
   it("eth_getTransactionCount_8", async () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     await testType.type("0"); // 0: none params 1: common params to request 2: more params
@@ -118,8 +118,8 @@ describe("eth_getTransactionCount", () => {
   });
 
   /**
- * param1:real address
- */
+   * param1:real address
+   */
   it("eth_getTransactionCount_9", async () => {
     await goto.goto(page, pageName);
     const testType = await page.$(goto.pageIds.testTypeId);

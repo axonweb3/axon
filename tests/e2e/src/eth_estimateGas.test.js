@@ -411,7 +411,7 @@ describe("eth_estimateGas", () => {
     await param5.type("0x0");
     await param6.type("0x06fdde03");
     await param7.type("latest");
-    await goto.check(page, "0xffffffffffffffff");
+    await goto.check(page, "-32603");
   }, 100000);
   /**
    * param1: from is none
@@ -583,7 +583,7 @@ describe("eth_estimateGas", () => {
     await param5.type("0x0");
     await param6.type("0x06fdde03");
     await param7.type("latest");
-    await goto.check(page, "0x524e");
+    await goto.check(page, "-32603");
   }, 100000);
 
   /**
