@@ -96,7 +96,7 @@ fn test_ackermann31() {
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
         0, 13
     ]);
-    assert_eq!(r.remain_gas, 68719443577);
+    assert_eq!(r.remain_gas, 29966841);
 }
 
 #[test]
@@ -146,7 +146,7 @@ fn test_simplestorage() {
     let r = executor.inner_exec(&mut backend, &config, MAX_BLOCK_GAS_LIMIT, &precompiles, tx);
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Returned));
     assert!(r.ret.is_empty());
-    assert_eq!(r.remain_gas, 68719375495);
+    assert_eq!(r.remain_gas, 29898759);
 
     // Thr created contract's address is
     // 0xc15d2ba57d126e6603240e89437efd419ce329d2, you can get the address by
@@ -163,7 +163,7 @@ fn test_simplestorage() {
     let r = executor.inner_exec(&mut backend, &config, MAX_BLOCK_GAS_LIMIT, &precompiles, tx);
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Stopped));
     assert!(r.ret.is_empty());
-    assert_eq!(r.remain_gas, 68719433227);
+    assert_eq!(r.remain_gas, 29956491);
 
     // let's call SimpleStorage.get() by exec
     let tx = gen_tx(
@@ -178,7 +178,7 @@ fn test_simplestorage() {
     //     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     // 0, 0, 0, 0, 0, 0,     0, 42
     // ]);
-    assert_eq!(r.remain_gas, 68719453348);
+    assert_eq!(r.remain_gas, 29976612);
 
     // let's call SimpleStorage.get() by call
     let executor = AxonExecutor::default();
