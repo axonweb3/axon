@@ -131,21 +131,6 @@ contract CrossChain is Context {
         return _tokenConfigs[token].threshold <= amount;
     }
 
-    function removeLimitTx(DataType.AxonToCKBRecord memory record)
-        external
-        onlyVerifier
-    {
-        bytes32 hash_ = keccak256(abi.encode(record));
-        if (!_limitTxes.contains(hash_)) {
-            return;
-        }
-
-        _limitTxes.remove(hash_);
-        delete _limitRecordMap[hash_];
-
-        emit CrossLimitRecord(hash_, _limitTxes.values());
-    }
-
     function _addLimitTxes(DataType.AxonToCKBRecord memory record) private {
         record.limitSign = _limitSign.current();
         _limitSign.increment();
@@ -247,10 +232,31 @@ contract CrossChain is Context {
         return _wCKB;
     }
 
+    function approveLimitTx(DataType.AxonToCKBRecord memory record)
+        external
+        onlyVerifier
+    {
+        bytes32 hash_ = keccak256(abi.encode(record));
+
+        require(_limitTxes.contains(hash_), "CrossChain: limit tx not exists");
+
+        emit CrossToCKB(
+            record.to,
+            record.tokenAddress,
+            record.amount,
+            record.minWCKBAmount
+        );
+
+        _limitTxes.remove(hash_);
+        delete _limitRecordMap[hash_];
+
+        emit CrossLimitRecord(hash_, _limitTxes.values());
+    }
+
     function limitTxes()
         external
         view
-        returns (DataType.AxonToCKBRecord[] memory)
+        returns (DataType.AxonToCKBRecord[] memory, bytes32[] memory)
     {
         DataType.AxonToCKBRecord[]
             memory records = new DataType.AxonToCKBRecord[](
@@ -263,7 +269,7 @@ contract CrossChain is Context {
             records[i] = _limitRecordMap[hashes[i]];
         }
 
-        return records;
+        return (records, hashes);
     }
 
     function fee(address token, uint256 value) public view returns (uint256) {

@@ -7,13 +7,14 @@ const private_key = Buffer.from("37aa0f893d05914a4def0460c0a984d3611546cfb26924d
 
 async function export_grant_role() {
     const wckb = await ethers.getContractFactory("MirrorToken")
+    const crosschain = '0xf67bc4e50d1df92b0e4c61794a4517af6a995cb2';
     const tx = {
         "value": "0x0",
         "maxPriorityFeePerGas": "0x539",
         "maxFeePerGas": "0x539",
         "gasLimit": "0x1c9c380",
         "nonce": "0x5",
-        "data": wckb.interface.encodeFunctionData('grantRole', [ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MANAGER_ROLE')), '0xF67Bc4E50d1df92b0E4C61794A4517AF6a995CB2']),
+        "data": wckb.interface.encodeFunctionData('grantRole', [ethers.utils.keccak256(ethers.utils.toUtf8Bytes('MANAGER_ROLE')), crosschain]),
         "accessList": [],
         "chainId": 5,
         "type": 2
@@ -22,6 +23,7 @@ async function export_grant_role() {
 }
 // caution: this method only generates mock transaction with mismatched signature to deploy to Axon genesis block
 export_grant_role().then(signed_tx => {
+    const wckb = '0x4af5ec5e3d29d9ddd7f4bf91a022131c41b72352';
     const hex = (value, length) => {
         let hexed = value.toString("hex")
         while (length != null && hexed.length < length) {
@@ -37,7 +39,7 @@ export_grant_role().then(signed_tx => {
                 "gas_price": '0x0',//hex(signed_tx.maxFeePerGas),
                 "gas_limit": hex(signed_tx.gasLimit),
                 "action": {
-                    Call: '0x4af5ec5e3d29d9ddd7f4bf91a022131c41b72352',
+                    Call: wckb,
                 },
                 "value": hex(signed_tx.value),
                 "data": Array.from(signed_tx.data),
