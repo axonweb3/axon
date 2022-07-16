@@ -25,7 +25,6 @@ pub struct EvmExecutor;
 
 #[allow(dead_code)]
 impl EvmExecutor {
-    #[allow(dead_code)]
     pub fn inner_exec<B: Backend + ApplyBackend>(
         &self,
         backend: &mut B,
