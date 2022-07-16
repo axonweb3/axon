@@ -221,7 +221,7 @@ fn test_out_of_gas() {
 
     let vicinity = gen_vicinity();
     let mut backend = MemoryBackend::new(&vicinity, state);
-    let executor = EvmExecutor::new();
+    let executor = EvmExecutor::default();
 
     let tx = SignedTransaction {
         transaction: UnverifiedTransaction {
