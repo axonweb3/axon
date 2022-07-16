@@ -22,6 +22,8 @@ use crate::jsonrpc::{
 };
 use crate::APIError;
 
+const MAX_LOG_NUM: usize = 5120;
+
 #[allow(dead_code)]
 pub struct JsonRpcImpl<Adapter> {
     adapter: Arc<Adapter>,
@@ -445,19 +447,23 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             topics: &[H256],
             logs: &mut Vec<Web3Log>,
             address: Option<&Vec<H160>>,
+            early_return: &mut bool,
         ) -> RpcResult<()> {
-            let extend_logs = |logs: &mut Vec<Web3Log>, receipts: Vec<Option<Receipt>>| {
-                let mut index = 0;
-                for receipt in receipts.into_iter().flatten() {
-                    let log_len = receipt.logs.len();
+            let extend_logs = |logs: &mut Vec<Web3Log>,
+                               receipts: Vec<Option<Receipt>>,
+                               early_return: &mut bool| {
+                for (index, receipt) in receipts.into_iter().flatten().enumerate() {
                     match address {
-                        Some(s) if s.contains(&receipt.sender) => {
+                        Some(ref s) if s.contains(&receipt.sender) => {
                             from_receipt_to_web3_log(index, topics, &receipt, logs)
                         }
                         None => from_receipt_to_web3_log(index, topics, &receipt, logs),
                         _ => (),
                     }
-                    index += log_len;
+                    if logs.len() > MAX_LOG_NUM {
+                        early_return = true;
+                        return;
+                    }
                 }
             };
 
@@ -477,7 +483,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                                 )
                                 .await
                                 .map_err(|e| Error::Custom(e.to_string()))?;
-                            extend_logs(logs, receipts);
+                            extend_logs(logs, receipts, early_return);
                             Ok(())
                         }
                         None => Err(Error::Custom(format!(
@@ -502,7 +508,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                         .await
                         .map_err(|e| Error::Custom(e.to_string()))?;
 
-                    extend_logs(logs, receipts);
+                    extend_logs(logs, receipts, early_return);
                     Ok(())
                 }
                 BlockPosition::Block(block) => {
@@ -515,7 +521,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                         .await
                         .map_err(|e| Error::Custom(e.to_string()))?;
 
-                    extend_logs(logs, receipts);
+                    extend_logs(logs, receipts, early_return);
                     Ok(())
                 }
             }
@@ -523,6 +529,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
 
         let address_filter: Option<Vec<H160>> = filter.address.into();
         let mut all_logs = Vec::new();
+        let mut early_return = false;
         match filter.block_hash {
             Some(hash) => {
                 get_logs(
@@ -531,6 +538,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                     &topics,
                     &mut all_logs,
                     address_filter.as_ref(),
+                    &mut early_return,
                 )
                 .await?;
             }
@@ -575,8 +583,13 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                             &topics,
                             &mut all_logs,
                             address_filter.as_ref(),
+                            &mut early_return,
                         )
                         .await?;
+
+                        if early_return {
+                            return Ok(all_logs);
+                        }
                     }
                 }
 
@@ -587,6 +600,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                         &topics,
                         &mut all_logs,
                         address_filter.as_ref(),
+                        &mut early_return,
                     )
                     .await?;
                 }
