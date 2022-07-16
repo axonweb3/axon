@@ -907,6 +907,25 @@ pub fn from_receipt_to_web3_log(
     receipt: &Receipt,
     logs: &mut Vec<Web3Log>,
 ) {
+    macro_rules! contains_topic {
+        ($topics: expr, $log: expr) => {{
+            $topics.is_empty()
+                || contains_topic!($topics, 1, $log, 0)
+                || contains_topic!($topics, 2, $log, 0, 1)
+                || contains_topic!($topics, 3, $log, 0, 1, 2)
+                || contains_topic!($topics, 4, $log, 0, 1, 2, 3)
+        }};
+
+        ($topics: expr, $min_len: expr, $log: expr$ (, $offset: expr)*) => {{
+            $topics.len() == $min_len && $log.topics.len() >= $min_len
+            $( && $topics[$offset]
+                .as_ref()
+                .map(|i| i.contains(&None) || i.contains(&Some($log.topics[$offset])))
+                .unwrap_or(true)
+            )*
+        }};
+    }
+
     for (log_idex, log) in receipt.logs.iter().enumerate() {
         let web3_log = Web3Log {
             address:           receipt.sender,
@@ -919,74 +938,9 @@ pub fn from_receipt_to_web3_log(
             log_index:         Some(log_idex.into()),
             removed:           false,
         };
-        if topics.is_empty() {
-            logs.push(web3_log);
-        } else if topics.len() == 1 && !log.topics.is_empty() {
-            if topics[0]
-                .as_ref()
-                .map(|i| i.contains(&None) || i.contains(&Some(log.topics[0])))
-                .unwrap_or(true)
-            {
-                logs.push(web3_log);
-            }
-        } else if topics.len() == 2 && log.topics.len() >= 2 {
-            let topic1 = &topics[0];
-            let topic2 = &topics[1];
 
-            if (topic1
-                .as_ref()
-                .map(|i| i.contains(&None) || i.contains(&Some(log.topics[0])))
-                .unwrap_or(true))
-                && (topic2
-                    .as_ref()
-                    .map(|i| i.contains(&None) || i.contains(&Some(log.topics[1])))
-                    .unwrap_or(true))
-            {
-                logs.push(web3_log);
-            }
-        } else if topics.len() == 3 && log.topics.len() >= 3 {
-            let topic1 = &topics[0];
-            let topic2 = &topics[1];
-            let topic3 = &topics[2];
-            if (topic1
-                .as_ref()
-                .map(|i| i.contains(&None) || i.contains(&Some(log.topics[0])))
-                .unwrap_or(true))
-                && (topic2
-                    .as_ref()
-                    .map(|i| i.contains(&None) || i.contains(&Some(log.topics[1])))
-                    .unwrap_or(true))
-                && (topic3
-                    .as_ref()
-                    .map(|i| i.contains(&None) || i.contains(&Some(log.topics[2])))
-                    .unwrap_or(true))
-            {
-                logs.push(web3_log);
-            }
-        } else if topics.len() == 4 && log.topics.len() >= 4 {
-            let topic1 = &topics[0];
-            let topic2 = &topics[1];
-            let topic3 = &topics[2];
-            let topic4 = &topics[3];
-            if (topic1
-                .as_ref()
-                .map(|i| i.contains(&None) || i.contains(&Some(log.topics[0])))
-                .unwrap_or(true))
-                && (topic2
-                    .as_ref()
-                    .map(|i| i.contains(&None) || i.contains(&Some(log.topics[1])))
-                    .unwrap_or(true))
-                && (topic3
-                    .as_ref()
-                    .map(|i| i.contains(&None) || i.contains(&Some(log.topics[2])))
-                    .unwrap_or(true))
-                && (topic4
-                    .as_ref()
-                    .map(|i| i.contains(&None) || i.contains(&Some(log.topics[3])))
-                    .unwrap_or(true))
-            {
-                logs.push(web3_log);
-            }
+        if contains_topic!(topics, log) {
+            logs.push(web3_log);
         }
     }
 }

@@ -288,6 +288,7 @@ async fn test_uniswap2_add_liquidity() {
     );
 }
 
+#[ignore]
 #[tokio::test(flavor = "multi_thread")]
 async fn test_uniswap2_add_liquidity_eth() {
     let distribution_address =
