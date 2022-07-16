@@ -22,7 +22,7 @@ use crate::jsonrpc::{
 };
 use crate::APIError;
 
-const MAX_LOG_NUM: usize = 5120;
+pub(crate) const MAX_LOG_NUM: usize = 10000;
 
 #[allow(dead_code)]
 pub struct JsonRpcImpl<Adapter> {
@@ -432,7 +432,15 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
 
     #[metrics_rpc("eth_getLogs")]
     async fn get_logs(&self, filter: Web3Filter) -> RpcResult<Vec<Web3Log>> {
-        let topics = filter.topics.unwrap_or_default();
+        let topics: Vec<Option<Vec<Option<H256>>>> = filter
+            .topics
+            .map(|s| {
+                s.into_iter()
+                    .take(4)
+                    .map(Into::<Option<Vec<Option<H256>>>>::into)
+                    .collect()
+            })
+            .unwrap_or_default();
 
         #[allow(clippy::large_enum_variant)]
         enum BlockPosition {
@@ -444,7 +452,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         async fn get_logs<T: APIAdapter>(
             adapter: &T,
             position: BlockPosition,
-            topics: &[H256],
+            topics: &[Option<Vec<Option<H256>>>],
             logs: &mut Vec<Web3Log>,
             address: Option<&Vec<H160>>,
             early_return: &mut bool,
@@ -454,14 +462,18 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                                early_return: &mut bool| {
                 for (index, receipt) in receipts.into_iter().flatten().enumerate() {
                     match address {
-                        Some(ref s) if s.contains(&receipt.sender) => {
+                        Some(s)
+                            if s.contains(
+                                &receipt.code_address.map(Into::into).unwrap_or_default(),
+                            ) =>
+                        {
                             from_receipt_to_web3_log(index, topics, &receipt, logs)
                         }
                         None => from_receipt_to_web3_log(index, topics, &receipt, logs),
                         _ => (),
                     }
                     if logs.len() > MAX_LOG_NUM {
-                        early_return = true;
+                        *early_return = true;
                         return;
                     }
                 }
@@ -891,26 +903,89 @@ fn mock_header_by_call_req(latest_header: Header, call_req: &Web3CallRequest) ->
 
 pub fn from_receipt_to_web3_log(
     index: usize,
-    topics: &[H256],
+    topics: &[Option<Vec<Option<Hash>>>],
     receipt: &Receipt,
     logs: &mut Vec<Web3Log>,
 ) {
     for (log_idex, log) in receipt.logs.iter().enumerate() {
-        for topic in log.topics.iter() {
-            if topics.is_empty() || topics.contains(topic) {
-                let web3_log = Web3Log {
-                    address:           receipt.sender,
-                    topics:            log.topics.clone(),
-                    data:              Hex::encode(&log.data),
-                    block_hash:        Some(receipt.block_hash),
-                    block_number:      Some(receipt.block_number.into()),
-                    transaction_hash:  Some(receipt.tx_hash),
-                    transaction_index: Some(index.into()),
-                    log_index:         Some(log_idex.into()),
-                    removed:           false,
-                };
+        let web3_log = Web3Log {
+            address:           receipt.sender,
+            topics:            log.topics.clone(),
+            data:              Hex::encode(&log.data),
+            block_hash:        Some(receipt.block_hash),
+            block_number:      Some(receipt.block_number.into()),
+            transaction_hash:  Some(receipt.tx_hash),
+            transaction_index: Some(index.into()),
+            log_index:         Some(log_idex.into()),
+            removed:           false,
+        };
+        if topics.is_empty() {
+            logs.push(web3_log);
+        } else if topics.len() == 1 && !log.topics.is_empty() {
+            if topics[0]
+                .as_ref()
+                .map(|i| i.contains(&None) || i.contains(&Some(log.topics[0])))
+                .unwrap_or(true)
+            {
                 logs.push(web3_log);
-                break;
+            }
+        } else if topics.len() == 2 && log.topics.len() >= 2 {
+            let topic1 = &topics[0];
+            let topic2 = &topics[1];
+
+            if (topic1
+                .as_ref()
+                .map(|i| i.contains(&None) || i.contains(&Some(log.topics[0])))
+                .unwrap_or(true))
+                && (topic2
+                    .as_ref()
+                    .map(|i| i.contains(&None) || i.contains(&Some(log.topics[1])))
+                    .unwrap_or(true))
+            {
+                logs.push(web3_log);
+            }
+        } else if topics.len() == 3 && log.topics.len() >= 3 {
+            let topic1 = &topics[0];
+            let topic2 = &topics[1];
+            let topic3 = &topics[2];
+            if (topic1
+                .as_ref()
+                .map(|i| i.contains(&None) || i.contains(&Some(log.topics[0])))
+                .unwrap_or(true))
+                && (topic2
+                    .as_ref()
+                    .map(|i| i.contains(&None) || i.contains(&Some(log.topics[1])))
+                    .unwrap_or(true))
+                && (topic3
+                    .as_ref()
+                    .map(|i| i.contains(&None) || i.contains(&Some(log.topics[2])))
+                    .unwrap_or(true))
+            {
+                logs.push(web3_log);
+            }
+        } else if topics.len() == 4 && log.topics.len() >= 4 {
+            let topic1 = &topics[0];
+            let topic2 = &topics[1];
+            let topic3 = &topics[2];
+            let topic4 = &topics[3];
+            if (topic1
+                .as_ref()
+                .map(|i| i.contains(&None) || i.contains(&Some(log.topics[0])))
+                .unwrap_or(true))
+                && (topic2
+                    .as_ref()
+                    .map(|i| i.contains(&None) || i.contains(&Some(log.topics[1])))
+                    .unwrap_or(true))
+                && (topic3
+                    .as_ref()
+                    .map(|i| i.contains(&None) || i.contains(&Some(log.topics[2])))
+                    .unwrap_or(true))
+                && (topic4
+                    .as_ref()
+                    .map(|i| i.contains(&None) || i.contains(&Some(log.topics[3])))
+                    .unwrap_or(true))
+            {
+                logs.push(web3_log);
             }
         }
     }
