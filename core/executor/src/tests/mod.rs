@@ -7,7 +7,7 @@ use evm::backend::{MemoryAccount, MemoryBackend, MemoryVicinity};
 use evm::Config;
 
 use protocol::types::{
-    Bytes, Eip1559Transaction, ExitError, ExitReason, ExitSucceed, Public, SignatureComponents,
+    Bytes, Eip1559Transaction, ExitReason, ExitSucceed, Public, SignatureComponents,
     SignedTransaction, TransactionAction, UnsignedTransaction, UnverifiedTransaction, H160, H256,
     MAX_BLOCK_GAS_LIMIT, U256,
 };
