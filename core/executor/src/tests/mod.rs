@@ -13,7 +13,7 @@ use protocol::types::{
 };
 use protocol::{codec::hex_decode, traits::Executor};
 
-use crate::{precompiles::build_precompile_set, AxonExecutor, EvmExecutor};
+use crate::{precompiles::build_precompile_set, vm::EvmExecutor, AxonExecutor};
 
 fn gen_vicinity() -> MemoryVicinity {
     MemoryVicinity {

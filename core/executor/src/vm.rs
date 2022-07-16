@@ -18,9 +18,12 @@ pub const CROSSCHAIN_CONTRACT_ADDRESS: H160 = H160([
 ]);
 const RETURN_MESSAGE_PRUNE_PREFIX: usize = 4;
 
+// deprecated
+#[allow(dead_code)]
 #[derive(Default)]
 pub struct EvmExecutor;
 
+#[allow(dead_code)]
 impl EvmExecutor {
     pub fn new() -> Self {
         EvmExecutor::default()

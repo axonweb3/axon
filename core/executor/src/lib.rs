@@ -21,17 +21,105 @@ use evm::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadat
 use evm::CreateScheme;
 
 use common_merkle::Merkle;
+use evm::executor::stack::PrecompileFn;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ApplyBackend, Backend, Executor, ExecutorAdapter as Adapter};
 use protocol::types::{
     data_gas_cost, Account, Config, ExecResp, Hasher, SignedTransaction, TransactionAction, TxResp,
     GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160, NIL_DATA, RLP_NULL, U256,
 };
+use std::collections::BTreeMap;
 
-use crate::{precompiles::build_precompile_set, system::SystemExecutor, vm::EvmExecutor};
+use crate::{precompiles::build_precompile_set, system::SystemExecutor};
 
 #[derive(Default)]
 pub struct AxonExecutor;
+
+impl AxonExecutor {
+    fn exec_single<B: Backend + ApplyBackend + Adapter>(
+        backend: &mut B,
+        config: &Config,
+        precompiles: &BTreeMap<H160, PrecompileFn>,
+        tx: SignedTransaction,
+    ) -> TxResp {
+        let old_nonce = backend.basic(tx.sender).nonce;
+        let gas_limit = tx.transaction.unsigned.gas_limit();
+        let gas_price = tx.transaction.unsigned.gas_price();
+
+        backend.set_gas_price(gas_price);
+        backend.set_origin(tx.sender);
+
+        if is_call_system_script(tx.transaction.unsigned.action()) {
+            return SystemExecutor::new().inner_exec(backend, tx);
+        };
+
+        let mut account = backend.get_account(&tx.sender);
+        account.balance = account.balance.saturating_sub(gas_limit * gas_price);
+        backend.save_account(&tx.sender, &account);
+
+        let gas_limit = gas_limit.as_u64() - tx.transaction.unsigned.base_gas();
+        let gas_limit = gas_limit - data_gas_cost(tx.transaction.unsigned.data());
+
+        let access_list = tx
+            .transaction
+            .unsigned
+            .access_list()
+            .into_iter()
+            .map(|x| (x.address, x.storage_keys))
+            .collect();
+        let metadata = StackSubstateMetadata::new(gas_limit, config);
+        let mut executor = StackExecutor::new_with_precompiles(
+            MemoryStackState::new(metadata, backend),
+            config,
+            precompiles,
+        );
+        let (exit_reason, ret) = match tx.transaction.unsigned.action() {
+            TransactionAction::Call(addr) => executor.transact_call(
+                tx.sender,
+                *addr,
+                *tx.transaction.unsigned.value(),
+                tx.transaction.unsigned.data().to_vec(),
+                gas_limit,
+                access_list,
+            ),
+            TransactionAction::Create => executor.transact_create(
+                tx.sender,
+                *tx.transaction.unsigned.value(),
+                tx.transaction.unsigned.data().to_vec(),
+                gas_limit,
+                access_list,
+            ),
+        };
+
+        let remain_gas = executor.gas();
+        let mut account = backend.get_account(&tx.sender);
+        account.nonce = old_nonce + U256::one();
+        account.balance += U256::from(remain_gas) * gas_price;
+        if exit_reason.is_succeed() {
+            let (values, logs) = executor.into_state().deconstruct();
+            backend.apply(values, logs, true);
+        }
+        backend.save_account(&tx.sender, &account);
+
+        let code_address = if tx.transaction.unsigned.action() == &TransactionAction::Create
+            && exit_reason.is_succeed()
+        {
+            Some(code_address(&tx.sender, &old_nonce))
+        } else {
+            None
+        };
+
+        TxResp {
+            exit_reason,
+            ret,
+            remain_gas,
+            gas_used: tx.transaction.unsigned.gas_limit().as_u64() - remain_gas,
+            logs: backend.get_logs(),
+            code_address,
+            removed: false,
+        }
+    }
+}
 
 impl Executor for AxonExecutor {
     // Used for query data API, this function will not modify the world state.
@@ -101,12 +189,11 @@ impl Executor for AxonExecutor {
         let mut hashes = Vec::with_capacity(txs_len);
         let mut gas_use = 0u64;
 
-        let evm_executor = EvmExecutor::new();
-        let sys_executor = SystemExecutor::new();
         let precompiles = build_precompile_set();
         let config = Config::london();
 
         for tx in txs.into_iter() {
+
             let tx_gas_price = tx.transaction.unsigned.gas_price();
             backend.set_gas_price(tx_gas_price);
             backend.set_origin(tx.sender);
