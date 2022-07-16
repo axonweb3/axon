@@ -7,7 +7,7 @@ use evm::backend::{MemoryAccount, MemoryBackend, MemoryVicinity};
 use evm::Config;
 
 use protocol::types::{
-    Bytes, Eip1559Transaction, ExitReason, ExitSucceed, Public, SignatureComponents,
+    Bytes, Eip1559Transaction, ExitError, ExitReason, ExitSucceed, Public, SignatureComponents,
     SignedTransaction, TransactionAction, UnsignedTransaction, UnverifiedTransaction, H160, H256,
     MAX_BLOCK_GAS_LIMIT, U256,
 };
@@ -195,4 +195,65 @@ fn test_simplestorage() {
     //     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     // 0, 0, 0, 0, 0, 0, 0,     0, 42
     // ]);
+}
+
+#[test]
+fn test_out_of_gas() {
+    let to_address = H160::from_str("0x1000000000000000000000000000000000000000").unwrap();
+    let from_address = H160::from_str("0xf000000000000000000000000000000000000000").unwrap();
+
+    let mut state = BTreeMap::new();
+    state.insert(
+		to_address,
+		MemoryAccount {
+			nonce: U256::one(),
+			balance: U256::max_value(),
+			storage: BTreeMap::new(),
+			code: hex_decode("60e060020a6000350480632839e92814601e57806361047ff414603457005b602a6004356024356047565b8060005260206000f35b603d6004356099565b8060005260206000f35b600082600014605457605e565b8160010190506093565b81600014606957607b565b60756001840360016047565b90506093565b609060018403608c85600186036047565b6047565b90505b92915050565b6000816000148060a95750816001145b60b05760b7565b81905060cf565b60c1600283036099565b60cb600184036099565b0190505b91905056").unwrap(),
+		}
+	);
+    state.insert(from_address, MemoryAccount {
+        nonce:   U256::one(),
+        balance: U256::max_value(),
+        storage: BTreeMap::new(),
+        code:    Vec::new(),
+    });
+
+    let vicinity = gen_vicinity();
+    let mut backend = MemoryBackend::new(&vicinity, state);
+    let executor = EvmExecutor::new();
+
+    let tx = SignedTransaction {
+        transaction: UnverifiedTransaction {
+            unsigned:  UnsignedTransaction::Eip1559(Eip1559Transaction {
+                nonce:                    U256::default(),
+                max_priority_fee_per_gas: U256::default(),
+                gas_price:                U256::default(),
+                gas_limit:                U256::from(10),
+                action:                   TransactionAction::Call(to_address),
+                value:                    U256::zero(),
+                data:                     hex_decode("2839e92800000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000001").unwrap().into(),
+                access_list:              Vec::new(),
+            }),
+            signature: Some(SignatureComponents {
+                standard_v: 0,
+                r:          Bytes::default(),
+                s:          Bytes::default(),
+            }),
+            chain_id:  0u64,
+            hash:      H256::default(),
+        },
+        sender: from_address,
+        public: Some(Public::default()),
+    };
+
+    let config = Config::london();
+    let precompiles = build_precompile_set();
+    let r = executor.inner_exec(&mut backend, &config, 10, &precompiles, tx);
+
+    assert_eq!(r.exit_reason, ExitReason::Error(ExitError::OutOfGas));
+    assert_eq!(
+        backend.state().get(&from_address).unwrap().nonce,
+        U256::from(2)
+    );
 }
