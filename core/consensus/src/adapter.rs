@@ -15,11 +15,10 @@ use protocol::traits::{
     SynchronizationAdapter,
 };
 use protocol::types::{
-    BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Hasher, Header, Hex, Log,
-    MerkleRoot, Metadata, PackedTxHashes, Proof, Proposal, Receipt, SignedTransaction, Validator,
-    U256,
+    BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Header, Hex, Log, MerkleRoot,
+    Metadata, PackedTxHashes, Proof, Proposal, Receipt, SignedTransaction, Validator, U256,
 };
-use protocol::{async_trait, codec::ProtocolCodec, tokio::task, ProtocolResult};
+use protocol::{async_trait, tokio::task, ProtocolResult};
 
 use crate::consensus::gen_overlord_status;
 use crate::message::{
@@ -457,7 +456,7 @@ where
         }
 
         // Todo: impl From<&Block> for Proposal
-        let proposal_hash = Hasher::digest(Proposal::from(block.clone()).encode()?);
+        let proposal_hash = Proposal::from(block.clone()).hash();
 
         if proposal_hash != proof.block_hash {
             log::error!(

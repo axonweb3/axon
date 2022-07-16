@@ -193,7 +193,40 @@ impl Executor for AxonExecutor {
         let config = Config::london();
 
         for tx in txs.into_iter() {
-            let r = AxonExecutor::exec_single(backend, &config, &precompiles, tx);
+
+            let tx_gas_price = tx.transaction.unsigned.gas_price();
+            backend.set_gas_price(tx_gas_price);
+            backend.set_origin(tx.sender);
+
+            let mut r = if is_call_system_script(tx.transaction.unsigned.action()) {
+                sys_executor.inner_exec(backend, tx)
+            } else {
+                // Deduct pre-pay gas
+                let sender = tx.sender;
+                let gas_limit = tx.transaction.unsigned.gas_limit();
+                let prepay_gas = tx_gas_price * gas_limit;
+                let mut account = backend.get_account(&sender);
+                account.balance = account.balance.saturating_sub(prepay_gas);
+                backend.save_account(&sender, &account);
+
+                // Execute transaction
+                let res =
+                    evm_executor.inner_exec(backend, &config, gas_limit.as_u64(), &precompiles, tx);
+
+                // Add remain gas
+                if res.remain_gas != 0 {
+                    let mut account = backend.get_account(&sender);
+                    let remain_gas = U256::from(res.remain_gas) * tx_gas_price;
+                    account.balance = account
+                        .balance
+                        .checked_add(remain_gas)
+                        .unwrap_or_else(U256::max_value);
+                    backend.save_account(&sender, &account);
+                }
+                res
+            };
+
+            r.logs = backend.get_logs();
             gas_use += r.gas_used;
 
             hashes.push(Hasher::digest(&r.ret));

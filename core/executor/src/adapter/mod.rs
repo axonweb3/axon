@@ -10,9 +10,12 @@ use evm::backend::{Apply, Basic};
 
 use protocol::traits::{ApplyBackend, Backend, Context, ExecutorAdapter, Storage};
 use protocol::types::{
-    Account, Bytes, ExecutorContext, Hasher, Log, MerkleRoot, H160, H256, NIL_DATA, RLP_NULL, U256,
+    Account, Bytes, ExecutorContext, Hasher, Log, MerkleRoot, Proposal, H160, H256, NIL_DATA,
+    RLP_NULL, U256,
 };
 use protocol::{codec::ProtocolCodec, ProtocolResult};
+
+const GET_BLOCK_HASH_NUMBER_RANGE: u64 = 256;
 
 macro_rules! blocking_async {
     ($self_: ident, $adapter: ident, $method: ident$ (, $args: expr)*) => {{
@@ -100,8 +103,20 @@ where
         self.exec_ctx.block_number
     }
 
-    fn block_hash(&self, _number: U256) -> H256 {
-        self.exec_ctx.block_hash
+    fn block_hash(&self, number: U256) -> H256 {
+        let current_number = self.block_number();
+        if number >= current_number {
+            return H256::default();
+        }
+
+        if (current_number - number) > U256::from(GET_BLOCK_HASH_NUMBER_RANGE) {
+            return H256::default();
+        }
+
+        let number = number.as_u64();
+        let res = blocking_async!(self, storage, get_block, Context::new(), number);
+
+        res.map(|b| Proposal::from(b).hash()).unwrap_or_default()
     }
 
     fn block_coinbase(&self) -> H160 {
