@@ -22,10 +22,7 @@ const RETURN_MESSAGE_PRUNE_PREFIX: usize = 4;
 pub struct EvmExecutor;
 
 impl EvmExecutor {
-    pub fn new() -> Self {
-        EvmExecutor::default()
-    }
-
+    #[allow(dead_code)]
     pub fn inner_exec<B: Backend + ApplyBackend>(
         &self,
         backend: &mut B,
@@ -47,7 +44,7 @@ impl EvmExecutor {
                 *addr,
                 *tx.transaction.unsigned.value(),
                 tx.transaction.unsigned.data().to_vec(),
-                tx.transaction.unsigned.gas_limit().as_u64(),
+                gas_limit,
                 tx.transaction
                     .unsigned
                     .access_list()
@@ -59,7 +56,7 @@ impl EvmExecutor {
                 tx.sender,
                 *tx.transaction.unsigned.value(),
                 tx.transaction.unsigned.data().to_vec(),
-                tx.transaction.unsigned.gas_limit().as_u64(),
+                gas_limit,
                 tx.transaction
                     .unsigned
                     .access_list()
@@ -71,7 +68,6 @@ impl EvmExecutor {
 
         let remain_gas = executor.gas();
         let gas_used = executor.used_gas();
-        let (values, logs) = executor.into_state().deconstruct();
         let code_address = if tx.transaction.unsigned.action() == &TransactionAction::Create
             && exit_reason.is_succeed()
         {
@@ -90,7 +86,10 @@ impl EvmExecutor {
             removed: false,
         };
 
-        backend.apply(values, logs, true);
+        if resp.exit_reason.is_succeed() {
+            let (values, logs) = executor.into_state().deconstruct();
+            backend.apply(values, logs, true);
+        }
 
         resp
     }

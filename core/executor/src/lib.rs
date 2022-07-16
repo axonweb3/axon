@@ -17,7 +17,9 @@ pub use crate::vm::{
     WCKB_CONTRACT_ADDRESS,
 };
 
-use evm::executor::stack::{MemoryStackState, StackExecutor, StackSubstateMetadata};
+use std::collections::BTreeMap;
+
+use evm::executor::stack::{MemoryStackState, PrecompileFn, StackExecutor, StackSubstateMetadata};
 use evm::CreateScheme;
 
 use common_merkle::Merkle;
@@ -28,7 +30,7 @@ use protocol::types::{
     GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160, NIL_DATA, RLP_NULL, U256,
 };
 
-use crate::{precompiles::build_precompile_set, system::SystemExecutor, vm::EvmExecutor};
+use crate::{precompiles::build_precompile_set, system::SystemExecutor};
 
 #[derive(Default)]
 pub struct AxonExecutor;
@@ -101,42 +103,19 @@ impl Executor for AxonExecutor {
         let mut hashes = Vec::with_capacity(txs_len);
         let mut gas_use = 0u64;
 
-        let evm_executor = EvmExecutor::new();
+        // let evm_executor = EvmExecutor::new();
         let sys_executor = SystemExecutor::new();
         let precompiles = build_precompile_set();
         let config = Config::london();
 
         for tx in txs.into_iter() {
-            let tx_gas_price = tx.transaction.unsigned.gas_price();
-            backend.set_gas_price(tx_gas_price);
+            backend.set_gas_price(tx.transaction.unsigned.gas_price());
             backend.set_origin(tx.sender);
 
             let mut r = if is_call_system_script(tx.transaction.unsigned.action()) {
                 sys_executor.inner_exec(backend, tx)
             } else {
-                // Deduct pre-pay gas
-                let sender = tx.sender;
-                let gas_limit = tx.transaction.unsigned.gas_limit();
-                let prepay_gas = tx_gas_price * gas_limit;
-                let mut account = backend.get_account(&sender);
-                account.balance = account.balance.saturating_sub(prepay_gas);
-                backend.save_account(&sender, &account);
-
-                // Execute transaction
-                let res =
-                    evm_executor.inner_exec(backend, &config, gas_limit.as_u64(), &precompiles, tx);
-
-                // Add remain gas
-                if res.remain_gas != 0 {
-                    let mut account = backend.get_account(&sender);
-                    let remain_gas = U256::from(res.remain_gas) * tx_gas_price;
-                    account.balance = account
-                        .balance
-                        .checked_add(remain_gas)
-                        .unwrap_or_else(U256::max_value);
-                    backend.save_account(&sender, &account);
-                }
-                res
+                Self::evm_exec(backend, &config, &precompiles, tx)
             };
 
             r.logs = backend.get_logs();
@@ -145,6 +124,7 @@ impl Executor for AxonExecutor {
             hashes.push(Hasher::digest(&r.ret));
             res.push(r);
         }
+
         // commit changes by all txs included in this block only once
         let new_state_root = backend.commit();
 
@@ -167,6 +147,102 @@ impl Executor for AxonExecutor {
                 storage_root: RLP_NULL,
                 code_hash:    NIL_DATA,
             },
+        }
+    }
+}
+
+impl AxonExecutor {
+    pub fn evm_exec<B: Backend + ApplyBackend + Adapter>(
+        backend: &mut B,
+        config: &Config,
+        precompiles: &BTreeMap<H160, PrecompileFn>,
+        tx: SignedTransaction,
+    ) -> TxResp {
+        // Deduct pre-pay gas
+        let sender = tx.sender;
+        let tx_gas_price = backend.gas_price();
+        let gas_limit = tx.transaction.unsigned.gas_limit();
+        let prepay_gas = tx_gas_price * gas_limit;
+
+        let mut account = backend.get_account(&sender);
+        account.balance = account.balance.saturating_sub(prepay_gas);
+        backend.save_account(&sender, &account);
+
+        let old_nonce = backend.basic(tx.sender).nonce;
+
+        let metadata = StackSubstateMetadata::new(gas_limit.as_u64(), config);
+        let mut executor = StackExecutor::new_with_precompiles(
+            MemoryStackState::new(metadata, backend),
+            config,
+            precompiles,
+        );
+
+        let access_list = tx
+            .transaction
+            .unsigned
+            .access_list()
+            .into_iter()
+            .map(|x| (x.address, x.storage_keys))
+            .collect::<Vec<_>>();
+
+        let (exit_reason, ret) = match tx.transaction.unsigned.action() {
+            TransactionAction::Call(addr) => executor.transact_call(
+                tx.sender,
+                *addr,
+                *tx.transaction.unsigned.value(),
+                tx.transaction.unsigned.data().to_vec(),
+                gas_limit.as_u64(),
+                access_list,
+            ),
+            TransactionAction::Create => executor.transact_create(
+                tx.sender,
+                *tx.transaction.unsigned.value(),
+                tx.transaction.unsigned.data().to_vec(),
+                gas_limit.as_u64(),
+                access_list,
+            ),
+        };
+
+        let remain_gas = executor.gas();
+        let gas_used = executor.used_gas();
+
+        let code_address = if tx.transaction.unsigned.action() == &TransactionAction::Create
+            && exit_reason.is_succeed()
+        {
+            Some(code_address(&tx.sender, &old_nonce))
+        } else {
+            None
+        };
+
+        let mut account = backend.get_account(&tx.sender);
+        account.nonce = old_nonce + U256::one();
+
+        // Add remain gas
+        if remain_gas != 0 {
+            let remain_gas = U256::from(remain_gas)
+                .checked_mul(backend.gas_price())
+                .unwrap_or_else(U256::max_value);
+            account.balance = account
+                .balance
+                .checked_add(remain_gas)
+                .unwrap_or_else(U256::max_value);
+        }
+
+        if exit_reason.is_succeed() {
+            let (values, logs) = executor.into_state().deconstruct();
+            backend.apply(values, logs, true);
+        }
+
+        backend.save_account(&tx.sender, &account);
+
+        TxResp {
+            exit_reason,
+            ret,
+            remain_gas,
+            gas_used,
+            logs: vec![],
+            code_address,
+            removed: false,
         }
     }
 }
