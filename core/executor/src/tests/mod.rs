@@ -80,7 +80,7 @@ fn test_ackermann31() {
 
     let vicinity = gen_vicinity();
     let mut backend = MemoryBackend::new(&vicinity, state);
-    let executor = EvmExecutor::new();
+    let executor = EvmExecutor::default();
     let tx = gen_tx(
         H160::from_str("0xf000000000000000000000000000000000000000").unwrap(),
         H160::from_str("0x1000000000000000000000000000000000000000").unwrap(),
@@ -114,7 +114,7 @@ fn test_simplestorage() {
     let vicinity = gen_vicinity();
     let mut backend = MemoryBackend::new(&vicinity, state);
 
-    let executor = EvmExecutor::new();
+    let executor = EvmExecutor::default();
     let config = Config::london();
     let precompiles = build_precompile_set();
 
