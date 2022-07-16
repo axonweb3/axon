@@ -172,6 +172,7 @@ fn get_pair_address(token_a: H160, token_b: H160, factory: H160) -> H160 {
     H160::from_slice(&hash.0[12..])
 }
 
+#[ignore]
 #[tokio::test(flavor = "multi_thread")]
 async fn test_uniswap2_add_liquidity() {
     let distribution_address =
