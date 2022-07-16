@@ -235,7 +235,6 @@ impl PriorityPool {
         let mut remove_tip_nonce: HashMap<H160, U256> = HashMap::new();
         for hash in hashes {
             if let Some((_, ptr)) = self.tx_map.remove(hash) {
-                ptr.set_dropped();
                 match remove_tip_nonce.entry(ptr.sender()) {
                     Entry::Occupied(mut v) => {
                         if v.get() < ptr.nonce() {

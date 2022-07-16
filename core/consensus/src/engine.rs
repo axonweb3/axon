@@ -16,7 +16,6 @@ use common_apm_derive::trace_span;
 use common_crypto::BlsPublicKey;
 use common_logger::{json, log};
 use common_merkle::Merkle;
-use protocol::codec::ProtocolCodec;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
     Block, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, Hex, Log, MerkleRoot, Metadata, Proof,
@@ -105,7 +104,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             .into());
         }
 
-        let hash = Hasher::digest(proposal.encode()?);
+        let hash = proposal.hash();
         let mut set = self.exemption_hash.write();
         set.insert(hash);
 

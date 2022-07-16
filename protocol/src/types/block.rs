@@ -74,6 +74,12 @@ impl From<Header> for Proposal {
     }
 }
 
+impl Proposal {
+    pub fn hash(&self) -> Hash {
+        Hasher::digest(self.encode().unwrap())
+    }
+}
+
 pub struct PackedTxHashes {
     pub hashes:                   Vec<Hash>,
     pub call_system_script_count: u32,
@@ -124,8 +130,7 @@ impl Block {
     }
 
     pub fn hash(&self) -> Hash {
-        let proposal = Proposal::from(self.clone());
-        Hasher::digest(proposal.encode().unwrap())
+        Proposal::from(self.clone()).hash()
     }
 }
 
