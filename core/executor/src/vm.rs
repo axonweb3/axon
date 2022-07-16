@@ -16,6 +16,7 @@ pub const WCKB_CONTRACT_ADDRESS: H160 = H160([
 pub const CROSSCHAIN_CONTRACT_ADDRESS: H160 = H160([
     246, 123, 196, 229, 13, 29, 249, 43, 14, 76, 97, 121, 74, 69, 23, 175, 106, 153, 92, 178,
 ]);
+const RETURN_MESSAGE_PRUNE_PREFIX: usize = 4;
 
 #[derive(Default)]
 pub struct EvmExecutor;
@@ -114,7 +115,7 @@ pub fn decode_revert_msg(input: &[u8]) -> String {
                     Some(c)
                 }
             })
-            .skip(5),
+            .skip(RETURN_MESSAGE_PRUNE_PREFIX),
     )
 }
 
