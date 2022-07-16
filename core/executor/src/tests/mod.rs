@@ -7,7 +7,7 @@ use evm::backend::{MemoryAccount, MemoryBackend, MemoryVicinity};
 use evm::Config;
 
 use protocol::types::{
-    Bytes, Eip1559Transaction, ExitReason, ExitSucceed, Public, SignatureComponents,
+    Bytes, Eip1559Transaction, ExitError, ExitReason, ExitSucceed, Public, SignatureComponents,
     SignedTransaction, TransactionAction, UnsignedTransaction, UnverifiedTransaction, H160, H256,
     MAX_BLOCK_GAS_LIMIT, U256,
 };
@@ -195,4 +195,37 @@ fn test_simplestorage() {
     //     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     // 0, 0, 0, 0, 0, 0, 0,     0, 42
     // ]);
+}
+
+#[test]
+fn test_out_of_balance() {
+    let to_address = H160::from_str("0x1000000000000000000000000000000000000000").unwrap();
+    let from_address = H160::from_str("0xf000000000000000000000000000000000000000").unwrap();
+
+    let mut state = BTreeMap::new();
+    state.insert(to_address, MemoryAccount {
+        nonce:   U256::one(),
+        balance: U256::zero(),
+        storage: BTreeMap::new(),
+        code:    vec![],
+    });
+    state.insert(from_address, MemoryAccount {
+        nonce:   U256::one(),
+        balance: U256::one(),
+        storage: BTreeMap::new(),
+        code:    Vec::new(),
+    });
+
+    let vicinity = gen_vicinity();
+    let mut backend = MemoryBackend::new(&vicinity, state);
+    let executor = EvmExecutor::new();
+    let tx = gen_tx(from_address, to_address, 10, vec![]);
+    let config = Config::london();
+    let precompiles = build_precompile_set();
+    let r = executor.inner_exec(&mut backend, &config, u64::MAX, &precompiles, tx);
+    assert_eq!(r.exit_reason, ExitReason::Error(ExitError::OutOfFund));
+    assert_eq!(
+        backend.state().get(&from_address).unwrap().nonce,
+        U256::from(2)
+    );
 }
