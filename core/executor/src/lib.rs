@@ -116,9 +116,7 @@ impl Executor for AxonExecutor {
             } else {
                 // Deduct pre-pay gas
                 let sender = tx.sender;
-                // let tx_base_gas = tx.transaction.unsigned.base_gas();
                 let gas_limit = tx.transaction.unsigned.gas_limit();
-                // .saturating_sub(tx_base_gas);
                 let prepay_gas = tx_gas_price * gas_limit;
                 let mut account = backend.get_account(&sender);
                 account.balance = account.balance.saturating_sub(prepay_gas);

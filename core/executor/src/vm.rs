@@ -103,14 +103,19 @@ pub fn code_address(sender: &H160, nonce: &U256) -> H256 {
 }
 
 pub fn decode_revert_msg(input: &[u8]) -> String {
-    String::from_iter(input.iter().filter_map(|i| {
-        let c = *i as char;
-        if c.is_control() {
-            None
-        } else {
-            Some(c)
-        }
-    }))
+    String::from_iter(
+        input
+            .iter()
+            .filter_map(|i| {
+                let c = *i as char;
+                if c.is_control() {
+                    None
+                } else {
+                    Some(c)
+                }
+            })
+            .skip(5),
+    )
 }
 
 #[cfg(test)]
