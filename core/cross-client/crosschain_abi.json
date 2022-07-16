@@ -248,6 +248,46 @@
         "components": [
           {
             "internalType": "address",
+            "name": "tokenAddress",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "minWCKBAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "string",
+            "name": "to",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "limitSign",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct DataType.AxonToCKBRecord",
+        "name": "record",
+        "type": "tuple"
+      }
+    ],
+    "name": "approveLimitTx",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
             "name": "to",
             "type": "address"
           },
@@ -536,46 +576,6 @@
       }
     ],
     "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "components": [
-          {
-            "internalType": "address",
-            "name": "tokenAddress",
-            "type": "address"
-          },
-          {
-            "internalType": "uint256",
-            "name": "amount",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "minWCKBAmount",
-            "type": "uint256"
-          },
-          {
-            "internalType": "string",
-            "name": "to",
-            "type": "string"
-          },
-          {
-            "internalType": "uint256",
-            "name": "limitSign",
-            "type": "uint256"
-          }
-        ],
-        "internalType": "struct DataType.AxonToCKBRecord",
-        "name": "record",
-        "type": "tuple"
-      }
-    ],
-    "name": "removeLimitTx",
-    "outputs": [],
-    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
