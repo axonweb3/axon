@@ -17,9 +17,12 @@ pub const CROSSCHAIN_CONTRACT_ADDRESS: H160 = H160([
     246, 123, 196, 229, 13, 29, 249, 43, 14, 76, 97, 121, 74, 69, 23, 175, 106, 153, 92, 178,
 ]);
 
+// deprecated
+#[allow(dead_code)]
 #[derive(Default)]
 pub struct EvmExecutor;
 
+#[allow(dead_code)]
 impl EvmExecutor {
     pub fn new() -> Self {
         EvmExecutor::default()
