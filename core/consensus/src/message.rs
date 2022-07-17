@@ -252,7 +252,7 @@ impl<R: Rpc + 'static, S: Storage + 'static> MessageHandler for PullBlockRpcHand
     async fn process(&self, ctx: Context, msg: BlockNumber) -> TrustFeedback {
         let ret = match self.storage.get_block(ctx.clone(), msg).await {
             Ok(Some(block)) => Ok(block),
-            Ok(None) => Err(StorageError::GetNone.into()),
+            Ok(None) => Err(StorageError::GetNone(msg.to_string()).into()),
             Err(e) => Err(e),
         };
         self.rpc
@@ -293,14 +293,14 @@ impl<R: Rpc + 'static, S: Storage + 'static> MessageHandler for PullProofRpcHand
                 number if number < latest_proof.number => {
                     match self.storage.get_block_header(ctx.clone(), number + 1).await {
                         Ok(Some(next_header)) => Ok(next_header.proof),
-                        Ok(None) => Err(StorageError::GetNone.into()),
-                        Err(_) => Err(StorageError::GetNone.into()),
+                        Ok(None) => Err(StorageError::GetNone((number + 1).to_string()).into()),
+                        Err(_) => Err(StorageError::GetNone("DB error".to_string()).into()),
                     }
                 }
                 number if number == latest_proof.number => Ok(latest_proof),
-                _ => Err(StorageError::GetNone.into()),
+                _ => Err(StorageError::GetNone("Future proof".to_string()).into()),
             },
-            Err(_) => Err(StorageError::GetNone.into()),
+            Err(_) => Err(StorageError::GetNone("Cannot get latest proof".to_string()).into()),
         };
 
         self.rpc

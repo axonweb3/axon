@@ -77,7 +77,7 @@ macro_rules! get {
 macro_rules! ensure_get {
     ($self_: ident, $key: expr, $schema: ident) => {{
         let opt = get!($self_, $key, $schema)?;
-        opt.ok_or_else(|| StorageError::GetNone)?
+        opt.ok_or_else(|| StorageError::GetNone($key.to_string()))?
     }};
 }
 
@@ -759,8 +759,8 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
 
 #[derive(Debug, Display, From)]
 pub enum StorageError {
-    #[display(fmt = "get none")]
-    GetNone,
+    #[display(fmt = "get none {:?}", _0)]
+    GetNone(String),
 
     #[display(fmt = "decode batch value")]
     BatchDecode,

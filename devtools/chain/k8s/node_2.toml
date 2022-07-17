@@ -14,7 +14,7 @@ mnemonic = "test test test test test test test test test test test junk"
 # initial_index = 0
 # path = "m/44'/60'/0'/0"
 count = 10
-balance = "56bc75e2d63100000"
+balance = "04ee2d6d415b85acef8100000000"
 
 [rpc]
 http_listening_address = "0.0.0.0:8000"
