@@ -23,7 +23,7 @@ use protocol::{
 
 use crate::jsonrpc::{
     r#impl::from_receipt_to_web3_log,
-    web3_types::{BlockId, MultiType, Web3Log},
+    web3_types::{BlockId, MultiNestType, MultiType, Web3Log},
     RpcResult,
 };
 
@@ -70,7 +70,7 @@ pub struct RawLoggerFilter {
     pub to_block:   Option<BlockId>,
     #[serde(default)]
     pub address:    MultiType<H160>,
-    pub topics:     Option<Vec<Hash>>,
+    pub topics:     Option<Vec<MultiNestType<Hash>>>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -78,7 +78,7 @@ pub struct LoggerFilter {
     pub from_block: Option<BlockId>,
     pub to_block:   Option<BlockId>,
     pub address:    Option<Vec<H160>>,
-    pub topics:     Option<Vec<Hash>>,
+    pub topics:     Vec<Option<Vec<Option<Hash>>>>,
 }
 
 impl From<RawLoggerFilter> for LoggerFilter {
@@ -87,7 +87,13 @@ impl From<RawLoggerFilter> for LoggerFilter {
             from_block: src.from_block,
             to_block:   src.to_block,
             address:    src.address.into(),
-            topics:     src.topics,
+            topics:     src
+                .topics
+                .unwrap_or_default()
+                .into_iter()
+                .take(4)
+                .map(Into::<Option<Vec<Option<H256>>>>::into)
+                .collect(),
         }
     }
 }
@@ -241,10 +247,10 @@ where
                 match from {
                     BlockId::Num(n) => {
                         if n < header.number {
-                            filter.from_block = Some(BlockId::Num(header.number));
+                            filter.from_block = Some(BlockId::Num(header.number + 1));
                         }
                     }
-                    _ => filter.from_block = Some(BlockId::Num(header.number)),
+                    _ => filter.from_block = Some(BlockId::Num(header.number + 1)),
                 }
 
                 self.logs_hub
@@ -325,8 +331,7 @@ where
     async fn filter_logs(&mut self, id: &U256) -> RpcResult<Vec<Web3Log>> {
         let (filter, time) = self.logs_hub.get_mut(id).unwrap();
 
-        let default_topic = Vec::new();
-        let topics = filter.topics.as_ref().unwrap_or(&default_topic);
+        let topics = filter.topics.as_slice();
 
         let mut all_logs = Vec::new();
 
@@ -371,7 +376,11 @@ where
         let extend_logs = |logs: &mut Vec<Web3Log>, receipts: Vec<Option<Receipt>>| {
             for (index, receipt) in receipts.into_iter().flatten().enumerate() {
                 match filter.address {
-                    Some(ref s) if s.contains(&receipt.sender) => {
+                    Some(ref s)
+                        if s.contains(
+                            &receipt.code_address.map(Into::into).unwrap_or_default(),
+                        ) =>
+                    {
                         from_receipt_to_web3_log(index, topics, &receipt, logs)
                     }
                     None => from_receipt_to_web3_log(index, topics, &receipt, logs),
@@ -416,7 +425,7 @@ where
         }
 
         if let Some(BlockId::Num(ref mut n)) = filter.from_block {
-            *n = latest_number + 1
+            *n = end + 1
         }
         *time = Instant::now();
         Ok(all_logs)

@@ -512,7 +512,67 @@ pub struct Web3Filter {
     pub block_hash: Option<H256>,
     #[serde(default)]
     pub address:    MultiType<H160>,
-    pub topics:     Option<Vec<H256>>,
+    pub topics:     Option<Vec<MultiNestType<Hash>>>,
+}
+
+#[derive(PartialEq, Eq, Debug, Clone)]
+pub enum MultiNestType<T> {
+    Single(T),
+    Multi(Vec<Option<T>>),
+    Null,
+}
+
+impl<T> Default for MultiNestType<T> {
+    fn default() -> Self {
+        MultiNestType::Null
+    }
+}
+
+impl<T> From<MultiNestType<T>> for Option<Vec<Option<T>>> {
+    fn from(src: MultiNestType<T>) -> Self {
+        match src {
+            MultiNestType::Null => None,
+            MultiNestType::Single(i) => Some(vec![Some(i)]),
+            MultiNestType::Multi(i) => Some(i),
+        }
+    }
+}
+
+impl<T> Serialize for MultiNestType<T>
+where
+    T: Serialize,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            MultiNestType::Single(inner) => inner.serialize(serializer),
+            MultiNestType::Multi(inner) => inner.serialize(serializer),
+            MultiNestType::Null => serializer.serialize_none(),
+        }
+    }
+}
+
+impl<'a, T> Deserialize<'a> for MultiNestType<T>
+where
+    T: for<'b> Deserialize<'b>,
+{
+    fn deserialize<D>(deserializer: D) -> Result<MultiNestType<T>, D::Error>
+    where
+        D: Deserializer<'a>,
+    {
+        let v: serde_json::Value = Deserialize::deserialize(deserializer)?;
+
+        if v.is_null() {
+            return Ok(MultiNestType::Null);
+        }
+
+        serde_json::from_value(v.clone())
+            .map(MultiNestType::Single)
+            .or_else(|_| serde_json::from_value(v).map(MultiNestType::Multi))
+            .map_err(|err| D::Error::custom(format!("Invalid value type: {}", err)))
+    }
 }
 
 #[derive(PartialEq, Eq, Debug, Clone)]

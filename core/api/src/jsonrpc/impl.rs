@@ -22,6 +22,8 @@ use crate::jsonrpc::{
 };
 use crate::APIError;
 
+pub(crate) const MAX_LOG_NUM: usize = 10000;
+
 #[allow(dead_code)]
 pub struct JsonRpcImpl<Adapter> {
     adapter: Arc<Adapter>,
@@ -430,7 +432,15 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
 
     #[metrics_rpc("eth_getLogs")]
     async fn get_logs(&self, filter: Web3Filter) -> RpcResult<Vec<Web3Log>> {
-        let topics = filter.topics.unwrap_or_default();
+        let topics: Vec<Option<Vec<Option<H256>>>> = filter
+            .topics
+            .map(|s| {
+                s.into_iter()
+                    .take(4)
+                    .map(Into::<Option<Vec<Option<H256>>>>::into)
+                    .collect()
+            })
+            .unwrap_or_default();
 
         #[allow(clippy::large_enum_variant)]
         enum BlockPosition {
@@ -442,22 +452,30 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         async fn get_logs<T: APIAdapter>(
             adapter: &T,
             position: BlockPosition,
-            topics: &[H256],
+            topics: &[Option<Vec<Option<H256>>>],
             logs: &mut Vec<Web3Log>,
             address: Option<&Vec<H160>>,
+            early_return: &mut bool,
         ) -> RpcResult<()> {
-            let extend_logs = |logs: &mut Vec<Web3Log>, receipts: Vec<Option<Receipt>>| {
-                let mut index = 0;
-                for receipt in receipts.into_iter().flatten() {
-                    let log_len = receipt.logs.len();
+            let extend_logs = |logs: &mut Vec<Web3Log>,
+                               receipts: Vec<Option<Receipt>>,
+                               early_return: &mut bool| {
+                for (index, receipt) in receipts.into_iter().flatten().enumerate() {
                     match address {
-                        Some(s) if s.contains(&receipt.sender) => {
+                        Some(s)
+                            if s.contains(
+                                &receipt.code_address.map(Into::into).unwrap_or_default(),
+                            ) =>
+                        {
                             from_receipt_to_web3_log(index, topics, &receipt, logs)
                         }
                         None => from_receipt_to_web3_log(index, topics, &receipt, logs),
                         _ => (),
                     }
-                    index += log_len;
+                    if logs.len() > MAX_LOG_NUM {
+                        *early_return = true;
+                        return;
+                    }
                 }
             };
 
@@ -477,7 +495,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                                 )
                                 .await
                                 .map_err(|e| Error::Custom(e.to_string()))?;
-                            extend_logs(logs, receipts);
+                            extend_logs(logs, receipts, early_return);
                             Ok(())
                         }
                         None => Err(Error::Custom(format!(
@@ -502,7 +520,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                         .await
                         .map_err(|e| Error::Custom(e.to_string()))?;
 
-                    extend_logs(logs, receipts);
+                    extend_logs(logs, receipts, early_return);
                     Ok(())
                 }
                 BlockPosition::Block(block) => {
@@ -515,7 +533,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                         .await
                         .map_err(|e| Error::Custom(e.to_string()))?;
 
-                    extend_logs(logs, receipts);
+                    extend_logs(logs, receipts, early_return);
                     Ok(())
                 }
             }
@@ -523,6 +541,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
 
         let address_filter: Option<Vec<H160>> = filter.address.into();
         let mut all_logs = Vec::new();
+        let mut early_return = false;
         match filter.block_hash {
             Some(hash) => {
                 get_logs(
@@ -531,6 +550,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                     &topics,
                     &mut all_logs,
                     address_filter.as_ref(),
+                    &mut early_return,
                 )
                 .await?;
             }
@@ -575,8 +595,13 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                             &topics,
                             &mut all_logs,
                             address_filter.as_ref(),
+                            &mut early_return,
                         )
                         .await?;
+
+                        if early_return {
+                            return Ok(all_logs);
+                        }
                     }
                 }
 
@@ -587,6 +612,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
                         &topics,
                         &mut all_logs,
                         address_filter.as_ref(),
+                        &mut early_return,
                     )
                     .await?;
                 }
@@ -877,27 +903,44 @@ fn mock_header_by_call_req(latest_header: Header, call_req: &Web3CallRequest) ->
 
 pub fn from_receipt_to_web3_log(
     index: usize,
-    topics: &[H256],
+    topics: &[Option<Vec<Option<Hash>>>],
     receipt: &Receipt,
     logs: &mut Vec<Web3Log>,
 ) {
+    macro_rules! contains_topic {
+        ($topics: expr, $log: expr) => {{
+            $topics.is_empty()
+                || contains_topic!($topics, 1, $log, 0)
+                || contains_topic!($topics, 2, $log, 0, 1)
+                || contains_topic!($topics, 3, $log, 0, 1, 2)
+                || contains_topic!($topics, 4, $log, 0, 1, 2, 3)
+        }};
+
+        ($topics: expr, $min_len: expr, $log: expr$ (, $offset: expr)*) => {{
+            $topics.len() == $min_len && $log.topics.len() >= $min_len
+            $( && $topics[$offset]
+                .as_ref()
+                .map(|i| i.contains(&None) || i.contains(&Some($log.topics[$offset])))
+                .unwrap_or(true)
+            )*
+        }};
+    }
+
     for (log_idex, log) in receipt.logs.iter().enumerate() {
-        for topic in log.topics.iter() {
-            if topics.is_empty() || topics.contains(topic) {
-                let web3_log = Web3Log {
-                    address:           receipt.sender,
-                    topics:            log.topics.clone(),
-                    data:              Hex::encode(&log.data),
-                    block_hash:        Some(receipt.block_hash),
-                    block_number:      Some(receipt.block_number.into()),
-                    transaction_hash:  Some(receipt.tx_hash),
-                    transaction_index: Some(index.into()),
-                    log_index:         Some(log_idex.into()),
-                    removed:           false,
-                };
-                logs.push(web3_log);
-                break;
-            }
+        let web3_log = Web3Log {
+            address:           receipt.sender,
+            topics:            log.topics.clone(),
+            data:              Hex::encode(&log.data),
+            block_hash:        Some(receipt.block_hash),
+            block_number:      Some(receipt.block_number.into()),
+            transaction_hash:  Some(receipt.tx_hash),
+            transaction_index: Some(index.into()),
+            log_index:         Some(log_idex.into()),
+            removed:           false,
+        };
+
+        if contains_topic!(topics, log) {
+            logs.push(web3_log);
         }
     }
 }
