@@ -157,10 +157,10 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
                 .start(current_consented_number, remote_number);
         }
 
-        while current_consented_number < remote_number {
+        while current_consented_number <= remote_number {
             let consenting_number = current_consented_number + 1;
             log::info!(
-                "[synchronization]: try syncing block, current_consented_number:{},syncing_number:{}",
+                "[synchronization]: try syncing block, current_consented_number {},syncing_number {}",
                 current_consented_number,
                 consenting_number
             );
@@ -221,7 +221,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             .await
             .map_err(|e| {
                 log::error!(
-                    "[synchronization]: get_proof_from_remote error, number: {:?}",
+                    "[synchronization]: get_proof_from_remote error, number {}",
                     consenting_number
                 );
                 e
@@ -364,7 +364,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         CURRENT_STATE_ROOT.swap(Arc::new(resp.state_root));
         status_agent.swap(new_status);
 
-        // If there are transactions in the trasnaction pool that have been on chain
+        // If there are transactions in the transaction pool that have been on chain
         // after this execution, make sure they are cleaned up.
         self.adapter
             .flush_mempool(

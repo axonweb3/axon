@@ -666,10 +666,11 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         );
 
         if block.header.number != proof.number {
-            info!("[consensus] update_status for handle_commit, error, before update, block number {}, proof number:{}, proof : {:?}",
-            block.header.number,
-            proof.number,
-            proof.clone());
+            log::error!("[consensus] update_status for handle_commit error, before update, block number {}, proof number {}, proof {:?}",
+                block_number,
+                proof.number,
+                proof
+            );
         }
 
         Ok(())
