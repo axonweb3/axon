@@ -1054,6 +1054,7 @@ dependencies = [
  "strsim 0.10.0",
  "termcolor",
  "textwrap 0.15.0",
+ "yaml-rust 0.4.5",
 ]
 
 [[package]]
@@ -2688,6 +2689,25 @@ checksum = "fd48d33ec7f05fbfa152300fdad764757cbded343c1aa1cff2fbaf4134851803"
 dependencies = [
  "typenum",
  "version_check",
+]
+
+[[package]]
+name = "genesis-generator"
+version = "0.1.0"
+dependencies = [
+ "axon-protocol",
+ "clap 3.2.13",
+ "common-config-parser",
+ "common-crypto",
+ "core-executor",
+ "core-metadata",
+ "ethers-contract",
+ "ethers-core",
+ "ethers-providers",
+ "ophelia",
+ "rand 0.7.3",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

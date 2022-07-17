@@ -76,6 +76,14 @@ impl UnsignedTransaction {
         }
     }
 
+    pub fn set_data(&mut self, data: Bytes) {
+        match self {
+            UnsignedTransaction::Legacy(tx) => tx.data = data,
+            UnsignedTransaction::Eip2930(tx) => tx.data = data,
+            UnsignedTransaction::Eip1559(tx) => tx.data = data,
+        }
+    }
+
     pub fn gas_price(&self) -> U256 {
         match self {
             UnsignedTransaction::Legacy(tx) => tx.gas_price,
