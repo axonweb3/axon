@@ -6,8 +6,7 @@ use std::sync::Arc;
 
 use ethers_core::abi::AbiEncode;
 
-use core_executor::adapter::{MPTTrie, RocksTrieDB};
-use core_executor::{AxonExecutor, AxonExecutorAdapter};
+use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB};
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{CommonStorage, Context, Executor, Storage};

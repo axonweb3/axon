@@ -422,6 +422,12 @@ impl TryFrom<UnverifiedTransaction> for SignedTransaction {
     }
 }
 
+impl UnverifiedTransaction {
+    pub fn is_create(&self) -> bool {
+        self.unsigned.action() == &TransactionAction::Create
+    }
+}
+
 impl SignedTransaction {
     pub fn get_to(&self) -> Option<H160> {
         self.transaction.unsigned.to()

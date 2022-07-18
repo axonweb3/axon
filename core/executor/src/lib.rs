@@ -1,21 +1,24 @@
 #![feature(test)]
 #![allow(clippy::derive_partial_eq_without_eq)]
 
-pub mod adapter;
+mod adapter;
+mod consts;
 #[cfg(test)]
 mod debugger;
 mod precompiles;
 mod system;
 #[cfg(test)]
 mod tests;
+mod utils;
 mod vm;
 
 pub use crate::adapter::{AxonExecutorAdapter, MPTTrie, RocksTrieDB};
-pub use crate::system::NATIVE_TOKEN_ISSUE_ADDRESS;
-pub use crate::vm::{
-    code_address, decode_revert_msg, CROSSCHAIN_CONTRACT_ADDRESS, METADATA_CONTRACT_ADDRESS,
-    WCKB_CONTRACT_ADDRESS,
+pub use crate::consts::{
+    BLOOM_BYTE_LENGTH, CROSSCHAIN_CONTRACT_ADDRESS, METADATA_CONTRACT_ADDRESS,
+    REVERT_EFFECT_MSG_OFFSET, REVERT_MSG_LEN_OFFSET, WCKB_CONTRACT_ADDRESS,
 };
+pub use crate::system::NATIVE_TOKEN_ISSUE_ADDRESS;
+pub use crate::utils::{code_address, decode_revert_msg, logs_bloom};
 
 use std::collections::BTreeMap;
 
@@ -26,14 +29,11 @@ use common_merkle::Merkle;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ApplyBackend, Backend, Executor, ExecutorAdapter as Adapter};
 use protocol::types::{
-    data_gas_cost, Account, Bloom, Config, ExecResp, Hasher, Log, SignedTransaction,
-    TransactionAction, TxResp, GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160, NIL_DATA,
-    RLP_NULL, U256,
+    data_gas_cost, Account, Bloom, Config, ExecResp, Hasher, SignedTransaction, TransactionAction,
+    TxResp, GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160, NIL_DATA, RLP_NULL, U256,
 };
 
 use crate::{precompiles::build_precompile_set, system::SystemExecutor};
-
-pub const BLOOM_BYTE_LENGTH: usize = 256;
 
 #[derive(Default)]
 pub struct AxonExecutor;
@@ -55,7 +55,7 @@ impl Executor for AxonExecutor {
         let precompiles = build_precompile_set();
         let mut executor = StackExecutor::new_with_precompiles(state, &config, &precompiles);
 
-        let base_gas = if to.is_some() {
+        let _base_gas = if to.is_some() {
             GAS_CALL_TRANSACTION + data_gas_cost(&data)
         } else {
             GAS_CREATE_TRANSACTION + GAS_CALL_TRANSACTION + data_gas_cost(&data)
@@ -190,7 +190,7 @@ impl AxonExecutor {
             .map(|x| (x.address, x.storage_keys))
             .collect::<Vec<_>>();
 
-        let (exit_reason, ret) = match tx.transaction.unsigned.action() {
+        let (reason, resp) = match tx.transaction.unsigned.action() {
             TransactionAction::Call(addr) => executor.transact_call(
                 tx.sender,
                 *addr,
@@ -208,12 +208,10 @@ impl AxonExecutor {
             ),
         };
 
-        let remain_gas = executor.gas();
-        let gas_used = executor.used_gas();
+        let remained_gas = executor.gas();
+        let used_gas = executor.used_gas();
 
-        let code_address = if tx.transaction.unsigned.action() == &TransactionAction::Create
-            && exit_reason.is_succeed()
-        {
+        let code_addr = if tx.transaction.is_create() && reason.is_succeed() {
             Some(code_address(&tx.sender, &old_nonce))
         } else {
             None
@@ -223,8 +221,8 @@ impl AxonExecutor {
         account.nonce = old_nonce + U256::one();
 
         // Add remain gas
-        if remain_gas != 0 {
-            let remain_gas = U256::from(remain_gas)
+        if remained_gas != 0 {
+            let remain_gas = U256::from(remained_gas)
                 .checked_mul(backend.gas_price())
                 .unwrap_or_else(U256::max_value);
             account.balance = account
@@ -233,7 +231,7 @@ impl AxonExecutor {
                 .unwrap_or_else(U256::max_value);
         }
 
-        if exit_reason.is_succeed() {
+        if reason.is_succeed() {
             let (values, logs) = executor.into_state().deconstruct();
             backend.apply(values, logs, true);
         }
@@ -241,14 +239,14 @@ impl AxonExecutor {
         backend.save_account(&tx.sender, &account);
 
         TxResp {
-            exit_reason,
-            ret,
-            remain_gas,
-            gas_used,
-            logs: vec![],
-            log_bloom: Bloom::default(),
-            code_address,
-            removed: false,
+            exit_reason:  reason,
+            ret:          resp,
+            remain_gas:   remained_gas,
+            gas_used:     used_gas,
+            logs:         Vec::new(),
+            log_bloom:    Bloom::default(),
+            code_address: code_addr,
+            removed:      false,
         }
     }
 }
@@ -264,27 +262,5 @@ pub fn is_crosschain_transaction(action: &TransactionAction) -> bool {
     match action {
         TransactionAction::Call(addr) => addr == &CROSSCHAIN_CONTRACT_ADDRESS,
         TransactionAction::Create => false,
-    }
-}
-
-pub fn logs_bloom<'a, I>(logs: I) -> Bloom
-where
-    I: Iterator<Item = &'a Log>,
-{
-    let mut bloom = Bloom::zero();
-    for log in logs {
-        m3_2048(&mut bloom, log.address.as_bytes());
-        for topic in log.topics.iter() {
-            m3_2048(&mut bloom, topic.as_bytes());
-        }
-    }
-    bloom
-}
-
-fn m3_2048(bloom: &mut Bloom, x: &[u8]) {
-    let hash = Hasher::digest(x).0;
-    for i in [0, 2, 4] {
-        let bit = (hash[i + 1] as usize + ((hash[i] as usize) << 8)) & 0x7FF;
-        bloom.0[BLOOM_BYTE_LENGTH - 1 - bit / 8] |= 1 << (bit % 8);
     }
 }

@@ -18,9 +18,9 @@ use common_logger::{json, log};
 use common_merkle::Merkle;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
-    Block, Bytes, ExecResp, Hash, Hasher, Hex, Log, MerkleRoot, Metadata, Proof,
-    Proposal, Receipt, SignedTransaction, TransactionAction, ValidatorExtend, BASE_FEE_PER_GAS,
-    H160, MAX_BLOCK_GAS_LIMIT, U256,
+    Block, Bytes, ExecResp, Hash, Hasher, Hex, Log, MerkleRoot, Metadata, Proof, Proposal, Receipt,
+    SignedTransaction, TransactionAction, ValidatorExtend, BASE_FEE_PER_GAS, H160,
+    MAX_BLOCK_GAS_LIMIT, U256,
 };
 use protocol::{
     async_trait, lazy::CURRENT_STATE_ROOT, tokio::sync::Mutex as AsyncMutex, ProtocolError,

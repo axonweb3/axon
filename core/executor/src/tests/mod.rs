@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 mod system_script;
 
 use std::collections::BTreeMap;
