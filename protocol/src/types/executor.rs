@@ -2,7 +2,7 @@ pub use ethereum::{AccessList, AccessListItem, Account};
 pub use evm::{backend::Log, Config, ExitError, ExitFatal, ExitReason, ExitRevert, ExitSucceed};
 
 use crate::codec::ProtocolCodec;
-use crate::types::{Hash, Hasher, Header, MerkleRoot, Proposal, H160, U256};
+use crate::types::{Bloom, Hash, Hasher, Header, MerkleRoot, Proposal, H160, U256};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ExecResp {
@@ -19,6 +19,7 @@ pub struct TxResp {
     pub gas_used:     u64,
     pub remain_gas:   u64,
     pub logs:         Vec<Log>,
+    pub log_bloom:    Bloom,
     pub code_address: Option<Hash>,
     pub removed:      bool,
 }
@@ -32,6 +33,7 @@ impl Default for TxResp {
             removed:      false,
             ret:          vec![],
             logs:         vec![],
+            log_bloom:    Bloom::default(),
             code_address: None,
         }
     }

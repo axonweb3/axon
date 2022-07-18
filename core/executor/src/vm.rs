@@ -84,6 +84,7 @@ impl EvmExecutor {
             remain_gas,
             gas_used,
             logs: vec![],
+            log_bloom: Default::default(),
             code_address,
             removed: false,
         };

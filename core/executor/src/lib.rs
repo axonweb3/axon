@@ -26,11 +26,14 @@ use common_merkle::Merkle;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ApplyBackend, Backend, Executor, ExecutorAdapter as Adapter};
 use protocol::types::{
-    data_gas_cost, Account, Config, ExecResp, Hasher, SignedTransaction, TransactionAction, TxResp,
-    GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160, NIL_DATA, RLP_NULL, U256,
+    data_gas_cost, Account, Bloom, Config, ExecResp, Hasher, Log, SignedTransaction,
+    TransactionAction, TxResp, GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160, NIL_DATA,
+    RLP_NULL, U256,
 };
 
 use crate::{precompiles::build_precompile_set, system::SystemExecutor};
+
+pub const BLOOM_BYTE_LENGTH: usize = 256;
 
 #[derive(Default)]
 pub struct AxonExecutor;
@@ -75,8 +78,9 @@ impl Executor for AxonExecutor {
             exit_reason:  exit,
             ret:          res,
             remain_gas:   executor.gas(),
-            gas_used:     executor.used_gas() + base_gas,
+            gas_used:     executor.used_gas(),
             logs:         vec![],
+            log_bloom:    Bloom::default(),
             code_address: if to.is_none() {
                 Some(
                     executor
@@ -108,7 +112,8 @@ impl Executor for AxonExecutor {
         let config = Config::london();
 
         for tx in txs.into_iter() {
-            backend.set_gas_price(tx.transaction.unsigned.gas_price());
+            let gas_price = tx.transaction.unsigned.gas_price();
+            backend.set_gas_price(gas_price);
             backend.set_origin(tx.sender);
 
             let mut r = if is_call_system_script(tx.transaction.unsigned.action()) {
@@ -118,7 +123,8 @@ impl Executor for AxonExecutor {
             };
 
             r.logs = backend.get_logs();
-            gas_use += r.gas_used;
+            r.log_bloom = logs_bloom(r.logs.iter());
+            gas_use += r.gas_used * gas_price.as_u64();
 
             hashes.push(Hasher::digest(&r.ret));
             res.push(r);
@@ -240,6 +246,7 @@ impl AxonExecutor {
             remain_gas,
             gas_used,
             logs: vec![],
+            log_bloom: Bloom::default(),
             code_address,
             removed: false,
         }
@@ -257,5 +264,27 @@ pub fn is_crosschain_transaction(action: &TransactionAction) -> bool {
     match action {
         TransactionAction::Call(addr) => addr == &CROSSCHAIN_CONTRACT_ADDRESS,
         TransactionAction::Create => false,
+    }
+}
+
+pub fn logs_bloom<'a, I>(logs: I) -> Bloom
+where
+    I: Iterator<Item = &'a Log>,
+{
+    let mut bloom = Bloom::zero();
+    for log in logs {
+        m3_2048(&mut bloom, log.address.as_bytes());
+        for topic in log.topics.iter() {
+            m3_2048(&mut bloom, topic.as_bytes());
+        }
+    }
+    bloom
+}
+
+fn m3_2048(bloom: &mut Bloom, x: &[u8]) {
+    let hash = Hasher::digest(x).0;
+    for i in [0, 2, 4] {
+        let bit = (hash[i + 1] as usize + ((hash[i] as usize) << 8)) & 0x7FF;
+        bloom.0[BLOOM_BYTE_LENGTH - 1 - bit / 8] |= 1 << (bit % 8);
     }
 }
