@@ -11,7 +11,7 @@ bincode = "1.3"
 bytes = { version = "1.2", features = ["serde"] }
 ckb-hash = "0.104"
 ckb-jsonrpc-types = "0.104"
-ckb-sdk = "1.0"
+ckb-sdk = "1.1"
 ckb-types = "0.104.0"
 common-crypto = { path = "../common/crypto" }
 creep = "0.2"

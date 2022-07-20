@@ -203,7 +203,7 @@ dependencies = [
  "bincode",
  "bytes",
  "ckb-hash 0.104.0",
- "ckb-jsonrpc-types 0.104.0",
+ "ckb-jsonrpc-types",
  "ckb-sdk",
  "ckb-types 0.104.0",
  "common-crypto",
@@ -771,11 +771,11 @@ dependencies = [
 
 [[package]]
 name = "ckb-crypto"
-version = "0.103.0"
+version = "0.104.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7304d43ab21f4715bb77c955ccd9359bf851b868881a6e3499122b3266c82edf"
+checksum = "1a600bb463e6d72acb85c0ba821b106a1710855a52737b434a4afd6fcbab0e55"
 dependencies = [
- "ckb-fixed-hash 0.103.0",
+ "ckb-fixed-hash 0.104.0",
  "faster-hex",
  "lazy_static",
  "rand 0.7.3",
@@ -785,13 +785,13 @@ dependencies = [
 
 [[package]]
 name = "ckb-dao-utils"
-version = "0.103.0"
+version = "0.104.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6d2495561e01760b017595dd98c9a050c267301950de69212ff9819342dba0ab"
+checksum = "ac8bee17950819b550031c81b4200e1e6eddc364c5aab16d5fc9407d2035c775"
 dependencies = [
  "byteorder",
- "ckb-error 0.103.0",
- "ckb-types 0.103.0",
+ "ckb-error 0.104.0",
+ "ckb-types 0.104.0",
 ]
 
 [[package]]
@@ -906,18 +906,6 @@ dependencies = [
 
 [[package]]
 name = "ckb-jsonrpc-types"
-version = "0.103.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "305760c25e4b4bce5b11b1efe80ee7afe81cb63e39432725b01577fefe719ee1"
-dependencies = [
- "ckb-types 0.103.0",
- "faster-hex",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "ckb-jsonrpc-types"
 version = "0.104.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "520d1cc13b7d5ea93a2b9a28362555410e6621e8141eb1289a0547e0c5ef6e46"
@@ -1024,12 +1012,12 @@ dependencies = [
 
 [[package]]
 name = "ckb-resource"
-version = "0.103.0"
+version = "0.104.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae84e61d1b7cc37353ba92dc122e7d3c746a9499473a448927393372e8d7daa6"
+checksum = "c45669446b51b6336f407044c1940cb31d709c09638fe4c2b34d6910d7d55f13"
 dependencies = [
  "ckb-system-scripts",
- "ckb-types 0.103.0",
+ "ckb-types 0.104.0",
  "includedir",
  "includedir_codegen",
  "phf",
@@ -1050,24 +1038,24 @@ dependencies = [
 
 [[package]]
 name = "ckb-sdk"
-version = "1.0.1"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c89d5a9733ae7e8cd9312dc130ba91cf44dba52e37b2844fa9758c1f4a78079"
+checksum = "1e73cd1e12195e22b169321c650ea06ec430583894224ab4661de5f082d7026f"
 dependencies = [
  "bech32 0.8.1",
  "bytes",
  "ckb-crypto",
  "ckb-dao-utils",
- "ckb-hash 0.103.0",
- "ckb-jsonrpc-types 0.103.0",
+ "ckb-hash 0.104.0",
+ "ckb-jsonrpc-types",
  "ckb-resource",
  "ckb-traits",
- "ckb-types 0.103.0",
+ "ckb-types 0.104.0",
  "futures",
  "jsonrpc-core",
  "log",
  "lru",
- "parking_lot 0.11.2",
+ "parking_lot 0.12.1",
  "reqwest",
  "secp256k1 0.20.3",
  "serde",
@@ -1093,11 +1081,11 @@ dependencies = [
 
 [[package]]
 name = "ckb-traits"
-version = "0.103.0"
+version = "0.104.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48f70a7bb9f8f85486f6e1bcae329a2f7495c36b996bf3bacca523ec43af355f"
+checksum = "50acf0a06a8d1f32e1c5cf4638ad97e0d94a61ae2ca4dab797b40cb602e2260a"
 dependencies = [
- "ckb-types 0.103.0",
+ "ckb-types 0.104.0",
 ]
 
 [[package]]
@@ -1505,7 +1493,7 @@ dependencies = [
  "axon-protocol",
  "cita_trie",
  "ckb-hash 0.104.0",
- "ckb-jsonrpc-types 0.104.0",
+ "ckb-jsonrpc-types",
  "ckb-rocksdb",
  "ckb-sdk",
  "ckb-types 0.104.0",
@@ -1538,7 +1526,7 @@ dependencies = [
  "axon-protocol",
  "az",
  "cita_trie",
- "ckb-jsonrpc-types 0.104.0",
+ "ckb-jsonrpc-types",
  "ckb-rocksdb",
  "ckb-types 0.104.0",
  "common-apm",
@@ -1682,7 +1670,7 @@ name = "core-rpc-client"
 version = "0.1.0"
 dependencies = [
  "axon-protocol",
- "ckb-jsonrpc-types 0.104.0",
+ "ckb-jsonrpc-types",
  "ckb-sdk",
  "ckb-types 0.104.0",
  "futures",
@@ -1754,7 +1742,7 @@ version = "0.1.0"
 dependencies = [
  "arc-swap",
  "axon-protocol",
- "ckb-jsonrpc-types 0.104.0",
+ "ckb-jsonrpc-types",
  "ckb-sdk",
  "ckb-types 0.104.0",
  "common-crypto",
