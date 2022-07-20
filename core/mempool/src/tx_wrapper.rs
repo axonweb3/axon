@@ -31,7 +31,7 @@ impl Ord for TxWrapper {
         if self.sender() != other.sender() {
             return self.gas_price().cmp(&other.gas_price());
         }
-        self.nonce().cmp(&other.nonce())
+        self.nonce().cmp(other.nonce())
     }
 }
 
