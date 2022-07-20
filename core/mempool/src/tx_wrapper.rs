@@ -1,4 +1,4 @@
-use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd, Reverse};
+use std::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use std::collections::{btree_map::Entry, BTreeMap};
 use std::ops::Bound::{Included, Unbounded};
 use std::sync::atomic::{AtomicU8, Ordering as AtomicOrdering};
@@ -29,9 +29,9 @@ impl From<SignedTransaction> for TxWrapper {
 impl Ord for TxWrapper {
     fn cmp(&self, other: &Self) -> Ordering {
         if self.sender() != other.sender() {
-            return Reverse(self.gas_price()).cmp(&Reverse(other.gas_price()));
+            return self.gas_price().cmp(&other.gas_price());
         }
-        Reverse(self.nonce()).cmp(&Reverse(other.nonce()))
+        self.nonce().cmp(&other.nonce())
     }
 }
 
@@ -123,8 +123,7 @@ impl PendingQueue {
         false
     }
 
-    pub fn try_search_package_list(&mut self) -> Vec<TxPtr> {
-        let mut res = Vec::new();
+    pub fn try_search_package_list(&mut self, list: &mut Vec<TxPtr>) {
         let mut current = self.pop_tip_nonce;
         for (k, v) in self.queue.range((Included(current), Unbounded)) {
             if k == &current {
@@ -133,13 +132,12 @@ impl PendingQueue {
                     continue;
                 }
                 v.set_package();
-                res.push(Arc::clone(v));
+                list.push(Arc::clone(v));
             } else {
                 break;
             }
         }
         self.pop_tip_nonce = current;
-        res
     }
 
     pub fn clear_droped(&mut self) {
