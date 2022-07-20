@@ -202,10 +202,10 @@ dependencies = [
  "async-trait",
  "bincode",
  "bytes",
- "ckb-hash 0.104.0",
+ "ckb-hash",
  "ckb-jsonrpc-types",
  "ckb-sdk",
- "ckb-types 0.104.0",
+ "ckb-types",
  "common-crypto",
  "creep",
  "derive_more",
@@ -753,15 +753,6 @@ dependencies = [
 
 [[package]]
 name = "ckb-channel"
-version = "0.103.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c37f58ccee88155144067490986221d6e65b721f9184ce4f775621d8c453247e"
-dependencies = [
- "crossbeam-channel",
-]
-
-[[package]]
-name = "ckb-channel"
 version = "0.104.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6fe17832858b599109ac9cee6d9dcde419dad958a1982d6e37eb97fedb0ef5e6"
@@ -775,7 +766,7 @@ version = "0.104.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1a600bb463e6d72acb85c0ba821b106a1710855a52737b434a4afd6fcbab0e55"
 dependencies = [
- "ckb-fixed-hash 0.104.0",
+ "ckb-fixed-hash",
  "faster-hex",
  "lazy_static",
  "rand 0.7.3",
@@ -790,20 +781,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ac8bee17950819b550031c81b4200e1e6eddc364c5aab16d5fc9407d2035c775"
 dependencies = [
  "byteorder",
- "ckb-error 0.104.0",
- "ckb-types 0.104.0",
-]
-
-[[package]]
-name = "ckb-error"
-version = "0.103.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "548dad083a5846996d38fb2680e4fd20737c23be4c6dbbc897bba63fc69427fd"
-dependencies = [
- "anyhow",
- "ckb-occupied-capacity 0.103.0",
- "derive_more",
- "thiserror",
+ "ckb-error",
+ "ckb-types",
 ]
 
 [[package]]
@@ -813,19 +792,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73dc4bb1f4c889f42edc9509005aa593ca1b88b6f43f9cfbd59c6d4897994783"
 dependencies = [
  "anyhow",
- "ckb-occupied-capacity 0.104.0",
+ "ckb-occupied-capacity",
  "derive_more",
  "thiserror",
-]
-
-[[package]]
-name = "ckb-fixed-hash"
-version = "0.103.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87e16c26d073b6ce9820154d8fb067d95dbfcb91faa693162341e90f26c3363f"
-dependencies = [
- "ckb-fixed-hash-core 0.103.0",
- "ckb-fixed-hash-macros 0.103.0",
 ]
 
 [[package]]
@@ -834,19 +803,8 @@ version = "0.104.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8183ed12fd0fff3abfb142d3dde7b501f211519e2b77972c64815e00d38c8ed3"
 dependencies = [
- "ckb-fixed-hash-core 0.104.0",
- "ckb-fixed-hash-macros 0.104.0",
-]
-
-[[package]]
-name = "ckb-fixed-hash-core"
-version = "0.103.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14c7cda98b0ed0f7c46788e5399b1c69423cad02cf9b8f9f77e3ed7cfbd95dcc"
-dependencies = [
- "faster-hex",
- "serde",
- "thiserror",
+ "ckb-fixed-hash-core",
+ "ckb-fixed-hash-macros",
 ]
 
 [[package]]
@@ -862,36 +820,14 @@ dependencies = [
 
 [[package]]
 name = "ckb-fixed-hash-macros"
-version = "0.103.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bcc8f5a4d66e01da9f8024aea5a49ee0c93f7a927e932b37c162c7afd38959f4"
-dependencies = [
- "ckb-fixed-hash-core 0.103.0",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "ckb-fixed-hash-macros"
 version = "0.104.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0f73281677e79cd8cbd873b86701209d560038549823e915cb3505d1b348f0a6"
 dependencies = [
- "ckb-fixed-hash-core 0.104.0",
+ "ckb-fixed-hash-core",
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "ckb-hash"
-version = "0.103.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "380702c09207ac378708f075d72b336adeb17b8887dcfcc1bf9460e10ea1e285"
-dependencies = [
- "blake2b-ref",
- "blake2b-rs",
 ]
 
 [[package]]
@@ -910,7 +846,7 @@ version = "0.104.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "520d1cc13b7d5ea93a2b9a28362555410e6621e8141eb1289a0547e0c5ef6e46"
 dependencies = [
- "ckb-types 0.104.0",
+ "ckb-types",
  "faster-hex",
  "serde",
  "serde_json",
@@ -932,31 +868,12 @@ dependencies = [
 
 [[package]]
 name = "ckb-occupied-capacity"
-version = "0.103.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c9aa5e0ccfc275af08d2423b8e7cbd98c980d2565950a4e3efc13182f0ae1bf"
-dependencies = [
- "ckb-occupied-capacity-core 0.103.0",
- "ckb-occupied-capacity-macros 0.103.0",
-]
-
-[[package]]
-name = "ckb-occupied-capacity"
 version = "0.104.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2f0e4ccbc2b6af791b589a09db77518fb2b0fa79a72ba568e6a7dade7e935721"
 dependencies = [
- "ckb-occupied-capacity-core 0.104.0",
- "ckb-occupied-capacity-macros 0.104.0",
-]
-
-[[package]]
-name = "ckb-occupied-capacity-core"
-version = "0.103.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "118085f13bf4d4a160c6df360adcc2142ab40f7cf0aea058d2a5a4ca4dd61172"
-dependencies = [
- "serde",
+ "ckb-occupied-capacity-core",
+ "ckb-occupied-capacity-macros",
 ]
 
 [[package]]
@@ -970,34 +887,13 @@ dependencies = [
 
 [[package]]
 name = "ckb-occupied-capacity-macros"
-version = "0.103.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2ca47bd5b0c381284f3f858cc6fd9087adecc384b1535e869a231061a23a7b59"
-dependencies = [
- "ckb-occupied-capacity-core 0.103.0",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "ckb-occupied-capacity-macros"
 version = "0.104.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dfcfb1f9f3812fd5e306d88f0a3683cdf9e8350f5a79c3288e835b8355425635"
 dependencies = [
- "ckb-occupied-capacity-core 0.104.0",
+ "ckb-occupied-capacity-core",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "ckb-rational"
-version = "0.103.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6942caea45b9da94b0321e738f6d58ba9f3d03347936d76924d102d360300bc4"
-dependencies = [
- "numext-fixed-uint",
- "serde",
 ]
 
 [[package]]
@@ -1017,7 +913,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c45669446b51b6336f407044c1940cb31d709c09638fe4c2b34d6910d7d55f13"
 dependencies = [
  "ckb-system-scripts",
- "ckb-types 0.104.0",
+ "ckb-types",
  "includedir",
  "includedir_codegen",
  "phf",
@@ -1046,11 +942,11 @@ dependencies = [
  "bytes",
  "ckb-crypto",
  "ckb-dao-utils",
- "ckb-hash 0.104.0",
+ "ckb-hash",
  "ckb-jsonrpc-types",
  "ckb-resource",
  "ckb-traits",
- "ckb-types 0.104.0",
+ "ckb-types",
  "futures",
  "jsonrpc-core",
  "log",
@@ -1085,29 +981,7 @@ version = "0.104.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "50acf0a06a8d1f32e1c5cf4638ad97e0d94a61ae2ca4dab797b40cb602e2260a"
 dependencies = [
- "ckb-types 0.104.0",
-]
-
-[[package]]
-name = "ckb-types"
-version = "0.103.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2c24d49d19a4b367ba9be3538e404131e5b911ecf8bba93bc08776377d06e67"
-dependencies = [
- "bit-vec",
- "bitflags",
- "bytes",
- "ckb-channel 0.103.0",
- "ckb-error 0.103.0",
- "ckb-fixed-hash 0.103.0",
- "ckb-hash 0.103.0",
- "ckb-occupied-capacity 0.103.0",
- "ckb-rational 0.103.0",
- "derive_more",
- "merkle-cbt",
- "molecule",
- "numext-fixed-uint",
- "once_cell",
+ "ckb-types",
 ]
 
 [[package]]
@@ -1118,12 +992,12 @@ checksum = "e9ba3e13c93900267bc9670b3ea4379eab1a234c7cb470fcd6856640f165e2af"
 dependencies = [
  "bit-vec",
  "bytes",
- "ckb-channel 0.104.0",
- "ckb-error 0.104.0",
- "ckb-fixed-hash 0.104.0",
- "ckb-hash 0.104.0",
- "ckb-occupied-capacity 0.104.0",
- "ckb-rational 0.104.0",
+ "ckb-channel",
+ "ckb-error",
+ "ckb-fixed-hash",
+ "ckb-hash",
+ "ckb-occupied-capacity",
+ "ckb-rational",
  "derive_more",
  "merkle-cbt",
  "molecule",
@@ -1492,11 +1366,11 @@ dependencies = [
  "arc-swap",
  "axon-protocol",
  "cita_trie",
- "ckb-hash 0.104.0",
+ "ckb-hash",
  "ckb-jsonrpc-types",
  "ckb-rocksdb",
  "ckb-sdk",
- "ckb-types 0.104.0",
+ "ckb-types",
  "common-config-parser",
  "common-crypto",
  "core-executor",
@@ -1528,7 +1402,7 @@ dependencies = [
  "cita_trie",
  "ckb-jsonrpc-types",
  "ckb-rocksdb",
- "ckb-types 0.104.0",
+ "ckb-types",
  "common-apm",
  "common-config-parser",
  "common-crypto",
@@ -1585,7 +1459,7 @@ dependencies = [
  "axon-protocol",
  "cardano-message-signing",
  "cardano-serialization-lib",
- "ckb-types 0.103.0",
+ "ckb-types",
  "ckb-vm",
  "core-rpc-client",
  "ed25519-dalek",
@@ -1672,7 +1546,7 @@ dependencies = [
  "axon-protocol",
  "ckb-jsonrpc-types",
  "ckb-sdk",
- "ckb-types 0.104.0",
+ "ckb-types",
  "futures",
  "jsonrpc-core",
  "reqwest",
@@ -1744,7 +1618,7 @@ dependencies = [
  "axon-protocol",
  "ckb-jsonrpc-types",
  "ckb-sdk",
- "ckb-types 0.104.0",
+ "ckb-types",
  "common-crypto",
  "core-rpc-client",
  "lazy_static",
