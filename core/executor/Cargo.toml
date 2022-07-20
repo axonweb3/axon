@@ -31,7 +31,7 @@ core-interoperation = { path = "../interoperation" }
 protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [dev-dependencies]
-ckb-jsonrpc-types = "0.103"
+ckb-jsonrpc-types = "0.104"
 common-crypto = { path = "../../common/crypto" }
 core-cross-client = { path = "../cross-client" }
 core-rpc-client = { path = "../rpc-client" }
