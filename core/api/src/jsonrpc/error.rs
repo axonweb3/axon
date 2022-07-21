@@ -31,7 +31,7 @@ pub fn vm_err(resp: TxResp) -> Error {
 
     into_rpc_err(ErrorObject::owned(
         EXEC_ERROR,
-        decode_revert_msg(&resp.ret),
+        format!("execution reverted: {}", decode_revert_msg(&resp.ret)),
         Some(data),
     ))
 }
