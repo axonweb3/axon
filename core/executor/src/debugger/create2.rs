@@ -9,7 +9,7 @@ use crate::debugger::EvmDebugger;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_create2_gas() {
-    let init_balance: U256 = 10000000000000000u64.into();
+    let init_balance: U256 = 90000000000u128.into();
     let sender =
         H160::from_slice(&hex_decode("0x4af5ec5e3d29d9ddd7f4bf91a022131c41b72352").unwrap());
     let mut debugger = EvmDebugger::new(vec![sender], init_balance, "free-space/db3");
@@ -26,7 +26,7 @@ async fn test_create2_gas() {
     // );
     // println!("{:?}", resp);
 
-    let gas_used = resp.gas_used;
+    let gas_used = resp.tx_resp[0].gas_used;
     let after_balance = debugger.backend(1).basic(sender).balance;
 
     assert_eq!(gas_used * 8, (init_balance - after_balance).as_u64());

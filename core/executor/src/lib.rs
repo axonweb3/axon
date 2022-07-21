@@ -217,10 +217,19 @@ impl AxonExecutor {
             None
         };
 
-        let mut account = backend.get_account(&tx.sender);
-        account.nonce = old_nonce + U256::one();
+        if reason.is_succeed() {
+            let (values, logs) = executor.into_state().deconstruct();
+            backend.apply(values, logs, true);
+        }
 
-        // Add remain gas
+        let mut account = backend.get_account(&tx.sender);
+
+        // If execute failed, increase nonce
+        if !reason.is_succeed() {
+            account.nonce = old_nonce + U256::one();
+        }
+
+        // Add remained gas
         if remained_gas != 0 {
             let remain_gas = U256::from(remained_gas)
                 .checked_mul(backend.gas_price())
@@ -229,11 +238,6 @@ impl AxonExecutor {
                 .balance
                 .checked_add(remain_gas)
                 .unwrap_or_else(U256::max_value);
-        }
-
-        if reason.is_succeed() {
-            let (values, logs) = executor.into_state().deconstruct();
-            backend.apply(values, logs, true);
         }
 
         backend.save_account(&tx.sender, &account);
