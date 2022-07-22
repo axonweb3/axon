@@ -333,9 +333,15 @@ where
             .into());
         }
 
+        // check gas price
+        let gas_price = stx.transaction.unsigned.gas_price();
+        if gas_price == U256::zero() || gas_price >= U256::from(u64::MAX) {
+            return Err(MemPoolError::InvalidGasPrice(gas_price).into());
+        }
+
         // check gas limit
         let gas_limit_tx = stx.transaction.unsigned.gas_limit();
-        if gas_limit_tx.as_u64() > self.gas_limit.load(Ordering::Acquire) {
+        if gas_limit_tx > &U256::from(self.gas_limit.load(Ordering::Acquire)) {
             if ctx.is_network_origin_txs() {
                 self.network.report(
                     ctx,

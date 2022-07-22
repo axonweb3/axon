@@ -371,6 +371,9 @@ pub enum MemPoolError {
         tx_gas_limit:    U256,
     },
 
+    #[display(fmt = "Invalid gas price {:?}", _0)]
+    InvalidGasPrice(U256),
+
     #[display(
         fmt = "Tx: {:?} exceeds size limit, now: {}, limit: {} Bytes",
         tx_hash,
