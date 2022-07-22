@@ -280,7 +280,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
 
     #[metrics_rpc("eth_call")]
     async fn call(&self, req: Web3CallRequest, number: Option<BlockId>) -> RpcResult<Hex> {
-        if req.gas_price.unwrap_or_default() > U256::max_value() {
+        if req.gas_price.unwrap_or_default() > U256::from(u64::MAX) {
             return Err(Error::Custom("The gas price is too large".to_string()));
         }
 
