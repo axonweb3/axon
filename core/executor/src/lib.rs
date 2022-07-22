@@ -8,13 +8,14 @@ mod precompiles;
 mod system;
 #[cfg(test)]
 mod tests;
+mod utils;
 mod vm;
 
 pub use crate::adapter::{AxonExecutorAdapter, MPTTrie, RocksTrieDB};
 pub use crate::system::NATIVE_TOKEN_ISSUE_ADDRESS;
+pub use crate::utils::{decode_revert_msg, logs_bloom};
 pub use crate::vm::{
-    code_address, decode_revert_msg, CROSSCHAIN_CONTRACT_ADDRESS, METADATA_CONTRACT_ADDRESS,
-    WCKB_CONTRACT_ADDRESS,
+    code_address, CROSSCHAIN_CONTRACT_ADDRESS, METADATA_CONTRACT_ADDRESS, WCKB_CONTRACT_ADDRESS,
 };
 
 use std::collections::BTreeMap;
