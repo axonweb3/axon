@@ -15,24 +15,28 @@ pub fn code_address(sender: &H160, nonce: &U256) -> H256 {
 }
 
 pub fn decode_revert_msg(input: &[u8]) -> String {
+    if input.is_empty() {
+        return EXEC_REVERT.to_string();
+    }
+
+    let decode_reason =
+        |i: &[u8]| -> String { 
+            let reason = String::from_iter(input.iter().map(|i| *i as char)); 
+            EXEC_REVERT.to_string() + &reason
+        };
+
     if input.len() < REVERT_EFFECT_MSG_OFFSET {
-        return String::from(EXEC_REVERT);
+        return decode_reason(&input);
     }
 
     let end_offset = REVERT_EFFECT_MSG_OFFSET
         + U256::from_big_endian(&input[REVERT_MSG_LEN_OFFSET..REVERT_EFFECT_MSG_OFFSET]).as_usize();
 
     if input.len() < end_offset {
-        return String::from(EXEC_REVERT);
+        return decode_reason(&input);
     }
 
-    let reason = String::from_iter(
-        input[REVERT_EFFECT_MSG_OFFSET..end_offset]
-            .iter()
-            .map(|i| *i as char),
-    );
-
-    EXEC_REVERT.to_string() + &reason
+    decode_reason(&input[REVERT_EFFECT_MSG_OFFSET..end_offset])
 }
 
 pub fn logs_bloom<'a, I>(logs: I) -> Bloom
@@ -40,6 +44,7 @@ where
     I: Iterator<Item = &'a Log>,
 {
     let mut bloom = Bloom::zero();
+    
     for log in logs {
         m3_2048(&mut bloom, log.address.as_bytes());
         for topic in log.topics.iter() {
