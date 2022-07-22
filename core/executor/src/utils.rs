@@ -5,6 +5,7 @@ const U256_BE_BYTES_LEN: usize = 32;
 const REVERT_MSG_LEN_OFFSET: usize = FUNC_SELECTOR_LEN + U256_BE_BYTES_LEN;
 const REVERT_EFFECT_MSG_OFFSET: usize = REVERT_MSG_LEN_OFFSET + U256_BE_BYTES_LEN;
 const BLOOM_BYTE_LENGTH: usize = 256;
+const EXEC_REVERT: &str = "execution reverted: ";
 
 pub fn code_address(sender: &H160, nonce: &U256) -> H256 {
     let mut stream = rlp::RlpStream::new_list(2);
@@ -15,14 +16,14 @@ pub fn code_address(sender: &H160, nonce: &U256) -> H256 {
 
 pub fn decode_revert_msg(input: &[u8]) -> String {
     if input.len() < REVERT_EFFECT_MSG_OFFSET {
-        return String::new();
+        return String::from(EXEC_REVERT);
     }
 
     let end_offset = REVERT_EFFECT_MSG_OFFSET
         + U256::from_big_endian(&input[REVERT_MSG_LEN_OFFSET..REVERT_EFFECT_MSG_OFFSET]).as_usize();
 
     if input.len() < end_offset {
-        return String::new();
+        return String::from(EXEC_REVERT);
     }
 
     let reason = String::from_iter(
@@ -31,7 +32,7 @@ pub fn decode_revert_msg(input: &[u8]) -> String {
             .map(|i| *i as char),
     );
 
-    format!("execution reverted: {}", reason)
+    EXEC_REVERT.to_string() + &reason
 }
 
 pub fn logs_bloom<'a, I>(logs: I) -> Bloom
