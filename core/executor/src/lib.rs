@@ -214,6 +214,11 @@ impl AxonExecutor {
             None
         };
 
+        if exit_reason.is_succeed() {
+            let (values, logs) = executor.into_state().deconstruct();
+            backend.apply(values, logs, true);
+        }
+
         let mut account = backend.get_account(&tx.sender);
         account.nonce = old_nonce + U256::one();
 
@@ -226,11 +231,6 @@ impl AxonExecutor {
                 .balance
                 .checked_add(remain_gas)
                 .unwrap_or_else(U256::max_value);
-        }
-
-        if exit_reason.is_succeed() {
-            let (values, logs) = executor.into_state().deconstruct();
-            backend.apply(values, logs, true);
         }
 
         backend.save_account(&tx.sender, &account);
