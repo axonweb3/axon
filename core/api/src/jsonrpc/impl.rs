@@ -9,7 +9,7 @@ use core_consensus::SYNC_STATUS;
 use protocol::traits::{APIAdapter, Context};
 use protocol::types::{
     Block, BlockNumber, Bytes, Hash, Hasher, Header, Hex, Receipt, SignedTransaction, TxResp,
-    UnverifiedTransaction, H160, H256, H64, MIN_TRANSACTION_GAS_LIMIT, U256,
+    UnverifiedTransaction, H160, H256, H64, MAX_BLOCK_GAS_LIMIT, MIN_TRANSACTION_GAS_LIMIT, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, lazy::CHAIN_ID, ProtocolResult};
 
@@ -85,10 +85,16 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         let utx = UnverifiedTransaction::decode(&tx.as_bytes())
             .map_err(|e| Error::Custom(e.to_string()))?;
 
-        if utx.unsigned.gas_price() == U256::zero() {
+        let gas_price = utx.unsigned.gas_price();
+
+        if gas_price == U256::zero() {
             return Err(Error::Custom(
                 "The transaction gas price is zero".to_string(),
             ));
+        }
+
+        if gas_price >= U256::from(u64::MAX) {
+            return Err(Error::Custom("The gas price is too large".to_string()));
         }
 
         let gas_limit = *utx.unsigned.gas_limit();
@@ -284,7 +290,7 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             return Err(Error::Custom("The gas price is too large".to_string()));
         }
 
-        if req.gas.unwrap_or_default() > U256::max_value() {
+        if req.gas.unwrap_or_default() > U256::from(MAX_BLOCK_GAS_LIMIT) {
             return Err(Error::Custom("The gas limit is too large".to_string()));
         }
 
