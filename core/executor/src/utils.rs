@@ -10,8 +10,16 @@ pub fn code_address(sender: &H160, nonce: &U256) -> H256 {
 }
 
 pub fn decode_revert_msg(input: &[u8]) -> String {
+    if input.len() < REVERT_EFFECT_MSG_OFFSET {
+        return String::new();
+    }
+
     let end_offset = REVERT_EFFECT_MSG_OFFSET
         + U256::from_big_endian(&input[REVERT_MSG_LEN_OFFSET..REVERT_EFFECT_MSG_OFFSET]).as_usize();
+
+    if input.len() < end_offset {
+        return String::new();
+    }
 
     String::from_iter(
         input[REVERT_EFFECT_MSG_OFFSET..end_offset]
