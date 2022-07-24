@@ -19,11 +19,10 @@ pub fn decode_revert_msg(input: &[u8]) -> String {
         return EXEC_REVERT.to_string();
     }
 
-    let decode_reason =
-        |i: &[u8]| -> String { 
-            let reason = String::from_iter(input.iter().map(|i| *i as char)); 
-            EXEC_REVERT.to_string() + &reason
-        };
+    let decode_reason = |i: &[u8]| -> String {
+        let reason = String::from_iter(input.iter().map(|i| *i as char));
+        EXEC_REVERT.to_string() + &reason
+    };
 
     if input.len() < REVERT_EFFECT_MSG_OFFSET {
         return decode_reason(&input);
@@ -44,7 +43,7 @@ where
     I: Iterator<Item = &'a Log>,
 {
     let mut bloom = Bloom::zero();
-    
+
     for log in logs {
         m3_2048(&mut bloom, log.address.as_bytes());
         for topic in log.topics.iter() {
