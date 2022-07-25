@@ -29,20 +29,14 @@ updates:
   - package-ecosystem: "npm"
     directory: "/tests/e2e"
     schedule:
-      interval: weekly
-      day: wednesday
-      timezone: Asia/Shanghai
+      interval: monthly
   
   - package-ecosystem: "npm"
     directory: "/builtin-contract/crosschain"
     schedule:
-      interval: weekly
-      day: wednesday
-      timezone: Asia/Shanghai
+      interval: monthly
 
   - package-ecosystem: "npm"
     directory: "/builtin-contract/metadata"
     schedule:
-      interval: weekly
-      day: wednesday
-      timezone: Asia/Shanghai
+      interval: monthly
