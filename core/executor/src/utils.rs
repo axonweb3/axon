@@ -20,19 +20,19 @@ pub fn decode_revert_msg(input: &[u8]) -> String {
     }
 
     let decode_reason = |i: &[u8]| -> String {
-        let reason = String::from_iter(input.iter().map(|i| *i as char));
+        let reason = String::from_iter(i.iter().map(|c| *c as char));
         EXEC_REVERT.to_string() + &reason
     };
 
     if input.len() < REVERT_EFFECT_MSG_OFFSET {
-        return decode_reason(&input);
+        return decode_reason(input);
     }
 
     let end_offset = REVERT_EFFECT_MSG_OFFSET
         + U256::from_big_endian(&input[REVERT_MSG_LEN_OFFSET..REVERT_EFFECT_MSG_OFFSET]).as_usize();
 
     if input.len() < end_offset {
-        return decode_reason(&input);
+        return decode_reason(input);
     }
 
     decode_reason(&input[REVERT_EFFECT_MSG_OFFSET..end_offset])
