@@ -316,13 +316,13 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
     async fn estimate_gas(&self, req: Web3CallRequest, number: Option<BlockId>) -> RpcResult<U256> {
         if let Some(gas_limit) = req.gas.as_ref() {
             if gas_limit == &U256::zero() {
-                return Err(Error::Custom("Gas cannot be zero".to_string()));
+                return Err(Error::Custom("Failed: Gas cannot be zero".to_string()));
             }
         }
 
         if let Some(price) = req.gas_price.as_ref() {
-            if price >= &U256::max_value() {
-                return Err(Error::Custom("Gas price too high".to_string()));
+            if price >= &U256::from(u64::MAX) {
+                return Err(Error::Custom("Failed: Gas price too high".to_string()));
             }
         }
 
