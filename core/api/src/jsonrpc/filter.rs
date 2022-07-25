@@ -306,6 +306,9 @@ where
             .await
             .unwrap()
             .unwrap();
+        if *start >= latest.header.number {
+            return Vec::new();
+        }
 
         let mut block_hashes = Vec::with_capacity((latest.header.number - *start) as usize);
 

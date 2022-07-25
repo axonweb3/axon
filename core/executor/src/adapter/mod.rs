@@ -325,7 +325,7 @@ where
         if let Some(c) = code {
             let new_code_hash = Hasher::digest(&c);
             if new_code_hash != old_account.code_hash {
-                let _ = blocking_async!(
+                blocking_async!(
                     self,
                     storage,
                     insert_code,
