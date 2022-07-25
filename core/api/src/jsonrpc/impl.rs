@@ -247,12 +247,27 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         address: H160,
         number: Option<BlockId>,
     ) -> RpcResult<U256> {
-        Ok(self
-            .adapter
-            .get_account(Context::new(), address, number.unwrap_or_default().into())
-            .await
-            .map(|account| account.nonce)
-            .unwrap_or_default())
+        match number.unwrap_or_default() {
+            BlockId::Pending => {
+                let pending_tx_count = self
+                    .adapter
+                    .get_pending_tx_count(Context::new(), address)
+                    .await
+                    .map_err(|e| Error::Custom(e.to_string()))?;
+                Ok(self
+                    .adapter
+                    .get_account(Context::new(), address, BlockId::Pending.into())
+                    .await
+                    .map(|account| account.nonce + pending_tx_count)
+                    .unwrap_or_default())
+            }
+            b => Ok(self
+                .adapter
+                .get_account(Context::new(), address, b.into())
+                .await
+                .map(|account| account.nonce)
+                .unwrap_or_default()),
+        }
     }
 
     #[metrics_rpc("eth_blockNumber")]
