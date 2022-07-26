@@ -111,6 +111,9 @@ pub trait AxonWeb3Rpc {
         position: U256,
     ) -> RpcResult<Option<Web3Transaction>>;
 
+    #[method(name = "net_peerCount")]
+    async fn peer_count(&self) -> RpcResult<U256>;
+
     #[method(name = "eth_getStorageAt")]
     async fn get_storage_at(
         &self,

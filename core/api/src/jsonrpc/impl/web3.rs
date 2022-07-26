@@ -401,6 +401,14 @@ impl<Adapter: APIAdapter + 'static> AxonWeb3RpcServer for Web3RpcImpl<Adapter> {
         }
     }
 
+    #[metrics_rpc("net_peerCount")]
+    async fn peer_count(&self) -> RpcResult<U256> {
+        self.adapter
+            .peer_count(Context::new())
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))
+    }
+
     #[metrics_rpc("eth_gasPrice")]
     async fn gas_price(&self) -> RpcResult<U256> {
         Ok(U256::from(8u64))
