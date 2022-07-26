@@ -948,19 +948,18 @@ pub fn from_receipt_to_web3_log(
     }
 
     for (log_idex, log) in receipt.logs.iter().enumerate() {
-        let web3_log = Web3Log {
-            address:           receipt.sender,
-            topics:            log.topics.clone(),
-            data:              Hex::encode(&log.data),
-            block_hash:        Some(receipt.block_hash),
-            block_number:      Some(receipt.block_number.into()),
-            transaction_hash:  Some(receipt.tx_hash),
-            transaction_index: Some(index.into()),
-            log_index:         Some(log_idex.into()),
-            removed:           false,
-        };
-
         if contains_topic!(topics, log) {
+            let web3_log = Web3Log {
+                address:           receipt.sender,
+                topics:            log.topics.clone(),
+                data:              Hex::encode(&log.data),
+                block_hash:        Some(receipt.block_hash),
+                block_number:      Some(receipt.block_number.into()),
+                transaction_hash:  Some(receipt.tx_hash),
+                transaction_index: Some(index.into()),
+                log_index:         Some(log_idex.into()),
+                removed:           false,
+            };
             logs.push(web3_log);
         }
     }
