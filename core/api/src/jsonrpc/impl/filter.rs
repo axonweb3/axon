@@ -14,7 +14,7 @@ use protocol::types::{BlockNumber, Hash, Receipt, H160, H256, U256};
 use crate::jsonrpc::web3_types::{BlockId, FilterChanges, RawLoggerFilter, Web3Log};
 use crate::jsonrpc::{r#impl::from_receipt_to_web3_log, RpcResult, Web3FilterServer};
 
-pub fn filter_module<Adapter>(adapter: Arc<Adapter>) -> Web3RpcFilter
+pub fn filter_module<Adapter>(adapter: Arc<Adapter>) -> AxonWeb3RpcFilter
 where
     Adapter: APIAdapter + 'static,
 {
@@ -22,7 +22,7 @@ where
 
     tokio::spawn(FilterHub::new(adapter, rx).run());
 
-    Web3RpcFilter { sender: tx }
+    AxonWeb3RpcFilter { sender: tx }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -50,12 +50,12 @@ impl From<RawLoggerFilter> for LoggerFilter {
     }
 }
 
-pub struct Web3RpcFilter {
+pub struct AxonWeb3RpcFilter {
     sender: Sender<Command>,
 }
 
 #[async_trait]
-impl Web3FilterServer for Web3RpcFilter {
+impl Web3FilterServer for AxonWeb3RpcFilter {
     async fn new_filter(&self, filter: RawLoggerFilter) -> RpcResult<U256> {
         if let Some(BlockId::Pending) = filter.from_block {
             return Err(Error::Custom(
