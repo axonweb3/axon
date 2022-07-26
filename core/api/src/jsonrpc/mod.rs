@@ -1,6 +1,5 @@
 mod crosschain_types;
 mod error;
-mod filter;
 mod r#impl;
 mod web3_types;
 mod ws_subscription;
@@ -16,21 +15,17 @@ use protocol::traits::APIAdapter;
 use protocol::types::{Hash, Hex, H160, H256, U256};
 use protocol::ProtocolResult;
 
-use crate::jsonrpc::{
-    crosschain_types::CrossChainTransaction,
-    filter::AxonFilterServer,
-    web3_types::{
-        BlockId, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter, Web3Log, Web3Receipt,
-        Web3SyncStatus, Web3Transaction,
-    },
-    ws_subscription::{ws_subscription_module, HexIdProvider},
+use crate::jsonrpc::web3_types::{
+    BlockId, FilterChanges, RawLoggerFilter, Web3Block, Web3CallRequest, Web3FeeHistory,
+    Web3Filter, Web3Log, Web3Receipt, Web3SyncStatus, Web3Transaction,
 };
-use crate::APIError;
+use crate::jsonrpc::ws_subscription::{ws_subscription_module, HexIdProvider};
+use crate::{jsonrpc::crosschain_types::CrossChainTransaction, APIError};
 
 type RpcResult<T> = Result<T, Error>;
 
 #[rpc(server)]
-pub trait AxonJsonRpc {
+pub trait AxonWeb3Rpc {
     /// Sends signed transaction, returning its hash.
     #[method(name = "eth_sendRawTransaction")]
     async fn send_raw_transaction(&self, tx: Hex) -> RpcResult<H256>;
@@ -76,29 +71,11 @@ pub trait AxonJsonRpc {
     #[method(name = "eth_estimateGas")]
     async fn estimate_gas(&self, req: Web3CallRequest, number: Option<BlockId>) -> RpcResult<U256>;
 
-    #[method(name = "eth_chainId")]
-    async fn chain_id(&self) -> RpcResult<U256>;
-
-    #[method(name = "net_version")]
-    async fn net_version(&self) -> RpcResult<U256>;
-
     #[method(name = "eth_getCode")]
     async fn get_code(&self, address: H160, number: Option<BlockId>) -> RpcResult<Hex>;
 
     #[method(name = "eth_getTransactionReceipt")]
     async fn get_transaction_receipt(&self, hash: H256) -> RpcResult<Option<Web3Receipt>>;
-
-    #[method(name = "net_listening")]
-    async fn listening(&self) -> RpcResult<bool>;
-
-    #[method(name = "net_peerCount")]
-    async fn peer_count(&self) -> RpcResult<U256>;
-
-    #[method(name = "eth_syncing")]
-    async fn syncing(&self) -> RpcResult<Web3SyncStatus>;
-
-    #[method(name = "eth_mining")]
-    async fn mining(&self) -> RpcResult<bool>;
 
     #[method(name = "eth_gasPrice")]
     async fn gas_price(&self) -> RpcResult<U256>;
@@ -114,14 +91,8 @@ pub trait AxonJsonRpc {
         reward_percentiles: Option<Vec<f64>>,
     ) -> RpcResult<Web3FeeHistory>;
 
-    #[method(name = "web3_clientVersion")]
-    async fn client_version(&self) -> RpcResult<String>;
-
     #[method(name = "eth_accounts")]
     async fn accounts(&self) -> RpcResult<Vec<Hex>>;
-
-    #[method(name = "web3_sha3")]
-    async fn sha3(&self, data: Hex) -> RpcResult<Hash>;
 
     #[method(name = "eth_getBlockTransactionCountByHash")]
     async fn get_block_transaction_count_by_hash(&self, hash: Hash) -> RpcResult<U256>;
@@ -147,23 +118,68 @@ pub trait AxonJsonRpc {
         position: U256,
         number: Option<BlockId>,
     ) -> RpcResult<Hex>;
+}
+
+#[rpc(server)]
+pub trait Web3Filter {
+    #[method(name = "eth_newFilter")]
+    async fn new_filter(&self, filter: RawLoggerFilter) -> RpcResult<U256>;
+
+    #[method(name = "eth_newBlockFilter")]
+    async fn block_filter(&self) -> RpcResult<U256>;
+
+    #[method(name = "eth_getFilterLogs")]
+    async fn get_filter_logs(&self, id: U256) -> RpcResult<FilterChanges>;
+
+    #[method(name = "eth_getFilterChanges")]
+    async fn get_filter_changes(&self, id: U256) -> RpcResult<FilterChanges>;
+
+    #[method(name = "eth_uninstallFilter")]
+    async fn uninstall_filter(&self, id: U256) -> RpcResult<bool>;
+}
+
+#[rpc(server)]
+pub trait AxonNodeRpc {
+    #[method(name = "eth_chainId")]
+    fn chain_id(&self) -> RpcResult<U256>;
+
+    #[method(name = "net_version")]
+    fn net_version(&self) -> RpcResult<U256>;
+
+    #[method(name = "web3_clientVersion")]
+    fn client_version(&self) -> RpcResult<String>;
+
+    #[method(name = "net_listening")]
+    fn listening(&self) -> RpcResult<bool>;
+
+    #[method(name = "eth_syncing")]
+    fn syncing(&self) -> RpcResult<Web3SyncStatus>;
+
+    #[method(name = "eth_mining")]
+    fn mining(&self) -> RpcResult<bool>;
 
     #[method(name = "eth_coinbase")]
-    async fn coinbase(&self) -> RpcResult<H160>;
+    fn coinbase(&self) -> RpcResult<H160>;
 
     #[method(name = "eth_hashrate")]
-    async fn hashrate(&self) -> RpcResult<U256>;
+    fn hashrate(&self) -> RpcResult<U256>;
 
     #[method(name = "eth_submitWork ")]
-    async fn submit_work(&self, _nc: U256, _hash: H256, _summary: Hex) -> RpcResult<bool>;
+    fn submit_work(&self, _nc: U256, _hash: H256, _summary: Hex) -> RpcResult<bool>;
 
     #[method(name = "eth_submitHashrate")]
-    async fn submit_hashrate(&self, _hash_rate: Hex, _client_id: Hex) -> RpcResult<bool>;
+    fn submit_hashrate(&self, _hash_rate: Hex, _client_id: Hex) -> RpcResult<bool>;
+
+    #[method(name = "web3_sha3")]
+    fn sha3(&self, data: Hex) -> RpcResult<Hash>;
 
     #[method(name = "pprof")]
     fn pprof(&self, enable: bool) -> RpcResult<bool>;
+}
 
-    #[method(name = "getCrosschianResult")]
+#[rpc(server)]
+pub trait AxonCrosschainRpc {
+    #[method(name = "getCrosschainResult")]
     async fn get_crosschain_result(
         &self,
         tx_hash: H256,
@@ -176,14 +192,14 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
 ) -> ProtocolResult<(Option<HttpServerHandle>, Option<WsServerHandle>)> {
     let mut ret = (None, None);
 
-    let filter = filter::filter_module(Arc::clone(&adapter)).into_rpc();
-    let mut rpc = r#impl::JsonRpcImpl::new(
-        Arc::clone(&adapter),
-        &config.rpc.client_version,
-        config.data_path.clone(),
-        config.rpc.gas_cap,
-    )
-    .into_rpc();
+    let mut rpc = r#impl::Web3RpcImpl::new(Arc::clone(&adapter), config.rpc.gas_cap).into_rpc();
+    let node_rpc =
+        r#impl::NodeRpcImpl::new(&config.rpc.client_version, config.data_path.clone()).into_rpc();
+    let crosschain_rpc = r#impl::CrosschainRpcImpl::new(Arc::clone(&adapter)).into_rpc();
+    let filter = r#impl::filter_module(Arc::clone(&adapter)).into_rpc();
+
+    rpc.merge(node_rpc).unwrap();
+    rpc.merge(crosschain_rpc).unwrap();
     rpc.merge(filter).unwrap();
 
     if let Some(addr) = config.rpc.http_listening_address {
