@@ -1,12 +1,12 @@
 use crate::debugger::{clear_data, EvmDebugger};
 use crate::{AxonExecutor, AxonExecutorAdapter};
 use evm::Config;
-use protocol::types::{ExecutorContext, MemoryAccount, SignedTransaction};
+use protocol::types::{ExecutorContext, MemoryAccount, SignedTransaction, U256};
 use protocol::{traits::Executor, types::H160};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use super::vm_state::{self, BlockHeader};
+use super::vm_state;
 use super::vm_state::{mock_signed_tx, AccountState};
 
 const DEBUG_PATH: &str = "../../devtools/chain/db3";
@@ -26,10 +26,10 @@ impl Drop for VmStateDebugger {
 }
 
 impl vm_state::TestEvmState for VmStateDebugger {
-    fn init_state(genesis: BlockHeader) -> Self {
+    fn init_state() -> Self {
         VmStateDebugger {
             config:   Config::london(),
-            debugger: EvmDebugger::new(vec![genesis.coinbase], genesis.difficulty, DEBUG_PATH),
+            debugger: EvmDebugger::new(vec![], U256::zero(), DEBUG_PATH),
             executor: AxonExecutor::default(),
             exec_ctx: ExecutorContext::default(),
             txs:      Vec::new(),
@@ -80,8 +80,9 @@ impl vm_state::TestEvmState for VmStateDebugger {
             self.txs.clone(),
             self.config.clone(),
         );
-        _ = res; // use for debug
-                 // println!("{:#?}", res);
+        _ = res;
+        // todo use
+        // println!("{:#?}", res);
         Ok(self)
     }
 
@@ -89,6 +90,7 @@ impl vm_state::TestEvmState for VmStateDebugger {
     fn validate_account(
         &self,
         address: H160,
+        coinbase: H160,
         account_state: vm_state::AccountState,
     ) -> Result<(), String> {
         let backend = AxonExecutorAdapter::from_root(
@@ -99,7 +101,7 @@ impl vm_state::TestEvmState for VmStateDebugger {
         )
         .unwrap();
         let account = self.executor.get_account(&backend, &address);
-        if account.balance != account_state.balance {
+        if account.balance != account_state.balance && address != coinbase {
             Err(format!(
                 "failed: test case mismatch,
                 address: {:?},
