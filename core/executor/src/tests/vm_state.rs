@@ -206,6 +206,12 @@ pub struct TestCase {
     post_state:           BTreeMap<H160, AccountState>,
 }
 
+#[derive(Debug)]
+pub struct TestNum {
+    total:  i32,
+    failed: i32,
+}
+
 pub trait TestEvmState: Sized {
     fn init_state() -> Self;
 
@@ -240,24 +246,31 @@ pub trait TestEvmState: Sized {
         Ok(self)
     }
 
-    fn validate_accounts<I>(&self, iter: I) -> i32
+    fn validate_accounts<I>(&self, iter: I) -> TestNum
     where
         I: Iterator<Item = (H160, AccountState)>,
     {
-        let mut sum = 0;
+        let mut sum: TestNum = TestNum {
+            total:  0,
+            failed: 0,
+        };
         for (address, account) in iter {
             self.validate_account(address, account)
                 .unwrap_or_else(|err| {
                     println!("{}", err);
-                    sum += 1
+                    sum.failed += 1
                 });
+            sum.total += 1;
         }
         sum
     }
 }
 
-pub fn run_evm_test<State: TestEvmState>(test: &str) -> i32 {
-    let mut sum = 0;
+pub fn run_evm_test<State: TestEvmState>(test: &str) -> TestNum {
+    let mut sum: TestNum = TestNum {
+        total:  0,
+        failed: 0,
+    };
     let reader = BufReader::new(test.as_bytes());
 
     let test: BTreeMap<String, TestCase> =
@@ -277,7 +290,8 @@ pub fn run_evm_test<State: TestEvmState>(test: &str) -> i32 {
             .unwrap();
         let num = state.validate_accounts(test_case.post_state.into_iter());
 
-        sum += num;
+        sum.failed += num.failed;
+        sum.total += num.total;
     }
     sum
 }
@@ -296,17 +310,27 @@ pub fn run_evm_tests<State: TestEvmState>() {
         SUICIDE,
         SWAP,
     ];
-    let mut total = 0;
+    let mut num: TestNum = TestNum {
+        total:  0,
+        failed: 0,
+    };
     for test in tests {
         let sum = run_evm_test::<State>(test);
-        total += sum;
+        num.total += sum.total;
+        num.failed += sum.failed;
     }
-    println!("**********************************************************");
     println!(
-        "evm compatibility test result: total {} test cases failed.",
-        total
+        "***************************************************************************************"
     );
-    println!("**********************************************************");
+    println!(
+        "evm compatibility test result: total {} test cases; failed {} cases; success {} cases.",
+        num.total,
+        num.failed,
+        num.total - num.failed,
+    );
+    println!(
+        "***************************************************************************************"
+    );
 }
 
 pub fn mock_signed_tx(tx: CallTransaction) -> SignedTransaction {
