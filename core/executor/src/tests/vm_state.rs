@@ -1,21 +1,12 @@
 use ethers_core::utils::hex;
-use evm::{ExitReason, ExitSucceed};
+use protocol::types::{Bytes, TransactionAction};
 use protocol::types::{
-    Eip1559Transaction, MemoryAccount, MemoryVicinity, SignatureComponents, SignedTransaction,
-    UnsignedTransaction, UnverifiedTransaction,
+    Eip1559Transaction, MemoryAccount, SignatureComponents, SignedTransaction, UnsignedTransaction,
+    UnverifiedTransaction,
 };
-use protocol::{
-    traits::Executor,
-    types::{MemoryBackend, H160, H256, U256},
-};
-use rand::random;
+use protocol::types::{H160, H256, U256};
 use serde::{Deserialize, Deserializer};
-use std::num::ParseIntError;
 use std::{collections::BTreeMap, io::BufReader, mem::size_of, str::FromStr};
-
-use common_crypto::secp256k1_recover;
-
-use protocol::types::{Bytes, Public, TransactionAction};
 
 pub const BLOCK_INFO: &str = include_str!("../../res/vmTests/blockInfo.json");
 pub const CALL_DATA_COPY: &str = include_str!("../../res/vmTests/calldatacopy.json");
@@ -28,19 +19,6 @@ pub const RANDOM: &str = include_str!("../../res/vmTests/push.json");
 pub const SHA3: &str = include_str!("../../res/vmTests/random.json");
 pub const SUICIDE: &str = include_str!("../../res/vmTests/sha3.json");
 pub const SWAP: &str = include_str!("../../res/vmTests/suicide.json");
-
-// fn deserialize_u8<'de, D>(deserializer: D) -> Result<u8, ParseIntError>
-// where
-//     D: Deserializer<'de>,
-// {
-//     let s = String::deserialize(deserializer)?;
-//     // u8::from_str(&s).map_err(serde::de::Error::custom)
-//     s[0..2].eq("0x").then(|| u8::from_str(&s[2..]))
-//     // .map_or(Ok(), serde::de::Error::custom)
-//     // .unwrap()
-//     // .unwrap_or(serde::de::Error::custom)
-//     // .unwrap_or(serde::de::Error::custom)
-// }
 
 fn deserialize_u256<'de, D>(deserializer: D) -> Result<U256, D::Error>
 where
@@ -229,27 +207,23 @@ pub struct TestCase {
 }
 
 pub trait TestEvmState: Sized {
-    // 1
     fn init_state() -> Self;
-    // // 2
-    // fn try_apply_chain_id(self, id: U256) -> Result<Self, String>;
-    // 3
+
     fn try_apply_network_type(self, net_type: NetworkType) -> Result<Self, String>;
-    // 4
+
     fn try_apply_accounts<I>(self, iter: I) -> Result<Self, String>
     where
         I: Iterator<Item = (H160, AccountState)>;
-    // 5
+
     fn try_apply_block_header(self, block_header: BlockHeader) -> Result<Self, String>;
-    // 6
+
     fn try_apply_transaction(self, tx: CallTransaction) -> Result<Self, String>;
-    // 7
+
     fn validate_account(&self, address: H160, account: AccountState) -> Result<(), String>;
 
     fn try_apply_block(mut self, block: Block) -> Result<Self, String> {
         self = self.try_apply_block_header(block.block_header)?;
         for transaction in block.transactions {
-            // println!("7777777try_apply_block888888888");
             self = self.try_apply_transaction(transaction)?;
         }
 
@@ -260,7 +234,6 @@ pub trait TestEvmState: Sized {
     where
         I: Iterator<Item = Block>,
     {
-        // println!("999999999try_apply_blocks88888888");
         for block in iter {
             self = self.try_apply_block(block)?;
         }
@@ -292,25 +265,8 @@ pub fn run_evm_test<State: TestEvmState>(test: &str) -> i32 {
 
     for (test_name, test_case) in test {
         println!("\nRunning test: {} ...", test_name);
-        // println!("!!!{:#?}", test_case);
-        // for (k, v) in test_case.pre {
-        //     // if v.storage.is_empty() {
-        //     //     continue;
-        //     // }
-        //     println!("{:?}", v.balance);
-        //     // println!("{:?}", v.balance);
-        // }
-        // for k in test_case.blocks[0].transactions.iter() {
-        //     // if v.storage.is_empty() {
-        //     //     continue;
-        //     // }
-        //     println!("{:?}", k.v[0]);
-        //     // println!("{:?}", v.balance);
-        // }
 
         let state = State::init_state()
-            // .try_apply_chain_id(U256::from_str("0x5").unwrap())// 0x7e6
-            // .unwrap()
             .try_apply_network_type(test_case.network)
             .unwrap()
             .try_apply_accounts(test_case.pre.into_iter())
@@ -320,11 +276,8 @@ pub fn run_evm_test<State: TestEvmState>(test: &str) -> i32 {
             .try_apply_blocks(test_case.blocks.into_iter())
             .unwrap();
         let num = state.validate_accounts(test_case.post_state.into_iter());
-        // state
-        //     .validate_accounts(test_case.post_state.into_iter())
-        //     .unwrap_or(());
+
         sum += num;
-        // break;
     }
     sum
 }
@@ -345,12 +298,8 @@ pub fn run_evm_tests<State: TestEvmState>() {
     ];
     let mut total = 0;
     for test in tests {
-        // println!("!!!{:?}", test);
-        // println!("!!!");
-        // let sum: i32 = 0;
         let sum = run_evm_test::<State>(test);
         total += sum;
-        // break;
     }
     println!("**********************************************************");
     println!(

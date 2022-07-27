@@ -154,11 +154,11 @@ impl EvmDebugger {
     }
 
     pub fn get_trie_db(&self) -> Arc<RocksTrieDB> {
-        self.trie_db.clone()
+        Arc::clone(&self.trie_db)
     }
 
     pub fn get_storage(&self) -> Arc<ImplStorage<RocksAdapter>> {
-        self.storage.clone()
+        Arc::clone(&self.storage)
     }
 
     fn backend(&self, number: u64) -> AxonExecutorAdapter<ImplStorage<RocksAdapter>, RocksTrieDB> {
