@@ -41,6 +41,7 @@ impl vm_state::TestEvmState for VmStateDebugger {
             vm_state::NetworkType::Berlin => self.config = Config::berlin(),
             vm_state::NetworkType::Istanbul => self.config = Config::istanbul(),
             vm_state::NetworkType::London => self.config = Config::london(),
+            vm_state::NetworkType::Merge => self.config = Config::london(), // todo
         }
         Ok(self)
     }

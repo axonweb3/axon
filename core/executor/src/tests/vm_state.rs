@@ -102,6 +102,7 @@ pub enum NetworkType {
     Istanbul,
     Berlin,
     London,
+    Merge,
 }
 
 impl<'de> Deserialize<'de> for NetworkType {
@@ -114,6 +115,7 @@ impl<'de> Deserialize<'de> for NetworkType {
             "Istanbul" => Ok(Self::Istanbul),
             "Berlin" => Ok(Self::Berlin),
             "London" => Ok(Self::London),
+            "Merge" => Ok(Self::Merge),
             network => Err(format!("Not known network type, {}", network)),
         }
         .map_err(serde::de::Error::custom)
