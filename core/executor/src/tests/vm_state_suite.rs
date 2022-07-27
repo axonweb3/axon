@@ -81,7 +81,7 @@ impl vm_state::TestEvmState for VmStateDebugger {
             self.config.clone(),
         );
         _ = res; // use for debug
-        println!("{:#?}", res);
+                 // println!("{:#?}", res);
         Ok(self)
     }
 
