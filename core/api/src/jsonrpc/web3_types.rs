@@ -747,6 +747,23 @@ impl From<Header> for Web3Header {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(deny_unknown_fields, rename_all = "camelCase", untagged)]
+pub enum FilterChanges {
+    Blocks(Vec<H256>),
+    Logs(Vec<Web3Log>),
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct RawLoggerFilter {
+    pub from_block: Option<BlockId>,
+    pub to_block:   Option<BlockId>,
+    #[serde(default)]
+    pub address:    MultiType<H160>,
+    pub topics:     Option<Vec<MultiNestType<Hash>>>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
