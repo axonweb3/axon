@@ -5,7 +5,7 @@ import Config from "../config";
 import createTransactionData from "../src/create_test_data/createTestDataManage";
 
 export const DAPPETEER_DEFAULT_CONFIG = {
-  metamaskVersion: "v10.8.2",
+  metamaskVersion: "v10.10.2",
   args: [
     process.env.HEADLESS ? "--headless=chrome" : "",
     process.env.WSL ? "-no-sandbox" : "",
