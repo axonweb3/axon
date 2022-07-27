@@ -1,6 +1,6 @@
 mod system_script;
-mod vm_path;
-mod vm_status;
+mod vm_state;
+mod vm_test_suite;
 
 use std::collections::BTreeMap;
 use std::str::FromStr;

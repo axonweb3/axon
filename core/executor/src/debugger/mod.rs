@@ -15,7 +15,7 @@ use common_crypto::{PrivateKey, Secp256k1RecoverablePrivateKey, Signature};
 use protocol::codec::{hex_decode, ProtocolCodec};
 use protocol::traits::{Backend, Executor};
 use protocol::types::{
-    Account, Eip1559Transaction, ExecResp, ExecutorContext, Hash, Hasher, RichBlock,
+    Account, Eip1559Transaction, ExecResp, ExecutorContext, Hash, Hasher, MemoryAccount, RichBlock,
     SignedTransaction, TxResp, UnsignedTransaction, UnverifiedTransaction, H160, H256,
     MAX_BLOCK_GAS_LIMIT, NIL_DATA, RLP_NULL, U256,
 };
@@ -69,6 +69,46 @@ impl EvmDebugger {
         }
     }
 
+    pub fn new_empty(db_path: &str) -> Self {
+        let mut db_data_path = db_path.to_string();
+        db_data_path.push_str("/data");
+        let _ = std::fs::create_dir_all(&db_data_path);
+        let rocks_adapter = Arc::new(RocksAdapter::new(db_data_path, Default::default()).unwrap());
+
+        let mut db_state_path = db_path.to_string();
+        db_state_path.push_str("/state");
+        let _ = std::fs::create_dir_all(&db_state_path);
+        let trie = Arc::new(RocksTrieDB::new(db_state_path, Default::default(), 1000).unwrap());
+
+        EvmDebugger {
+            state_root: H256::default(),
+            storage:    Arc::new(ImplStorage::new(rocks_adapter, 10)),
+            trie_db:    trie,
+        }
+    }
+
+    pub fn set_state_root<I>(&mut self, iter: I)
+    where
+        I: Iterator<Item = (H160, MemoryAccount)>,
+    {
+        let mut mpt = MPTTrie::new(Arc::clone(&self.trie_db));
+        for (distribute_address, memory_account) in iter {
+            let distribute_account = Account {
+                nonce:        memory_account.nonce,
+                balance:      memory_account.balance,
+                storage_root: RLP_NULL,
+                code_hash:    NIL_DATA,
+            };
+
+            mpt.insert(
+                distribute_address.as_bytes(),
+                distribute_account.encode().unwrap().as_ref(),
+            )
+            .unwrap();
+        }
+        self.state_root = mpt.commit().unwrap();
+    }
+
     pub fn init_genesis(&mut self) {
         let genesis: RichBlock = parse_file(GENESIS_PATH, true).unwrap();
         self.exec(0, genesis.txs);
@@ -78,6 +118,19 @@ impl EvmDebugger {
         let mut backend = self.backend(number);
         let evm = AxonExecutor::default();
         let res = evm.exec(&mut backend, txs);
+        self.state_root = res.state_root;
+        res
+    }
+
+    pub fn exec_with_ectx(
+        &mut self,
+        exec_ctx: ExecutorContext,
+        txs: Vec<SignedTransaction>,
+        config: evm::Config,
+    ) -> ExecResp {
+        let mut backend = self.backend_with_ectx(exec_ctx);
+        let evm = AxonExecutor::default();
+        let res = evm.exec_with_config(&mut backend, txs, config);
         self.state_root = res.state_root;
         res
     }
@@ -96,6 +149,18 @@ impl EvmDebugger {
         evm.call(&mut backend, MAX_BLOCK_GAS_LIMIT, from, to, value, data)
     }
 
+    pub fn get_state_root(&self) -> H256 {
+        self.state_root
+    }
+
+    pub fn get_trie_db(&self) -> Arc<RocksTrieDB> {
+        self.trie_db.clone()
+    }
+
+    pub fn get_storage(&self) -> Arc<ImplStorage<RocksAdapter>> {
+        self.storage.clone()
+    }
+
     fn backend(&self, number: u64) -> AxonExecutorAdapter<ImplStorage<RocksAdapter>, RocksTrieDB> {
         let exec_ctx = ExecutorContext {
             block_number:           number.into(),
@@ -111,6 +176,19 @@ impl EvmDebugger {
             logs:                   vec![],
         };
 
+        AxonExecutorAdapter::from_root(
+            self.state_root,
+            Arc::clone(&self.trie_db),
+            Arc::clone(&self.storage),
+            exec_ctx,
+        )
+        .unwrap()
+    }
+
+    fn backend_with_ectx(
+        &self,
+        exec_ctx: ExecutorContext,
+    ) -> AxonExecutorAdapter<ImplStorage<RocksAdapter>, RocksTrieDB> {
         AxonExecutorAdapter::from_root(
             self.state_root,
             Arc::clone(&self.trie_db),
