@@ -1,4 +1,4 @@
-use std::collections::{hash_map::Entry, BTreeMap, BinaryHeap, HashMap, HashSet};
+use std::collections::{hash_map::Entry, BTreeMap, HashMap, HashSet};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
@@ -20,7 +20,7 @@ pub struct PriorityPool {
     sys_tx_bucket:  BuiltInContractTxBucket,
     pending_queue:  Arc<DashMap<H160, PendingQueue>>,
     co_queue:       Arc<ArrayQueue<(TxPtr, U256)>>,
-    real_queue:     Arc<Mutex<BinaryHeap<TxPtr>>>,
+    real_queue:     Arc<Mutex<Vec<TxPtr>>>,
     tx_map:         DashMap<Hash, TxPtr>,
     stock_len:      AtomicUsize,
     timeout_gap:    Mutex<BTreeMap<BlockNumber, HashSet<Hash>>>,
@@ -35,7 +35,7 @@ impl PriorityPool {
             sys_tx_bucket: BuiltInContractTxBucket::new(),
             pending_queue: Arc::new(DashMap::new()),
             co_queue: Arc::new(ArrayQueue::new(size)),
-            real_queue: Arc::new(Mutex::new(BinaryHeap::with_capacity(size * 2))),
+            real_queue: Arc::new(Mutex::new(Vec::with_capacity(size * 2))),
             tx_map: DashMap::new(),
             stock_len: AtomicUsize::new(0),
             timeout_gap: Mutex::new(BTreeMap::new()),
@@ -68,8 +68,7 @@ impl PriorityPool {
                             q.push(tx);
                         }
 
-                        let list = pending_queue.try_search_package_list();
-                        q.extend(list);
+                        pending_queue.try_search_package_list(&mut q);
                     }
                 }
 
@@ -145,17 +144,21 @@ impl PriorityPool {
         if !self.co_queue.is_empty() {
             self.flush_to_pending_queue()
         }
-        let q = self.real_queue.lock();
+        let mut q = self.real_queue.lock();
 
-        let mut q_c = q.clone();
-        for _ in 0..limit {
-            while let Some(tx) = q_c.pop() {
-                if !tx.is_dropped() {
-                    hashes.push(tx.hash());
-                    break;
-                }
-            }
-        }
+        q.sort_unstable();
+
+        hashes.extend(
+            q.iter()
+                .filter_map(|ptr| {
+                    if ptr.is_dropped() {
+                        None
+                    } else {
+                        Some(ptr.hash())
+                    }
+                })
+                .take(limit),
+        );
 
         PackedTxHashes {
             hashes,
@@ -180,8 +183,7 @@ impl PriorityPool {
                 q.push(tx);
             }
 
-            let list = pending_queue.try_search_package_list();
-            q.extend(list);
+            pending_queue.try_search_package_list(&mut q);
         }
     }
 
@@ -261,13 +263,15 @@ impl PriorityPool {
             None
         };
 
-        self.tx_map.retain(|_, v| {
+        let mut retain_keys = Vec::with_capacity(self.len() / 4);
+        self.tx_map.retain(|hash, v| {
             if !v.is_dropped()
                 && timeout
                     .as_ref()
                     .map(|set| set.is_empty() || !set.contains(&v.hash()))
                     .unwrap_or(true)
             {
+                retain_keys.push(*hash);
                 return true;
             }
 
@@ -276,12 +280,9 @@ impl PriorityPool {
             false
         });
 
-        let keys = self.tx_map.iter().map(|kv| kv.hash());
+        timeout_gap.entry(number).or_default().extend(retain_keys);
 
-        timeout_gap.entry(number).or_default().extend(keys);
-
-        let retain: Vec<_> = q.drain().filter(|ptr| !ptr.is_dropped()).collect();
-        q.extend(retain);
+        q.retain(|ptr| !ptr.is_dropped());
 
         self.pending_queue.retain(|_, v| {
             v.clear_droped();

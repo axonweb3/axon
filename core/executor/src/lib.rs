@@ -8,13 +8,14 @@ mod precompiles;
 mod system;
 #[cfg(test)]
 mod tests;
+mod utils;
 mod vm;
 
 pub use crate::adapter::{AxonExecutorAdapter, MPTTrie, RocksTrieDB};
 pub use crate::system::NATIVE_TOKEN_ISSUE_ADDRESS;
+pub use crate::utils::{code_address, decode_revert_msg, logs_bloom};
 pub use crate::vm::{
-    code_address, decode_revert_msg, CROSSCHAIN_CONTRACT_ADDRESS, METADATA_CONTRACT_ADDRESS,
-    WCKB_CONTRACT_ADDRESS,
+    CROSSCHAIN_CONTRACT_ADDRESS, METADATA_CONTRACT_ADDRESS, WCKB_CONTRACT_ADDRESS,
 };
 
 use std::collections::BTreeMap;
@@ -213,6 +214,11 @@ impl AxonExecutor {
             None
         };
 
+        if exit_reason.is_succeed() {
+            let (values, logs) = executor.into_state().deconstruct();
+            backend.apply(values, logs, true);
+        }
+
         let mut account = backend.get_account(&tx.sender);
         account.nonce = old_nonce + U256::one();
 
@@ -225,11 +231,6 @@ impl AxonExecutor {
                 .balance
                 .checked_add(remain_gas)
                 .unwrap_or_else(U256::max_value);
-        }
-
-        if exit_reason.is_succeed() {
-            let (values, logs) = executor.into_state().deconstruct();
-            backend.apply(values, logs, true);
         }
 
         backend.save_account(&tx.sender, &account);

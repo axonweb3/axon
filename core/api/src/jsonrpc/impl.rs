@@ -9,7 +9,7 @@ use core_consensus::SYNC_STATUS;
 use protocol::traits::{APIAdapter, Context};
 use protocol::types::{
     Block, BlockNumber, Bytes, Hash, Hasher, Header, Hex, Receipt, SignedTransaction, TxResp,
-    UnverifiedTransaction, H160, H256, H64, MIN_TRANSACTION_GAS_LIMIT, U256,
+    UnverifiedTransaction, H160, H256, H64, MAX_BLOCK_GAS_LIMIT, MIN_TRANSACTION_GAS_LIMIT, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, lazy::CHAIN_ID, ProtocolResult};
 
@@ -85,10 +85,16 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         let utx = UnverifiedTransaction::decode(&tx.as_bytes())
             .map_err(|e| Error::Custom(e.to_string()))?;
 
-        if utx.unsigned.gas_price() == U256::zero() {
+        let gas_price = utx.unsigned.gas_price();
+
+        if gas_price == U256::zero() {
             return Err(Error::Custom(
                 "The transaction gas price is zero".to_string(),
             ));
+        }
+
+        if gas_price >= U256::from(u64::MAX) {
+            return Err(Error::Custom("The gas price is too large".to_string()));
         }
 
         let gas_limit = *utx.unsigned.gas_limit();
@@ -241,12 +247,27 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         address: H160,
         number: Option<BlockId>,
     ) -> RpcResult<U256> {
-        Ok(self
-            .adapter
-            .get_account(Context::new(), address, number.unwrap_or_default().into())
-            .await
-            .map(|account| account.nonce)
-            .unwrap_or_default())
+        match number.unwrap_or_default() {
+            BlockId::Pending => {
+                let pending_tx_count = self
+                    .adapter
+                    .get_pending_tx_count(Context::new(), address)
+                    .await
+                    .map_err(|e| Error::Custom(e.to_string()))?;
+                Ok(self
+                    .adapter
+                    .get_account(Context::new(), address, BlockId::Pending.into())
+                    .await
+                    .map(|account| account.nonce + pending_tx_count)
+                    .unwrap_or_default())
+            }
+            b => Ok(self
+                .adapter
+                .get_account(Context::new(), address, b.into())
+                .await
+                .map(|account| account.nonce)
+                .unwrap_or_default()),
+        }
     }
 
     #[metrics_rpc("eth_blockNumber")]
@@ -280,11 +301,11 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
 
     #[metrics_rpc("eth_call")]
     async fn call(&self, req: Web3CallRequest, number: Option<BlockId>) -> RpcResult<Hex> {
-        if req.gas_price.unwrap_or_default() > U256::max_value() {
+        if req.gas_price.unwrap_or_default() > U256::from(u64::MAX) {
             return Err(Error::Custom("The gas price is too large".to_string()));
         }
 
-        if req.gas.unwrap_or_default() > U256::max_value() {
+        if req.gas.unwrap_or_default() > U256::from(MAX_BLOCK_GAS_LIMIT) {
             return Err(Error::Custom("The gas limit is too large".to_string()));
         }
 
@@ -310,13 +331,13 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
     async fn estimate_gas(&self, req: Web3CallRequest, number: Option<BlockId>) -> RpcResult<U256> {
         if let Some(gas_limit) = req.gas.as_ref() {
             if gas_limit == &U256::zero() {
-                return Err(Error::Custom("Gas cannot be zero".to_string()));
+                return Err(Error::Custom("Failed: Gas cannot be zero".to_string()));
             }
         }
 
         if let Some(price) = req.gas_price.as_ref() {
-            if price >= &U256::max_value() {
-                return Err(Error::Custom("Gas price too high".to_string()));
+            if price >= &U256::from(u64::MAX) {
+                return Err(Error::Custom("Failed: Gas price too high".to_string()));
             }
         }
 
@@ -927,19 +948,18 @@ pub fn from_receipt_to_web3_log(
     }
 
     for (log_idex, log) in receipt.logs.iter().enumerate() {
-        let web3_log = Web3Log {
-            address:           receipt.sender,
-            topics:            log.topics.clone(),
-            data:              Hex::encode(&log.data),
-            block_hash:        Some(receipt.block_hash),
-            block_number:      Some(receipt.block_number.into()),
-            transaction_hash:  Some(receipt.tx_hash),
-            transaction_index: Some(index.into()),
-            log_index:         Some(log_idex.into()),
-            removed:           false,
-        };
-
         if contains_topic!(topics, log) {
+            let web3_log = Web3Log {
+                address:           receipt.sender,
+                topics:            log.topics.clone(),
+                data:              Hex::encode(&log.data),
+                block_hash:        Some(receipt.block_hash),
+                block_number:      Some(receipt.block_number.into()),
+                transaction_hash:  Some(receipt.tx_hash),
+                transaction_index: Some(index.into()),
+                log_index:         Some(log_idex.into()),
+                removed:           false,
+            };
             logs.push(web3_log);
         }
     }

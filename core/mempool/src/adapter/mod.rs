@@ -117,7 +117,7 @@ pub struct DefaultMemPoolAdapter<C, N, S, DB, M, I> {
     metadata:       Arc<M>,
     interoperation: Arc<I>,
 
-    addr_nonce:  DashMap<H160, U256>,
+    addr_nonce:  DashMap<H160, (U256, U256)>,
     gas_limit:   AtomicU64,
     max_tx_size: AtomicUsize,
     chain_id:    u64,
@@ -264,14 +264,21 @@ where
 
         let addr = &tx.sender;
         if let Some(res) = self.addr_nonce.get(addr) {
-            if tx.transaction.unsigned.nonce() < res.value() {
+            if tx.transaction.unsigned.nonce() < &res.value().0 {
                 return Err(MemPoolError::InvalidNonce {
-                    current:  res.value().as_u64(),
+                    current:  res.value().0.as_u64(),
                     tx_nonce: tx.transaction.unsigned.nonce().as_u64(),
                 }
                 .into());
+            } else if res.value().1 < tx.transaction.unsigned.may_cost() {
+                return Err(MemPoolError::ExceedBalance {
+                    tx_hash:         tx.transaction.hash,
+                    account_balance: res.value().1,
+                    tx_gas_limit:    *tx.transaction.unsigned.gas_limit(),
+                }
+                .into());
             } else {
-                return Ok(tx.transaction.unsigned.nonce() - res.value());
+                return Ok(tx.transaction.unsigned.nonce() - res.value().0);
             }
         }
 
@@ -283,7 +290,8 @@ where
         )?;
 
         let account = AxonExecutor::default().get_account(&backend, addr);
-        self.addr_nonce.insert(*addr, account.nonce);
+        self.addr_nonce
+            .insert(*addr, (account.nonce, account.balance));
 
         if &account.nonce > tx.transaction.unsigned.nonce() {
             return Err(MemPoolError::InvalidNonce {
@@ -333,9 +341,15 @@ where
             .into());
         }
 
+        // check gas price
+        let gas_price = stx.transaction.unsigned.gas_price();
+        if gas_price == U256::zero() || gas_price >= U256::from(u64::MAX) {
+            return Err(MemPoolError::InvalidGasPrice(gas_price).into());
+        }
+
         // check gas limit
         let gas_limit_tx = stx.transaction.unsigned.gas_limit();
-        if gas_limit_tx.as_u64() > self.gas_limit.load(Ordering::Acquire) {
+        if gas_limit_tx > &U256::from(self.gas_limit.load(Ordering::Acquire)) {
             if ctx.is_network_origin_txs() {
                 self.network.report(
                     ctx,

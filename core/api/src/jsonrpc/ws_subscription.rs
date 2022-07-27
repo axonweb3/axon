@@ -45,19 +45,20 @@ where
         "eth_subscription",
         "eth_subscription",
         "eth_unsubscribe",
-        |params, pending, ctx| match Type::try_from(params) {
+        |params, mut sink, ctx| match Type::try_from(params) {
             Ok(typ) => {
-                if let Some(sink) = pending.accept() {
-                    let raw_hub = RawHub { typ, sink };
+                sink.accept()?;
+                let raw_hub = RawHub { typ, sink };
 
-                    tokio::spawn(async move {
-                        let _ignore = ctx.send(raw_hub).await;
-                    });
-                }
+                tokio::spawn(async move {
+                    let _ignore = ctx.send(raw_hub).await;
+                });
+                Ok(())
             }
             Err(e) => {
                 let e: Error = e.into();
-                pending.reject(e);
+                let _ = sink.reject(e);
+                Ok(())
             }
         },
     )
@@ -133,7 +134,6 @@ where
 
             let latest_web3_header = Web3Header::from(latest_block.header.clone());
             for hub in self.header_hubs.iter_mut() {
-                // unbound sender can ignore it's return
                 let _ignore = hub.sink.send(&latest_web3_header);
             }
         }

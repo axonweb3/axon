@@ -18,14 +18,16 @@ use common_logger::{json, log};
 use common_merkle::Merkle;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
-    Block, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, Hex, Log, MerkleRoot, Metadata, Proof,
-    Proposal, Receipt, SignedTransaction, TransactionAction, ValidatorExtend, BASE_FEE_PER_GAS,
-    H160, MAX_BLOCK_GAS_LIMIT, U256,
+    Block, Bytes, ExecResp, Hash, Hasher, Hex, Log, MerkleRoot, Metadata, Proof, Proposal, Receipt,
+    SignedTransaction, TransactionAction, ValidatorExtend, BASE_FEE_PER_GAS, H160,
+    MAX_BLOCK_GAS_LIMIT, U256,
 };
 use protocol::{
     async_trait, lazy::CURRENT_STATE_ROOT, tokio::sync::Mutex as AsyncMutex, ProtocolError,
     ProtocolResult,
 };
+
+use core_executor::logs_bloom;
 
 use crate::message::{
     END_GOSSIP_AGGREGATED_VOTE, END_GOSSIP_SIGNED_CHOKE, END_GOSSIP_SIGNED_PROPOSAL,
@@ -765,7 +767,7 @@ pub fn generate_receipts_and_logs(
                 tx_index: idx as u32,
                 state_root,
                 used_gas: U256::from(res.gas_used),
-                logs_bloom: Bloom::from(BloomInput::Raw(rlp::encode_list(&res.logs).as_ref())),
+                logs_bloom: logs_bloom(res.logs.iter()),
                 logs: res.logs.clone(),
                 log_index,
                 code_address: res.code_address,
