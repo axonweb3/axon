@@ -1,7 +1,7 @@
 use ethers_core::utils::hex;
-use protocol::types::{Bytes, TransactionAction};
+use protocol::types::{Bytes, LegacyTransaction, TransactionAction};
 use protocol::types::{
-    Eip1559Transaction, MemoryAccount, SignatureComponents, SignedTransaction, UnsignedTransaction,
+    MemoryAccount, SignatureComponents, SignedTransaction, UnsignedTransaction,
     UnverifiedTransaction,
 };
 use protocol::types::{H160, H256, U256};
@@ -215,7 +215,7 @@ pub struct TestNum {
 }
 
 pub trait TestEvmState: Sized {
-    fn init_state() -> Self;
+    fn init_state(genesis: BlockHeader) -> Self;
 
     fn try_apply_network_type(self, net_type: NetworkType) -> Result<Self, String>;
 
@@ -223,14 +223,14 @@ pub trait TestEvmState: Sized {
     where
         I: Iterator<Item = (H160, AccountState)>;
 
-    fn try_apply_block_header(self, block_header: BlockHeader) -> Result<Self, String>;
+    fn try_apply_block_header(self, block_header: &BlockHeader) -> Result<Self, String>;
 
     fn try_apply_transaction(self, tx: CallTransaction) -> Result<Self, String>;
 
     fn validate_account(&self, address: H160, account: AccountState) -> Result<(), String>;
 
     fn try_apply_block(mut self, block: Block) -> Result<Self, String> {
-        self = self.try_apply_block_header(block.block_header)?;
+        self = self.try_apply_block_header(&block.block_header)?;
         for transaction in block.transactions {
             self = self.try_apply_transaction(transaction)?;
         }
@@ -281,12 +281,12 @@ pub fn run_evm_test<State: TestEvmState>(test: &str) -> TestNum {
     for (test_name, test_case) in test {
         println!("\nRunning test: {} ...", test_name);
 
-        let state = State::init_state()
+        let state = State::init_state(test_case.genesis_block_header)
             .try_apply_network_type(test_case.network)
             .unwrap()
             .try_apply_accounts(test_case.pre.into_iter())
             .unwrap()
-            .try_apply_block_header(test_case.genesis_block_header)
+            .try_apply_block_header(&test_case.blocks[0].block_header)
             .unwrap()
             .try_apply_blocks(test_case.blocks.into_iter())
             .unwrap();
@@ -294,6 +294,7 @@ pub fn run_evm_test<State: TestEvmState>(test: &str) -> TestNum {
 
         sum.failed += num.failed;
         sum.total += num.total;
+        // break;
     }
     sum
 }
@@ -320,6 +321,7 @@ pub fn run_evm_tests<State: TestEvmState>() {
         let sum = run_evm_test::<State>(test);
         num.total += sum.total;
         num.failed += sum.failed;
+        // break;g
     }
     println!(
         "***************************************************************************************"
@@ -337,15 +339,25 @@ pub fn run_evm_tests<State: TestEvmState>() {
 
 pub fn mock_signed_tx(tx: CallTransaction) -> SignedTransaction {
     let utx = UnverifiedTransaction {
-        unsigned:  UnsignedTransaction::Eip1559(Eip1559Transaction {
-            nonce:                    tx.nonce,
-            gas_limit:                tx.gas_limit,
-            max_priority_fee_per_gas: U256::one(),
-            gas_price:                tx.gas_price,
-            action:                   TransactionAction::Create,
-            value:                    tx.value,
-            data:                     Bytes::copy_from_slice(&tx.data),
-            access_list:              vec![],
+        // unsigned:  UnsignedTransaction::Eip1559(Eip1559Transaction {
+        //     nonce:                    tx.nonce,
+        //     gas_limit:                tx.gas_limit,
+        //     max_priority_fee_per_gas: tx.gas_price,
+        //     gas_price:                tx.gas_price,
+        //     action:                   TransactionAction::Call(tx.to),
+        //     value:                    tx.value,
+        //     data:                     Bytes::copy_from_slice(&tx.data),
+        //     access_list:              vec![],
+        // }),
+        unsigned:  UnsignedTransaction::Legacy(LegacyTransaction {
+            nonce:     tx.nonce,
+            gas_limit: tx.gas_limit,
+            // max_priority_fee_per_gas: tx.gas_price,
+            gas_price: tx.gas_price,
+            action:    TransactionAction::Call(tx.to),
+            value:     tx.value,
+            data:      Bytes::copy_from_slice(&tx.data),
+            // access_list:              vec![],
         }),
         chain_id:  5u64,
         hash:      H256::default(),

@@ -6,7 +6,7 @@ use protocol::{traits::Executor, types::H160};
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use super::vm_state;
+use super::vm_state::{self, BlockHeader};
 use super::vm_state::{mock_signed_tx, AccountState};
 
 const DEBUG_PATH: &str = "../../devtools/chain/db3";
@@ -26,10 +26,10 @@ impl Drop for VmStateDebugger {
 }
 
 impl vm_state::TestEvmState for VmStateDebugger {
-    fn init_state() -> Self {
+    fn init_state(genesis: BlockHeader) -> Self {
         VmStateDebugger {
             config:   Config::london(),
-            debugger: EvmDebugger::new_empty(DEBUG_PATH),
+            debugger: EvmDebugger::new(vec![genesis.coinbase], genesis.difficulty, DEBUG_PATH),
             executor: AxonExecutor::default(),
             exec_ctx: ExecutorContext::default(),
             txs:      Vec::new(),
@@ -51,6 +51,7 @@ impl vm_state::TestEvmState for VmStateDebugger {
     where
         I: Iterator<Item = (H160, AccountState)>,
     {
+        self.debugger.exec(0, vec![]);
         let states: BTreeMap<H160, MemoryAccount> =
             iter.map(|(k, v)| (k, v.try_into().unwrap())).collect();
         self.debugger.set_state_root(states.into_iter());
@@ -58,7 +59,7 @@ impl vm_state::TestEvmState for VmStateDebugger {
     }
 
     // blocks-blockheader
-    fn try_apply_block_header(mut self, header: vm_state::BlockHeader) -> Result<Self, String> {
+    fn try_apply_block_header(mut self, header: &vm_state::BlockHeader) -> Result<Self, String> {
         self.exec_ctx.block_coinbase = header.coinbase;
         self.exec_ctx.difficulty = header.difficulty;
         self.exec_ctx.block_gas_limit = header.gas_limit;
@@ -80,6 +81,7 @@ impl vm_state::TestEvmState for VmStateDebugger {
             self.config.clone(),
         );
         _ = res; // use for debug
+        println!("{:#?}", res);
         Ok(self)
     }
 
@@ -101,7 +103,7 @@ impl vm_state::TestEvmState for VmStateDebugger {
             Err(format!(
                 "failed: test case mismatch,
                 address: {:?},
-                current: {{ balance: {}, nonce: {}}},
+                current:  {{ balance: {}, nonce: {}}},
                 expected: {{ balance: {}, nonce: {}}}",
                 address, account.balance, account.nonce, account_state.balance, account_state.nonce,
             ))

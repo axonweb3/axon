@@ -69,24 +69,6 @@ impl EvmDebugger {
         }
     }
 
-    pub fn new_empty(db_path: &str) -> Self {
-        let mut db_data_path = db_path.to_string();
-        db_data_path.push_str("/data");
-        let _ = std::fs::create_dir_all(&db_data_path);
-        let rocks_adapter = Arc::new(RocksAdapter::new(db_data_path, Default::default()).unwrap());
-
-        let mut db_state_path = db_path.to_string();
-        db_state_path.push_str("/state");
-        let _ = std::fs::create_dir_all(&db_state_path);
-        let trie = Arc::new(RocksTrieDB::new(db_state_path, Default::default(), 1000).unwrap());
-
-        EvmDebugger {
-            state_root: H256::default(),
-            storage:    Arc::new(ImplStorage::new(rocks_adapter, 10)),
-            trie_db:    trie,
-        }
-    }
-
     pub fn set_state_root<I>(&mut self, iter: I)
     where
         I: Iterator<Item = (H160, MemoryAccount)>,
