@@ -25,6 +25,14 @@ pub enum UnsignedTransaction {
 }
 
 impl UnsignedTransaction {
+    pub fn type_(&self) -> u64 {
+        match self {
+            UnsignedTransaction::Legacy(_) => 0x00,
+            UnsignedTransaction::Eip2930(_) => 0x01,
+            UnsignedTransaction::Eip1559(_) => 0x02,
+        }
+    }
+
     pub fn may_cost(&self) -> U256 {
         if let Some(res) = self.gas_price().checked_mul(*self.gas_limit()) {
             return res
@@ -423,6 +431,10 @@ impl TryFrom<UnverifiedTransaction> for SignedTransaction {
 }
 
 impl SignedTransaction {
+    pub fn type_(&self) -> u64 {
+        self.transaction.unsigned.type_()
+    }
+
     pub fn get_to(&self) -> Option<H160> {
         self.transaction.unsigned.to()
     }

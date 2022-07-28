@@ -10,8 +10,6 @@ use protocol::types::{
     H256, MAX_PRIORITY_FEE_PER_GAS, U256, U64,
 };
 
-const EIP1559_TX_TYPE: u64 = 0x02;
-
 #[allow(clippy::large_enum_variant)]
 #[derive(Deserialize, Clone, Debug, PartialEq, Eq)]
 pub enum RichTransactionOrHash {
@@ -77,7 +75,7 @@ impl From<SignedTransaction> for Web3Transaction {
         let signature = stx.transaction.signature.clone().unwrap_or_default();
         let is_eip1559 = stx.transaction.unsigned.is_eip1559();
         Web3Transaction {
-            type_:                    Some(EIP1559_TX_TYPE.into()),
+            type_:                    Some(stx.type_().into()),
             block_number:             None,
             block_hash:               None,
             raw:                      Hex::encode(stx.transaction.encode().unwrap()),
@@ -117,7 +115,7 @@ impl From<(SignedTransaction, Receipt)> for Web3Transaction {
         let signature = stx.transaction.signature.clone().unwrap_or_default();
         let is_eip1559 = stx.transaction.unsigned.is_eip1559();
         Web3Transaction {
-            type_:                    Some(EIP1559_TX_TYPE.into()),
+            type_:                    Some(stx.type_().into()),
             block_number:             Some(receipt.block_number.into()),
             block_hash:               Some(receipt.block_hash),
             raw:                      Hex::encode(stx.transaction.encode().unwrap()),
@@ -238,7 +236,7 @@ impl Web3Receipt {
             to:                  stx.get_to(),
             transaction_hash:    receipt.tx_hash,
             transaction_index:   Some(receipt.tx_index.into()),
-            transaction_type:    Some(EIP1559_TX_TYPE.into()),
+            transaction_type:    Some(stx.type_().into()),
         }
     }
 }
@@ -745,6 +743,23 @@ impl From<Header> for Web3Header {
             nonce:             U256::default(),
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(deny_unknown_fields, rename_all = "camelCase", untagged)]
+pub enum FilterChanges {
+    Blocks(Vec<H256>),
+    Logs(Vec<Web3Log>),
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct RawLoggerFilter {
+    pub from_block: Option<BlockId>,
+    pub to_block:   Option<BlockId>,
+    #[serde(default)]
+    pub address:    MultiType<H160>,
+    pub topics:     Option<Vec<MultiNestType<Hash>>>,
 }
 
 #[cfg(test)]

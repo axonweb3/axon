@@ -1,45 +1,33 @@
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use jsonrpsee::core::Error;
 
 use common_apm::metrics_rpc;
-use core_consensus::SYNC_STATUS;
 use protocol::traits::{APIAdapter, Context};
 use protocol::types::{
-    Block, BlockNumber, Bytes, Hash, Hasher, Header, Hex, Receipt, SignedTransaction, TxResp,
+    Block, BlockNumber, Bytes, Hash, Header, Hex, Receipt, SignedTransaction, TxResp,
     UnverifiedTransaction, H160, H256, H64, MAX_BLOCK_GAS_LIMIT, MIN_TRANSACTION_GAS_LIMIT, U256,
 };
-use protocol::{async_trait, codec::ProtocolCodec, lazy::CHAIN_ID, ProtocolResult};
+use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
 use crate::jsonrpc::web3_types::{
     BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter,
-    Web3Log, Web3Receipt, Web3SyncStatus, Web3Transaction,
+    Web3Log, Web3Receipt, Web3Transaction,
 };
-use crate::jsonrpc::{
-    crosschain_types::CrossChainTransaction, error::RpcError, AxonJsonRpcServer, RpcResult,
-};
+use crate::jsonrpc::{error::RpcError, AxonWeb3RpcServer, RpcResult};
 use crate::APIError;
 
 pub(crate) const MAX_LOG_NUM: usize = 10000;
 
-#[allow(dead_code)]
-pub struct JsonRpcImpl<Adapter> {
+pub struct Web3RpcImpl<Adapter> {
     adapter: Arc<Adapter>,
-    version: String,
-    pprof:   Arc<AtomicBool>,
-    path:    PathBuf,
     gas_cap: U256,
 }
 
-impl<Adapter: APIAdapter> JsonRpcImpl<Adapter> {
-    pub fn new(adapter: Arc<Adapter>, version: &str, path: PathBuf, gas_cap: u64) -> Self {
+impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
+    pub fn new(adapter: Arc<Adapter>, gas_cap: u64) -> Self {
         Self {
             adapter,
-            version: version.to_string(),
-            pprof: Arc::new(AtomicBool::default()),
-            path: path.join("api"),
             gas_cap: gas_cap.into(),
         }
     }
@@ -79,7 +67,7 @@ impl<Adapter: APIAdapter> JsonRpcImpl<Adapter> {
 }
 
 #[async_trait]
-impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
+impl<Adapter: APIAdapter + 'static> AxonWeb3RpcServer for Web3RpcImpl<Adapter> {
     #[metrics_rpc("eth_sendRawTransaction")]
     async fn send_raw_transaction(&self, tx: Hex) -> RpcResult<H256> {
         let utx = UnverifiedTransaction::decode(&tx.as_bytes())
@@ -289,16 +277,6 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             .map_or(U256::zero(), |account| account.balance))
     }
 
-    #[metrics_rpc("eth_chainId")]
-    async fn chain_id(&self) -> RpcResult<U256> {
-        Ok((**CHAIN_ID.load()).into())
-    }
-
-    #[metrics_rpc("net_version")]
-    async fn net_version(&self) -> RpcResult<U256> {
-        self.chain_id().await
-    }
-
     #[metrics_rpc("eth_call")]
     async fn call(&self, req: Web3CallRequest, number: Option<BlockId>) -> RpcResult<Hex> {
         if req.gas_price.unwrap_or_default() > U256::from(u64::MAX) {
@@ -423,21 +401,6 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         }
     }
 
-    #[metrics_rpc("eth_gasPrice")]
-    async fn gas_price(&self) -> RpcResult<U256> {
-        Ok(U256::from(8u64))
-    }
-
-    #[metrics_rpc("net_listening")]
-    async fn listening(&self) -> RpcResult<bool> {
-        Ok(true)
-    }
-
-    #[metrics_rpc("eth_mining")]
-    async fn mining(&self) -> RpcResult<bool> {
-        Ok(false)
-    }
-
     #[metrics_rpc("net_peerCount")]
     async fn peer_count(&self) -> RpcResult<U256> {
         self.adapter
@@ -446,9 +409,9 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
             .map_err(|e| Error::Custom(e.to_string()))
     }
 
-    #[metrics_rpc("eth_syncing")]
-    async fn syncing(&self) -> RpcResult<Web3SyncStatus> {
-        Ok(SYNC_STATUS.read().clone().into())
+    #[metrics_rpc("eth_gasPrice")]
+    async fn gas_price(&self) -> RpcResult<U256> {
+        Ok(U256::from(8u64))
     }
 
     #[metrics_rpc("eth_getLogs")]
@@ -657,22 +620,9 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
         })
     }
 
-    #[metrics_rpc("web3_clientVersion")]
-    async fn client_version(&self) -> RpcResult<String> {
-        Ok(self.version.clone())
-    }
-
     #[metrics_rpc("eth_accounts")]
     async fn accounts(&self) -> RpcResult<Vec<Hex>> {
         Ok(vec![])
-    }
-
-    #[metrics_rpc("web3_sha3")]
-    async fn sha3(&self, data: Hex) -> RpcResult<Hash> {
-        let decode_data =
-            Hex::decode(data.as_string()).map_err(|e| Error::Custom(e.to_string()))?;
-        let ret = Hasher::digest(decode_data.as_ref());
-        Ok(ret)
     }
 
     #[metrics_rpc("eth_getBlockTransactionCountByHash")]
@@ -770,119 +720,6 @@ impl<Adapter: APIAdapter + 'static> AxonJsonRpcServer for JsonRpcImpl<Adapter> {
 
         Ok(Hex::encode(&value))
     }
-
-    async fn coinbase(&self) -> RpcResult<H160> {
-        // fixme: how to get the the coinbase value
-        Ok(H160::default())
-    }
-
-    async fn hashrate(&self) -> RpcResult<U256> {
-        Ok(U256::from(1u64))
-    }
-
-    async fn submit_work(&self, _nc: U256, _hash: H256, _summary: Hex) -> RpcResult<bool> {
-        Ok(true)
-    }
-
-    async fn submit_hashrate(&self, _hash_rate: Hex, _client_id: Hex) -> RpcResult<bool> {
-        Ok(true)
-    }
-
-    fn pprof(&self, _enable: bool) -> RpcResult<bool> {
-        #[cfg(feature = "pprof")]
-        {
-            use std::{
-                fs::{create_dir_all, OpenOptions},
-                time::Duration,
-            };
-
-            let old = self.pprof.load(Ordering::Acquire);
-            self.pprof.store(_enable, Ordering::Release);
-            if !old && _enable {
-                let flag = Arc::clone(&self.pprof);
-                let path = self.path.clone();
-                std::thread::spawn(move || {
-                    use pprof::protos::Message;
-                    use std::io::Write;
-
-                    let guard = pprof::ProfilerGuard::new(100).unwrap();
-                    while flag.load(Ordering::Acquire) {
-                        std::thread::sleep(Duration::from_secs(60));
-                        if let Ok(report) = guard.report().build() {
-                            create_dir_all(&path).unwrap();
-                            let tmp_dir = path.join("tmp");
-                            create_dir_all(&tmp_dir).unwrap();
-                            let tmp_file = tmp_dir.join("profile.pb");
-                            let mut file = OpenOptions::new()
-                                .write(true)
-                                .create(true)
-                                .append(false)
-                                .open(&tmp_file)
-                                .unwrap();
-                            let profile = report.pprof().unwrap();
-
-                            let mut content = Vec::new();
-                            profile.encode(&mut content).unwrap();
-                            file.write_all(&content).unwrap();
-                            file.sync_all().unwrap();
-                            move_file(tmp_file, path.join("profile.pb")).unwrap();
-                        };
-                    }
-                });
-            }
-        }
-
-        Ok(self.pprof.load(Ordering::Acquire))
-    }
-
-    async fn get_crosschain_result(
-        &self,
-        tx_hash: H256,
-    ) -> RpcResult<Option<CrossChainTransaction>> {
-        let ctx = Context::new();
-        if let Some(hash_with_dir) = self
-            .adapter
-            .get_crosschain_record_by_hash(ctx.clone(), &tx_hash)
-            .await
-            .map_err(|e| Error::Custom(e.to_string()))?
-        {
-            if !hash_with_dir.direction.is_from_ckb() {
-                return Ok(Some(CrossChainTransaction {
-                    request_tx_hash: tx_hash,
-                    relay_tx_hash:   hash_with_dir.tx_hash,
-                    direction:       hash_with_dir.direction,
-                    axon_tx:         None,
-                    receipt:         None,
-                }));
-            }
-
-            let hash = hash_with_dir.tx_hash;
-            let stx = self
-                .adapter
-                .get_transaction_by_hash(ctx.clone(), hash)
-                .await
-                .map_err(|e| Error::Custom(e.to_string()))?
-                .ok_or_else(|| {
-                    Error::Custom(format!("Can not get transaction by hash {:?}", hash))
-                })?;
-            let receipt = self
-                .adapter
-                .get_receipt_by_tx_hash(ctx.clone(), hash)
-                .await
-                .map_err(|e| Error::Custom(e.to_string()))?
-                .ok_or_else(|| Error::Custom(format!("Can not get receipt by hash {:?}", hash)))?;
-
-            return Ok(Some(CrossChainTransaction {
-                request_tx_hash: tx_hash,
-                relay_tx_hash:   hash,
-                direction:       hash_with_dir.direction,
-                axon_tx:         Some(Web3Transaction::from((stx.clone(), receipt.clone()))),
-                receipt:         Some(Web3Receipt::new(receipt, stx)),
-            }));
-        }
-
-        Ok(None)
-    }
 }
 
 fn mock_header_by_call_req(latest_header: Header, call_req: &Web3CallRequest) -> Header {
@@ -963,17 +800,4 @@ pub fn from_receipt_to_web3_log(
             logs.push(web3_log);
         }
     }
-}
-
-/// This function use `copy` then `remove_file` as a fallback when `rename`
-/// failed, this maybe happen when src and dst on different file systems.
-#[cfg(feature = "pprof")]
-fn move_file<P: AsRef<std::path::Path>>(src: P, dst: P) -> Result<(), std::io::Error> {
-    use std::fs::{copy, remove_file, rename};
-
-    if rename(&src, &dst).is_err() {
-        copy(&src, &dst)?;
-        remove_file(&src)?;
-    }
-    Ok(())
 }

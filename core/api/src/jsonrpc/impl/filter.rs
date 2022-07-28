@@ -1,33 +1,20 @@
-use std::{
-    collections::HashMap,
-    sync::Arc,
-    time::{Duration, Instant},
-};
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 
-use jsonrpsee::{core::Error, proc_macros::rpc};
+use jsonrpsee::core::Error;
 use serde::{Deserialize, Serialize};
 
-use protocol::{
-    async_trait,
-    tokio::{
-        self, select,
-        sync::{
-            mpsc::{channel, Receiver, Sender},
-            oneshot,
-        },
-        time::interval,
-    },
-    traits::{APIAdapter, Context},
-    types::{BlockNumber, Hash, Receipt, H160, H256, U256},
-};
+use protocol::async_trait;
+use protocol::tokio::sync::mpsc::{channel, Receiver, Sender};
+use protocol::tokio::{self, select, sync::oneshot, time::interval};
+use protocol::traits::{APIAdapter, Context};
+use protocol::types::{BlockNumber, Hash, Receipt, H160, H256, U256};
 
-use crate::jsonrpc::{
-    r#impl::from_receipt_to_web3_log,
-    web3_types::{BlockId, MultiNestType, MultiType, Web3Log},
-    RpcResult,
-};
+use crate::jsonrpc::web3_types::{BlockId, FilterChanges, RawLoggerFilter, Web3Log};
+use crate::jsonrpc::{r#impl::from_receipt_to_web3_log, RpcResult, Web3FilterServer};
 
-pub fn filter_module<Adapter>(adapter: Arc<Adapter>) -> JsonRpcFilter
+pub fn filter_module<Adapter>(adapter: Arc<Adapter>) -> AxonWeb3RpcFilter
 where
     Adapter: APIAdapter + 'static,
 {
@@ -35,42 +22,7 @@ where
 
     tokio::spawn(FilterHub::new(adapter, rx).run());
 
-    JsonRpcFilter { sender: tx }
-}
-
-#[rpc(server)]
-pub trait AxonFilter {
-    #[method(name = "eth_newFilter")]
-    async fn new_filter(&self, filter: RawLoggerFilter) -> RpcResult<U256>;
-
-    #[method(name = "eth_newBlockFilter")]
-    async fn block_filter(&self) -> RpcResult<U256>;
-
-    #[method(name = "eth_getFilterLogs")]
-    async fn get_filter_logs(&self, id: U256) -> RpcResult<FilterChanges>;
-
-    #[method(name = "eth_getFilterChanges")]
-    async fn get_filter_changes(&self, id: U256) -> RpcResult<FilterChanges>;
-
-    #[method(name = "eth_uninstallFilter")]
-    async fn uninstall_filter(&self, id: U256) -> RpcResult<bool>;
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-#[serde(deny_unknown_fields, rename_all = "camelCase", untagged)]
-pub enum FilterChanges {
-    Blocks(Vec<H256>),
-    Logs(Vec<Web3Log>),
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-#[serde(deny_unknown_fields, rename_all = "camelCase")]
-pub struct RawLoggerFilter {
-    pub from_block: Option<BlockId>,
-    pub to_block:   Option<BlockId>,
-    #[serde(default)]
-    pub address:    MultiType<H160>,
-    pub topics:     Option<Vec<MultiNestType<Hash>>>,
+    AxonWeb3RpcFilter { sender: tx }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -98,12 +50,12 @@ impl From<RawLoggerFilter> for LoggerFilter {
     }
 }
 
-pub struct JsonRpcFilter {
+pub struct AxonWeb3RpcFilter {
     sender: Sender<Command>,
 }
 
 #[async_trait]
-impl AxonFilterServer for JsonRpcFilter {
+impl Web3FilterServer for AxonWeb3RpcFilter {
     async fn new_filter(&self, filter: RawLoggerFilter) -> RpcResult<U256> {
         if let Some(BlockId::Pending) = filter.from_block {
             return Err(Error::Custom(
