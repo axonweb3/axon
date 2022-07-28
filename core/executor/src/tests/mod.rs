@@ -1,5 +1,5 @@
 mod system_script;
-mod vm_state_suite;
+mod vm_tests;
 
 use std::collections::BTreeMap;
 use std::str::FromStr;

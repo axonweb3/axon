@@ -168,14 +168,14 @@ mod test {
         evm_test_suite::block_chain_tests::run_tests::<VmStateDebugger>(true);
     }
 
-    #[test]
-    fn run_single_file() {
-        evm_test_suite::block_chain_tests::run_single_test::<VmStateDebugger>(
-            evm_test_suite::block_chain_tests::vm::BLOCK_INFO,
-            "",
-            true,
-        );
-    }
+    // #[test]
+    // fn run_single_file() {
+    //     evm_test_suite::block_chain_tests::run_single_test::<VmStateDebugger>(
+    //         evm_test_suite::block_chain_tests::vm::BLOCK_INFO,
+    //         "",
+    //         true,
+    //     );
+    // }
 
     #[test]
     fn run_single_test() {
