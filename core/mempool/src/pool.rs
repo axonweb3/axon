@@ -17,14 +17,14 @@ use crate::tx_wrapper::{PendingQueue, TxPtr, TxWrapper};
 use crate::MemPoolError;
 
 pub struct PriorityPool {
-    sys_tx_bucket:  BuiltInContractTxBucket,
-    pending_queue:  Arc<DashMap<H160, PendingQueue>>,
-    co_queue:       Arc<ArrayQueue<(TxPtr, U256)>>,
-    real_queue:     Arc<Mutex<Vec<TxPtr>>>,
-    tx_map:         DashMap<Hash, TxPtr>,
-    stock_len:      AtomicUsize,
-    timeout_gap:    Mutex<BTreeMap<BlockNumber, HashSet<Hash>>>,
-    timeout_config: u64,
+    sys_tx_bucket:          BuiltInContractTxBucket,
+    pending_queue:          Arc<DashMap<H160, PendingQueue>>,
+    co_queue:               Arc<ArrayQueue<(TxPtr, U256)>>,
+    real_queue:             Arc<Mutex<Vec<TxPtr>>>,
+    tx_map:                 DashMap<Hash, TxPtr>,
+    stock_len:              AtomicUsize,
+    pub(crate) timeout_gap: Mutex<BTreeMap<BlockNumber, HashSet<Hash>>>,
+    timeout_config:         u64,
 
     flush_lock: Arc<RwLock<()>>,
 }
@@ -126,10 +126,14 @@ impl PriorityPool {
 
         let ptr = Arc::new(TxWrapper::from(stx));
 
-        if self.tx_map.insert(ptr.hash(), Arc::clone(&ptr)).is_some() {
-            self.stock_len.fetch_sub(1, Ordering::AcqRel);
-        } else {
-            let _ = self.co_queue.push((ptr, check_nonce));
+        match self.tx_map.entry(ptr.hash()) {
+            dashmap::mapref::entry::Entry::Occupied(_) => {
+                self.stock_len.fetch_sub(1, Ordering::AcqRel);
+            }
+            dashmap::mapref::entry::Entry::Vacant(v) => {
+                v.insert(Arc::clone(&ptr));
+                let _ = self.co_queue.push((ptr, check_nonce));
+            }
         }
 
         Ok(())
@@ -257,20 +261,17 @@ impl PriorityPool {
             }
         }
 
-        let timeout = if number > self.timeout_config {
-            timeout_gap.remove(&number.saturating_sub(self.timeout_config))
+        let timeout = if number >= self.timeout_config {
+            timeout_gap
+                .remove(&number.saturating_sub(self.timeout_config))
+                .unwrap_or_default()
         } else {
-            None
+            HashSet::new()
         };
 
         let mut retain_keys = Vec::with_capacity(self.len() / 4);
         self.tx_map.retain(|hash, v| {
-            if !v.is_dropped()
-                && timeout
-                    .as_ref()
-                    .map(|set| set.is_empty() || !set.contains(&v.hash()))
-                    .unwrap_or(true)
-            {
+            if !v.is_dropped() && (timeout.is_empty() || !timeout.contains(&v.hash())) {
                 retain_keys.push(*hash);
                 return true;
             }

@@ -188,6 +188,43 @@ async fn test_flush_with_concurrent_insert() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
+async fn test_repeat_insertion_with_timout_gap() {
+    let mempool = Arc::new(new_mempool(1024, 0, 0, 0).await);
+
+    let priv_key = Secp256k1RecoverablePrivateKey::generate(&mut OsRng);
+    let pub_key = priv_key.pub_key();
+    let txs: Vec<SignedTransaction> = (0..3)
+        .map(|i| mock_signed_tx(&priv_key, &pub_key, 0, i as u64, true))
+        .collect();
+
+    let pool = mempool.get_tx_cache();
+
+    pool.insert(txs[0].clone(), false, 0.into()).unwrap();
+    pool.insert(txs[1].clone(), false, 1.into()).unwrap();
+    pool.insert(txs[2].clone(), false, 2.into()).unwrap();
+    // repeat insertion
+    pool.insert(txs[2].clone(), false, 2.into()).unwrap();
+
+    pool.timeout_gap
+        .lock()
+        .entry(0)
+        .or_default()
+        .insert(txs[2].transaction.hash);
+
+    pool.flush(&[], 20);
+
+    let list = pool.package(1000.into(), 3);
+
+    assert_eq!(
+        list.hashes,
+        txs[0..2]
+            .iter()
+            .map(|tx| tx.transaction.hash)
+            .collect::<Vec<_>>()
+    )
+}
+
+#[tokio::test(flavor = "multi_thread")]
 async fn test_nonce_insert() {
     let mempool = Arc::new(new_mempool(1024, 0, 0, 0).await);
 
