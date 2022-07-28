@@ -94,9 +94,9 @@ impl vm_state::TestEvmState for VmStateDebugger {
         account_state: vm_state::AccountState,
     ) -> Result<(), String> {
         let backend = AxonExecutorAdapter::from_root(
-            self.debugger.get_state_root(),
-            Arc::clone(&self.debugger.get_trie_db()),
-            Arc::clone(&self.debugger.get_storage()),
+            self.debugger.state_root(),
+            Arc::clone(&self.debugger.trie_db()),
+            Arc::clone(&self.debugger.storage()),
             self.exec_ctx.clone(),
         )
         .unwrap();
@@ -118,9 +118,20 @@ impl vm_state::TestEvmState for VmStateDebugger {
 
 #[cfg(test)]
 mod test {
+    use crate::tests::vm_state::print_result;
+
     use super::*;
     #[test]
     fn run_tests() {
         vm_state::run_evm_tests::<VmStateDebugger>();
+    }
+
+    #[test]
+    fn run_single_test() {
+        let num = vm_state::run_evm_test::<VmStateDebugger>(
+            vm_state::BLOCK_INFO,
+            "blockInfo_d0g0v0_London",
+        );
+        print_result(num);
     }
 }

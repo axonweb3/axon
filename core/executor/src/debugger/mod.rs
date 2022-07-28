@@ -131,15 +131,15 @@ impl EvmDebugger {
         evm.call(&mut backend, MAX_BLOCK_GAS_LIMIT, from, to, value, data)
     }
 
-    pub fn get_state_root(&self) -> H256 {
+    pub fn state_root(&self) -> H256 {
         self.state_root
     }
 
-    pub fn get_trie_db(&self) -> Arc<RocksTrieDB> {
+    pub fn trie_db(&self) -> Arc<RocksTrieDB> {
         Arc::clone(&self.trie_db)
     }
 
-    pub fn get_storage(&self) -> Arc<ImplStorage<RocksAdapter>> {
+    pub fn storage(&self) -> Arc<ImplStorage<RocksAdapter>> {
         Arc::clone(&self.storage)
     }
 

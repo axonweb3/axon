@@ -273,7 +273,7 @@ pub trait TestEvmState: Sized {
     }
 }
 
-pub fn run_evm_test<State: TestEvmState>(test: &str) -> TestNum {
+pub fn run_evm_test<State: TestEvmState>(test: &str, single_case: &str) -> TestNum {
     let mut sum: TestNum = TestNum {
         total:  0,
         failed: 0,
@@ -284,8 +284,11 @@ pub fn run_evm_test<State: TestEvmState>(test: &str) -> TestNum {
         serde_json::from_reader(reader).expect("Parse test cases failed");
 
     for (test_name, test_case) in test {
+        if single_case != test_name && !single_case.is_empty() {
+            continue;
+        }
         println!("\nRunning test: {} ...", test_name);
-        // test case in this list get length of 31 bytes of transaction.r/s which should
+        // test case in this list get length of transaction.r/s is 31 bytes which should
         // be 32 bytes.
         let black_list = vec![
             "calldatasize_d4g0v0_Istanbul",
@@ -350,11 +353,15 @@ pub fn run_evm_tests<State: TestEvmState>() {
         failed: 0,
     };
     for test in tests {
-        let sum = run_evm_test::<State>(test);
+        let sum = run_evm_test::<State>(test, "");
         num.total += sum.total;
         num.failed += sum.failed;
         // break;
     }
+    print_result(num);
+}
+
+pub fn print_result(num: TestNum) {
     println!(
         "*************************************************************************************************"
     );
