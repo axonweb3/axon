@@ -1,13 +1,14 @@
 mod engine;
-mod synchronization;
+pub mod synchronization;
 
 use rand::random;
 
 use protocol::types::{
-    Address, Block, Bytes, Hash, Hasher, Header, Hex, MerkleRoot, Proof, Validator,
+    Address, Block, Bytes, Hash, Hasher, Header, Hex, MerkleRoot, Proof, Validator, U256,
 };
 
 use crate::status::CurrentStatus;
+use crate::OverlordSynchronization;
 
 const _HEIGHT_TEN: u64 = 10;
 
@@ -19,10 +20,10 @@ fn _mock_block_from_status(status: &CurrentStatus) -> Block {
         timestamp:                  random::<u64>(),
         transactions_root:          _mock_hash(),
         signed_txs_hash:            _mock_hash(),
-        state_root:                 status.state_root,
-        receipts_root:              status.receipts_root,
-        gas_used:                   status.gas_used,
-        gas_limit:                  status.gas_limit,
+        state_root:                 Default::default(),
+        receipts_root:              Default::default(),
+        gas_used:                   Default::default(),
+        gas_limit:                  Default::default(),
         proposer:                   _mock_address().0,
         proof:                      _mock_proof(status.last_number),
         log_bloom:                  Default::default(),
@@ -32,6 +33,7 @@ fn _mock_block_from_status(status: &CurrentStatus) -> Block {
         nonce:                      Default::default(),
         base_fee_per_gas:           Default::default(),
         last_checkpoint_block_hash: Default::default(),
+        call_system_script_count:   0,
     };
 
     Block {
@@ -42,15 +44,13 @@ fn _mock_block_from_status(status: &CurrentStatus) -> Block {
 
 fn _mock_current_status() -> CurrentStatus {
     CurrentStatus {
-        gas_used:         random::<u64>().into(),
-        gas_limit:        random::<u64>().into(),
-        log_bloom:        Default::default(),
-        base_fee_per_gas: Default::default(),
-        last_number:      _HEIGHT_TEN,
-        prev_hash:        _mock_hash(),
-        state_root:       _mock_hash(),
-        receipts_root:    _mock_hash(),
-        proof:            _mock_proof(_HEIGHT_TEN),
+        prev_hash:                  _mock_hash(),
+        last_number:                0,
+        last_state_root:            _mock_hash(),
+        tx_num_limit:               9,
+        max_tx_size:                U256::zero(),
+        proof:                      Proof::default(),
+        last_checkpoint_block_hash: _mock_hash(),
     }
 }
 
