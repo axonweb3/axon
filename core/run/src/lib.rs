@@ -340,6 +340,7 @@ impl Axon {
             Arc::clone(&interoperation),
             self.genesis.block.header.chain_id,
             self.genesis.block.header.gas_limit.as_u64(),
+            config.mempool.pool_size as usize,
             config.mempool.broadcast_txs_size,
             config.mempool.broadcast_txs_interval,
         );
