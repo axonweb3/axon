@@ -29,7 +29,7 @@ impl vm_state::TestEvmState for VmStateDebugger {
     fn init_state() -> Self {
         VmStateDebugger {
             config:   Config::london(),
-            debugger: EvmDebugger::new(vec![], U256::zero(), DEBUG_PATH),
+            debugger: EvmDebugger::new(Vec::new(), U256::zero(), DEBUG_PATH),
             executor: AxonExecutor::default(),
             exec_ctx: ExecutorContext::default(),
             txs:      Vec::new(),
@@ -51,7 +51,7 @@ impl vm_state::TestEvmState for VmStateDebugger {
     where
         I: Iterator<Item = (H160, AccountState)>,
     {
-        self.debugger.exec(0, vec![]);
+        self.debugger.exec(0, Vec::new());
         let states: BTreeMap<H160, MemoryAccount> =
             iter.map(|(k, v)| (k, v.try_into().unwrap())).collect();
         self.debugger.set_state_root(states.into_iter());

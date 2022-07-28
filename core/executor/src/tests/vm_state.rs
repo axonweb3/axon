@@ -329,7 +329,6 @@ pub fn run_evm_test<State: TestEvmState>(test: &str, single_case: &str) -> TestN
 
         sum.failed += num.failed;
         sum.total += num.total;
-        // break;
     }
     sum
 }
@@ -353,10 +352,9 @@ pub fn run_evm_tests<State: TestEvmState>() {
         failed: 0,
     };
     for test in tests {
-        let sum = run_evm_test::<State>(test, "");
+        let sum = run_evm_test::<State>(test, String::new().as_str());
         num.total += sum.total;
         num.failed += sum.failed;
-        // break;
     }
     print_result(num);
 }
