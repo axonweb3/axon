@@ -116,7 +116,7 @@ impl evm_test_suite::block_chain_tests::TestEvmState for VmStateDebugger {
         let account = self.executor.get_account(&backend, &address);
         if skip_coinbase && address == coinbase {
             println!("skip: {:?}", address);
-            return Err(format!("skip coinbase"));
+            return Err("skip coinbase".to_string());
         }
         if account.balance != account_state.balance {
             Err(format!(
