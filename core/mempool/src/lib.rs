@@ -24,9 +24,7 @@ use common_apm::Instant;
 use core_executor::{is_call_system_script, is_crosschain_transaction};
 use core_network::NetworkContext;
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
-use protocol::types::{
-    BlockNumber, Hash, PackedTxHashes, SignedTransaction, H160, H256, MAX_CONTRACT_CODE_SIZE, U256,
-};
+use protocol::types::{BlockNumber, Hash, PackedTxHashes, SignedTransaction, H160, H256, U256};
 use protocol::{async_trait, tokio, Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 use crate::context::TxContext;
@@ -377,12 +375,16 @@ pub enum MemPoolError {
     InvalidGasPrice(U256),
 
     #[display(
-        fmt = "Tx: {:?} data exceeds size limit, now: {}, limit: {}",
+        fmt = "Tx: {:?} exceeds size limit, now: {}, limit: {} Bytes",
         tx_hash,
         size,
-        MAX_CONTRACT_CODE_SIZE
+        max_tx_size
     )]
-    ExceedDataSizeLimit { tx_hash: Hash, size: usize },
+    ExceedSizeLimit {
+        tx_hash:     Hash,
+        max_tx_size: usize,
+        size:        usize,
+    },
 
     #[display(
         fmt = "Tx: {:?} exceeds cycle limit, tx: {}, config: {}",

@@ -2,7 +2,7 @@ use super::TxContext;
 
 pub mod message;
 
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::{collections::HashMap, error::Error, marker::PhantomData, sync::Arc, time::Duration};
 
 use dashmap::DashMap;
@@ -22,12 +22,11 @@ use protocol::traits::{
     Priority, Rpc, Storage, TrustFeedback,
 };
 use protocol::types::{
-    recover_intact_pub_key, BatchSignedTxs, Bytes, Hash, MerkleRoot, SignedTransaction, H160,
-    MAX_CONTRACT_CODE_SIZE, U256,
+    recover_intact_pub_key, BatchSignedTxs, Bytes, Hash, MerkleRoot, SignedTransaction, H160, U256,
 };
 use protocol::{
-    async_trait, lazy::CURRENT_STATE_ROOT, tokio, Display, ProtocolError, ProtocolErrorKind,
-    ProtocolResult,
+    async_trait, codec::ProtocolCodec, lazy::CURRENT_STATE_ROOT, tokio, Display, ProtocolError,
+    ProtocolErrorKind, ProtocolResult,
 };
 
 use crate::adapter::message::{MsgPullTxs, END_GOSSIP_NEW_TXS, RPC_PULL_TXS};
@@ -118,9 +117,10 @@ pub struct DefaultMemPoolAdapter<C, N, S, DB, M, I> {
     metadata:       Arc<M>,
     interoperation: Arc<I>,
 
-    addr_nonce: DashMap<H160, (U256, U256)>,
-    gas_limit:  AtomicU64,
-    chain_id:   u64,
+    addr_nonce:  DashMap<H160, (U256, U256)>,
+    gas_limit:   AtomicU64,
+    max_tx_size: AtomicUsize,
+    chain_id:    u64,
 
     stx_tx: UnboundedSender<(Option<usize>, SignedTransaction)>,
     err_rx: Mutex<UnboundedReceiver<ProtocolError>>,
@@ -145,6 +145,7 @@ where
         interoperation: Arc<I>,
         chain_id: u64,
         gas_limit: u64,
+        max_tx_size: usize,
         broadcast_txs_size: usize,
         broadcast_txs_interval: u64,
     ) -> Self {
@@ -168,6 +169,7 @@ where
 
             addr_nonce: DashMap::new(),
             gas_limit: AtomicU64::new(gas_limit),
+            max_tx_size: AtomicUsize::new(max_tx_size),
             chain_id,
 
             stx_tx,
@@ -320,19 +322,21 @@ where
             return Err(AdapterError::VerifySignature("missing public key".to_string()).into());
         }
 
+        let fixed_bytes = stx.transaction.encode()?;
         let tx_hash = stx.transaction.hash;
 
         // check tx size
-        if stx.transaction.unsigned.data().len() > MAX_CONTRACT_CODE_SIZE {
+        if fixed_bytes.len() > self.max_tx_size.load(Ordering::Acquire) {
             if ctx.is_network_origin_txs() {
                 self.network.report(
                     ctx,
                     TrustFeedback::Bad(format!("Mempool exceed size limit of tx {:?}", tx_hash)),
                 );
             }
-            return Err(MemPoolError::ExceedDataSizeLimit {
+            return Err(MemPoolError::ExceedSizeLimit {
                 tx_hash,
-                size: stx.transaction.unsigned.data().len(),
+                max_tx_size: self.max_tx_size.load(Ordering::Acquire),
+                size: fixed_bytes.len(),
             }
             .into());
         }
@@ -437,10 +441,12 @@ where
         &self,
         _context: Context,
         _state_root: MerkleRoot,
-        gas_limit: u64,
-        _max_tx_size: u64,
+        cycles_limit: u64,
+        max_tx_size: u64,
     ) {
-        self.gas_limit.store(gas_limit, Ordering::Release);
+        self.gas_limit.store(cycles_limit, Ordering::Release);
+        self.max_tx_size
+            .store(max_tx_size as usize, Ordering::Release);
         self.addr_nonce.clear();
     }
 

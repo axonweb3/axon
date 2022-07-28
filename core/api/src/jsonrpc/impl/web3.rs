@@ -6,8 +6,7 @@ use common_apm::metrics_rpc;
 use protocol::traits::{APIAdapter, Context};
 use protocol::types::{
     Block, BlockNumber, Bytes, Hash, Header, Hex, Receipt, SignedTransaction, TxResp,
-    UnverifiedTransaction, H160, H256, H64, MAX_BLOCK_GAS_LIMIT, MAX_CONTRACT_CODE_SIZE,
-    MIN_TRANSACTION_GAS_LIMIT, U256,
+    UnverifiedTransaction, H160, H256, H64, MAX_BLOCK_GAS_LIMIT, MIN_TRANSACTION_GAS_LIMIT, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
@@ -73,10 +72,6 @@ impl<Adapter: APIAdapter + 'static> AxonWeb3RpcServer for Web3RpcImpl<Adapter> {
     async fn send_raw_transaction(&self, tx: Hex) -> RpcResult<H256> {
         let utx = UnverifiedTransaction::decode(&tx.as_bytes())
             .map_err(|e| Error::Custom(e.to_string()))?;
-
-        if utx.unsigned.data().len() > MAX_CONTRACT_CODE_SIZE {
-            return Err(Error::Custom("The data exceeds the max size".to_string()));
-        }
 
         let gas_price = utx.unsigned.gas_price();
 
