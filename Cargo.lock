@@ -1410,6 +1410,7 @@ dependencies = [
  "ethers-contract",
  "ethers-core",
  "evm",
+ "evm-test-suite",
  "futures",
  "getrandom 0.2.7",
  "hasher",
@@ -2405,6 +2406,19 @@ dependencies = [
  "evm-core",
  "primitive-types",
  "sha3 0.10.1",
+]
+
+[[package]]
+name = "evm-test-suite"
+version = "0.1.0"
+source = "git+https://github.com/hongda3141/evm-test-suite.git?rev=11b057d#11b057d8102e80e1d894b247a90f328104814a4f"
+dependencies = [
+ "ethereum-types",
+ "ethers-core",
+ "evm",
+ "hex",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

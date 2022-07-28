@@ -1,3 +1,0 @@
-[submodule "core/executor/res/ethereum/tests"]
-	path = core/executor/res/ethereum/tests
-	url = https://github.com/ethereum/tests.git

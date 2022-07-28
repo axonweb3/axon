@@ -23,15 +23,13 @@ $ cargo run --package axon --bin axon -- --config=./devtools/chain/config.toml -
 You can also use [axon-devops](https://github.com/nervosnetwork/axon-devops) to deploy a multi-node chain.
 
 ## EVM Testing
-Download the required test files: 
+Download the project files: 
 ```shell
 $ git clone https://github.com/nervosnetwork/axon.git
 $ cd axon
-$ git submodule update --init --recursive  --depth=1
 ```
 You can run tests with the following commands:
 ```shell
-$ cp -r core/executor/res/ethereum/tests/BlockchainTests/GeneralStateTests/VMTests/vmTests/ core/executor/res/vmTests
 $ cargo test --package core-executor --lib -- tests::vm_state_suite::test::run_tests --exact --nocapture
 ```
 
