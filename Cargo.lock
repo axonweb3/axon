@@ -1213,7 +1213,6 @@ dependencies = [
  "overlord",
  "rand 0.7.3",
  "rlp",
- "zeroize",
 ]
 
 [[package]]
