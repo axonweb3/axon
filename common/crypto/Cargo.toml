@@ -9,6 +9,7 @@ edition = "2021"
 ophelia = "0.3"
 ophelia-blst = "0.3"
 ophelia-secp256k1 = "0.3"
+zeroize = "1.5.7"
 
 [dev-dependencies]
 overlord = "0.4"
