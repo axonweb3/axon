@@ -183,7 +183,7 @@ fn test_simplestorage() {
     // let's call SimpleStorage.get() by call
     let executor = AxonExecutor::default();
     let r = executor.call(
-        &mut backend,
+        &backend,
         u64::MAX,
         None,
         Some(H160::from_str("0xc15d2ba57d126e6603240e89437efd419ce329d2").unwrap()),

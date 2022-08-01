@@ -109,7 +109,7 @@ where
     async fn call_evm(&self, ctx: Context, addr: H160, data: Vec<u8>) -> ProtocolResult<TxResp> {
         let header = self.storage.get_latest_block_header(ctx).await?;
 
-        let mut backend = AxonExecutorAdapter::from_root(
+        let backend = AxonExecutorAdapter::from_root(
             header.state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
@@ -117,7 +117,7 @@ where
         )?;
 
         Ok(AxonExecutor::default().call(
-            &mut backend,
+            &backend,
             u64::MAX,
             None,
             Some(addr),

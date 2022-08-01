@@ -26,7 +26,7 @@ pub trait ExecutorAdapter {
 pub trait Executor: Send + Sync {
     fn call<B: Backend>(
         &self,
-        backend: &mut B,
+        backend: &B,
         gas_limit: u64,
         from: Option<H160>,
         to: Option<H160>,

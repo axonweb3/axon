@@ -179,7 +179,7 @@ where
         exec_ctx.origin = from.unwrap_or_default();
         exec_ctx.gas_price = gas_price.unwrap_or_else(U256::one);
 
-        let mut backend = AxonExecutorAdapter::from_root(
+        let backend = AxonExecutorAdapter::from_root(
             state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
@@ -189,7 +189,7 @@ where
             .map(|gas| gas.as_u64())
             .unwrap_or(MAX_BLOCK_GAS_LIMIT);
 
-        Ok(AxonExecutor::default().call(&mut backend, gas_limit, from, to, value, data))
+        Ok(AxonExecutor::default().call(&backend, gas_limit, from, to, value, data))
     }
 
     async fn get_code_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>> {
