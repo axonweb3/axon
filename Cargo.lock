@@ -724,12 +724,12 @@ dependencies = [
 
 [[package]]
 name = "cita_trie"
-version = "3.0.1"
+version = "3.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c849f29415c4506c6253d749eb0ea073503f30ebd649940358d23c3a55cda67c"
+checksum = "20bef4b9e0e4b3c642551260ee5284d6756dfa8c845fba3bf043bd836b16ebdc"
 dependencies = [
  "hasher",
- "parking_lot 0.11.2",
+ "parking_lot 0.12.1",
  "rlp",
 ]
 
