@@ -27,7 +27,7 @@ fun_pasing_message(){
   if [ $? -eq 0 ]; then
     job_run_list=`echo "${MESSAGE}"| grep "ci-runs-only" | awk -F ':' '{print $2}'`
   else
-    job_run_list=" [ Chaos CI,Cargo Clippy,Coverage Test,E2E Tests,Conventional PR,Unit Tests,Web3 Compatible Tests] "
+    job_run_list=" [ Chaos CI,Cargo Clippy,Coverage Test,E2E Tests,Conventional PR,Unit Tests,Web3 Compatible Tests,OCT 1-5 And 12-15,OCT 6-10,OCT 11,OCT 16-19] "
   fi
   echo "job_run_list is ""$job_run_list"
   
@@ -41,7 +41,7 @@ if [[ $GITHUB_EVENT_NAME == "pull_request" ]];then
   fun_pasing_message "$MESSAGE"
 fi
 if [[ $GITHUB_EVENT_NAME == "push" ]];then
-  job_run_list=" [ Chaos CI,Cargo Clippy,Coverage Test,E2E Tests,Conventional PR,Unit Tests,Web3 Compatible Tests] "
+  job_run_list=" [ Chaos CI,Cargo Clippy,Coverage Test,E2E Tests,Conventional PR,Unit Tests,Web3 Compatible Tests,OCT 1-5 And 12-15,OCT 6-10,OCT 11,OCT 16-19] "
   #set reqiured output
   fun_jobs "$job_run_list"
 fi
