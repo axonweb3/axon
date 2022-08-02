@@ -2384,10 +2384,9 @@ dependencies = [
 [[package]]
 name = "evm-test-suite"
 version = "0.1.0"
-source = "git+https://github.com/hongda3141/evm-test-suite.git?rev=2042441#20424410da7135c31cf5c437cb8924723a1c0b5a"
+source = "git+https://github.com/hongda3141/evm-test-suite.git?rev=31b4538#31b4538d09951387fc901ca0b583d5bc87f82813"
 dependencies = [
  "ethereum-types",
- "ethers-core",
  "evm",
  "hex",
  "serde",
