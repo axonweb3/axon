@@ -23,16 +23,22 @@ impl From<RpcError> for Error {
 
 pub fn vm_err(resp: TxResp) -> Error {
     let data = match resp.exit_reason {
-        ExitReason::Revert(_) => format!("0x{}", hex_encode(&resp.ret),),
-        ExitReason::Error(err) => format!("{:?}", err),
-        ExitReason::Fatal(fatal) => format!("{:?}", fatal),
-        _ => unreachable!(),
+        ExitReason::Revert(_) => {
+            if resp.ret.is_empty() {
+                None
+            } else {
+                Some(format!("0x{}", hex_encode(&resp.ret)))
+            }
+        }
+        ExitReason::Error(err) => Some(format!("{:?}", err)),
+        ExitReason::Fatal(fatal) => Some(format!("{:?}", fatal)),
+        _ => None,
     };
 
     into_rpc_err(ErrorObject::owned(
         EXEC_ERROR,
         decode_revert_msg(&resp.ret),
-        Some(data),
+        data,
     ))
 }
 
