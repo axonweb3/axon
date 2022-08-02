@@ -42,8 +42,8 @@ criterion = "0.3"
 ethabi = "17.1"
 ethabi-contract = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
 ethabi-derive = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
-ethers-contract = "0.13"
-ethers-core = "0.13"
+ethers-contract = "0.17"
+ethers-core = "0.17"
 evm-test-suite = {git = "https://github.com/hongda3141/evm-test-suite.git", rev = "11b057d"}
 getrandom = "0.2"
 rlp = "0.5"

@@ -1,0 +1,87 @@
+name:  OCT 11
+concurrency:
+  group: Openzeppelin Contracts-11-${{ github.ref }}
+  cancel-in-progress: true
+
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  prologue:
+    name: prologue
+    runs-on: ubuntu-20.04
+    outputs:
+      job_skip: ${{ steps.prologue.outputs.job_skip }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: prologue
+        id: prologue
+        uses: ./.github/actions/ci_prologue
+        with:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          PR_COMMONS_BODY: "${{ github.event.pull_request.body }}"
+          GITHUB_WORKFLOW: ${{ github.workflow }}
+  openzeppelin-contracts-1:
+    needs: prologue
+    strategy:
+      fail-fast: false
+      matrix:
+        net: ['axon']
+    runs-on: ubuntu-latest
+    if: needs.prologue.outputs.job_skip == 'run'
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
+        with:
+          repository: gpBlockchain/openzeppelin-contracts
+          ref: compatibillity-axon
+          path: openzeppelin-contracts
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+      - name: Node Cache
+        uses: actions/cache@v2
+        id: npm-and-yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+        with:
+          path: |
+            ${{ steps.yarn-cache-dir-path.outputs.dir }}
+            ~/.npm
+          key: ${{ runner.os }}-node_modules-${{ hashFiles('/home/runner/work/**/package-lock.json', '/home/runner/work/**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-node_modules-
+
+      - name: Deploy Local Network of Axon
+        run: |
+          cargo build
+          rm -rf ./devtools/chain/data
+          ./target/debug/axon --config devtools/chain/config.toml --genesis devtools/chain/genesis_single_node.json > /tmp/log 2>&1 &
+
+      - name: Run prepare
+        id: runtest
+        run: |
+          cd /home/runner/work/axon/axon/openzeppelin-contracts
+          npm install
+          npm run test:init
+      - name: Run Pipeline 5-11
+        if: success() || failure()
+        run: |
+          cd /home/runner/work/axon/axon/openzeppelin-contracts
+          npm run test:pipeline5-11
+
+      - name: Check Axon Status
+        if: success() || failure()
+        run: |
+          curl http://localhost:8000 -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params": [],"id":1}'
+      - name: Publish reports
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: jfoa-build-reports-${{ runner.os }}
+          path: openzeppelin-contracts/mochawesome-report/
