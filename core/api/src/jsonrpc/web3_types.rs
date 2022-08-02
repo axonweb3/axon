@@ -6,8 +6,8 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use core_consensus::SyncStatus as InnerSyncStatus;
 use protocol::codec::ProtocolCodec;
 use protocol::types::{
-    AccessList, Block, Bloom, Bytes, Hash, Header, Hex, Public, Receipt, SignedTransaction, H160,
-    H256, MAX_PRIORITY_FEE_PER_GAS, U256, U64,
+    AccessList, Block, Bloom, Hash, Header, Hex, Public, Receipt, SignedTransaction, H160, H256,
+    MAX_PRIORITY_FEE_PER_GAS, U256, U64,
 };
 
 #[allow(clippy::large_enum_variant)]
