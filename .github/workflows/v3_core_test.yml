@@ -3,13 +3,11 @@ concurrency:
   group: v3 Core-${{ github.ref }}
   cancel-in-progress: true
 
-
 on:
   push:
     branches:
       - main
   pull_request:
-
 
 jobs:
   prologue:
@@ -26,12 +24,13 @@ jobs:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           PR_COMMONS_BODY: "${{ github.event.pull_request.body }}"
           GITHUB_WORKFLOW: ${{ github.workflow }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
   v3-core-test:
     needs: prologue
     strategy:
       fail-fast: false
       matrix:
-        net: ['axon']
+        net: ["axon"]
     runs-on: ubuntu-latest
     if: needs.prologue.outputs.job_skip == 'run'
     steps:
