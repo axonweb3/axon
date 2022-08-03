@@ -9,7 +9,7 @@ args:
       short: p
       long: private_key
       # just for testing
-      default_value: "0x6b657ecbeaa1e006035976cee63583ebbe13871541e66a98102bdeff6fe861f8"
+      default_value: "0x37aa0f893d05914a4def0460c0a984d3611546cfb26924d7a7ca6e0db9950a2d"
 
   - chain_id:
       help: chain id
