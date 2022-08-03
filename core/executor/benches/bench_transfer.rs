@@ -2,7 +2,6 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use rand::random;
 
 use common_crypto::{
     Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey, Signature,
@@ -85,7 +84,7 @@ impl BenchAdapter {
 }
 
 fn rand_hash() -> Hash {
-    Hash::from_slice(&(0..32).map(|_| random()).collect::<Vec<_>>())
+    Hash::random()
 }
 
 fn time_now() -> u64 {

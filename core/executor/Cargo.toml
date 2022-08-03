@@ -8,6 +8,12 @@ version = "0.1.0"
 az = "1.2"
 bn = { package = "substrate-bn", version = "0.6" }
 cita_trie = "3.0"
+
+common-apm = { path = "../../common/apm" }
+common-config-parser = { path = "../../common/config-parser" }
+common-crypto = { path = "../../common/crypto" }
+common-merkle = { path = "../../common/merkle" }
+core-interoperation = { path = "../interoperation" }
 crossbeam-channel = "0.5"
 evm = { version = "0.35", features = ["tracing"] }
 # evm = { git = "https://github.com/KaoImin/evm.git", branch = "debug", features = ["tracing"] }
@@ -16,6 +22,7 @@ hasher = "0.1"
 lazy_static = "1.4"
 log = "0.4"
 parking_lot = "0.12"
+protocol = { path = "../../protocol", package = "axon-protocol" }
 rand = { version = "0.8", features = ["small_rng"] }
 ripemd = "0.1"
 rlp = "0.5"
@@ -23,21 +30,15 @@ rocksdb = { version = "0.18", package = "ckb-rocksdb" }
 rug = "1.17"
 sha2 = "0.10"
 
-common-apm = { path = "../../common/apm" }
-common-config-parser = { path = "../../common/config-parser" }
-common-crypto = { path = "../../common/crypto" }
-common-merkle = { path = "../../common/merkle" }
-core-interoperation = { path = "../interoperation" }
-protocol = { path = "../../protocol", package = "axon-protocol" }
-
 [dev-dependencies]
+bytemuck = "1.11"
 ckb-jsonrpc-types = "0.104"
+
+ckb-types = "0.104"
 common-crypto = { path = "../../common/crypto" }
 core-cross-client = { path = "../cross-client" }
 core-rpc-client = { path = "../rpc-client" }
 core-storage = { path = "../storage" }
-
-ckb-types = "0.104"
 criterion = "0.3"
 ethabi = "17.1"
 ethabi-contract = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
@@ -45,10 +46,21 @@ ethabi-derive = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7e
 ethers-contract = "0.17"
 ethers-core = "0.17"
 getrandom = "0.2"
+hashbrown = "0.12"
+rand7 = { package = "rand", version = "0.7" }
+revm = "1.8"
 rlp = "0.5"
 serde_json = "1.0"
 tempfile = "3.3"
 
 [[bench]]
 harness = false
+name = "bench_convert_u256"
+
+[[bench]]
+harness = false
 name = "bench_transfer"
+
+[[bench]]
+harness = false
+name = "bench_vm"
