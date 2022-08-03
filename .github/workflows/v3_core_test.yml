@@ -1,0 +1,89 @@
+name: v3 Core Tests
+concurrency:
+  group: v3 Core-${{ github.ref }}
+  cancel-in-progress: true
+
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+
+jobs:
+  prologue:
+    name: prologue
+    runs-on: ubuntu-20.04
+    outputs:
+      job_skip: ${{ steps.prologue.outputs.job_skip }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: prologue
+        id: prologue
+        uses: ./.github/actions/ci_prologue
+        with:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          PR_COMMONS_BODY: "${{ github.event.pull_request.body }}"
+          GITHUB_WORKFLOW: ${{ github.workflow }}
+  v3-core-test:
+    needs: prologue
+    strategy:
+      fail-fast: false
+      matrix:
+        net: ['axon']
+    runs-on: ubuntu-latest
+    if: needs.prologue.outputs.job_skip == 'run'
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
+        with:
+          repository: gpBlockchain/v3-core
+          path: v3-core
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 16.x
+
+      - id: yarn-cache
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+
+      - name: Deploy Local Network of Axon
+        run: |
+          cargo build
+          rm -rf ./devtools/chain/data
+          ./target/debug/axon --config devtools/chain/config.toml --genesis devtools/chain/genesis_single_node.json > /tmp/log 2>&1 &
+      - name: Install dependencies
+        run: |
+          cd /home/runner/work/axon/axon/v3-core
+          yarn install
+      # This is required separately from yarn test because it generates the typechain definitions
+      - name: Compile
+        run: |
+          cd /home/runner/work/axon/axon/v3-core
+          yarn compile
+      - name: Run tests 0
+        id: runtest
+        run: |
+          cd /home/runner/work/axon/axon/v3-core
+          yarn test:prepare
+          yarn test:runAll0
+      - name: Run test 1
+        if: success() || failure()
+        run: |
+          cd /home/runner/work/axon/axon/v3-core
+          yarn test:runAll1
+      - name: Run test 2
+        if: success() || failure()
+        run: |
+          cd /home/runner/work/axon/axon/v3-core
+          yarn test:runAll2
+      - name: Check Axon Status
+        if: success() || failure()
+        run: |
+          curl http://localhost:8000 -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params": [],"id":1}'
+      - name: Publish reports
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: jfoa-build-reports-${{ runner.os }}
+          path: v3-core/mochawesome-report/
