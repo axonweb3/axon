@@ -12,10 +12,10 @@ common-config-parser = { path = "../../common/config-parser" }
 common-crypto = { path = "../../common/crypto" }
 core-executor = { path = "../../core/executor" }
 core-metadata = { path = "../../core/metadata" }
-ethers-contract = { version = "0.13", features = ["abigen"] }
-ethers-core = "0.13"
-ethers-providers = "0.13"
-ophelia = "0.3.4"
+ethers-contract = { version = "0.17", features = ["abigen"] }
+ethers-core = "0.17"
+ethers-providers = "0.17"
+ophelia = "0.3"
 protocol = { path = "../../protocol", package = "axon-protocol" }
 rand = "0.7"
 serde = { version = "1.0", features = ["derive"] }

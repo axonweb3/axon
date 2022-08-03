@@ -4,22 +4,22 @@ about: a tool to generate genesis for axon
 author: axon Dev <axon@nervos.org>
 
 args:
-        - private_key:
-                  help: priate key to generate transaction
-                  short: p
-                  long: private_key
-                  # just for testing
-                  default_value: "0x6b657ecbeaa1e006035976cee63583ebbe13871541e66a98102bdeff6fe861f8"
+  - private_key:
+      help: priate key to generate transaction
+      short: p
+      long: private_key
+      # just for testing
+      default_value: "0x6b657ecbeaa1e006035976cee63583ebbe13871541e66a98102bdeff6fe861f8"
 
-        - chain_id:
-                  help: chain id
-                  short: c
-                  long: chain_id
-                  default_value: "2022"
+  - chain_id:
+      help: chain id
+      short: c
+      long: chain_id
+      default_value: "2022"
 
-        - config_path:
-                  help: config file path to generate metadata
-                  short: f
-                  long: config_path
-                  takes_value: true
-                  default_value: "./../chain/nodes"
+  - config_path:
+      help: config file path to generate metadata
+      short: f
+      long: config_path
+      takes_value: true
+      default_value: "./../chain/nodes"
