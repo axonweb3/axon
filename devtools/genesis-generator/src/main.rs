@@ -1,5 +1,4 @@
 use std::fs;
-use std::u64;
 
 use clap::{load_yaml, value_t, App};
 use ethers_core::abi::AbiEncode;
@@ -18,7 +17,7 @@ use protocol::types::{
 
 fn genesis_generator(priv_key: Secp256k1RecoverablePrivateKey, chain_id: u64, metadata: Metadata) {
     // template json file path
-    let input_path = "genesis.json";
+    let input_path = "../chain/genesis_single_node.json";
     // read block info from template json file
     let mut genesis: RichBlock =
         serde_json::from_slice(&std::fs::read(input_path).unwrap()).unwrap();
@@ -51,7 +50,6 @@ fn genesis_generator(priv_key: Secp256k1RecoverablePrivateKey, chain_id: u64, me
     // update chain_id in block header
     genesis.block.header.chain_id = chain_id;
 
-    // // from string to json
     let output_genesis_str = serde_json::to_string_pretty(&genesis).unwrap();
     let path = "./temp";
     let _ = std::fs::create_dir_all(path);
@@ -113,6 +111,8 @@ fn get_metadata(config_path: String) -> Metadata {
             get_ve(priv_key, propose_weight, vote_weight)
         })
         .collect::<Vec<_>>();
+
+    println!("{:?}", ve_list);
 
     metadata.verifier_list = ve_list;
     metadata

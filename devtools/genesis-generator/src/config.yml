@@ -5,7 +5,7 @@ author: axon Dev <axon@nervos.org>
 
 args:
   - private_key:
-      help: priate key to generate transaction
+      help: private key to generate transaction
       short: p
       long: private_key
       # just for testing
@@ -22,4 +22,4 @@ args:
       short: f
       long: config_path
       takes_value: true
-      default_value: "./../chain/nodes"
+      default_value: "./../chain"

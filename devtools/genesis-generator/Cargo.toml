@@ -7,7 +7,7 @@ license = "MIT"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "3", features = ["yaml", "cargo"] }
+clap = { version = "3.2", features = ["yaml", "cargo"] }
 common-config-parser = { path = "../../common/config-parser" }
 common-crypto = { path = "../../common/crypto" }
 core-executor = { path = "../../core/executor" }
