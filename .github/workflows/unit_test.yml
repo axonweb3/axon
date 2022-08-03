@@ -4,7 +4,7 @@ concurrency:
   cancel-in-progress: true
 on:
   push:
-    branches: 
+    branches:
       - main
   pull_request:
 
@@ -15,14 +15,15 @@ jobs:
     outputs:
       job_skip: ${{ steps.prologue.outputs.job_skip }}
     steps:
-    - uses: actions/checkout@v3
-    - name: prologue
-      id: prologue
-      uses: ./.github/actions/ci_prologue
-      with:
-        GITHUB_EVENT_NAME: ${{ github.event_name }}
-        PR_COMMONS_BODY: "${{ github.event.pull_request.body }}"
-        GITHUB_WORKFLOW: ${{ github.workflow }}
+      - uses: actions/checkout@v3
+      - name: prologue
+        id: prologue
+        uses: ./.github/actions/ci_prologue
+        with:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          PR_COMMONS_BODY: "${{ github.event.pull_request.body }}"
+          GITHUB_WORKFLOW: ${{ github.workflow }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
   Test:
     needs: prologue
     runs-on: ubuntu-latest
@@ -30,7 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: lyricwulf/abc@v1
-        with: 
+        with:
           linux: m4
       - uses: actions-rs/toolchain@v1
         with:
@@ -38,7 +39,7 @@ jobs:
           components: rustfmt, clippy
 
       - uses: Swatinem/rust-cache@v1
-      
+
       # - name: Init submodules
       #   uses: srt32/git-actions@v0.0.3
       #   with:
@@ -48,7 +49,7 @@ jobs:
       #   run: cargo install moleculec --locked --version "0.6.0"
       - uses: actions/setup-node@v3
         with:
-          node-version: '16'
+          node-version: "16"
 
       - name: CI
         run: make unit-test

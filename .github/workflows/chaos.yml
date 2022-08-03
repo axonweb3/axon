@@ -12,14 +12,15 @@ jobs:
     outputs:
       job_skip: ${{ steps.prologue.outputs.job_skip }}
     steps:
-    - uses: actions/checkout@v3
-    - name: prologue
-      id: prologue
-      uses: ./.github/actions/ci_prologue
-      with:
-        GITHUB_EVENT_NAME: ${{ github.event_name }}
-        PR_COMMONS_BODY: "${{ github.event.pull_request.body }}"
-        GITHUB_WORKFLOW: ${{ github.workflow }}
+      - uses: actions/checkout@v3
+      - name: prologue
+        id: prologue
+        uses: ./.github/actions/ci_prologue
+        with:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          PR_COMMONS_BODY: "${{ github.event.pull_request.body }}"
+          GITHUB_WORKFLOW: ${{ github.workflow }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
   build:
     needs: prologue
     runs-on: self-hosted
