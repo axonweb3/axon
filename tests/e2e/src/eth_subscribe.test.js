@@ -1,3 +1,7 @@
+import goto from "./goto";
+
+const pageName = "eth_subscribe.html";
+
 async function subscribe(buttonId, resultId) {
   await page.click(`#${buttonId}`);
 
@@ -30,7 +34,7 @@ async function unsubscribe(id) {
 
 describe("eth_subscribe", () => {
   beforeAll(async () => {
-    await page.goto("http://localhost:8080/eth_subscribe");
+    await goto.goto(page, pageName);
   });
 
   it("should successfully subscribe new heads", async () => {

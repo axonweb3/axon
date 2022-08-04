@@ -1,6 +1,10 @@
+import goto from "./goto";
+
+const pageName = "eth_syncing.html";
+
 describe("eth_syncing", () => {
   beforeAll(async () => {
-    await page.goto("http://localhost:8080/eth_syncing");
+    await goto.goto(page, pageName);
   });
 
   it("should returns false", async () => {

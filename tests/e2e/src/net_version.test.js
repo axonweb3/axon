@@ -1,6 +1,10 @@
+import goto from "./goto";
+
+const pageName = "net_version.html";
+
 describe("net_version", () => {
   beforeAll(async () => {
-    await page.goto("http://localhost:8080/net_version");
+    await goto.goto(page, pageName);
   });
 
   it("should returns 0x05", async () => {

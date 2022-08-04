@@ -6,8 +6,8 @@ const goto = {
   },
   async goto(currentpage, pageName) {
     try {
+      // await currentpage.goto(`${Config.getIns().httpServer}/src/${pageName}`);
       await currentpage.goto(`${Config.getIns().httpServer}/${pageName}`);
-      // await currentpage.goto(`${Config.getIns().axonRpc.url}/${pageName}`);
     } catch (err) {
       // eslint-disable-next-line no-console
       console.log(err);
