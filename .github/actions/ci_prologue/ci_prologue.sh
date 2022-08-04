@@ -39,7 +39,7 @@ fun_pasing_message(){
 if [[ $GITHUB_EVENT_NAME == "pull_request" ]];then
   echo "$PR_AUTHOR"
   
-  if [[ $PR_AUTHOR == "dependabot" ]]; then
+  if [[ $PR_AUTHOR == "dependabot[bot]" ]]; then
     # Only run below jobs when pr suthor is dependabot.
     job_run_list=" [ Cargo Clippy,Code Format,E2E Tests,Unit Tests ] "
     fun_jobs "$job_run_list"
