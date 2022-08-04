@@ -38,6 +38,7 @@ members = [
     "core/storage",
 
     "core/tx-assembler",
+    "devtools/genesis-generator",
     "devtools/keypair",
     
     "protocol",

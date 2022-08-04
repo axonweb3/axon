@@ -21,6 +21,7 @@
 
 # dev
 devtools/chain/data
+devtools/genesis-generator/temp
 
 tests/e2e/node_modules
 tests/e2e/yarn-error.log
