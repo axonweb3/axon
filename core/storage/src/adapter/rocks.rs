@@ -103,10 +103,7 @@ impl<'a, S: StorageSchema> Iterator for RocksIterator<'a, S> {
 
     fn next(&mut self) -> Option<Self::Item> {
         let kv_decode = |(k_bytes, v_bytes): (Box<[u8]>, Box<[u8]>)| -> ProtocolResult<_> {
-            let k_bytes = Bytes::copy_from_slice(k_bytes.as_ref());
             let key = <_>::decode(k_bytes)?;
-
-            let v_bytes = Bytes::copy_from_slice(v_bytes.as_ref());
             let val = <_>::decode(v_bytes)?;
 
             Ok((key, val))
@@ -154,8 +151,8 @@ impl StorageAdapter for RocksAdapter {
         let inst = Instant::now();
 
         let column = get_column::<S>(&self.db)?;
-        let key = key.encode()?.to_vec();
-        let val = val.encode()?.to_vec();
+        let key = key.encode()?;
+        let val = val.encode()?;
         let size = val.len() as i64;
 
         db!(self.db, put_cf, column, key, val)?;
@@ -171,8 +168,7 @@ impl StorageAdapter for RocksAdapter {
         let column = get_column::<S>(&self.db)?;
         let key = key.encode()?;
 
-        let opt_bytes =
-            { db!(self.db, get_cf, column, key)?.map(|db_vec| Bytes::copy_from_slice(&db_vec)) };
+        let opt_bytes = { db!(self.db, get_cf, column, key)? };
 
         if let Some(bytes) = opt_bytes {
             let val = <_>::decode(bytes)?;
@@ -185,7 +181,7 @@ impl StorageAdapter for RocksAdapter {
 
     async fn remove<S: StorageSchema>(&self, key: <S as StorageSchema>::Key) -> ProtocolResult<()> {
         let column = get_column::<S>(&self.db)?;
-        let key = key.encode()?.to_vec();
+        let key = key.encode()?;
 
         db!(self.db, delete_cf, column, key)?;
 
@@ -197,7 +193,7 @@ impl StorageAdapter for RocksAdapter {
         key: <S as StorageSchema>::Key,
     ) -> ProtocolResult<bool> {
         let column = get_column::<S>(&self.db)?;
-        let key = key.encode()?.to_vec();
+        let key = key.encode()?;
         let val = db!(self.db, get_cf, column, key)?;
 
         Ok(val.is_some())
