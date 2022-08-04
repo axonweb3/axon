@@ -20,10 +20,6 @@ function makeRequest(method, url) {
       if (this.status >= 200 && this.status < 300) {
         resolve(xhr.response);
       } else {
-        // reject({
-        //   status: this.status,
-        //   statusText: xhr.statusText,
-        // });
         reject(new Error("makeRequest fail"));
       }
     };
@@ -39,11 +35,7 @@ function makeRequest(method, url) {
 }
 
 async function doAjaxThings() {
-  // await code here
   const result = await makeRequest("POST", configSetting.axonRpc.url);
-  // code below here will only execute when await makeRequest() finished loading
-  // console.log(result);
-  // return parseInt(JSON.parse(result).result, 16);
 
   return new Promise((resolve) => {
     resolve(parseInt(JSON.parse(result).result, 16));
@@ -76,11 +68,7 @@ export default class Config {
     if (!Config.ins) {
       Config.ins = new Config();
     }
-    // this.ins.axonRpc.chainId = await doAjaxThings();
-    // this.axonRpc.chainId = await doAjaxThings();
     Config.ins.axonRpc.chainId = await doAjaxThings();
-    // console.log(Config.ins.axonRpc.chainId);
-    // console.log("Config.ins.axonRpc.chainId");
   }
 
   static getIns() {
@@ -92,11 +80,4 @@ export default class Config {
     }());
     return Config.ins;
   }
-
-  // static getIns() {
-  //   if (!Config.ins) {
-  //     Config.ins = new Config();
-  //   }
-  //   return Config.ins;
-  // }
 }
