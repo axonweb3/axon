@@ -2,7 +2,7 @@ import configSetting from "./config.json";
 
 function makeRequest(method, url) {
   return new Promise((resolve, reject) => {
-    const XMLHttpRequest = require("xhr2");
+    const XMLHttpRequest = require("xhr2");// eslint-disable-line global-require
     const xhr = new XMLHttpRequest();
     xhr.open(method, url);
     xhr.setRequestHeader("Content-type", "application/json");
@@ -65,10 +65,7 @@ export default class Config {
   }
 
   async initialize() {
-    if (!Config.ins) {
-      Config.ins = new Config();
-    }
-    Config.ins.axonRpc.chainId = await doAjaxThings();
+    this.axonRpc.chainId = await doAjaxThings();
   }
 
   static getIns() {
