@@ -1,6 +1,10 @@
+import goto from "./goto";
+
+const pageName = "web3_clientVersion.html";
+
 describe("web3_clientVersion", () => {
   beforeAll(async () => {
-    await page.goto("http://localhost:8080/web3_clientVersion");
+    await goto.goto(page, pageName);
   });
 
   it("should returns MetaMask/v10.10.2", async () => {

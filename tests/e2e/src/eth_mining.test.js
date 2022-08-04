@@ -1,6 +1,10 @@
+import goto from "./goto";
+
+const pageName = "eth_mining.html";
+
 describe("eth_mining", () => {
   beforeAll(async () => {
-    await page.goto("http://localhost:8080/eth_mining");
+    await goto.goto(page, pageName);
   });
 
   it("should returns false", async () => {

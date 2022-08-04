@@ -3,7 +3,7 @@
     "axonRpc": {
         "netWorkName": "axon",
         "url": "http://localhost:8000",
-        "chainId": 5
+        "chainId": 0
     },
     "hexPrivateKey": "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
     "acount1": "0x8ab0CF264DF99D83525e9E11c7e4db01558AE1b1",

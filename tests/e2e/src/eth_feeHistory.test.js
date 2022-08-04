@@ -1,6 +1,11 @@
+import goto from "./goto";
+
+const pageName = "eth_feeHistory.html";
+
 describe("eth_feeHistory", () => {
   beforeAll(async () => {
-    await page.goto("http://localhost:8080/eth_feeHistory");
+    // await page.goto("http://localhost:8080/eth_feeHistory");
+    await goto.goto(page, pageName);
   });
 
   it("should returns empty fee history", async () => {

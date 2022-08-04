@@ -1,6 +1,10 @@
+import goto from "./goto";
+
+const pageName = "net_peerCount.html";
+
 describe("net_peerCount", () => {
   beforeAll(async () => {
-    await page.goto("http://localhost:8080/net_peerCount");
+    await goto.goto(page, pageName);
   });
 
   it("should returns 0x0", async () => {
