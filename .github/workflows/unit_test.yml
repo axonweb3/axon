@@ -24,6 +24,7 @@ jobs:
           PR_COMMONS_BODY: "${{ github.event.pull_request.body }}"
           GITHUB_WORKFLOW: ${{ github.workflow }}
           PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+
   Test:
     needs: prologue
     runs-on: ubuntu-latest
@@ -47,9 +48,32 @@ jobs:
 
       # - name: Install moleculec
       #   run: cargo install moleculec --locked --version "0.6.0"
+
+      - name: CI
+        run: make test
+
+  Metadata-Test:
+    needs: prologue
+    runs-on: ubuntu-latest
+    if: needs.prologue.outputs.job_skip == 'run'
+    steps:
+      - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
           node-version: "16"
 
       - name: CI
-        run: make unit-test
+        run: make metadata-test
+
+  Crosschain-Test:
+    needs: prologue
+    runs-on: ubuntu-latest
+    if: needs.prologue.outputs.job_skip == 'run'
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+
+      - name: CI
+        run: make crosschain-test
