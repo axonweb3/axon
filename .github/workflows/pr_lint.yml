@@ -19,3 +19,24 @@ jobs:
 
           # if the PR contains a single commit, fail if the commit message and the PR title do not match
           commitTitleMatch: "true"
+
+  Label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add labels based on PR title
+        uses: TDAK1509/set-label-based-on-pr-title@v1
+        with:
+          words: feat;perf;refactor;fix;chore;docs;ci
+          labels: feature;performance;refactor;bugfix;chore;document;skip_changelog
+          repo-token: "${{ secrets.GITHUB_TOKEN }}"
+
+  Triage:
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/labeler@v4
+      with:
+        repo-token: "${{ secrets.GITHUB_TOKEN }}"
+        sync-labels: true
