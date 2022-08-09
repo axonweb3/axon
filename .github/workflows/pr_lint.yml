@@ -26,8 +26,8 @@ jobs:
       - name: Add labels based on PR title
         uses: TDAK1509/set-label-based-on-pr-title@v1
         with:
-          words: feat;perf;refactor;fix;chore;docs;ci
-          labels: feature;performance;refactor;bugfix;chore;document;skip_changelog
+          words: feat;perf;refactor;fix;chore;docs;style;ci
+          labels: feature;enhancement;refactor;bugfix;chore;document;style;skip_changelog
           repo-token: "${{ secrets.GITHUB_TOKEN }}"
 
   Triage:
