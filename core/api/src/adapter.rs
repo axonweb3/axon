@@ -44,7 +44,7 @@ where
             .await?
             .ok_or_else(|| APIError::Adapter(format!("Cannot get {:?} block", number)))?;
         let state_root = block.header.state_root;
-        let proposal: Proposal = block.into();
+        let proposal = Proposal::from(&block);
 
         AxonExecutorAdapter::from_root(
             state_root,

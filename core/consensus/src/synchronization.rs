@@ -313,7 +313,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             .exec(
                 ctx.clone(),
                 status_agent.inner().last_state_root,
-                &block.clone().into(),
+                &block.into(),
                 rich_block.txs.clone(),
             )
             .await?;

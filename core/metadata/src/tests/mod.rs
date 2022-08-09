@@ -73,7 +73,7 @@ impl TestHandle {
         )
         .unwrap();
 
-        let proposal = Proposal::from(genesis.block.clone());
+        let proposal = Proposal::from(&genesis.block);
         let executor = AxonExecutor::default();
         let mut backend = AxonExecutorAdapter::from_root(
             mpt.commit().unwrap(),

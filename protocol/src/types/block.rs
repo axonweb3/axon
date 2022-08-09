@@ -30,8 +30,8 @@ pub struct Proposal {
     pub tx_hashes:                  Vec<Hash>,
 }
 
-impl From<Block> for Proposal {
-    fn from(b: Block) -> Self {
+impl From<&Block> for Proposal {
+    fn from(b: &Block) -> Self {
         Proposal {
             prev_hash:                  b.header.prev_hash,
             proposer:                   b.header.proposer,
@@ -40,14 +40,14 @@ impl From<Block> for Proposal {
             timestamp:                  b.header.timestamp,
             number:                     b.header.number,
             gas_limit:                  b.header.gas_limit,
-            extra_data:                 b.header.extra_data,
+            extra_data:                 b.header.extra_data.clone(),
             mixed_hash:                 b.header.mixed_hash,
             base_fee_per_gas:           b.header.base_fee_per_gas,
-            proof:                      b.header.proof,
+            proof:                      b.header.proof.clone(),
             last_checkpoint_block_hash: b.header.last_checkpoint_block_hash,
             chain_id:                   b.header.chain_id,
             call_system_script_count:   b.header.call_system_script_count,
-            tx_hashes:                  b.tx_hashes,
+            tx_hashes:                  b.tx_hashes.clone(),
         }
     }
 }
@@ -130,7 +130,7 @@ impl Block {
     }
 
     pub fn hash(&self) -> Hash {
-        Proposal::from(self.clone()).hash()
+        Proposal::from(self).hash()
     }
 }
 
