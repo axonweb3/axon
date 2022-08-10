@@ -35,31 +35,31 @@ fun_pasing_message(){
   unit_tests_box_value=`echo "${MESSAGE}" |grep 'Unit Tests' |awk '{print $2}'`
   v3_core_tests_box_value=`echo "${MESSAGE}" |grep 'v3 Core Tests' |awk '{print $2}'`
   web3_compatible_tests_box_value=`echo "${MESSAGE}" |grep 'Web3 Compatible Tests' |awk '{print $2}'`
-  if [[ $chaos_ci_box_value == '[x]' ]];then
+  if [[ $chaos_ci_box_value == "[x]" ]];then
          job_run_list=$job_run_list",Chaos CI"
   fi
-  if [[ $cargo_clippy_box_value == '[x]' ]];then
+  if [[ $cargo_clippy_box_value == "[x]" ]];then
          job_run_list=$job_run_list",Cargo Clippy"
   fi
-  if [[ $coverage_test_box_value == '[x]' ]];then
+  if [[ $coverage_test_box_value == "[x]" ]];then
          job_run_list=$job_run_list",Coverage Test"
   fi
-  if [[ $code_format_box_value == '[x]' ]];then
+  if [[ $code_format_box_value == "[x]" ]];then
          job_run_list=$job_run_list",code_format_box_value"
   fi
-  if [[ $OCT_1_to_5_and_12_to_15_box_value == '[x]' ]];then
+  if [[ $OCT_1_to_5_and_12_to_15_box_value == "[x]" ]];then
          job_run_list=$job_run_list",OCT 1-5 And 12-15"
   fi
-  if [[ $OCT_6_to_10_box_value == '[x]' ]];then
+  if [[ $OCT_6_to_10_box_value == "[x]" ]];then
          job_run_list=$job_run_list",OCT 16-19"
   fi
-  if [[ $unit_tests_box_value == '[x]' ]];then
+  if [[ $unit_tests_box_value == "[x]" ]];then
          job_run_list=$job_run_list",Unit Tests"
   fi
-  if [[ $v3_core_tests_box_value == '[x]' ]];then
+  if [[ $v3_core_tests_box_value == "[x]" ]];then
          job_run_list=$job_run_list",v3 Core Tests"
   fi
-  if [[ $web3_compatible_tests_box_value == '[x]' ]];then
+  if [[ $web3_compatible_tests_box_value == "[x]" ]];then
          job_run_list=$job_run_list",Web3 Compatible Tests"
   fi
   job_run_list=$job_run_list" ]"
