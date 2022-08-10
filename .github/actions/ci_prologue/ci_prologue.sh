@@ -22,6 +22,48 @@ fun_jobs(){
 fun_pasing_message(){
   set +e
   MESSAGE=$1
+  job_run_list=" [ Conventional PR"
+  chaos_ci_box_value=`echo "${MESSAGE}" |grep 'Chaos CI' |awk '{print $2}'`
+  cargo_clippy_box_value=`echo "${MESSAGE}" |grep 'Cargo Clippy' |awk '{print $2}'`
+  coverage_test_box_value=`echo "${MESSAGE}" |grep 'Coverage Test' |awk '{print $2}'`
+  E2E_tests_box_value=`echo "${MESSAGE}" |grep 'E2E Tests' |awk '{print $2}'`
+  code_format_box_value=`echo "${MESSAGE}" |grep 'Code Format' |awk '{print $2}'`
+  OCT_1_to_5_and_12_to_15_box_value=`echo "${MESSAGE}" |grep 'OCT 1-5 And 12-15' |awk '{print $2}'`
+  OCT_6_to_10_box_value=`echo "${MESSAGE}" |grep 'OCT 6-10' |awk '{print $2}'`
+  OCT_11_box_value=`echo "${MESSAGE}" |grep 'OCT 11' |awk '{print $2}'`
+  OCT_16_to_19_box_value=`echo "${MESSAGE}" |grep 'OCT 16-19' |awk '{print $2}'`
+  unit_tests_box_value=`echo "${MESSAGE}" |grep 'Unit Tests' |awk '{print $2}'`
+  v3_core_tests_box_value=`echo "${MESSAGE}" |grep 'v3 Core Tests' |awk '{print $2}'`
+  web3_compatible_tests_box_value=`echo "${MESSAGE}" |grep 'Web3 Compatible Tests' |awk '{print $2}'`
+  if [[ $chaos_ci_box_value == '[x]' ]];then
+         job_run_list=$job_run_list",Chaos CI"
+  fi
+  if [[ $cargo_clippy_box_value == '[x]' ]];then
+         job_run_list=$job_run_list",Cargo Clippy"
+  fi
+  if [[ $coverage_test_box_value == '[x]' ]];then
+         job_run_list=$job_run_list",Coverage Test"
+  fi
+  if [[ $code_format_box_value == '[x]' ]];then
+         job_run_list=$job_run_list",code_format_box_value"
+  fi
+  if [[ $OCT_1_to_5_and_12_to_15_box_value == '[x]' ]];then
+         job_run_list=$job_run_list",OCT 1-5 And 12-15"
+  fi
+  if [[ $OCT_6_to_10_box_value == '[x]' ]];then
+         job_run_list=$job_run_list",OCT 16-19"
+  fi
+  if [[ $unit_tests_box_value == '[x]' ]];then
+         job_run_list=$job_run_list",Unit Tests"
+  fi
+  if [[ $v3_core_tests_box_value == '[x]' ]];then
+         job_run_list=$job_run_list",v3 Core Tests"
+  fi
+  if [[ $web3_compatible_tests_box_value == '[x]' ]];then
+         job_run_list=$job_run_list",Web3 Compatible Tests"
+  fi
+  job_run_list=$job_run_list" ]"
+
   #pass job run list
   echo "$MESSAGE" | grep -q "ci-runs-only:"
   if [ $? -eq 0 ]; then
