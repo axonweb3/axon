@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use ckb_jsonrpc_types::{Transaction as JsonTx, TransactionView as JsonTxView};
-use ckb_types::{core::Capacity, h160, h256};
+use ckb_types::{core::Capacity, h256};
 
 use common_crypto::{
     BlsPrivateKey, BlsPublicKey, BlsSignature, HashValue, PrivateKey, ToBlsPublicKey,
@@ -21,7 +21,7 @@ const STAKE_TYPEID_ARGS: ckb_types::H256 =
     h256!("0x0000000000000000000000000000000000000000000000000000000000000000");
 const METADATA_TYPEID: ckb_types::H256 =
     h256!("0x01b75db2124ce629e18fc88eb9b78b7f9f9f0b1bdc4d287a598c61b9f79fb663");
-const RECEIVE_ADDRESS: ckb_types::H160 = h160!("0x4f696abdf3be58328775de663e07924122d3cf2f");
+const RECEIVE_ADDRESS: &str = "ckt1qyqy76t2hhemukpjsa6aue37q7fyzgkneuhswnd2pa";
 
 fn gen_sig_pubkeys(size: usize, hash: &H256) -> (BlsSignature, Vec<BlsPublicKey>) {
     let mut sigs = vec![];
@@ -52,7 +52,8 @@ fn adapter() -> Arc<IndexerAdapter<RpcClient>> {
 async fn test_acs_complete_transacion() {
     let transfer = crosschain::Transfer {
         direction:     crosschain::Direction::FromAxon,
-        address:       H160::from_slice(RECEIVE_ADDRESS.as_bytes()),
+        ckb_address:   RECEIVE_ADDRESS.into(),
+        address:       H160::default(),
         ckb_amount:    Capacity::bytes(85).unwrap().as_u64(),
         erc20_address: H160::default(),
         sudt_amount:   0,

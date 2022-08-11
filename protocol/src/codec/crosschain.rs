@@ -10,7 +10,8 @@ impl Encodable for Transfer {
             .append(&self.address)
             .append(&self.erc20_address)
             .append(&self.ckb_amount)
-            .append(&self.sudt_amount);
+            .append(&self.sudt_amount)
+            .append(&self.ckb_address);
     }
 }
 
@@ -26,6 +27,7 @@ impl Decodable for Transfer {
             erc20_address: rlp.val_at(3)?,
             ckb_amount:    rlp.val_at(4)?,
             sudt_amount:   rlp.val_at(5)?,
+            ckb_address:   rlp.val_at(6)?,
         })
     }
 }
@@ -240,6 +242,7 @@ mod tests {
         Transfer {
             direction:     0u8.try_into().unwrap(),
             tx_hash:       Hash::random(),
+            ckb_address:   Default::default(),
             address:       H160::random(),
             erc20_address: H160::random(),
             ckb_amount:    random(),

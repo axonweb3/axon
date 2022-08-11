@@ -1,19 +1,17 @@
 use std::collections::HashMap;
 
+use ckb_sdk::constants::TYPE_ID_CODE_HASH;
 use ckb_types::bytes::Bytes;
 use ckb_types::core::{Capacity, DepType, ScriptHashType, TransactionView};
 use ckb_types::h256;
 use ckb_types::packed::{CellDep, CellOutput, OutPoint, Script, WitnessArgs};
 use ckb_types::prelude::{Builder, Entity, Pack, Unpack};
-use protocol::types::{H160, H256};
+use protocol::types::H256;
 
 use crate::molecule;
 
-pub const TYPE_ID_CODE_HASH: ckb_types::H256 = h256!("0x545950455f4944");
 pub const ACS_LOCK_CODE_HASH: ckb_types::H256 =
     h256!("0xe6716305da395dbd3dc094695b2a6dc9160e186e41102cceac377d78a350c962");
-pub const SECP256K1_CODE_HASH: ckb_types::H256 =
-    h256!("0x9bd7e06f3ecf4be0f2fcd2188b23f1b9fcc88e5d4b65a8637b17723bbda3cce8");
 pub const SUDT_CODE_HASH: ckb_types::H256 =
     h256!("0xc5e5dcf215925f7ef4dfaf5f4b4f105bc321c02776d6e7d52a1db3fcd9d011a4");
 
@@ -41,12 +39,11 @@ pub fn build_acs_lock_script(metadata_typeid: H256) -> Script {
 }
 
 pub fn build_transfer_output_cell(
-    secp256k1_lockargs: H160,
+    lock_script: Script,
     ckb_amount: u64,
     sudt_amount: u128,
     sudt_lockhash: H256,
 ) -> Result<(CellOutput, Bytes), (u64, u64)> {
-    let lock_script = build_script(SECP256K1_CODE_HASH, secp256k1_lockargs.as_bytes());
     let mut cell = CellOutput::new_builder()
         .lock(lock_script)
         .build_exact_capacity(Capacity::zero())
