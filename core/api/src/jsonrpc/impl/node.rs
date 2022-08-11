@@ -13,7 +13,7 @@ use crate::jsonrpc::{web3_types::Web3SyncStatus, AxonNodeRpcServer, RpcResult};
 pub struct NodeRpcImpl {
     version: String,
     pprof:   Arc<AtomicBool>,
-    path:    PathBuf,
+    _path:   PathBuf,
 }
 
 impl NodeRpcImpl {
@@ -21,7 +21,7 @@ impl NodeRpcImpl {
         NodeRpcImpl {
             version: version.to_string(),
             pprof:   Arc::new(AtomicBool::default()),
-            path:    path.join("api"),
+            _path:   path.join("api"),
         }
     }
 }
@@ -79,7 +79,7 @@ impl AxonNodeRpcServer for NodeRpcImpl {
             self.pprof.store(_enable, Ordering::Release);
             if !old && _enable {
                 let flag = Arc::clone(&self.pprof);
-                let path = self.path.clone();
+                let path = self._path.clone();
 
                 std::thread::spawn(move || {
                     use pprof::protos::Message;
