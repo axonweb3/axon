@@ -23,18 +23,30 @@ fun_pasing_message(){
   set +e
   MESSAGE=$1
   job_run_list=" [ Conventional PR"
-  chaos_ci_box_value=`echo "${MESSAGE}" |grep 'Chaos CI' |awk '{print $2}'`
-  cargo_clippy_box_value=`echo "${MESSAGE}" |grep 'Cargo Clippy' |awk '{print $2}'`
-  coverage_test_box_value=`echo "${MESSAGE}" |grep 'Coverage Test' |awk '{print $2}'`
-  E2E_tests_box_value=`echo "${MESSAGE}" |grep 'E2E Tests' |awk '{print $2}'`
-  code_format_box_value=`echo "${MESSAGE}" |grep 'Code Format' |awk '{print $2}'`
-  OCT_1_to_5_and_12_to_15_box_value=`echo "${MESSAGE}" |grep 'OCT 1-5 And 12-15' |awk '{print $2}'`
-  OCT_6_to_10_box_value=`echo "${MESSAGE}" |grep 'OCT 6-10' |awk '{print $2}'`
-  OCT_11_box_value=`echo "${MESSAGE}" |grep 'OCT 11' |awk '{print $2}'`
-  OCT_16_to_19_box_value=`echo "${MESSAGE}" |grep 'OCT 16-19' |awk '{print $2}'`
-  unit_tests_box_value=`echo "${MESSAGE}" |grep 'Unit Tests' |awk '{print $2}'`
-  v3_core_tests_box_value=`echo "${MESSAGE}" |grep 'v3 Core Tests' |awk '{print $2}'`
-  web3_compatible_tests_box_value=`echo "${MESSAGE}" |grep 'Web3 Compatible Tests' |awk '{print $2}'`
+  chaos_ci_box_value=`cat test.txt |grep 'Chaos CI' |awk '{print $2}'`
+  echo "chaos_ci_box_value is ""$chaos_ci_box_value"
+  cargo_clippy_box_value=`cat test.txt |grep 'Cargo Clippy' |awk '{print $2}'`
+  echo "cargo_clippy_box_value is ""$cargo_clippy_box_value"
+  coverage_test_box_value=`cat test.txt |grep 'Coverage Test' |awk '{print $2}'`
+  echo "coverage_test_box_value is ""$coverage_test_box_value"
+  E2E_tests_box_value=`cat test.txt |grep 'E2E Tests' |awk '{print $2}'`
+  echo "E2E_tests_box_value is ""$E2E_tests_box_value"
+  code_format_box_value=`cat test.txt |grep 'Code Format' |awk '{print $2}'`
+  echo "code_format_box_value is ""$code_format_box_value"
+  OCT_1_to_5_and_12_to_15_box_value=`cat test.txt |grep 'OCT 1-5 And 12-15' |awk '{print $2}'`
+  echo "OCT_1_to_5_and_12_to_15_box_value is ""$OCT_1_to_5_and_12_to_15_box_value"
+  OCT_6_to_10_box_value=`cat test.txt |grep 'OCT 6-10' |awk '{print $2}'`
+  echo "OCT_6_to_10_box_value is ""$OCT_6_to_10_box_value"
+  OCT_11_box_value=`cat test.txt |grep 'OCT 11' |awk '{print $2}'`
+  echo "OCT_11_box_value is ""$OCT_11_box_value"
+  OCT_16_to_19_box_value=`cat test.txt |grep 'OCT 16-19' |awk '{print $2}'`
+  echo "OCT_16_to_19_box_value is ""$OCT_16_to_19_box_value"
+  unit_tests_box_value=`cat test.txt |grep 'Unit Tests' |awk '{print $2}'`
+  echo "unit_tests_box_value is ""$unit_tests_box_value"
+  v3_core_tests_box_value=`cat test.txt |grep 'v3 Core Tests' |awk '{print $2}'`
+  echo "v3_core_tests_box_value is ""$v3_core_tests_box_value"
+  web3_compatible_tests_box_value=`cat test.txt |grep 'Web3 Compatible Tests' |awk '{print $2}'`
+  echo "web3_compatible_tests_box_value is ""$web3_compatible_tests_box_value"
   if [[ $chaos_ci_box_value == "[x]" ]];then
          job_run_list=$job_run_list",Chaos CI"
   fi
@@ -63,14 +75,16 @@ fun_pasing_message(){
          job_run_list=$job_run_list",Web3 Compatible Tests"
   fi
   job_run_list=$job_run_list" ]"
+  
+  echo "job_run_list: ""$job_run_list"
 
   #pass job run list
-  echo "$MESSAGE" | grep -q "ci-runs-only:"
-  if [ $? -eq 0 ]; then
-    job_run_list=`echo "${MESSAGE}"| grep "ci-runs-only" | awk -F ':' '{print $2}'`
-  else
-    job_run_list=" [ Code Format,Chaos CI,Cargo Clippy,Coverage Test,E2E Tests,Conventional PR,Unit Tests,Web3 Compatible Tests,OCT 1-5 And 12-15,OCT 6-10,OCT 11,OCT 16-19,v3 Core Tests] "
-  fi
+  # echo "$MESSAGE" | grep -q "ci-runs-only:"
+  # if [ $? -eq 0 ]; then
+  #   job_run_list=`echo "${MESSAGE}"| grep "ci-runs-only" | awk -F ':' '{print $2}'`
+  # else
+  #   job_run_list=" [ Code Format,Chaos CI,Cargo Clippy,Coverage Test,E2E Tests,Conventional PR,Unit Tests,Web3 Compatible Tests,OCT 1-5 And 12-15,OCT 6-10,OCT 11,OCT 16-19,v3 Core Tests] "
+  # fi
   echo "job_run_list is ""$job_run_list"
   
   set -e
