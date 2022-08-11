@@ -5,6 +5,7 @@ use parking_lot::RwLock;
 
 use common_apm::Instant;
 use common_apm_derive::trace_span;
+use core_network::NetworkContext;
 use protocol::tokio::{sync::Mutex, time::sleep};
 use protocol::traits::{Context, Synchronization, SynchronizationAdapter};
 use protocol::types::{Block, Proof, Proposal, Receipt, SignedTransaction, U256};
@@ -28,10 +29,11 @@ pub struct RichBlock {
 }
 
 pub struct OverlordSynchronization<Adapter: SynchronizationAdapter> {
-    adapter: Arc<Adapter>,
-    status:  StatusAgent,
-    lock:    Arc<Mutex<()>>,
-    syncing: Mutex<()>,
+    adapter:       Arc<Adapter>,
+    status:        StatusAgent,
+    lock:          Arc<Mutex<()>>,
+    syncing:       Mutex<()>,
+    remote_ignore: dashmap::DashMap<core_network::SessionId, Instant>,
 
     sync_txs_chunk_size: usize,
 }
@@ -40,6 +42,13 @@ pub struct OverlordSynchronization<Adapter: SynchronizationAdapter> {
 impl<Adapter: SynchronizationAdapter> Synchronization for OverlordSynchronization<Adapter> {
     #[trace_span(kind = "consensus.sync", logs = "{remote_number: remote_number}")]
     async fn receive_remote_block(&self, ctx: Context, remote_number: u64) -> ProtocolResult<()> {
+        self.remote_ignore
+            .retain(|_, v| v.elapsed() < Duration::from_secs(10));
+        let sid = ctx.session_id()?;
+        if self.remote_ignore.contains_key(&sid) {
+            return Ok(());
+        }
+
         let syncing_lock = self.syncing.try_lock();
         if syncing_lock.is_err() {
             return Ok(());
@@ -83,6 +92,7 @@ impl<Adapter: SynchronizationAdapter> Synchronization for OverlordSynchronizatio
                 sync_status.last_number,
                 e
             );
+            self.remote_ignore.insert(sid, Instant::now());
             return Err(e);
         }
 
@@ -113,6 +123,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             status,
             lock,
             syncing,
+            remote_ignore: Default::default(),
 
             sync_txs_chunk_size,
         }
@@ -553,8 +564,10 @@ impl SyncStatus {
     pub fn add_one(&mut self) {
         match *self {
             SyncStatus::False => (),
-            SyncStatus::Syncing { mut current, .. } => {
-                current += U256::one();
+            SyncStatus::Syncing {
+                ref mut current, ..
+            } => {
+                *current += U256::one();
             }
         }
     }

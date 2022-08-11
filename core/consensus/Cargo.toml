@@ -8,6 +8,7 @@ edition = "2021"
 arc-swap = "1.5"
 cita_trie = "3.0"
 creep = "0.2"
+dashmap = { version = "5.3", features = ["rayon"] }
 futures = { version = "0.3", features = ["async-await"] }
 json = "0.12"
 lazy_static = "1.4"

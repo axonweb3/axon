@@ -1329,6 +1329,7 @@ dependencies = [
  "core-network",
  "core-storage",
  "creep",
+ "dashmap",
  "futures",
  "json",
  "lazy_static",

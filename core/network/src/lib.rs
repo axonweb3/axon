@@ -16,7 +16,7 @@ mod traits;
 pub use self::config::NetworkConfig;
 pub use self::service::{NetworkService, NetworkServiceHandle};
 pub use self::traits::NetworkContext;
-pub use tentacle::{multiaddr, secio::PeerId};
+pub use tentacle::{multiaddr, secio::PeerId, SessionId};
 
 use crate::error::NetworkError;
 use protocol::types::Bytes;
