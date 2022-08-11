@@ -89,17 +89,25 @@ impl TxWrapper {
 
 #[derive(Default)]
 pub struct PendingQueue {
-    queue:         BTreeMap<U256, TxPtr>,
+    queue:             BTreeMap<U256, TxPtr>,
     // already insert to package list tip nonce
-    pop_tip_nonce: U256,
+    pop_tip_nonce:     U256,
+    current_tip_nonce: U256,
+    need_remove:       bool,
 }
 
 impl PendingQueue {
     pub fn insert(&mut self, tx: TxPtr, nonce_diff: U256) -> bool {
         let nonce = *tx.nonce();
         let current_tip = nonce - nonce_diff;
-        if self.pop_tip_nonce < current_tip {
+        if self.current_tip_nonce > nonce {
+            tx.set_dropped();
+            return false;
+        }
+
+        if self.current_tip_nonce < current_tip {
             self.pop_tip_nonce = current_tip;
+            self.current_tip_nonce = current_tip;
         }
         match self.queue.entry(nonce) {
             Entry::Occupied(mut o) => {
@@ -141,23 +149,26 @@ impl PendingQueue {
     }
 
     pub fn clear_droped(&mut self) {
+        if self.queue.is_empty() {
+            self.need_remove = true
+        }
         self.queue.retain(|_, v| !v.is_dropped());
-
-        self.pop_tip_nonce = U256::zero();
     }
 
     pub fn set_drop_by_nonce_tip(&mut self, nonce: U256) {
         for (_, v) in self.queue.range((Included(0.into()), Included(nonce))) {
             v.set_dropped();
         }
+        self.pop_tip_nonce = nonce + 1;
+        self.current_tip_nonce = self.pop_tip_nonce;
     }
 
     pub fn count(&self) -> usize {
         self.queue.values().filter(|tx| !tx.is_dropped()).count()
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.queue.is_empty()
+    pub fn need_remove(&self) -> bool {
+        self.need_remove
     }
 
     pub fn len(&self) -> usize {
