@@ -171,7 +171,7 @@ impl Axon {
             mpt.insert(wallet.address().as_bytes(), &distribute_account)?;
         }
 
-        let proposal = Proposal::from(self.genesis.block.clone());
+        let proposal = Proposal::from(&self.genesis.block);
         let executor = AxonExecutor::default();
         let mut backend = AxonExecutorAdapter::from_root(
             mpt.commit()?,

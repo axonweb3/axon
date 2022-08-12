@@ -213,7 +213,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         consenting_rich_block: &RichBlock,
     ) -> ProtocolResult<Proof> {
         let consenting_number = consenting_rich_block.block.header.number;
-        let proposal: Proposal = consenting_rich_block.block.clone().into();
+        let proposal: Proposal = (&consenting_rich_block.block).into();
 
         let consenting_proof: Proof = self
             .adapter
@@ -313,7 +313,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             .exec(
                 ctx.clone(),
                 status_agent.inner().last_state_root,
-                &block.clone().into(),
+                &block.into(),
                 rich_block.txs.clone(),
             )
             .await?;

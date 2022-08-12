@@ -116,7 +116,7 @@ where
         let number = number.as_u64();
         let res = blocking_async!(self, storage, get_block, Context::new(), number);
 
-        res.map(|b| Proposal::from(b).hash()).unwrap_or_default()
+        res.map(|b| Proposal::from(&b).hash()).unwrap_or_default()
     }
 
     fn block_coinbase(&self) -> H160 {

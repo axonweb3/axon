@@ -1,10 +1,10 @@
 use std::error::Error;
 
-use derive_more::{Display, From};
+use derive_more::Display;
 
 use crate::{ProtocolError, ProtocolErrorKind};
 
-#[derive(Debug, From, Display)]
+#[derive(Debug, Display)]
 pub enum CodecError {
     #[display(fmt = "from string {}", _0)]
     Rlp(String),
@@ -12,7 +12,6 @@ pub enum CodecError {
 
 impl Error for CodecError {}
 
-// TODO: derive macro
 impl From<CodecError> for ProtocolError {
     fn from(err: CodecError) -> ProtocolError {
         ProtocolError::new(ProtocolErrorKind::Codec, Box::new(err))

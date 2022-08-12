@@ -455,8 +455,7 @@ where
             .into());
         }
 
-        // Todo: impl From<&Block> for Proposal
-        let proposal_hash = Proposal::from(block.clone()).hash();
+        let proposal_hash = Proposal::from(&block).hash();
 
         if proposal_hash != proof.block_hash {
             log::error!(
