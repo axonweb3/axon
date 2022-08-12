@@ -287,7 +287,7 @@ impl PriorityPool {
 
         self.pending_queue.retain(|_, v| {
             v.clear_droped();
-            !v.is_empty()
+            !v.need_remove()
         })
     }
 
