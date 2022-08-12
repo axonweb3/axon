@@ -19,7 +19,7 @@ jobs:
        contains(github.event.review.body, '/run-ci')
        ) ||
        github.event_name == 'push' ||
-       github.event_name == 'pull_request'
+       （github.event_name == 'pull_request' && github.event.action == 'synchronize')
 
     runs-on: ubuntu-20.04
     outputs:
