@@ -7,10 +7,19 @@ on:
     branches:
       - main
   pull_request:
+    types: [synchronize]
+  pull_request_review:
+    types: [submitted]
 
 jobs:
   prologue:
     name: prologue
+    if: |
+      (github.event_name == 'issue_comment' &&
+       contains(github.event.review.body, '/run-ci')
+       ) ||
+       (github.event_name == 'pull_request' && github.event.action == 'synchronize') ||
+       github.event_name == 'push'
     runs-on: ubuntu-20.04
     outputs:
       job_skip: ${{ steps.prologue.outputs.job_skip }}
