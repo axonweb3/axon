@@ -157,7 +157,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
                 .start(current_consented_number, remote_number);
         }
 
-        while current_consented_number <= remote_number {
+        while current_consented_number < remote_number {
             let consenting_number = current_consented_number + 1;
             log::info!(
                 "[synchronization]: try syncing block, current_consented_number {},syncing_number {}",
@@ -553,9 +553,106 @@ impl SyncStatus {
     pub fn add_one(&mut self) {
         match *self {
             SyncStatus::False => (),
-            SyncStatus::Syncing { mut current, .. } => {
-                current += U256::one();
+            SyncStatus::Syncing {
+                ref mut current, ..
+            } => {
+                *current += U256::one();
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::tests::synchronization::{get_mock_rick_block, get_mock_synchronization};
+    use protocol::tokio;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn test_start_sync() {
+        let synchronization = get_mock_synchronization();
+        let ctx = Context::default();
+        let status_agent = StatusAgent::new(CurrentStatus::default());
+        let result = synchronization.start_sync(ctx, status_agent, 0, 5).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_verify_block() {
+        let synchronization = get_mock_synchronization();
+        let ctx = Context::default();
+        let genesis = get_mock_rick_block();
+        let result = synchronization.verify_block(ctx, &genesis).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_commit_block() {
+        let sync = get_mock_synchronization();
+        let ctx = Context::default();
+        let rich_block = get_mock_rick_block();
+        let proof = Proof::default();
+        let status_agent = StatusAgent::new(CurrentStatus::default());
+        let result = sync
+            .commit_block(ctx, rich_block, proof, status_agent)
+            .await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_get_rich_block_from_remote() {
+        let sync = get_mock_synchronization();
+        let ctx = Context::default();
+        let result = sync.get_rich_block_from_remote(ctx, 4).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_need_sync() {
+        let sync = get_mock_synchronization();
+        let ctx = Context::default();
+
+        let result = sync.need_sync(ctx.clone(), 4).await.unwrap();
+        assert!(result);
+
+        let result = sync.need_sync(ctx, 0).await.unwrap();
+        assert!(!result);
+    }
+
+    #[tokio::test]
+    async fn test_update_status() {
+        let sync = get_mock_synchronization();
+        let ctx = Context::default();
+
+        let sync_status_agent = StatusAgent::new(CurrentStatus::default());
+        let result = sync.update_status(ctx, sync_status_agent);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_sync_status() {
+        let mut sync_status = SyncStatus::default();
+        assert_eq!(sync_status, SyncStatus::False);
+
+        sync_status.add_one();
+        assert_eq!(sync_status, SyncStatus::False);
+
+        sync_status.start(0, 5);
+        assert_eq!(sync_status, SyncStatus::Syncing {
+            start:   U256::zero(),
+            current: U256::zero(),
+            highest: U256::from(5),
+        });
+
+        sync_status.add_one();
+        assert_eq!(sync_status, SyncStatus::Syncing {
+            start:   U256::zero(),
+            current: U256::from(1),
+            highest: U256::from(5),
+        });
+
+        sync_status.finish();
+        assert_eq!(sync_status, SyncStatus::False);
     }
 }
