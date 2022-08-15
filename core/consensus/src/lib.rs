@@ -11,6 +11,10 @@ pub mod engine;
 pub mod message;
 pub mod status;
 pub mod synchronization;
+
+#[cfg(test)]
+mod tests;
+
 pub mod types;
 pub mod util;
 pub mod wal;
