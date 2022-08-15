@@ -91,9 +91,9 @@ impl EvmDebugger {
         value: U256,
         data: Vec<u8>,
     ) -> TxResp {
-        let mut backend = self.backend(number);
+        let backend = self.backend(number);
         let evm = AxonExecutor::default();
-        evm.call(&mut backend, MAX_BLOCK_GAS_LIMIT, from, to, value, data)
+        evm.call(&backend, MAX_BLOCK_GAS_LIMIT, from, to, value, data)
     }
 
     fn backend(&self, number: u64) -> AxonExecutorAdapter<ImplStorage<RocksAdapter>, RocksTrieDB> {
