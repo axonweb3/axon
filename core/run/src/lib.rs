@@ -37,7 +37,7 @@ use core_consensus::{
     OverlordConsensusAdapter, OverlordSynchronization, SignedTxsWAL,
 };
 use core_cross_client::{
-    CrossChainDBImpl, CrossChainImpl, CrosschainMessageHandler, DefaultCrossChainAdapter,
+    CrossChainDBImpl, CrossChainImpl, CrossChainMessageHandler, DefaultCrossChainAdapter,
     END_GOSSIP_BUILD_CKB_TX, END_GOSSIP_CKB_TX_SIGNATURE,
 };
 use core_executor::{
@@ -542,12 +542,12 @@ impl Axon {
 
         network_service.register_endpoint_handler(
             END_GOSSIP_CKB_TX_SIGNATURE,
-            CrosschainMessageHandler::new(crosschain_net_handle.clone()),
+            CrossChainMessageHandler::new(crosschain_net_handle.clone()),
         )?;
 
         network_service.register_endpoint_handler(
             END_GOSSIP_BUILD_CKB_TX,
-            CrosschainMessageHandler::new(crosschain_net_handle),
+            CrossChainMessageHandler::new(crosschain_net_handle),
         )?;
 
         // register consensus

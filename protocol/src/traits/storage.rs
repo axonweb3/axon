@@ -13,7 +13,7 @@ pub enum StorageCategory {
     Wal,
     HashHeight,
     Code,
-    Crosschain,
+    CrossChain,
 }
 
 pub type StorageIterator<'a, S> = Box<

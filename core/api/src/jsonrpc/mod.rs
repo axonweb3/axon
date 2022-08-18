@@ -181,7 +181,7 @@ pub trait AxonNodeRpc {
 }
 
 #[rpc(server)]
-pub trait AxonCrosschainRpc {
+pub trait AxonCrossChainRpc {
     #[method(name = "getCrosschainResult")]
     async fn get_crosschain_result(
         &self,
@@ -198,7 +198,7 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
     let mut rpc = r#impl::Web3RpcImpl::new(Arc::clone(&adapter), config.rpc.gas_cap).into_rpc();
     let node_rpc =
         r#impl::NodeRpcImpl::new(&config.rpc.client_version, config.data_path.clone()).into_rpc();
-    let crosschain_rpc = r#impl::CrosschainRpcImpl::new(Arc::clone(&adapter)).into_rpc();
+    let crosschain_rpc = r#impl::CrossChainRpcImpl::new(Arc::clone(&adapter)).into_rpc();
     let filter = r#impl::filter_module(Arc::clone(&adapter)).into_rpc();
 
     rpc.merge(node_rpc).unwrap();

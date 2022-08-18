@@ -12,7 +12,7 @@ pub use abi::{crosschain_abi, wckb_abi};
 pub use adapter::{CrossChainDBImpl, DefaultCrossChainAdapter};
 use protocol::codec::ProtocolCodec;
 pub use task::message::{
-    CrosschainMessageHandler, END_GOSSIP_BUILD_CKB_TX, END_GOSSIP_CKB_TX_SIGNATURE,
+    CrossChainMessageHandler, END_GOSSIP_BUILD_CKB_TX, END_GOSSIP_CKB_TX_SIGNATURE,
 };
 
 use std::str::FromStr;
@@ -29,7 +29,7 @@ use common_crypto::{
     PrivateKey, Secp256k1RecoverablePrivateKey, Signature, ToPublicKey, UncompressedPublicKey,
 };
 use protocol::tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
-use protocol::traits::{CkbClient, Context, CrossAdapter, Crosschain};
+use protocol::traits::{CkbClient, Context, CrossAdapter, CrossChain};
 use protocol::types::{
     Address, Block, BlockNumber, Direction, Eip1559Transaction, Hash, Hasher, Log, Proof,
     RequestTxHashes, Requests, SignedTransaction, TransactionAction, Transfer, UnsignedTransaction,
@@ -40,7 +40,7 @@ use protocol::{async_trait, lazy::CHAIN_ID, tokio, ProtocolResult};
 use core_executor::{CROSSCHAIN_CONTRACT_ADDRESS, WCKB_CONTRACT_ADDRESS};
 
 use crate::error::CrossChainError;
-use crate::task::{message::CrosschainMessage, RequestCkbTask};
+use crate::task::{message::CrossChainMessage, RequestCkbTask};
 use crate::{adapter::fixed_array, monitor::CrossChainMonitor, sidechain::SidechainTask};
 
 pub const CKB_BLOCK_INTERVAL: u64 = 8; // second
@@ -69,8 +69,8 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
         adapter: Arc<Adapter>,
     ) -> (
         Self,
-        CrosschainHandler<C>,
-        UnboundedSender<CrosschainMessage>,
+        CrossChainHandler<C>,
+        UnboundedSender<CrossChainMessage>,
     ) {
         let priv_key = Secp256k1RecoverablePrivateKey::try_from(private_key)
             .expect("Invalid secp private key");
@@ -107,7 +107,7 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
             .await
         });
 
-        let handler = CrosschainHandler::new(priv_key.clone(), log_tx, config, ckb_client);
+        let handler = CrossChainHandler::new(priv_key.clone(), log_tx, config, ckb_client);
         let crosschain = CrossChainImpl {
             priv_key,
             address,
@@ -255,7 +255,7 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
     }
 }
 
-pub struct CrosschainHandler<C> {
+pub struct CrossChainHandler<C> {
     priv_key:   Secp256k1RecoverablePrivateKey,
     logs_tx:    UnboundedSender<(Vec<Vec<Log>>, H256)>,
     config:     ConfigCrossChain,
@@ -263,7 +263,7 @@ pub struct CrosschainHandler<C> {
 }
 
 #[async_trait]
-impl<C: CkbClient + 'static> Crosschain for CrosschainHandler<C> {
+impl<C: CkbClient + 'static> CrossChain for CrossChainHandler<C> {
     async fn set_evm_log(
         &self,
         ctx: Context,
@@ -298,14 +298,14 @@ impl<C: CkbClient + 'static> Crosschain for CrosschainHandler<C> {
     }
 }
 
-impl<C: CkbClient + 'static> CrosschainHandler<C> {
+impl<C: CkbClient + 'static> CrossChainHandler<C> {
     fn new(
         priv_key: Secp256k1RecoverablePrivateKey,
         logs_tx: UnboundedSender<(Vec<Vec<Log>>, H256)>,
         config: ConfigCrossChain,
         ckb_client: Arc<C>,
     ) -> Self {
-        CrosschainHandler {
+        CrossChainHandler {
             priv_key,
             logs_tx,
             config,

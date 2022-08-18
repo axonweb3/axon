@@ -227,7 +227,7 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssemblerImpl<Adapter> {
             &offered_sudt_set,
             &required_sudt_set,
         ) {
-            return Err(TxAssemblerError::InsufficientCrosschainCell.into());
+            return Err(TxAssemblerError::InsufficientCrossChainCell.into());
         }
 
         // fill transaction inputs and build sUDT change outputs
@@ -439,7 +439,7 @@ pub enum TxAssemblerError {
     MetadataChainIdError(u16),
 
     #[display(fmt = "Not enough cells to response current crosschain requests")]
-    InsufficientCrosschainCell,
+    InsufficientCrossChainCell,
 
     #[display(fmt = "No transaction found with Hash({})", _0)]
     NoTransactionFound(H256),
