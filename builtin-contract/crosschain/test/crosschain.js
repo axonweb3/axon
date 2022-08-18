@@ -174,9 +174,9 @@ describe("CrossChain", () => {
         await expect(contract.connect(owner).approveLimitTx(limitTxes[0][0]))
           .emit(contract, 'CrossToCKB')
           .withArgs(
-            limitTxes[0][0].to, 
-            limitTxes[0][0].tokenAddress, 
-            limitTxes[0][0].amount, 
+            limitTxes[0][0].to,
+            limitTxes[0][0].tokenAddress,
+            limitTxes[0][0].amount,
             limitTxes[0][0].minWCKBAmount,
         );
         limitTxes = await contract.limitTxes();
@@ -282,9 +282,9 @@ describe("CrossChain", () => {
         await expect(contract.connect(owner).approveLimitTx(limitTxes[0][0]))
           .emit(contract, 'CrossToCKB')
           .withArgs(
-            limitTxes[0][0].to, 
-            limitTxes[0][0].tokenAddress, 
-            limitTxes[0][0].amount, 
+            limitTxes[0][0].to,
+            limitTxes[0][0].tokenAddress,
+            limitTxes[0][0].amount,
             limitTxes[0][0].minWCKBAmount,
         );
         limitTxes = await contract.limitTxes();
@@ -379,9 +379,9 @@ describe("CrossChain", () => {
         await expect(contract.connect(owner).approveLimitTx(limitTxes[0][0]))
           .emit(contract, 'CrossToCKB')
           .withArgs(
-            limitTxes[0][0].to, 
-            limitTxes[0][0].tokenAddress, 
-            limitTxes[0][0].amount, 
+            limitTxes[0][0].to,
+            limitTxes[0][0].tokenAddress,
+            limitTxes[0][0].amount,
             limitTxes[0][0].minWCKBAmount,
         );
         limitTxes = await contract.limitTxes();
@@ -489,9 +489,9 @@ describe("CrossChain", () => {
         await expect(contract.connect(owner).approveLimitTx(limitTxes[0][0]))
           .emit(contract, 'CrossToCKB')
           .withArgs(
-            limitTxes[0][0].to, 
-            limitTxes[0][0].tokenAddress, 
-            limitTxes[0][0].amount, 
+            limitTxes[0][0].to,
+            limitTxes[0][0].tokenAddress,
+            limitTxes[0][0].amount,
             limitTxes[0][0].minWCKBAmount,
         );
         limitTxes = await contract.limitTxes();

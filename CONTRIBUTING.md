@@ -2,14 +2,14 @@
 
 Our goal is to make contributing to the `axon` project easy and transparent.
 
-When contributing to this repository, please first discuss the change you wish to make via issue, or any other method with the community before making a change. 
+When contributing to this repository, please first discuss the change you wish to make via issue, or any other method with the community before making a change.
 
 ### Report Issue
 
 * Read known issues to see whether the issue is already addressed there.
 
 * Search existing issues to see whether others had already posted a similar issue.
-  
+
 * **Do not open up a GitHub issue to report security vulnerabilities**. Instead,
   refer to the [security policy](SECURITY.md).
 
@@ -18,7 +18,7 @@ When contributing to this repository, please first discuss the change you wish t
 ### Send PR
 
 * See [Code Standards]() for code guidelines.
-  
+
 * See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
 1. Fork the `axon` repo and create your branch from master.

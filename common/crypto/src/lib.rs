@@ -92,7 +92,7 @@ mod benches {
             .zip(priv_pub_keys.iter())
             .map(|(sig, key_pair)| (sig.clone(), key_pair.1.clone()))
             .collect::<Vec<_>>();
-        
+
 
         b.iter(move || {
             let _ = BlsSignature::combine(sigs_pubkeys.clone());
@@ -121,7 +121,7 @@ mod benches {
             .zip(priv_pub_keys.iter())
             .map(|(sig, key_pair)| (sig.clone(), key_pair.1.clone()))
             .collect::<Vec<_>>();
-        
+
 
         b.iter(move || {
             let _ = BlsSignature::combine(sigs_pubkeys.clone());
@@ -150,7 +150,7 @@ mod benches {
             .zip(priv_pub_keys.iter())
             .map(|(sig, key_pair)| (sig.clone(), key_pair.1.clone()))
             .collect::<Vec<_>>();
-        
+
 
         b.iter(move || {
             let _ = BlsSignature::combine(sigs_pubkeys.clone());
@@ -179,7 +179,7 @@ mod benches {
             .zip(priv_pub_keys.iter())
             .map(|(sig, key_pair)| (sig.clone(), key_pair.1.clone()))
             .collect::<Vec<_>>();
-        
+
 
         b.iter(move || {
             let _ = BlsSignature::combine(sigs_pubkeys.clone());
@@ -208,7 +208,7 @@ mod benches {
             .zip(priv_pub_keys.iter())
             .map(|(sig, key_pair)| (sig.clone(), key_pair.1.clone()))
             .collect::<Vec<_>>();
-        
+
 
         b.iter(move || {
             let _ = BlsSignature::combine(sigs_pubkeys.clone());

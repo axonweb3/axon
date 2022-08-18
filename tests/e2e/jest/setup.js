@@ -27,7 +27,7 @@ export default async function setup() {
 
   global.browser = browser;
   global.metamask = await getMetamaskWindow(browser);
-  
+
   // await Config.getIns().initialize();
   await metamask.addNetwork({
     networkName: Config.getIns().axonRpc.netWorkName,

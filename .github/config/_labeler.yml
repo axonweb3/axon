@@ -25,13 +25,13 @@ contract:
 protocol:
 - protocol/src/*
 
-toolchain: 
+toolchain:
 - rust-toolchain
 
-ci: 
+ci:
 - any: ['.github/actions/*', '.github/workflows/*']
 
-apm: 
+apm:
 - any: ['common/apm/src/*', 'common/apm-derive/src/*', 'common/memory-tracker/src/*']
 
 config:

@@ -30,7 +30,7 @@ fun_pasing_message(){
     job_run_list=" [ Code Format,Chaos CI,Cargo Clippy,Coverage Test,E2E Tests,Conventional PR,Unit Tests,Web3 Compatible Tests,OCT 1-5 And 12-15,OCT 6-10,OCT 11,OCT 16-19,v3 Core Tests] "
   fi
   echo "job_run_list is ""$job_run_list"
-  
+
   set -e
   #set reqiured output
   fun_jobs "$job_run_list"
@@ -38,7 +38,7 @@ fun_pasing_message(){
 
 if [[ $GITHUB_EVENT_NAME == "pull_request" ]];then
   echo "$PR_AUTHOR"
-  
+
   if [[ $PR_AUTHOR == "dependabot[bot]" ]]; then
     # Only run below jobs when pr suthor is dependabot.
     job_run_list=" [ Cargo Clippy,Code Format,E2E Tests,Unit Tests ] "

@@ -40,7 +40,7 @@ members = [
     "core/tx-assembler",
     "devtools/genesis-generator",
     "devtools/keypair",
-    
+
     "protocol",
 ]
 

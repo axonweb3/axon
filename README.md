@@ -8,7 +8,7 @@ Axon is a sidechain framework based on [Muta](https://github.com/nervosnetwork/m
 Dapp developers can use Axon toolkit to create and distribute chain-specific UDT on CKB. Chain token holders can stake UDT to become an Axon chain validator or just deposit UDT into Axon chain for use in Dapps.
 Axon will support [interoperability 2.0](https://medium.com/nervosnetwork/blockchain-abstraction-and-interoperability-2-0-eea98d81b7b6) and be 100% Ethereum compatible, like [Godwoken](https://github.com/nervosnetwork/godwoken).
 
-As a layer-2 solution on [Nervos](https://www.nervos.org/), Axon can achieve thousands of TPS with the help of [Overlord](https://github.com/nervosnetwork/overlord), a high-performance consensus. 
+As a layer-2 solution on [Nervos](https://www.nervos.org/), Axon can achieve thousands of TPS with the help of [Overlord](https://github.com/nervosnetwork/overlord), a high-performance consensus.
 This offers Nervos DApp developers one more option. Godwoken is perfect for scenarios that involve low throughput and high value, such as DeFi, where security is usually more important than speed.
 When it comes to consumer-facing applications such as decentralized games or social networks, Axon offers the best performance.
 

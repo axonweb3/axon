@@ -6,9 +6,9 @@ coverage:
         threshold: null
     patch: false
 
-comment: 
+comment:
   layout: "reach, diff, flags, files"
   behavior: default
-  require_changes: false 
-  require_base: false    
-  require_head: true    
+  require_changes: false
+  require_base: false
+  require_head: true

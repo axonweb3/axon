@@ -116,8 +116,8 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
     #[trace_span(
         kind = "consensus.engine",
         logs = "{
-            next_number: next_number, 
-            hash: Hex::encode(hash.clone()).as_string(), 
+            next_number: next_number,
+            hash: Hex::encode(hash.clone()).as_string(),
             txs_len: proposal.tx_hashes.len()}"
     )]
     async fn check_block(
@@ -190,7 +190,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
     #[trace_span(
         kind = "consensus.engine",
         logs = "{
-            current_number: current_number, 
+            current_number: current_number,
             txs_len: commit.content.tx_hashes.len()}"
     )]
     async fn commit(

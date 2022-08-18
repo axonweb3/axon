@@ -348,8 +348,8 @@ mod tests {
     fn mock_hash() -> Hash {
         Hasher::digest(get_random_bytes(10))
     }
-    
-    fn mock_sign_tx() -> SignedTransaction {   
+
+    fn mock_sign_tx() -> SignedTransaction {
         let mut utx = UnverifiedTransaction {
             unsigned:  UnsignedTransaction::Eip1559(Eip1559Transaction {
                 nonce:                    Default::default(),
