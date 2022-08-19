@@ -1241,6 +1241,7 @@ name = "common-crypto"
 version = "0.2.1"
 dependencies = [
  "axon-protocol",
+ "criterion",
  "ophelia",
  "ophelia-blst",
  "ophelia-secp256k1",
@@ -1282,6 +1283,7 @@ name = "common-merkle"
 version = "0.2.1"
 dependencies = [
  "axon-protocol",
+ "criterion",
  "rand 0.7.3",
  "static_merkle_tree",
 ]
@@ -1361,6 +1363,7 @@ dependencies = [
  "core-network",
  "core-storage",
  "creep",
+ "criterion",
  "futures",
  "json",
  "lazy_static",
@@ -1619,6 +1622,7 @@ dependencies = [
  "common-apm-derive",
  "common-config-parser",
  "common-crypto",
+ "criterion",
  "futures",
  "lazy_static",
  "log",

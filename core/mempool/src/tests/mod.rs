@@ -131,11 +131,6 @@ fn mock_txs(valid_size: usize, invalid_size: usize, timeout: u64) -> Vec<SignedT
         .collect()
 }
 
-fn default_mempool_sync() -> MemPoolImpl<HashMemPoolAdapter> {
-    let rt = tokio::runtime::Runtime::new().unwrap();
-    rt.block_on(default_mempool())
-}
-
 async fn default_mempool() -> MemPoolImpl<HashMemPoolAdapter> {
     new_mempool(POOL_SIZE, TIMEOUT_GAP, CYCLE_LIMIT, MAX_TX_SIZE).await
 }
@@ -178,15 +173,6 @@ fn check_sig(stx: &SignedTransaction) -> ProtocolResult<()> {
     )
     .map_err(|err| AdapterError::VerifySignature(err.to_string()))?;
     Ok(())
-}
-
-async fn concurrent_check_sig(txs: Vec<SignedTransaction>) {
-    let futs = txs
-        .into_iter()
-        .map(|tx| tokio::task::spawn_blocking(move || check_sig(&tx)))
-        .collect::<Vec<_>>();
-
-    let _ = futures::future::try_join_all(futs).await;
 }
 
 async fn concurrent_insert(

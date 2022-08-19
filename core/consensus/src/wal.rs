@@ -317,27 +317,20 @@ impl ConsensusWal {
     }
 }
 
-#[rustfmt::skip]
-/// Bench in Intel(R) Core(TM) i7-4770HQ CPU @ 2.20GHz (8 x 2200):
-/// test wal::test::bench_save_wal_1000_txs  ... bench:   2,346,611 ns/iter (+/- 754,074)
-/// test wal::test::bench_save_wal_16000_txs ... bench:  41,576,328 ns/iter (+/- 2,547,323)
-/// test wal::test::bench_save_wal_2000_txs  ... bench:   4,759,015 ns/iter (+/- 460,748)
-/// test wal::test::bench_save_wal_4000_txs  ... bench:   9,725,284 ns/iter (+/- 452,143)
-/// test wal::test::bench_save_wal_8000_txs  ... bench:  19,971,012 ns/iter (+/- 1,620,755)
-/// test wal::test::bench_save_wal_16000_txs ... bench:  41,576,328 ns/iter (+/- 2,547,323)
-/// test wal::test::bench_txs_prost_encode   ... bench:  40,020,365 ns/iter (+/- 2,800,361)
-/// test wal::test::bench_txs_rlp_encode     ... bench:  40,792,370 ns/iter (+/- 1,908,695)
-
 #[cfg(test)]
 mod tests {
     extern crate test;
 
-    use common_crypto::{Secp256k1Recoverable, Crypto, Secp256k1RecoverablePrivateKey, PrivateKey, Signature};
+    use common_crypto::{
+        Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey, Signature,
+    };
     use rand::random;
     use rand::rngs::OsRng;
-    use test::Bencher;
 
-    use protocol::types::{TransactionAction, SignatureComponents, UnverifiedTransaction, Bytes, Hash, Eip1559Transaction, SignedTransaction, UnsignedTransaction};
+    use protocol::types::{
+        Bytes, Eip1559Transaction, Hash, SignatureComponents, SignedTransaction, TransactionAction,
+        UnsignedTransaction, UnverifiedTransaction,
+    };
 
     use super::*;
 
@@ -368,13 +361,14 @@ mod tests {
             }),
             chain_id:  random::<u64>(),
             hash:      mock_hash(),
-        }.calc_hash();
+        }
+        .calc_hash();
 
         let priv_key = Secp256k1RecoverablePrivateKey::generate(&mut OsRng);
         let signature =
             Secp256k1Recoverable::sign_message(utx.hash.as_bytes(), &priv_key.to_bytes())
-            .unwrap()
-            .to_bytes();
+                .unwrap()
+                .to_bytes();
         utx.signature = Some(signature.into());
 
         utx.try_into().unwrap()
@@ -428,21 +422,25 @@ mod tests {
         // write one, read one
         let wal = ConsensusWal::new(FULL_CONSENSUS_PATH);
         let info = get_random_bytes(1000);
-        wal.update_overlord_wal(Context::new(),info.clone()).unwrap();
+        wal.update_overlord_wal(Context::new(), info.clone())
+            .unwrap();
 
         let load = wal.load_overlord_wal(Context::new()).unwrap();
-        assert_eq!(load,info);
+        assert_eq!(load, info);
 
         // write three, read latest
         fs::remove_dir_all(PathBuf::from_str(FULL_CONSENSUS_PATH).unwrap()).unwrap();
 
         let info = get_random_bytes(1000);
-        wal.update_overlord_wal(Context::new(),get_random_bytes(1000)).unwrap();
-        wal.update_overlord_wal(Context::new(),get_random_bytes(1000)).unwrap();
-        wal.update_overlord_wal(Context::new(),info.clone()).unwrap();
+        wal.update_overlord_wal(Context::new(), get_random_bytes(1000))
+            .unwrap();
+        wal.update_overlord_wal(Context::new(), get_random_bytes(1000))
+            .unwrap();
+        wal.update_overlord_wal(Context::new(), info.clone())
+            .unwrap();
 
         let load = wal.load_overlord_wal(Context::new()).unwrap();
-        assert_eq!(load,info);
+        assert_eq!(load, info);
 
         // remove all, read nothing
         fs::remove_dir_all(PathBuf::from_str(FULL_CONSENSUS_PATH).unwrap()).unwrap();
@@ -453,10 +451,11 @@ mod tests {
         // write a old correct one and a new wrong one, read old
 
         // old one
-        //fs::remove_dir_all(PathBuf::from_str(FULL_CONSENSUS_PATH).unwrap()).unwrap();
+        // fs::remove_dir_all(PathBuf::from_str(FULL_CONSENSUS_PATH).unwrap()).unwrap();
 
         let info = get_random_bytes(1000);
-        wal.update_overlord_wal(Context::new(),info.clone()).unwrap();
+        wal.update_overlord_wal(Context::new(), info.clone())
+            .unwrap();
 
         // -> copy and modify to a new fake one
 
@@ -464,21 +463,21 @@ mod tests {
 
         let file = files.next().unwrap().unwrap();
 
-        let from = u128::from_str( file.file_name().to_str().unwrap()).unwrap();
+        let from = u128::from_str(file.file_name().to_str().unwrap()).unwrap();
 
-        let to = file.path().parent().unwrap().join((from+1).to_string());
+        let to = file.path().parent().unwrap().join((from + 1).to_string());
 
         let mut new_file = fs::OpenOptions::new()
             .read(true)
             .write(true)
             .create(true)
-            .open(to).unwrap();
+            .open(to)
+            .unwrap();
 
-        new_file
-            .write_all(get_random_bytes(1000).as_ref()).unwrap();
+        new_file.write_all(get_random_bytes(1000).as_ref()).unwrap();
 
         let load = wal.load_overlord_wal(Context::new()).unwrap();
-        assert_eq!(load,info);
+        assert_eq!(load, info);
 
         fs::remove_dir_all(PathBuf::from_str(FULL_CONSENSUS_PATH).unwrap()).unwrap();
     }
@@ -488,75 +487,7 @@ mod tests {
         for _ in 0..1 {
             let mut txs = BatchSignedTxs::new(mock_wal_txs(100));
             let raw = txs.encode_msg().unwrap();
-            assert_eq!(
-                BatchSignedTxs::decode_msg(raw).unwrap(),
-                txs
-            );
+            assert_eq!(BatchSignedTxs::decode_msg(raw).unwrap(), txs);
         }
-    }
-
-    #[bench]
-    fn bench_txs_rlp_encode(b: &mut Bencher) {
-        let txs = mock_wal_txs(20000);
-
-        b.iter(move || {
-            let _ = rlp::encode_list(&txs);
-        });
-    }
-
-    #[bench]
-    fn bench_save_wal_1000_txs(b: &mut Bencher) {
-        let wal = SignedTxsWAL::new(FULL_TXS_PATH);
-        let txs = mock_wal_txs(1000);
-        let txs_hash = Hasher::digest(Bytes::from(rlp::encode_list(&txs)));
-
-        b.iter(move || {
-            wal.save(1u64, txs_hash, txs.clone()).unwrap();
-        })
-    }
-
-    #[bench]
-    fn bench_save_wal_2000_txs(b: &mut Bencher) {
-        let wal = SignedTxsWAL::new(FULL_TXS_PATH);
-        let txs = mock_wal_txs(2000);
-        let txs_hash = Hasher::digest(Bytes::from(rlp::encode_list(&txs)));
-
-        b.iter(move || {
-            wal.save(1u64, txs_hash, txs.clone()).unwrap();
-        })
-    }
-
-    #[bench]
-    fn bench_save_wal_4000_txs(b: &mut Bencher) {
-        let wal = SignedTxsWAL::new(FULL_TXS_PATH);
-        let txs = mock_wal_txs(4000);
-        let txs_hash = Hasher::digest(Bytes::from(rlp::encode_list(&txs)));
-
-        b.iter(move || {
-            wal.save(1u64, txs_hash, txs.clone()).unwrap();
-        })
-    }
-
-    #[bench]
-    fn bench_save_wal_8000_txs(b: &mut Bencher) {
-        let wal = SignedTxsWAL::new(FULL_TXS_PATH);
-        let txs = mock_wal_txs(8000);
-        let txs_hash = Hasher::digest(Bytes::from(rlp::encode_list(&txs)));
-
-        b.iter(move || {
-            wal.save(1u64, txs_hash, txs.clone()).unwrap();
-        })
-    }
-
-    #[bench]
-    #[ignore]
-    fn bench_save_wal_16000_txs(b: &mut Bencher) {
-        let wal = SignedTxsWAL::new(FULL_TXS_PATH);
-        let txs = mock_wal_txs(16000);
-        let txs_hash = Hasher::digest(Bytes::from(rlp::encode_list(&txs)));
-
-        b.iter(move || {
-            wal.save(1u64, txs_hash, txs.clone()).unwrap();
-        })
     }
 }

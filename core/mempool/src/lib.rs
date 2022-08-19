@@ -12,7 +12,7 @@ pub use adapter::message::{
     MsgPullTxs, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS, RPC_PULL_TXS, RPC_RESP_PULL_TXS,
     RPC_RESP_PULL_TXS_SYNC,
 };
-pub use adapter::DefaultMemPoolAdapter;
+pub use adapter::{AdapterError, DefaultMemPoolAdapter};
 
 use std::collections::HashSet;
 use std::error::Error;
@@ -177,7 +177,6 @@ where
         Ok(res)
     }
 
-    #[cfg(test)]
     pub fn get_tx_cache(&self) -> &PriorityPool {
         &self.pool
     }
@@ -337,7 +336,7 @@ where
     }
 }
 
-fn check_dup_order_hashes(order_tx_hashes: &[Hash]) -> ProtocolResult<()> {
+pub fn check_dup_order_hashes(order_tx_hashes: &[Hash]) -> ProtocolResult<()> {
     let mut dup_set = HashSet::with_capacity(order_tx_hashes.len());
 
     for hash in order_tx_hashes.iter() {

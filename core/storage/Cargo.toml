@@ -20,5 +20,10 @@ protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [dev-dependencies]
 common-crypto = { path = "../../common/crypto" }
+criterion = "0.3"
 num-traits = "0.2"
 rand = "0.7"
+
+[[bench]]
+harness = false
+name = "bench"
