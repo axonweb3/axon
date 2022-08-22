@@ -383,7 +383,7 @@ mod tests {
 
     #[test]
     fn test_txs_wal() {
-        fs::remove_dir_all(PathBuf::from_str(FULL_TXS_PATH).unwrap()).unwrap();
+        let _ = fs::remove_dir_all(PathBuf::from_str(FULL_TXS_PATH).unwrap());
 
         let wal = SignedTxsWAL::new(FULL_TXS_PATH);
         let txs_01 = mock_wal_txs(100);
