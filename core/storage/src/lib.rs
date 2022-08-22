@@ -336,7 +336,7 @@ impl_storage_schema_for!(LatestProofSchema, Hash, Proof, Block);
 impl_storage_schema_for!(OverlordWalSchema, Hash, Bytes, Wal);
 impl_storage_schema_for!(EvmCodeSchema, Hash, Bytes, Code);
 impl_storage_schema_for!(EvmCodeAddressSchema, Hash, Hash, Code);
-impl_storage_schema_for!(CrossChainRecordSchema, Hash, HashWithDirection, Crosschain);
+impl_storage_schema_for!(CrossChainRecordSchema, Hash, HashWithDirection, CrossChain);
 
 #[async_trait]
 impl<Adapter: StorageAdapter> CommonStorage for ImplStorage<Adapter> {

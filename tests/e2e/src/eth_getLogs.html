@@ -25,7 +25,7 @@
         const params = [];
         const topics = [];
         const request_params = { method: "eth_getLogs", params: params };
-       
+
         if (t_type === "1") {
             topics.push(param4);
             const call_request = { fromBlock: param1, toBlock: param2, address: param3, topics: topics,blockHash: param6};

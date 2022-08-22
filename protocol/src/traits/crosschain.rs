@@ -68,7 +68,7 @@ pub trait CrossAdapter: Send + Sync {
 }
 
 #[async_trait]
-pub trait Crosschain: Send + Sync {
+pub trait CrossChain: Send + Sync {
     async fn set_evm_log(
         &self,
         ctx: Context,

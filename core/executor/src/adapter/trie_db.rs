@@ -242,7 +242,6 @@ mod tests {
     extern crate test;
     use cita_trie::DB;
     use getrandom::getrandom;
-    use test::Bencher;
 
     use super::*;
 
@@ -332,15 +331,5 @@ mod tests {
         assert_eq!(trie.cache_len(), 100);
 
         dir.close().unwrap();
-    }
-
-    #[bench]
-    fn bench_rand(b: &mut Bencher) {
-        b.iter(|| {
-            let mut rng = SmallRng::seed_from_u64(RAND_SEED);
-            for _ in 0..10000 {
-                rng.gen_range(10..1000000);
-            }
-        })
     }
 }

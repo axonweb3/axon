@@ -5,8 +5,8 @@
 
 version: 2
 updates:
-  - package-ecosystem: cargo 
-    directory: "/" 
+  - package-ecosystem: cargo
+    directory: "/"
     schedule:
       interval: daily
       time: "03:00"
@@ -30,7 +30,7 @@ updates:
     directory: "/tests/e2e"
     schedule:
       interval: monthly
-  
+
   - package-ecosystem: "npm"
     directory: "/builtin-contract/crosschain"
     schedule:

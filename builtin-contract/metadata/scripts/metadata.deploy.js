@@ -50,7 +50,7 @@ export_deploy().then(signed_tx => {
             "hash": hex(signed_tx.hash())
         },
         "sender": hex(util.privateToAddress(private_key)),
-        "public": hex(util.privateToPublic(private_key)) 
+        "public": hex(util.privateToPublic(private_key))
     }
     const stream = util.rlp.encode([util.privateToAddress(private_key), signed_tx.nonce])
     const code_address = hex(util.keccak256(stream))

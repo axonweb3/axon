@@ -44,5 +44,20 @@ fn criterion_convert(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, criterion_convert);
+fn criterion_rand(c: &mut Criterion) {
+    const RAND_SEED: u64 = 49999;
+    use rand::rngs::SmallRng;
+    use rand::{Rng, SeedableRng};
+    // MacOS M1 Pro 16G: 15.80µs
+    c.bench_function("gen rand", |b| {
+        b.iter(|| {
+            let mut rng = SmallRng::seed_from_u64(RAND_SEED);
+            for _ in 0..10000 {
+                rng.gen_range(10..1000000);
+            }
+        })
+    });
+}
+
+criterion_group!(benches, criterion_convert, criterion_rand);
 criterion_main!(benches);

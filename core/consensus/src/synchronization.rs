@@ -133,7 +133,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
     #[trace_span(
         kind = "consensus.sync",
         logs = "{
-                    current_number: current_number, 
+                    current_number: current_number,
                     remote_number: remote_number
                 }"
     )]

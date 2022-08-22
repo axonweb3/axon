@@ -12,11 +12,11 @@ use protocol::types::{Bytes, H256};
 pub const END_GOSSIP_BUILD_CKB_TX: &str = "/gossip/crosschain/ckb_tx";
 pub const END_GOSSIP_CKB_TX_SIGNATURE: &str = "/gossip/crosschain/signature";
 
-pub struct CrosschainMessageHandler(UnboundedSender<CrosschainMessage>);
+pub struct CrossChainMessageHandler(UnboundedSender<CrossChainMessage>);
 
 #[async_trait]
-impl MessageHandler for CrosschainMessageHandler {
-    type Message = CrosschainMessage;
+impl MessageHandler for CrossChainMessageHandler {
+    type Message = CrossChainMessage;
 
     async fn process(&self, ctx: Context, msg: Self::Message) -> TrustFeedback {
         if let Err(e) = self.0.send(msg) {
@@ -28,35 +28,35 @@ impl MessageHandler for CrosschainMessageHandler {
     }
 }
 
-impl CrosschainMessageHandler {
-    pub fn new(sender: UnboundedSender<CrosschainMessage>) -> Self {
-        CrosschainMessageHandler(sender)
+impl CrossChainMessageHandler {
+    pub fn new(sender: UnboundedSender<CrossChainMessage>) -> Self {
+        CrossChainMessageHandler(sender)
     }
 }
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug)]
-pub enum CrosschainMessage {
+pub enum CrossChainMessage {
     TxView(TxViewWrapper),
     Signature(CrossChainSignature),
 }
 
-impl Encodable for CrosschainMessage {
+impl Encodable for CrossChainMessage {
     fn rlp_append(&self, s: &mut RlpStream) {
         s.begin_list(2);
         match self {
-            CrosschainMessage::TxView(hash) => s.append(&0u8).append(hash),
-            CrosschainMessage::Signature(sig) => s.append(&1u8).append(sig),
+            CrossChainMessage::TxView(hash) => s.append(&0u8).append(hash),
+            CrossChainMessage::Signature(sig) => s.append(&1u8).append(sig),
         };
     }
 }
 
-impl Decodable for CrosschainMessage {
+impl Decodable for CrossChainMessage {
     fn decode(rlp: &Rlp) -> Result<Self, DecoderError> {
         let ty: u8 = rlp.val_at(0)?;
         match ty {
-            0 => Ok(CrosschainMessage::TxView(rlp.val_at(1)?)),
-            1 => Ok(CrosschainMessage::Signature(rlp.val_at(1)?)),
+            0 => Ok(CrossChainMessage::TxView(rlp.val_at(1)?)),
+            1 => Ok(CrossChainMessage::Signature(rlp.val_at(1)?)),
             _ => Err(DecoderError::Custom("Invalid message type")),
         }
     }

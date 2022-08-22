@@ -291,7 +291,6 @@ impl PriorityPool {
         })
     }
 
-    #[cfg(test)]
     pub fn real_queue_len(&self) -> usize {
         self.real_queue.lock().len()
     }

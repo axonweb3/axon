@@ -15,7 +15,7 @@ use protocol::{codec::ProtocolCodec, tokio, ProtocolResult};
 
 use crate::error::CrossChainError;
 use crate::task::message::{
-    CrossChainSignature, CrosschainMessage, TxViewWrapper, END_GOSSIP_BUILD_CKB_TX,
+    CrossChainMessage, CrossChainSignature, TxViewWrapper, END_GOSSIP_BUILD_CKB_TX,
     END_GOSSIP_CKB_TX_SIGNATURE,
 };
 
@@ -28,7 +28,7 @@ pub struct RequestCkbTask<Adapter> {
     req_records:    ReqRecords,
 
     reqs_rx: UnboundedReceiver<Requests>,
-    net_rx:  UnboundedReceiver<CrosschainMessage>,
+    net_rx:  UnboundedReceiver<CrossChainMessage>,
 
     adapter: Arc<Adapter>,
 }
@@ -42,7 +42,7 @@ where
         private_key: &[u8],
         reqs_rx: UnboundedReceiver<Requests>,
         adapter: Arc<Adapter>,
-    ) -> (Self, UnboundedSender<CrosschainMessage>) {
+    ) -> (Self, UnboundedSender<CrossChainMessage>) {
         let (net_tx, net_rx) = unbounded_channel();
         let private_key = BlsPrivateKey::try_from(private_key).expect("Invalid bls private key");
 
@@ -117,18 +117,18 @@ where
         }
     }
 
-    async fn handle_msgs(&mut self, msg: CrosschainMessage) -> ProtocolResult<()> {
+    async fn handle_msgs(&mut self, msg: CrossChainMessage) -> ProtocolResult<()> {
         if !self.validate_power {
             return Ok(());
         }
 
         match msg {
-            CrosschainMessage::TxView(tx_view_wrapper) => {
+            CrossChainMessage::TxView(tx_view_wrapper) => {
                 if let Ok(sig) = self.verify_tx_wrapper(&tx_view_wrapper) {
                     self.adapter
                         .transmit(
                             Context::new(),
-                            CrosschainMessage::Signature(sig).encode().unwrap().to_vec(),
+                            CrossChainMessage::Signature(sig).encode().unwrap().to_vec(),
                             END_GOSSIP_CKB_TX_SIGNATURE,
                             MessageTarget::Specified(Bytes::from(
                                 self.calc_leader(&tx_view_wrapper.req_hash)
@@ -140,7 +140,7 @@ where
                 }
             }
 
-            CrosschainMessage::Signature(sig) => {
+            CrossChainMessage::Signature(sig) => {
                 if let Some((c_sig, pks)) =
                     self.req_records.insert_vote(&sig.req_hash, (&sig).into())
                 {
@@ -190,7 +190,7 @@ where
         self.adapter
             .transmit(
                 ctx.clone(),
-                CrosschainMessage::TxView(tx_wrapper)
+                CrossChainMessage::TxView(tx_wrapper)
                     .encode()
                     .unwrap()
                     .to_vec(),

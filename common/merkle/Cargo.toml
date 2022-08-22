@@ -11,4 +11,9 @@ static_merkle_tree = "1.1.0"
 protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [dev-dependencies]
+criterion = "0.3"
 rand = "0.7"
+
+[[bench]]
+harness = false
+name = "bench"

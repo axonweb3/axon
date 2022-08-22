@@ -28,3 +28,7 @@ protocol = { path = "../../protocol", package = "axon-protocol" }
 criterion = { version = "0.3", features = ["async_tokio"] }
 parking_lot = "0.12"
 rand = "0.7"
+
+[[bench]]
+harness = false
+name = "bench"

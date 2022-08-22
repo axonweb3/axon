@@ -2,8 +2,6 @@ extern crate test;
 
 use std::sync::Arc;
 
-use test::Bencher;
-
 use protocol::traits::{CommonStorage, Context, Storage};
 use protocol::types::Hasher;
 
@@ -110,108 +108,4 @@ fn test_storage_evm_code_insert() {
 
     let code_3 = exec!(storage.get_code_by_address(Context::new(), &address));
     assert_eq!(code, code_3.unwrap());
-}
-
-#[rustfmt::skip]
-/// Bench in Intel(R) Core(TM) i7-4770HQ CPU @ 2.20GHz (8 x 2200)
-/// test tests::storage::bench_insert_10000_receipts ... bench:  33,954,916 ns/iter (+/- 3,818,780)
-/// test tests::storage::bench_insert_20000_receipts ... bench:  69,476,334 ns/iter (+/- 25,206,468)
-/// test tests::storage::bench_insert_40000_receipts ... bench: 138,903,121 ns/iter (+/- 26,053,433)
-/// test tests::storage::bench_insert_80000_receipts ... bench: 289,629,756 ns/iter (+/- 114,583,692)
-/// test tests::storage::bench_insert_10000_txs      ... bench:  37,900,652 ns/iter (+/- 19,055,351)
-/// test tests::storage::bench_insert_20000_txs      ... bench:  76,499,664 ns/iter (+/- 17,883,127)
-/// test tests::storage::bench_insert_40000_txs      ... bench: 148,111,340 ns/iter (+/- 5,637,411)
-/// test tests::storage::bench_insert_80000_txs      ... bench: 311,861,163 ns/iter (+/- 16,891,290)
-
-#[bench]
-fn bench_insert_10000_receipts(b: &mut Bencher) {
-    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()), 10);
-    let height = 2045;
-
-    let receipts = (0..10000)
-        .map(|_| mock_receipt(Hasher::digest(get_random_bytes(10))))
-        .collect::<Vec<_>>();
-
-
-    b.iter(move || {
-        exec!(storage.insert_receipts(Context::new(), height, receipts.clone()));
-    })
-}
-
-#[bench]
-fn bench_insert_20000_receipts(b: &mut Bencher) {
-    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()), 10);
-    let height = 2045;
-
-    let receipts = (0..20000)
-        .map(|_| mock_receipt(Hasher::digest(get_random_bytes(10))))
-        .collect::<Vec<_>>();
-
-    b.iter(move || {
-        exec!(storage.insert_receipts(Context::new(), height, receipts.clone()));
-    })
-}
-
-#[bench]
-fn bench_insert_40000_receipts(b: &mut Bencher) {
-    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()), 10);
-    let height = 2077;
-
-    let receipts = (0..40000)
-        .map(|_| mock_receipt(Hasher::digest(get_random_bytes(10))))
-        .collect::<Vec<_>>();
-
-    b.iter(move || {
-        exec!(storage.insert_receipts(Context::new(), height, receipts.clone()));
-    })
-}
-
-#[bench]
-fn bench_insert_80000_receipts(b: &mut Bencher) {
-    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()), 10);
-    let height = 2077;
-
-    let receipts = (0..80000)
-        .map(|_| mock_receipt(Hasher::digest(get_random_bytes(10))))
-        .collect::<Vec<_>>();
-
-    b.iter(move || {
-        exec!(storage.insert_receipts(Context::new(), height, receipts.clone()));
-    })
-}
-
-#[bench]
-fn bench_insert_10000_txs(b: &mut Bencher) {
-    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()), 10);
-    let height = 2077;
-
-    let txs = (0..10000).map(|_| mock_signed_tx()).collect::<Vec<_>>();
-
-    b.iter(move || {
-        exec!(storage.insert_transactions(Context::new(), height, txs.clone()));
-    })
-}
-
-#[bench]
-fn bench_insert_20000_txs(b: &mut Bencher) {
-    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()), 10);
-    let height = 2077;
-
-    let txs = (0..20000).map(|_| mock_signed_tx()).collect::<Vec<_>>();
-
-    b.iter(move || {
-        exec!(storage.insert_transactions(Context::new(), height, txs.clone()));
-    })
-}
-
-#[bench]
-fn bench_insert_40000_txs(b: &mut Bencher) {
-    let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()), 10);
-    let height = 2077;
-
-    let txs = (0..40000).map(|_| mock_signed_tx()).collect::<Vec<_>>();
-
-    b.iter(move || {
-        exec!(storage.insert_transactions(Context::new(), height, txs.clone()));
-    })
 }

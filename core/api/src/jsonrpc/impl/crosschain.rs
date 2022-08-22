@@ -5,21 +5,21 @@ use protocol::{async_trait, types::H256};
 
 use crate::jsonrpc::web3_types::{Web3Receipt, Web3Transaction};
 use crate::jsonrpc::{
-    crosschain_types::CrossChainTransaction, AxonCrosschainRpcServer, Error, RpcResult,
+    crosschain_types::CrossChainTransaction, AxonCrossChainRpcServer, Error, RpcResult,
 };
 
-pub struct CrosschainRpcImpl<Adapter> {
+pub struct CrossChainRpcImpl<Adapter> {
     adapter: Arc<Adapter>,
 }
 
-impl<Adapter: APIAdapter> CrosschainRpcImpl<Adapter> {
+impl<Adapter: APIAdapter> CrossChainRpcImpl<Adapter> {
     pub fn new(adapter: Arc<Adapter>) -> Self {
-        CrosschainRpcImpl { adapter }
+        CrossChainRpcImpl { adapter }
     }
 }
 
 #[async_trait]
-impl<Adapter: APIAdapter + 'static> AxonCrosschainRpcServer for CrosschainRpcImpl<Adapter> {
+impl<Adapter: APIAdapter + 'static> AxonCrossChainRpcServer for CrossChainRpcImpl<Adapter> {
     async fn get_crosschain_result(
         &self,
         tx_hash: H256,
