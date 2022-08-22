@@ -319,8 +319,6 @@ impl ConsensusWal {
 
 #[cfg(test)]
 mod tests {
-    extern crate test;
-
     use common_crypto::{
         Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey, Signature,
     };
