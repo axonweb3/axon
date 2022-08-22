@@ -1,4 +1,3 @@
-#![feature(test, map_first_last)]
 #![allow(clippy::suspicious_else_formatting, clippy::mutable_key_type)]
 
 mod adapter;

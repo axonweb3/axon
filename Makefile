@@ -50,7 +50,7 @@ sort:
 check-sort:
 	cargo sort -gwc
 
-ci: fmt clippy test
+ci: check-fmt clippy test
 
 info:
 	date

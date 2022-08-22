@@ -1,5 +1,3 @@
-#![feature(test)]
-
 pub use ophelia::HashValue;
 pub use ophelia::{
     BlsSignatureVerify, Crypto, Error, PrivateKey, PublicKey, Signature, ToBlsPublicKey,
