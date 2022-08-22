@@ -22,6 +22,17 @@ $ cargo run --package axon --bin axon -- --config=./devtools/chain/config.toml -
 ```
 You can also use [axon-devops](https://github.com/nervosnetwork/axon-devops) to deploy a multi-node chain.
 
+## EVM Testing
+Download the project files: 
+```shell
+$ git clone https://github.com/nervosnetwork/axon.git
+$ cd axon
+```
+You can run tests with the following commands:
+```shell
+$ cargo test --package core-executor --lib -- tests::vm_state_suite::test::run_tests --exact --nocapture
+```
+
 ## Acknowledgment
 
 Axon is based on [Muta](https://github.com/nervosnetwork/muta). Sincerely thanks to everyone who [contributed code to Muta](https://github.com/nervosnetwork/muta/graphs/contributors).

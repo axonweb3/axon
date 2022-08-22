@@ -45,6 +45,7 @@ ethabi-contract = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "
 ethabi-derive = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
 ethers-contract = "0.17"
 ethers-core = "0.17"
+evm-test-suite = {git = "https://github.com/hongda3141/evm-test-suite.git", rev = "31b4538"}
 getrandom = "0.2"
 hashbrown = "0.12"
 rand7 = { package = "rand", version = "0.7" }

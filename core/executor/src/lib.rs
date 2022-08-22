@@ -245,6 +245,51 @@ impl AxonExecutor {
             removed: false,
         }
     }
+
+    pub fn exec_with_config<B: Backend + ApplyBackend + Adapter>(
+        &self,
+        backend: &mut B,
+        txs: Vec<SignedTransaction>,
+        config: Config,
+    ) -> ExecResp {
+        let txs_len = txs.len();
+        let mut res = Vec::with_capacity(txs_len);
+        let mut hashes = Vec::with_capacity(txs_len);
+        let mut gas_use = 0u64;
+
+        let sys_executor = SystemExecutor::new();
+        let precompiles = build_precompile_set();
+        // let config = Config::london();
+
+        for tx in txs.into_iter() {
+            backend.set_gas_price(tx.transaction.unsigned.gas_price());
+            backend.set_origin(tx.sender);
+
+            let mut r = if is_call_system_script(tx.transaction.unsigned.action()) {
+                sys_executor.inner_exec(backend, tx)
+            } else {
+                Self::evm_exec(backend, &config, &precompiles, tx)
+            };
+
+            r.logs = backend.get_logs();
+            gas_use += r.gas_used;
+
+            hashes.push(Hasher::digest(&r.ret));
+            res.push(r);
+        }
+
+        // commit changes by all txs included in this block only once
+        let new_state_root = backend.commit();
+
+        ExecResp {
+            state_root:   new_state_root,
+            receipt_root: Merkle::from_hashes(hashes)
+                .get_root_hash()
+                .unwrap_or_default(),
+            gas_used:     gas_use,
+            tx_resp:      res,
+        }
+    }
 }
 
 pub fn is_call_system_script(action: &TransactionAction) -> bool {

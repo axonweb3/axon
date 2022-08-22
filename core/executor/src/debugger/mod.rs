@@ -15,7 +15,7 @@ use common_crypto::{PrivateKey, Secp256k1RecoverablePrivateKey, Signature};
 use protocol::codec::{hex_decode, ProtocolCodec};
 use protocol::traits::{Backend, Executor};
 use protocol::types::{
-    Account, Eip1559Transaction, ExecResp, ExecutorContext, Hash, Hasher, RichBlock,
+    Account, Eip1559Transaction, ExecResp, ExecutorContext, Hash, Hasher, MemoryAccount, RichBlock,
     SignedTransaction, TxResp, UnsignedTransaction, UnverifiedTransaction, H160, H256,
     MAX_BLOCK_GAS_LIMIT, NIL_DATA, RLP_NULL, U256,
 };
@@ -69,6 +69,28 @@ impl EvmDebugger {
         }
     }
 
+    pub fn set_state_root<I>(&mut self, iter: I)
+    where
+        I: Iterator<Item = (H160, MemoryAccount)>,
+    {
+        let mut mpt = MPTTrie::new(Arc::clone(&self.trie_db));
+        for (distribute_address, memory_account) in iter {
+            let distribute_account = Account {
+                nonce:        memory_account.nonce,
+                balance:      memory_account.balance,
+                storage_root: RLP_NULL,
+                code_hash:    NIL_DATA,
+            };
+
+            mpt.insert(
+                distribute_address.as_bytes(),
+                distribute_account.encode().unwrap().as_ref(),
+            )
+            .unwrap();
+        }
+        self.state_root = mpt.commit().unwrap();
+    }
+
     pub fn init_genesis(&mut self) {
         let genesis: RichBlock = parse_file(GENESIS_PATH, true).unwrap();
         self.exec(0, genesis.txs);
@@ -78,6 +100,19 @@ impl EvmDebugger {
         let mut backend = self.backend(number);
         let evm = AxonExecutor::default();
         let res = evm.exec(&mut backend, txs);
+        self.state_root = res.state_root;
+        res
+    }
+
+    pub fn exec_with_ectx(
+        &mut self,
+        exec_ctx: ExecutorContext,
+        txs: Vec<SignedTransaction>,
+        config: evm::Config,
+    ) -> ExecResp {
+        let mut backend = self.backend_with_ectx(exec_ctx);
+        let evm = AxonExecutor::default();
+        let res = evm.exec_with_config(&mut backend, txs, config);
         self.state_root = res.state_root;
         res
     }
@@ -96,6 +131,18 @@ impl EvmDebugger {
         evm.call(&backend, MAX_BLOCK_GAS_LIMIT, from, to, value, data)
     }
 
+    pub fn state_root(&self) -> H256 {
+        self.state_root
+    }
+
+    pub fn trie_db(&self) -> Arc<RocksTrieDB> {
+        Arc::clone(&self.trie_db)
+    }
+
+    pub fn storage(&self) -> Arc<ImplStorage<RocksAdapter>> {
+        Arc::clone(&self.storage)
+    }
+
     fn backend(&self, number: u64) -> AxonExecutorAdapter<ImplStorage<RocksAdapter>, RocksTrieDB> {
         let exec_ctx = ExecutorContext {
             block_number:           number.into(),
@@ -111,6 +158,19 @@ impl EvmDebugger {
             logs:                   vec![],
         };
 
+        AxonExecutorAdapter::from_root(
+            self.state_root,
+            Arc::clone(&self.trie_db),
+            Arc::clone(&self.storage),
+            exec_ctx,
+        )
+        .unwrap()
+    }
+
+    fn backend_with_ectx(
+        &self,
+        exec_ctx: ExecutorContext,
+    ) -> AxonExecutorAdapter<ImplStorage<RocksAdapter>, RocksTrieDB> {
         AxonExecutorAdapter::from_root(
             self.state_root,
             Arc::clone(&self.trie_db),
