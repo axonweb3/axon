@@ -7,8 +7,13 @@ use core_consensus::SyncStatus as InnerSyncStatus;
 use protocol::codec::ProtocolCodec;
 use protocol::types::{
     AccessList, Block, Bloom, Bytes, Hash, Header, Hex, Public, Receipt, SignedTransaction, H160,
-    H256, MAX_PRIORITY_FEE_PER_GAS, U256, U64,
+    H256, H64, MAX_PRIORITY_FEE_PER_GAS, U256, U64,
 };
+
+pub const EMPTY_UNCLE_HASH: H256 = H256([
+    0x1d, 0xcc, 0x4d, 0xe8, 0xde, 0xc7, 0x5d, 0x7a, 0xab, 0x85, 0xb5, 0x67, 0xb6, 0xcc, 0xd4, 0x1a,
+    0xd3, 0x12, 0x45, 0x1b, 0x94, 0x8a, 0x74, 0x13, 0xf0, 0xa1, 0x42, 0xfd, 0x40, 0xd4, 0x93, 0x47,
+]);
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -267,7 +272,7 @@ pub struct Web3Block {
     pub transactions:      Vec<RichTransactionOrHash>,
     pub size:              Option<U256>,
     pub mix_hash:          H256,
-    pub nonce:             U256,
+    pub nonce:             H64,
 }
 
 impl From<Block> for Web3Block {
@@ -277,7 +282,7 @@ impl From<Block> for Web3Block {
             number:            b.header.number.into(),
             author:            b.header.proposer,
             parent_hash:       b.header.prev_hash,
-            sha3_uncles:       Default::default(),
+            sha3_uncles:       EMPTY_UNCLE_HASH,
             logs_bloom:        Some(b.header.log_bloom),
             transactions_root: b.header.transactions_root,
             state_root:        b.header.state_root,
@@ -299,7 +304,7 @@ impl From<Block> for Web3Block {
                 .collect(),
             uncles:            vec![],
             mix_hash:          H256::default(),
-            nonce:             U256::default(),
+            nonce:             H64::default(),
         }
     }
 }
@@ -729,7 +734,7 @@ impl From<Header> for Web3Header {
         Web3Header {
             number:            h.number.into(),
             parent_hash:       h.prev_hash,
-            sha3_uncles:       Default::default(),
+            sha3_uncles:       EMPTY_UNCLE_HASH,
             logs_bloom:        Some(h.log_bloom),
             transactions_root: h.transactions_root,
             state_root:        h.state_root,
