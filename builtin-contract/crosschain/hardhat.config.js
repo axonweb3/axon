@@ -2,10 +2,13 @@ const { getContractAddress } = require("ethers/lib/utils");
 const { task } = require("hardhat/config");
 
 require("@nomiclabs/hardhat-waffle");
+require('@openzeppelin/hardhat-upgrades');
 require('dotenv').config();
 
 const wckb = '0x4af5ec5e3d29d9ddd7f4bf91a022131c41b72352';
-const crosschain = '0xf67bc4e50d1df92b0e4c61794a4517af6a995cb2';
+// const crosschain = '0xf67bc4e50d1df92b0e4c61794a4517af6a995cb2';
+const crosschain = '0xc4a3c40808d63e1ee18f7739f239dfa5bc92bfcd';
+
 
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html

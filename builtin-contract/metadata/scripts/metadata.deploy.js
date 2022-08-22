@@ -11,7 +11,7 @@ async function export_deploy() {
         "maxPriorityFeePerGas": "0x7d0",
         "maxFeePerGas": "0x7d0",
         "gasLimit": "0x3231303030",
-        "nonce": "0x4",
+        "nonce": "0x0",
         "data": metadata.bytecode,
         "accessList": [],
         "chainId": 5,
@@ -22,12 +22,12 @@ async function export_deploy() {
 
 // caution: this method only generates mock transaction with mismatched signature to deploy to Axon genesis block
 export_deploy().then(signed_tx => {
-    const hex = (value, length) => {
-        let hexed = value.toString("hex")
-        while (length != null && hexed.length < length) {
-            hexed = "0" + hexed
+    const hex = (value) => {
+        let hexed = value.toString("hex");
+        if (hexed.length > 40) {
+            hexed = hexed.substring(hexed.length - 40);
         }
-        return "0x" + hexed
+        return "0x" + hexed;
     }
     const deploy = {
         "transaction": {

@@ -8,3 +8,5 @@ scripts/*.json
 #Hardhat files
 cache
 artifacts
+.openzeppelin
+*.log

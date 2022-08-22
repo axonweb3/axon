@@ -5,7 +5,7 @@ pragma solidity >=0.7.0;
 // import "hardhat/console.sol";
 
 contract MetadataManager {
-    uint64 U64_MAX = 2**64 - 1;
+    uint64 constant U64_MAX = 2**64 - 1;
 
     struct MetadataVersion {
         uint64 start;
@@ -40,7 +40,11 @@ contract MetadataManager {
     mapping(uint64 => Metadata) metadata_set;
 
     // to identify current highest epoch number
-    uint64 highest_epoch = U64_MAX;
+    uint64 highest_epoch;
+
+    function construct() public {
+        highest_epoch = U64_MAX;
+    }
 
     // push new metadata into `metadata_set`
     function appendMetadata(Metadata memory metadata) public {

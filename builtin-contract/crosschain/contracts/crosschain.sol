@@ -23,7 +23,7 @@ contract CrossChain is Context {
 
     address public constant AT_ADDRESS = address(0);
 
-    uint256 private _epoch = 2**64 - 1;
+    uint256 private _epoch;
     uint256 private _relayerThreshold;
     address private _metadata;
     address private _wCKB;
@@ -65,7 +65,17 @@ contract CrossChain is Context {
 
     event ChangeMinWCKB(uint256 minWCKB);
 
-    constructor(address metadata, address wCKB) {
+    // constructor(address metadata, address wCKB) {
+    //     _metadata = metadata;
+    //     _wCKB = wCKB;
+    //     _addMirrorToken(_wCKB, bytes32(0));
+    //     _addWhitelist(_wCKB);
+    //     _limitSign.increment();
+    // }
+
+    // use this to enable to deploy upgradeable crosschain contract
+    function construct(address metadata, address wCKB) public {
+        _epoch = 2**64 - 1;
         _metadata = metadata;
         _wCKB = wCKB;
         _addMirrorToken(_wCKB, bytes32(0));

@@ -1,5 +1,5 @@
-const { expect } = require("chai")
-const { ethers } = require("hardhat")
+const { expect } = require("chai");
+const { ethers, upgrades } = require("hardhat");
 const { deployMockContract } = require('@ethereum-waffle/mock-contract');
 const { abi } = require('../artifacts/contracts/Metadata.sol/IMetadata.json');
 
@@ -64,7 +64,8 @@ describe("CrossChain", () => {
         wckb = await deployMirrorToken(owner);
 
         let deployer = await ethers.getContractFactory("CrossChain");
-        contract = await deployer.connect(owner).deploy(metadata.address, wckb.address);
+        // contract = await deployer.connect(owner).deploy(metadata.address, wckb.address);
+        contract = await upgrades.deployProxy(deployer, [metadata.address, wckb.address], { initializer: 'construct' });
         await contract.deployed();
 
         await contract.connect(owner).setTokenConfig(wckb.address, [10, 10000000]);
