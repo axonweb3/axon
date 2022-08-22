@@ -1,5 +1,3 @@
-extern crate test;
-
 use std::sync::Arc;
 
 use protocol::traits::{CommonStorage, Context, Storage};

@@ -1,5 +1,3 @@
-extern crate test;
-
 mod mempool;
 
 use std::sync::Arc;

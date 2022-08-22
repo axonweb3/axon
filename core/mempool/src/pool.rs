@@ -330,7 +330,9 @@ impl BuiltInContractTxBucket {
             .iter()
             .map(|kv| {
                 kv.value()
-                    .first_key_value()
+                    .iter()
+                    .take(1)
+                    .next()
                     .map(|(hash, _tx)| *hash)
                     .unwrap()
             })

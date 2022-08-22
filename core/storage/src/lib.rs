@@ -1,4 +1,3 @@
-#![feature(test)]
 #![allow(clippy::mutable_key_type)]
 pub mod adapter;
 mod cache;

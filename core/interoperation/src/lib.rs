@@ -78,7 +78,7 @@ impl Interoperation for InteroperationImpl {
         let program = DISPATCHER.load().get_program(&tx_hash)?;
 
         #[cfg(not(target_arch = "aarch64"))]
-        let aot_code = unsafe { Some(&*Arc::as_ptr(&program.aot)) };
+        let aot_code = Some(Arc::clone(&program.aot));
 
         #[cfg(target_arch = "aarch64")]
         let aot_code = None;

@@ -1,5 +1,3 @@
-#![feature(test)]
-
 use static_merkle_tree::Tree;
 
 use protocol::types::{Bytes, Hash, Hasher};
