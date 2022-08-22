@@ -332,7 +332,7 @@ impl BuiltInContractTxBucket {
                 kv.value()
                     .iter()
                     .take(1)
-                    .nth(0)
+                    .next()
                     .map(|(hash, _tx)| *hash)
                     .unwrap()
             })
