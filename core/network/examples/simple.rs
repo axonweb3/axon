@@ -121,9 +121,7 @@ async fn main() {
         let mut peer = NetworkService::new(peer_conf);
         let handle = peer.handle();
 
-        let take_my_money = TakeMyMoney {
-            shop: handle.clone(),
-        };
+        let take_my_money = TakeMyMoney { shop: handle };
 
         peer.register_endpoint_handler(RELEASE_CHANNEL, take_my_money)
             .unwrap();

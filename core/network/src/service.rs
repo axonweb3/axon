@@ -361,7 +361,7 @@ impl NetworkService {
             let _ignore = self
                 .control
                 .dial(
-                    addr.clone(),
+                    addr,
                     TargetProtocol::Single(SupportProtocols::Identify.protocol_id()),
                 )
                 .await;
@@ -380,7 +380,7 @@ impl NetworkService {
             let _ignore = self
                 .control
                 .dial(
-                    addr.clone(),
+                    addr,
                     TargetProtocol::Single(SupportProtocols::Identify.protocol_id()),
                 )
                 .await;

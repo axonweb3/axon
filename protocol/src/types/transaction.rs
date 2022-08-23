@@ -293,14 +293,17 @@ pub struct UnverifiedTransaction {
 impl UnverifiedTransaction {
     pub fn calc_hash(mut self) -> Self {
         debug_assert!(self.signature.is_some());
-        let hash = Hasher::digest(&self.unsigned.encode(self.chain_id, self.signature.clone()));
+        let hash = self.get_hash();
         self.hash = hash;
         self
     }
 
+    pub fn get_hash(&self) -> H256 {
+        Hasher::digest(&self.unsigned.encode(self.chain_id, self.signature.clone()))
+    }
+
     pub fn check_hash(&self) -> ProtocolResult<()> {
-        let calc_hash =
-            Hasher::digest(&self.unsigned.encode(self.chain_id, self.signature.clone()));
+        let calc_hash = self.get_hash();
         if self.hash != calc_hash {
             return Err(TypesError::TxHashMismatch {
                 origin: self.hash,

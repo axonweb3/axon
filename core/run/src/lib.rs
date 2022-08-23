@@ -179,7 +179,7 @@ impl Axon {
             Arc::clone(&storage),
             proposal.into(),
         )?;
-        let resp = executor.exec(&mut backend, self.genesis.txs.clone());
+        let resp = executor.exec(&mut backend, &self.genesis.txs);
 
         self.state_root = resp.state_root;
         self.genesis.block.header.state_root = self.state_root;

@@ -270,7 +270,7 @@ impl CommonConsensusAdapter for MockSyncAdapter {
         ctx: Context,
         last_state_root: Hash,
         proposal: &Proposal,
-        signed_txs: Vec<SignedTransaction>,
+        signed_txs: &[SignedTransaction],
     ) -> ProtocolResult<ExecResp> {
         Ok(ExecResp {
             state_root:   H256::from_str(

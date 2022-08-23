@@ -129,7 +129,7 @@ pub trait CommonConsensusAdapter: Send + Sync {
         ctx: Context,
         last_state_root: Hash,
         proposal: &Proposal,
-        signed_txs: Vec<SignedTransaction>,
+        signed_txs: &[SignedTransaction],
     ) -> ProtocolResult<ExecResp>;
 
     fn need_change_metadata(&self, block_number: u64) -> bool;

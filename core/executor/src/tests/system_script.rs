@@ -16,7 +16,7 @@ fn test_issue_token() {
     let data = mock_data(0, addr);
     let tx = gen_tx(addr, NATIVE_TOKEN_ISSUE_ADDRESS, 1000, data);
 
-    let r = executor.inner_exec(&mut backend, tx);
+    let r = executor.inner_exec(&mut backend, &tx);
     assert!(r.exit_reason.is_succeed());
     assert_eq!(r.ret, rlp::encode(&U256::from(1000)).to_vec());
 
@@ -41,7 +41,7 @@ fn test_burn_token() {
     let data = mock_data(1, addr);
     let tx = gen_tx(addr, NATIVE_TOKEN_ISSUE_ADDRESS, 1000, data);
 
-    let r = executor.inner_exec(&mut backend, tx);
+    let r = executor.inner_exec(&mut backend, &tx);
     assert!(r.exit_reason.is_succeed());
     assert_eq!(r.ret, rlp::encode(&U256::from(1000)).to_vec());
 
@@ -66,7 +66,7 @@ fn test_burn_token_failed() {
     let data = mock_data(1, addr);
     let tx = gen_tx(addr, NATIVE_TOKEN_ISSUE_ADDRESS, 1000, data);
 
-    let r = executor.inner_exec(&mut backend, tx);
+    let r = executor.inner_exec(&mut backend, &tx);
     assert!(r.exit_reason.is_revert());
     assert!(r.ret.is_empty());
 

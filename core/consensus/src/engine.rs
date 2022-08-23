@@ -264,7 +264,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
                 ctx.clone(),
                 self.status.inner().last_state_root,
                 &proposal,
-                signed_txs.clone(),
+                &signed_txs,
             )
             .await?;
 

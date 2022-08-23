@@ -113,6 +113,7 @@ where
         }
 
         let mut log_vec = Vec::new();
+        let latest_header_number = latest_block.header.number;
 
         // Send all header
         if !self.header_hubs.is_empty() {
@@ -132,7 +133,7 @@ where
                 }
             }
 
-            let latest_web3_header = Web3Header::from(latest_block.header.clone());
+            let latest_web3_header = Web3Header::from(latest_block.header);
             for hub in self.header_hubs.iter_mut() {
                 let _ignore = hub.sink.send(&latest_web3_header);
             }
@@ -152,7 +153,7 @@ where
         if !self.log_hubs.is_empty() {
             // May not has header_hub
             if log_vec.is_empty() {
-                for number in self.current_number + 1..latest_block.header.number {
+                for number in self.current_number + 1..latest_header_number {
                     let block = self
                         .adapter
                         .get_block_by_number(Context::new(), Some(number))
@@ -164,7 +165,7 @@ where
                 }
             }
 
-            log_vec.push((latest_block.header.number, latest_block.tx_hashes));
+            log_vec.push((latest_header_number, latest_block.tx_hashes));
 
             for (number, tx_hashes) in log_vec {
                 let receipts = self
@@ -209,7 +210,7 @@ where
             }
         }
 
-        self.current_number = latest_block.header.number;
+        self.current_number = latest_header_number;
     }
 
     pub async fn run(mut self) {

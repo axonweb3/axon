@@ -27,7 +27,7 @@ static _FULL_CONSENSUS_PATH: &str = "./free-space/engine/consensus";
 
 fn _mock_commit(block: Block) -> Commit<Pill> {
     let pill = Pill {
-        block:          block.clone(),
+        block          ,
         propose_hashes: vec![],
     };
     Commit {
