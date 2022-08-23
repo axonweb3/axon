@@ -20,7 +20,7 @@ use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
     Block, Bytes, ExecResp, Hash, Hasher, Hex, Log, MerkleRoot, Metadata, Proof, Proposal, Receipt,
     SignedTransaction, TransactionAction, ValidatorExtend, BASE_FEE_PER_GAS, H160,
-    MAX_BLOCK_GAS_LIMIT, U256,
+    MAX_BLOCK_GAS_LIMIT, RLP_NULL, U256,
 };
 use protocol::{
     async_trait, lazy::CURRENT_STATE_ROOT, tokio::sync::Mutex as AsyncMutex, ProtocolError,
@@ -76,9 +76,13 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             )
             .await?;
         let signed_txs = self.adapter.get_full_txs(ctx.clone(), &txs.hashes).await?;
-        let order_root = Merkle::from_hashes(txs.hashes.clone())
-            .get_root_hash()
-            .unwrap_or_default();
+        let order_root = if !txs.hashes.is_empty() {
+            Merkle::from_hashes(txs.hashes.clone())
+                .get_root_hash()
+                .unwrap_or_default()
+        } else {
+            RLP_NULL
+        };
 
         let proposal = Proposal {
             prev_hash:                  status.prev_hash,
