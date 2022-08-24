@@ -14,6 +14,7 @@ ckb-jsonrpc-types = "0.104"
 ckb-sdk = "2.0"
 ckb-types = "0.104"
 common-crypto = { path = "../common/crypto" }
+cosmos-ibc = { package = "ibc", version = "0.19", optional = true }
 creep = "0.2"
 derive_more = "0.99"
 ethereum = { version = "0.12", features = ["with-codec", "with-serde"] }
@@ -22,7 +23,6 @@ evm = { version = "0.35", features = ["with-serde"] }
 # evm = { git = "https://github.com/KaoImin/evm.git", branch = "debug", features = ["with-serde"] }
 faster-hex = "0.6"
 hasher = { version = "0.1", features = ["hash-keccak"] }
-cosmos-ibc = { package = "ibc", version = "0.19", optional = true }
 lazy_static = "1.4"
 ophelia = "0.3"
 ophelia-secp256k1 = "0.3"
