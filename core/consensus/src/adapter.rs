@@ -88,11 +88,7 @@ where
         target: MessageTarget,
     ) -> ProtocolResult<()> {
         match target {
-            MessageTarget::Broadcast => {
-                self.network
-                    .broadcast(ctx.clone(), end, msg, Priority::High)
-                    .await
-            }
+            MessageTarget::Broadcast => self.network.broadcast(ctx, end, msg, Priority::High).await,
 
             MessageTarget::Specified(pub_key) => {
                 let peer_id_bytes = PeerId::from_pubkey_bytes(pub_key)?.into_bytes_ext();
@@ -123,11 +119,7 @@ where
 
     #[trace_span(kind = "consensus.adapter", logs = "{txs_len: txs.len()}")]
     async fn verify_txs(&self, ctx: Context, number: u64, txs: &[Hash]) -> ProtocolResult<()> {
-        if let Err(e) = self
-            .mempool
-            .ensure_order_txs(ctx.clone(), Some(number), txs)
-            .await
-        {
+        if let Err(e) = self.mempool.ensure_order_txs(ctx, Some(number), txs).await {
             log::error!("verify_txs error {:?}", e);
             return Err(ConsensusError::VerifyTransaction(number).into());
         }
@@ -229,7 +221,7 @@ where
     async fn get_proof_from_remote(&self, ctx: Context, number: u64) -> ProtocolResult<Proof> {
         let ret = self
             .network
-            .call::<BlockNumber, Proof>(ctx.clone(), RPC_SYNC_PULL_PROOF, number, Priority::High)
+            .call::<BlockNumber, Proof>(ctx, RPC_SYNC_PULL_PROOF, number, Priority::High)
             .await?;
         Ok(ret)
     }
@@ -348,7 +340,7 @@ where
         ctx: Context,
         last_state_root: Hash,
         proposal: &Proposal,
-        signed_txs: Vec<SignedTransaction>,
+        signed_txs: &[SignedTransaction],
     ) -> ProtocolResult<ExecResp> {
         let mut backend = AxonExecutorAdapter::from_root(
             last_state_root,
@@ -387,7 +379,7 @@ where
     #[trace_span(kind = "consensus.adapter")]
     async fn broadcast_number(&self, ctx: Context, number: u64) -> ProtocolResult<()> {
         self.network
-            .broadcast(ctx.clone(), BROADCAST_HEIGHT, number, Priority::High)
+            .broadcast(ctx, BROADCAST_HEIGHT, number, Priority::High)
             .await
     }
 

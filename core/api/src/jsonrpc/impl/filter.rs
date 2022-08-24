@@ -194,11 +194,11 @@ where
                     .await
                     .unwrap()
                     .unwrap();
-                let from = filter.from_block.clone().unwrap_or_default();
+                let from = filter.from_block.as_ref().unwrap_or(&BlockId::Latest);
 
                 match from {
                     BlockId::Num(n) => {
-                        if n < header.number {
+                        if n < &header.number {
                             filter.from_block = Some(BlockId::Num(header.number + 1));
                         }
                     }

@@ -184,7 +184,7 @@ pub fn gen_overlord_status(
     let mut authority_list = validators
         .into_iter()
         .map(|v| Node {
-            address:        v.pub_key.clone(),
+            address:        v.pub_key,
             propose_weight: v.propose_weight,
             vote_weight:    v.vote_weight,
         })

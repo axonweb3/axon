@@ -145,8 +145,7 @@ async fn new_mempool(
 
 fn check_hash(tx: &SignedTransaction) -> ProtocolResult<()> {
     assert!(tx.transaction.signature.is_some());
-    let tx_clone = tx.transaction.clone();
-    let calc_hash = tx_clone.calc_hash().hash;
+    let calc_hash = tx.transaction.get_hash();
 
     if calc_hash != tx.transaction.hash {
         return Err(MemPoolError::CheckHash {

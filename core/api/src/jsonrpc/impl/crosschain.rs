@@ -52,7 +52,7 @@ impl<Adapter: APIAdapter + 'static> AxonCrossChainRpcServer for CrossChainRpcImp
                 })?;
             let receipt = self
                 .adapter
-                .get_receipt_by_tx_hash(ctx.clone(), hash)
+                .get_receipt_by_tx_hash(ctx, hash)
                 .await
                 .map_err(|e| Error::Custom(e.to_string()))?
                 .ok_or_else(|| Error::Custom(format!("Can not get receipt by hash {:?}", hash)))?;

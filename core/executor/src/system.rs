@@ -19,7 +19,7 @@ impl SystemExecutor {
     pub fn inner_exec<B: Backend + ApplyBackend>(
         &self,
         backend: &mut B,
-        tx: SignedTransaction,
+        tx: &SignedTransaction,
     ) -> TxResp {
         match classify_script(tx.transaction.unsigned.action()) {
             SystemScriptCategory::NativeToken => native_token::call_native_token(backend, tx),
@@ -61,9 +61,9 @@ mod native_token {
 
     pub fn call_native_token<B: Backend + ApplyBackend>(
         backend: &mut B,
-        tx: SignedTransaction,
+        tx: &SignedTransaction,
     ) -> TxResp {
-        let tx = tx.transaction.unsigned;
+        let tx = &tx.transaction.unsigned;
         let tx_data = tx.data();
         let tx_value = *tx.value();
 

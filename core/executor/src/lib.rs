@@ -96,7 +96,7 @@ impl Executor for AxonExecutor {
     fn exec<B: Backend + ApplyBackend + Adapter>(
         &self,
         backend: &mut B,
-        txs: Vec<SignedTransaction>,
+        txs: &[SignedTransaction],
     ) -> ExecResp {
         let txs_len = txs.len();
         let mut res = Vec::with_capacity(txs_len);
@@ -107,7 +107,7 @@ impl Executor for AxonExecutor {
         let precompiles = build_precompile_set();
         let config = Config::london();
 
-        for tx in txs.into_iter() {
+        for tx in txs.iter() {
             backend.set_gas_price(tx.transaction.unsigned.gas_price());
             backend.set_origin(tx.sender);
 
@@ -155,7 +155,7 @@ impl AxonExecutor {
         backend: &mut B,
         config: &Config,
         precompiles: &BTreeMap<H160, PrecompileFn>,
-        tx: SignedTransaction,
+        tx: &SignedTransaction,
     ) -> TxResp {
         // Deduct pre-pay gas
         let sender = tx.sender;

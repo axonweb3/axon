@@ -37,7 +37,7 @@ pub trait Executor: Send + Sync {
     fn exec<B: Backend + ApplyBackend + ExecutorAdapter>(
         &self,
         backend: &mut B,
-        txs: Vec<SignedTransaction>,
+        txs: &[SignedTransaction],
     ) -> ExecResp;
 
     fn get_account<B: Backend + ExecutorAdapter>(&self, backend: &B, address: &H160) -> Account;
