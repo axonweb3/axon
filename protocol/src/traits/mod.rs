@@ -3,6 +3,8 @@ mod ckb_client;
 mod consensus;
 mod crosschain;
 mod executor;
+#[cfg(feature = "ibc")]
+mod ibc;
 mod interoperation;
 mod mempool;
 mod metadata;
