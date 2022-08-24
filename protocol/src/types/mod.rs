@@ -9,6 +9,8 @@ pub use evm::{backend::*, ExitError, ExitRevert, ExitSucceed};
 pub use executor::{
     AccessList, AccessListItem, Account, Config, ExecResp, ExecutorContext, ExitReason, TxResp,
 };
+#[cfg(feature = "ibc")]
+pub use ibc::*;
 pub use interoperation::VMResp;
 pub use primitive::*;
 pub use receipt::*;
@@ -19,6 +21,8 @@ pub mod block;
 pub mod ckb_client;
 pub mod crosschain;
 pub mod executor;
+#[cfg(feature = "ibc")]
+pub mod ibc;
 pub mod interoperation;
 pub mod primitive;
 pub mod receipt;

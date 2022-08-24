@@ -1,0 +1,15 @@
+[package]
+name = "core-ibc"
+version = "0.1.0"
+edition = "2021"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+ibc = "0.19"
+ibc-proto = "0.20"
+tonic = { version = "0.8", features = ["tls", "tls-roots"] }
+
+[dependencies.protocol]
+path = "../../protocol"
+package = "axon-protocol"
+features = ["ibc"]
