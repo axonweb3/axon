@@ -555,7 +555,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
     ) -> ProtocolResult<()> {
         let order_root = Merkle::from_hashes(proposal.tx_hashes.clone())
             .get_root_hash()
-            .unwrap_or_default();
+            .unwrap_or(RLP_NULL);
 
         let stxs_hash = Hasher::digest(rlp::encode_list(signed_txs));
 
