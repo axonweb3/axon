@@ -1503,6 +1503,10 @@ dependencies = [
  "axon-protocol",
  "ibc",
  "ibc-proto",
+ "prost 0.11.0",
+ "serde",
+ "serde_json",
+ "tendermint-proto",
  "tonic",
 ]
 
