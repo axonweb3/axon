@@ -3,7 +3,7 @@ name = "axon"
 version = "0.1.0"
 authors = ["Nervos Dev <dev@nervos.org>"]
 edition = "2021"
-repository = "https://github.com/nervosnetwork/axon"
+repository = "https://github.com/axonweb3/axon"
 
 [dependencies]
 # byzantine = { path = "./byzantine" }
