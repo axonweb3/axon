@@ -16,11 +16,11 @@ When it comes to consumer-facing applications such as decentralized games or soc
 
 Clone the source code, compile locally, and run the chain.
 ```shell
-$ git clone https://github.com/nervosnetwork/axon.git
+$ git clone https://github.com/axonweb3/axon.git
 $ cd axon
 $ cargo run --package axon --bin axon -- --config=./devtools/chain/config.toml --genesis=./devtools/chain/genesis_single_node.json
 ```
-You can also use [axon-devops](https://github.com/nervosnetwork/axon-devops) to deploy a multi-node chain.
+You can also use [axon-devops](https://github.com/axonweb3/axon-devops) to deploy a multi-node chain.
 
 ## Acknowledgment
 
