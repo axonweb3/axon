@@ -7,7 +7,8 @@ const private_key = Buffer.from("37aa0f893d05914a4def0460c0a984d3611546cfb26924d
 
 async function export_deploy() {
     const wCKB = '0x4af5ec5e3d29d9ddd7f4bf91a022131c41b72352';
-    const metadata = '0xa13763691970d9373d4fab7cc323d7ba06fa9986';
+    // const metadata = '0xa13763691970d9373d4fab7cc323d7ba06fa9986';
+    const metadata = '0xb484fd480e598621638f380f404697cd9f58b0f8';
     const crosschain = await ethers.getContractFactory("CrossChain")
     const tx = {
         "value": "0x0",

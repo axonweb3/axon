@@ -104,7 +104,7 @@ task('grantWCKBRole').addParam('private').addParam('to').setAction(async (taskAr
     to: hre.ethers.utils.getAddress(wckb),
   };
   unsignedTx = await signer.populateTransaction(unsignedTx);
-  unsignedTx.nonce = await signer.getTransactionCount() + 1;
+  // unsignedTx.nonce = await signer.getTransactionCount() + 1;
   const signedTx = await signer.signTransaction(unsignedTx);
   const tx = await hre.ethers.provider.sendTransaction(signedTx);
   const receipt = await tx.wait();
