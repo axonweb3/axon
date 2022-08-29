@@ -1,12 +1,10 @@
 # Axon
 
-[![version](https://img.shields.io/github/v/release/axonweb3/axon?sort=semver)](https://github.com/nervosnetwork/axon/releases) ![status-check](https://img.shields.io/github/checks-status/nervosnetwork/axon/main) [![license](https://img.shields.io/github/license/nervosnetwork/axon)](https://github.com/nervosnetwork/axon/blob/main/LICENSE) ![contributors](https://img.shields.io/github/contributors/nervosnetwork/axon)
+[![version](https://img.shields.io/github/v/release/nervosnetwork/axon?sort=semver)](https://github.com/nervosnetwork/axon/releases) [![license](https://img.shields.io/github/license/nervosnetwork/axon)](https://github.com/nervosnetwork/axon/blob/main/LICENSE) ![status-check](https://github.com/axonweb3/axon/actions/workflows/web3_compatible.yml/badge.svg?branch=main)  ![contributors](https://img.shields.io/github/contributors/nervosnetwork/axon)
 
 > Axon is still in active development and a work in progress.
 
-Axon is a high-performance layer 2 framework with native cross-chain function.  Built on top of the [Overlord](https://github.com/nervosnetwork/overlord) consensus protocol and the P2P network [Tentacle](https://github.com/nervosnetwork/tentacle), Axon supports hundreds of nodes and achieves thousands of TPS.
-
-Axon is fully EVM-compatible and highly interoperable. It provides toolchains that facilitate dApps deployment. Thus you can deploy your application on it and communicate with other chains conveniently.
+Axon is a high-performance layer 2 framework with native cross-chain function.  Built on top of the [Overlord](https://github.com/nervosnetwork/overlord) consensus protocol and the P2P network [Tentacle](https://github.com/nervosnetwork/tentacle), Axon supports hundreds of nodes and achieves thousands of TPS. Axon is also EVM-compatible with well-developed toolchains. It performs high interoperability, meaning deployed applications can achieve convenient cross-chain communication.
 
 
 ## Highlights
@@ -15,7 +13,7 @@ Axon is fully EVM-compatible and highly interoperable. It provides toolchains th
 
 Axon is compatible with [Ethereum](https://ethereum.org) so that all of the develop utilities can be used on it directly. And the [Axon CLI](https://github.com/axonweb3/axon-devops/axon-cli) provides an all-in-one client which includes initialization, DevOps, cross chain request and so on. If you consider seeing is believing, there is a [15 minutes tutorial]() that will lead you to build your own chain and deploy a tiny application.
 
-### Native cross-chain
+### Native cross-chain communication
 
 Openness and mobility are the foundation of social development, so is blockchain. Cross-chain derive the taking liquidity precisely. Axon satisfy native cross-chain ability without attach to a bridge. Each of the chain based Axon can cross to [CKB](https://www.nervos.org), any other Axon based chain, and [IBC](https://ibcprotocol.org) compatible chains. Axon will embed more cross-chain protocol in future.
 
