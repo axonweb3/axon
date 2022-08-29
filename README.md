@@ -1,6 +1,6 @@
 # Axon
 
-[![version](https://img.shields.io/github/v/release/nervosnetwork/axon?sort=semver)](https://github.com/nervosnetwork/axon/releases) [![license](https://img.shields.io/github/license/nervosnetwork/axon)](https://github.com/nervosnetwork/axon/blob/main/LICENSE) ![status-check](https://github.com/axonweb3/axon/actions/workflows/web3_compatible.yml/badge.svg?branch=main)  ![contributors](https://img.shields.io/github/contributors/nervosnetwork/axon)
+[![version](https://img.shields.io/github/v/release/axonweb3/axon?sort=semver)](https://github.com/axonweb3/axon/releases) [![license](https://img.shields.io/github/license/axonweb3/axon)](https://github.com/axonweb3/axon/blob/main/LICENSE) ![status-check](https://github.com/axonweb3/axon/actions/workflows/web3_compatible.yml/badge.svg?branch=main)  ![contributors](https://img.shields.io/github/contributors/axonweb3/axon)
 
 > Axon is still in active development and a work in progress.
 
@@ -30,7 +30,7 @@ Most of the infrastructure has done and some substantial features to be develope
 The [release page](`https://github.com/axonweb3/axon/release`) provides the compiled binary, and if you want to build from source code, please make sure that [rust](https://www.rust-lang.org/), [clang](http://clang.org/), [openssl](https://www.openssl.org/), [m4](https://www.gnu.org/software/m4/) have already been installed and then execute the following command:
 
 ```bash
-git clone https://github.com/nervosnetwork/axon.git
+git clone https://github.com/axonweb3/axon.git
 cd axon && cargo build --release
 ```
 
