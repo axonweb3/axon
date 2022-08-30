@@ -3,9 +3,11 @@ use std::str::FromStr;
 use protocol::types::{Bytes, Hash, Hasher};
 use protocol::{codec::ProtocolCodec, ProtocolResult};
 
+const PREFIX_LEN: usize = 8;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct CommonPrefix {
-    block_height: [u8; 8], // BigEndian
+    block_height: [u8; PREFIX_LEN], // BigEndian
 }
 
 impl CommonPrefix {
@@ -16,7 +18,7 @@ impl CommonPrefix {
     }
 
     pub fn len() -> usize {
-        8
+        PREFIX_LEN
     }
 
     pub fn height(self) -> u64 {
@@ -24,7 +26,7 @@ impl CommonPrefix {
     }
 
     pub fn make_hash_key(self, hash: &Hash) -> [u8; 40] {
-        debug_assert!(hash.as_bytes().len() == 32);
+        debug_assert!(hash.as_bytes().len() == Hash::len_bytes());
 
         let mut key = [0u8; 40];
         key[0..8].copy_from_slice(&self.block_height);
@@ -42,10 +44,10 @@ impl AsRef<[u8]> for CommonPrefix {
 
 impl From<&[u8]> for CommonPrefix {
     fn from(bytes: &[u8]) -> CommonPrefix {
-        debug_assert!(bytes.len() >= 8);
+        debug_assert!(bytes.len() >= PREFIX_LEN);
 
-        let mut h_buf = [0u8; 8];
-        h_buf.copy_from_slice(&bytes[0..8]);
+        let mut h_buf = [0u8; PREFIX_LEN];
+        h_buf.copy_from_slice(&bytes[..PREFIX_LEN]);
 
         CommonPrefix {
             block_height: h_buf,
@@ -59,7 +61,7 @@ impl ProtocolCodec for CommonPrefix {
     }
 
     fn decode<B: AsRef<[u8]>>(bytes: B) -> ProtocolResult<Self> {
-        Ok(CommonPrefix::from(&bytes.as_ref()[..8]))
+        Ok(CommonPrefix::from(&bytes.as_ref()[..PREFIX_LEN]))
     }
 }
 
