@@ -40,11 +40,13 @@ As most of the infrastructure has been done, our next major steps will be buildi
 
 ## Install
 
-The [release page](`https://github.com/axonweb3/axon/release`) provides the compiled binary, and if you want to build from source code, please make sure that [rust](https://www.rust-lang.org/), [clang](http://clang.org/), [openssl](https://www.openssl.org/), [m4](https://www.gnu.org/software/m4/) have already been installed and then execute the following command:
+The [release page](`https://github.com/axonweb3/axon/release`) provides the compiled binary. If you want to build from source code, please make sure that [rust](https://www.rust-lang.org/), [clang](http://clang.org/), [openssl](https://www.openssl.org/), [m4](https://www.gnu.org/software/m4/) have already been installed. Then execute the following command:
 
 ```bash
-git clone https://github.com/axonweb3/axon.git
-cd axon && cargo build --release
+# Clone from GitHub
+git clone https://github.com/axonweb3/axon.git && cd axon
+# Run release binary
+cargo run --release -- -c devtools/chain/config.toml -g devtools/chain/genesis_single_node.json
 ```
 
 ## Toolchain
