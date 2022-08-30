@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://github.com/axonweb3/axon">
-    <img src="./docs/assets/logo/axon-01.png" width="300">
+    <img src="./docs/assets/logo/axon-01.png" width="450">
   </a>
   <p align="center">
 	<a href="https://github.com/axonweb3/axon/releases"><img src="https://img.shields.io/github/v/release/axonweb3/axon?sort=semver"></a>
