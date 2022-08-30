@@ -13,6 +13,7 @@ use {
     jemallocator::Jemalloc,
 };
 
+use core_ibc::{IbcImpl, IbcRouter, Ibc};
 use ethers_signers::{coins_bip39::English, MnemonicBuilder, Signer};
 
 use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
@@ -220,6 +221,7 @@ impl Axon {
             feature = "jemalloc"
         ))]
         tokio::spawn(common_memory_tracker::track_current_process());
+        Self::run_ibc();
 
         log::info!("node starts");
         observe_listen_port_occupancy(&[self.config.network.listening_address.clone()]).await?;
@@ -680,6 +682,14 @@ impl Axon {
         }
 
         Ok(())
+    }
+
+    fn run_ibc() {
+        log::info!("ibc start");
+        tokio::spawn(async{
+            let ibc = core_ibc::IbcImpl::<Ibc, IbcRouter>::new();
+            ibc.run().await;
+        });
     }
 
     fn run_jaeger(config: Config) {

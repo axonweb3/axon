@@ -28,6 +28,7 @@ core-consensus = { path = "../../core/consensus" }
 core-cross-client = { path = "../../core/cross-client" }
 core-executor = { path = "../../core/executor" }
 core-interoperation = { path = "../../core/interoperation" }
+core-ibc = { path = "../../core/ibc"}
 core-mempool = { path = "../../core/mempool" }
 core-metadata = { path = "../../core/metadata" }
 core-network = { path = "../../core/network" }
