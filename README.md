@@ -1,17 +1,30 @@
-# Axon
+<p align="center">
+  <a href="https://github.com/axonweb3/axon">
+    <img src="./docs/assets/logo/axon-01.png" width="300">
+  </a>
+  <p align="center">
+	<a href="https://github.com/axonweb3/axon/releases"><img src="https://img.shields.io/github/v/release/axonweb3/axon?sort=semver"></a>
+    <a href="https://github.com/axonweb3/axon/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg"></a>
+    <a href="https://github.com/axonweb3/axon"><img src="https://github.com/axonweb3/axon/actions/workflows/web3_compatible.yml/badge.svg?branch=main"></a>
+    <a href="https://github.com/axonweb3/axon"><img src="https://img.shields.io/github/contributors/axonweb3/axon"></a>
+  </p>
+  <p align="center">
+     Developed by AxonWeb3<br>
+  </p>
+</p>
 
-[![version](https://img.shields.io/github/v/release/axonweb3/axon?sort=semver)](https://github.com/axonweb3/axon/releases) [![license](https://img.shields.io/github/license/axonweb3/axon)](https://github.com/axonweb3/axon/blob/main/LICENSE) ![status-check](https://github.com/axonweb3/axon/actions/workflows/web3_compatible.yml/badge.svg?branch=main)  ![contributors](https://img.shields.io/github/contributors/axonweb3/axon)
+> Axon is still in active development.
 
-> Axon is still in active development and a work in progress.
+## What is Axon
 
-Axon is a high-performance layer 2 framework with native cross-chain function.  Built on top of the [Overlord](https://github.com/nervosnetwork/overlord) consensus protocol and the P2P network [Tentacle](https://github.com/nervosnetwork/tentacle), Axon supports hundreds of nodes and achieves thousands of TPS. Axon is also EVM-compatible with well-developed toolchains. It performs high interoperability, meaning deployed applications can achieve convenient cross-chain communication.
+Axon is a high-performance layer 2 framework with native cross-chain function.  Built on top of the [Overlord](https://github.com/nervosnetwork/overlord) consensus protocol and the P2P network [Tentacle](https://github.com/nervosnetwork/tentacle), Axon supports hundreds of nodes and achieves thousands of TPS. Axon is also EVM-compatible with well-developed toolchains. Its high interoperability facilitates cross-chain communication among dApps.
 
 
 ## Highlights
 
-### About developer-friendly
+### DApps development made easy
 
-Axon is compatible with [Ethereum](https://ethereum.org) so that all of the develop utilities can be used on it directly. And the [Axon CLI](https://github.com/axonweb3/axon-devops/axon-cli) provides an all-in-one client which includes initialization, DevOps, cross chain request and so on. If you consider seeing is believing, there is a [15 minutes tutorial]() that will lead you to build your own chain and deploy a tiny application.
+Axon is compatible with [Ethereum](https://ethereum.org) so that all of the develop utilities can be used on it directly. And the [Axon CLI](https://github.com/axonweb3/axon-devops/axon-cli) provides an all-in-one client which includes initialization, DevOps, cross-chain request and so on. If you consider seeing is believing, there is a [15 minutes tutorial]() that will lead you to build your own chain and deploy a tiny application.
 
 ### Native cross-chain communication
 
@@ -19,11 +32,11 @@ Openness and mobility are the foundation of social development, so is blockchain
 
 ## Roadmap
 
-Most of the infrastructure has done and some substantial features to be developed are as below:
+As most of the infrastructure has been done, our next major steps will be building the following substantial features:
 
 1. Be compatible with [IBC](https://github.com/cosmos/ibc) protocol.
-2. Implement the original homologous cross chain protocol.
-3. Implement some other cross chain protocol.
+2. Implement the original homologous cross-chain protocol.
+3. Implement more cross-chain protocol.
 
 ## Install
 
@@ -36,13 +49,13 @@ cd axon && cargo build --release
 
 ## Toolchain
 
-Apart from the framework, axon has corresponding toolchains:
+Apart from the framework, Axon has corresponding toolchains:
 
-- [Axon Faucet](https://github.com/axonweb3/axon-faucet): faucet for the chain based Axon.
-- [Axon Explorer](https://github.com/Magickbase/blockscan): a blockchain explorer for the chain based Axon.
-- [Axon DevOps](https://github.com/axonweb3/axon-devops): includes some utilities such as monitor, benchmark tool and so on.
+- [Axon Faucet](https://github.com/axonweb3/axon-faucet): the faucet for the chain-based Axon.
+- [Axon Explorer](https://github.com/Magickbase/blockscan): a blockchain explorer for the chain-based Axon.
+- [Axon DevOps](https://github.com/axonweb3/axon-devops): includes several utilities, such as monitor, benchmark tool and so on.
 
-All the toolchains above can be dictated by **[Axon CLI](https://github.com/axonweb3/axon-cli) which is a exquisite and deft command line interface**. You can use Axon CLI to do anything related Axon.
+All the toolchains above can be dictated by **[Axon CLI](https://github.com/axonweb3/axon-cli), an exquisite and deft command line interface that makes everything Axon-related easier.
 
 ## Contributing
 
@@ -54,4 +67,4 @@ This project is licensed under the MIT License - see the [LICENSE.md](./LICENSE
 
 ## Acknowledgment
 
-Axon is based on [Muta](https://github.com/nervosnetwork/muta). Sincerely thanks to everyone who [contributed code to Muta](https://github.com/nervosnetwork/muta/graphs/contributors).
+Axon is based on [Muta](https://github.com/nervosnetwork/muta). Sincerely thanks go to everyone who [contributed code to Muta](https://github.com/nervosnetwork/muta/graphs/contributors).

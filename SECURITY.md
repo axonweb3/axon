@@ -2,7 +2,7 @@
 
 This project is still under development, the primary goal at this stage is to implement features but we also take security very seriously. This document defines the policy on how to report vulnerabilities and receive updates when patches to those are released.
 
-[Join Nervos Security Team!](mailto:careers@nervos.org)
+[Join the Nervos Security Team!](mailto:careers@nervos.org)
 
 ## Reporting a vulnerability
 
