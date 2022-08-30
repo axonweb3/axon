@@ -65,8 +65,8 @@ impl ProtocolCodec for CommonPrefix {
 
 #[derive(Debug, Clone)]
 pub struct CommonHashKey {
-    prefix:   CommonPrefix,
-    hash: Hash,
+    prefix: CommonPrefix,
+    hash:   Hash,
 }
 
 impl CommonHashKey {

@@ -32,9 +32,9 @@ use protocol::{
 use crate::cache::StorageCache;
 use crate::hash_key::{BlockKey, CommonHashKey, CommonPrefix};
 use crate::schema::{
-    BlockHashNumberSchema, BlockHeaderSchema, BlockSchema, EvmCodeAddressSchema, EvmCodeSchema,
-    LatestBlockSchema, ReceiptBytesSchema, ReceiptSchema, TransactionBytesSchema,
-    TransactionSchema, TxHashNumberSchema, LatestProofSchema, CrossChainRecordSchema
+    BlockHashNumberSchema, BlockHeaderSchema, BlockSchema, CrossChainRecordSchema,
+    EvmCodeAddressSchema, EvmCodeSchema, LatestBlockSchema, LatestProofSchema, ReceiptBytesSchema,
+    ReceiptSchema, TransactionBytesSchema, TransactionSchema, TxHashNumberSchema,
 };
 
 const BATCH_VALUE_DECODE_NUMBER: usize = 1000;
