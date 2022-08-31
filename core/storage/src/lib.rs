@@ -18,8 +18,8 @@ use common_apm::Instant;
 use common_apm_derive::trace_span;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{
-    CommonStorage, Context, Storage, StorageAdapter, StorageBatchModify, StorageCategory,
-    StorageSchema,
+    CkbCrossChainStorage, CommonStorage, Context, Storage, StorageAdapter, StorageBatchModify,
+    StorageCategory, StorageSchema,
 };
 use protocol::types::{
     Block, BlockNumber, Bytes, DBBytes, Direction, Hash, HashWithDirection, Hasher, Header, Proof,
@@ -32,9 +32,10 @@ use protocol::{
 use crate::cache::StorageCache;
 use crate::hash_key::{BlockKey, CommonHashKey, CommonPrefix};
 use crate::schema::{
-    BlockHashNumberSchema, BlockHeaderSchema, BlockSchema, CrossChainRecordSchema,
-    EvmCodeAddressSchema, EvmCodeSchema, LatestBlockSchema, LatestProofSchema, ReceiptBytesSchema,
-    ReceiptSchema, TransactionBytesSchema, TransactionSchema, TxHashNumberSchema,
+    BlockHashNumberSchema, BlockHeaderSchema, BlockSchema, CkbCrossChainSchema,
+    EvmCodeAddressSchema, EvmCodeSchema, LatestBlockSchema, LatestProofSchema,
+    MonitorCkbNumberSchema, ReceiptBytesSchema, ReceiptSchema, TransactionBytesSchema,
+    TransactionSchema, TxHashNumberSchema,
 };
 
 const BATCH_VALUE_DECODE_NUMBER: usize = 1000;
@@ -43,6 +44,7 @@ lazy_static::lazy_static! {
     pub static ref LATEST_BLOCK_KEY: Hash = Hasher::digest(Bytes::from("latest_hash"));
     pub static ref LATEST_PROOF_KEY: Hash = Hasher::digest(Bytes::from("latest_proof"));
     pub static ref OVERLORD_WAL_KEY: Hash = Hasher::digest(Bytes::from("overlord_wal"));
+    pub static ref MONITOR_CKB_NUMBER_KEY: Hash = Hasher::digest(Bytes::from("monitor_ckb_number"));
 }
 
 macro_rules! get_cache {
@@ -563,7 +565,10 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
             Ok(proof)
         }
     }
+}
 
+#[async_trait]
+impl<Adapter: StorageAdapter> CkbCrossChainStorage for ImplStorage<Adapter> {
     async fn insert_crosschain_records(
         &self,
         _ctx: Context,
@@ -586,7 +591,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
             .unzip();
 
         self.adapter
-            .batch_modify::<CrossChainRecordSchema>(keys, vals)
+            .batch_modify::<CkbCrossChainSchema>(keys, vals)
             .await
     }
 
@@ -595,7 +600,22 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         _ctx: Context,
         hash: &Hash,
     ) -> ProtocolResult<Option<HashWithDirection>> {
-        self.adapter.get::<CrossChainRecordSchema>(*hash).await
+        self.adapter.get::<CkbCrossChainSchema>(*hash).await
+    }
+
+    async fn update_monitor_ckb_number(&self, _ctx: Context, number: u64) -> ProtocolResult<()> {
+        self.adapter
+            .insert::<MonitorCkbNumberSchema>(*MONITOR_CKB_NUMBER_KEY, number)
+            .await
+    }
+
+    async fn get_monitor_ckb_number(&self, _ctx: Context) -> ProtocolResult<u64> {
+        let ret = self
+            .adapter
+            .get::<MonitorCkbNumberSchema>(*MONITOR_CKB_NUMBER_KEY)
+            .await?
+            .ok_or_else(|| StorageError::GetNone("monitor_ckb_number".to_string()))?;
+        Ok(ret)
     }
 }
 

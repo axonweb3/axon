@@ -17,7 +17,7 @@ impl CommonPrefix {
         }
     }
 
-    pub fn len() -> usize {
+    pub const fn len() -> usize {
         PREFIX_LEN
     }
 

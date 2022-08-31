@@ -13,7 +13,8 @@ pub enum StorageCategory {
     Wal,
     HashHeight,
     Code,
-    CrossChain,
+    CkbCrossChain,
+    IbcCrossChain,
 }
 
 pub type StorageIterator<'a, S> = Box<
@@ -52,7 +53,7 @@ pub trait CommonStorage: Send + Sync {
 }
 
 #[async_trait]
-pub trait Storage: CommonStorage {
+pub trait Storage: CommonStorage + CkbCrossChainStorage {
     async fn insert_transactions(
         &self,
         ctx: Context,
@@ -118,7 +119,10 @@ pub trait Storage: CommonStorage {
     async fn update_latest_proof(&self, ctx: Context, proof: Proof) -> ProtocolResult<()>;
 
     async fn get_latest_proof(&self, ctx: Context) -> ProtocolResult<Proof>;
+}
 
+#[async_trait]
+pub trait CkbCrossChainStorage: Send + Sync {
     async fn insert_crosschain_records(
         &self,
         ctx: Context,
@@ -132,6 +136,10 @@ pub trait Storage: CommonStorage {
         ctx: Context,
         hash: &Hash,
     ) -> ProtocolResult<Option<HashWithDirection>>;
+
+    async fn update_monitor_ckb_number(&self, ctx: Context, number: u64) -> ProtocolResult<()>;
+
+    async fn get_monitor_ckb_number(&self, ctx: Context) -> ProtocolResult<u64>;
 }
 
 #[async_trait]

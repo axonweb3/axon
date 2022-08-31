@@ -91,15 +91,11 @@ where
     }
 
     async fn update_monitor_ckb_number(&self, ctx: Context, number: u64) -> ProtocolResult<()> {
-        self.db
-            .insert(MONITOR_CKB_NUMBER_KEY.as_bytes(), &number.to_le_bytes())
+        self.storage.update_monitor_ckb_number(ctx, number).await
     }
 
-    async fn get_monitor_ckb_number(&self, _ctx: Context) -> ProtocolResult<u64> {
-        match self.db.get(MONITOR_CKB_NUMBER_KEY.as_bytes()) {
-            Ok(Some(bytes)) => Ok(u64::from_le_bytes(fixed_array(&bytes))),
-            _ => Err(CrossChainError::Adapter("Cannot get monitor CKB number".to_string()).into()),
-        }
+    async fn get_monitor_ckb_number(&self, ctx: Context) -> ProtocolResult<u64> {
+        self.storage.get_monitor_ckb_number(ctx).await
     }
 
     async fn nonce(&self, _ctx: Context, address: H160) -> ProtocolResult<U256> {

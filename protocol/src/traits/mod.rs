@@ -28,7 +28,7 @@ pub use network::{
     Gossip, MessageCodec, MessageHandler, Network, PeerTag, PeerTrust, Priority, Rpc, TrustFeedback,
 };
 pub use storage::{
-    CommonStorage, IntoIteratorByRef, Storage, StorageAdapter, StorageBatchModify, StorageCategory,
-    StorageIterator, StorageSchema,
+    CkbCrossChainStorage, CommonStorage, IntoIteratorByRef, Storage, StorageAdapter,
+    StorageBatchModify, StorageCategory, StorageIterator, StorageSchema,
 };
 pub use tx_assembler::{TxAssembler, TxAssemblerAdapter};

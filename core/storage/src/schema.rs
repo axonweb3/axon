@@ -1,3 +1,5 @@
+pub use ckb_crosschain_schema::{CkbCrossChainSchema, MonitorCkbNumberSchema};
+
 use protocol::traits::{StorageCategory, StorageSchema};
 use protocol::types::{
     Block, Bytes, DBBytes, Hash, HashWithDirection, Header, Proof, Receipt, SignedTransaction,
@@ -43,4 +45,10 @@ impl_storage_schema_for!(LatestProofSchema, Hash, Proof, Block);
 impl_storage_schema_for!(OverlordWalSchema, Hash, Bytes, Wal);
 impl_storage_schema_for!(EvmCodeSchema, Hash, Bytes, Code);
 impl_storage_schema_for!(EvmCodeAddressSchema, Hash, Hash, Code);
-impl_storage_schema_for!(CrossChainRecordSchema, Hash, HashWithDirection, CrossChain);
+
+mod ckb_crosschain_schema {
+    use super::*;
+
+    impl_storage_schema_for!(CkbCrossChainSchema, Hash, HashWithDirection, CkbCrossChain);
+    impl_storage_schema_for!(MonitorCkbNumberSchema, Hash, u64, CkbCrossChain);
+}
