@@ -3,7 +3,7 @@ use protocol::{Display, ProtocolError, ProtocolErrorKind};
 #[derive(Debug, Display)]
 pub enum CrossChainError {
     #[display(fmt = "Rocksdb error {}", _0)]
-    DB(rocksdb::Error),
+    DB(sled::Error),
 
     #[display(fmt = "Adapter error {}", _0)]
     Adapter(String),
@@ -32,8 +32,8 @@ impl From<CrossChainError> for ProtocolError {
     }
 }
 
-impl From<rocksdb::Error> for CrossChainError {
-    fn from(err: rocksdb::Error) -> Self {
+impl From<sled::Error> for CrossChainError {
+    fn from(err: sled::Error) -> Self {
         CrossChainError::DB(err)
     }
 }

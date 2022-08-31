@@ -13,7 +13,8 @@ pub enum StorageCategory {
     Wal,
     HashHeight,
     Code,
-    CrossChain,
+    CkbCrossChain,
+    IbcCrossChain,
 }
 
 pub type StorageIterator<'a, S> = Box<
@@ -52,7 +53,7 @@ pub trait CommonStorage: Send + Sync {
 }
 
 #[async_trait]
-pub trait Storage: CommonStorage {
+pub trait Storage: CommonStorage + CkbCrossChainStorage {
     async fn insert_transactions(
         &self,
         ctx: Context,
@@ -118,7 +119,10 @@ pub trait Storage: CommonStorage {
     async fn update_latest_proof(&self, ctx: Context, proof: Proof) -> ProtocolResult<()>;
 
     async fn get_latest_proof(&self, ctx: Context) -> ProtocolResult<Proof>;
+}
 
+#[async_trait]
+pub trait CkbCrossChainStorage: Send + Sync {
     async fn insert_crosschain_records(
         &self,
         ctx: Context,
@@ -132,6 +136,10 @@ pub trait Storage: CommonStorage {
         ctx: Context,
         hash: &Hash,
     ) -> ProtocolResult<Option<HashWithDirection>>;
+
+    async fn update_monitor_ckb_number(&self, ctx: Context, number: u64) -> ProtocolResult<()>;
+
+    async fn get_monitor_ckb_number(&self, ctx: Context) -> ProtocolResult<u64>;
 }
 
 #[async_trait]
@@ -142,40 +150,36 @@ pub enum StorageBatchModify<S: StorageSchema> {
     Insert(<S as StorageSchema>::Value),
 }
 
-#[async_trait]
 pub trait StorageAdapter: Send + Sync {
-    async fn insert<S: StorageSchema>(
+    fn insert<S: StorageSchema>(
         &self,
         key: <S as StorageSchema>::Key,
         val: <S as StorageSchema>::Value,
     ) -> ProtocolResult<()>;
 
-    async fn get<S: StorageSchema>(
+    fn get<S: StorageSchema>(
         &self,
         key: <S as StorageSchema>::Key,
     ) -> ProtocolResult<Option<<S as StorageSchema>::Value>>;
 
-    async fn get_batch<S: StorageSchema>(
+    fn get_batch<S: StorageSchema>(
         &self,
         keys: Vec<<S as StorageSchema>::Key>,
     ) -> ProtocolResult<Vec<Option<<S as StorageSchema>::Value>>> {
         let mut vec = Vec::with_capacity(keys.len());
 
         for key in keys {
-            vec.push(self.get::<S>(key).await?);
+            vec.push(self.get::<S>(key)?);
         }
 
         Ok(vec)
     }
 
-    async fn remove<S: StorageSchema>(&self, key: <S as StorageSchema>::Key) -> ProtocolResult<()>;
+    fn remove<S: StorageSchema>(&self, key: <S as StorageSchema>::Key) -> ProtocolResult<()>;
 
-    async fn contains<S: StorageSchema>(
-        &self,
-        key: <S as StorageSchema>::Key,
-    ) -> ProtocolResult<bool>;
+    fn contains<S: StorageSchema>(&self, key: <S as StorageSchema>::Key) -> ProtocolResult<bool>;
 
-    async fn batch_modify<S: StorageSchema>(
+    fn batch_modify<S: StorageSchema>(
         &self,
         keys: Vec<<S as StorageSchema>::Key>,
         vals: Vec<StorageBatchModify<S>>,

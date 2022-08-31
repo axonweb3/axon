@@ -32,8 +32,8 @@ fn test_adapter_remove() {
 fn adapter_insert_test(db: impl StorageAdapter) {
     let stx = mock_signed_tx();
     let tx_key = CommonHashKey::new(1, stx.transaction.hash);
-    exec!(db.insert::<TransactionSchema>(tx_key.clone(), stx.clone()));
-    let stx = exec!(db.get::<TransactionSchema>(tx_key)).unwrap();
+    db.insert::<TransactionSchema>(tx_key.clone(), stx).unwrap();
+    let stx = db.get::<TransactionSchema>(tx_key).unwrap().unwrap();
 
     assert!(stx.transaction.check_hash().is_ok());
 }
@@ -50,8 +50,9 @@ fn adapter_batch_modify_test(db: impl StorageAdapter) {
         inserts.push(StorageBatchModify::Insert::<TransactionSchema>(stx));
     }
 
-    exec!(db.batch_modify::<TransactionSchema>(keys.clone(), inserts));
-    let opt_stxs = exec!(db.get_batch::<TransactionSchema>(keys));
+    db.batch_modify::<TransactionSchema>(keys.clone(), inserts)
+        .unwrap();
+    let opt_stxs = db.get_batch::<TransactionSchema>(keys).unwrap();
 
     for i in 0..10 {
         assert_eq!(
@@ -64,11 +65,11 @@ fn adapter_batch_modify_test(db: impl StorageAdapter) {
 fn adapter_remove_test(db: impl StorageAdapter) {
     let stx = mock_signed_tx();
     let tx_key = CommonHashKey::new(1, stx.transaction.hash);
-    exec!(db.insert::<TransactionSchema>(tx_key.clone(), stx.clone()));
-    let is_exist = exec!(db.contains::<TransactionSchema>(tx_key.clone()));
+    db.insert::<TransactionSchema>(tx_key.clone(), stx).unwrap();
+    let is_exist = db.contains::<TransactionSchema>(tx_key.clone()).unwrap();
     assert!(is_exist);
 
-    exec!(db.remove::<TransactionSchema>(tx_key.clone()));
-    let is_exist = exec!(db.contains::<TransactionSchema>(tx_key));
+    db.remove::<TransactionSchema>(tx_key.clone()).unwrap();
+    let is_exist = db.contains::<TransactionSchema>(tx_key).unwrap();
     assert!(!is_exist);
 }
