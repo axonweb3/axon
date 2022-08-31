@@ -78,7 +78,7 @@ pub trait IbcAdapter: CrossChainCodec {
     // }
 
     #[inline]
-    fn get_keys(&self, key_prefix: &Path) -> Vec<StorePath> {
+    fn get_keys(&self, key_prefix: &StorePath) -> Vec<StorePath> {
         todo!()
     }
 }

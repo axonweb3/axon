@@ -10,7 +10,7 @@ use std::borrow::Borrow;
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
-use grpc::IbcClientService;
+use grpc::{IbcChannelService, IbcClientService, IbcConnectionService};
 use protocol::ProtocolResult;
 use tonic::transport::Server;
 
@@ -56,7 +56,13 @@ use adapter::{
     IbcAdapter, PacketCommitmentSchema, ReceiptSchema, SeqAcksSchema, SeqRecvsSchema,
     SeqSendsSchema, StoreSchema,
 };
-use ibc_proto::ibc::core::client::v1::query_server::QueryServer as ClientQueryServer;
+use ibc_proto::ibc::core::{
+    channel::v1::query_server::{Query as ChannelQuery, QueryServer as ChannelQueryServer},
+    client::v1::query_server::QueryServer as ClientQueryServer,
+    connection::v1::query_server::{
+        Query as ConnectionQuery, QueryServer as ConnectionQueryServer,
+    },
+};
 use protocol::types::Hasher;
 
 pub struct IbcImpl<Adapter: IbcAdapter, Router> {
@@ -105,6 +111,14 @@ impl<Adapter: IbcAdapter + 'static + Send + Sync, Router> IbcImpl<Adapter, Route
 
     pub fn client_service(&self) -> ClientQueryServer<IbcClientService<Adapter>> {
         ClientQueryServer::new(IbcClientService::new(self.adapter.clone()))
+    }
+
+    pub fn connection_service(&self) -> ConnectionQueryServer<IbcConnectionService<Adapter>> {
+        ConnectionQueryServer::new(IbcConnectionService::new(self.adapter.clone()))
+    }
+
+    pub fn channel_service(&self) -> ChannelQueryServer<IbcChannelService<Adapter>> {
+        ChannelQueryServer::new(IbcChannelService::new(self.adapter.clone()))
     }
 }
 

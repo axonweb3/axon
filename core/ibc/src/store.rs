@@ -134,3 +134,5 @@ pub enum Height {
     Latest,
     Stable(RawHeight), // or equivalently `tendermint::block::Height`
 }
+
+pub const CHAIN_REVISION_NUMBER: u64 = 0;
