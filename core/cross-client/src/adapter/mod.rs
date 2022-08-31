@@ -1,7 +1,6 @@
 mod db;
 
 pub use db::CrossChainDBImpl;
-use protocol::lazy::CURRENT_STATE_ROOT;
 
 use std::sync::Arc;
 
@@ -16,13 +15,9 @@ use protocol::traits::{
 use protocol::types::{
     Metadata, RequestTxHashes, SignedTransaction, Transfer, TxResp, H160, H256, U256,
 };
-use protocol::{async_trait, ProtocolResult};
+use protocol::{async_trait, lazy::CURRENT_STATE_ROOT, ProtocolResult};
 
 use core_executor::{AxonExecutor, AxonExecutorAdapter};
-
-use crate::error::CrossChainError;
-
-const MONITOR_CKB_NUMBER_KEY: &str = "MonitorCkbNumberKey";
 
 pub trait CrossChainDB: Sync + Send {
     fn get(&self, key: &[u8]) -> ProtocolResult<Option<Vec<u8>>>;
