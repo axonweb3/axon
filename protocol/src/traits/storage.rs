@@ -150,40 +150,36 @@ pub enum StorageBatchModify<S: StorageSchema> {
     Insert(<S as StorageSchema>::Value),
 }
 
-#[async_trait]
 pub trait StorageAdapter: Send + Sync {
-    async fn insert<S: StorageSchema>(
+    fn insert<S: StorageSchema>(
         &self,
         key: <S as StorageSchema>::Key,
         val: <S as StorageSchema>::Value,
     ) -> ProtocolResult<()>;
 
-    async fn get<S: StorageSchema>(
+    fn get<S: StorageSchema>(
         &self,
         key: <S as StorageSchema>::Key,
     ) -> ProtocolResult<Option<<S as StorageSchema>::Value>>;
 
-    async fn get_batch<S: StorageSchema>(
+    fn get_batch<S: StorageSchema>(
         &self,
         keys: Vec<<S as StorageSchema>::Key>,
     ) -> ProtocolResult<Vec<Option<<S as StorageSchema>::Value>>> {
         let mut vec = Vec::with_capacity(keys.len());
 
         for key in keys {
-            vec.push(self.get::<S>(key).await?);
+            vec.push(self.get::<S>(key)?);
         }
 
         Ok(vec)
     }
 
-    async fn remove<S: StorageSchema>(&self, key: <S as StorageSchema>::Key) -> ProtocolResult<()>;
+    fn remove<S: StorageSchema>(&self, key: <S as StorageSchema>::Key) -> ProtocolResult<()>;
 
-    async fn contains<S: StorageSchema>(
-        &self,
-        key: <S as StorageSchema>::Key,
-    ) -> ProtocolResult<bool>;
+    fn contains<S: StorageSchema>(&self, key: <S as StorageSchema>::Key) -> ProtocolResult<bool>;
 
-    async fn batch_modify<S: StorageSchema>(
+    fn batch_modify<S: StorageSchema>(
         &self,
         keys: Vec<<S as StorageSchema>::Key>,
         vals: Vec<StorageBatchModify<S>>,

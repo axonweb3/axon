@@ -17,9 +17,7 @@ use protocol::traits::{
     IntoIteratorByRef, StorageAdapter, StorageBatchModify, StorageCategory, StorageIterator,
     StorageSchema,
 };
-use protocol::{
-    async_trait, types::Bytes, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
-};
+use protocol::{types::Bytes, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 #[derive(Debug)]
 pub struct RocksAdapter {
@@ -146,9 +144,8 @@ impl<'c, S: StorageSchema, P: AsRef<[u8]>> IntoIteratorByRef<S> for RocksIntoIte
     }
 }
 
-#[async_trait]
 impl StorageAdapter for RocksAdapter {
-    async fn insert<S: StorageSchema>(&self, key: S::Key, val: S::Value) -> ProtocolResult<()> {
+    fn insert<S: StorageSchema>(&self, key: S::Key, val: S::Value) -> ProtocolResult<()> {
         let inst = Instant::now();
 
         let column = get_column::<S>(&self.db)?;
@@ -162,7 +159,7 @@ impl StorageAdapter for RocksAdapter {
         Ok(())
     }
 
-    async fn get<S: StorageSchema>(
+    fn get<S: StorageSchema>(
         &self,
         key: <S as StorageSchema>::Key,
     ) -> ProtocolResult<Option<<S as StorageSchema>::Value>> {
@@ -180,7 +177,7 @@ impl StorageAdapter for RocksAdapter {
         }
     }
 
-    async fn remove<S: StorageSchema>(&self, key: <S as StorageSchema>::Key) -> ProtocolResult<()> {
+    fn remove<S: StorageSchema>(&self, key: <S as StorageSchema>::Key) -> ProtocolResult<()> {
         let column = get_column::<S>(&self.db)?;
         let key = key.encode()?;
 
@@ -189,10 +186,7 @@ impl StorageAdapter for RocksAdapter {
         Ok(())
     }
 
-    async fn contains<S: StorageSchema>(
-        &self,
-        key: <S as StorageSchema>::Key,
-    ) -> ProtocolResult<bool> {
+    fn contains<S: StorageSchema>(&self, key: <S as StorageSchema>::Key) -> ProtocolResult<bool> {
         let column = get_column::<S>(&self.db)?;
         let key = key.encode()?;
         let val = db!(self.db, get_cf, column, key)?;
@@ -200,7 +194,7 @@ impl StorageAdapter for RocksAdapter {
         Ok(val.is_some())
     }
 
-    async fn batch_modify<S: StorageSchema>(
+    fn batch_modify<S: StorageSchema>(
         &self,
         keys: Vec<<S as StorageSchema>::Key>,
         vals: Vec<StorageBatchModify<S>>,

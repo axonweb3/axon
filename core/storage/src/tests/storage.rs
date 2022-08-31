@@ -7,6 +7,12 @@ use crate::adapter::memory::MemoryAdapter;
 use crate::tests::{get_random_bytes, mock_block, mock_proof, mock_receipt, mock_signed_tx};
 use crate::ImplStorage;
 
+macro_rules! exec {
+    ($func: expr) => {
+        futures::executor::block_on(async { $func.await.unwrap() })
+    };
+}
+
 #[test]
 fn test_storage_block_insert() {
     let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()), 10);

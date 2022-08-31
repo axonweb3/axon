@@ -10,7 +10,7 @@ use protocol::traits::{
     IntoIteratorByRef, StorageAdapter, StorageBatchModify, StorageIterator, StorageSchema,
 };
 use protocol::types::Bytes;
-use protocol::{async_trait, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
+use protocol::{Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 type Category = HashMap<Vec<u8>, Vec<u8>>;
 
@@ -84,9 +84,8 @@ impl<'c, S: StorageSchema> IntoIteratorByRef<S> for MemoryIntoIterator<'c, S> {
     }
 }
 
-#[async_trait]
 impl StorageAdapter for MemoryAdapter {
-    async fn insert<S: StorageSchema>(
+    fn insert<S: StorageSchema>(
         &self,
         key: <S as StorageSchema>::Key,
         val: <S as StorageSchema>::Value,
@@ -104,7 +103,7 @@ impl StorageAdapter for MemoryAdapter {
         Ok(())
     }
 
-    async fn get<S: StorageSchema>(
+    fn get<S: StorageSchema>(
         &self,
         key: <S as StorageSchema>::Key,
     ) -> ProtocolResult<Option<<S as StorageSchema>::Value>> {
@@ -126,7 +125,7 @@ impl StorageAdapter for MemoryAdapter {
         }
     }
 
-    async fn remove<S: StorageSchema>(&self, key: <S as StorageSchema>::Key) -> ProtocolResult<()> {
+    fn remove<S: StorageSchema>(&self, key: <S as StorageSchema>::Key) -> ProtocolResult<()> {
         let key = key.encode()?.to_vec();
 
         let mut db = self.db.write();
@@ -139,10 +138,7 @@ impl StorageAdapter for MemoryAdapter {
         Ok(())
     }
 
-    async fn contains<S: StorageSchema>(
-        &self,
-        key: <S as StorageSchema>::Key,
-    ) -> ProtocolResult<bool> {
+    fn contains<S: StorageSchema>(&self, key: <S as StorageSchema>::Key) -> ProtocolResult<bool> {
         let key = key.encode()?.to_vec();
 
         let mut db = self.db.write();
@@ -153,7 +149,7 @@ impl StorageAdapter for MemoryAdapter {
         Ok(db.get(&key).is_some())
     }
 
-    async fn batch_modify<S: StorageSchema>(
+    fn batch_modify<S: StorageSchema>(
         &self,
         keys: Vec<<S as StorageSchema>::Key>,
         vals: Vec<StorageBatchModify<S>>,

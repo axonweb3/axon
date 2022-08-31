@@ -68,14 +68,14 @@ macro_rules! put_cache {
 macro_rules! get {
     ($self_: ident, $key: expr, $schema: ident) => {{
         let inst = Instant::now();
-        let res = $self_.adapter.get::<$schema>($key).await;
+        let res = $self_.adapter.get::<$schema>($key);
         on_storage_get_cf($schema::category(), inst.elapsed(), 1.0f64);
         res
     }};
 
     ($self_: ident, $key: expr, $schema: ident, $cache_key: expr, $category: ident) => {{
         let inst = Instant::now();
-        let res = $self_.adapter.get::<$schema>($key).await?;
+        let res = $self_.adapter.get::<$schema>($key)?;
         put_cache!($self_, $cache_key, res, $category);
         on_storage_get_cf($schema::category(), inst.elapsed(), 1.0f64);
         Ok(res)
@@ -109,7 +109,7 @@ impl<Adapter: StorageAdapter> ImplStorage<Adapter> {
 
     async fn get_block_number_by_hash(&self, hash: &Hash) -> ProtocolResult<Option<u64>> {
         get_cache!(self, hash, block_numbers);
-        let ret = self.adapter.get::<BlockHashNumberSchema>(*hash).await?;
+        let ret = self.adapter.get::<BlockHashNumberSchema>(*hash)?;
         put_cache!(self, hash, ret, block_numbers);
         Ok(ret)
     }
@@ -140,12 +140,10 @@ impl<Adapter: StorageAdapter> ImplStorage<Adapter> {
             .unzip();
 
         self.adapter
-            .batch_modify::<TransactionSchema>(keys, batch_stxs)
-            .await?;
+            .batch_modify::<TransactionSchema>(keys, batch_stxs)?;
 
         self.adapter
-            .batch_modify::<TxHashNumberSchema>(hashes, heights)
-            .await?;
+            .batch_modify::<TxHashNumberSchema>(hashes, heights)?;
 
         Ok(())
     }
@@ -171,12 +169,10 @@ impl<Adapter: StorageAdapter> ImplStorage<Adapter> {
             .unzip();
 
         self.adapter
-            .batch_modify::<ReceiptSchema>(keys, batch_stxs)
-            .await?;
+            .batch_modify::<ReceiptSchema>(keys, batch_stxs)?;
 
         self.adapter
-            .batch_modify::<TxHashNumberSchema>(hashes, heights)
-            .await?;
+            .batch_modify::<TxHashNumberSchema>(hashes, heights)?;
 
         Ok(())
     }
@@ -195,10 +191,7 @@ impl<Adapter: StorageAdapter> CommonStorage for ImplStorage<Adapter> {
 
     async fn get_block(&self, _ctx: Context, height: u64) -> ProtocolResult<Option<Block>> {
         get_cache!(self, &height, blocks);
-        let ret = self
-            .adapter
-            .get::<BlockSchema>(BlockKey::new(height))
-            .await?;
+        let ret = self.adapter.get::<BlockSchema>(BlockKey::new(height))?;
         put_cache!(self, height, ret, blocks);
         Ok(ret)
     }
@@ -207,8 +200,7 @@ impl<Adapter: StorageAdapter> CommonStorage for ImplStorage<Adapter> {
         get_cache!(self, &height, headers);
         let opt_header = self
             .adapter
-            .get::<BlockHeaderSchema>(BlockKey::new(height))
-            .await?;
+            .get::<BlockHeaderSchema>(BlockKey::new(height))?;
         if opt_header.is_some() {
             put_cache!(self, height, opt_header, headers);
             return Ok(opt_header);
@@ -219,21 +211,18 @@ impl<Adapter: StorageAdapter> CommonStorage for ImplStorage<Adapter> {
 
     async fn set_block(&self, _ctx: Context, block: Block) -> ProtocolResult<()> {
         self.adapter
-            .insert::<BlockSchema>(BlockKey::new(block.header.number), block.clone())
-            .await?;
+            .insert::<BlockSchema>(BlockKey::new(block.header.number), block.clone())?;
+        self.adapter.insert::<BlockHeaderSchema>(
+            BlockKey::new(block.header.number),
+            block.header.clone(),
+        )?;
         self.adapter
-            .insert::<BlockHeaderSchema>(BlockKey::new(block.header.number), block.header.clone())
-            .await?;
-        self.adapter
-            .insert::<BlockHashNumberSchema>(block.hash(), block.header.number)
-            .await?;
+            .insert::<BlockHashNumberSchema>(block.hash(), block.header.number)?;
         Ok(())
     }
 
     async fn remove_block(&self, _ctx: Context, height: u64) -> ProtocolResult<()> {
-        self.adapter
-            .remove::<BlockSchema>(BlockKey::new(height))
-            .await
+        self.adapter.remove::<BlockSchema>(BlockKey::new(height))
     }
 
     async fn get_latest_block(&self, _ctx: Context) -> ProtocolResult<Block> {
@@ -247,8 +236,7 @@ impl<Adapter: StorageAdapter> CommonStorage for ImplStorage<Adapter> {
 
     async fn set_latest_block(&self, _ctx: Context, block: Block) -> ProtocolResult<()> {
         self.adapter
-            .insert::<LatestBlockSchema>(*LATEST_BLOCK_KEY, block.clone())
-            .await?;
+            .insert::<LatestBlockSchema>(*LATEST_BLOCK_KEY, block.clone())?;
 
         self.latest_block.store(Arc::new(Some(block)));
 
@@ -385,17 +373,14 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         code_hash: Hash,
         code: Bytes,
     ) -> ProtocolResult<()> {
-        self.adapter
-            .insert::<EvmCodeSchema>(code_hash, code)
-            .await?;
+        self.adapter.insert::<EvmCodeSchema>(code_hash, code)?;
         self.adapter
             .insert::<EvmCodeAddressSchema>(code_address, code_hash)
-            .await
     }
 
     async fn get_code_by_hash(&self, _ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>> {
         get_cache!(self, hash, codes);
-        let ret = self.adapter.get::<EvmCodeSchema>(*hash).await?;
+        let ret = self.adapter.get::<EvmCodeSchema>(*hash)?;
         put_cache!(self, hash, ret, codes);
         Ok(ret)
     }
@@ -405,7 +390,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         ctx: Context,
         address: &H256,
     ) -> ProtocolResult<Option<Bytes>> {
-        let code_hash = self.adapter.get::<EvmCodeAddressSchema>(*address).await?;
+        let code_hash = self.adapter.get::<EvmCodeAddressSchema>(*address)?;
 
         if let Some(hash) = code_hash {
             self.get_code_by_hash(ctx, &hash).await
@@ -549,8 +534,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
 
     async fn update_latest_proof(&self, _ctx: Context, proof: Proof) -> ProtocolResult<()> {
         self.adapter
-            .insert::<LatestProofSchema>(*LATEST_PROOF_KEY, proof.clone())
-            .await?;
+            .insert::<LatestProofSchema>(*LATEST_PROOF_KEY, proof.clone())?;
 
         self.latest_proof.store(Arc::new(Some(proof)));
 
@@ -590,9 +574,7 @@ impl<Adapter: StorageAdapter> CkbCrossChainStorage for ImplStorage<Adapter> {
             })
             .unzip();
 
-        self.adapter
-            .batch_modify::<CkbCrossChainSchema>(keys, vals)
-            .await
+        self.adapter.batch_modify::<CkbCrossChainSchema>(keys, vals)
     }
 
     async fn get_crosschain_record(
@@ -600,20 +582,18 @@ impl<Adapter: StorageAdapter> CkbCrossChainStorage for ImplStorage<Adapter> {
         _ctx: Context,
         hash: &Hash,
     ) -> ProtocolResult<Option<HashWithDirection>> {
-        self.adapter.get::<CkbCrossChainSchema>(*hash).await
+        self.adapter.get::<CkbCrossChainSchema>(*hash)
     }
 
     async fn update_monitor_ckb_number(&self, _ctx: Context, number: u64) -> ProtocolResult<()> {
         self.adapter
             .insert::<MonitorCkbNumberSchema>(*MONITOR_CKB_NUMBER_KEY, number)
-            .await
     }
 
     async fn get_monitor_ckb_number(&self, _ctx: Context) -> ProtocolResult<u64> {
         let ret = self
             .adapter
-            .get::<MonitorCkbNumberSchema>(*MONITOR_CKB_NUMBER_KEY)
-            .await?
+            .get::<MonitorCkbNumberSchema>(*MONITOR_CKB_NUMBER_KEY)?
             .ok_or_else(|| StorageError::GetNone("monitor_ckb_number".to_string()))?;
         Ok(ret)
     }

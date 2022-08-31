@@ -1,9 +1,3 @@
-macro_rules! exec {
-    ($func: expr) => {
-        futures::executor::block_on(async { $func.await.unwrap() })
-    };
-}
-
 mod adapter;
 mod storage;
 
