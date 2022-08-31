@@ -3,16 +3,18 @@ mod client;
 mod codec;
 mod error;
 mod grpc;
+mod store;
 mod transfer;
 
 use std::borrow::Borrow;
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
+use grpc::IbcClientService;
 use protocol::ProtocolResult;
 use tonic::transport::Server;
 
-use crate::grpc::{client_service, client_msg_service};
+use crate::grpc::client_msg_service;
 
 use ibc::clients::ics07_tendermint::consensus_state::ConsensusState;
 use ibc::timestamp::Timestamp;
@@ -50,9 +52,11 @@ use ibc::{
 
 use adapter::{
     AcknowledgementCommitmentSchema, ChannelEndSchema, ClientConsensusStateSchema,
-    ClientStateSchema, ClientTypeSchema, ConnectionEndSchema, ConnectionIdsSchema, IbcAdapter,
-    PacketCommitmentSchema, ReceiptSchema, SeqAcksSchema, SeqRecvsSchema, SeqSendsSchema, CrossChainCodec, StoreSchema,
+    ClientStateSchema, ClientTypeSchema, ConnectionEndSchema, ConnectionIdsSchema, CrossChainCodec,
+    IbcAdapter, PacketCommitmentSchema, ReceiptSchema, SeqAcksSchema, SeqRecvsSchema,
+    SeqSendsSchema, StoreSchema,
 };
+use ibc_proto::ibc::core::client::v1::query_server::QueryServer as ClientQueryServer;
 use protocol::types::Hasher;
 
 pub struct IbcImpl<Adapter: IbcAdapter, Router> {
@@ -67,37 +71,41 @@ pub struct IbcImpl<Adapter: IbcAdapter, Router> {
     consensus_states:         HashMap<u64, ConsensusState>,
 }
 
-impl<Adapter: IbcAdapter, Router> IbcImpl<Adapter, Router> {
+impl<Adapter: IbcAdapter + 'static + Send + Sync, Router> IbcImpl<Adapter, Router> {
     pub fn new() -> Self {
         IbcImpl {
-            adapter: todo!(),
-            router: todo!(),
-            client_counter: todo!(),
-            channel_counter: todo!(),
-            conn_counter: todo!(),
-            port_to_module_map: todo!(),
-            client_processed_times: todo!(),
+            adapter:                  todo!(),
+            router:                   todo!(),
+            client_counter:           todo!(),
+            channel_counter:          todo!(),
+            conn_counter:             todo!(),
+            port_to_module_map:       todo!(),
+            client_processed_times:   todo!(),
             client_processed_heights: todo!(),
-            consensus_states: todo!(),
+            consensus_states:         todo!(),
         }
     }
 
-pub async fn run(&self) {
-    log::info!("ibc run");
+    pub async fn run(&self) {
+        log::info!("ibc run");
 
-    // [::1] ipv6, equal to 127.0.0.1
-    let addr = "[::1]:50051".parse().unwrap();
+        // [::1] ipv6, equal to 127.0.0.1
+        let addr = "[::1]:50051".parse().unwrap();
 
-    let ibc_client_service = client_service();
-    let ibc_client_msg_service = client_msg_service();
+        let ibc_client_service = self.client_service();
+        let ibc_client_msg_service = client_msg_service();
 
-    let _grpc = Server::builder()
+        let _grpc = Server::builder()
     .add_service(ibc_client_service)
     .add_service(ibc_client_msg_service)
     // .add_service(ibc_conn_service)
     // .add_service(ibc_channel_service)
     .serve(addr).await.unwrap();
-}
+    }
+
+    pub fn client_service(&self) -> ClientQueryServer<IbcClientService<Adapter>> {
+        ClientQueryServer::new(IbcClientService::new(self.adapter.clone()))
+    }
 }
 
 impl<Adapter: IbcAdapter, Router> ClientReader for IbcImpl<Adapter, Router> {
@@ -685,20 +693,20 @@ impl Router for IbcRouter {
     }
 }
 
-pub struct Ibc {
-
-}
+pub struct Ibc {}
 
 impl CrossChainCodec for Ibc {
     fn get<S: StoreSchema>(&self, key: &S::Key) -> ProtocolResult<S::Value> {
         todo!()
     }
+
     fn set<S: StoreSchema>(&self, key: &S::Key, value: S::Value) -> ProtocolResult<()> {
         todo!()
     }
+
     fn get_all_keys<S: StoreSchema>(&self) -> &[S::Key] {
         todo!()
-    }   
+    }
 }
 
 impl IbcAdapter for Ibc {

@@ -21,6 +21,7 @@ use ibc::core::{
 use protocol::ProtocolResult;
 
 use crate::codec::Codec;
+use crate::store::Path as StorePath;
 
 pub trait StoreSchema {
     type Key: Into<Path>;
@@ -70,4 +71,14 @@ pub trait CrossChainCodec {
 
 pub trait IbcAdapter: CrossChainCodec {
     fn get_current_height(&self) -> u64;
+
+    // #[inline]
+    // fn get(&self, height: Height, path: &K) -> Option<V> {
+    //     todo!()
+    // }
+
+    #[inline]
+    fn get_keys(&self, key_prefix: &Path) -> Vec<StorePath> {
+        todo!()
+    }
 }

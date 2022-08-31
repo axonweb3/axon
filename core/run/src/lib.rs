@@ -13,7 +13,7 @@ use {
     jemallocator::Jemalloc,
 };
 
-use core_ibc::{IbcImpl, IbcRouter, Ibc};
+use core_ibc::{Ibc, IbcImpl, IbcRouter};
 use ethers_signers::{coins_bip39::English, MnemonicBuilder, Signer};
 
 use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
@@ -686,7 +686,7 @@ impl Axon {
 
     fn run_ibc() {
         log::info!("ibc start");
-        tokio::spawn(async{
+        tokio::spawn(async {
             let ibc = core_ibc::IbcImpl::<Ibc, IbcRouter>::new();
             ibc.run().await;
         });
