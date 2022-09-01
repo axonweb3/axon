@@ -1,10 +1,28 @@
 const { expect } = require("chai")
-const { ethers } = require("hardhat")
+const { ethers, upgrades } = require("hardhat")
+const ABI = require('../artifacts/contracts/metadata.sol/MetadataManager.json');
+const ERC1967Proxy = require('@openzeppelin/upgrades-core/artifacts/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol/ERC1967Proxy.json');
 
 function hexToBytes(hex) {
     for (var bytes = [], c = 0; c < hex.length; c += 2)
         bytes.push(parseInt(hex.substr(c, 2), 16));
     return bytes;
+}
+
+async function deployProxy(deployer, { params, initializer }) {
+    // deploy proxy implementation
+    const impl = await deployer.deploy();
+    // console.log('metadata:', impl);
+    await impl.deployed();
+    // make proxy construction params
+    const abi = new ethers.utils.Interface(ABI.abi);
+    const data = abi.encodeFunctionData(initializer, params);
+    // deploy proxy contract
+    const proxy_deployer = await ethers.getContractFactory(ERC1967Proxy.abi, ERC1967Proxy.bytecode);
+    const proxy = await proxy_deployer.deploy(impl.address, data);
+    await proxy.deployed();
+    // attach proxy contract
+    return deployer.attach(proxy.address);
 }
 
 describe("Testing MetadataManager", () => {
@@ -14,8 +32,10 @@ describe("Testing MetadataManager", () => {
 
     before(async () => {
         let deployer = await ethers.getContractFactory("MetadataManager")
-        contract = await deployer.deploy()
-        await contract.deployed()
+        // contract = await deployer.deploy()
+        // contract = await upgrades.deployProxy(deployer, [], { initializer: 'construct' });
+        // await contract.deployed()
+        contract = await deployProxy(deployer, { params: [], initializer: 'construct' });
         wallets = await ethers.getSigners()
         metadata = {
             version: {

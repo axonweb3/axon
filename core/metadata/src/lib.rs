@@ -16,10 +16,10 @@ use ethers_core::abi::{
 use parking_lot::RwLock;
 
 use protocol::traits::{Context, MetadataControl, MetadataControlAdapter};
-use protocol::types::{
-    ExitReason, Hash, Header, Hex, Metadata, MetadataVersion, ValidatorExtend, H160,
-};
+use protocol::types::{ExitReason, Hash, Header, Hex, Metadata, MetadataVersion, ValidatorExtend};
 use protocol::{Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
+
+use core_executor::METADATA_CONTRACT_ADDRESS;
 
 type Epoch = u64;
 
@@ -28,9 +28,8 @@ lazy_static::lazy_static! {
 }
 
 pub struct MetadataController<Adapter> {
-    adapter:          Arc<Adapter>,
-    metadata_cache:   RwLock<BTreeMap<Epoch, Metadata>>,
-    metadata_address: H160,
+    adapter:        Arc<Adapter>,
+    metadata_cache: RwLock<BTreeMap<Epoch, Metadata>>,
 }
 
 impl<Adapter> MetadataControl for MetadataController<Adapter>
@@ -83,12 +82,11 @@ where
 }
 
 impl<Adapter: MetadataControlAdapter> MetadataController<Adapter> {
-    pub fn new(adapter: Arc<Adapter>, metadata_address: H160, epoch_len: u64) -> Self {
+    pub fn new(adapter: Arc<Adapter>, epoch_len: u64) -> Self {
         EPOCH_LEN.swap(Arc::new(epoch_len));
         MetadataController {
             adapter,
             metadata_cache: RwLock::new(BTreeMap::new()),
-            metadata_address,
         }
     }
 
@@ -101,7 +99,7 @@ impl<Adapter: MetadataControlAdapter> MetadataController<Adapter> {
         let res = self.adapter.call_evm(
             Context::new(),
             header,
-            self.metadata_address,
+            METADATA_CONTRACT_ADDRESS,
             payload.encode(),
         )?;
 

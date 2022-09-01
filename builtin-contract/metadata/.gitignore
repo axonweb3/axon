@@ -4,7 +4,9 @@ coverage
 coverage.json
 typechain
 metadata.deploy.json
+metadata.proxy.json
 
 #Hardhat files
 cache
 artifacts
+.openzeppelin
