@@ -22,5 +22,16 @@ No Breaking Change
 
 ### CI Switch
 
-ci-runs-only: [Chaos CI, Cargo Clippy, Coverage Test, E2E Tests, Code Format, Unit Tests, Web3 Compatible Tests]
+- [ ] Chaos CI
+- [ ] Cargo Clippy
+- [ ] Coverage Test
+- [ ] E2E Tests
+- [ ] Code Format
+- [ ] Unit Tests
+- [ ] Web3 Compatible Tests
+- [ ] OCT 1-5 And 12-15
+- [ ] OCT 6-10
+- [ ] OCT 11
+- [ ] OCT 16-19
+- [ ] v3 Core Tests
 
