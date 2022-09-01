@@ -191,21 +191,6 @@ pub trait StorageAdapter: Send + Sync {
     ) -> ProtocolResult<Box<dyn IntoIteratorByRef<S> + 'a>>;
 }
 
-pub trait IbcCrossChainStorage {
-    fn get<S: StorageSchema>(
-        &self,
-        key: <S as StorageSchema>::Key,
-    ) -> ProtocolResult<Option<<S as StorageSchema>::Value>>;
-
-    fn insert<S: StorageSchema>(
-        &self,
-        key: <S as StorageSchema>::Key,
-        val: <S as StorageSchema>::Value,
-    ) -> ProtocolResult<()>;
-
-    fn get_all_keys<S: StorageSchema>(&self) -> ProtocolResult<Vec<<S as StorageSchema>::Key>>;
-}
-
 #[cfg(feature = "ibc")]
 pub mod ibc {
     use cosmos_ibc::{
