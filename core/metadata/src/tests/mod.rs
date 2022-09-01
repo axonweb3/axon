@@ -7,24 +7,19 @@ use std::sync::Arc;
 use ethers_core::abi::AbiEncode;
 
 use core_executor::adapter::{MPTTrie, RocksTrieDB};
-use core_executor::{AxonExecutor, AxonExecutorAdapter};
+use core_executor::{AxonExecutor, AxonExecutorAdapter, METADATA_CONTRACT_ADDRESS};
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{CommonStorage, Context, Executor, Storage};
 use protocol::types::{
-    Account, Address, Bytes, Eip1559Transaction, Header, Hex, Metadata, Proposal, Public,
-    RichBlock, SignatureComponents, SignedTransaction, TransactionAction, UnsignedTransaction,
-    UnverifiedTransaction, H160, H256, NIL_DATA, RLP_NULL, U256,
+    Account, Address, Bytes, Eip1559Transaction, Header, Metadata, Proposal, Public, RichBlock,
+    SignatureComponents, SignedTransaction, TransactionAction, UnsignedTransaction,
+    UnverifiedTransaction, H256, NIL_DATA, RLP_NULL, U256,
 };
 
 use crate::{calc_epoch, metadata_abi as abi, MetadataAdapterImpl, MetadataController, EPOCH_LEN};
 
 const GENESIS_PATH: &str = "../../devtools/chain/genesis_single_node.json";
-
-lazy_static::lazy_static! {
-    static ref METADATA_ADDRESS: H160
-        = H160::from_slice(&Hex::decode("0xa13763691970d9373d4fab7cc323d7ba06fa9986".to_string()).unwrap());
-}
 
 struct TestHandle {
     storage:    Arc<ImplStorage<RocksAdapter>>,
@@ -110,7 +105,7 @@ impl TestHandle {
     ) -> MetadataController<MetadataAdapterImpl<ImplStorage<RocksAdapter>, RocksTrieDB>> {
         let adapter =
             MetadataAdapterImpl::new(Arc::clone(&self.storage), Arc::clone(&self.trie_db));
-        MetadataController::new(Arc::new(adapter), *METADATA_ADDRESS, epoch_len)
+        MetadataController::new(Arc::new(adapter), epoch_len)
     }
 
     pub fn exec(&mut self, txs: Vec<SignedTransaction>) {
@@ -177,7 +172,7 @@ fn mock_transaction(nonce: u64, data: Vec<u8>) -> Eip1559Transaction {
         gas_limit:                100000000u64.into(),
         max_priority_fee_per_gas: U256::one(),
         gas_price:                U256::one(),
-        action:                   TransactionAction::Call(*METADATA_ADDRESS),
+        action:                   TransactionAction::Call(METADATA_CONTRACT_ADDRESS),
         value:                    U256::zero(),
         data:                     data.into(),
         access_list:              vec![],

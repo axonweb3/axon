@@ -40,9 +40,7 @@ use core_cross_client::{
     CrossChainDBImpl, CrossChainImpl, CrossChainMessageHandler, DefaultCrossChainAdapter,
     END_GOSSIP_BUILD_CKB_TX, END_GOSSIP_CKB_TX_SIGNATURE,
 };
-use core_executor::{
-    AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB, METADATA_CONTRACT_ADDRESS,
-};
+use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB};
 use core_interoperation::InteroperationImpl;
 use core_mempool::{
     DefaultMemPoolAdapter, MemPoolImpl, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
@@ -311,7 +309,6 @@ impl Axon {
         let metadata_adapter = MetadataAdapterImpl::new(Arc::clone(&storage), Arc::clone(&trie_db));
         let metadata_controller = Arc::new(MetadataController::new(
             Arc::new(metadata_adapter),
-            METADATA_CONTRACT_ADDRESS,
             self.config.epoch_len,
         ));
 
