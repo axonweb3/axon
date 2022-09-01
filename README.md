@@ -17,22 +17,23 @@
 
 ## What is Axon
 
-Axon is a high-performance layer 2 framework with native cross-chain function.  Built on top of the [Overlord](https://github.com/nervosnetwork/overlord) consensus protocol and the P2P network [Tentacle](https://github.com/nervosnetwork/tentacle), Axon supports hundreds of nodes and achieves thousands of TPS. Axon is also EVM-compatible with well-developed toolchains. Its high interoperability facilitates cross-chain communication among dApps.
+Axon is a high-performance layer2 framework with native cross-chain function. Built on top of the [Overlord](https://github.com/nervosnetwork/overlord) consensus protocol and the P2P network [Tentacle](https://github.com/nervosnetwork/tentacle)
+, Axon supports hundreds of nodes and achieves thousands of TPS. Axon is also EVM-compatible with well-developed toolchains. Its high interoperability facilitates cross-chain communication among dApps.
 
 
 ## Highlights
 
-### DApps development made easy
+### Developer-Friendly Design
 
-Axon is compatible with [Ethereum](https://ethereum.org) so that all of the develop utilities can be used on it directly. And the [Axon CLI](https://github.com/axonweb3/axon-devops/axon-cli) provides an all-in-one client which includes initialization, DevOps, cross-chain request and so on. If you consider seeing is believing, there is a [15 minutes tutorial]() that will lead you to build your own chain and deploy a tiny application.
+Axon is compatible with [Ethereum](https://ethereum.org) so that all of the develop utilities can be used on it directly. And the [Axon CLI](https://github.com/axonweb3/axon-devops/axon-cli) provides an all-in-one client which includes initialization, DevOps, cross-chain request and so on. Seeing is believing, there is a [15 minutes tutorial]() that will lead you to build your own chain and deploy a tiny application.
 
-### Native cross-chain communication
+### Native Cross-chain Communication
 
-Openness and mobility are the foundation of social development, so is blockchain. Cross-chain derive the taking liquidity precisely. Axon satisfy native cross-chain ability without attach to a bridge. Each of the chain based Axon can cross to [CKB](https://www.nervos.org), any other Axon based chain, and [IBC](https://ibcprotocol.org) compatible chains. Axon will embed more cross-chain protocol in future.
+Openness and mobility are the foundation of social development, so is blockchain. Cross-chain function enhances liquidity for the web3 ecosystem. Axon develops native cross-chain communication without any bridge. Each the Axon-based chain can speak to [CKB](https://www.nervos.org), other Axon-based chains, and any [IBC](https://ibcprotocol.org) compatible chains. Axon will embed more cross-chain protocols in the future.
 
 ## Roadmap
 
-As most of the infrastructure has been done, our next major steps will be building the following substantial features:
+Most of the infrastructure has been done and some substantial features to be developed are as below:
 
 1. Be compatible with [IBC](https://github.com/cosmos/ibc) protocol.
 2. Implement the original homologous cross-chain protocol.
@@ -40,7 +41,7 @@ As most of the infrastructure has been done, our next major steps will be buildi
 
 ## Install
 
-The [release page](`https://github.com/axonweb3/axon/release`) provides the compiled binary. If you want to build from source code, please make sure that [rust](https://www.rust-lang.org/), [clang](http://clang.org/), [openssl](https://www.openssl.org/), [m4](https://www.gnu.org/software/m4/) have already been installed. Then execute the following command:
+Axon provides the compiled binary on the [release page](`https://github.com/axonweb3/axon/release`), and if you want to build from source code, please make sure that [rust](https://www.rust-lang.org/), [clang](http://clang.org/), [openssl](https://www.openssl.org/), [m4](https://www.gnu.org/software/m4/) have already been installed. Then execute the following command:
 
 ```bash
 # Clone from GitHub
@@ -51,17 +52,17 @@ cargo run --release -- -c devtools/chain/config.toml -g devtools/chain/genesis_s
 
 ## Toolchain
 
-Apart from the framework, Axon has corresponding toolchains:
+Apart from the framework, Axon has toolchains:
 
-- [Axon Faucet](https://github.com/axonweb3/axon-faucet): the faucet for the chain-based Axon.
-- [Axon Explorer](https://github.com/Magickbase/blockscan): a blockchain explorer for the chain-based Axon.
+- [Axon Faucet](https://github.com/axonweb3/axon-faucet): the faucet for the Axon-based chains.
+- [Axon Explorer](https://github.com/Magickbase/blockscan): a blockchain explorer for the Axon-based chains.
 - [Axon DevOps](https://github.com/axonweb3/axon-devops): includes several utilities, such as monitor, benchmark tool and so on.
 
-All the toolchains above can be dictated by **[Axon CLI](https://github.com/axonweb3/axon-cli), an exquisite and deft command line interface that makes everything Axon-related easier.
+All the toolchains above can be dictated by **[Axon CLI](https://github.com/axonweb3/axon-cli), an exquisite and deft command line interface. You can use Axon CLI to do anything related to Axon.
 
 ## Contributing
 
-Please read the [CONTRIBUTING.md](./CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests to us. And the security policy is described in [SECURITY.md](./SECURITY.md).
+Please read the [CONTRIBUTING.md](./CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests. And the security policy is described in [SECURITY.md](./SECURITY.md).
 
 ## License
 
