@@ -18,12 +18,12 @@ function address(value) {
 async function main() {
     const export_json = {
         Implementation: {
-            nonce: new util.BN(0),
+            nonce: 0,
             data: [],
             address: '',
         },
         Proxy: {
-            nonce: new util.BN(5),
+            nonce: 2,
             data: [],
             address: '',
         },

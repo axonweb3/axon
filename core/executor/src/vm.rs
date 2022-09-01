@@ -6,13 +6,13 @@ use protocol::traits::{ApplyBackend, Backend};
 use protocol::types::{Config, SignedTransaction, TransactionAction, TxResp, H160};
 
 pub const METADATA_CONTRACT_ADDRESS: H160 = H160([
-    161, 55, 99, 105, 25, 112, 217, 55, 61, 79, 171, 124, 195, 35, 215, 186, 6, 250, 153, 134,
+    176, 13, 97, 107, 130, 12, 57, 97, 158, 226, 158, 81, 68, 208, 34, 108, 248, 181, 193, 90,
 ]);
 pub const WCKB_CONTRACT_ADDRESS: H160 = H160([
     74, 245, 236, 94, 61, 41, 217, 221, 215, 244, 191, 145, 160, 34, 19, 28, 65, 183, 35, 82,
 ]);
 pub const CROSSCHAIN_CONTRACT_ADDRESS: H160 = H160([
-    246, 123, 196, 229, 13, 29, 249, 43, 14, 76, 97, 121, 74, 69, 23, 175, 106, 153, 92, 178,
+    180, 132, 253, 72, 14, 89, 134, 33, 99, 143, 56, 15, 64, 70, 151, 205, 159, 88, 176, 248,
 ]);
 
 // deprecated

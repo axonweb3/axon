@@ -7,7 +7,7 @@ const ERC1967Proxy = require('@openzeppelin/upgrades-core/artifacts/@openzeppeli
 const private_key = Buffer.from("37aa0f893d05914a4def0460c0a984d3611546cfb26924d7a7ca6e0db9950a2d", "hex");
 const sender = util.privateToAddress(private_key);
 
-const metadata = '0xb484fd480e598621638f380f404697cd9f58b0f8'; // nonce = 5 (proxy)
+const metadata = '0xb00d616b820c39619ee29e5144d0226cf8b5c15a'; // nonce = 2 (proxy)
 const wckb = '0x4af5ec5e3d29d9ddd7f4bf91a022131c41b72352'; // nonce = 1
 
 function address(value) {
@@ -21,12 +21,12 @@ function address(value) {
 async function main() {
     const export_json = {
         Implementation: {
-            nonce: new util.BN(3),
+            nonce: 3,
             data: [],
             address: '',
         },
         Proxy: {
-            nonce: new util.BN(6),
+            nonce: 5,
             data: [],
             address: '',
         },

@@ -25,7 +25,7 @@ task('deployTestToken', 'deploy test token on axon').addParam('private').setActi
   const TestToken = await hre.ethers.getContractFactory('TestToken');
   let unsignedTx = TestToken.getDeployTransaction();
   unsignedTx = await signer.populateTransaction(unsignedTx);
-  unsignedTx.nonce = await signer.getTransactionCount() + 1;
+  // unsignedTx.nonce = await signer.getTransactionCount() + 1;
   const signedTx = await signer.signTransaction(unsignedTx);
   const tx = await hre.ethers.provider.sendTransaction(signedTx);
   const receipt = await tx.wait();
@@ -39,7 +39,7 @@ task('deployMirrorToken', 'deploy mirror token on axon').addParam('private').add
   const MirrorToken = await hre.ethers.getContractFactory('MirrorToken');
   let unsignedTx = MirrorToken.getDeployTransaction(taskArgs.name, taskArgs.symbol, 18);
   unsignedTx = await signer.populateTransaction(unsignedTx);
-  unsignedTx.nonce = await signer.getTransactionCount() + 1;
+  // unsignedTx.nonce = await signer.getTransactionCount() + 1;
   const signedTx = await signer.signTransaction(unsignedTx);
   const tx = await hre.ethers.provider.sendTransaction(signedTx);
   const receipt = await tx.wait();
@@ -56,7 +56,7 @@ task('crossAt', 'cross at').addParam('to').addParam('private').setAction(async (
     value: hre.ethers.utils.parseEther('0.1'),
   };
   unsignedTx = await signer.populateTransaction(unsignedTx);
-  unsignedTx.nonce = await signer.getTransactionCount() + 1;
+  // unsignedTx.nonce = await signer.getTransactionCount() + 1;
   const signedTx = await signer.signTransaction(unsignedTx);
   const tx = await hre.ethers.provider.sendTransaction(signedTx);
   const receipt = await tx.wait();
@@ -71,7 +71,7 @@ task('crossToken', 'cross token').addParam('to').addParam('token').addParam('amo
     to: hre.ethers.utils.getAddress(crosschain),
   };
   unsignedTx = await signer.populateTransaction(unsignedTx);
-  unsignedTx.nonce = await signer.getTransactionCount() + 1;
+  // unsignedTx.nonce = await signer.getTransactionCount() + 1;
   const signedTx = await signer.signTransaction(unsignedTx);
   const tx = await hre.ethers.provider.sendTransaction(signedTx);
   const receipt = await tx.wait();
@@ -89,7 +89,7 @@ task('crossFromCKB', 'cross from ckb').addParam('to').addParam('token').addParam
     to: hre.ethers.utils.getAddress(crosschain),
   };
   unsignedTx = await signer.populateTransaction(unsignedTx);
-  unsignedTx.nonce = await signer.getTransactionCount() + 1;
+  // unsignedTx.nonce = await signer.getTransactionCount() + 1;
   const signedTx = await signer.signTransaction(unsignedTx);
   const tx = await hre.ethers.provider.sendTransaction(signedTx);
   const receipt = await tx.wait();
