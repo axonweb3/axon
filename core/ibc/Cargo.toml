@@ -9,6 +9,10 @@ ibc = "0.19"
 ibc-proto = "0.20"
 tonic = { version = "0.8", features = ["tls", "tls-roots"] }
 
+[dependencies.core-storage]
+path = "../storage"
+features = ["ibc"]
+
 [dependencies.protocol]
 path = "../../protocol"
 package = "axon-protocol"

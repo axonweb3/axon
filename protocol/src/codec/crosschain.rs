@@ -82,6 +82,99 @@ impl Decodable for HashWithDirection {
     }
 }
 
+#[cfg(feature = "ibc")]
+pub mod ibc {
+    use cosmos_ibc::core::{
+        ics02_client::{
+            client_consensus::AnyConsensusState, client_state::AnyClientState,
+            client_type::ClientType,
+        },
+        ics03_connection::connection::ConnectionEnd,
+        ics04_channel::{
+            channel::ChannelEnd,
+            commitment::{AcknowledgementCommitment, PacketCommitment},
+            packet::Sequence,
+        },
+        ics24_host::{
+            identifier::ConnectionId,
+            path::{
+                AcksPath, ChannelEndsPath, ClientConnectionsPath, ClientConsensusStatePath,
+                ClientStatePath, ClientTypePath, CommitmentsPath, ConnectionsPath, ReceiptsPath,
+                SeqAcksPath, SeqRecvsPath, SeqSendsPath,
+            },
+        },
+    };
+
+    use crate::codec::ProtocolCodec;
+    use crate::{ProtocolError, ProtocolErrorKind, ProtocolResult};
+
+    #[derive(Clone)]
+    pub struct IbcWrapper<T: Clone>(pub T);
+
+    macro_rules! todo_codec {
+        ($name: ty) => {
+            impl ProtocolCodec for IbcWrapper<$name> {
+                fn encode(&self) -> ProtocolResult<bytes::Bytes> {
+                    todo!()
+                }
+
+                fn decode<B: AsRef<[u8]>>(_bytes: B) -> ProtocolResult<Self> {
+                    todo!()
+                }
+            }
+        };
+    }
+
+    macro_rules! json_codec_impl {
+        ($name:ty) => {
+            impl ProtocolCodec for IbcWrapper<$name> {
+                fn encode(&self) -> ProtocolResult<bytes::Bytes> {
+                    match serde_json::to_vec(&self.0) {
+                        Ok(v) => Ok(v.into()),
+                        Err(e) => Err(ProtocolError {
+                            kind:  ProtocolErrorKind::CrossChain,
+                            error: Box::new(e),
+                        }),
+                    }
+                }
+
+                fn decode<B: AsRef<[u8]>>(bytes: B) -> ProtocolResult<Self> {
+                    match serde_json::from_slice(bytes.as_ref()) {
+                        Ok(v) => Ok(IbcWrapper(v)),
+                        Err(e) => Err(ProtocolError {
+                            kind:  ProtocolErrorKind::CrossChain,
+                            error: Box::new(e),
+                        }),
+                    }
+                }
+            }
+        };
+    }
+
+    json_codec_impl!(ClientType);
+    json_codec_impl!(());
+    json_codec_impl!(Sequence);
+    json_codec_impl!(Vec<ConnectionId>);
+    json_codec_impl!(ChannelEnd);
+    json_codec_impl!(ConnectionEnd);
+    json_codec_impl!(PacketCommitment);
+    json_codec_impl!(AcknowledgementCommitment);
+    todo_codec!(AnyClientState);
+    todo_codec!(AnyConsensusState);
+    todo_codec!(ClientTypePath);
+    todo_codec!(ClientStatePath);
+    todo_codec!(ClientConsensusStatePath);
+    todo_codec!(SeqSendsPath);
+    todo_codec!(SeqRecvsPath);
+    todo_codec!(SeqAcksPath);
+    todo_codec!(CommitmentsPath);
+    todo_codec!(AcksPath);
+    todo_codec!(ReceiptsPath);
+    todo_codec!(ChannelEndsPath);
+    todo_codec!(ConnectionsPath);
+    todo_codec!(ClientConnectionsPath);
+}
+
 #[cfg(test)]
 mod tests {
     use crate::types::{Hash, H160};

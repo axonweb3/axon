@@ -31,6 +31,8 @@ use protocol::{
 
 use crate::cache::StorageCache;
 use crate::hash_key::{BlockKey, CommonHashKey, CommonPrefix};
+#[cfg(feature = "ibc")]
+pub use crate::schema::ibc_crosschain_schema;
 use crate::schema::{
     BlockHashNumberSchema, BlockHeaderSchema, BlockSchema, CkbCrossChainSchema,
     EvmCodeAddressSchema, EvmCodeSchema, LatestBlockSchema, LatestProofSchema,
