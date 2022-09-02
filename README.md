@@ -1,27 +1,73 @@
-# Axon
+<p align="center">
+  <a href="https://github.com/axonweb3/axon">
+    <img src="./docs/assets/logo/axon-01.png" width="450">
+  </a>
+  <p align="center">
+	<a href="https://github.com/axonweb3/axon/releases"><img src="https://img.shields.io/github/v/release/axonweb3/axon?sort=semver"></a>
+    <a href="https://github.com/axonweb3/axon/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg"></a>
+    <a href="https://github.com/axonweb3/axon"><img src="https://github.com/axonweb3/axon/actions/workflows/web3_compatible.yml/badge.svg?branch=main"></a>
+    <a href="https://github.com/axonweb3/axon"><img src="https://img.shields.io/github/contributors/axonweb3/axon"></a>
+  </p>
+  <p align="center">
+     Developed by AxonWeb3<br>
+  </p>
+</p>
 
-> Axon is still in active development and a work in progress.
+> Axon is still in active development.
 
-## About Axon
+## What is Axon
 
-Axon is a sidechain framework based on [Muta](https://github.com/nervosnetwork/muta) with UDT token staking on CKB.
-Dapp developers can use Axon toolkit to create and distribute chain-specific UDT on CKB. Chain token holders can stake UDT to become an Axon chain validator or just deposit UDT into Axon chain for use in Dapps.
-Axon will support [interoperability 2.0](https://medium.com/nervosnetwork/blockchain-abstraction-and-interoperability-2-0-eea98d81b7b6) and be 100% Ethereum compatible, like [Godwoken](https://github.com/nervosnetwork/godwoken).
+Axon is a high-performance layer2 framework with native cross-chain function. Built on top of the [Overlord](https://github.com/nervosnetwork/overlord) consensus protocol and the P2P network [Tentacle](https://github.com/nervosnetwork/tentacle)
+, Axon supports hundreds of nodes and achieves thousands of TPS. Axon is also EVM-compatible with well-developed toolchains. Its high interoperability facilitates cross-chain communication among dApps.
 
-As a layer-2 solution on [Nervos](https://www.nervos.org/), Axon can achieve thousands of TPS with the help of [Overlord](https://github.com/nervosnetwork/overlord), a high-performance consensus.
-This offers Nervos DApp developers one more option. Godwoken is perfect for scenarios that involve low throughput and high value, such as DeFi, where security is usually more important than speed.
-When it comes to consumer-facing applications such as decentralized games or social networks, Axon offers the best performance.
 
-## Quick Start
+## Highlights
 
-Clone the source code, compile locally, and run the chain.
-```shell
-$ git clone https://github.com/axonweb3/axon.git
-$ cd axon
-$ cargo run --package axon --bin axon -- --config=./devtools/chain/config.toml --genesis=./devtools/chain/genesis_single_node.json
+### Developer-Friendly Design
+
+Axon is compatible with [Ethereum](https://ethereum.org) so that all of the develop utilities can be used on it directly. And the [Axon CLI](https://github.com/axonweb3/axon-devops/axon-cli) provides an all-in-one client which includes initialization, DevOps, cross-chain request and so on. Seeing is believing, there is a [15 minutes tutorial]() that will lead you to build your own chain and deploy a tiny application.
+
+### Native Cross-chain Communication
+
+Openness and mobility are the foundation of social development, so is blockchain. Cross-chain function enhances liquidity for the web3 ecosystem. Axon develops native cross-chain communication without any bridge. Each the Axon-based chain can speak to [CKB](https://www.nervos.org), other Axon-based chains, and any [IBC](https://ibcprotocol.org) compatible chains. Axon will embed more cross-chain protocols in the future.
+
+## Roadmap
+
+Most of the infrastructure has been done and some substantial features to be developed are as below:
+
+1. Be compatible with [IBC](https://github.com/cosmos/ibc) protocol.
+2. Implement the original homologous cross-chain protocol.
+3. Implement more cross-chain protocol.
+
+## Install
+
+Axon provides the compiled binary on the [release page](`https://github.com/axonweb3/axon/release`), and if you want to build from source code, please make sure that [rust](https://www.rust-lang.org/), [clang](http://clang.org/), [openssl](https://www.openssl.org/), [m4](https://www.gnu.org/software/m4/) have already been installed. Then execute the following command:
+
+```bash
+# Clone from GitHub
+git clone https://github.com/axonweb3/axon.git && cd axon
+# Run release binary
+cargo run --release -- -c devtools/chain/config.toml -g devtools/chain/genesis_single_node.json
 ```
-You can also use [axon-devops](https://github.com/axonweb3/axon-devops) to deploy a multi-node chain.
+
+## Toolchain
+
+Apart from the framework, Axon has toolchains:
+
+- [Axon Faucet](https://github.com/axonweb3/axon-faucet): the faucet for the Axon-based chains.
+- [Axon Explorer](https://github.com/Magickbase/blockscan): a blockchain explorer for the Axon-based chains.
+- [Axon DevOps](https://github.com/axonweb3/axon-devops): includes several utilities, such as monitor, benchmark tool and so on.
+
+All the toolchains above can be dictated by **[Axon CLI](https://github.com/axonweb3/axon-cli), an exquisite and deft command line interface. You can use Axon CLI to do anything related to Axon.
+
+## Contributing
+
+Please read the [CONTRIBUTING.md](./CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests. And the security policy is described in [SECURITY.md](./SECURITY.md).
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE.md](./LICENSE) file for details.
 
 ## Acknowledgment
 
-Axon is based on [Muta](https://github.com/nervosnetwork/muta). Sincerely thanks to everyone who [contributed code to Muta](https://github.com/nervosnetwork/muta/graphs/contributors).
+Axon is based on [Muta](https://github.com/nervosnetwork/muta). Sincerely thanks go to everyone who [contributed code to Muta](https://github.com/nervosnetwork/muta/graphs/contributors).
