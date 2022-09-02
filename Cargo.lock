@@ -1503,8 +1503,10 @@ version = "0.1.0"
 dependencies = [
  "axon-protocol",
  "core-storage",
+ "flex-error",
  "ibc",
  "ibc-proto",
+ "log",
  "tonic",
 ]
 
@@ -1626,6 +1628,7 @@ dependencies = [
  "core-consensus",
  "core-cross-client",
  "core-executor",
+ "core-ibc",
  "core-interoperation",
  "core-mempool",
  "core-metadata",
@@ -2593,6 +2596,7 @@ version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c606d892c9de11507fa0dcffc116434f94e105d0bbdc4e405b61519464c49d7b"
 dependencies = [
+ "anyhow",
  "eyre",
  "paste",
 ]

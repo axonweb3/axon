@@ -13,6 +13,7 @@ use {
     jemallocator::Jemalloc,
 };
 
+use core_ibc::{IbcImpl, IbcRouter, grpc::{GrpcService}};
 use ethers_signers::{coins_bip39::English, MnemonicBuilder, Signer};
 
 use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
@@ -55,7 +56,7 @@ use core_network::{
 use core_rpc_client::RpcClient;
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use core_tx_assembler::{IndexerAdapter, TxAssemblerImpl};
-use protocol::lazy::{CHAIN_ID, CURRENT_STATE_ROOT};
+use protocol::{lazy::{CHAIN_ID, CURRENT_STATE_ROOT}, traits::IbcContext};
 #[cfg(unix)]
 use protocol::tokio::signal::unix as os_impl;
 use protocol::tokio::{runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep};
@@ -220,6 +221,7 @@ impl Axon {
             feature = "jemalloc"
         ))]
         tokio::spawn(common_memory_tracker::track_current_process());
+        Self::run_ibc();
 
         log::info!("node starts");
         observe_listen_port_occupancy(&[self.config.network.listening_address.clone()]).await?;
@@ -680,6 +682,14 @@ impl Axon {
         }
 
         Ok(())
+    }
+
+    fn run_ibc() {
+        log::info!("ibc start");
+        tokio::spawn(async {
+            let grpc_service: GrpcService = core_ibc::grpc::GrpcService::new();
+            grpc_service.run().await;
+        });
     }
 
     fn run_jaeger(config: Config) {

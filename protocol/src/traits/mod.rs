@@ -4,12 +4,12 @@ mod consensus;
 mod crosschain;
 mod executor;
 #[cfg(feature = "ibc")]
-mod ibc;
+pub mod ibc;
 mod interoperation;
 mod mempool;
 mod metadata;
 mod network;
-mod storage;
+pub mod storage;
 mod tx_assembler;
 
 pub use api::APIAdapter;

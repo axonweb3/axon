@@ -1,7 +1,8 @@
 mod adapter;
 mod client;
 mod error;
-mod grpc;
+pub mod grpc;
+mod store;
 mod transfer;
 
 use std::borrow::Borrow;
@@ -562,3 +563,11 @@ impl Router for IbcRouter {
         todo!()
     }
 }
+
+// pub struct Ibc {}
+
+// impl IbcContext for Ibc {
+//     fn get_current_height(&self) -> u64 {
+//         todo!()
+//     }
+// }
