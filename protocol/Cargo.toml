@@ -31,7 +31,7 @@ prost = "0.11"
 rlp = "0.5"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-tokio = { version = "1.20", features = ["full"] }
+tokio = { version = "1.21", features = ["full"] }
 
 [dev-dependencies]
 getrandom = "0.2"
