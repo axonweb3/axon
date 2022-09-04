@@ -1502,6 +1502,7 @@ name = "core-ibc"
 version = "0.1.0"
 dependencies = [
  "axon-protocol",
+ "common-config-parser",
  "core-storage",
  "ibc",
  "ibc-proto",

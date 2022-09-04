@@ -18,8 +18,8 @@ use common_apm::Instant;
 use common_apm_derive::trace_span;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{
-    CkbCrossChainStorage, CommonStorage, Context, Storage, StorageAdapter, StorageBatchModify,
-    StorageCategory, StorageSchema,
+    CkbCrossChainStorage, CommonStorage, Context, IbcCrossChainStorage, Storage, StorageAdapter,
+    StorageBatchModify, StorageCategory, StorageSchema,
 };
 use protocol::types::{
     Block, BlockNumber, Bytes, DBBytes, Direction, Hash, HashWithDirection, Hasher, Header, Proof,
@@ -27,6 +27,19 @@ use protocol::types::{
 };
 use protocol::{
     async_trait, tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
+};
+
+use cosmos_ibc::{
+    core::{
+        ics02_client::client_consensus::AnyConsensusState,
+        ics02_client::{client_state::AnyClientState, client_type::ClientType},
+        ics03_connection::connection::ConnectionEnd,
+        ics04_channel::channel::ChannelEnd,
+        ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment},
+        ics04_channel::packet::{Receipt as IbcReceipt, Sequence},
+        ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+    },
+    Height,
 };
 
 use crate::cache::StorageCache;
@@ -598,6 +611,219 @@ impl<Adapter: StorageAdapter> CkbCrossChainStorage for ImplStorage<Adapter> {
             .get::<MonitorCkbNumberSchema>(*MONITOR_CKB_NUMBER_KEY)?
             .ok_or_else(|| StorageError::GetNone("monitor_ckb_number".to_string()))?;
         Ok(ret)
+    }
+}
+
+impl<Adapter: StorageAdapter> IbcCrossChainStorage for ImplStorage<Adapter> {
+    fn get_current_height(&self, ctx: Context) -> u64 {
+        todo!()
+    }
+
+    fn get_client_type(
+        &self,
+        ctx: Context,
+        client_id: &ClientId,
+    ) -> ProtocolResult<Option<ClientType>> {
+        todo!()
+    }
+
+    fn get_client_state(
+        &self,
+        ctx: Context,
+        client_id: &ClientId,
+    ) -> ProtocolResult<Option<AnyClientState>> {
+        todo!()
+    }
+
+    fn get_consensus_state(
+        &self,
+        ctx: Context,
+        client_id: &ClientId,
+        epoch: u64,
+        height: u64,
+    ) -> ProtocolResult<Option<AnyConsensusState>> {
+        todo!()
+    }
+
+    fn get_next_consensus_state(
+        &self,
+        ctx: Context,
+        client_id: &ClientId,
+        height: Height,
+    ) -> ProtocolResult<Option<AnyConsensusState>> {
+        todo!()
+    }
+
+    fn get_prev_consensus_state(
+        &self,
+        ctx: Context,
+        client_id: &ClientId,
+        height: Height,
+    ) -> ProtocolResult<Option<AnyConsensusState>> {
+        todo!()
+    }
+
+    fn set_client_type(
+        &mut self,
+        ctx: Context,
+        client_id: ClientId,
+        client_type: ClientType,
+    ) -> ProtocolResult<()> {
+        todo!()
+    }
+
+    fn set_client_state(
+        &mut self,
+        ctx: Context,
+        client_id: ClientId,
+        client_state: AnyClientState,
+    ) -> ProtocolResult<()> {
+        todo!()
+    }
+
+    fn set_consensus_state(
+        &mut self,
+        ctx: Context,
+        client_id: ClientId,
+        height: Height,
+        consensus_state: AnyConsensusState,
+    ) -> ProtocolResult<()> {
+        todo!()
+    }
+
+    fn set_connection_end(
+        &mut self,
+        ctx: Context,
+        connection_id: ConnectionId,
+        connection_end: ConnectionEnd,
+    ) -> ProtocolResult<()> {
+        todo!()
+    }
+
+    fn set_connection_to_client(
+        &mut self,
+        ctx: Context,
+        connection_id: ConnectionId,
+        client_id: &ClientId,
+    ) -> ProtocolResult<()> {
+        todo!()
+    }
+
+    fn get_connection_end(
+        &self,
+        ctx: Context,
+        conn_id: &ConnectionId,
+    ) -> ProtocolResult<Option<ConnectionEnd>> {
+        todo!()
+    }
+
+    fn set_packet_commitment(
+        &mut self,
+        ctx: Context,
+        key: (PortId, ChannelId, Sequence),
+        commitment: PacketCommitment,
+    ) -> ProtocolResult<()> {
+        todo!()
+    }
+
+    fn delete_packet_commitment(
+        &mut self,
+        ctx: Context,
+        key: (PortId, ChannelId, Sequence),
+    ) -> ProtocolResult<()> {
+        todo!()
+    }
+
+    fn set_packet_receipt(
+        &mut self,
+        ctx: Context,
+        key: (PortId, ChannelId, Sequence),
+        receipt: IbcReceipt,
+    ) -> ProtocolResult<()> {
+        todo!()
+    }
+
+    fn set_packet_acknowledgement(
+        &mut self,
+        ctx: Context,
+        key: (PortId, ChannelId, Sequence),
+        ack_commitment: AcknowledgementCommitment,
+    ) -> ProtocolResult<()> {
+        todo!()
+    }
+
+    fn delete_packet_acknowledgement(
+        &mut self,
+        ctx: Context,
+        key: (PortId, ChannelId, Sequence),
+    ) -> ProtocolResult<()> {
+        todo!()
+    }
+
+    fn set_connection_channels(
+        // todo
+        &mut self,
+        _ctx: Context,
+        _conn_id: ConnectionId,
+        _port_channel_id: &(PortId, ChannelId),
+    ) -> ProtocolResult<()> {
+        todo!()
+    }
+
+    fn set_channel(
+        &mut self,
+        ctx: Context,
+        port_id: PortId,
+        chan_id: ChannelId,
+        chan_end: ChannelEnd,
+    ) -> ProtocolResult<()> {
+        todo!()
+    }
+
+    fn set_next_sequence_send(
+        &mut self,
+        ctx: Context,
+        port_id: PortId,
+        chan_id: ChannelId,
+        seq: Sequence,
+    ) -> ProtocolResult<()> {
+        todo!()
+    }
+
+    fn set_next_sequence_recv(
+        &mut self,
+        ctx: Context,
+        port_id: PortId,
+        chan_id: ChannelId,
+        seq: Sequence,
+    ) -> ProtocolResult<()> {
+        todo!()
+    }
+
+    fn set_next_sequence_ack(
+        &mut self,
+        ctx: Context,
+        port_id: PortId,
+        chan_id: ChannelId,
+        seq: Sequence,
+    ) -> ProtocolResult<()> {
+        todo!()
+    }
+
+    fn get_channel_end(
+        &self,
+        ctx: Context,
+        port_channel_id: &(PortId, ChannelId),
+    ) -> ProtocolResult<Option<ChannelEnd>> {
+        todo!()
+    }
+
+    fn get_next_sequence_send(
+        &self,
+        ctx: Context,
+        port_channel_id: &(PortId, ChannelId),
+    ) -> ProtocolResult<Option<Sequence>> {
+        todo!()
     }
 }
 

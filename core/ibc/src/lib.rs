@@ -37,9 +37,9 @@ use ibc::{
 
 use protocol::types::Hasher;
 
-use protocol::traits::IbcContext;
+use protocol::traits::IbcCrossChainStorage;
 
-pub struct IbcImpl<Adapter: IbcContext, Router> {
+pub struct IbcImpl<Adapter: IbcCrossChainStorage, Router> {
     adapter:                  Arc<RwLock<Adapter>>,
     router:                   Router,
     client_counter:           u64,
@@ -51,21 +51,23 @@ pub struct IbcImpl<Adapter: IbcContext, Router> {
     consensus_states:         HashMap<u64, ConsensusState>,
 }
 
-impl<Adapter: IbcContext, Router> ClientReader for IbcImpl<Adapter, Router> {
+impl<Adapter: IbcCrossChainStorage, Router> ClientReader for IbcImpl<Adapter, Router> {
     fn client_type(&self, client_id: &ClientId) -> Result<ClientType, ClientError> {
-        let adapter = self.adapter.read().unwrap();
-        match adapter.get_client_type(client_id) {
-            Ok(Some(v)) => Ok(v),
-            _ => Err(ClientError::implementation_specific()),
-        }
+        // let adapter = self.adapter.read().unwrap();
+        // match adapter.get_client_type(client_id) {
+        //     Ok(Some(v)) => Ok(v),
+        //     _ => Err(ClientError::implementation_specific()),
+        // }
+        todo!()
     }
 
     fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, ClientError> {
-        let adapter = self.adapter.read().unwrap();
-        match adapter.get_client_state(client_id) {
-            Ok(Some(v)) => Ok(v),
-            _ => Err(ClientError::implementation_specific()),
-        }
+        // let adapter = self.adapter.read().unwrap();
+        // match adapter.get_client_state(client_id) {
+        //     Ok(Some(v)) => Ok(v),
+        //     _ => Err(ClientError::implementation_specific()),
+        // }
+        todo!()
     }
 
     fn consensus_state(
@@ -76,10 +78,11 @@ impl<Adapter: IbcContext, Router> ClientReader for IbcImpl<Adapter, Router> {
         let epoch = height.revision_number();
         let height = height.revision_height();
         let adapter = self.adapter.read().unwrap();
-        match adapter.get_consensus_state(client_id, epoch, height) {
-            Ok(Some(v)) => Ok(v),
-            _ => Err(ClientError::implementation_specific()),
-        }
+        // match adapter.get_consensus_state(client_id, epoch, height) {
+        //     Ok(Some(v)) => Ok(v),
+        //     _ => Err(ClientError::implementation_specific()),
+        // }
+        todo!()
     }
 
     fn next_consensus_state(
@@ -88,11 +91,12 @@ impl<Adapter: IbcContext, Router> ClientReader for IbcImpl<Adapter, Router> {
         height: ibc::Height,
     ) -> Result<Option<AnyConsensusState>, ClientError> {
         let adapter = self.adapter.read().unwrap();
-        match adapter.get_next_consensus_state(client_id, height) {
-            Ok(Some(v)) => Ok(Some(v)),
-            Ok(None) => Ok(None),
-            Err(_) => Err(ClientError::implementation_specific()),
-        }
+        // match adapter.get_next_consensus_state(client_id, height) {
+        //     Ok(Some(v)) => Ok(Some(v)),
+        //     Ok(None) => Ok(None),
+        //     Err(_) => Err(ClientError::implementation_specific()),
+        // }
+        todo!()
     }
 
     fn prev_consensus_state(
@@ -100,17 +104,19 @@ impl<Adapter: IbcContext, Router> ClientReader for IbcImpl<Adapter, Router> {
         client_id: &ClientId,
         height: ibc::Height,
     ) -> Result<Option<AnyConsensusState>, ClientError> {
-        let adapter = self.adapter.read().unwrap();
-        match adapter.get_prev_consensus_state(client_id, height) {
-            Ok(Some(v)) => Ok(Some(v)),
-            Ok(None) => Ok(None),
-            Err(_) => Err(ClientError::implementation_specific()),
-        }
+        // let adapter = self.adapter.read().unwrap();
+        // match adapter.get_prev_consensus_state(client_id, height) {
+        //     Ok(Some(v)) => Ok(Some(v)),
+        //     Ok(None) => Ok(None),
+        //     Err(_) => Err(ClientError::implementation_specific()),
+        // }
+        todo!()
     }
 
     fn host_height(&self) -> ibc::Height {
         let adapter = self.adapter.read().unwrap();
-        Height::new(0, adapter.get_current_height()).unwrap()
+        // Height::new(0, adapter.get_current_height()).unwrap()
+        todo!()
     }
 
     fn host_consensus_state(&self, height: ibc::Height) -> Result<AnyConsensusState, ClientError> {
@@ -131,17 +137,18 @@ impl<Adapter: IbcContext, Router> ClientReader for IbcImpl<Adapter, Router> {
     }
 }
 
-impl<Adapter: IbcContext, Router> ClientKeeper for IbcImpl<Adapter, Router> {
+impl<Adapter: IbcCrossChainStorage, Router> ClientKeeper for IbcImpl<Adapter, Router> {
     fn store_client_type(
         &mut self,
         client_id: ClientId,
         client_type: ClientType,
     ) -> Result<(), ClientError> {
         let mut adapter = self.adapter.write().unwrap();
-        match adapter.set_client_type(client_id, client_type) {
-            Ok(_) => Ok(()),
-            Err(_) => Err(ClientError::implementation_specific()),
-        }
+        // match adapter.set_client_type(client_id, client_type) {
+        //     Ok(_) => Ok(()),
+        //     Err(_) => Err(ClientError::implementation_specific()),
+        // }
+        todo!()
     }
 
     fn store_client_state(
@@ -150,10 +157,11 @@ impl<Adapter: IbcContext, Router> ClientKeeper for IbcImpl<Adapter, Router> {
         client_state: AnyClientState,
     ) -> Result<(), ClientError> {
         let mut adapter = self.adapter.write().unwrap();
-        match adapter.set_client_state(client_id, client_state) {
-            Ok(_) => Ok(()),
-            Err(_) => Err(ClientError::implementation_specific()),
-        }
+        // match adapter.set_client_state(client_id, client_state) {
+        //     Ok(_) => Ok(()),
+        //     Err(_) => Err(ClientError::implementation_specific()),
+        // }
+        todo!()
     }
 
     fn store_consensus_state(
@@ -163,10 +171,11 @@ impl<Adapter: IbcContext, Router> ClientKeeper for IbcImpl<Adapter, Router> {
         consensus_state: AnyConsensusState,
     ) -> Result<(), ClientError> {
         let mut adapter = self.adapter.write().unwrap();
-        match adapter.set_consensus_state(client_id, height, consensus_state) {
-            Ok(_) => Ok(()),
-            Err(_) => Err(ClientError::implementation_specific()),
-        }
+        // match adapter.set_consensus_state(client_id, height, consensus_state) {
+        //     Ok(_) => Ok(()),
+        //     Err(_) => Err(ClientError::implementation_specific()),
+        // }
+        todo!()
     }
 
     fn increase_client_counter(&mut self) {
@@ -198,17 +207,18 @@ impl<Adapter: IbcContext, Router> ClientKeeper for IbcImpl<Adapter, Router> {
     }
 }
 
-impl<Adapter: IbcContext, Router> ConnectionKeeper for IbcImpl<Adapter, Router> {
+impl<Adapter: IbcCrossChainStorage, Router> ConnectionKeeper for IbcImpl<Adapter, Router> {
     fn store_connection(
         &mut self,
         connection_id: ConnectionId,
         connection_end: &ConnectionEnd,
     ) -> Result<(), ConnectionError> {
         let mut adapter = self.adapter.write().unwrap();
-        match adapter.set_connection_end(connection_id, connection_end.clone()) {
-            Ok(_) => Ok(()),
-            Err(_) => Err(ConnectionError::implementation_specific()),
-        }
+        // match adapter.set_connection_end(connection_id, connection_end.clone()) {
+        //     Ok(_) => Ok(()),
+        //     Err(_) => Err(ConnectionError::implementation_specific()),
+        // }
+        todo!()
     }
 
     fn store_connection_to_client(
@@ -217,10 +227,11 @@ impl<Adapter: IbcContext, Router> ConnectionKeeper for IbcImpl<Adapter, Router> 
         client_id: &ClientId,
     ) -> Result<(), ConnectionError> {
         let mut adapter = self.adapter.write().unwrap();
-        match adapter.set_connection_to_client(connection_id, client_id) {
-            Ok(_) => Ok(()),
-            Err(_) => Err(ConnectionError::implementation_specific()),
-        }
+        // match adapter.set_connection_to_client(connection_id, client_id) {
+        //     Ok(_) => Ok(()),
+        //     Err(_) => Err(ConnectionError::implementation_specific()),
+        // }
+        todo!()
     }
 
     fn increase_connection_counter(&mut self) {
@@ -228,13 +239,14 @@ impl<Adapter: IbcContext, Router> ConnectionKeeper for IbcImpl<Adapter, Router> 
     }
 }
 
-impl<Adapter: IbcContext, Router> ConnectionReader for IbcImpl<Adapter, Router> {
+impl<Adapter: IbcCrossChainStorage, Router> ConnectionReader for IbcImpl<Adapter, Router> {
     fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, ConnectionError> {
         let adapter = self.adapter.read().unwrap();
-        match adapter.get_connection_end(conn_id) {
-            Ok(Some(v)) => Ok(v),
-            _ => Err(ConnectionError::implementation_specific()),
-        }
+        // match adapter.get_connection_end(conn_id) {
+        //     Ok(Some(v)) => Ok(v),
+        //     _ => Err(ConnectionError::implementation_specific()),
+        // }
+        todo!()
     }
 
     fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, ConnectionError> {
@@ -274,7 +286,7 @@ impl<Adapter: IbcContext, Router> ConnectionReader for IbcImpl<Adapter, Router> 
     }
 }
 
-impl<Adapter: IbcContext, Router> PortReader for IbcImpl<Adapter, Router> {
+impl<Adapter: IbcCrossChainStorage, Router> PortReader for IbcImpl<Adapter, Router> {
     fn lookup_module_by_port(&self, port_id: &PortId) -> Result<ModuleId, PortError> {
         self.port_to_module_map
             .get(port_id)
@@ -283,17 +295,18 @@ impl<Adapter: IbcContext, Router> PortReader for IbcImpl<Adapter, Router> {
     }
 }
 
-impl<Adapter: IbcContext, Router> ChannelKeeper for IbcImpl<Adapter, Router> {
+impl<Adapter: IbcCrossChainStorage, Router> ChannelKeeper for IbcImpl<Adapter, Router> {
     fn store_packet_commitment(
         &mut self,
         key: (PortId, ChannelId, Sequence),
         commitment: PacketCommitment,
     ) -> Result<(), ChannelError> {
         let mut adapter = self.adapter.write().unwrap();
-        match adapter.set_packet_commitment(key, commitment) {
-            Ok(_) => Ok(()),
-            Err(_) => Err(ChannelError::implementation_specific()),
-        }
+        // match adapter.set_packet_commitment(key, commitment) {
+        //     Ok(_) => Ok(()),
+        //     Err(_) => Err(ChannelError::implementation_specific()),
+        // }
+        todo!()
     }
 
     fn delete_packet_commitment(
@@ -301,10 +314,11 @@ impl<Adapter: IbcContext, Router> ChannelKeeper for IbcImpl<Adapter, Router> {
         key: (PortId, ChannelId, Sequence),
     ) -> Result<(), ChannelError> {
         let mut adapter = self.adapter.write().unwrap();
-        match adapter.delete_packet_commitment(key) {
-            Ok(_) => Ok(()),
-            Err(_) => Err(ChannelError::implementation_specific()),
-        }
+        // match adapter.delete_packet_commitment(key) {
+        //     Ok(_) => Ok(()),
+        //     Err(_) => Err(ChannelError::implementation_specific()),
+        // }
+        todo!()
     }
 
     fn store_packet_receipt(
@@ -313,10 +327,11 @@ impl<Adapter: IbcContext, Router> ChannelKeeper for IbcImpl<Adapter, Router> {
         receipt: Receipt,
     ) -> Result<(), ChannelError> {
         let mut adapter = self.adapter.write().unwrap();
-        match adapter.set_packet_receipt(key, receipt) {
-            Ok(_) => Ok(()),
-            Err(_) => Err(ChannelError::implementation_specific()),
-        }
+        // match adapter.set_packet_receipt(key, receipt) {
+        //     Ok(_) => Ok(()),
+        //     Err(_) => Err(ChannelError::implementation_specific()),
+        // }
+        todo!()
     }
 
     fn store_packet_acknowledgement(
@@ -324,11 +339,8 @@ impl<Adapter: IbcContext, Router> ChannelKeeper for IbcImpl<Adapter, Router> {
         key: (PortId, ChannelId, Sequence),
         ack_commitment: AcknowledgementCommitment,
     ) -> Result<(), ChannelError> {
-        let mut adapter = self.adapter.write().unwrap();
-        match adapter.set_packet_acknowledgement(key, ack_commitment) {
-            Ok(_) => Ok(()),
-            Err(_) => Err(ChannelError::implementation_specific()),
-        }
+        //
+        todo!()
     }
 
     fn delete_packet_acknowledgement(
@@ -352,10 +364,11 @@ impl<Adapter: IbcContext, Router> ChannelKeeper for IbcImpl<Adapter, Router> {
         channel_end: &ibc::core::ics04_channel::channel::ChannelEnd,
     ) -> Result<(), ChannelError> {
         let mut adapter = self.adapter.write().unwrap();
-        match adapter.set_channel(port_id, chan_id, channel_end.clone()) {
-            Ok(_) => Ok(()),
-            Err(_) => Err(ChannelError::implementation_specific()),
-        }
+        // match adapter.set_channel(port_id, chan_id, channel_end.clone()) {
+        //     Ok(_) => Ok(()),
+        //     Err(_) => Err(ChannelError::implementation_specific()),
+        // }
+        todo!()
     }
 
     fn store_next_sequence_send(
@@ -364,10 +377,11 @@ impl<Adapter: IbcContext, Router> ChannelKeeper for IbcImpl<Adapter, Router> {
         seq: Sequence,
     ) -> Result<(), ChannelError> {
         let mut adapter = self.adapter.write().unwrap();
-        match adapter.set_next_sequence_send(port_id, chan_id, seq) {
-            Ok(_) => Ok(()),
-            Err(_) => Err(ChannelError::implementation_specific()),
-        }
+        // match adapter.set_next_sequence_send(port_id, chan_id, seq) {
+        //     Ok(_) => Ok(()),
+        //     Err(_) => Err(ChannelError::implementation_specific()),
+        // }
+        todo!()
     }
 
     fn store_next_sequence_recv(
@@ -376,10 +390,11 @@ impl<Adapter: IbcContext, Router> ChannelKeeper for IbcImpl<Adapter, Router> {
         seq: Sequence,
     ) -> Result<(), ChannelError> {
         let mut adapter = self.adapter.write().unwrap();
-        match adapter.set_next_sequence_recv(port_id, chan_id, seq) {
-            Ok(_) => Ok(()),
-            Err(_) => Err(ChannelError::implementation_specific()),
-        }
+        // match adapter.set_next_sequence_recv(port_id, chan_id, seq) {
+        //     Ok(_) => Ok(()),
+        //     Err(_) => Err(ChannelError::implementation_specific()),
+        // }
+        todo!()
     }
 
     fn store_next_sequence_ack(
@@ -388,10 +403,11 @@ impl<Adapter: IbcContext, Router> ChannelKeeper for IbcImpl<Adapter, Router> {
         seq: Sequence,
     ) -> Result<(), ChannelError> {
         let mut adapter = self.adapter.write().unwrap();
-        match adapter.set_next_sequence_ack(port_id, chan_id, seq) {
-            Ok(_) => Ok(()),
-            Err(_) => Err(ChannelError::implementation_specific()),
-        }
+        // match adapter.set_next_sequence_ack(port_id, chan_id, seq) {
+        //     Ok(_) => Ok(()),
+        //     Err(_) => Err(ChannelError::implementation_specific()),
+        // }
+        todo!()
     }
 
     fn increase_channel_counter(&mut self) {
@@ -399,24 +415,26 @@ impl<Adapter: IbcContext, Router> ChannelKeeper for IbcImpl<Adapter, Router> {
     }
 }
 
-impl<Adapter: IbcContext, Router> ChannelReader for IbcImpl<Adapter, Router> {
+impl<Adapter: IbcCrossChainStorage, Router> ChannelReader for IbcImpl<Adapter, Router> {
     fn channel_end(
         &self,
         port_channel_id: &(PortId, ChannelId),
     ) -> Result<ChannelEnd, ChannelError> {
         let adapter = self.adapter.read().unwrap();
-        match adapter.get_channel_end(port_channel_id) {
-            Ok(Some(v)) => Ok(v),
-            _ => Err(ChannelError::implementation_specific()),
-        }
+        // match adapter.get_channel_end(port_channel_id) {
+        //     Ok(Some(v)) => Ok(v),
+        //     _ => Err(ChannelError::implementation_specific()),
+        // }
+        todo!()
     }
 
     fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, ChannelError> {
         let adapter = self.adapter.read().unwrap();
-        match adapter.get_connection_end(conn_id) {
-            Ok(Some(v)) => Ok(v),
-            _ => Err(ChannelError::implementation_specific()),
-        }
+        // match adapter.get_connection_end(conn_id) {
+        //     Ok(Some(v)) => Ok(v),
+        //     _ => Err(ChannelError::implementation_specific()),
+        // }
+        todo!()
     }
 
     fn connection_channels(
@@ -428,10 +446,11 @@ impl<Adapter: IbcContext, Router> ChannelReader for IbcImpl<Adapter, Router> {
 
     fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, ChannelError> {
         let adapter = self.adapter.read().unwrap();
-        match adapter.get_client_state(client_id) {
-            Ok(Some(v)) => Ok(v),
-            _ => Err(ChannelError::implementation_specific()),
-        }
+        // match adapter.get_client_state(client_id) {
+        //     Ok(Some(v)) => Ok(v),
+        //     _ => Err(ChannelError::implementation_specific()),
+        // }
+        todo!()
     }
 
     fn client_consensus_state(
@@ -442,10 +461,11 @@ impl<Adapter: IbcContext, Router> ChannelReader for IbcImpl<Adapter, Router> {
         let epoch = height.revision_number();
         let h = height.revision_height();
         let adapter = self.adapter.read().unwrap();
-        match adapter.get_consensus_state(client_id, epoch, h) {
-            Ok(Some(v)) => Ok(v),
-            _ => Err(ChannelError::implementation_specific()),
-        }
+        // match adapter.get_consensus_state(client_id, epoch, h) {
+        //     Ok(Some(v)) => Ok(v),
+        //     _ => Err(ChannelError::implementation_specific()),
+        // }
+        todo!()
     }
 
     fn get_next_sequence_send(
@@ -453,10 +473,11 @@ impl<Adapter: IbcContext, Router> ChannelReader for IbcImpl<Adapter, Router> {
         port_channel_id: &(PortId, ChannelId),
     ) -> Result<Sequence, ChannelError> {
         let adapter = self.adapter.read().unwrap();
-        match adapter.get_next_sequence_send(port_channel_id) {
-            Ok(Some(v)) => Ok(v),
-            _ => Err(ChannelError::implementation_specific()),
-        }
+        // match adapter.get_next_sequence_send(port_channel_id) {
+        //     Ok(Some(v)) => Ok(v),
+        //     _ => Err(ChannelError::implementation_specific()),
+        // }
+        todo!()
     }
 
     fn get_next_sequence_recv(
@@ -500,7 +521,8 @@ impl<Adapter: IbcContext, Router> ChannelReader for IbcImpl<Adapter, Router> {
 
     fn host_height(&self) -> ibc::Height {
         let adapter = self.adapter.read().unwrap();
-        Height::new(0, adapter.get_current_height()).unwrap()
+        // Height::new(0, adapter.get_current_height()).unwrap()
+        todo!()
     }
 
     fn host_consensus_state(
@@ -539,7 +561,7 @@ impl<Adapter: IbcContext, Router> ChannelReader for IbcImpl<Adapter, Router> {
     }
 }
 
-impl<Adapter: IbcContext> Ics26Context for IbcImpl<Adapter, IbcRouter> {
+impl<Adapter: IbcCrossChainStorage> Ics26Context for IbcImpl<Adapter, IbcRouter> {
     type Router = IbcRouter;
 
     fn router(&self) -> &Self::Router {

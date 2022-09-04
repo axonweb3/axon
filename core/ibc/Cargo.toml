@@ -7,6 +7,7 @@ edition = "2021"
 [dependencies]
 ibc = "0.19"
 ibc-proto = "0.20"
+common-config-parser = { path = "../../common/config-parser" }
 tonic = { version = "0.8", features = ["tls", "tls-roots"] }
 
 [dependencies.core-storage]
