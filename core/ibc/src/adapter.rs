@@ -38,6 +38,10 @@ mod tests {
         //     // adapter: Arc<RwLock<GrpcAdapter>>,
         //     store: Arc<S>,
         // }
+        // GrpcAdapter
+        // pub struct GrpcStorage {
+
+        // }
 
         // impl<S> GrpcService<S>
         // where
