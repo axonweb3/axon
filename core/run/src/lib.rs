@@ -13,7 +13,7 @@ use {
     jemallocator::Jemalloc,
 };
 
-use core_ibc::{IbcImpl, IbcRouter, grpc::{GrpcService}};
+use core_ibc::grpc::GrpcService;
 use ethers_signers::{coins_bip39::English, MnemonicBuilder, Signer};
 
 use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
@@ -56,7 +56,7 @@ use core_network::{
 use core_rpc_client::RpcClient;
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use core_tx_assembler::{IndexerAdapter, TxAssemblerImpl};
-use protocol::{lazy::{CHAIN_ID, CURRENT_STATE_ROOT}, traits::IbcContext};
+use protocol::lazy::{CHAIN_ID, CURRENT_STATE_ROOT};
 #[cfg(unix)]
 use protocol::tokio::signal::unix as os_impl;
 use protocol::tokio::{runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep};

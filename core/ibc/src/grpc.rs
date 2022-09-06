@@ -1,16 +1,16 @@
+use ibc::core::ics02_client::client_consensus::AnyConsensusState;
+use ibc::core::ics02_client::client_state::AnyClientState;
+use ibc::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
-use core_storage::ibc_crosschain_schema::ClientStateSchema;
-use protocol::codec::crosschain::ibc::IbcWrapper;
-use protocol::traits::{IbcContext, IbcCrossChainStorage, Storage};
-use protocol::traits::storage::{IbcCrossChainStorage as GrpcCrossChainStorage};
-use protocol::traits::ibc::IbcAdapter;
 
-use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
-use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
+use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
+use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-use ibc::core::ics24_host::path::ClientConnectionsPath;
+use ibc::core::ics24_host::path::{
+    ClientConnectionsPath, ClientConsensusStatePath, ClientStatePath,
+};
 use ibc::core::ics24_host::{path, Path as IbcPath};
 use ibc_proto::ibc::core::client::v1::{
     ConsensusStateWithHeight, QueryConsensusStateHeightsRequest, QueryConsensusStateHeightsResponse,
@@ -75,11 +75,8 @@ use ibc_proto::ibc::core::{
 use tonic::transport::Server;
 use tonic::{Request, Response, Status};
 
-use crate::{IbcImpl, IbcRouter};
+use crate::store::Path;
 use crate::store::{Height, CHAIN_REVISION_NUMBER};
-use crate::{
-    store::Path,
-};
 
 impl TryFrom<Path> for IbcPath {
     type Error = path::PathError;
@@ -121,293 +118,92 @@ impl_into_path_for!(
     path::AcksPath
 );
 
-/* 
-pub struct GrpcAdapter {
-}
+pub struct GrpcIbcAdapter {}
 
-impl IbcContext for GrpcAdapter {
-    fn get_current_height(&self) -> u64 {
-        todo!()
-    }
-}
+impl GrpcIbcAdapter {
+    // pub(crate) fn get_client_state(
+    //     &self,
+    //     height: Height,
+    //     path: &ClientStatePath,
+    // ) -> Option<AnyClientState> {
+    //     todo!()
+    // }
 
-impl IbcCrossChainStorage for GrpcAdapter {
-    fn get_client_type(&self, client_id: &ibc::core::ics24_host::identifier::ClientId) -> protocol::ProtocolResult<Option<ibc::core::ics02_client::client_type::ClientType>> {
-        todo!()
-    }
-
-    fn get_client_state(&self, client_id: &ibc::core::ics24_host::identifier::ClientId) -> protocol::ProtocolResult<Option<ibc::core::ics02_client::client_state::AnyClientState>> {
+    #[inline]
+    pub(crate) fn get<K, V>(&self, height: Height, path: &K) -> Option<V> {
         todo!()
     }
 
-    fn get_consensus_state(
-            &self,
-            client_id: &ibc::core::ics24_host::identifier::ClientId,
-            epoch: u64,
-            height: u64,
-        ) -> protocol::ProtocolResult<Option<ibc::core::ics02_client::client_consensus::AnyConsensusState>> {
+    #[inline]
+    pub(crate) fn get_keys(&self, key_prefix: &Path) -> Vec<Path> {
         todo!()
     }
 
-    fn get_next_consensus_state(
-            &self,
-            client_id: &ibc::core::ics24_host::identifier::ClientId,
-            height: ibc::Height,
-        ) -> protocol::ProtocolResult<Option<ibc::core::ics02_client::client_consensus::AnyConsensusState>> {
-        todo!()
-    }
-
-    fn get_prev_consensus_state(
-            &self,
-            client_id: &ibc::core::ics24_host::identifier::ClientId,
-            height: ibc::Height,
-        ) -> protocol::ProtocolResult<Option<ibc::core::ics02_client::client_consensus::AnyConsensusState>> {
-        todo!()
-    }
-
-    fn set_client_type(
-            &mut self,
-            client_id: ibc::core::ics24_host::identifier::ClientId,
-            client_type: ibc::core::ics02_client::client_type::ClientType,
-        ) -> protocol::ProtocolResult<()> {
-        todo!()
-    }
-
-    fn set_client_state(
-            &mut self,
-            client_id: ibc::core::ics24_host::identifier::ClientId,
-            client_state: ibc::core::ics02_client::client_state::AnyClientState,
-        ) -> protocol::ProtocolResult<()> {
-        todo!()
-    }
-
-    fn set_consensus_state(
-            &mut self,
-            client_id: ibc::core::ics24_host::identifier::ClientId,
-            height: ibc::Height,
-            consensus_state: ibc::core::ics02_client::client_consensus::AnyConsensusState,
-        ) -> protocol::ProtocolResult<()> {
-        todo!()
-    }
-
-    fn set_connection_end(
-            &mut self,
-            connection_id: ConnectionId,
-            connection_end: ibc::core::ics03_connection::connection::ConnectionEnd,
-        ) -> protocol::ProtocolResult<()> {
-        todo!()
-    }
-
-    fn set_connection_to_client(
-            &mut self,
-            connection_id: ConnectionId,
-            client_id: &ibc::core::ics24_host::identifier::ClientId,
-        ) -> protocol::ProtocolResult<()> {
-        todo!()
-    }
-
-    fn get_connection_end(
-            &self,
-            conn_id: &ConnectionId,
-        ) -> protocol::ProtocolResult<Option<ibc::core::ics03_connection::connection::ConnectionEnd>> {
-        todo!()
-    }
-
-    fn set_packet_commitment(
-            &mut self,
-            key: (PortId, ChannelId, Sequence),
-            commitment: ibc::core::ics04_channel::commitment::PacketCommitment,
-        ) -> protocol::ProtocolResult<()> {
-        todo!()
-    }
-
-    fn delete_packet_commitment(
-            &mut self,
-            key: (PortId, ChannelId, Sequence),
-        ) -> protocol::ProtocolResult<()> {
-        todo!()
-    }
-
-    fn set_packet_receipt(
-            &mut self,
-            key: (PortId, ChannelId, Sequence),
-            receipt: ibc::core::ics04_channel::packet::Receipt,
-        ) -> protocol::ProtocolResult<()> {
-        todo!()
-    }
-
-    fn set_packet_acknowledgement(
-            &mut self,
-            key: (PortId, ChannelId, Sequence),
-            ack_commitment: ibc::core::ics04_channel::commitment::AcknowledgementCommitment,
-        ) -> protocol::ProtocolResult<()> {
-        todo!()
-    }
-
-    fn delete_packet_acknowledgement(
-            &mut self,
-            key: (PortId, ChannelId, Sequence),
-        ) -> protocol::ProtocolResult<()> {
-        todo!()
-    }
-
-    fn set_channel(
-            &mut self,
-            port_id: PortId,
-            chan_id: ChannelId,
-            chan_end: ibc::core::ics04_channel::channel::ChannelEnd,
-        ) -> protocol::ProtocolResult<()> {
-        todo!()
-    }
-
-    fn set_next_sequence_send(
-            &mut self,
-            port_id: PortId,
-            chan_id: ChannelId,
-            seq: Sequence,
-        ) -> protocol::ProtocolResult<()> {
-        todo!()
-    }
-
-    fn set_next_sequence_recv(
-            &mut self,
-            port_id: PortId,
-            chan_id: ChannelId,
-            seq: Sequence,
-        ) -> protocol::ProtocolResult<()> {
-        todo!()
-    }
-
-    fn set_next_sequence_ack(
-            &mut self,
-            port_id: PortId,
-            chan_id: ChannelId,
-            seq: Sequence,
-        ) -> protocol::ProtocolResult<()> {
-        todo!()
-    }
-
-    fn get_channel_end(
-            &self,
-            port_channel_id: &(PortId, ChannelId),
-        ) -> protocol::ProtocolResult<Option<ibc::core::ics04_channel::channel::ChannelEnd>> {
-        todo!()
-    }
-
-    fn get_next_sequence_send(
-            &self,
-            port_channel_id: &(PortId, ChannelId),
-        ) -> protocol::ProtocolResult<Option<Sequence>> {
-        todo!()
-    }
-}
-*/
-
-pub struct GrpcStorage {
-
-}
-
-impl GrpcCrossChainStorage for GrpcStorage {
-    fn get<S: protocol::traits::StorageSchema>(
-        &self,
-        key: <S as protocol::traits::StorageSchema>::Key,
-    ) -> protocol::ProtocolResult<Option<<S as protocol::traits::StorageSchema>::Value>> {
-        todo!()
-    }
-
-    fn insert<S: protocol::traits::StorageSchema>(
-        &self,
-        key: <S as protocol::traits::StorageSchema>::Key,
-        val: <S as protocol::traits::StorageSchema>::Value,
-    ) -> protocol::ProtocolResult<()> {
-        todo!()
-    }
-
-    fn get_all_keys<S: protocol::traits::StorageSchema>(&self) -> protocol::ProtocolResult<Vec<<S as protocol::traits::StorageSchema>::Key>> {
+    // pub(crate) type RawHeight = u64; name conflict
+    #[inline]
+    pub(crate) fn current_height(&self) -> u64 {
         todo!()
     }
 }
 
 pub struct GrpcService {
-    // ibc: IbcImpl<GrpcAdapter, IbcRouter>,
-    // adapter: Arc<RwLock<GrpcAdapter>>,
-    store: Arc<GrpcStorage>,
+    store: Arc<GrpcIbcAdapter>,
 }
 
 impl GrpcService {
     pub fn new() -> Self {
         GrpcService {
-            // adapter: Arc::new(RwLock::new(GrpcAdapter{}))
-            // ibc: IbcImpl::new(),
-            store: Arc::new(GrpcStorage{}),
+            store: Arc::new(GrpcIbcAdapter {}),
         }
     }
 
     pub async fn run(&self) {
         log::info!("ibc run");
-
         // [::1] ipv6, equal to 127.0.0.1
         let addr = "[::1]:50051".parse().unwrap();
 
         let ibc_client_service = self.client_service();
+        let ibc_conn_service = self.connection_service();
+        let ibc_channel_service = self.channel_service();
         // let ibc_client_msg_service = client_msg_service();
         let _grpc = Server::builder()
-                    .add_service(ibc_client_service)
-                    // .add_service(ibc_client_msg_service)
-                    // .add_service(ibc_conn_service)
-                    // .add_service(ibc_channel_service)
-                    .serve(addr).await.unwrap();
+            .add_service(ibc_client_service)
+            .add_service(ibc_conn_service)
+            .add_service(ibc_channel_service)
+            .serve(addr)
+            .await
+            .unwrap();
     }
 
-    // pub fn client_service(&self) -> ClientQueryServer<IbcClientService<GrpcAdapter>> {
-    //     ClientQueryServer::new(IbcClientService::new(self.ibc.adapter.clone(), self.store.clone()))
-    // }
     pub fn client_service(&self) -> ClientQueryServer<IbcClientService> {
         ClientQueryServer::new(IbcClientService::new(self.store.clone()))
     }
 
-    // pub fn connection_service(&self) -> ConnectionQueryServer<IbcConnectionService<Adapter>> {
-    //     ConnectionQueryServer::new(IbcConnectionService::new(self.adapter.clone()))
-    // }
+    pub fn connection_service(&self) -> ConnectionQueryServer<IbcConnectionService> {
+        ConnectionQueryServer::new(IbcConnectionService::new(self.store.clone()))
+    }
 
-    // pub fn channel_service(&self) -> ChannelQueryServer<IbcChannelService<Adapter>> {
-    //     ChannelQueryServer::new(IbcChannelService::new(self.adapter.clone()))
-    // }    
+    pub fn channel_service(&self) -> ChannelQueryServer<IbcChannelService> {
+        ChannelQueryServer::new(IbcChannelService::new(self.store.clone()))
+    }
 }
 
-// pub struct IbcClientService<Adapter> {
-    pub struct IbcClientService {
-        //     client_state_store: ProtobufStore<SharedStore<S>, path::ClientStatePath, AnyClientState,
-    // Any>, consensus_state_store:
-    //     ProtobufStore<SharedStore<S>, path::ClientConsensusStatePath, AnyConsensusState, Any>,
-    // adapter: Arc<RwLock<Adapter>>,
-    store: Arc<GrpcStorage>,
+pub struct IbcClientService {
+    adapter: Arc<GrpcIbcAdapter>,
 }
 
-// impl<S: Store> IbcClientService<S> {
-//     pub fn new(store: SharedStore<S>) -> Self {
-// impl<Adapter: IbcContext> IbcClientService<Adapter> {
-//     pub fn new(adapter: Arc<RwLock<Adapter>>, store: Arc<GrpcStorage>) -> Self {
-        impl IbcClientService {
-            pub fn new(store: Arc<GrpcStorage>) -> Self {
-                Self {
-            // adapter: adapter,
-            store: store,
-            // client_state_store: TypedStore::new(store.clone()),
-            // consensus_state_store: TypedStore::new(store),
-        }
+impl IbcClientService {
+    pub fn new(adapter: Arc<GrpcIbcAdapter>) -> Self {
+        Self { adapter }
     }
 }
 
 #[tonic::async_trait]
-// impl<S: ProvableStore + 'static> ClientQuery for IbcClientService<S> {
-// impl<S: IbcContext + 'static + Send + Sync> ClientQuery for IbcClientService<S> {
-    impl ClientQuery for IbcClientService {
-        async fn client_state(
+impl ClientQuery for IbcClientService {
+    async fn client_state(
         &self,
         _request: Request<QueryClientStateRequest>,
     ) -> Result<Response<QueryClientStateResponse>, Status> {
-        // self.adapter.client_state(_request);
         unimplemented!()
     }
 
@@ -415,42 +211,39 @@ impl GrpcService {
         &self,
         request: Request<QueryClientStatesRequest>,
     ) -> Result<Response<QueryClientStatesResponse>, Status> {
-        // unimplemented!()
-        // trace!("Got client states request: {:?}", request);
+        log::info!("Got client states request: {:?}", request);
 
-        // let path: Path = "clients"
-        //     .to_owned()
-        //     .try_into()
-        //     .map_err(|e| Status::invalid_argument(format!("{}", e)))?;
+        let path = "clients"
+            .to_owned()
+            .try_into()
+            .map_err(|e| Status::invalid_argument(format!("{}", e)))?;
 
-        // let client_state_paths = |path: IbcWrapper<Path>| -> Option<path::ClientStatePath> {
-        //     match path.0.try_into() {
-        //         Ok(IbcPath::ClientState(p)) => Some(p),
-        //         _ => None,
-        //     }
-        // };
+        let client_state_paths = |path: Path| -> Option<path::ClientStatePath> {
+            match path.try_into() {
+                Ok(IbcPath::ClientState(p)) => Some(p),
+                _ => None,
+            }
+        };
 
-        let identified_client_state = |path: IbcWrapper<path::ClientStatePath>| {
-            let client_state = self.store.get::<ClientStateSchema>(path.clone()).unwrap().unwrap().0;
-            // self.adapter
+        let identified_client_state = |path: path::ClientStatePath| {
+            let client_state: AnyClientState = self.adapter.get(Height::Pending, &path).unwrap();
             IdentifiedClientState {
-                client_id:    path.clone().0.to_string(),
+                client_id:    path.0.to_string(),
                 client_state: Some(client_state.into()),
             }
         };
 
-        let keys = self.store.get_all_keys::<ClientStateSchema>().unwrap();
+        let keys = self.adapter.get_keys(&path);
         let client_states = keys
             .into_iter()
-            // .filter_map(client_state_paths)
+            .filter_map(client_state_paths)
             .map(identified_client_state)
             .collect();
 
         Ok(Response::new(QueryClientStatesResponse {
             client_states,
             pagination: None, // TODO(hu55a1n1): add pagination support
-        }))        /*
-        */
+        }))
     }
 
     async fn consensus_state(
@@ -464,9 +257,9 @@ impl GrpcService {
         &self,
         request: Request<QueryConsensusStatesRequest>,
     ) -> Result<Response<QueryConsensusStatesResponse>, Status> {
-        unimplemented!()
-        /*
-        let path: Path = format!("clients/{}/consensusStates", request.get_ref().client_id)
+        log::info!("Got consensus states request: {:?}", request);
+
+        let path = format!("clients/{}/consensusStates", request.get_ref().client_id)
             .try_into()
             .map_err(|e| Status::invalid_argument(format!("{}", e)))?;
 
@@ -475,11 +268,8 @@ impl GrpcService {
             .into_iter()
             .map(|path| {
                 if let Ok(IbcPath::ClientConsensusState(path)) = path.try_into() {
-                    let consensus_state = Some(
-                        self.adapter
-                            .get::<ClientConsensusStateSchema>(&path)
-                            .unwrap(),
-                    );
+                    let consensus_state: Option<AnyConsensusState> =
+                        self.adapter.get(Height::Pending, &path);
                     ConsensusStateWithHeight {
                         height:          Some(RawHeight {
                             revision_number: path.epoch,
@@ -497,7 +287,7 @@ impl GrpcService {
         Ok(Response::new(QueryConsensusStatesResponse {
             consensus_states,
             pagination: None, // TODO(hu55a1n1): add pagination support
-        })) */
+        }))
     }
 
     async fn consensus_state_heights(
@@ -536,30 +326,31 @@ impl GrpcService {
     }
 }
 
-/*
-pub struct IbcConnectionService<S> {
-    adapter: Arc<S>,
+pub struct IbcConnectionService {
+    connection_end_store: Arc<GrpcIbcAdapter>,
+    connection_ids_store: Arc<GrpcIbcAdapter>,
 }
 
-impl<S: IbcAdapter> IbcConnectionService<S> {
-    pub fn new(store: Arc<S>) -> Self {
-        Self { adapter: store }
+impl IbcConnectionService {
+    pub fn new(store: Arc<GrpcIbcAdapter>) -> Self {
+        Self {
+            connection_end_store: store.clone(),
+            connection_ids_store: store.clone(),
+        }
     }
 }
 
 #[tonic::async_trait]
-impl<S: IbcAdapter + 'static + Send + Sync> ConnectionQuery for IbcConnectionService<S> {
+impl ConnectionQuery for IbcConnectionService {
     async fn connection(
         &self,
         request: Request<QueryConnectionRequest>,
     ) -> Result<Response<QueryConnectionResponse>, Status> {
         let conn_id = ConnectionId::from_str(&request.get_ref().connection_id)
             .map_err(|_| Status::invalid_argument("invalid connection id"))?;
-        let conn = Some(
-            self.adapter
-                .get::<ConnectionEndSchema>(&path::ConnectionsPath(conn_id))
-                .unwrap(),
-        );
+        let conn: Option<ConnectionEnd> = self
+            .connection_end_store
+            .get(Height::Pending, &path::ConnectionsPath(conn_id));
         Ok(Response::new(QueryConnectionResponse {
             connection:   conn.map(|c| c.into()),
             proof:        vec![],
@@ -575,15 +366,15 @@ impl<S: IbcAdapter + 'static + Send + Sync> ConnectionQuery for IbcConnectionSer
             .try_into()
             .expect("'connections' expected to be a valid Path");
 
-        let connection_paths = self.adapter.get_keys(&connection_path_prefix);
+        let connection_paths = self.connection_end_store.get_keys(&connection_path_prefix);
 
         let identified_connections: Vec<RawIdentifiedConnection> = connection_paths
             .into_iter()
             .map(|path| match path.try_into() {
                 Ok(IbcPath::Connections(connections_path)) => {
                     let connection_end = self
-                        .adapter
-                        .get::<ConnectionEndSchema>(&connections_path)
+                        .connection_end_store
+                        .get(Height::Pending, &connections_path)
                         .unwrap();
                     IdentifiedConnectionEnd::new(connections_path.0, connection_end).into()
                 }
@@ -608,9 +399,9 @@ impl<S: IbcAdapter + 'static + Send + Sync> ConnectionQuery for IbcConnectionSer
             .parse()
             .map_err(|e| Status::invalid_argument(format!("{}", e)))?;
         let path = path::ClientConnectionsPath(client_id);
-        let connection_ids = self
-            .adapter
-            .get::<ConnectionIdsSchema>(&path)
+        let connection_ids: Vec<ConnectionId> = self
+            .connection_ids_store
+            .get(Height::Pending, &path)
             .unwrap_or_default();
         let connection_paths = connection_ids
             .into_iter()
@@ -640,18 +431,26 @@ impl<S: IbcAdapter + 'static + Send + Sync> ConnectionQuery for IbcConnectionSer
     }
 }
 
-pub struct IbcChannelService<S> {
-    adapter: Arc<S>,
+pub struct IbcChannelService {
+    channel_end_store:       Arc<GrpcIbcAdapter>,
+    packet_commitment_store: Arc<GrpcIbcAdapter>,
+    packet_ack_store:        Arc<GrpcIbcAdapter>,
+    packet_receipt_store:    Arc<GrpcIbcAdapter>,
 }
 
-impl<S: IbcAdapter> IbcChannelService<S> {
-    pub fn new(store: Arc<S>) -> Self {
-        Self { adapter: store }
+impl IbcChannelService {
+    pub fn new(store: Arc<GrpcIbcAdapter>) -> Self {
+        Self {
+            channel_end_store:       store.clone(),
+            packet_commitment_store: store.clone(),
+            packet_ack_store:        store.clone(),
+            packet_receipt_store:    store.clone(),
+        }
     }
 }
 
 #[tonic::async_trait]
-impl<S: IbcAdapter + 'static + Send + Sync> ChannelQuery for IbcChannelService<S> {
+impl ChannelQuery for IbcChannelService {
     async fn channel(
         &self,
         request: Request<QueryChannelRequest>,
@@ -662,12 +461,10 @@ impl<S: IbcAdapter + 'static + Send + Sync> ChannelQuery for IbcChannelService<S
         let channel_id = ChannelId::from_str(&request.channel_id)
             .map_err(|_| Status::invalid_argument("invalid channel id"))?;
 
-        let channel = Some(
-            self.adapter
-                .get::<ChannelEndSchema>(&path::ChannelEndsPath(port_id, channel_id))
-                .unwrap(),
-        )
-        .map(|channel_end| channel_end.into());
+        let channel = self
+            .channel_end_store
+            .get(Height::Pending, &path::ChannelEndsPath(port_id, channel_id))
+            .map(|channel_end: ChannelEnd| channel_end.into());
 
         Ok(Response::new(QueryChannelResponse {
             channel,
@@ -685,14 +482,14 @@ impl<S: IbcAdapter + 'static + Send + Sync> ChannelQuery for IbcChannelService<S
             .try_into()
             .expect("'channelEnds/ports' expected to be a valid Path");
 
-        let channel_paths = self.adapter.get_keys(&channel_path_prefix);
+        let channel_paths = self.channel_end_store.get_keys(&channel_path_prefix);
         let identified_channels: Vec<RawIdentifiedChannel> = channel_paths
             .into_iter()
             .map(|path| match path.try_into() {
                 Ok(IbcPath::ChannelEnds(channels_path)) => {
                     let channel_end = self
-                        .adapter
-                        .get::<ChannelEndSchema>(&channels_path)
+                        .channel_end_store
+                        .get(Height::Pending, &channels_path)
                         .expect("channel path returned by get_keys() had no associated channel");
                     IdentifiedChannelEnd::new(channels_path.0, channels_path.1, channel_end).into()
                 }
@@ -705,7 +502,7 @@ impl<S: IbcAdapter + 'static + Send + Sync> ChannelQuery for IbcChannelService<S
             pagination: None,
             height:     Some(RawHeight {
                 revision_number: CHAIN_REVISION_NUMBER,
-                revision_height: self.adapter.get_current_height(),
+                revision_height: self.channel_end_store.current_height(),
             }),
         }))
     }
@@ -724,12 +521,13 @@ impl<S: IbcAdapter + 'static + Send + Sync> ChannelQuery for IbcChannelService<S
             .try_into()
             .expect("'commitments/ports' expected to be a valid Path");
 
-        let keys = self.adapter.get_keys(&path);
+        let keys = self.channel_end_store.get_keys(&path);
         let channels = keys
             .into_iter()
             .filter_map(|path| {
                 if let Ok(IbcPath::ChannelEnds(path)) = path.try_into() {
-                    let channel_end = self.adapter.get::<ChannelEndSchema>(&path).unwrap();
+                    let channel_end: ChannelEnd =
+                        self.channel_end_store.get(Height::Pending, &path)?;
                     if channel_end.connection_hops.first() == Some(&conn_id) {
                         return Some(IdentifiedChannelEnd::new(path.0, path.1, channel_end).into());
                     }
@@ -744,7 +542,7 @@ impl<S: IbcAdapter + 'static + Send + Sync> ChannelQuery for IbcChannelService<S
             pagination: None,
             height: Some(RawHeight {
                 revision_number: CHAIN_REVISION_NUMBER,
-                revision_height: self.adapter.get_current_height(),
+                revision_height: self.channel_end_store.current_height(),
             }),
         }))
     }
@@ -791,7 +589,7 @@ impl<S: IbcAdapter + 'static + Send + Sync> ChannelQuery for IbcChannelService<S
             let prefix: Path = String::from("commitments/ports")
                 .try_into()
                 .expect("'commitments/ports' expected to be a valid Path");
-            self.adapter.get_keys(&prefix)
+            self.packet_commitment_store.get_keys(&prefix)
         };
 
         let matching_commitment_paths = |path: Path| -> Option<path::CommitmentsPath> {
@@ -806,7 +604,10 @@ impl<S: IbcAdapter + 'static + Send + Sync> ChannelQuery for IbcChannelService<S
         };
 
         let packet_state = |path: path::CommitmentsPath| -> Option<PacketState> {
-            let commitment = self.adapter.get::<PacketCommitmentSchema>(&path).unwrap();
+            let commitment: PacketCommitment = self
+                .packet_commitment_store
+                .get(Height::Pending, &path)
+                .unwrap();
             let data = commitment.into_vec();
             (!data.is_empty()).then(|| PacketState {
                 port_id: path.port_id.to_string(),
@@ -827,7 +628,7 @@ impl<S: IbcAdapter + 'static + Send + Sync> ChannelQuery for IbcChannelService<S
             pagination:  None,
             height:      Some(RawHeight {
                 revision_number: CHAIN_REVISION_NUMBER,
-                revision_height: self.adapter.get_current_height(),
+                revision_height: self.packet_commitment_store.current_height(),
             }),
         }))
     }
@@ -865,7 +666,7 @@ impl<S: IbcAdapter + 'static + Send + Sync> ChannelQuery for IbcChannelService<S
             let prefix: Path = String::from("acks/ports")
                 .try_into()
                 .expect("'acks/ports' expected to be a valid Path");
-            self.adapter.get_keys(&prefix)
+            self.packet_ack_store.get_keys(&prefix)
         };
 
         let matching_ack_paths = |path: Path| -> Option<path::AcksPath> {
@@ -878,10 +679,8 @@ impl<S: IbcAdapter + 'static + Send + Sync> ChannelQuery for IbcChannelService<S
         };
 
         let packet_state = |path: path::AcksPath| -> Option<PacketState> {
-            let commitment = self
-                .adapter
-                .get::<AcknowledgementCommitmentSchema>(&path)
-                .unwrap();
+            let commitment: AcknowledgementCommitment =
+                self.packet_ack_store.get(Height::Pending, &path).unwrap();
             let data = commitment.into_vec();
             (!data.is_empty()).then(|| PacketState {
                 port_id: path.port_id.to_string(),
@@ -902,7 +701,7 @@ impl<S: IbcAdapter + 'static + Send + Sync> ChannelQuery for IbcChannelService<S
             pagination:       None,
             height:           Some(RawHeight {
                 revision_number: CHAIN_REVISION_NUMBER,
-                revision_height: self.adapter.get_current_height(),
+                revision_height: self.packet_ack_store.current_height(),
             }),
         }))
     }
@@ -932,7 +731,10 @@ impl<S: IbcAdapter + 'static + Send + Sync> ChannelQuery for IbcChannelService<S
                     channel_id: channel_id.clone(),
                     sequence:   Sequence::from(*seq),
                 };
-                Some(self.adapter.get::<ReceiptSchema>(&receipts_path).unwrap()).is_none()
+                let packet_receipt: Option<()> = self
+                    .packet_receipt_store
+                    .get(Height::Pending, &receipts_path);
+                packet_receipt.is_none()
             })
             .collect();
 
@@ -940,7 +742,7 @@ impl<S: IbcAdapter + 'static + Send + Sync> ChannelQuery for IbcChannelService<S
             sequences: unreceived_sequences,
             height:    Some(RawHeight {
                 revision_number: CHAIN_REVISION_NUMBER,
-                revision_height: self.adapter.get_current_height(),
+                revision_height: self.packet_receipt_store.current_height(),
             }),
         }))
     }
@@ -970,11 +772,10 @@ impl<S: IbcAdapter + 'static + Send + Sync> ChannelQuery for IbcChannelService<S
                     sequence:   Sequence::from(*seq),
                 };
 
-                Some(
-                    self.adapter
-                        .get::<PacketCommitmentSchema>(&commitments_path),
-                )
-                .is_some()
+                let packet_commitment: Option<PacketCommitment> = self
+                    .packet_commitment_store
+                    .get(Height::Pending, &commitments_path);
+                packet_commitment.is_some()
             })
             .collect();
 
@@ -982,7 +783,7 @@ impl<S: IbcAdapter + 'static + Send + Sync> ChannelQuery for IbcChannelService<S
             sequences: unreceived_sequences,
             height:    Some(RawHeight {
                 revision_number: CHAIN_REVISION_NUMBER,
-                revision_height: self.adapter.get_current_height(),
+                revision_height: self.packet_commitment_store.current_height(),
             }),
         }))
     }
@@ -996,58 +797,3 @@ impl<S: IbcAdapter + 'static + Send + Sync> ChannelQuery for IbcChannelService<S
         todo!()
     }
 }
-
-pub fn client_msg_service() -> ClientMsgServer<IbcClientMsgService> {
-    ClientMsgServer::new(IbcClientMsgService::new())
-}
-
-pub struct IbcClientMsgService {
-    // client_state_store: ProtobufStore<SharedStore<S>, path::ClientStatePath, AnyClientState,
-    // Any>, consensus_state_store:
-    //     ProtobufStore<SharedStore<S>, path::ClientConsensusStatePath, AnyConsensusState, Any>,
-}
-
-impl IbcClientMsgService {
-    pub fn new() -> Self {
-        Self {
-            // client_state_store: TypedStore::new(store.clone()),
-            // consensus_state_store: TypedStore::new(store),
-        }
-    }
-}
-#[tonic::async_trait]
-impl ClientMsg for IbcClientMsgService {
-    /// CreateClient defines a rpc handler method for MsgCreateClient.
-    async fn create_client(
-        &self,
-        request: tonic::Request<MsgCreateClient>,
-    ) -> Result<tonic::Response<MsgCreateClientResponse>, tonic::Status> {
-        unimplemented!()
-    }
-
-    /// UpdateClient defines a rpc handler method for MsgUpdateClient.
-    async fn update_client(
-        &self,
-        request: tonic::Request<MsgUpdateClient>,
-    ) -> Result<tonic::Response<MsgUpdateClientResponse>, tonic::Status> {
-        unimplemented!()
-    }
-
-    /// UpgradeClient defines a rpc handler method for MsgUpgradeClient.
-    async fn upgrade_client(
-        &self,
-        request: tonic::Request<MsgUpgradeClient>,
-    ) -> Result<tonic::Response<MsgUpgradeClientResponse>, tonic::Status> {
-        unimplemented!()
-    }
-
-    /// SubmitMisbehaviour defines a rpc handler method for
-    /// MsgSubmitMisbehaviour.
-    async fn submit_misbehaviour(
-        &self,
-        request: tonic::Request<MsgSubmitMisbehaviour>,
-    ) -> Result<tonic::Response<MsgSubmitMisbehaviourResponse>, tonic::Status> {
-        unimplemented!()
-    }
-}
- */
