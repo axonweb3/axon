@@ -6,8 +6,10 @@ use crate::{ProtocolError, ProtocolErrorKind};
 
 #[derive(Debug, Display)]
 pub enum CodecError {
-    #[display(fmt = "from string {}", _0)]
+    #[display(fmt = "rlp: from string {}", _0)]
     Rlp(String),
+    #[display(fmt = "ibc: from string {}", _0)]
+    Ibc(String),
 }
 
 impl Error for CodecError {}

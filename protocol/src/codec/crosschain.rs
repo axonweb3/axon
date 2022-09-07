@@ -84,6 +84,9 @@ impl Decodable for HashWithDirection {
 
 #[cfg(feature = "ibc")]
 pub mod ibc {
+    use std::str::FromStr;
+
+    use bincode;
     use cosmos_ibc::core::{
         ics02_client::{
             client_consensus::AnyConsensusState, client_state::AnyClientState,
@@ -102,77 +105,128 @@ pub mod ibc {
                 ClientStatePath, ClientTypePath, CommitmentsPath, ConnectionsPath, ReceiptsPath,
                 SeqAcksPath, SeqRecvsPath, SeqSendsPath,
             },
+            Path,
         },
     };
+    use ibc_proto::google::protobuf::Any;
+    use ibc_proto::ibc::core::{
+        channel::v1::Channel as RawChannelEnd, connection::v1::ConnectionEnd as RawConnectionEnd,
+    };
+    use tendermint_proto::Protobuf;
 
+    use crate::codec::error::CodecError;
     use crate::codec::ProtocolCodec;
-    use crate::{ProtocolError, ProtocolErrorKind, ProtocolResult};
+    use crate::{ProtocolError, ProtocolResult};
 
     #[derive(Clone)]
     pub struct IbcWrapper<T: Clone>(pub T);
 
-    macro_rules! todo_codec {
-        ($name: ty) => {
+    macro_rules! protobuf_codec_impl {
+        ($name:ty, $raw:ident) => {
             impl ProtocolCodec for IbcWrapper<$name> {
                 fn encode(&self) -> ProtocolResult<bytes::Bytes> {
-                    todo!()
-                }
-
-                fn decode<B: AsRef<[u8]>>(_bytes: B) -> ProtocolResult<Self> {
-                    todo!()
-                }
-            }
-        };
-    }
-
-    macro_rules! json_codec_impl {
-        ($name:ty) => {
-            impl ProtocolCodec for IbcWrapper<$name> {
-                fn encode(&self) -> ProtocolResult<bytes::Bytes> {
-                    match serde_json::to_vec(&self.0) {
-                        Ok(v) => Ok(v.into()),
-                        Err(e) => Err(ProtocolError {
-                            kind:  ProtocolErrorKind::CrossChain,
-                            error: Box::new(e),
-                        }),
-                    }
+                    let res = self
+                        .0
+                        .encode_vec()
+                        .map_err(|e| ProtocolError::from(CodecError::Ibc(e.to_string())))?;
+                    Ok(res.into())
                 }
 
                 fn decode<B: AsRef<[u8]>>(bytes: B) -> ProtocolResult<Self> {
-                    match serde_json::from_slice(bytes.as_ref()) {
-                        Ok(v) => Ok(IbcWrapper(v)),
-                        Err(e) => Err(ProtocolError {
-                            kind:  ProtocolErrorKind::CrossChain,
-                            error: Box::new(e),
-                        }),
+                    let res = <$name as Protobuf<$raw>>::decode_vec(bytes.as_ref())
+                        .map_err(|e| ProtocolError::from(CodecError::Ibc(e.to_string())))?;
+                    Ok(IbcWrapper(res.into()))
+                }
+            }
+        };
+    }
+
+    macro_rules! path_codec_impl {
+        ($name:ty, $variant:ident) => {
+            impl ProtocolCodec for IbcWrapper<$name> {
+                fn encode(&self) -> ProtocolResult<bytes::Bytes> {
+                    let path: Path = self.0.clone().into();
+                    let string = path.to_string();
+                    ProtocolCodec::encode(&string)
+                }
+
+                fn decode<B: AsRef<[u8]>>(bytes: B) -> ProtocolResult<Self> {
+                    let raw = <String as ProtocolCodec>::decode(bytes.as_ref())?;
+                    let path = Path::from_str(&raw).unwrap();
+                    if let Path::$variant(p) = path {
+                        Ok(IbcWrapper(p))
+                    } else {
+                        Err(ProtocolError::from(CodecError::Ibc(raw)))
                     }
                 }
             }
         };
     }
 
-    json_codec_impl!(ClientType);
-    json_codec_impl!(());
-    json_codec_impl!(Sequence);
-    json_codec_impl!(Vec<ConnectionId>);
-    json_codec_impl!(ChannelEnd);
-    json_codec_impl!(ConnectionEnd);
-    json_codec_impl!(PacketCommitment);
-    json_codec_impl!(AcknowledgementCommitment);
-    todo_codec!(AnyClientState);
-    todo_codec!(AnyConsensusState);
-    todo_codec!(ClientTypePath);
-    todo_codec!(ClientStatePath);
-    todo_codec!(ClientConsensusStatePath);
-    todo_codec!(SeqSendsPath);
-    todo_codec!(SeqRecvsPath);
-    todo_codec!(SeqAcksPath);
-    todo_codec!(CommitmentsPath);
-    todo_codec!(AcksPath);
-    todo_codec!(ReceiptsPath);
-    todo_codec!(ChannelEndsPath);
-    todo_codec!(ConnectionsPath);
-    todo_codec!(ClientConnectionsPath);
+    macro_rules! raw_codec_impl {
+        ($name:ty) => {
+            impl ProtocolCodec for IbcWrapper<$name> {
+                fn encode(&self) -> ProtocolResult<bytes::Bytes> {
+                    Ok(self.0.as_ref().to_vec().into())
+                }
+
+                fn decode<B: AsRef<[u8]>>(bytes: B) -> ProtocolResult<Self> {
+                    Ok(IbcWrapper(bytes.as_ref().to_vec().into()))
+                }
+            }
+        };
+    }
+
+    macro_rules! bincode_codec_impl {
+        ($name:ty) => {
+            impl ProtocolCodec for IbcWrapper<$name> {
+                fn encode(&self) -> ProtocolResult<bytes::Bytes> {
+                    let r = bincode::serialize(&self.0)
+                        .map_err(|e| ProtocolError::from(CodecError::Ibc(e.to_string())))?;
+                    Ok(r.into())
+                }
+
+                fn decode<B: AsRef<[u8]>>(bytes: B) -> ProtocolResult<Self> {
+                    let r = bincode::deserialize(bytes.as_ref())
+                        .map_err(|e| ProtocolError::from(CodecError::Ibc(e.to_string())))?;
+                    Ok(IbcWrapper(r))
+                }
+            }
+        };
+    }
+
+    bincode_codec_impl!(());
+    bincode_codec_impl!(ClientType);
+    bincode_codec_impl!(Sequence);
+    bincode_codec_impl!(Vec<ConnectionId>);
+    raw_codec_impl!(PacketCommitment);
+    raw_codec_impl!(AcknowledgementCommitment);
+    protobuf_codec_impl!(AnyClientState, Any);
+    protobuf_codec_impl!(AnyConsensusState, Any);
+    protobuf_codec_impl!(ChannelEnd, RawChannelEnd);
+    protobuf_codec_impl!(ConnectionEnd, RawConnectionEnd);
+    path_codec_impl!(ClientTypePath, ClientType);
+    path_codec_impl!(ClientStatePath, ClientState);
+    path_codec_impl!(ClientConsensusStatePath, ClientConsensusState);
+    path_codec_impl!(SeqSendsPath, SeqSends);
+    path_codec_impl!(SeqRecvsPath, SeqRecvs);
+    path_codec_impl!(SeqAcksPath, SeqAcks);
+    path_codec_impl!(CommitmentsPath, Commitments);
+    path_codec_impl!(AcksPath, Acks);
+    path_codec_impl!(ReceiptsPath, Receipts);
+    path_codec_impl!(ChannelEndsPath, ChannelEnds);
+    path_codec_impl!(ConnectionsPath, Connections);
+    path_codec_impl!(ClientConnectionsPath, ClientConnections);
+
+    #[test]
+    fn test_ibc_path_codec() {
+        use cosmos_ibc::core::ics24_host::identifier::ClientId;
+        let path = ClientTypePath(ClientId::new(ClientType::Tendermint, 0).unwrap());
+        let wrap = IbcWrapper(path.clone());
+        let encoded = wrap.encode().unwrap();
+        let actual = IbcWrapper::<ClientTypePath>::decode(encoded).unwrap();
+        assert_eq!(path, actual.0);
+    }
 }
 
 #[cfg(test)]

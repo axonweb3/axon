@@ -244,6 +244,7 @@ dependencies = [
  "hasher",
  "hex",
  "ibc",
+ "ibc-proto",
  "lazy_static",
  "ophelia",
  "ophelia-secp256k1",
@@ -253,6 +254,7 @@ dependencies = [
  "rlp",
  "serde",
  "serde_json",
+ "tendermint-proto",
  "tokio",
  "toml",
 ]
