@@ -1,13 +1,20 @@
 use ibc::core::ics02_client::client_consensus::AnyConsensusState;
 use ibc::core::ics02_client::client_state::AnyClientState;
+use ibc::core::ics02_client::context::ClientReader;
+use ibc::core::ics02_client::error::Error;
+use ibc::core::ics02_client::events::Attributes;
+use ibc::core::ics02_client::handler::ClientResult;
+use ibc::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
+use ibc::events::IbcEvent;
+use ibc::handler::{HandlerOutput, HandlerOutputBuilder};
 use std::str::FromStr;
 use std::sync::{Arc, RwLock};
 
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
 use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::core::ics04_channel::packet::Sequence;
-use ibc::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+use ibc::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId, ClientId};
 use ibc::core::ics24_host::path::{
     ClientConnectionsPath, ClientConsensusStatePath, ClientStatePath,
 };
@@ -165,11 +172,12 @@ impl GrpcService {
         let ibc_client_service = self.client_service();
         let ibc_conn_service = self.connection_service();
         let ibc_channel_service = self.channel_service();
-        // let ibc_client_msg_service = client_msg_service();
+        let ibc_client_msg_service = self.client_msg_service();
         let _grpc = Server::builder()
             .add_service(ibc_client_service)
             .add_service(ibc_conn_service)
             .add_service(ibc_channel_service)
+            .add_service(ibc_client_msg_service)
             .serve(addr)
             .await
             .unwrap();
@@ -185,6 +193,10 @@ impl GrpcService {
 
     pub fn channel_service(&self) -> ChannelQueryServer<IbcChannelService> {
         ChannelQueryServer::new(IbcChannelService::new(self.store.clone()))
+    }
+
+    pub fn client_msg_service(&self) -> ClientMsgServer<IbcClientMsgService> {
+        ClientMsgServer::new(IbcClientMsgService::new())
     }
 }
 
@@ -795,5 +807,147 @@ impl ChannelQuery for IbcChannelService {
         _request: Request<QueryNextSequenceReceiveRequest>,
     ) -> Result<Response<QueryNextSequenceReceiveResponse>, Status> {
         todo!()
+    }
+}
+
+// this should be replaced by IbcImpl
+pub struct GrpcClientReader {}
+
+impl ClientReader for GrpcClientReader {
+    fn client_type(&self, client_id: &ClientId) -> Result<ibc::core::ics02_client::client_type::ClientType, Error> {
+        todo!()
+    }
+
+    fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Error> {
+        todo!()
+    }
+
+    fn consensus_state(
+        &self,
+        client_id: &ClientId,
+        height: ibc::Height,
+    ) -> Result<AnyConsensusState, Error> {
+        todo!()
+    }
+
+    fn next_consensus_state(
+        &self,
+        client_id: &ClientId,
+        height: ibc::Height,
+    ) -> Result<Option<AnyConsensusState>, Error> {
+        todo!()
+    }
+
+    fn prev_consensus_state(
+        &self,
+        client_id: &ClientId,
+        height: ibc::Height,
+    ) -> Result<Option<AnyConsensusState>, Error> {
+        todo!()
+    }
+
+    fn host_height(&self) -> ibc::Height {
+        todo!()
+    }
+
+    fn host_consensus_state(&self, height: ibc::Height) -> Result<AnyConsensusState, Error> {
+        todo!()
+    }
+
+    fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, Error> {
+        todo!()
+    }
+
+    fn client_counter(&self) -> Result<u64, Error> {
+        todo!()
+    }
+}
+
+
+pub fn client_msg_service() -> ClientMsgServer<IbcClientMsgService> {
+    ClientMsgServer::new(IbcClientMsgService::new())
+}
+
+pub struct IbcClientMsgService {
+    ctx: GrpcClientReader,
+}
+
+impl IbcClientMsgService {
+    pub fn new() -> Self {
+        Self {
+            // client_state_store: TypedStore::new(store.clone()),
+            // consensus_state_store: TypedStore::new(store),
+            ctx: GrpcClientReader{},
+        }
+    }
+}
+
+#[tonic::async_trait]
+impl ClientMsg for IbcClientMsgService {
+    /// CreateClient defines a rpc handler method for MsgCreateClient.
+    async fn create_client(
+        &self,
+        request: tonic::Request<MsgCreateClient>,
+    ) -> Result<tonic::Response<MsgCreateClientResponse>, tonic::Status> {
+        // unimplemented!()
+        let raw = request.get_ref();
+        let msg = MsgCreateAnyClient::try_from(raw.clone()).unwrap();
+
+        let mut output: HandlerOutputBuilder<ClientResult> = HandlerOutput::builder();
+
+        // Construct this client's identifier
+        let id_counter = self.ctx.client_counter().unwrap();
+        let client_id = ClientId::new(msg.client_state.client_type(), id_counter).map_err(|e| {
+            Error::client_identifier_constructor(msg.client_state.client_type(), id_counter, e)
+        }).unwrap();
+    
+        output.log(format!(
+            "success: generated new client identifier: {}",
+            client_id
+        ));
+        use ibc::core::ics02_client::handler::create_client::Result;
+        let result = ClientResult::Create(Result {
+            client_id: client_id.clone(),
+            client_type: msg.client_state.client_type(),
+            client_state: msg.client_state.clone(),
+            consensus_state: msg.consensus_state,
+            processed_time: self.ctx.host_timestamp(),
+            processed_height: self.ctx.host_height(),
+        });
+    
+        let event_attributes = Attributes {
+            client_id,
+            ..Default::default()
+        };
+        output.emit(IbcEvent::CreateClient(event_attributes.into()));
+
+        let res = tonic::Response::<MsgCreateClientResponse>::new(MsgCreateClientResponse{});
+
+        Ok(res)
+    }
+
+    /// UpdateClient defines a rpc handler method for MsgUpdateClient.
+    async fn update_client(
+        &self,
+        request: tonic::Request<MsgUpdateClient>,
+    ) -> Result<tonic::Response<MsgUpdateClientResponse>, tonic::Status> {
+        unimplemented!()
+    }
+
+    /// UpgradeClient defines a rpc handler method for MsgUpgradeClient.
+    async fn upgrade_client(
+        &self,
+        request: tonic::Request<MsgUpgradeClient>,
+    ) -> Result<tonic::Response<MsgUpgradeClientResponse>, tonic::Status> {
+        unimplemented!()
+    }
+
+    /// SubmitMisbehaviour defines a rpc handler method for
+    /// MsgSubmitMisbehaviour.
+    async fn submit_misbehaviour(
+        &self,
+        request: tonic::Request<MsgSubmitMisbehaviour>,
+    ) -> Result<tonic::Response<MsgSubmitMisbehaviourResponse>, tonic::Status> {
+        unimplemented!()
     }
 }
