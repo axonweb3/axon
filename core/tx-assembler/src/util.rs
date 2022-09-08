@@ -20,7 +20,7 @@ const ACS_LOCK_TX_HASH: ckb_types::H256 =
 const SUDT_TX_HASH: ckb_types::H256 =
     h256!("0xe12877ebd2c3c364dc46c5c992bcfaf4fee33fa13eebdf82c591fc9825aab769");
 const ACS_REQUEST_TX_HASH: ckb_types::H256 =
-    h256!("0x695480b96d41a2af956f3cf86a4f1dac6ab2cf81ad143788f77183eda512b051");
+    h256!("0x272168c3d7c4576398f6cb82a15490ad07b11602c0af8810f7dc0fd4252717fb");
 
 fn build_script(code_hash: ckb_types::H256, args: &[u8]) -> Script {
     Script::new_builder()
