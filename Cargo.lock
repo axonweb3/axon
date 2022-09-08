@@ -1434,7 +1434,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sled",
- "tokio-util 0.7.3",
+ "tokio-util 0.7.4",
 ]
 
 [[package]]
@@ -1593,7 +1593,7 @@ dependencies = [
  "snap",
  "socket2",
  "tentacle",
- "tokio-util 0.7.3",
+ "tokio-util 0.7.4",
 ]
 
 [[package]]
@@ -2930,7 +2930,7 @@ dependencies = [
  "indexmap",
  "slab",
  "tokio",
- "tokio-util 0.7.3",
+ "tokio-util 0.7.4",
  "tracing",
 ]
 
@@ -3481,7 +3481,7 @@ dependencies = [
  "soketto",
  "tokio",
  "tokio-stream",
- "tokio-util 0.7.3",
+ "tokio-util 0.7.4",
  "tracing",
  "tracing-futures",
 ]
@@ -5980,7 +5980,7 @@ dependencies = [
  "tentacle-secio",
  "thiserror",
  "tokio",
- "tokio-util 0.7.3",
+ "tokio-util 0.7.4",
  "tokio-yamux",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -6022,7 +6022,7 @@ dependencies = [
  "secp256k1 0.20.3",
  "sha2 0.10.5",
  "tokio",
- "tokio-util 0.7.3",
+ "tokio-util 0.7.4",
  "unsigned-varint",
  "x25519-dalek",
 ]
@@ -6301,9 +6301,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.7.3"
+version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc463cd8deddc3770d20f9852143d50bf6094e640b485cb2e189a2099085ff45"
+checksum = "0bb2e075f03b3d66d8d8785356224ba688d2906a371015e225beeb65ca92c740"
 dependencies = [
  "bytes",
  "futures-core",
@@ -6325,7 +6325,7 @@ dependencies = [
  "log",
  "nohash-hasher",
  "tokio",
- "tokio-util 0.7.3",
+ "tokio-util 0.7.4",
 ]
 
 [[package]]
@@ -6364,7 +6364,7 @@ dependencies = [
  "tokio",
  "tokio-rustls",
  "tokio-stream",
- "tokio-util 0.7.3",
+ "tokio-util 0.7.4",
  "tower",
  "tower-layer",
  "tower-service",
@@ -6386,7 +6386,7 @@ dependencies = [
  "rand 0.8.5",
  "slab",
  "tokio",
- "tokio-util 0.7.3",
+ "tokio-util 0.7.4",
  "tower-layer",
  "tower-service",
  "tracing",
