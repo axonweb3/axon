@@ -10,7 +10,7 @@ cosmos-ibc = { package = "ibc", version = "0.19", optional = true }
 futures = "0.3"
 lazy_static = "1.4"
 log = "0.4"
-lru = "0.7"
+lru = "0.8"
 parking_lot = "0.12"
 rocksdb = { version = "0.18", package = "ckb-rocksdb" }
 
