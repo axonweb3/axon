@@ -11,7 +11,7 @@ ophelia-blst = "0.3"
 ophelia-secp256k1 = "0.3"
 
 [dev-dependencies]
-criterion = "0.3"
+criterion = "0.4"
 overlord = "0.4"
 rand = "0.7"
 rlp = "0.5"
