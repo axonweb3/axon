@@ -39,7 +39,7 @@ common-crypto = { path = "../../common/crypto" }
 core-cross-client = { path = "../cross-client" }
 core-rpc-client = { path = "../rpc-client" }
 core-storage = { path = "../storage" }
-criterion = "0.3"
+criterion = "0.4"
 ethabi = "17.2"
 ethabi-contract = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
 ethabi-derive = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }

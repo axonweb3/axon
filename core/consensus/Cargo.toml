@@ -33,7 +33,7 @@ protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [dev-dependencies]
 bit-vec = "0.6"
-criterion = "0.3"
+criterion = "0.4"
 num-traits = "0.2"
 rand = "0.7"
 
