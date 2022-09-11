@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use evm::ExitSucceed;
-use revm::{Bytecode, Database, DatabaseCommit};
+use protocol::ProtocolError;
+use revm::{AccountInfo, Bytecode, Database, DatabaseCommit};
 
 use common_merkle::Merkle;
 use core_executor::{code_address, MPTTrie};
@@ -39,77 +40,70 @@ where
     S: Storage + 'static,
     DB: cita_trie::DB + 'static,
 {
-    fn basic(&mut self, address: H160) -> revm::AccountInfo {
-        self.trie
-            .get(address.as_bytes())
-            .map(|raw| {
-                if raw.is_none() {
-                    return revm::AccountInfo::default();
-                }
-                Account::decode(raw.unwrap()).map_or(revm::AccountInfo::default(), |account| {
-                    revm::AccountInfo {
-                        balance:   account.balance,
-                        nonce:     account.nonce.low_u64(),
-                        code_hash: account.code_hash,
-                        code:      None,
-                    }
-                })
-            })
-            .unwrap_or_default()
+    type Error = ProtocolError;
+
+    fn basic(&mut self, address: H160) -> Result<Option<AccountInfo>, Self::Error> {
+        let raw = self.trie.get(address.as_bytes())?;
+        if raw.is_none() {
+            return Ok(None);
+        }
+
+        let raw = raw.unwrap();
+        Ok(Some(Account::decode(raw).map(|a| AccountInfo {
+            balance:   a.balance,
+            nonce:     a.nonce.as_u64(),
+            code_hash: a.code_hash,
+            code:      None,
+        })?))
     }
 
-    fn code_by_hash(&mut self, code_hash: H256) -> Bytecode {
-        if code_hash == NIL_DATA {
+    fn code_by_hash(&mut self, code_hash: H256) -> Result<Bytecode, Self::Error> {
+        Ok(if code_hash == NIL_DATA {
             Bytecode::new()
         } else {
             match blocking_async!(self, storage, get_code_by_hash, Context::new(), &code_hash) {
                 Some(bytes) => Bytecode::new_raw(bytes),
                 None => Bytecode::new(),
             }
-        }
+        })
     }
 
-    fn storage(&mut self, address: H160, index: U256) -> U256 {
-        let raw = self.trie.get(address.as_bytes());
-        if matches!(raw, Err(_)) || matches!(raw, Ok(None)) {
-            return U256::default();
+    fn storage(&mut self, address: H160, index: U256) -> Result<U256, Self::Error> {
+        let raw = self.trie.get(address.as_bytes())?;
+        if raw.is_none() {
+            return Ok(U256::default());
         }
 
-        let raw = raw.unwrap().unwrap();
-        let account = Account::decode(raw);
-        if account.is_err() {
-            return U256::default();
-        }
-        let account = account.unwrap();
+        let raw = raw.unwrap();
+        let account = Account::decode(raw)?;
         let storage_root = account.storage_root;
         if storage_root == RLP_NULL {
-            U256::default()
+            Ok(U256::default())
         } else {
-            MPTTrie::from_root(storage_root, Arc::clone(&self.db))
-                .map(|storage| match storage.get(u256_to_u8_slice(&index)) {
+            MPTTrie::from_root(storage_root, Arc::clone(&self.db)).map(|storage| {
+                match storage.get(u256_to_u8_slice(&index)) {
                     Ok(Some(bytes)) => match u8_slice_to_u256(bytes.as_ref()) {
                         Some(res) => res,
                         None => U256::default(),
                     },
                     _ => U256::default(),
-                })
-                .unwrap_or_default()
+                }
+            })
         }
     }
 
-    fn block_hash(&mut self, number: U256) -> H256 {
+    fn block_hash(&mut self, number: U256) -> Result<H256, Self::Error> {
         let current_number = self.exec_ctx.block_number;
-        if number >= current_number {
-            return H256::default();
+        if number > current_number {
+            return Ok(H256::default());
         }
 
-        if (current_number - number) > U256::from(256) {
-            return H256::default();
-        }
         let number = number.as_u64();
-        let res = blocking_async!(self, storage, get_block, Context::new(), number);
+        let res = blocking_async!(self, storage, get_block, Context::new(), number)
+            .map(|b| Proposal::from(&b).hash())
+            .unwrap_or_default();
 
-        res.map(|b| Proposal::from(&b).hash()).unwrap_or_default()
+        Ok(res)
     }
 }
 
@@ -140,7 +134,8 @@ where
                 MPTTrie::from_root(storage_root, Arc::clone(&self.db)).unwrap()
             };
             change.storage.into_iter().for_each(|(k, v)| {
-                let _ = storage_trie.insert(u256_to_u8_slice(&k), u256_to_u8_slice(&v));
+                let _ =
+                    storage_trie.insert(u256_to_u8_slice(&k), u256_to_u8_slice(&v.present_value()));
             });
 
             let code_hash = if let Some(code) = change.info.code {
@@ -253,23 +248,22 @@ pub fn revm_call<T: Database>(
     let mut evm = revm::EVM::<T>::new();
     evm.database(db);
     set_revm(&mut evm, gas_limit, from, to, value, data);
-    let (_exit_code, output, gas_used, _state, _logs) = evm.transact();
+    let (res, _state) = evm.transact();
     TxResp {
         // todo
-        exit_reason: evm::ExitReason::Succeed(ExitSucceed::Returned),
-        ret: match output {
+        exit_reason:  evm::ExitReason::Succeed(ExitSucceed::Returned),
+        ret:          match res.out {
             revm::TransactOut::None => vec![],
             revm::TransactOut::Call(ret) => ret.to_vec(),
             revm::TransactOut::Create(ret, _) => ret.to_vec(),
         },
-        gas_used,
-        remain_gas: gas_limit - gas_used,
+        gas_used:     res.gas_used,
+        remain_gas:   gas_limit - res.gas_used,
         // todo
-        logs: vec![],
+        logs:         vec![],
         // todo
         code_address: None,
-        // todo
-        removed: false,
+        removed:      false,
     }
 }
 
@@ -287,7 +281,14 @@ where
     let mut total_gas_used = 0u64;
 
     txs.into_iter().for_each(|tx| {
-        let old_nonce = evm.db.as_mut().unwrap().basic(tx.sender).nonce;
+        let old_nonce = evm
+            .db
+            .as_mut()
+            .unwrap()
+            .basic(tx.sender)
+            .unwrap()
+            .unwrap()
+            .nonce;
         set_revm(
             evm,
             tx.transaction.unsigned.gas_limit().as_u64(),
@@ -296,14 +297,14 @@ where
             *tx.transaction.unsigned.value(),
             tx.transaction.unsigned.data().to_vec(),
         );
-        let (_exit_code, output, gas_used, _logs) = evm.transact_commit();
-        let ret = match output {
+        let res = evm.transact_commit();
+        let ret = match res.out {
             revm::TransactOut::None => vec![],
             revm::TransactOut::Call(bytes) => bytes.to_vec(),
             revm::TransactOut::Create(bytes, _) => bytes.to_vec(),
         };
         hashes.push(Hasher::digest(&ret));
-        total_gas_used += gas_used;
+        total_gas_used += res.gas_used;
 
         let code_address = if tx.transaction.unsigned.action() == &TransactionAction::Create {
             Some(code_address(&tx.sender, &U256::from(old_nonce)))
@@ -314,8 +315,8 @@ where
         let resp = TxResp {
             exit_reason: evm::ExitReason::Succeed(ExitSucceed::Returned),
             ret,
-            gas_used,
-            remain_gas: tx.transaction.unsigned.gas_limit().as_u64() - gas_used,
+            gas_used: res.gas_used,
+            remain_gas: tx.transaction.unsigned.gas_limit().as_u64() - res.gas_used,
             // todo
             logs: vec![],
             code_address,
