@@ -287,7 +287,7 @@ where
             .unwrap()
             .basic(tx.sender)
             .unwrap()
-            .unwrap()
+            .unwrap_or_default()
             .nonce;
         set_revm(
             evm,
@@ -324,9 +324,9 @@ where
         };
         tx_outputs.push(resp);
     });
-    let adapter = evm.db().unwrap();
+
     ExecResp {
-        state_root:   adapter.trie.commit().unwrap(),
+        state_root:   evm.db().unwrap().trie.commit().unwrap(),
         receipt_root: Merkle::from_hashes(hashes)
             .get_root_hash()
             .unwrap_or_default(),
