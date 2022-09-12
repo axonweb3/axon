@@ -39,7 +39,7 @@ jobs:
         with:
           repository: gpBlockchain/v3-core
           path: v3-core
-      - uses: actions/setup-node@v1
+      - uses: actions/setup-node@v3
         with:
           node-version: 16.x
 
