@@ -1,3 +1,5 @@
+use std::num::NonZeroUsize;
+
 use lru::LruCache;
 use parking_lot::Mutex;
 
@@ -15,6 +17,7 @@ pub struct StorageCache {
 
 impl StorageCache {
     pub fn new(size: usize) -> Self {
+        let size = NonZeroUsize::new(size).unwrap();
         StorageCache {
             blocks:        Mutex::new(LruCache::new(size)),
             block_numbers: Mutex::new(LruCache::new(size)),
