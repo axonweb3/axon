@@ -15,7 +15,6 @@ pub use task::message::{
     CrossChainMessageHandler, END_GOSSIP_BUILD_CKB_TX, END_GOSSIP_CKB_TX_SIGNATURE,
 };
 
-use std::str::FromStr;
 use std::sync::Arc;
 
 use arc_swap::ArcSwap;
@@ -334,7 +333,8 @@ async fn build_ckb_tx_process(
 
                 Transfer {
                     direction:     Direction::FromAxon,
-                    address:       H160::from_str(log.to.as_str()).unwrap_or_default(),
+                    ckb_address:   log.to.clone(),
+                    address:       H160::default(),
                     erc20_address: log.token,
                     sudt_amount:   s_amount,
                     ckb_amount:    c_amount,
@@ -358,6 +358,7 @@ pub fn build_axon_txs(
 
             Transfer {
                 direction:     Direction::FromCkb,
+                ckb_address:   String::new(),
                 tx_hash:       H256::from_slice(&tx.hash().raw_data()),
                 address:       H160::from_slice(&request_args.axon_address().raw_data()),
                 erc20_address: H160::from_slice(&request_args.e_r_c20_address().raw_data()),
@@ -426,6 +427,7 @@ impl From<crosschain_abi::CrossFromCKBFilter> for Requests {
                 .into_iter()
                 .map(|r| Transfer {
                     direction:     Direction::FromCkb,
+                    ckb_address:   String::new(),
                     address:       r.0,
                     erc20_address: r.1,
                     sudt_amount:   r.2.as_u128(),

@@ -30,6 +30,7 @@ impl Direction {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Transfer {
     pub direction:     Direction,
+    pub ckb_address:   String,
     pub address:       H160,
     pub erc20_address: H160,
     pub sudt_amount:   u128,

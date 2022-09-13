@@ -53,7 +53,7 @@ task('crossAt', 'cross at').addParam('to').addParam('private').setAction(async (
   let unsignedTx = {
     data: abi.encodeFunctionData('lockAT', [taskArgs.to]),
     to: hre.ethers.utils.getAddress(crosschain),
-    value: hre.ethers.utils.parseEther('0.1'),
+    value: hre.ethers.utils.parseEther('50'),
   };
   unsignedTx = await signer.populateTransaction(unsignedTx);
   // unsignedTx.nonce = await signer.getTransactionCount() + 1;
@@ -152,7 +152,7 @@ task('addWhitelist').addParam('token').addParam('private').setAction(async (task
     to: hre.ethers.utils.getAddress(crosschain),
   };
   unsignedTx = await signer.populateTransaction(unsignedTx);
-  unsignedTx.nonce = await signer.getTransactionCount() + 1;
+  unsignedTx.nonce = await signer.getTransactionCount();
   const signedTx = await signer.signTransaction(unsignedTx);
   const tx = await hre.ethers.provider.sendTransaction(signedTx);
   const receipt = await tx.wait();
@@ -312,7 +312,7 @@ module.exports = {
   solidity: "0.8.4",
   networks: {
     axon: {
-      url: process.env.AXON_URL|| "",
+      url: process.env.AXON_URL|| "http://18.162.235.225:8000/",
       accounts:
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
     },

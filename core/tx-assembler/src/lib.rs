@@ -9,11 +9,13 @@ pub use crate::indexer::IndexerAdapter;
 
 use std::collections::HashMap;
 use std::error::Error;
+use std::str::FromStr;
 use std::sync::{Arc, RwLock};
 
 use arc_swap::ArcSwap;
 use ckb_jsonrpc_types::JsonBytes;
 use ckb_sdk::rpc::ckb_indexer::{Cell, Pagination, ScriptType, SearchKey};
+use ckb_sdk::Address;
 use ckb_types::core::{Capacity, TransactionView};
 use ckb_types::{bytes::Bytes, packed, prelude::*};
 
@@ -332,7 +334,9 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssembler for TxAssemblerImpl<Adap
         let ckb_transfers = transfers
             .iter()
             .filter(|value| {
-                if value.direction == Direction::FromAxon {
+                if value.direction == Direction::FromAxon
+                    && Address::from_str(&value.ckb_address).is_ok()
+                {
                     if value.sudt_amount > 0 {
                         erc20_tokens.erc20_config.contains_key(&value.erc20_address)
                     } else {
@@ -347,8 +351,9 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssembler for TxAssemblerImpl<Adap
                 if let Some(lockhash) = erc20_tokens.erc20_config.get(&value.erc20_address) {
                     sudt_lockhash = *lockhash;
                 }
+                let address = Address::from_str(&value.ckb_address).unwrap();
                 util::build_transfer_output_cell(
-                    value.address,
+                    address.payload().into(),
                     value.ckb_amount,
                     value.sudt_amount,
                     sudt_lockhash,
