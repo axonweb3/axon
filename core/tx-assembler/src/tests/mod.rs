@@ -51,13 +51,13 @@ fn adapter() -> Arc<IndexerAdapter<RpcClient>> {
 #[tokio::test]
 async fn test_acs_complete_transacion() {
     let transfer = crosschain::Transfer {
-        direction: crosschain::Direction::FromAxon,
-        ckb_address: RECEIVE_ADDRESS.into(),
-        address: H160::default(),
-        ckb_amount: Capacity::bytes(85).unwrap().as_u64(),
+        direction:     crosschain::Direction::FromAxon,
+        ckb_address:   RECEIVE_ADDRESS.into(),
+        address:       H160::default(),
+        ckb_amount:    Capacity::bytes(85).unwrap().as_u64(),
         erc20_address: H160::default(),
-        sudt_amount: 0,
-        tx_hash: H256::default(),
+        sudt_amount:   0,
+        tx_hash:       H256::default(),
     };
     let acs = TxAssemblerImpl::new(adapter());
     let metadata_typeid_args = H256::from_slice(METADATA_TYPEID_ARGS.as_bytes());

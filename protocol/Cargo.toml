@@ -23,7 +23,7 @@ evm = { version = "0.35", features = ["with-serde"] }
 # evm = { git = "https://github.com/KaoImin/evm.git", branch = "debug", features = ["with-serde"] }
 faster-hex = "0.6"
 hasher = { version = "0.1", features = ["hash-keccak"] }
-ibc-proto = {version = "0.20", optional = true}
+ibc-proto = { version = "0.20", optional = true }
 lazy_static = "1.4"
 ophelia = "0.3"
 ophelia-secp256k1 = "0.3"
@@ -31,7 +31,7 @@ overlord = "0.4"
 prost = "0.11"
 rlp = "0.5"
 serde = { version = "1.0", features = ["derive"] }
-tendermint-proto = {version = "0.23", optional = true}
+tendermint-proto = { version = "0.23", optional = true }
 tokio = { version = "1.20", features = ["full"] }
 
 [dev-dependencies]

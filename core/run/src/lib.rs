@@ -79,8 +79,8 @@ pub static JEMALLOC: Jemalloc = Jemalloc;
 
 #[derive(Debug)]
 pub struct Axon {
-    config: Config,
-    genesis: RichBlock,
+    config:     Config,
+    genesis:    RichBlock,
     state_root: MerkleRoot,
 }
 
@@ -142,10 +142,10 @@ impl Axon {
         let mut mpt = MPTTrie::new(Arc::clone(&trie_db));
 
         let distribute_account = Account {
-            nonce: 0u64.into(),
-            balance: self.config.accounts.balance,
+            nonce:        0u64.into(),
+            balance:      self.config.accounts.balance,
             storage_root: RLP_NULL,
-            code_hash: NIL_DATA,
+            code_hash:    NIL_DATA,
         }
         .encode()?;
 
@@ -388,14 +388,14 @@ impl Axon {
             .verifier_list
             .iter()
             .map(|v| Validator {
-                pub_key: v.pub_key.as_bytes(),
+                pub_key:        v.pub_key.as_bytes(),
                 propose_weight: v.propose_weight,
-                vote_weight: v.vote_weight,
+                vote_weight:    v.vote_weight,
             })
             .collect();
 
         let node_info = NodeInfo {
-            chain_id: self.genesis.block.header.chain_id,
+            chain_id:     self.genesis.block.header.chain_id,
             self_address: my_address.clone(),
             self_pub_key: my_pubkey.to_bytes(),
         };
@@ -404,13 +404,13 @@ impl Axon {
         let latest_proof = storage.get_latest_proof(Context::new()).await?;
 
         let current_consensus_status = CurrentStatus {
-            prev_hash: current_block.hash(),
-            last_number: current_header.number,
-            max_tx_size: metadata.max_tx_size.into(),
-            tx_num_limit: metadata.tx_num_limit,
+            prev_hash:                  current_block.hash(),
+            last_number:                current_header.number,
+            max_tx_size:                metadata.max_tx_size.into(),
+            tx_num_limit:               metadata.tx_num_limit,
             last_checkpoint_block_hash: metadata.last_checkpoint_block_hash,
-            proof: latest_proof,
-            last_state_root: if current_number == 0 {
+            proof:                      latest_proof,
+            last_state_root:            if current_number == 0 {
                 self.state_root
             } else {
                 current_header.state_root
@@ -611,17 +611,17 @@ impl Axon {
         let authority_list = validators
             .iter()
             .map(|v| Node {
-                address: v.pub_key.clone(),
+                address:        v.pub_key.clone(),
                 propose_weight: v.propose_weight,
-                vote_weight: v.vote_weight,
+                vote_weight:    v.vote_weight,
             })
             .collect::<Vec<_>>();
 
         let timer_config = DurationConfig {
-            propose_ratio: metadata.propose_ratio,
-            prevote_ratio: metadata.prevote_ratio,
+            propose_ratio:   metadata.propose_ratio,
+            prevote_ratio:   metadata.prevote_ratio,
             precommit_ratio: metadata.precommit_ratio,
-            brake_ratio: metadata.brake_ratio,
+            brake_ratio:     metadata.brake_ratio,
         };
 
         tokio::spawn(async move {

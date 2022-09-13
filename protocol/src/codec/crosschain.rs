@@ -4,7 +4,7 @@ use crate::types::{HashWithDirection, RequestTxHashes, Requests, Transfer};
 
 impl Encodable for Transfer {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(6)
+        s.begin_list(7)
             .append(&(self.direction as u8))
             .append(&self.tx_hash)
             .append(&self.address)
