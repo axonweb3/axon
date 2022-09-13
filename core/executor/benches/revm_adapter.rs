@@ -1,17 +1,17 @@
 use std::sync::Arc;
 
-use evm::ExitSucceed;
-use protocol::ProtocolError;
+use evm::{ExitReason, ExitSucceed};
+use hashbrown::HashMap;
 use revm::{AccountInfo, Bytecode, Database, DatabaseCommit};
 
 use common_merkle::Merkle;
 use core_executor::{code_address, MPTTrie};
-use protocol::codec::ProtocolCodec;
 use protocol::traits::{Context, Storage};
 use protocol::types::{
     Account, Address, Bytes, ExecResp, ExecutorContext, Hasher, Proposal, SignedTransaction,
     TransactionAction, TxResp, H160, H256, NIL_DATA, RLP_NULL, U256,
 };
+use protocol::{codec::ProtocolCodec, ProtocolError};
 
 lazy_static::lazy_static! {
     static ref DISTRIBUTE_ADDRESS: Address = Address::from_hex("0x35e70c3f5a794a77efc2ec5ba964bffcc7fd2c0a").unwrap();
@@ -112,7 +112,7 @@ where
     S: Storage + 'static,
     DB: cita_trie::DB + 'static,
 {
-    fn commit(&mut self, changes: hashbrown::HashMap<H160, revm::Account>) {
+    fn commit(&mut self, changes: HashMap<H160, revm::Account>) {
         changes.into_iter().for_each(|(addr, change)| {
             if change.is_empty() {
                 let _ = self.trie.remove(addr.as_bytes());
@@ -251,7 +251,7 @@ pub fn revm_call<T: Database>(
     let (res, _state) = evm.transact();
     TxResp {
         // todo
-        exit_reason:  evm::ExitReason::Succeed(ExitSucceed::Returned),
+        exit_reason:  ExitReason::Succeed(ExitSucceed::Returned),
         ret:          match res.out {
             revm::TransactOut::None => vec![],
             revm::TransactOut::Call(ret) => ret.to_vec(),
@@ -259,9 +259,7 @@ pub fn revm_call<T: Database>(
         },
         gas_used:     res.gas_used,
         remain_gas:   gas_limit - res.gas_used,
-        // todo
         logs:         vec![],
-        // todo
         code_address: None,
         removed:      false,
     }
