@@ -1549,6 +1549,7 @@ dependencies = [
  "core-storage",
  "ibc",
  "ibc-proto",
+ "log",
  "tonic",
 ]
 
@@ -1670,6 +1671,7 @@ dependencies = [
  "core-consensus",
  "core-cross-client",
  "core-executor",
+ "core-ibc",
  "core-interoperation",
  "core-mempool",
  "core-metadata",

@@ -41,6 +41,7 @@ use core_cross_client::{
     END_GOSSIP_BUILD_CKB_TX, END_GOSSIP_CKB_TX_SIGNATURE,
 };
 use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB};
+// use core_ibc::run_ibc_grpc;
 use core_interoperation::InteroperationImpl;
 use core_mempool::{
     DefaultMemPoolAdapter, MemPoolImpl, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
@@ -68,7 +69,6 @@ use protocol::{
     types::H160,
 };
 use protocol::{tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
-
 #[cfg(all(
     not(target_env = "msvc"),
     not(target_os = "macos"),
@@ -221,6 +221,12 @@ impl Axon {
             feature = "jemalloc"
         ))]
         tokio::spawn(common_memory_tracker::track_current_process());
+
+        // let grpc_adapter = IbcAdapter {};
+        // let grpc_addr = "[::1]:50051".to_string();
+        // tokio::spawn(async {
+        //     run_ibc_grpc(grpc_adapter, grpc_addr).await;
+        // });
 
         log::info!("node starts");
         observe_listen_port_occupancy(&[self.config.network.listening_address.clone()]).await?;
