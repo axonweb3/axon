@@ -51,7 +51,7 @@ use core_network::{
     observe_listen_port_occupancy, NetworkConfig, NetworkService, PeerId, PeerIdExt,
 };
 use core_rpc_client::RpcClient;
-use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
+use core_storage::{adapter::rocks::RocksAdapter, ImplStorage, DEFAULT_CACHE_SIZE};
 use core_tx_assembler::{IndexerAdapter, TxAssemblerImpl};
 use protocol::lazy::{CHAIN_ID, CURRENT_STATE_ROOT};
 #[cfg(unix)]
@@ -118,7 +118,7 @@ impl Axon {
         // Init Block db
         let path_block = self.config.data_path_for_block();
         let rocks_adapter = Arc::new(RocksAdapter::new(path_block, self.config.rocksdb.clone())?);
-        let storage = Arc::new(ImplStorage::new(rocks_adapter, Default::default()));
+        let storage = Arc::new(ImplStorage::new(rocks_adapter, DEFAULT_CACHE_SIZE));
 
         match storage.get_latest_block(Context::new()).await {
             Ok(_) => {
