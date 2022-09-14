@@ -1,9 +1,8 @@
-# A simple config set for creating a new chain
-
-**The config files in this folder are only used for test!**
-
-Address in genesis:
-
- Address                                       | Asset(MTT)    | PrivKey                                                              | Pubkey                                                                 |
- --------------------------------------------- | ------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------- |
- `0x8ab0cf264df99d83525e9e11c7e4db01558ae1b1` | `0x100000000` | `0x37aa0f893d05914a4def0460c0a984d3611546cfb26924d7a7ca6e0db9950a2d` | `0x031ddc35212b7fc7ff6685b17d91f77c972535aee5c7ae5684d3e72b986f08834b` |
+ # The meaning of each transactions in Genesis.json
+ 1. `nonce = 0` means: Creation of metadata implementation contract
+ 2. `nonce = 1` means: Creation of wckb contract
+ 3. `nonce = 2` means: Creation of metadata proxy contract
+ 4. `nonce = 3` means: Creation of crosschain implementation contract
+ 5. `nonce = 4` means: Transaction of metadata update
+ 6. `nonce = 5` means: Creation of crosschain proxy contract
+ 7. `nonce = 6` means: Transaction of wckb grants role to crosschain
