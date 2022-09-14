@@ -82,6 +82,21 @@ fn test_calc_epoch() {
 // }
 
 // #[test]
+// fn test_output_metadata_multi() {
+//     use ethers_core::abi::AbiEncode;
+
+//     let r =
+// BufReader::new(File::open("./src/tests/metadata_multi.json").unwrap());
+//     let metadata: Metadata = serde_json::from_reader(r).unwrap();
+//     let call =
+// abi::MetadataContractCalls::AppendMetadata(abi::AppendMetadataCall {
+//         metadata: metadata.into(),
+//     });
+//     let raw_call = call.encode();
+//     println!("{:?}", raw_call);
+// }
+
+// #[test]
 // fn test_abi() {
 //     use ethers_contract::Abigen;
 //     Abigen::new("MetadataContract", "./metadata_abi.json")

@@ -1,0 +1,48 @@
+{
+  "version": {
+    "start": 0,
+    "end": 99999999
+  },
+  "epoch": 0,
+  "common_ref": "0x6c747758636859487038",
+  "timeout_gap": 1000,
+  "gas_limit": 4294967295000,
+  "gas_price": 1,
+  "interval": 3000,
+  "verifier_list": [
+    {
+      "bls_pub_key": "0xac85bbb40347b6e06ac2dc2da1f75eece029cdc0ed2d456c457d27e288bfbfbcd4c5c19716e9b250134a0e76ce50fa22",
+      "pub_key": "0x031ddc35212b7fc7ff6685b17d91f77c972535aee5c7ae5684d3e72b986f08834b",
+      "address": "0x8ab0cf264df99d83525e9e11c7e4db01558ae1b1",
+      "propose_weight": 1,
+      "vote_weight": 1
+    },
+    {
+      "bls_pub_key": "0x91ed9f3c51c580e56948b1bda9d00c2159665f8a6e284191ab816ee64ef2487d78453a547a0f14efbf842bba5b5a3b4f",
+      "pub_key": "0x02b77c74eb68af3d4d6cc7884ed6709f1a2a1af0f713382a4438ec2ea3a70d4d7f",
+      "address": "0xf386573563c3a75dbbd269fce9782620826ddac2",
+      "propose_weight": 1,
+      "vote_weight": 1
+    },
+    {
+      "bls_pub_key": "0x92e5d0856fb20ea9cb5ab5da2d3331c38d32cc96507f6ad902fa3da9400096a485fb4e09834bc93de55db224f26c229c",
+      "pub_key": "0x027ffd6a6a231561f2afe5878b1c743323b34263d16787130b1815fe35649b0bf5",
+      "address": "0x8af204ac5d7cb8815a6c53a50b72d01e729d3b22",
+      "propose_weight": 1,
+      "vote_weight": 1
+    },
+    {
+      "bls_pub_key": "0xa694f4e48a5a173b61731998f8f1204342dc5c8eb1e32cdae37415c20d11ae035ddac4a39f105e9c2d4d3691024d385d",
+      "pub_key": "0x0232c489c23b1207107e9a24648c1e4754a8c1c0b38db96df57a526201035058cb",
+      "address": "0xf4cc1652dcec2e5de9ce6fb1b6f9fa9456e957f1",
+      "propose_weight": 1,
+      "vote_weight": 1
+    }
+  ],
+  "propose_ratio": 15,
+  "prevote_ratio": 10,
+  "precommit_ratio": 10,
+  "brake_ratio": 10,
+  "tx_num_limit": 20000,
+  "max_tx_size": 409600000
+}
