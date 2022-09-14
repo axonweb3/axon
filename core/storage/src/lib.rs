@@ -41,7 +41,6 @@ use crate::schema::{
 };
 
 const BATCH_VALUE_DECODE_NUMBER: usize = 1000;
-pub const DEFAULT_CACHE_SIZE: usize = 10;
 
 lazy_static::lazy_static! {
     pub static ref LATEST_BLOCK_KEY: Hash = Hasher::digest(Bytes::from("latest_hash"));
