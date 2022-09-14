@@ -64,10 +64,12 @@ All the toolchains above can be dictated by **[Axon CLI](https://github.com/axon
 
 Please read the [CONTRIBUTING.md](./CONTRIBUTING.md) for details on code of conduct, and the process for submitting pull requests. And the security policy is described in [SECURITY.md](./SECURITY.md).
 
+## Communication
+
+Contact us through email: axon@axonweb3.io
+
+Linktree: https://linktr.ee/axonweb3
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE.md](./LICENSE) file for details.
-
-## Acknowledgment
-
-Axon is based on [Muta](https://github.com/nervosnetwork/muta). Sincerely thanks go to everyone who [contributed code to Muta](https://github.com/nervosnetwork/muta/graphs/contributors).
