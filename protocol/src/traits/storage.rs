@@ -210,76 +210,92 @@ pub mod ibc {
 
     pub trait IbcCrossChainStorage {
         fn get_client_type(&self, client_id: &ClientId) -> ProtocolResult<Option<ClientType>>;
+
         fn get_client_state(&self, client_id: &ClientId) -> ProtocolResult<Option<AnyClientState>>;
+
         fn get_consensus_state(
             &self,
             client_id: &ClientId,
             epoch: u64,
             height: u64,
         ) -> ProtocolResult<Option<AnyConsensusState>>;
+
         fn get_next_consensus_state(
             &self,
             client_id: &ClientId,
             height: Height,
         ) -> ProtocolResult<Option<AnyConsensusState>>;
+
         fn get_prev_consensus_state(
             &self,
             client_id: &ClientId,
             height: Height,
         ) -> ProtocolResult<Option<AnyConsensusState>>;
+
         fn set_client_type(
             &mut self,
             client_id: ClientId,
             client_type: ClientType,
         ) -> ProtocolResult<()>;
+
         fn set_client_state(
             &mut self,
             client_id: ClientId,
             client_state: AnyClientState,
         ) -> ProtocolResult<()>;
+
         fn set_consensus_state(
             &mut self,
             client_id: ClientId,
             height: Height,
             consensus_state: AnyConsensusState,
         ) -> ProtocolResult<()>;
+
         fn set_connection_end(
             &mut self,
             connection_id: ConnectionId,
             connection_end: ConnectionEnd,
         ) -> ProtocolResult<()>;
+
         fn set_connection_to_client(
             &mut self,
             connection_id: ConnectionId,
             client_id: &ClientId,
         ) -> ProtocolResult<()>;
+
         fn get_connection_end(
             &self,
             conn_id: &ConnectionId,
         ) -> ProtocolResult<Option<ConnectionEnd>>;
+
         fn set_packet_commitment(
             &mut self,
             key: (PortId, ChannelId, Sequence),
             commitment: PacketCommitment,
         ) -> ProtocolResult<()>;
+
         fn delete_packet_commitment(
             &mut self,
             key: (PortId, ChannelId, Sequence),
         ) -> ProtocolResult<()>;
+
         fn set_packet_receipt(
             &mut self,
             key: (PortId, ChannelId, Sequence),
             receipt: Receipt,
         ) -> ProtocolResult<()>;
+
         fn set_packet_acknowledgement(
             &mut self,
             key: (PortId, ChannelId, Sequence),
             ack_commitment: AcknowledgementCommitment,
         ) -> ProtocolResult<()>;
+
         fn delete_packet_acknowledgement(
             &mut self,
             key: (PortId, ChannelId, Sequence),
         ) -> ProtocolResult<()>;
+
         fn set_connection_channels(
             &mut self,
             _conn_id: ConnectionId,
@@ -287,34 +303,40 @@ pub mod ibc {
         ) -> ProtocolResult<()> {
             todo!()
         }
+
         fn set_channel(
             &mut self,
             port_id: PortId,
             chan_id: ChannelId,
             chan_end: ChannelEnd,
         ) -> ProtocolResult<()>;
+
         fn set_next_sequence_send(
             &mut self,
             port_id: PortId,
             chan_id: ChannelId,
             seq: Sequence,
         ) -> ProtocolResult<()>;
+
         fn set_next_sequence_recv(
             &mut self,
             port_id: PortId,
             chan_id: ChannelId,
             seq: Sequence,
         ) -> ProtocolResult<()>;
+
         fn set_next_sequence_ack(
             &mut self,
             port_id: PortId,
             chan_id: ChannelId,
             seq: Sequence,
         ) -> ProtocolResult<()>;
+
         fn get_channel_end(
             &self,
             port_channel_id: &(PortId, ChannelId),
         ) -> ProtocolResult<Option<ChannelEnd>>;
+
         fn get_next_sequence_send(
             &self,
             port_channel_id: &(PortId, ChannelId),

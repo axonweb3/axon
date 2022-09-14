@@ -6,7 +6,6 @@ edition = "2021"
 
 [dependencies]
 cita_trie = "3.0"
-
 crossbeam-queue = "0.3"
 dashmap = { version = "5.4", features = ["rayon"] }
 futures = { version = "0.3", features = [ "async-await" ] }
