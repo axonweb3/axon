@@ -274,6 +274,11 @@ pub mod ibc {
             commitment: PacketCommitment,
         ) -> ProtocolResult<()>;
 
+        fn get_packet_commitment(
+            &self,
+            key: &(PortId, ChannelId, Sequence),
+        ) -> ProtocolResult<Option<PacketCommitment>>;
+
         fn delete_packet_commitment(
             &mut self,
             key: (PortId, ChannelId, Sequence),
@@ -285,11 +290,21 @@ pub mod ibc {
             receipt: Receipt,
         ) -> ProtocolResult<()>;
 
+        fn get_packet_receipt(
+            &self,
+            key: &(PortId, ChannelId, Sequence),
+        ) -> ProtocolResult<Option<Receipt>>;
+
         fn set_packet_acknowledgement(
             &mut self,
             key: (PortId, ChannelId, Sequence),
             ack_commitment: AcknowledgementCommitment,
         ) -> ProtocolResult<()>;
+
+        fn get_packet_acknowledgement(
+            &self,
+            key: &(PortId, ChannelId, Sequence),
+        ) -> ProtocolResult<Option<AcknowledgementCommitment>>;
 
         fn delete_packet_acknowledgement(
             &mut self,
@@ -338,6 +353,16 @@ pub mod ibc {
         ) -> ProtocolResult<Option<ChannelEnd>>;
 
         fn get_next_sequence_send(
+            &self,
+            port_channel_id: &(PortId, ChannelId),
+        ) -> ProtocolResult<Option<Sequence>>;
+
+        fn get_next_sequence_recv(
+            &self,
+            port_channel_id: &(PortId, ChannelId),
+        ) -> ProtocolResult<Option<Sequence>>;
+
+        fn get_next_sequence_ack(
             &self,
             port_channel_id: &(PortId, ChannelId),
         ) -> ProtocolResult<Option<Sequence>>;
