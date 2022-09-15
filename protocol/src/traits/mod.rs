@@ -22,7 +22,7 @@ pub use creep::{Cloneable, Context};
 pub use crosschain::{CrossAdapter, CrossChain};
 pub use executor::{ApplyBackend, Backend, Executor, ExecutorAdapter};
 #[cfg(feature = "ibc")]
-pub use ibc::{IbcAdapter, IbcContext};
+pub use ibc::{IbcAdapter, IbcGrpcAdapter};
 pub use interoperation::Interoperation;
 pub use mempool::{MemPool, MemPoolAdapter};
 pub use metadata::{MetadataControl, MetadataControlAdapter};

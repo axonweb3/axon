@@ -6,7 +6,7 @@ use ibc::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::core::ics02_client::{error::Error, events::Attributes, handler::ClientResult};
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
 use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
-use ibc::core::ics04_channel::{commitment::PacketCommitment, packet::Sequence};
+use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc::core::ics24_host::{path, Path as IbcPath};
 use ibc::core::ics26_routing::context::Ics26Context;
@@ -287,7 +287,9 @@ impl<Adapter: IbcAdapter + 'static> ConnectionQuery for IbcConnectionService<Ada
             .map_err(|_| Status::invalid_argument("invalid connection id"))?;
         let conn: Option<ConnectionEnd> = self
             .connection_end_adapter
-            .get(Height::Pending, &path::ConnectionsPath(conn_id));
+            .get_connection_end(Height::Pending, &path::ConnectionsPath(conn_id))
+            .await
+            .map_err(Status::data_loss)?;
         Ok(Response::new(QueryConnectionResponse {
             connection:   conn.map(|c| c.into()),
             proof:        vec![],
@@ -566,25 +568,27 @@ impl<Adapter: IbcAdapter + 'static> ChannelQuery for IbcChannelService<Adapter> 
             }
         };
 
-        let packet_state = |path: path::CommitmentsPath| -> Option<PacketState> {
-            let commitment: PacketCommitment = self
-                .packet_commitment_adapter
-                .get(Height::Pending, &path)
-                .unwrap();
-            let data = commitment.into_vec();
-            (!data.is_empty()).then(|| PacketState {
-                port_id: path.port_id.to_string(),
-                channel_id: path.channel_id.to_string(),
-                sequence: path.sequence.into(),
-                data,
-            })
-        };
+        let mut packet_states = Vec::with_capacity(commitment_paths.len());
 
-        let packet_states: Vec<PacketState> = commitment_paths
+        for path in commitment_paths
             .into_iter()
             .filter_map(matching_commitment_paths)
-            .filter_map(packet_state)
-            .collect();
+        {
+            let commitment = self
+                .packet_commitment_adapter
+                .get_packet_commitment(Height::Pending, &path)
+                .map_err(Status::data_loss)?
+                .unwrap();
+            let data = commitment.into_vec();
+            if !data.is_empty() {
+                packet_states.push(PacketState {
+                    port_id: path.port_id.to_string(),
+                    channel_id: path.channel_id.to_string(),
+                    sequence: path.sequence.into(),
+                    data,
+                });
+            }
+        }
 
         Ok(Response::new(QueryPacketCommitmentsResponse {
             commitments: packet_states,
