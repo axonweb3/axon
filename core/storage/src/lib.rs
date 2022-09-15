@@ -16,6 +16,7 @@ use arc_swap::ArcSwap;
 use common_apm::metrics::storage::on_storage_get_cf;
 use common_apm::Instant;
 use common_apm_derive::trace_span;
+#[cfg(feature = "ibc")]
 use cosmos_ibc::{
     core::{
         ics02_client::client_consensus::AnyConsensusState,
@@ -29,9 +30,11 @@ use cosmos_ibc::{
     Height,
 };
 use protocol::codec::ProtocolCodec;
+#[cfg(feature = "ibc")]
+use protocol::traits::IbcCrossChainStorage;
 use protocol::traits::{
-    CkbCrossChainStorage, CommonStorage, Context, IbcCrossChainStorage, Storage, StorageAdapter,
-    StorageBatchModify, StorageCategory, StorageSchema,
+    CkbCrossChainStorage, CommonStorage, Context, Storage, StorageAdapter, StorageBatchModify,
+    StorageCategory, StorageSchema,
 };
 use protocol::types::{
     Block, BlockNumber, Bytes, DBBytes, Direction, Hash, HashWithDirection, Hasher, Header, Proof,
@@ -613,6 +616,7 @@ impl<Adapter: StorageAdapter> CkbCrossChainStorage for ImplStorage<Adapter> {
     }
 }
 
+#[cfg(feature = "ibc")]
 #[async_trait]
 impl<Adapter: StorageAdapter> IbcCrossChainStorage for ImplStorage<Adapter> {
     fn get_client_type(&self, _client_id: &ClientId) -> ProtocolResult<Option<ClientType>> {

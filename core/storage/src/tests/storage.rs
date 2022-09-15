@@ -1,7 +1,8 @@
-use std::sync::Arc;
-
+#[cfg(feature = "ibc")]
+use protocol::traits::IbcCrossChainStorage;
 use protocol::traits::{CommonStorage, Context, Storage};
 use protocol::types::Hasher;
+use std::sync::Arc;
 
 use crate::adapter::memory::MemoryAdapter;
 use crate::tests::{get_random_bytes, mock_block, mock_proof, mock_receipt, mock_signed_tx};
@@ -112,4 +113,15 @@ fn test_storage_evm_code_insert() {
 
     let code_3 = exec!(storage.get_code_by_address(Context::new(), &address));
     assert_eq!(code, code_3.unwrap());
+}
+
+#[test]
+#[cfg(feature = "ibc")]
+fn test_ibc_storage() {
+    use cosmos_ibc::core::ics02_client::client_type::ClientType;
+    use cosmos_ibc::core::ics24_host::identifier::{ClientId, ConnectionId};
+    let mut storage = ImplStorage::new(Arc::new(MemoryAdapter::new()), 10);
+    let connect_id = ConnectionId::new(3);
+    let client_id = ClientId::new(ClientType::Tendermint, 3).unwrap();
+    let _res = storage.set_connection_to_client(connect_id, &client_id);
 }
