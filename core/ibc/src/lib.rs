@@ -49,8 +49,9 @@ pub async fn run_ibc_grpc<
     ctx: Ctx,
 ) {
     log::info!("ibc start");
-    let grpc_service = GrpcService::new(Arc::new(adapter), addr, Arc::new(RwLock::new(ctx)));
-    grpc_service.run().await;
+    GrpcService::new(Arc::new(adapter), addr, Arc::new(RwLock::new(ctx)))
+        .run()
+        .await;
 }
 
 pub struct IbcImpl<Adapter: IbcContext, Router> {

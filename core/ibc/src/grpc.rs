@@ -1,18 +1,12 @@
-use std::net::SocketAddr;
-use std::str::FromStr;
 use std::sync::{Arc, RwLock};
+use std::{net::SocketAddr, str::FromStr};
 
-use ibc::core::ics02_client::client_consensus::AnyConsensusState;
-use ibc::core::ics02_client::client_state::AnyClientState;
 use ibc::core::ics02_client::context::{ClientKeeper, ClientReader};
-use ibc::core::ics02_client::error::Error;
-use ibc::core::ics02_client::events::Attributes;
-use ibc::core::ics02_client::handler::ClientResult;
 use ibc::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
+use ibc::core::ics02_client::{error::Error, events::Attributes, handler::ClientResult};
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
 use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
-use ibc::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
-use ibc::core::ics04_channel::packet::Sequence;
+use ibc::core::ics04_channel::{commitment::PacketCommitment, packet::Sequence};
 use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc::core::ics24_host::{path, Path as IbcPath};
 use ibc::core::ics26_routing::context::Ics26Context;
@@ -25,15 +19,14 @@ use ibc_proto::ibc::core::client::v1::{
 use ibc_proto::ibc::core::{
     channel::v1::{
         query_server::{Query as ChannelQuery, QueryServer as ChannelQueryServer},
-        IdentifiedChannel as RawIdentifiedChannel, PacketState, QueryChannelClientStateRequest,
-        QueryChannelClientStateResponse, QueryChannelConsensusStateRequest,
-        QueryChannelConsensusStateResponse, QueryChannelRequest, QueryChannelResponse,
-        QueryChannelsRequest, QueryChannelsResponse, QueryConnectionChannelsRequest,
-        QueryConnectionChannelsResponse, QueryNextSequenceReceiveRequest,
-        QueryNextSequenceReceiveResponse, QueryPacketAcknowledgementRequest,
-        QueryPacketAcknowledgementResponse, QueryPacketAcknowledgementsRequest,
-        QueryPacketAcknowledgementsResponse, QueryPacketCommitmentRequest,
-        QueryPacketCommitmentResponse, QueryPacketCommitmentsRequest,
+        PacketState, QueryChannelClientStateRequest, QueryChannelClientStateResponse,
+        QueryChannelConsensusStateRequest, QueryChannelConsensusStateResponse, QueryChannelRequest,
+        QueryChannelResponse, QueryChannelsRequest, QueryChannelsResponse,
+        QueryConnectionChannelsRequest, QueryConnectionChannelsResponse,
+        QueryNextSequenceReceiveRequest, QueryNextSequenceReceiveResponse,
+        QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementResponse,
+        QueryPacketAcknowledgementsRequest, QueryPacketAcknowledgementsResponse,
+        QueryPacketCommitmentRequest, QueryPacketCommitmentResponse, QueryPacketCommitmentsRequest,
         QueryPacketCommitmentsResponse, QueryPacketReceiptRequest, QueryPacketReceiptResponse,
         QueryUnreceivedAcksRequest, QueryUnreceivedAcksResponse, QueryUnreceivedPacketsRequest,
         QueryUnreceivedPacketsResponse,
@@ -60,8 +53,7 @@ use ibc_proto::ibc::core::{
         QueryConnectionsRequest, QueryConnectionsResponse,
     },
 };
-use tonic::transport::Server;
-use tonic::{Request, Response, Status};
+use tonic::{transport::Server, Request, Response, Status};
 
 use protocol::{
     traits::IbcAdapter,
@@ -71,23 +63,25 @@ use protocol::{
 pub const CHAIN_REVISION_NUMBER: u64 = 0;
 
 pub struct GrpcService<Adapter: IbcAdapter, Ctx: Ics26Context> {
-    store: Arc<Adapter>,
-    addr:  SocketAddr,
-    ctx:   Arc<RwLock<Ctx>>,
+    adapter: Arc<Adapter>,
+    addr:    SocketAddr,
+    ctx:     Arc<RwLock<Ctx>>,
 }
 
-impl<Adapter: IbcAdapter + 'static, Ctx: Ics26Context + Sync + Send + 'static>
-    GrpcService<Adapter, Ctx>
+impl<Adapter, Ctx> GrpcService<Adapter, Ctx>
+where
+    Adapter: IbcAdapter + 'static,
+    Ctx: Ics26Context + Sync + Send + 'static,
 {
     pub fn new(adapter: Arc<Adapter>, addr: String, ctx: Arc<RwLock<Ctx>>) -> Self {
         GrpcService {
-            store: adapter,
+            adapter,
             addr: addr.parse().unwrap(),
             ctx,
         }
     }
 
-    pub async fn run(&self) {
+    pub async fn run(self) {
         log::info!("ibc run");
         // [::1] ipv6, equal to 127.0.0.1
         println!("addr {:?}", self.addr);
@@ -107,15 +101,15 @@ impl<Adapter: IbcAdapter + 'static, Ctx: Ics26Context + Sync + Send + 'static>
     }
 
     pub fn client_service(&self) -> ClientQueryServer<IbcClientService<Adapter>> {
-        ClientQueryServer::new(IbcClientService::new(Arc::clone(&self.store)))
+        ClientQueryServer::new(IbcClientService::new(Arc::clone(&self.adapter)))
     }
 
     pub fn connection_service(&self) -> ConnectionQueryServer<IbcConnectionService<Adapter>> {
-        ConnectionQueryServer::new(IbcConnectionService::new(Arc::clone(&self.store)))
+        ConnectionQueryServer::new(IbcConnectionService::new(Arc::clone(&self.adapter)))
     }
 
     pub fn channel_service(&self) -> ChannelQueryServer<IbcChannelService<Adapter>> {
-        ChannelQueryServer::new(IbcChannelService::new(Arc::clone(&self.store)))
+        ChannelQueryServer::new(IbcChannelService::new(Arc::clone(&self.adapter)))
     }
 
     pub fn client_msg_service(&self) -> ClientMsgServer<IbcClientMsgService<Ctx>> {
@@ -160,20 +154,24 @@ impl<Adapter: IbcAdapter + 'static> ClientQuery for IbcClientService<Adapter> {
             }
         };
 
-        let identified_client_state = |path: path::ClientStatePath| {
-            let client_state: AnyClientState = self.adapter.get(Height::Pending, &path).unwrap();
-            IdentifiedClientState {
-                client_id:    path.0.to_string(),
-                client_state: Some(client_state.into()),
-            }
-        };
+        let keys = self
+            .adapter
+            .get_paths_by_prefix(&path)
+            .map_err(Status::internal)?;
+        let mut client_states = Vec::with_capacity(keys.len());
 
-        let keys = self.adapter.get_keys(&path);
-        let client_states = keys
-            .into_iter()
-            .filter_map(client_state_paths)
-            .map(identified_client_state)
-            .collect();
+        for path in keys.into_iter().filter_map(client_state_paths) {
+            client_states.push(
+                self.adapter
+                    .get_client_state(Height::Pending, &path)
+                    .await
+                    .map(|client_state| IdentifiedClientState {
+                        client_id:    path.0.to_string(),
+                        client_state: Some(client_state.unwrap().into()),
+                    })
+                    .map_err(Status::data_loss)?,
+            );
+        }
 
         Ok(Response::new(QueryClientStatesResponse {
             client_states,
@@ -198,26 +196,30 @@ impl<Adapter: IbcAdapter + 'static> ClientQuery for IbcClientService<Adapter> {
             .try_into()
             .map_err(|e| Status::invalid_argument(format!("{:?}", e)))?;
 
-        let keys = self.adapter.get_keys(&path);
-        let consensus_states = keys
-            .into_iter()
-            .map(|path| {
-                if let Ok(IbcPath::ClientConsensusState(path)) = path.try_into() {
-                    let consensus_state: Option<AnyConsensusState> =
-                        self.adapter.get(Height::Pending, &path);
-                    ConsensusStateWithHeight {
-                        height:          Some(RawHeight {
-                            revision_number: path.epoch,
-                            revision_height: path.height,
-                        }),
-                        consensus_state: consensus_state.map(|cs| cs.into()),
-                    }
-                } else {
-                    panic!("unexpected path") // safety - store paths are
-                                              // assumed to be well-formed
-                }
-            })
-            .collect();
+        let keys = self
+            .adapter
+            .get_paths_by_prefix(&path)
+            .map_err(Status::internal)?;
+        let mut consensus_states = Vec::with_capacity(keys.len());
+
+        for path in keys.into_iter() {
+            if let Ok(IbcPath::ClientConsensusState(path)) = path.try_into() {
+                let consensus_state = self
+                    .adapter
+                    .get_consensus_state(Height::Pending, &path)
+                    .await
+                    .map_err(Status::data_loss)?;
+                consensus_states.push(ConsensusStateWithHeight {
+                    height:          Some(RawHeight {
+                        revision_number: path.epoch,
+                        revision_height: path.height,
+                    }),
+                    consensus_state: consensus_state.map(|cs| cs.into()),
+                });
+            } else {
+                panic!("unexpected path")
+            }
+        }
 
         Ok(Response::new(QueryConsensusStatesResponse {
             consensus_states,
@@ -262,15 +264,15 @@ impl<Adapter: IbcAdapter + 'static> ClientQuery for IbcClientService<Adapter> {
 }
 
 pub struct IbcConnectionService<Adapter: IbcAdapter> {
-    connection_end_store: Arc<Adapter>,
-    connection_ids_store: Arc<Adapter>,
+    connection_end_adapter: Arc<Adapter>,
+    connection_ids_adapter: Arc<Adapter>,
 }
 
 impl<Adapter: IbcAdapter> IbcConnectionService<Adapter> {
-    pub fn new(store: Arc<Adapter>) -> Self {
+    pub fn new(adapter: Arc<Adapter>) -> Self {
         Self {
-            connection_end_store: Arc::clone(&store),
-            connection_ids_store: Arc::clone(&store),
+            connection_end_adapter: Arc::clone(&adapter),
+            connection_ids_adapter: Arc::clone(&adapter),
         }
     }
 }
@@ -284,7 +286,7 @@ impl<Adapter: IbcAdapter + 'static> ConnectionQuery for IbcConnectionService<Ada
         let conn_id = ConnectionId::from_str(&request.get_ref().connection_id)
             .map_err(|_| Status::invalid_argument("invalid connection id"))?;
         let conn: Option<ConnectionEnd> = self
-            .connection_end_store
+            .connection_end_adapter
             .get(Height::Pending, &path::ConnectionsPath(conn_id));
         Ok(Response::new(QueryConnectionResponse {
             connection:   conn.map(|c| c.into()),
@@ -301,21 +303,30 @@ impl<Adapter: IbcAdapter + 'static> ConnectionQuery for IbcConnectionService<Ada
             .try_into()
             .expect("'connections' expected to be a valid Path");
 
-        let connection_paths = self.connection_end_store.get_keys(&connection_path_prefix);
+        let connection_paths = self
+            .connection_end_adapter
+            .get_paths_by_prefix(&connection_path_prefix)
+            .map_err(Status::internal)?;
 
-        let identified_connections: Vec<RawIdentifiedConnection> = connection_paths
-            .into_iter()
-            .map(|path| match path.try_into() {
+        let mut identified_connections: Vec<RawIdentifiedConnection> =
+            Vec::with_capacity(connection_paths.len());
+
+        for path in connection_paths.into_iter() {
+            match path.try_into() {
                 Ok(IbcPath::Connections(connections_path)) => {
                     let connection_end = self
-                        .connection_end_store
-                        .get(Height::Pending, &connections_path)
-                        .unwrap();
-                    IdentifiedConnectionEnd::new(connections_path.0, connection_end).into()
+                        .connection_end_adapter
+                        .get_connection_end(Height::Pending, &connections_path)
+                        .await
+                        .map_err(Status::data_loss)?;
+                    identified_connections.push(
+                        IdentifiedConnectionEnd::new(connections_path.0, connection_end.unwrap())
+                            .into(),
+                    );
                 }
                 _ => panic!("unexpected path"),
-            })
-            .collect();
+            }
+        }
 
         Ok(Response::new(QueryConnectionsResponse {
             connections: identified_connections,
@@ -334,20 +345,19 @@ impl<Adapter: IbcAdapter + 'static> ConnectionQuery for IbcConnectionService<Ada
             .parse()
             .map_err(|e| Status::invalid_argument(format!("{}", e)))?;
         let path = path::ClientConnectionsPath(client_id);
-        let connection_ids: Vec<ConnectionId> = self
-            .connection_ids_store
-            .get(Height::Pending, &path)
-            .unwrap_or_default();
-        let connection_paths = connection_ids
-            .into_iter()
+        let connection_ids = self
+            .connection_ids_adapter
+            .get_connection_ids(Height::Pending, &path)
+            .await
+            .unwrap_or_default()
+            .iter()
             .map(|conn_id| conn_id.to_string())
             .collect();
 
         Ok(Response::new(QueryClientConnectionsResponse {
-            connection_paths,
-            // Note: proofs aren't being used by hermes currently
-            proof: vec![],
-            proof_height: None,
+            connection_paths: connection_ids,
+            proof:            vec![],
+            proof_height:     None,
         }))
     }
 
@@ -367,19 +377,19 @@ impl<Adapter: IbcAdapter + 'static> ConnectionQuery for IbcConnectionService<Ada
 }
 
 pub struct IbcChannelService<Adapter: IbcAdapter> {
-    channel_end_store:       Arc<Adapter>,
-    packet_commitment_store: Arc<Adapter>,
-    packet_ack_store:        Arc<Adapter>,
-    packet_receipt_store:    Arc<Adapter>,
+    channel_end_adapter:       Arc<Adapter>,
+    packet_commitment_adapter: Arc<Adapter>,
+    packet_ack_adapter:        Arc<Adapter>,
+    packet_receipt_adapter:    Arc<Adapter>,
 }
 
 impl<Adapter: IbcAdapter> IbcChannelService<Adapter> {
-    pub fn new(store: Arc<Adapter>) -> Self {
+    pub fn new(adapter: Arc<Adapter>) -> Self {
         Self {
-            channel_end_store:       Arc::clone(&store),
-            packet_commitment_store: Arc::clone(&store),
-            packet_ack_store:        Arc::clone(&store),
-            packet_receipt_store:    Arc::clone(&store),
+            channel_end_adapter:       Arc::clone(&adapter),
+            packet_commitment_adapter: Arc::clone(&adapter),
+            packet_ack_adapter:        Arc::clone(&adapter),
+            packet_receipt_adapter:    Arc::clone(&adapter),
         }
     }
 }
@@ -396,14 +406,16 @@ impl<Adapter: IbcAdapter + 'static> ChannelQuery for IbcChannelService<Adapter> 
         let channel_id = ChannelId::from_str(&request.channel_id)
             .map_err(|_| Status::invalid_argument("invalid channel id"))?;
 
-        let channel = self
-            .channel_end_store
-            .get(Height::Pending, &path::ChannelEndsPath(port_id, channel_id))
+        let channel_opt = self
+            .channel_end_adapter
+            .get_channel_end(Height::Pending, &path::ChannelEndsPath(port_id, channel_id))
+            .await
+            .map_err(Status::data_loss)?
             .map(|channel_end: ChannelEnd| channel_end.into());
 
         Ok(Response::new(QueryChannelResponse {
-            channel,
-            proof: vec![],
+            channel:      channel_opt,
+            proof:        vec![],
             proof_height: None,
         }))
     }
@@ -417,27 +429,36 @@ impl<Adapter: IbcAdapter + 'static> ChannelQuery for IbcChannelService<Adapter> 
             .try_into()
             .expect("'channelEnds/ports' expected to be a valid Path");
 
-        let channel_paths = self.channel_end_store.get_keys(&channel_path_prefix);
-        let identified_channels: Vec<RawIdentifiedChannel> = channel_paths
-            .into_iter()
-            .map(|path| match path.try_into() {
+        let channel_paths = self
+            .channel_end_adapter
+            .get_paths_by_prefix(&channel_path_prefix)
+            .map_err(Status::internal)?;
+        let mut identified_channels = Vec::with_capacity(channel_paths.len());
+
+        for path in channel_paths.into_iter() {
+            match path.try_into() {
                 Ok(IbcPath::ChannelEnds(channels_path)) => {
                     let channel_end = self
-                        .channel_end_store
-                        .get(Height::Pending, &channels_path)
+                        .channel_end_adapter
+                        .get_channel_end(Height::Pending, &channels_path)
+                        .await
+                        .map_err(Status::data_loss)?
                         .expect("channel path returned by get_keys() had no associated channel");
-                    IdentifiedChannelEnd::new(channels_path.0, channels_path.1, channel_end).into()
+                    identified_channels.push(
+                        IdentifiedChannelEnd::new(channels_path.0, channels_path.1, channel_end)
+                            .into(),
+                    );
                 }
                 _ => panic!("unexpected path"),
-            })
-            .collect();
+            }
+        }
 
         Ok(Response::new(QueryChannelsResponse {
             channels:   identified_channels,
             pagination: None,
             height:     Some(RawHeight {
                 revision_number: CHAIN_REVISION_NUMBER,
-                revision_height: self.channel_end_store.current_height(),
+                revision_height: self.channel_end_adapter.current_height(),
             }),
         }))
     }
@@ -456,28 +477,34 @@ impl<Adapter: IbcAdapter + 'static> ChannelQuery for IbcChannelService<Adapter> 
             .try_into()
             .expect("'commitments/ports' expected to be a valid Path");
 
-        let keys = self.channel_end_store.get_keys(&path);
-        let channels = keys
-            .into_iter()
-            .filter_map(|path| {
-                if let Ok(IbcPath::ChannelEnds(path)) = path.try_into() {
-                    let channel_end: ChannelEnd =
-                        self.channel_end_store.get(Height::Pending, &path)?;
+        let keys = self
+            .channel_end_adapter
+            .get_paths_by_prefix(&path)
+            .map_err(Status::internal)?;
+        let mut identified_channels = Vec::with_capacity(keys.len());
+
+        for path in keys.into_iter() {
+            if let Ok(IbcPath::ChannelEnds(path)) = path.try_into() {
+                if let Some(channel_end) = self
+                    .channel_end_adapter
+                    .get_channel_end(Height::Pending, &path)
+                    .await
+                    .map_err(Status::data_loss)?
+                {
                     if channel_end.connection_hops.first() == Some(&conn_id) {
-                        return Some(IdentifiedChannelEnd::new(path.0, path.1, channel_end).into());
+                        identified_channels
+                            .push(IdentifiedChannelEnd::new(path.0, path.1, channel_end).into());
                     }
                 }
-
-                None
-            })
-            .collect();
+            }
+        }
 
         Ok(Response::new(QueryConnectionChannelsResponse {
-            channels,
+            channels:   identified_channels,
             pagination: None,
-            height: Some(RawHeight {
+            height:     Some(RawHeight {
                 revision_number: CHAIN_REVISION_NUMBER,
-                revision_height: self.channel_end_store.current_height(),
+                revision_height: self.channel_end_adapter.current_height(),
             }),
         }))
     }
@@ -500,7 +527,6 @@ impl<Adapter: IbcAdapter + 'static> ChannelQuery for IbcChannelService<Adapter> 
         todo!()
     }
 
-    /// PacketCommitment queries a stored packet commitment hash.
     async fn packet_commitment(
         &self,
         _request: Request<QueryPacketCommitmentRequest>,
@@ -524,7 +550,9 @@ impl<Adapter: IbcAdapter + 'static> ChannelQuery for IbcChannelService<Adapter> 
             let prefix: Path = String::from("commitments/ports")
                 .try_into()
                 .expect("'commitments/ports' expected to be a valid Path");
-            self.packet_commitment_store.get_keys(&prefix)
+            self.packet_commitment_adapter
+                .get_paths_by_prefix(&prefix)
+                .map_err(Status::internal)?
         };
 
         let matching_commitment_paths = |path: Path| -> Option<path::CommitmentsPath> {
@@ -540,7 +568,7 @@ impl<Adapter: IbcAdapter + 'static> ChannelQuery for IbcChannelService<Adapter> 
 
         let packet_state = |path: path::CommitmentsPath| -> Option<PacketState> {
             let commitment: PacketCommitment = self
-                .packet_commitment_store
+                .packet_commitment_adapter
                 .get(Height::Pending, &path)
                 .unwrap();
             let data = commitment.into_vec();
@@ -563,7 +591,7 @@ impl<Adapter: IbcAdapter + 'static> ChannelQuery for IbcChannelService<Adapter> 
             pagination:  None,
             height:      Some(RawHeight {
                 revision_number: CHAIN_REVISION_NUMBER,
-                revision_height: self.packet_commitment_store.current_height(),
+                revision_height: self.packet_commitment_adapter.current_height(),
             }),
         }))
     }
@@ -577,7 +605,6 @@ impl<Adapter: IbcAdapter + 'static> ChannelQuery for IbcChannelService<Adapter> 
         todo!()
     }
 
-    /// PacketAcknowledgement queries a stored packet acknowledgement hash.
     async fn packet_acknowledgement(
         &self,
         _request: Request<QueryPacketAcknowledgementRequest>,
@@ -601,7 +628,9 @@ impl<Adapter: IbcAdapter + 'static> ChannelQuery for IbcChannelService<Adapter> 
             let prefix: Path = String::from("acks/ports")
                 .try_into()
                 .expect("'acks/ports' expected to be a valid Path");
-            self.packet_ack_store.get_keys(&prefix)
+            self.packet_ack_adapter
+                .get_paths_by_prefix(&prefix)
+                .map_err(Status::internal)?
         };
 
         let matching_ack_paths = |path: Path| -> Option<path::AcksPath> {
@@ -613,30 +642,33 @@ impl<Adapter: IbcAdapter + 'static> ChannelQuery for IbcChannelService<Adapter> 
             }
         };
 
-        let packet_state = |path: path::AcksPath| -> Option<PacketState> {
-            let commitment: AcknowledgementCommitment =
-                self.packet_ack_store.get(Height::Pending, &path).unwrap();
-            let data = commitment.into_vec();
-            (!data.is_empty()).then(|| PacketState {
-                port_id: path.port_id.to_string(),
-                channel_id: path.channel_id.to_string(),
-                sequence: path.sequence.into(),
-                data,
-            })
-        };
+        let mut packet_states = Vec::with_capacity(ack_paths.len());
 
-        let packet_states: Vec<PacketState> = ack_paths
-            .into_iter()
-            .filter_map(matching_ack_paths)
-            .filter_map(packet_state)
-            .collect();
+        for path in ack_paths.into_iter().filter_map(matching_ack_paths) {
+            if let Some(commitment) = self
+                .packet_ack_adapter
+                .get_acknowledgement_commitment(Height::Pending, &path)
+                .await
+                .map_err(Status::data_loss)?
+            {
+                let data = commitment.into_vec();
+                if !data.is_empty() {
+                    packet_states.push(PacketState {
+                        port_id: path.port_id.to_string(),
+                        channel_id: path.channel_id.to_string(),
+                        sequence: path.sequence.into(),
+                        data,
+                    });
+                }
+            }
+        }
 
         Ok(Response::new(QueryPacketAcknowledgementsResponse {
             acknowledgements: packet_states,
             pagination:       None,
             height:           Some(RawHeight {
                 revision_number: CHAIN_REVISION_NUMBER,
-                revision_height: self.packet_ack_store.current_height(),
+                revision_height: self.packet_ack_adapter.current_height(),
             }),
         }))
     }
@@ -667,8 +699,10 @@ impl<Adapter: IbcAdapter + 'static> ChannelQuery for IbcChannelService<Adapter> 
                     sequence:   Sequence::from(*seq),
                 };
                 let packet_receipt: Option<()> = self
-                    .packet_receipt_store
-                    .get(Height::Pending, &receipts_path);
+                    .packet_receipt_adapter
+                    .get_opt(Height::Pending, &receipts_path)
+                    .ok()
+                    .flatten();
                 packet_receipt.is_none()
             })
             .collect();
@@ -677,7 +711,7 @@ impl<Adapter: IbcAdapter + 'static> ChannelQuery for IbcChannelService<Adapter> 
             sequences: unreceived_sequences,
             height:    Some(RawHeight {
                 revision_number: CHAIN_REVISION_NUMBER,
-                revision_height: self.packet_receipt_store.current_height(),
+                revision_height: self.packet_receipt_adapter.current_height(),
             }),
         }))
     }
@@ -707,10 +741,11 @@ impl<Adapter: IbcAdapter + 'static> ChannelQuery for IbcChannelService<Adapter> 
                     sequence:   Sequence::from(*seq),
                 };
 
-                let packet_commitment: Option<PacketCommitment> = self
-                    .packet_commitment_store
-                    .get(Height::Pending, &commitments_path);
-                packet_commitment.is_some()
+                self.packet_commitment_adapter
+                    .get_packet_commitment(Height::Pending, &commitments_path)
+                    .ok()
+                    .flatten()
+                    .is_some()
             })
             .collect();
 
@@ -718,7 +753,7 @@ impl<Adapter: IbcAdapter + 'static> ChannelQuery for IbcChannelService<Adapter> 
             sequences: unreceived_sequences,
             height:    Some(RawHeight {
                 revision_number: CHAIN_REVISION_NUMBER,
-                revision_height: self.packet_commitment_store.current_height(),
+                revision_height: self.packet_commitment_adapter.current_height(),
             }),
         }))
     }
@@ -811,8 +846,6 @@ impl<Ctx: ClientReader + ClientKeeper + Sync + Send + 'static> ClientMsg
         unimplemented!()
     }
 
-    /// SubmitMisbehaviour defines a rpc handler method for
-    /// MsgSubmitMisbehaviour.
     async fn submit_misbehaviour(
         &self,
         _request: tonic::Request<MsgSubmitMisbehaviour>,
