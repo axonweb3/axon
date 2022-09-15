@@ -70,7 +70,7 @@ where
 
 fn criterion_10000_txs(c: &mut Criterion) {
     let txs = mock_transactions(10000);
-    // MacOS M1 Pro, 16GB: time: 73.397ms
+    // MacOS M1 Pro, 16GB: time: 20.098ms
     c.bench_function("revm 10000 tx", |b| {
         let storage = new_storage();
         let db = new_rocks_trie_db();
@@ -83,7 +83,7 @@ fn criterion_10000_txs(c: &mut Criterion) {
             revm_exec(&mut evm, txs.clone());
         });
     });
-    // MacOS M1 Pro, 16GB: time: 56.627ms
+    // MacOS M1 Pro, 16GB: time:54.987ms
     c.bench_function("evm 10000 tx", |b| {
         let storage = new_storage();
         let db = new_rocks_trie_db();

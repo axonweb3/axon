@@ -461,37 +461,57 @@ impl<Adapter: IbcContext, Router> ChannelReader for IbcImpl<Adapter, Router> {
 
     fn get_next_sequence_recv(
         &self,
-        _port_channel_id: &(PortId, ChannelId),
+        port_channel_id: &(PortId, ChannelId),
     ) -> Result<Sequence, ChannelError> {
-        unimplemented!()
+        let adapter = self.adapter.read().unwrap();
+        match adapter.get_next_sequence_recv(port_channel_id) {
+            Ok(Some(v)) => Ok(v),
+            _ => Err(ChannelError::implementation_specific()),
+        }
     }
 
     fn get_next_sequence_ack(
         &self,
-        _port_channel_id: &(PortId, ChannelId),
+        port_channel_id: &(PortId, ChannelId),
     ) -> Result<Sequence, ChannelError> {
-        unimplemented!()
+        let adapter = self.adapter.read().unwrap();
+        match adapter.get_next_sequence_ack(port_channel_id) {
+            Ok(Some(v)) => Ok(v),
+            _ => Err(ChannelError::implementation_specific()),
+        }
     }
 
     fn get_packet_commitment(
         &self,
-        _key: &(PortId, ChannelId, Sequence),
+        key: &(PortId, ChannelId, Sequence),
     ) -> Result<PacketCommitment, ChannelError> {
-        unimplemented!()
+        let adapter = self.adapter.read().unwrap();
+        match adapter.get_packet_commitment(key) {
+            Ok(Some(c)) => Ok(c),
+            _ => Err(ChannelError::implementation_specific()),
+        }
     }
 
     fn get_packet_receipt(
         &self,
-        _key: &(PortId, ChannelId, Sequence),
+        key: &(PortId, ChannelId, Sequence),
     ) -> Result<Receipt, ChannelError> {
-        unimplemented!()
+        let adapter = self.adapter.read().unwrap();
+        match adapter.get_packet_receipt(key) {
+            Ok(Some(r)) => Ok(r),
+            _ => Err(ChannelError::implementation_specific()),
+        }
     }
 
     fn get_packet_acknowledgement(
         &self,
-        _key: &(PortId, ChannelId, Sequence),
+        key: &(PortId, ChannelId, Sequence),
     ) -> Result<AcknowledgementCommitment, ChannelError> {
-        unimplemented!()
+        let adapter = self.adapter.read().unwrap();
+        match adapter.get_packet_acknowledgement(key) {
+            Ok(Some(r)) => Ok(r),
+            _ => Err(ChannelError::implementation_specific()),
+        }
     }
 
     fn hash(&self, value: Vec<u8>) -> Vec<u8> {
@@ -516,10 +536,16 @@ impl<Adapter: IbcContext, Router> ChannelReader for IbcImpl<Adapter, Router> {
 
     fn client_update_time(
         &self,
-        _client_id: &ClientId,
-        _height: ibc::Height,
+        client_id: &ClientId,
+        height: ibc::Height,
     ) -> Result<Timestamp, ChannelError> {
-        unimplemented!()
+        match self
+            .client_processed_times
+            .get(&(client_id.clone(), height))
+        {
+            Some(t) => Ok(*t),
+            None => Err(ChannelError::implementation_specific()),
+        }
     }
 
     fn client_update_height(
@@ -531,7 +557,7 @@ impl<Adapter: IbcContext, Router> ChannelReader for IbcImpl<Adapter, Router> {
     }
 
     fn channel_counter(&self) -> Result<u64, ChannelError> {
-        unimplemented!()
+        Ok(self.channel_counter)
     }
 
     fn max_expected_time_per_block(&self) -> std::time::Duration {
