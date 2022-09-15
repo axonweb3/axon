@@ -1,10 +1,10 @@
 use std::net::SocketAddr;
 use std::str::FromStr;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
 use ibc::core::ics02_client::client_consensus::AnyConsensusState;
 use ibc::core::ics02_client::client_state::AnyClientState;
-use ibc::core::ics02_client::context::ClientReader;
+use ibc::core::ics02_client::context::{ClientKeeper, ClientReader};
 use ibc::core::ics02_client::error::Error;
 use ibc::core::ics02_client::events::Attributes;
 use ibc::core::ics02_client::handler::ClientResult;
@@ -15,6 +15,7 @@ use ibc::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketComm
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc::core::ics24_host::{path, Path as IbcPath};
+use ibc::core::ics26_routing::context::Ics26Context;
 use ibc::events::IbcEvent;
 use ibc::handler::{HandlerOutput, HandlerOutputBuilder};
 
@@ -69,16 +70,20 @@ use protocol::{
 
 pub const CHAIN_REVISION_NUMBER: u64 = 0;
 
-pub struct GrpcService<Adapter: IbcAdapter> {
+pub struct GrpcService<Adapter: IbcAdapter, Ctx: Ics26Context> {
     store: Arc<Adapter>,
     addr:  SocketAddr,
+    ctx:   Arc<RwLock<Ctx>>,
 }
 
-impl<Adapter: IbcAdapter + 'static> GrpcService<Adapter> {
-    pub fn new(adapter: Arc<Adapter>, addr: String) -> Self {
+impl<Adapter: IbcAdapter + 'static, Ctx: Ics26Context + Sync + Send + 'static>
+    GrpcService<Adapter, Ctx>
+{
+    pub fn new(adapter: Arc<Adapter>, addr: String, ctx: Arc<RwLock<Ctx>>) -> Self {
         GrpcService {
             store: adapter,
-            addr:  addr.parse().unwrap(),
+            addr: addr.parse().unwrap(),
+            ctx,
         }
     }
 
@@ -113,8 +118,8 @@ impl<Adapter: IbcAdapter + 'static> GrpcService<Adapter> {
         ChannelQueryServer::new(IbcChannelService::new(Arc::clone(&self.store)))
     }
 
-    pub fn client_msg_service(&self) -> ClientMsgServer<IbcClientMsgService> {
-        ClientMsgServer::new(IbcClientMsgService::new())
+    pub fn client_msg_service(&self) -> ClientMsgServer<IbcClientMsgService<Ctx>> {
+        ClientMsgServer::new(IbcClientMsgService::new(Arc::clone(&self.ctx)))
     }
 }
 
@@ -172,7 +177,7 @@ impl<Adapter: IbcAdapter + 'static> ClientQuery for IbcClientService<Adapter> {
 
         Ok(Response::new(QueryClientStatesResponse {
             client_states,
-            pagination: None, // TODO(hu55a1n1): add pagination support
+            pagination: None,
         }))
     }
 
@@ -216,7 +221,7 @@ impl<Adapter: IbcAdapter + 'static> ClientQuery for IbcClientService<Adapter> {
 
         Ok(Response::new(QueryConsensusStatesResponse {
             consensus_states,
-            pagination: None, // TODO(hu55a1n1): add pagination support
+            pagination: None,
         }))
     }
 
@@ -728,89 +733,33 @@ impl<Adapter: IbcAdapter + 'static> ChannelQuery for IbcChannelService<Adapter> 
     }
 }
 
-// this should be replaced by IbcImpl
-pub struct GrpcClientReader {}
-
-impl ClientReader for GrpcClientReader {
-    fn client_type(
-        &self,
-        _client_id: &ClientId,
-    ) -> Result<ibc::core::ics02_client::client_type::ClientType, Error> {
-        todo!()
-    }
-
-    fn client_state(&self, _client_id: &ClientId) -> Result<AnyClientState, Error> {
-        todo!()
-    }
-
-    fn consensus_state(
-        &self,
-        _client_id: &ClientId,
-        _height: ibc::Height,
-    ) -> Result<AnyConsensusState, Error> {
-        todo!()
-    }
-
-    fn next_consensus_state(
-        &self,
-        _client_id: &ClientId,
-        _height: ibc::Height,
-    ) -> Result<Option<AnyConsensusState>, Error> {
-        todo!()
-    }
-
-    fn prev_consensus_state(
-        &self,
-        _client_id: &ClientId,
-        _height: ibc::Height,
-    ) -> Result<Option<AnyConsensusState>, Error> {
-        todo!()
-    }
-
-    fn host_height(&self) -> ibc::Height {
-        todo!()
-    }
-
-    fn host_consensus_state(&self, _height: ibc::Height) -> Result<AnyConsensusState, Error> {
-        todo!()
-    }
-
-    fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, Error> {
-        todo!()
-    }
-
-    fn client_counter(&self) -> Result<u64, Error> {
-        todo!()
-    }
+pub struct IbcClientMsgService<Ctx: ClientReader + ClientKeeper> {
+    ctx: Arc<RwLock<Ctx>>,
 }
 
-pub struct IbcClientMsgService {
-    ctx: GrpcClientReader,
-}
-
-impl IbcClientMsgService {
-    pub fn new() -> Self {
-        Self {
-            ctx: GrpcClientReader {},
-        }
+impl<Ctx: ClientReader + ClientKeeper> IbcClientMsgService<Ctx> {
+    pub fn new(ctx: Arc<RwLock<Ctx>>) -> Self {
+        Self { ctx }
     }
 }
 
 #[tonic::async_trait]
-impl ClientMsg for IbcClientMsgService {
+impl<Ctx: ClientReader + ClientKeeper + Sync + Send + 'static> ClientMsg
+    for IbcClientMsgService<Ctx>
+{
     /// CreateClient defines a rpc handler method for MsgCreateClient.
     async fn create_client(
         &self,
         request: tonic::Request<MsgCreateClient>,
     ) -> Result<tonic::Response<MsgCreateClientResponse>, tonic::Status> {
-        // unimplemented!()
         let raw = request.get_ref();
         let msg = MsgCreateAnyClient::try_from(raw.clone()).unwrap();
 
         let mut output: HandlerOutputBuilder<ClientResult> = HandlerOutput::builder();
 
         // Construct this client's identifier
-        let id_counter = self.ctx.client_counter().unwrap();
+        let mut ctx = self.ctx.write().unwrap();
+        let id_counter = ctx.client_counter().unwrap();
         let client_id = ClientId::new(msg.client_state.client_type(), id_counter)
             .map_err(|e| {
                 Error::client_identifier_constructor(msg.client_state.client_type(), id_counter, e)
@@ -822,13 +771,13 @@ impl ClientMsg for IbcClientMsgService {
             client_id
         ));
         use ibc::core::ics02_client::handler::create_client::Result;
-        let _result = ClientResult::Create(Result {
+        let result = ClientResult::Create(Result {
             client_id:        client_id.clone(),
             client_type:      msg.client_state.client_type(),
             client_state:     msg.client_state.clone(),
             consensus_state:  msg.consensus_state,
-            processed_time:   self.ctx.host_timestamp(),
-            processed_height: self.ctx.host_height(),
+            processed_time:   ctx.host_timestamp(),
+            processed_height: ctx.host_height(),
         });
 
         let event_attributes = Attributes {
@@ -838,8 +787,8 @@ impl ClientMsg for IbcClientMsgService {
         output.emit(IbcEvent::CreateClient(event_attributes.into()));
 
         // Apply the result to the context (host chain store).
-        // ctx.store_client_result(handler_output.result)
-        // .map_err(Error::ics02_client)?;
+        ctx.store_client_result(result)
+            .map_err(|_v| tonic::Status::invalid_argument("store_client_result"))?;
 
         let res = tonic::Response::<MsgCreateClientResponse>::new(MsgCreateClientResponse {});
 
