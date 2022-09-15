@@ -41,7 +41,7 @@ use core_cross_client::{
     END_GOSSIP_BUILD_CKB_TX, END_GOSSIP_CKB_TX_SIGNATURE,
 };
 use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB};
-// use core_ibc::run_ibc_grpc;
+// use core_ibc::{run_ibc_grpc, DefaultIbcAdapter};
 use core_interoperation::InteroperationImpl;
 use core_mempool::{
     DefaultMemPoolAdapter, MemPoolImpl, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
@@ -221,12 +221,6 @@ impl Axon {
             feature = "jemalloc"
         ))]
         tokio::spawn(common_memory_tracker::track_current_process());
-
-        // let grpc_adapter = IbcAdapter {};
-        // let grpc_addr = "[::1]:50051".to_string();
-        // tokio::spawn(async {
-        //     run_ibc_grpc(grpc_adapter, grpc_addr).await;
-        // });
 
         log::info!("node starts");
         observe_listen_port_occupancy(&[self.config.network.listening_address.clone()]).await?;
@@ -596,6 +590,13 @@ impl Axon {
         network_service.register_rpc_response(RPC_RESP_SYNC_PULL_TXS)?;
 
         let network_handle = network_service.handle();
+
+        // Run IBC
+        // let ibc_adapter = DefaultIbcAdapter::new(Arc::clone(&storage)).await;
+        // let grpc_addr = "[::1]:50051".to_string();
+        // tokio::spawn(async {
+        //     run_ibc_grpc(ibc_adapter, grpc_addr).await;
+        // });
 
         // Run network
         tokio::spawn(network_service.run());
