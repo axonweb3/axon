@@ -1,42 +1,106 @@
 name: Chaos CI
-concurrency:
-  group: Chaos CI-${{ github.ref }}
-  cancel-in-progress: true
 on:
-  pull_request:
+  workflow_dispatch:
+    inputs:
+      dispatch:
+        type: string
+        description: "Dispatch contains pr context that want to trigger chaos test"
+        required: true
 
 jobs:
-  prologue:
-    name: prologue
-    runs-on: ubuntu-20.04
-    outputs:
-      job_skip: ${{ steps.prologue.outputs.job_skip }}
-    steps:
-      - uses: actions/checkout@v3
-      - name: prologue
-        id: prologue
-        uses: ./.github/actions/ci_prologue
-        with:
-          GITHUB_EVENT_NAME: ${{ github.event_name }}
-          PR_COMMONS_BODY: "${{ github.event.pull_request.body }}"
-          GITHUB_WORKFLOW: ${{ github.workflow }}
-          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
   build:
-    needs: prologue
+    if: contains(github.event_name, 'workflow_dispatch')
     runs-on: self-hosted
     environment: chaos
-    if: needs.prologue.outputs.job_skip == 'run'
+    outputs:
+      output-sha: ${{ steps.escape_multiple_lines_test_inputs.outputs.sha }}
     steps:
+      - name: Generate axon-bot token
+        if: contains(github.event_name, 'workflow_dispatch') &&
+            github.repository_owner == 'axonweb3'
+        id: generate_axon_bot_token
+        uses: wow-actions/use-app-token@v1
+        with:
+          app_id: ${{ secrets.AXON_BOT_APP_ID }}
+          private_key: ${{ secrets.AXON_BOT_PRIVATE_KEY }}
+      - name: Event is dispatch
+        if: contains(github.event_name, 'workflow_dispatch') &&
+            github.repository_owner == 'axonweb3'
+        uses: actions/github-script@v6
+        id: get_sha
+        with:
+          github-token: ${{ steps.generate_axon_bot_token.outputs.token }}
+          script: |
+            const dispatch = JSON.parse(`${{ github.event.inputs.dispatch }}`);
+            const pr = (
+             await github.rest.pulls.get({
+               owner: dispatch.repo.owner,
+               repo: dispatch.repo.repo,
+               pull_number: dispatch.issue.number,
+            })
+            ).data.head;
+            github.rest.repos.createCommitStatus({
+              state: 'pending',
+              owner: dispatch.repo.owner,
+              repo: dispatch.repo.repo,
+              context: '${{ github.workflow }}',
+              sha: pr.sha,
+              target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+            })
+            const ref= pr.ref;
+            const pr_number= dispatch.issue.number;
+            const sha= pr.sha;
+            return { ref,pr_number,sha}
+      - name: Escape multiple lines test inputs
+        id: escape_multiple_lines_test_inputs
+        run: |
+          ref=$(echo "${{ steps.get_sha.outputs.result }}" | awk -F ':' '{print $2}'| awk -F ',' '{print $1}')
+          pr_number=$(echo "${{ steps.get_sha.outputs.result }}" | awk -F ':' '{print $3}'| awk -F ',' '{print $1}')
+          sha=$(echo "${{ steps.get_sha.outputs.result }}" | awk -F ':' '{print $4}'| awk -F '}' '{print $1}')
+          echo "::set-output name=ref::$ref"
+          echo "::set-output name=pr_number::$pr_number"
+          echo "::set-output name=sha::$sha"
+         
       - name: Git checkout
         uses: actions/checkout@v3
+        with:
+          ref: ${{ steps.escape_multiple_lines_test_inputs.outputs.ref || 'main' }}
 
       - name: Build Axon
         run: |
           cd /home/ckb/axon-devops/axon-image/
-          ansible-playbook build.yml --tags build -e axon_branch=${{ github.head_ref }} -e pr_number=${{ github.event.pull_request.number }}
+          ansible-playbook build.yml --tags build -e axon_branch=${{ steps.escape_multiple_lines_test_inputs.outputs.ref }} -e pr_number=${{ steps.escape_multiple_lines_test_inputs.outputs.pr_number  }}
 
       - name: Run chaos
         run: |
           cd /home/ckb/axon-devops/axon-chaos/axon-chaos-integration
           yarn install
           node index.js ${{ secrets.CHAOS_URL }}
+
+  finally:
+    name: Finally
+    needs: [ build ]
+    if: always() && contains(github.event_name, 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate axon-bot token
+        id: generate_axon_bot_token
+        uses: wow-actions/use-app-token@v1
+        with:
+          app_id: ${{ secrets.AXON_BOT_APP_ID }}
+          private_key: ${{ secrets.AXON_BOT_PRIVATE_KEY }}
+      - if: contains(join(needs.*.result, ';'), 'failure') || contains(join(needs.*.result, ';'), 'cancelled')
+        run: exit 1
+      - uses: actions/github-script@v6
+        if: ${{ always() }}
+        with:
+          github-token: ${{ steps.generate_axon_bot_token.outputs.token }}
+          script: |
+            github.rest.repos.createCommitStatus({
+              state: '${{ job.status }}',
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              context: '${{ github.workflow }}',
+              sha: '${{ needs.build.outputs.output-sha }}',
+              target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+            })
