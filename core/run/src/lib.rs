@@ -591,13 +591,6 @@ impl Axon {
 
         let network_handle = network_service.handle();
 
-        // Run IBC
-        // let ibc_adapter = DefaultIbcAdapter::new(Arc::clone(&storage)).await;
-        // let grpc_addr = "[::1]:50051".to_string();
-        // tokio::spawn(async {
-        //     run_ibc_grpc(ibc_adapter, grpc_addr).await;
-        // });
-
         // Run network
         tokio::spawn(network_service.run());
 
