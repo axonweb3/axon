@@ -12,7 +12,7 @@ use cosmos_ibc::core::ics24_host::path::{
 };
 use creep::Context;
 
-use crate::types::{ConsensusStateWithHeight, Header, Metadata, Path, StoreHeight};
+use crate::types::{Header, Metadata, Path, StoreHeight};
 use crate::{async_trait, ProtocolResult};
 
 #[async_trait]
@@ -66,8 +66,6 @@ pub trait IbcGrpcAdapter {
 
 #[async_trait]
 pub trait IbcAdapter: IbcGrpcAdapter + Send + Sync {
-    async fn consensus_state_with_height(&self) -> ProtocolResult<ConsensusStateWithHeight>;
-
     async fn get_metadata(&self, height: u64) -> ProtocolResult<Metadata>;
 
     async fn get_header_by_height(&self, height: u64) -> ProtocolResult<Header>;
