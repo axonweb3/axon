@@ -52,8 +52,6 @@ where
     }
 }
 
-// todo : move to storage
-#[async_trait]
 impl<S> IbcCrossChainStorage for DefaultIbcAdapter<S> {
     fn get_client_type(&self, _client_id: &ClientId) -> ProtocolResult<Option<ClientType>> {
         todo!()
