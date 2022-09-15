@@ -15,7 +15,7 @@ use cosmos_ibc::core::ics24_host::{
 use cosmos_ibc::timestamp::Timestamp;
 
 use crate::types::{Hash, Header, MerkleRoot};
-use crate::ProtocolError;
+use crate::{ProtocolError, ProtocolErrorKind};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ConsensusStateWithHeight {
@@ -118,8 +118,7 @@ impl IbcHeader for Header {
         todo!()
     }
 }
-#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Clone)]
-pub struct Error(String);
+
 /// A newtype representing a valid ICS024 identifier.
 /// Implements `Deref<Target=String>`.
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Clone)]
@@ -132,14 +131,14 @@ impl Identifier {
     /// * Alphanumeric
     /// * `.`, `_`, `+`, `-`, `#`
     /// * `[`, `]`, `<`, `>`
-    fn validate(s: impl AsRef<str>) -> Result<(), Error> {
+    fn validate(s: impl AsRef<str>) -> Result<(), ProtocolError> {
         let s = s.as_ref();
 
         // give a `min` parameter of 0 here to allow id's of arbitrary
         // length as inputs; `validate_identifier` itself checks for
         // empty inputs and returns an error as appropriate
         validate_identifier(s, 0, s.len())
-            .map_err(|_v| Error("Error::invalid_identifier".to_string()))
+            .map_err(|e| ProtocolError::new(ProtocolErrorKind::Ibc, Box::new(e)))
     }
 }
 
@@ -152,7 +151,7 @@ impl Deref for Identifier {
 }
 
 impl TryFrom<String> for Identifier {
-    type Error = Error;
+    type Error = ProtocolError;
 
     fn try_from(s: String) -> Result<Self, Self::Error> {
         Identifier::validate(&s).map(|_| Self(s))
@@ -170,7 +169,7 @@ impl Display for Identifier {
 pub struct Path(Vec<Identifier>);
 
 impl TryFrom<String> for Path {
-    type Error = Error;
+    type Error = ProtocolError;
 
     fn try_from(s: String) -> Result<Self, Self::Error> {
         let mut identifiers = vec![];
@@ -183,10 +182,11 @@ impl TryFrom<String> for Path {
 }
 
 impl TryFrom<&[u8]> for Path {
-    type Error = Error;
+    type Error = ProtocolError;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        let s = from_utf8(value).map_err(|_v| Error("malformed_path_string".to_string()))?;
+        let s = from_utf8(value)
+            .map_err(|e| ProtocolError::new(ProtocolErrorKind::Ibc, Box::new(e)))?;
         s.to_owned().try_into()
     }
 }

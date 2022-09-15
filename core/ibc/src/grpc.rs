@@ -1,6 +1,5 @@
 use std::net::SocketAddr;
 use std::str::FromStr;
-
 use std::sync::{Arc, RwLock};
 
 use ibc::core::ics02_client::client_consensus::AnyConsensusState;
