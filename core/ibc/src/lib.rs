@@ -35,9 +35,23 @@ use ibc::{
     Height,
 };
 
+use protocol::traits::{IbcAdapter, IbcContext};
 use protocol::types::Hasher;
 
-use protocol::traits::IbcContext;
+use crate::grpc::GrpcService;
+
+pub async fn run_ibc_grpc<
+    Adapter: IbcAdapter + 'static,
+    Ctx: Ics26Context + Sync + Send + 'static,
+>(
+    adapter: Adapter,
+    addr: String,
+    ctx: Ctx,
+) {
+    log::info!("ibc start");
+    let grpc_service = GrpcService::new(Arc::new(adapter), addr, Arc::new(RwLock::new(ctx)));
+    grpc_service.run().await;
+}
 
 pub struct IbcImpl<Adapter: IbcContext, Router> {
     adapter:                  Arc<RwLock<Adapter>>,
