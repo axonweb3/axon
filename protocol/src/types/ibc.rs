@@ -256,5 +256,5 @@ impl_into_path_for!(
 pub enum StoreHeight {
     Pending,
     // Latest,
-    // Stable(RawHeight), // or equivalently `tendermint::block::Height`
+    // Stable(RawHeight),
 }
