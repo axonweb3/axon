@@ -68,6 +68,7 @@ use protocol::{
     types::H160,
 };
 use protocol::{tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
+
 #[cfg(all(
     not(target_env = "msvc"),
     not(target_os = "macos"),
