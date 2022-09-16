@@ -60,12 +60,11 @@ jobs:
           inputs="${inputs//'\n'/'%0A'}"
           inputs="${inputs//'\r'/'%0D'}"
           echo "::set-output name=result::$GITHUB_REF"
-
   Test:
     if: | 
-       contains(github.event_name, 'workflow_dispatch') || 
+       (contains(github.event_name, 'workflow_dispatch')) || 
        (contains(github.event_name, 'pull_request') && contains(fromJson('["dependabot[bot]" ]'), github.actor)) || 
-       github.ref == 'refs/heads/main'
+       (contains(github.event_name, 'push') && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     needs: set-output
     steps:
@@ -88,9 +87,9 @@ jobs:
 
   Metadata-Test:
     if: | 
-       contains(github.event_name, 'workflow_dispatch') || 
+       (contains(github.event_name, 'workflow_dispatch')) || 
        (contains(github.event_name, 'pull_request') && contains(fromJson('["dependabot[bot]" ]'), github.actor)) || 
-       github.ref == 'refs/heads/main'
+       (contains(github.event_name, 'push') && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     needs: set-output
     steps:
@@ -107,9 +106,9 @@ jobs:
 
   Crosschain-Test:
     if: | 
-       contains(github.event_name, 'workflow_dispatch') || 
+       (contains(github.event_name, 'workflow_dispatch')) || 
        (contains(github.event_name, 'pull_request') && contains(fromJson('["dependabot[bot]" ]'), github.actor)) || 
-       github.ref == 'refs/heads/main'
+       (contains(github.event_name, 'push') && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     needs: set-output
     steps:
@@ -148,6 +147,6 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               context: '${{ github.workflow }}',
-              sha: '${{ needs.set-output.outputs.output-sha }}',
+              sha: '${{ needs.Test.set-output.outputs.output-sha }}',
               target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
             })

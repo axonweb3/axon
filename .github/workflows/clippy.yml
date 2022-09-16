@@ -95,16 +95,14 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               context: '${{ github.workflow }}',
-              sha: '${{ needs.Clippy.outputs.output-sha || 'main'}}',
+              sha: '${{ needs.Dispatch-Clippy.outputs.output-sha || 'main'}}',
               target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
             })
   Clippy:
-    runs-on: ubuntu-latest
     if: |
-      (contains(github.event_name, 'pull_request') &&
-      contains(fromJson('["dependabot[bot]" ]'), github.actor)) ||
-      github.ref == 'refs/heads/main'
-
+      (contains(fromJson('["dependabot[bot]" ]'), github.actor) && github.event_name == 'pull_request') ||
+      (contains(github.event_name, 'push') && github.ref == 'refs/heads/main' )
+    runs-on: ubuntu-latest
     steps:
       - uses: lyricwulf/abc@v1
         with:

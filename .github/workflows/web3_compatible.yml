@@ -95,7 +95,6 @@ jobs:
           cd /home/runner/work/axon/axon/axon-test
           npm install
           npm run test:test --network=axon_test --grep=""
-
       - name: Check Axon Status
         if: success() || failure()
         run: |
@@ -130,7 +129,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               context: '${{ github.workflow }}',
-              sha: '${{ needs.web3-compatible.outputs.output-sha }}',
+              sha: '${{ needs.dispatch-web3-compatible.outputs.output-sha }}',
               target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
             })
 
@@ -140,9 +139,8 @@ jobs:
       matrix:
         net: ["axon"]
     if: |
-      (contains(github.event_name, 'pull_request') &&
-      contains(fromJson('["dependabot[bot]" ]'), github.actor)) ||
-      github.ref == 'refs/heads/main'
+      (contains(fromJson('["dependabot[bot]" ]'), github.actor) && github.event_name == 'pull_request') ||
+      (contains(github.event_name, 'push') && github.ref == 'refs/heads/main' )
     runs-on: ubuntu-latest
     steps:
       - name: Git checkout
