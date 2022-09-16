@@ -14,23 +14,24 @@ on:
         required: true
 
 jobs:
-  dispatch-web3-compatible:
+  web3-compatible:
     strategy:
       fail-fast: false
       matrix:
         net: ["axon"]
-    if: contains(github.event_name, 'workflow_dispatch')
     runs-on: ubuntu-latest
     outputs:
       output-sha: ${{ steps.escape_multiple_lines_test_inputs.outputs.result }}
     steps:
       - name: Generate axon-bot token
+        if: contains(github.event_name, 'workflow_dispatch')
         id: generate_axon_bot_token
         uses: wow-actions/use-app-token@v1
         with:
           app_id: ${{ secrets.AXON_BOT_APP_ID }}
           private_key: ${{ secrets.AXON_BOT_PRIVATE_KEY }}
       - name: Event is dispatch
+        if: contains(github.event_name, 'workflow_dispatch')
         uses: actions/github-script@v6
         id: get_sha
         with:
