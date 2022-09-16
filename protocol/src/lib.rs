@@ -54,6 +54,12 @@ impl From<ProtocolError> for Box<dyn Error + Send> {
     }
 }
 
+impl From<ProtocolError> for String {
+    fn from(error: ProtocolError) -> String {
+        error.to_string()
+    }
+}
+
 impl Error for ProtocolError {}
 
 pub type ProtocolResult<T> = Result<T, ProtocolError>;

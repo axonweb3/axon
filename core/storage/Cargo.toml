@@ -6,7 +6,7 @@ version = "0.1.0"
 
 [dependencies]
 arc-swap = "1.5"
-cosmos-ibc = { package = "ibc", version = "0.19", optional = true }
+cosmos-ibc = { package = "ibc", version = "0.19", optional = true , features = ["mocks"]}
 futures = "0.3"
 lazy_static = "1.4"
 log = "0.4"

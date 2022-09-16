@@ -59,7 +59,7 @@ jobs:
           inputs="${inputs//'%'/'%25'}"
           inputs="${inputs//'\n'/'%0A'}"
           inputs="${inputs//'\r'/'%0D'}"
-          echo "::set-output name=result::$GITHUB_REF"
+          echo "::set-output name=result::$inputs"
   Test:
     if: | 
        (contains(github.event_name, 'workflow_dispatch')) || 
@@ -125,8 +125,8 @@ jobs:
   
   finally:
     name: Finally
-    needs: [ Test,Metadata-Test,Crosschain-Test,set-output]
     if: always() && contains(github.event_name, 'workflow_dispatch')
+    needs: [ Test,Metadata-Test,Crosschain-Test,set-output]
     runs-on: ubuntu-latest
     steps:
       - name: Generate axon-bot token
@@ -147,6 +147,6 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               context: '${{ github.workflow }}',
-              sha: '${{ needs.Test.set-output.outputs.output-sha }}',
+              sha: '${{ needs.set-output.outputs.output-sha }}',
               target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
             })
