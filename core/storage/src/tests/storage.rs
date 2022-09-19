@@ -205,7 +205,6 @@ fn test_ibc_get_set_connection_end() {
     use cosmos_ibc::core::ics24_host::identifier::ConnectionId;
     use protocol::traits::IbcCrossChainStorage;
     let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()), 10);
-    // let client_id = ClientId::new(ClientType::Tendermint, 1033).unwrap();
     let connection_id = ConnectionId::new(11);
     let connection_end = ConnectionEnd::default();
     let set_ret = storage.set_connection_end(connection_id.clone(), connection_end.clone());

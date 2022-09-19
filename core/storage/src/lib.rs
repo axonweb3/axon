@@ -831,13 +831,6 @@ impl<Adapter: StorageAdapter> IbcCrossChainStorage for ImplStorage<Adapter> {
         &self,
         key: &(PortId, ChannelId, Sequence),
     ) -> ProtocolResult<Option<IbcReceipt>> {
-        // self.adapter
-        //     .get::<IbcReceiptSchema>(IbcWrapper(ReceiptsPath {
-        //         port_id:    key.0.clone(),
-        //         channel_id: key.1.clone(),
-        //         sequence:   key.2,
-        //     }))?
-        //     .map(|res| res.0);
         if let Some(_res) = self
             .adapter
             .get::<IbcReceiptSchema>(IbcWrapper(ReceiptsPath {
