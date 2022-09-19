@@ -16,7 +16,31 @@ use arc_swap::ArcSwap;
 use common_apm::metrics::storage::on_storage_get_cf;
 use common_apm::Instant;
 use common_apm_derive::trace_span;
+#[cfg(feature = "ibc")]
+use cosmos_ibc::{
+    core::{
+        ics02_client::client_consensus::AnyConsensusState,
+        ics02_client::{client_state::AnyClientState, client_type::ClientType},
+        ics03_connection::connection::ConnectionEnd,
+        ics04_channel::channel::ChannelEnd,
+        ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment},
+        ics04_channel::packet::{Receipt as IbcReceipt, Sequence},
+        ics24_host::{
+            identifier::{ChannelId, ClientId, ConnectionId, PortId},
+            path::{
+                AcksPath, ChannelEndsPath, ClientConnectionsPath, ClientConsensusStatePath,
+                ClientStatePath, ClientTypePath, CommitmentsPath, ConnectionsPath, ReceiptsPath,
+                SeqAcksPath, SeqRecvsPath, SeqSendsPath,
+            },
+        },
+    },
+    Height,
+};
+#[cfg(feature = "ibc")]
+use protocol::codec::crosschain::ibc::IbcWrapper;
 use protocol::codec::ProtocolCodec;
+#[cfg(feature = "ibc")]
+use protocol::traits::IbcCrossChainStorage;
 use protocol::traits::{
     CkbCrossChainStorage, CommonStorage, Context, Storage, StorageAdapter, StorageBatchModify,
     StorageCategory, StorageSchema,
@@ -27,6 +51,13 @@ use protocol::types::{
 };
 use protocol::{
     async_trait, tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
+};
+#[cfg(feature = "ibc")]
+use schema::ibc_crosschain_schema::{
+    AcknowledgementCommitmentSchema, ChannelEndSchema, ClientConsensusStateSchema,
+    ClientStateSchema, ClientTypeSchema, ConnectionEndSchema, ConnectionIdsSchema,
+    PacketCommitmentSchema, ReceiptSchema as IbcReceiptSchema, SeqAcksSchema, SeqRecvsSchema,
+    SeqSendsSchema,
 };
 
 use crate::cache::StorageCache;
@@ -598,6 +629,342 @@ impl<Adapter: StorageAdapter> CkbCrossChainStorage for ImplStorage<Adapter> {
             .get::<MonitorCkbNumberSchema>(*MONITOR_CKB_NUMBER_KEY)?
             .ok_or_else(|| StorageError::GetNone("monitor_ckb_number".to_string()))?;
         Ok(ret)
+    }
+}
+
+#[cfg(feature = "ibc")]
+#[async_trait]
+impl<Adapter: StorageAdapter> IbcCrossChainStorage for ImplStorage<Adapter> {
+    fn get_client_type(&self, client_id: &ClientId) -> ProtocolResult<Option<ClientType>> {
+        Ok(self
+            .adapter
+            .get::<ClientTypeSchema>(IbcWrapper(ClientTypePath(client_id.clone())))?
+            .map(|res| res.0))
+    }
+
+    fn get_client_state(&self, client_id: &ClientId) -> ProtocolResult<Option<AnyClientState>> {
+        Ok(self
+            .adapter
+            .get::<ClientStateSchema>(IbcWrapper(ClientStatePath(client_id.clone())))?
+            .map(|res| res.0))
+    }
+
+    fn get_consensus_state(
+        &self,
+        client_id: &ClientId,
+        epoch: u64,
+        height: u64,
+    ) -> ProtocolResult<Option<AnyConsensusState>> {
+        Ok(self
+            .adapter
+            .get::<ClientConsensusStateSchema>(IbcWrapper(ClientConsensusStatePath {
+                client_id: client_id.clone(),
+                epoch,
+                height,
+            }))?
+            .map(|res| res.0))
+    }
+
+    fn get_next_consensus_state(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+    ) -> ProtocolResult<Option<AnyConsensusState>> {
+        self.get_consensus_state(
+            client_id,
+            height.revision_number(),
+            height.revision_height(),
+        )
+    }
+
+    fn get_prev_consensus_state(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+    ) -> ProtocolResult<Option<AnyConsensusState>> {
+        self.get_consensus_state(
+            client_id,
+            height.revision_number(),
+            height.revision_height(),
+        )
+    }
+
+    fn set_client_type(&self, client_id: ClientId, client_type: ClientType) -> ProtocolResult<()> {
+        let path = IbcWrapper(ClientTypePath(client_id));
+        self.adapter
+            .insert::<ClientTypeSchema>(path, IbcWrapper(client_type))
+    }
+
+    fn set_client_state(
+        &self,
+        client_id: ClientId,
+        client_state: AnyClientState,
+    ) -> ProtocolResult<()> {
+        let path = IbcWrapper(ClientStatePath(client_id));
+        self.adapter
+            .insert::<ClientStateSchema>(path, IbcWrapper(client_state))
+    }
+
+    fn set_consensus_state(
+        &self,
+        client_id: ClientId,
+        height: Height,
+        consensus_state: AnyConsensusState,
+    ) -> ProtocolResult<()> {
+        let path = IbcWrapper(ClientConsensusStatePath {
+            client_id,
+            epoch: height.revision_number(),
+            height: height.revision_height(),
+        });
+        self.adapter
+            .insert::<ClientConsensusStateSchema>(path, IbcWrapper(consensus_state))
+    }
+
+    fn set_connection_end(
+        &self,
+        connection_id: ConnectionId,
+        connection_end: ConnectionEnd,
+    ) -> ProtocolResult<()> {
+        let path = IbcWrapper(ConnectionsPath(connection_id));
+        self.adapter
+            .insert::<ConnectionEndSchema>(path, IbcWrapper(connection_end))
+    }
+
+    fn get_connection_to_client(
+        &self,
+        client_id: &ClientId,
+    ) -> ProtocolResult<Option<Vec<ConnectionId>>> {
+        Ok(self
+            .adapter
+            .get::<ConnectionIdsSchema>(IbcWrapper(ClientConnectionsPath(client_id.clone())))?
+            .map(|res| res.0))
+    }
+
+    fn set_connection_to_client(
+        &self,
+        connection_id: ConnectionId,
+        client_id: &ClientId,
+    ) -> ProtocolResult<()> {
+        let path = IbcWrapper(ClientConnectionsPath(client_id.clone()));
+        self.adapter
+            .insert::<ConnectionIdsSchema>(path, IbcWrapper(vec![connection_id]))
+    }
+
+    fn set_connection_channels(
+        &self,
+        _conn_id: ConnectionId,
+        _port_channel_id: &(PortId, ChannelId),
+    ) -> ProtocolResult<()> {
+        todo!()
+    }
+
+    fn set_channel(
+        &self,
+        port_id: PortId,
+        chan_id: ChannelId,
+        chan_end: ChannelEnd,
+    ) -> ProtocolResult<()> {
+        let path = IbcWrapper(ChannelEndsPath(port_id, chan_id));
+        self.adapter
+            .insert::<ChannelEndSchema>(path, IbcWrapper(chan_end))
+    }
+
+    fn get_connection_end(&self, conn_id: &ConnectionId) -> ProtocolResult<Option<ConnectionEnd>> {
+        Ok(self
+            .adapter
+            .get::<ConnectionEndSchema>(IbcWrapper(ConnectionsPath(conn_id.clone())))?
+            .map(|res| res.0))
+    }
+
+    fn set_packet_commitment(
+        &self,
+        key: (PortId, ChannelId, Sequence),
+        commitment: PacketCommitment,
+    ) -> ProtocolResult<()> {
+        let path = IbcWrapper(CommitmentsPath {
+            port_id:    key.0.clone(),
+            channel_id: key.1.clone(),
+            sequence:   key.2,
+        });
+        self.adapter
+            .insert::<PacketCommitmentSchema>(path, IbcWrapper(commitment))
+    }
+
+    fn get_packet_commitment(
+        &self,
+        key: &(PortId, ChannelId, Sequence),
+    ) -> ProtocolResult<Option<PacketCommitment>> {
+        Ok(self
+            .adapter
+            .get::<PacketCommitmentSchema>(IbcWrapper(CommitmentsPath {
+                port_id:    key.0.clone(),
+                channel_id: key.1.clone(),
+                sequence:   key.2,
+            }))?
+            .map(|res| res.0))
+    }
+
+    fn delete_packet_commitment(&self, key: (PortId, ChannelId, Sequence)) -> ProtocolResult<()> {
+        let path = IbcWrapper(CommitmentsPath {
+            port_id:    key.0.clone(),
+            channel_id: key.1.clone(),
+            sequence:   key.2,
+        });
+        self.adapter.remove::<PacketCommitmentSchema>(path)
+    }
+
+    fn set_packet_receipt(
+        &self,
+        key: (PortId, ChannelId, Sequence),
+        _receipt: IbcReceipt,
+    ) -> ProtocolResult<()> {
+        let path = IbcWrapper(ReceiptsPath {
+            port_id:    key.0.clone(),
+            channel_id: key.1.clone(),
+            sequence:   key.2,
+        });
+        self.adapter
+            .insert::<IbcReceiptSchema>(path, IbcWrapper(()))
+    }
+
+    fn get_packet_receipt(
+        &self,
+        key: &(PortId, ChannelId, Sequence),
+    ) -> ProtocolResult<Option<IbcReceipt>> {
+        if let Some(_res) = self
+            .adapter
+            .get::<IbcReceiptSchema>(IbcWrapper(ReceiptsPath {
+                port_id:    key.0.clone(),
+                channel_id: key.1.clone(),
+                sequence:   key.2,
+            }))?
+        {}
+        Ok(Some(IbcReceipt::Ok))
+    }
+
+    fn set_packet_acknowledgement(
+        &self,
+        key: (PortId, ChannelId, Sequence),
+        ack_commitment: AcknowledgementCommitment,
+    ) -> ProtocolResult<()> {
+        let path = IbcWrapper(AcksPath {
+            port_id:    key.0,
+            channel_id: key.1,
+            sequence:   key.2,
+        });
+        self.adapter
+            .insert::<AcknowledgementCommitmentSchema>(path, IbcWrapper(ack_commitment))
+    }
+
+    fn get_packet_acknowledgement(
+        &self,
+        key: &(PortId, ChannelId, Sequence),
+    ) -> ProtocolResult<Option<AcknowledgementCommitment>> {
+        let path = IbcWrapper(AcksPath {
+            port_id:    key.0.clone(),
+            channel_id: key.1.clone(),
+            sequence:   key.2,
+        });
+        let ret = self
+            .adapter
+            .get::<AcknowledgementCommitmentSchema>(path)?
+            .unwrap()
+            .0;
+        Ok(Some(ret))
+    }
+
+    fn delete_packet_acknowledgement(
+        &self,
+        key: (PortId, ChannelId, Sequence),
+    ) -> ProtocolResult<()> {
+        let path = IbcWrapper(AcksPath {
+            port_id:    key.0.clone(),
+            channel_id: key.1.clone(),
+            sequence:   key.2,
+        });
+        self.adapter.remove::<AcknowledgementCommitmentSchema>(path)
+    }
+
+    fn set_next_sequence_send(
+        &self,
+        port_id: PortId,
+        chan_id: ChannelId,
+        seq: Sequence,
+    ) -> ProtocolResult<()> {
+        let path = IbcWrapper(SeqSendsPath(port_id, chan_id));
+        self.adapter.insert::<SeqSendsSchema>(path, IbcWrapper(seq))
+    }
+
+    fn set_next_sequence_recv(
+        &self,
+        port_id: PortId,
+        chan_id: ChannelId,
+        seq: Sequence,
+    ) -> ProtocolResult<()> {
+        let path = IbcWrapper(SeqRecvsPath(port_id, chan_id));
+        self.adapter.insert::<SeqRecvsSchema>(path, IbcWrapper(seq))
+    }
+
+    fn set_next_sequence_ack(
+        &self,
+        port_id: PortId,
+        chan_id: ChannelId,
+        seq: Sequence,
+    ) -> ProtocolResult<()> {
+        let path = IbcWrapper(SeqAcksPath(port_id, chan_id));
+        self.adapter.insert::<SeqAcksSchema>(path, IbcWrapper(seq))
+    }
+
+    fn get_channel_end(
+        &self,
+        port_channel_id: &(PortId, ChannelId),
+    ) -> ProtocolResult<Option<ChannelEnd>> {
+        Ok(self
+            .adapter
+            .get::<ChannelEndSchema>(IbcWrapper(ChannelEndsPath(
+                port_channel_id.0.clone(),
+                port_channel_id.1.clone(),
+            )))?
+            .map(|res| res.0))
+    }
+
+    fn get_next_sequence_send(
+        &self,
+        port_channel_id: &(PortId, ChannelId),
+    ) -> ProtocolResult<Option<Sequence>> {
+        Ok(self
+            .adapter
+            .get::<SeqSendsSchema>(IbcWrapper(SeqSendsPath(
+                port_channel_id.0.clone(),
+                port_channel_id.1.clone(),
+            )))?
+            .map(|res| res.0))
+    }
+
+    fn get_next_sequence_recv(
+        &self,
+        port_channel_id: &(PortId, ChannelId),
+    ) -> ProtocolResult<Option<Sequence>> {
+        Ok(self
+            .adapter
+            .get::<SeqRecvsSchema>(IbcWrapper(SeqRecvsPath(
+                port_channel_id.0.clone(),
+                port_channel_id.1.clone(),
+            )))?
+            .map(|res| res.0))
+    }
+
+    fn get_next_sequence_ack(
+        &self,
+        port_channel_id: &(PortId, ChannelId),
+    ) -> ProtocolResult<Option<Sequence>> {
+        Ok(self
+            .adapter
+            .get::<SeqAcksSchema>(IbcWrapper(SeqAcksPath(
+                port_channel_id.0.clone(),
+                port_channel_id.1.clone(),
+            )))?
+            .map(|res| res.0))
     }
 }
 

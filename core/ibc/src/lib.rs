@@ -4,6 +4,7 @@ mod error;
 mod grpc;
 mod transfer;
 
+pub use adapter::DefaultIbcAdapter;
 use std::borrow::Borrow;
 use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, RwLock};
