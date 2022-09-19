@@ -147,6 +147,6 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               context: '${{ github.workflow }}',
-              sha: '${{ needs.Test.set-output.outputs.output-sha }}',
+              sha: '${{ needs.set-output.outputs.output-sha }}',
               target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
             })
