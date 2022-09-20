@@ -41,14 +41,11 @@ use protocol::types::Hasher;
 
 use crate::grpc::GrpcService;
 
-pub async fn run_ibc_grpc<
+pub async fn run_ibc_grpc<Adapter, Ctx>(adapter: Adapter, addr: String, ctx: Ctx)
+where
     Adapter: IbcAdapter + 'static,
     Ctx: Ics26Context + Sync + Send + 'static,
->(
-    adapter: Adapter,
-    addr: String,
-    ctx: Ctx,
-) {
+{
     log::info!("ibc start");
     GrpcService::new(Arc::new(adapter), addr, Arc::new(RwLock::new(ctx)))
         .run()
@@ -65,6 +62,22 @@ pub struct IbcImpl<Adapter, Router> {
     client_processed_times:   HashMap<(ClientId, Height), Timestamp>,
     client_processed_heights: HashMap<(ClientId, Height), Height>,
     consensus_states:         HashMap<u64, ConsensusState>,
+}
+
+impl<Adapter, Router> IbcImpl<Adapter, Router> {
+    pub fn new(adapter: Arc<Adapter>, router: Router) -> Self {
+        IbcImpl {
+            adapter,
+            router,
+            client_counter: 0,
+            channel_counter: 0,
+            conn_counter: 0,
+            port_to_module_map: BTreeMap::new(),
+            client_processed_times: HashMap::new(),
+            client_processed_heights: HashMap::new(),
+            consensus_states: HashMap::new(),
+        }
+    }
 }
 
 impl<Adapter, Router> ClientReader for IbcImpl<Adapter, Router>
@@ -659,6 +672,7 @@ impl<Adapter: IbcAdapter + 'static> Ics26Context for IbcImpl<Adapter, IbcRouter>
     }
 }
 
+#[derive(Default)]
 pub struct IbcRouter;
 
 impl Router for IbcRouter {
