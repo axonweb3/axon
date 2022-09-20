@@ -34,10 +34,10 @@ Openness and mobility are the foundation of social development, so is blockchain
 
 Most of the infrastructure has been done and some substantial features to be developed are as below:
 
-1. Be compatible with [IBC](https://github.com/cosmos/ibc) protocol.
+1. Compatible with [IBC](https://github.com/cosmos/ibc) protocol.
 2. Implement the original homologous cross-chain protocol.
-3. Implement a cross-chain protocol with EVM-based chains.
-4. Implement more cross-chain protocols.
+3. Design a cross-chain protocol for EVM-based chains.
+4. Compatible with more cross-chain protocols in the future.
 
 ## Install
 
