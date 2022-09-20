@@ -36,8 +36,8 @@ Most of the infrastructure has been done and some substantial features to be dev
 
 1. Be compatible with [IBC](https://github.com/cosmos/ibc) protocol.
 2. Implement the original homologous cross-chain protocol.
-3. Implement a cross-chain protocol with EVM-based chain.
-4. Implement more cross-chain protocol.
+3. Implement a cross-chain protocol with EVM-based chains.
+4. Implement more cross-chain protocols.
 
 ## Install
 
