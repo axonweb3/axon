@@ -1,23 +1,67 @@
+use std::ops::Deref;
 use std::sync::{Arc, RwLock};
 use std::{net::SocketAddr, str::FromStr};
 
 use ibc::core::ics02_client::context::{ClientKeeper, ClientReader};
-use ibc::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
-use ibc::core::ics02_client::{error::Error, events::Attributes, handler::ClientResult};
+use ibc::core::ics02_client::handler::{dispatch as client_dispatch, ClientResult};
+use ibc::core::ics02_client::msgs::{
+    create_client::MsgCreateAnyClient,
+    update_client::MsgUpdateAnyClient,
+    upgrade_client::MsgUpgradeAnyClient,
+    ClientMsg::{self, CreateClient, UpdateClient, UpgradeClient},
+};
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
+use ibc::core::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
+use ibc::core::ics03_connection::handler::{dispatch as connection_dispatch, ConnectionResult};
+use ibc::core::ics03_connection::msgs::{
+    conn_open_ack::MsgConnectionOpenAck,
+    conn_open_confirm::MsgConnectionOpenConfirm,
+    conn_open_init::MsgConnectionOpenInit,
+    conn_open_try::MsgConnectionOpenTry,
+    ConnectionMsg::{
+        self, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
+    },
+};
 use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
+use ibc::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
+use ibc::core::ics04_channel::handler::{channel_dispatch, ChannelResult};
+use ibc::core::ics04_channel::msgs::{
+    chan_close_confirm::MsgChannelCloseConfirm,
+    chan_close_init::MsgChannelCloseInit,
+    chan_open_ack::MsgChannelOpenAck,
+    chan_open_confirm::MsgChannelOpenConfirm,
+    chan_open_init::MsgChannelOpenInit,
+    chan_open_try::MsgChannelOpenTry,
+    ChannelMsg::{
+        self, ChannelCloseConfirm, ChannelCloseInit, ChannelOpenAck, ChannelOpenConfirm,
+        ChannelOpenInit, ChannelOpenTry,
+    },
+};
 use ibc::core::ics04_channel::packet::Sequence;
-use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use ibc::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use ibc::core::ics24_host::{path, Path as IbcPath};
 use ibc::core::ics26_routing::context::Ics26Context;
-use ibc::events::IbcEvent;
-use ibc::handler::{HandlerOutput, HandlerOutputBuilder};
 
-use ibc_proto::ibc::core::client::v1::{
-    ConsensusStateWithHeight, QueryConsensusStateHeightsRequest, QueryConsensusStateHeightsResponse,
+use ibc_proto::ibc::core::channel::v1::{
+    MsgAcknowledgement, MsgAcknowledgementResponse,
+    MsgChannelCloseConfirm as RawMsgChannelCloseConfirm, MsgChannelCloseConfirmResponse,
+    MsgChannelCloseInit as RawMsgChannelCloseInit, MsgChannelCloseInitResponse,
+    MsgChannelOpenAck as RawMsgChannelOpenAck, MsgChannelOpenAckResponse,
+    MsgChannelOpenConfirm as RawMsgChannelOpenConfirm, MsgChannelOpenConfirmResponse,
+    MsgChannelOpenInit as RawMsgChannelOpenInit, MsgChannelOpenInitResponse,
+    MsgChannelOpenTry as RawMsgChannelOpenTry, MsgChannelOpenTryResponse, MsgRecvPacket,
+    MsgRecvPacketResponse, MsgTimeout, MsgTimeoutOnClose, MsgTimeoutOnCloseResponse,
+    MsgTimeoutResponse,
+};
+use ibc_proto::ibc::core::connection::v1::{
+    MsgConnectionOpenAck as RawMsgConnectionOpenAck, MsgConnectionOpenAckResponse,
+    MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm, MsgConnectionOpenConfirmResponse,
+    MsgConnectionOpenInit as RawMsgConnectionOpenInit, MsgConnectionOpenInitResponse,
+    MsgConnectionOpenTry as RawMsgConnectionOpenTry, MsgConnectionOpenTryResponse,
 };
 use ibc_proto::ibc::core::{
     channel::v1::{
+        msg_server::{Msg as ChannelMsgService, MsgServer as ChannelMsgServer},
         query_server::{Query as ChannelQuery, QueryServer as ChannelQueryServer},
         PacketState, QueryChannelClientStateRequest, QueryChannelClientStateResponse,
         QueryChannelConsensusStateRequest, QueryChannelConsensusStateResponse, QueryChannelRequest,
@@ -32,19 +76,21 @@ use ibc_proto::ibc::core::{
         QueryUnreceivedPacketsResponse,
     },
     client::v1::{
-        msg_server::{Msg as ClientMsg, MsgServer as ClientMsgServer},
+        msg_server::{Msg as ClientMsgService, MsgServer as ClientMsgServer},
         query_server::{Query as ClientQuery, QueryServer as ClientQueryServer},
-        Height as RawHeight, IdentifiedClientState, MsgCreateClient, MsgCreateClientResponse,
-        MsgSubmitMisbehaviour, MsgSubmitMisbehaviourResponse, MsgUpdateClient,
-        MsgUpdateClientResponse, MsgUpgradeClient, MsgUpgradeClientResponse,
+        ConsensusStateWithHeight, Height as RawHeight, IdentifiedClientState, MsgCreateClient,
+        MsgCreateClientResponse, MsgSubmitMisbehaviour, MsgSubmitMisbehaviourResponse,
+        MsgUpdateClient, MsgUpdateClientResponse, MsgUpgradeClient, MsgUpgradeClientResponse,
         QueryClientParamsRequest, QueryClientParamsResponse, QueryClientStateRequest,
         QueryClientStateResponse, QueryClientStatesRequest, QueryClientStatesResponse,
-        QueryClientStatusRequest, QueryClientStatusResponse, QueryConsensusStateRequest,
+        QueryClientStatusRequest, QueryClientStatusResponse, QueryConsensusStateHeightsRequest,
+        QueryConsensusStateHeightsResponse, QueryConsensusStateRequest,
         QueryConsensusStateResponse, QueryConsensusStatesRequest, QueryConsensusStatesResponse,
         QueryUpgradedClientStateRequest, QueryUpgradedClientStateResponse,
         QueryUpgradedConsensusStateRequest, QueryUpgradedConsensusStateResponse,
     },
     connection::v1::{
+        msg_server::{Msg as ConnectionMsgService, MsgServer as ConnectionMsgServer},
         query_server::{Query as ConnectionQuery, QueryServer as ConnectionQueryServer},
         IdentifiedConnection as RawIdentifiedConnection, QueryClientConnectionsRequest,
         QueryClientConnectionsResponse, QueryConnectionClientStateRequest,
@@ -53,6 +99,7 @@ use ibc_proto::ibc::core::{
         QueryConnectionsRequest, QueryConnectionsResponse,
     },
 };
+
 use tonic::{transport::Server, Request, Response, Status};
 
 use protocol::{
@@ -90,11 +137,15 @@ where
         let ibc_conn_service = self.connection_service();
         let ibc_channel_service = self.channel_service();
         let ibc_client_msg_service = self.client_msg_service();
+        let ibc_connection_msg_service = self.connection_msg_service();
+        let ibc_channel_msg_service = self.channel_msg_service();
         Server::builder()
             .add_service(ibc_client_service)
             .add_service(ibc_conn_service)
             .add_service(ibc_channel_service)
             .add_service(ibc_client_msg_service)
+            .add_service(ibc_connection_msg_service)
+            .add_service(ibc_channel_msg_service)
             .serve(self.addr)
             .await
             .unwrap();
@@ -114,6 +165,14 @@ where
 
     pub fn client_msg_service(&self) -> ClientMsgServer<IbcClientMsgService<Ctx>> {
         ClientMsgServer::new(IbcClientMsgService::new(Arc::clone(&self.ctx)))
+    }
+
+    pub fn connection_msg_service(&self) -> ConnectionMsgServer<IbcConnectionMsgService<Ctx>> {
+        ConnectionMsgServer::new(IbcConnectionMsgService::new(Arc::clone(&self.ctx)))
+    }
+
+    pub fn channel_msg_service(&self) -> ChannelMsgServer<IbcChannelMsgService<Ctx>> {
+        ChannelMsgServer::new(IbcChannelMsgService::new(Arc::clone(&self.ctx)))
     }
 }
 
@@ -780,80 +839,319 @@ impl<Ctx: ClientReader + ClientKeeper> IbcClientMsgService<Ctx> {
     pub fn new(ctx: Arc<RwLock<Ctx>>) -> Self {
         Self { ctx }
     }
+
+    fn process_msg(&self, msg: ClientMsg) -> Result<ClientResult, Status> {
+        let output = {
+            let ctx = self
+                .ctx
+                .read()
+                .map_err(|v| Status::internal(v.to_string()))?;
+            client_dispatch(ctx.deref(), msg).map_err(|v| Status::internal(v.to_string()))?
+        };
+
+        let mut ctx = self
+            .ctx
+            .write()
+            .map_err(|v| Status::internal(v.to_string()))?;
+        // Apply the result to the context (host chain store).
+        ctx.store_client_result(output.result.clone())
+            .map_err(|v| Status::internal(v.to_string()))?;
+
+        Ok(output.result)
+    }
 }
 
 #[tonic::async_trait]
-impl<Ctx: ClientReader + ClientKeeper + Sync + Send + 'static> ClientMsg
+impl<Ctx: ClientReader + ClientKeeper + Sync + Send + 'static> ClientMsgService
     for IbcClientMsgService<Ctx>
 {
     /// CreateClient defines a rpc handler method for MsgCreateClient.
     async fn create_client(
         &self,
-        request: tonic::Request<MsgCreateClient>,
-    ) -> Result<tonic::Response<MsgCreateClientResponse>, tonic::Status> {
-        let raw = request.get_ref();
-        let msg = MsgCreateAnyClient::try_from(raw.clone()).unwrap();
-
-        let mut output: HandlerOutputBuilder<ClientResult> = HandlerOutput::builder();
-
-        // Construct this client's identifier
-        let mut ctx = self.ctx.write().unwrap();
-        let id_counter = ctx.client_counter().unwrap();
-        let client_id = ClientId::new(msg.client_state.client_type(), id_counter)
-            .map_err(|e| {
-                Error::client_identifier_constructor(msg.client_state.client_type(), id_counter, e)
-            })
-            .unwrap();
-
-        output.log(format!(
-            "success: generated new client identifier: {}",
-            client_id
-        ));
-        use ibc::core::ics02_client::handler::create_client::Result;
-        let result = ClientResult::Create(Result {
-            client_id:        client_id.clone(),
-            client_type:      msg.client_state.client_type(),
-            client_state:     msg.client_state.clone(),
-            consensus_state:  msg.consensus_state,
-            processed_time:   ctx.host_timestamp(),
-            processed_height: ctx.host_height(),
-        });
-
-        let event_attributes = Attributes {
-            client_id,
-            ..Default::default()
-        };
-        output.emit(IbcEvent::CreateClient(event_attributes.into()));
-
-        // Apply the result to the context (host chain store).
-        ctx.store_client_result(result)
-            .map_err(|_v| tonic::Status::invalid_argument("store_client_result"))?;
-
-        let res = tonic::Response::<MsgCreateClientResponse>::new(MsgCreateClientResponse {});
-
-        Ok(res)
+        request: Request<MsgCreateClient>,
+    ) -> Result<Response<MsgCreateClientResponse>, Status> {
+        let msg = CreateClient(
+            MsgCreateAnyClient::try_from(request.get_ref().clone())
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
+        );
+        let _result = self.process_msg(msg)?;
+        Ok(Response::new(MsgCreateClientResponse {}))
     }
 
     /// UpdateClient defines a rpc handler method for MsgUpdateClient.
     async fn update_client(
         &self,
-        _request: tonic::Request<MsgUpdateClient>,
-    ) -> Result<tonic::Response<MsgUpdateClientResponse>, tonic::Status> {
-        unimplemented!()
+        request: Request<MsgUpdateClient>,
+    ) -> Result<Response<MsgUpdateClientResponse>, Status> {
+        let msg = UpdateClient(
+            MsgUpdateAnyClient::try_from(request.get_ref().clone())
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
+        );
+        let _result = self.process_msg(msg)?;
+        Ok(Response::new(MsgUpdateClientResponse {}))
     }
 
     /// UpgradeClient defines a rpc handler method for MsgUpgradeClient.
     async fn upgrade_client(
         &self,
-        _request: tonic::Request<MsgUpgradeClient>,
-    ) -> Result<tonic::Response<MsgUpgradeClientResponse>, tonic::Status> {
-        unimplemented!()
+        request: Request<MsgUpgradeClient>,
+    ) -> Result<Response<MsgUpgradeClientResponse>, Status> {
+        let msg = UpgradeClient(
+            MsgUpgradeAnyClient::try_from(request.get_ref().clone())
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
+        );
+        let _result = self.process_msg(msg)?;
+        Ok(Response::new(MsgUpgradeClientResponse {}))
     }
 
     async fn submit_misbehaviour(
         &self,
-        _request: tonic::Request<MsgSubmitMisbehaviour>,
-    ) -> Result<tonic::Response<MsgSubmitMisbehaviourResponse>, tonic::Status> {
+        _request: Request<MsgSubmitMisbehaviour>,
+    ) -> Result<Response<MsgSubmitMisbehaviourResponse>, Status> {
         unimplemented!()
+    }
+}
+
+pub struct IbcConnectionMsgService<Ctx: ConnectionReader + ConnectionKeeper> {
+    ctx: Arc<RwLock<Ctx>>,
+}
+
+impl<Ctx: ConnectionReader + ConnectionKeeper> IbcConnectionMsgService<Ctx> {
+    pub fn new(ctx: Arc<RwLock<Ctx>>) -> Self {
+        Self { ctx }
+    }
+
+    fn process_msg(&self, msg: ConnectionMsg) -> Result<ConnectionResult, Status> {
+        let output = {
+            let ctx = self
+                .ctx
+                .read()
+                .map_err(|v| Status::internal(v.to_string()))?;
+            connection_dispatch(ctx.deref(), msg).map_err(|v| Status::internal(v.to_string()))?
+        };
+
+        let mut ctx = self
+            .ctx
+            .write()
+            .map_err(|v| Status::internal(v.to_string()))?;
+        // Apply the result to the context (host chain store).
+        ctx.store_connection_result(output.result.clone())
+            .map_err(|v| Status::internal(v.to_string()))?;
+
+        Ok(output.result)
+    }
+}
+
+/// Generated trait containing gRPC methods that should be implemented for use
+/// with MsgServer.
+#[tonic::async_trait]
+impl<Ctx: ConnectionReader + ConnectionKeeper + Send + Sync + 'static> ConnectionMsgService
+    for IbcConnectionMsgService<Ctx>
+{
+    /// ConnectionOpenInit defines a rpc handler method for
+    /// MsgConnectionOpenInit.
+    async fn connection_open_init(
+        &self,
+        request: Request<RawMsgConnectionOpenInit>,
+    ) -> Result<Response<MsgConnectionOpenInitResponse>, Status> {
+        let msg = ConnectionOpenInit(
+            MsgConnectionOpenInit::try_from(request.get_ref().clone())
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
+        );
+        let _result = self.process_msg(msg)?;
+        Ok(Response::new(MsgConnectionOpenInitResponse {}))
+    }
+
+    /// ConnectionOpenTry defines a rpc handler method for MsgConnectionOpenTry.
+    async fn connection_open_try(
+        &self,
+        request: Request<RawMsgConnectionOpenTry>,
+    ) -> Result<Response<MsgConnectionOpenTryResponse>, Status> {
+        let msg = ConnectionOpenTry(Box::new(
+            MsgConnectionOpenTry::try_from(request.get_ref().clone())
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
+        ));
+        let _result = self.process_msg(msg)?;
+        Ok(Response::new(MsgConnectionOpenTryResponse {}))
+    }
+
+    /// ConnectionOpenAck defines a rpc handler method for MsgConnectionOpenAck.
+    async fn connection_open_ack(
+        &self,
+        request: Request<RawMsgConnectionOpenAck>,
+    ) -> Result<Response<MsgConnectionOpenAckResponse>, Status> {
+        let msg = ConnectionOpenAck(Box::new(
+            MsgConnectionOpenAck::try_from(request.get_ref().clone())
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
+        ));
+        let _result = self.process_msg(msg)?;
+        Ok(Response::new(MsgConnectionOpenAckResponse {}))
+    }
+
+    /// ConnectionOpenConfirm defines a rpc handler method for
+    /// MsgConnectionOpenConfirm.
+    async fn connection_open_confirm(
+        &self,
+        request: Request<RawMsgConnectionOpenConfirm>,
+    ) -> Result<Response<MsgConnectionOpenConfirmResponse>, Status> {
+        let msg = ConnectionOpenConfirm(
+            MsgConnectionOpenConfirm::try_from(request.get_ref().clone())
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
+        );
+        let _result = self.process_msg(msg)?;
+        Ok(Response::new(MsgConnectionOpenConfirmResponse {}))
+    }
+}
+
+pub struct IbcChannelMsgService<Ctx: ChannelReader + ChannelKeeper> {
+    ctx: Arc<RwLock<Ctx>>,
+}
+
+impl<Ctx: ChannelReader + ChannelKeeper> IbcChannelMsgService<Ctx> {
+    pub fn new(ctx: Arc<RwLock<Ctx>>) -> Self {
+        Self { ctx }
+    }
+
+    fn process_msg(&self, msg: ChannelMsg) -> Result<ChannelResult, Status> {
+        let output = {
+            let ctx = self
+                .ctx
+                .read()
+                .map_err(|v| Status::internal(v.to_string()))?;
+            channel_dispatch(ctx.deref(), &msg).map_err(|v| Status::internal(v.to_string()))?
+        };
+        let mut ctx = self
+            .ctx
+            .write()
+            .map_err(|v| Status::internal(v.to_string()))?;
+        // Apply the result to the context (host chain store).
+        ctx.store_channel_result(output.1.clone())
+            .map_err(|v| Status::internal(v.to_string()))?;
+
+        Ok(output.1)
+    }
+}
+
+/// Generated trait containing gRPC methods that should be implemented for use
+/// with MsgServer.
+#[tonic::async_trait]
+impl<Ctx: ChannelReader + ChannelKeeper + Send + Sync + 'static> ChannelMsgService
+    for IbcChannelMsgService<Ctx>
+{
+    /// ChannelOpenInit defines a rpc handler method for MsgChannelOpenInit.
+    async fn channel_open_init(
+        &self,
+        request: Request<RawMsgChannelOpenInit>,
+    ) -> Result<Response<MsgChannelOpenInitResponse>, Status> {
+        let msg = ChannelOpenInit(
+            MsgChannelOpenInit::try_from(request.get_ref().clone())
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
+        );
+        let result = self.process_msg(msg)?;
+        Ok(Response::new(MsgChannelOpenInitResponse {
+            channel_id: result.channel_id.to_string(),
+            version:    "ver".to_string(),
+        }))
+    }
+
+    /// ChannelOpenTry defines a rpc handler method for MsgChannelOpenTry.
+    async fn channel_open_try(
+        &self,
+        request: Request<RawMsgChannelOpenTry>,
+    ) -> Result<Response<MsgChannelOpenTryResponse>, Status> {
+        let msg = ChannelOpenTry(
+            MsgChannelOpenTry::try_from(request.get_ref().clone())
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
+        );
+        let _result = self.process_msg(msg)?;
+        Ok(Response::new(MsgChannelOpenTryResponse {
+            version: "msg".to_string(),
+        }))
+    }
+
+    /// ChannelOpenAck defines a rpc handler method for MsgChannelOpenAck.
+    async fn channel_open_ack(
+        &self,
+        request: Request<RawMsgChannelOpenAck>,
+    ) -> Result<Response<MsgChannelOpenAckResponse>, Status> {
+        let msg = ChannelOpenAck(
+            MsgChannelOpenAck::try_from(request.get_ref().clone())
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
+        );
+        let _result = self.process_msg(msg)?;
+        Ok(Response::new(MsgChannelOpenAckResponse {}))
+    }
+
+    /// ChannelOpenConfirm defines a rpc handler method for
+    /// MsgChannelOpenConfirm.
+    async fn channel_open_confirm(
+        &self,
+        request: Request<RawMsgChannelOpenConfirm>,
+    ) -> Result<Response<MsgChannelOpenConfirmResponse>, Status> {
+        let msg = ChannelOpenConfirm(
+            MsgChannelOpenConfirm::try_from(request.get_ref().clone())
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
+        );
+        let _result = self.process_msg(msg)?;
+        Ok(Response::new(MsgChannelOpenConfirmResponse {}))
+    }
+
+    /// ChannelCloseInit defines a rpc handler method for MsgChannelCloseInit.
+    async fn channel_close_init(
+        &self,
+        request: Request<RawMsgChannelCloseInit>,
+    ) -> Result<Response<MsgChannelCloseInitResponse>, Status> {
+        let msg = ChannelCloseInit(
+            MsgChannelCloseInit::try_from(request.get_ref().clone())
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
+        );
+        let _result = self.process_msg(msg)?;
+        Ok(Response::new(MsgChannelCloseInitResponse {}))
+    }
+
+    /// ChannelCloseConfirm defines a rpc handler method for
+    /// MsgChannelCloseConfirm.
+    async fn channel_close_confirm(
+        &self,
+        request: Request<RawMsgChannelCloseConfirm>,
+    ) -> Result<Response<MsgChannelCloseConfirmResponse>, Status> {
+        let msg = ChannelCloseConfirm(
+            MsgChannelCloseConfirm::try_from(request.get_ref().clone())
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
+        );
+        let _result = self.process_msg(msg)?;
+        Ok(Response::new(MsgChannelCloseConfirmResponse {}))
+    }
+
+    /// RecvPacket defines a rpc handler method for MsgRecvPacket.
+    async fn recv_packet(
+        &self,
+        _request: Request<MsgRecvPacket>,
+    ) -> Result<Response<MsgRecvPacketResponse>, Status> {
+        todo!()
+    }
+
+    /// Timeout defines a rpc handler method for MsgTimeout.
+    async fn timeout(
+        &self,
+        _request: Request<MsgTimeout>,
+    ) -> Result<Response<MsgTimeoutResponse>, Status> {
+        todo!()
+    }
+
+    /// TimeoutOnClose defines a rpc handler method for MsgTimeoutOnClose.
+    async fn timeout_on_close(
+        &self,
+        _request: Request<MsgTimeoutOnClose>,
+    ) -> Result<Response<MsgTimeoutOnCloseResponse>, Status> {
+        todo!()
+    }
+
+    /// Acknowledgement defines a rpc handler method for MsgAcknowledgement.
+    async fn acknowledgement(
+        &self,
+        _request: Request<MsgAcknowledgement>,
+    ) -> Result<Response<MsgAcknowledgementResponse>, Status> {
+        todo!()
     }
 }
