@@ -126,6 +126,11 @@ impl Default for ConfigRocksDB {
 }
 
 #[derive(Clone, Debug, Deserialize)]
+pub struct ConfigIbc {
+    pub uri: String,
+}
+
+#[derive(Clone, Debug, Deserialize)]
 pub struct ConfigLogger {
     pub filter:                     String,
     pub log_to_console:             bool,
@@ -248,6 +253,7 @@ pub struct Config {
     pub epoch_len:                   u64,
     pub metadata_contract_address:   H256,
     pub crosschain_contract_address: H256,
+    pub ibc:                         Option<ConfigIbc>,
     pub interoperability_extension:  ConfigInteroperabilityExtension,
 }
 
