@@ -840,16 +840,16 @@ impl<Ctx: ClientReader + ClientKeeper> IbcClientMsgService<Ctx> {
         Self { ctx }
     }
 
-    fn process_msg(&self, msg: ClientMsg) -> Result<ClientResult, tonic::Status> {
+    fn process_msg(&self, msg: ClientMsg) -> Result<ClientResult, Status> {
         let mut ctx = self
             .ctx
             .write()
-            .map_err(|v| tonic::Status::internal(format!("{:?}", v)))?;
-        let output = client_dispatch(ctx.deref(), msg)
-            .map_err(|v| tonic::Status::internal(format!("{:?}", v)))?;
+            .map_err(|v| Status::internal(v.to_string()))?;
+        let output =
+            client_dispatch(ctx.deref(), msg).map_err(|v| Status::internal(v.to_string()))?;
         // Apply the result to the context (host chain store).
         ctx.store_client_result(output.result.clone())
-            .map_err(|v| tonic::Status::internal(v.to_string()))?;
+            .map_err(|v| Status::internal(v.to_string()))?;
 
         Ok(output.result)
     }
@@ -862,46 +862,46 @@ impl<Ctx: ClientReader + ClientKeeper + Sync + Send + 'static> ClientMsgService
     /// CreateClient defines a rpc handler method for MsgCreateClient.
     async fn create_client(
         &self,
-        request: tonic::Request<MsgCreateClient>,
-    ) -> Result<tonic::Response<MsgCreateClientResponse>, tonic::Status> {
+        request: Request<MsgCreateClient>,
+    ) -> Result<Response<MsgCreateClientResponse>, Status> {
         let msg = CreateClient(
             MsgCreateAnyClient::try_from(request.get_ref().clone())
-                .map_err(|v| tonic::Status::invalid_argument(format!("{:?}", v)))?,
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
         );
         let _result = self.process_msg(msg)?;
-        Ok(tonic::Response::new(MsgCreateClientResponse {}))
+        Ok(Response::new(MsgCreateClientResponse {}))
     }
 
     /// UpdateClient defines a rpc handler method for MsgUpdateClient.
     async fn update_client(
         &self,
-        request: tonic::Request<MsgUpdateClient>,
-    ) -> Result<tonic::Response<MsgUpdateClientResponse>, tonic::Status> {
+        request: Request<MsgUpdateClient>,
+    ) -> Result<Response<MsgUpdateClientResponse>, Status> {
         let msg = UpdateClient(
             MsgUpdateAnyClient::try_from(request.get_ref().clone())
-                .map_err(|v| tonic::Status::invalid_argument(format!("{:?}", v)))?,
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
         );
         let _result = self.process_msg(msg)?;
-        Ok(tonic::Response::new(MsgUpdateClientResponse {}))
+        Ok(Response::new(MsgUpdateClientResponse {}))
     }
 
     /// UpgradeClient defines a rpc handler method for MsgUpgradeClient.
     async fn upgrade_client(
         &self,
-        request: tonic::Request<MsgUpgradeClient>,
-    ) -> Result<tonic::Response<MsgUpgradeClientResponse>, tonic::Status> {
+        request: Request<MsgUpgradeClient>,
+    ) -> Result<Response<MsgUpgradeClientResponse>, Status> {
         let msg = UpgradeClient(
             MsgUpgradeAnyClient::try_from(request.get_ref().clone())
-                .map_err(|v| tonic::Status::invalid_argument(format!("{:?}", v)))?,
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
         );
         let _result = self.process_msg(msg)?;
-        Ok(tonic::Response::new(MsgUpgradeClientResponse {}))
+        Ok(Response::new(MsgUpgradeClientResponse {}))
     }
 
     async fn submit_misbehaviour(
         &self,
-        _request: tonic::Request<MsgSubmitMisbehaviour>,
-    ) -> Result<tonic::Response<MsgSubmitMisbehaviourResponse>, tonic::Status> {
+        _request: Request<MsgSubmitMisbehaviour>,
+    ) -> Result<Response<MsgSubmitMisbehaviourResponse>, Status> {
         unimplemented!()
     }
 }
@@ -915,16 +915,16 @@ impl<Ctx: ConnectionReader + ConnectionKeeper> IbcConnectionMsgService<Ctx> {
         Self { ctx }
     }
 
-    fn process_msg(&self, msg: ConnectionMsg) -> Result<ConnectionResult, tonic::Status> {
+    fn process_msg(&self, msg: ConnectionMsg) -> Result<ConnectionResult, Status> {
         let mut ctx = self
             .ctx
             .write()
-            .map_err(|v| tonic::Status::internal(format!("{:?}", v)))?;
-        let output = connection_dispatch(ctx.deref(), msg)
-            .map_err(|v| tonic::Status::internal(format!("{:?}", v)))?;
+            .map_err(|v| Status::internal(v.to_string()))?;
+        let output =
+            connection_dispatch(ctx.deref(), msg).map_err(|v| Status::internal(v.to_string()))?;
         // Apply the result to the context (host chain store).
         ctx.store_connection_result(output.result.clone())
-            .map_err(|v| tonic::Status::internal(v.to_string()))?;
+            .map_err(|v| Status::internal(v.to_string()))?;
 
         Ok(output.result)
     }
@@ -940,54 +940,54 @@ impl<Ctx: ConnectionReader + ConnectionKeeper + Send + Sync + 'static> Connectio
     /// MsgConnectionOpenInit.
     async fn connection_open_init(
         &self,
-        request: tonic::Request<RawMsgConnectionOpenInit>,
-    ) -> Result<tonic::Response<MsgConnectionOpenInitResponse>, tonic::Status> {
+        request: Request<RawMsgConnectionOpenInit>,
+    ) -> Result<Response<MsgConnectionOpenInitResponse>, Status> {
         let msg = ConnectionOpenInit(
             MsgConnectionOpenInit::try_from(request.get_ref().clone())
-                .map_err(|v| tonic::Status::invalid_argument(format!("{:?}", v)))?,
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
         );
         let _result = self.process_msg(msg)?;
-        Ok(tonic::Response::new(MsgConnectionOpenInitResponse {}))
+        Ok(Response::new(MsgConnectionOpenInitResponse {}))
     }
 
     /// ConnectionOpenTry defines a rpc handler method for MsgConnectionOpenTry.
     async fn connection_open_try(
         &self,
-        request: tonic::Request<RawMsgConnectionOpenTry>,
-    ) -> Result<tonic::Response<MsgConnectionOpenTryResponse>, tonic::Status> {
+        request: Request<RawMsgConnectionOpenTry>,
+    ) -> Result<Response<MsgConnectionOpenTryResponse>, Status> {
         let msg = ConnectionOpenTry(Box::new(
             MsgConnectionOpenTry::try_from(request.get_ref().clone())
-                .map_err(|v| tonic::Status::invalid_argument(format!("{:?}", v)))?,
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
         ));
         let _result = self.process_msg(msg)?;
-        Ok(tonic::Response::new(MsgConnectionOpenTryResponse {}))
+        Ok(Response::new(MsgConnectionOpenTryResponse {}))
     }
 
     /// ConnectionOpenAck defines a rpc handler method for MsgConnectionOpenAck.
     async fn connection_open_ack(
         &self,
-        request: tonic::Request<RawMsgConnectionOpenAck>,
-    ) -> Result<tonic::Response<MsgConnectionOpenAckResponse>, tonic::Status> {
+        request: Request<RawMsgConnectionOpenAck>,
+    ) -> Result<Response<MsgConnectionOpenAckResponse>, Status> {
         let msg = ConnectionOpenAck(Box::new(
             MsgConnectionOpenAck::try_from(request.get_ref().clone())
-                .map_err(|v| tonic::Status::invalid_argument(format!("{:?}", v)))?,
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
         ));
         let _result = self.process_msg(msg)?;
-        Ok(tonic::Response::new(MsgConnectionOpenAckResponse {}))
+        Ok(Response::new(MsgConnectionOpenAckResponse {}))
     }
 
     /// ConnectionOpenConfirm defines a rpc handler method for
     /// MsgConnectionOpenConfirm.
     async fn connection_open_confirm(
         &self,
-        request: tonic::Request<RawMsgConnectionOpenConfirm>,
-    ) -> Result<tonic::Response<MsgConnectionOpenConfirmResponse>, tonic::Status> {
+        request: Request<RawMsgConnectionOpenConfirm>,
+    ) -> Result<Response<MsgConnectionOpenConfirmResponse>, Status> {
         let msg = ConnectionOpenConfirm(
             MsgConnectionOpenConfirm::try_from(request.get_ref().clone())
-                .map_err(|v| tonic::Status::invalid_argument(format!("{:?}", v)))?,
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
         );
         let _result = self.process_msg(msg)?;
-        Ok(tonic::Response::new(MsgConnectionOpenConfirmResponse {}))
+        Ok(Response::new(MsgConnectionOpenConfirmResponse {}))
     }
 }
 
@@ -1000,16 +1000,16 @@ impl<Ctx: ChannelReader + ChannelKeeper> IbcChannelMsgService<Ctx> {
         Self { ctx }
     }
 
-    fn process_msg(&self, msg: ChannelMsg) -> Result<ChannelResult, tonic::Status> {
+    fn process_msg(&self, msg: ChannelMsg) -> Result<ChannelResult, Status> {
         let mut ctx = self
             .ctx
             .write()
-            .map_err(|v| tonic::Status::internal(format!("{:?}", v)))?;
-        let output = channel_dispatch(ctx.deref(), &msg)
-            .map_err(|v| tonic::Status::internal(format!("{:?}", v)))?;
+            .map_err(|v| Status::internal(v.to_string()))?;
+        let output =
+            channel_dispatch(ctx.deref(), &msg).map_err(|v| Status::internal(v.to_string()))?;
         // Apply the result to the context (host chain store).
         ctx.store_channel_result(output.1.clone())
-            .map_err(|v| tonic::Status::internal(v.to_string()))?;
+            .map_err(|v| Status::internal(v.to_string()))?;
 
         Ok(output.1)
     }
@@ -1024,14 +1024,14 @@ impl<Ctx: ChannelReader + ChannelKeeper + Send + Sync + 'static> ChannelMsgServi
     /// ChannelOpenInit defines a rpc handler method for MsgChannelOpenInit.
     async fn channel_open_init(
         &self,
-        request: tonic::Request<RawMsgChannelOpenInit>,
-    ) -> Result<tonic::Response<MsgChannelOpenInitResponse>, tonic::Status> {
+        request: Request<RawMsgChannelOpenInit>,
+    ) -> Result<Response<MsgChannelOpenInitResponse>, Status> {
         let msg = ChannelOpenInit(
             MsgChannelOpenInit::try_from(request.get_ref().clone())
-                .map_err(|v| tonic::Status::invalid_argument(format!("{:?}", v)))?,
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
         );
         let result = self.process_msg(msg)?;
-        Ok(tonic::Response::new(MsgChannelOpenInitResponse {
+        Ok(Response::new(MsgChannelOpenInitResponse {
             channel_id: result.channel_id.to_string(),
             version:    "ver".to_string(),
         }))
@@ -1040,14 +1040,14 @@ impl<Ctx: ChannelReader + ChannelKeeper + Send + Sync + 'static> ChannelMsgServi
     /// ChannelOpenTry defines a rpc handler method for MsgChannelOpenTry.
     async fn channel_open_try(
         &self,
-        request: tonic::Request<RawMsgChannelOpenTry>,
-    ) -> Result<tonic::Response<MsgChannelOpenTryResponse>, tonic::Status> {
+        request: Request<RawMsgChannelOpenTry>,
+    ) -> Result<Response<MsgChannelOpenTryResponse>, Status> {
         let msg = ChannelOpenTry(
             MsgChannelOpenTry::try_from(request.get_ref().clone())
-                .map_err(|v| tonic::Status::invalid_argument(format!("{:?}", v)))?,
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
         );
         let _result = self.process_msg(msg)?;
-        Ok(tonic::Response::new(MsgChannelOpenTryResponse {
+        Ok(Response::new(MsgChannelOpenTryResponse {
             version: "msg".to_string(),
         }))
     }
@@ -1055,86 +1055,86 @@ impl<Ctx: ChannelReader + ChannelKeeper + Send + Sync + 'static> ChannelMsgServi
     /// ChannelOpenAck defines a rpc handler method for MsgChannelOpenAck.
     async fn channel_open_ack(
         &self,
-        request: tonic::Request<RawMsgChannelOpenAck>,
-    ) -> Result<tonic::Response<MsgChannelOpenAckResponse>, tonic::Status> {
+        request: Request<RawMsgChannelOpenAck>,
+    ) -> Result<Response<MsgChannelOpenAckResponse>, Status> {
         let msg = ChannelOpenAck(
             MsgChannelOpenAck::try_from(request.get_ref().clone())
-                .map_err(|v| tonic::Status::invalid_argument(format!("{:?}", v)))?,
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
         );
         let _result = self.process_msg(msg)?;
-        Ok(tonic::Response::new(MsgChannelOpenAckResponse {}))
+        Ok(Response::new(MsgChannelOpenAckResponse {}))
     }
 
     /// ChannelOpenConfirm defines a rpc handler method for
     /// MsgChannelOpenConfirm.
     async fn channel_open_confirm(
         &self,
-        request: tonic::Request<RawMsgChannelOpenConfirm>,
-    ) -> Result<tonic::Response<MsgChannelOpenConfirmResponse>, tonic::Status> {
+        request: Request<RawMsgChannelOpenConfirm>,
+    ) -> Result<Response<MsgChannelOpenConfirmResponse>, Status> {
         let msg = ChannelOpenConfirm(
             MsgChannelOpenConfirm::try_from(request.get_ref().clone())
-                .map_err(|v| tonic::Status::invalid_argument(format!("{:?}", v)))?,
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
         );
         let _result = self.process_msg(msg)?;
-        Ok(tonic::Response::new(MsgChannelOpenConfirmResponse {}))
+        Ok(Response::new(MsgChannelOpenConfirmResponse {}))
     }
 
     /// ChannelCloseInit defines a rpc handler method for MsgChannelCloseInit.
     async fn channel_close_init(
         &self,
-        request: tonic::Request<RawMsgChannelCloseInit>,
-    ) -> Result<tonic::Response<MsgChannelCloseInitResponse>, tonic::Status> {
+        request: Request<RawMsgChannelCloseInit>,
+    ) -> Result<Response<MsgChannelCloseInitResponse>, Status> {
         let msg = ChannelCloseInit(
             MsgChannelCloseInit::try_from(request.get_ref().clone())
-                .map_err(|v| tonic::Status::invalid_argument(format!("{:?}", v)))?,
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
         );
         let _result = self.process_msg(msg)?;
-        Ok(tonic::Response::new(MsgChannelCloseInitResponse {}))
+        Ok(Response::new(MsgChannelCloseInitResponse {}))
     }
 
     /// ChannelCloseConfirm defines a rpc handler method for
     /// MsgChannelCloseConfirm.
     async fn channel_close_confirm(
         &self,
-        request: tonic::Request<RawMsgChannelCloseConfirm>,
-    ) -> Result<tonic::Response<MsgChannelCloseConfirmResponse>, tonic::Status> {
+        request: Request<RawMsgChannelCloseConfirm>,
+    ) -> Result<Response<MsgChannelCloseConfirmResponse>, Status> {
         let msg = ChannelCloseConfirm(
             MsgChannelCloseConfirm::try_from(request.get_ref().clone())
-                .map_err(|v| tonic::Status::invalid_argument(format!("{:?}", v)))?,
+                .map_err(|v| Status::invalid_argument(v.to_string()))?,
         );
         let _result = self.process_msg(msg)?;
-        Ok(tonic::Response::new(MsgChannelCloseConfirmResponse {}))
+        Ok(Response::new(MsgChannelCloseConfirmResponse {}))
     }
 
     /// RecvPacket defines a rpc handler method for MsgRecvPacket.
     async fn recv_packet(
         &self,
-        _request: tonic::Request<MsgRecvPacket>,
-    ) -> Result<tonic::Response<MsgRecvPacketResponse>, tonic::Status> {
+        _request: Request<MsgRecvPacket>,
+    ) -> Result<Response<MsgRecvPacketResponse>, Status> {
         todo!()
     }
 
     /// Timeout defines a rpc handler method for MsgTimeout.
     async fn timeout(
         &self,
-        _request: tonic::Request<MsgTimeout>,
-    ) -> Result<tonic::Response<MsgTimeoutResponse>, tonic::Status> {
+        _request: Request<MsgTimeout>,
+    ) -> Result<Response<MsgTimeoutResponse>, Status> {
         todo!()
     }
 
     /// TimeoutOnClose defines a rpc handler method for MsgTimeoutOnClose.
     async fn timeout_on_close(
         &self,
-        _request: tonic::Request<MsgTimeoutOnClose>,
-    ) -> Result<tonic::Response<MsgTimeoutOnCloseResponse>, tonic::Status> {
+        _request: Request<MsgTimeoutOnClose>,
+    ) -> Result<Response<MsgTimeoutOnCloseResponse>, Status> {
         todo!()
     }
 
     /// Acknowledgement defines a rpc handler method for MsgAcknowledgement.
     async fn acknowledgement(
         &self,
-        _request: tonic::Request<MsgAcknowledgement>,
-    ) -> Result<tonic::Response<MsgAcknowledgementResponse>, tonic::Status> {
+        _request: Request<MsgAcknowledgement>,
+    ) -> Result<Response<MsgAcknowledgementResponse>, Status> {
         todo!()
     }
 }
