@@ -841,12 +841,18 @@ impl<Ctx: ClientReader + ClientKeeper> IbcClientMsgService<Ctx> {
     }
 
     fn process_msg(&self, msg: ClientMsg) -> Result<ClientResult, Status> {
+        let output = {
+            let ctx = self
+                .ctx
+                .read()
+                .map_err(|v| Status::internal(v.to_string()))?;
+            client_dispatch(ctx.deref(), msg).map_err(|v| Status::internal(v.to_string()))?
+        };
+
         let mut ctx = self
             .ctx
             .write()
             .map_err(|v| Status::internal(v.to_string()))?;
-        let output =
-            client_dispatch(ctx.deref(), msg).map_err(|v| Status::internal(v.to_string()))?;
         // Apply the result to the context (host chain store).
         ctx.store_client_result(output.result.clone())
             .map_err(|v| Status::internal(v.to_string()))?;
@@ -916,12 +922,18 @@ impl<Ctx: ConnectionReader + ConnectionKeeper> IbcConnectionMsgService<Ctx> {
     }
 
     fn process_msg(&self, msg: ConnectionMsg) -> Result<ConnectionResult, Status> {
+        let output = {
+            let ctx = self
+                .ctx
+                .read()
+                .map_err(|v| Status::internal(v.to_string()))?;
+            connection_dispatch(ctx.deref(), msg).map_err(|v| Status::internal(v.to_string()))?
+        };
+
         let mut ctx = self
             .ctx
             .write()
             .map_err(|v| Status::internal(v.to_string()))?;
-        let output =
-            connection_dispatch(ctx.deref(), msg).map_err(|v| Status::internal(v.to_string()))?;
         // Apply the result to the context (host chain store).
         ctx.store_connection_result(output.result.clone())
             .map_err(|v| Status::internal(v.to_string()))?;
@@ -1001,12 +1013,17 @@ impl<Ctx: ChannelReader + ChannelKeeper> IbcChannelMsgService<Ctx> {
     }
 
     fn process_msg(&self, msg: ChannelMsg) -> Result<ChannelResult, Status> {
+        let output = {
+            let ctx = self
+                .ctx
+                .read()
+                .map_err(|v| Status::internal(v.to_string()))?;
+            channel_dispatch(ctx.deref(), &msg).map_err(|v| Status::internal(v.to_string()))?
+        };
         let mut ctx = self
             .ctx
             .write()
             .map_err(|v| Status::internal(v.to_string()))?;
-        let output =
-            channel_dispatch(ctx.deref(), &msg).map_err(|v| Status::internal(v.to_string()))?;
         // Apply the result to the context (host chain store).
         ctx.store_channel_result(output.1.clone())
             .map_err(|v| Status::internal(v.to_string()))?;
