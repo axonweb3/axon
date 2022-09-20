@@ -20,7 +20,6 @@
 Axon is a high-performance layer2 framework with native cross-chain function. Built on top of the [Overlord](https://github.com/nervosnetwork/overlord) consensus protocol and the P2P network [Tentacle](https://github.com/nervosnetwork/tentacle)
 , Axon supports hundreds of nodes and achieves thousands of TPS. Axon is also EVM-compatible with well-developed toolchains. Its high interoperability facilitates cross-chain communication among dApps.
 
-
 ## Highlights
 
 ### Developer-Friendly Design
@@ -35,9 +34,10 @@ Openness and mobility are the foundation of social development, so is blockchain
 
 Most of the infrastructure has been done and some substantial features to be developed are as below:
 
-1. Be compatible with [IBC](https://github.com/cosmos/ibc) protocol.
+1. Compatible with [IBC](https://github.com/cosmos/ibc) protocol.
 2. Implement the original homologous cross-chain protocol.
-3. Implement more cross-chain protocol.
+3. Design a cross-chain protocol for EVM-based chains.
+4. Compatible with more cross-chain protocols in the future.
 
 ## Install
 
@@ -58,7 +58,7 @@ Apart from the framework, Axon has toolchains:
 - [Axon Explorer](https://github.com/Magickbase/blockscan): a blockchain explorer for the Axon-based chains.
 - [Axon DevOps](https://github.com/axonweb3/axon-devops): includes several utilities, such as monitor, benchmark tool and so on.
 
-All the toolchains above can be dictated by **[Axon CLI](https://github.com/axonweb3/axon-cli), an exquisite and deft command line interface. You can use Axon CLI to do anything related to Axon.
+All the toolchains above can be dictated by **[Axon CLI](https://github.com/axonweb3/axon-cli), an exquisite and deft command line interface**. You can use Axon CLI to do anything related to Axon.
 
 ## Contributing
 
