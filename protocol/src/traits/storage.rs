@@ -206,6 +206,7 @@ pub mod ibc {
         Height,
     };
 
+    use crate::types::ibc::Path as IbcPath;
     use crate::ProtocolResult;
 
     pub trait IbcCrossChainStorage {
@@ -369,5 +370,7 @@ pub mod ibc {
             &self,
             port_channel_id: &(PortId, ChannelId),
         ) -> ProtocolResult<Option<Sequence>>;
+
+        fn get_keys_by_prefix(&self, key_prefix: &IbcPath) -> ProtocolResult<Vec<IbcPath>>;
     }
 }

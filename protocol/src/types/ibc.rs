@@ -1,4 +1,5 @@
 use std::{
+    convert::TryInto,
     fmt::{Display, Formatter},
     ops::Deref,
     str::{from_utf8, FromStr},
@@ -168,6 +169,14 @@ impl Display for Identifier {
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Clone)]
 pub struct Path(Vec<Identifier>);
 
+impl Path {
+    pub fn starts_with(&self, prefix: &Path) -> bool {
+        KeyPrefix::from(self)
+            .as_ref()
+            .starts_with(KeyPrefix::from(prefix).as_ref())
+    }
+}
+
 impl TryFrom<String> for Path {
     type Error = ProtocolError;
 
@@ -226,6 +235,28 @@ impl From<IbcPath> for Path {
     }
 }
 
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Clone)]
+pub struct KeyPrefix(String);
+
+impl From<&Path> for KeyPrefix {
+    fn from(ibc_path: &Path) -> Self {
+        let strs: Vec<String> = ibc_path.0.iter().map(|x| x.to_string()).collect();
+        KeyPrefix(strs.join("/"))
+    }
+}
+
+impl From<&KeyPrefix> for String {
+    fn from(key_prefix: &KeyPrefix) -> Self {
+        key_prefix.0.clone()
+    }
+}
+
+impl AsRef<[u8]> for KeyPrefix {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+}
+
 macro_rules! impl_into_path_for {
     ($($path:ty),+) => {
         $(impl From<$path> for Path {
@@ -257,4 +288,96 @@ pub enum StoreHeight {
     Pending,
     // Latest,
     // Stable(RawHeight),
+}
+
+#[test]
+#[cfg(feature = "ibc")]
+fn test_starts_with() {
+    starts_with_test_case01();
+    starts_with_test_case02();
+    starts_with_test_case03();
+}
+
+#[test]
+#[cfg(feature = "ibc")]
+fn starts_with_test_case01() {
+    use cosmos_ibc::core::ics24_host::{identifier::ClientId, path::ClientTypePath};
+    let dst_path: Path = "clients/07-tendermint-1033"
+        .to_owned()
+        .try_into()
+        .map_err(|e| ProtocolError::new(ProtocolErrorKind::Ibc, Box::new(e)))
+        .unwrap();
+    let client_id = ClientId::new(ClientType::Tendermint, 103344).unwrap();
+    let path = ClientTypePath(client_id);
+    let src_path: Path = Path::from(path);
+
+    assert!(src_path.starts_with(&dst_path));
+}
+
+#[test]
+#[cfg(feature = "ibc")]
+fn starts_with_test_case02() {
+    use cosmos_ibc::core::ics24_host::{identifier::ClientId, path::ClientStatePath};
+    let dst_path = "clients/07-tend"
+        .to_owned()
+        .try_into()
+        .map_err(|e| ProtocolError::new(ProtocolErrorKind::Ibc, Box::new(e)))
+        .unwrap();
+    let client_id = ClientId::new(ClientType::Tendermint, 1033).unwrap();
+    let path = ClientStatePath(client_id);
+    let src_path: Path = Path::from(path);
+
+    assert!(src_path.starts_with(&dst_path));
+}
+
+#[test]
+#[cfg(feature = "ibc")]
+fn starts_with_test_case03() {
+    use cosmos_ibc::core::ics24_host::{identifier::ClientId, path::ClientStatePath};
+    let dst_path = "clients"
+        .to_owned()
+        .try_into()
+        .map_err(|e| ProtocolError::new(ProtocolErrorKind::Ibc, Box::new(e)))
+        .unwrap();
+    let client_id = ClientId::new(ClientType::Tendermint, 1033).unwrap();
+    let path = ClientStatePath(client_id);
+    let src_path: Path = Path::from(path);
+
+    assert!(src_path.starts_with(&dst_path));
+}
+
+#[test]
+#[cfg(feature = "ibc")]
+fn test_keyprefix_from_path_case01() {
+    let src = String::from("connections");
+    let src_path: Path = src
+        .clone()
+        .try_into()
+        .expect("'connections' expected to be a valid Path");
+    let prefix_key = KeyPrefix::from(&src_path);
+    assert_eq!(src, String::from(&prefix_key))
+}
+
+#[test]
+#[cfg(feature = "ibc")]
+fn test_keyprefix_from_path_case02() {
+    let src = String::from("channelEnds/ports");
+    let src_path: Path = src
+        .clone()
+        .try_into()
+        .expect("'channelEnds/ports' expected to be a valid Path");
+    let prefix_key = KeyPrefix::from(&src_path);
+    assert_eq!(src, String::from(&prefix_key))
+}
+
+#[test]
+#[cfg(feature = "ibc")]
+fn test_keyprefix_from_path_case03() {
+    let src = format!("clients/{}/consensusStates", "123client_id");
+    let src_path = src
+        .clone()
+        .try_into()
+        .expect("'channelEnds/ports' expected to be a valid Path");
+    let prefix_key = KeyPrefix::from(&src_path);
+    assert_eq!(src, String::from(&prefix_key))
 }
