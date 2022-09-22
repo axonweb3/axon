@@ -8,6 +8,9 @@ edition = "2021"
 ibc = "0.19"
 ibc-proto = { version = "0.20", features = ["server"] }
 log = "0.4"
+structopt = "0.3.21"
+tendermint-abci = "=0.23.9"
+tendermint-proto = "=0.23.9"
 tonic = { version = "0.8", features = ["tls", "tls-roots"] }
 
 [dependencies.core-storage]

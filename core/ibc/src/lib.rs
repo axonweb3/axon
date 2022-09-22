@@ -1,4 +1,5 @@
 mod adapter;
+mod app;
 mod client;
 mod error;
 mod grpc;
@@ -8,6 +9,7 @@ pub use adapter::DefaultIbcAdapter;
 use std::borrow::Borrow;
 use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, RwLock};
+use structopt::StructOpt;
 
 use ibc::clients::ics07_tendermint::consensus_state::ConsensusState;
 use ibc::timestamp::Timestamp;
@@ -38,15 +40,58 @@ use ibc::{
 
 use protocol::traits::{Context, IbcAdapter};
 use protocol::types::Hasher;
+use tendermint_abci::ServerBuilder;
 
+use crate::app::BaseCoinApp;
 use crate::grpc::GrpcService;
+
+#[derive(Debug, StructOpt)]
+struct Opt {
+    /// Bind the TCP server to this host.
+    #[structopt(short, long, default_value = "127.0.0.1")]
+    host: String,
+
+    /// Bind the TCP server to this port.
+    #[structopt(short, long, default_value = "26358")]
+    port: u16,
+
+    /// Bind the gRPC server to this port.
+    #[structopt(short, long, default_value = "9093")]
+    grpc_port: u16,
+
+    /// The default server read buffer size, in bytes, for each incoming client
+    /// connection.
+    #[structopt(short, long, default_value = "1048576")]
+    read_buf_size: usize,
+
+    /// Increase output logging verbosity to DEBUG level.
+    #[structopt(short, long)]
+    verbose: bool,
+
+    /// Suppress all output logging (overrides --verbose).
+    #[structopt(short, long)]
+    quiet: bool,
+}
 
 pub async fn run_ibc_grpc<Adapter, Ctx>(adapter: Adapter, addr: String, ctx: Ctx)
 where
     Adapter: IbcAdapter + 'static,
     Ctx: Ics26Context + Sync + Send + 'static,
 {
-    log::info!("ibc start");
+    // let opt: Opt = Opt::from_args();
+
+    // register modules with the app
+    let app = BaseCoinApp::new();
+
+    // run the blocking ABCI server on a separate thread
+    let server = ServerBuilder::new(1048576)
+        .bind(format!("{}:{}", "127.0.0.1", 26358), app.clone())
+        .unwrap();
+    std::thread::spawn(move || {
+        server.listen().unwrap();
+    });
+
+    log::info!("ibc grpc start");
     GrpcService::new(Arc::new(adapter), addr, Arc::new(RwLock::new(ctx)))
         .run()
         .await;
