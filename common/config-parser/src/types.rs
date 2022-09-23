@@ -127,7 +127,8 @@ impl Default for ConfigRocksDB {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct ConfigIbc {
-    pub uri: String,
+    pub grpc:  String,
+    pub tmrpc: String,
 }
 
 #[derive(Clone, Debug, Deserialize)]

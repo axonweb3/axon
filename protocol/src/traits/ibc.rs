@@ -1,3 +1,6 @@
+use std::fmt;
+
+use ckb_jsonrpc_types::Serialize;
 use cosmos_ibc::core::ics02_client::client_consensus::AnyConsensusState;
 use cosmos_ibc::core::ics02_client::client_state::AnyClientState;
 use cosmos_ibc::core::ics02_client::client_type::ClientType;
@@ -11,6 +14,18 @@ use cosmos_ibc::core::ics24_host::path::{
     CommitmentsPath, ConnectionsPath, ReceiptsPath,
 };
 use creep::Context;
+use serde::de::DeserializeOwned;
+use tendermint::block::Height;
+use tendermint::evidence::Evidence;
+use tendermint::{abci, Genesis};
+use tendermint_rpc::endpoint::abci_info::AbciInfo;
+use tendermint_rpc::endpoint::abci_query::AbciQuery;
+use tendermint_rpc::endpoint::{
+    block, block_results, block_search, blockchain, broadcast, commit, consensus_params,
+    consensus_state, evidence, net_info, status, tx, tx_search, validators,
+};
+use tendermint_rpc::query::Query;
+use tendermint_rpc::{Order, Paging};
 
 use crate::types::{Header, Metadata, Path, StoreHeight};
 use crate::{async_trait, ProtocolResult};
@@ -248,4 +263,101 @@ pub trait IbcAdapter: IbcGrpcAdapter + Send + Sync {
     ) -> ProtocolResult<()>;
 
     fn current_height(&self) -> u64;
+}
+
+/// TendermintRpc service is required when using official relayer(Hermes).
+/// Reference: https://github.com/informalsystems/tendermint-rs/blob/2f2e86868de1c4b5f820c5f6b15e4f48e35a118d/rpc/src/client.rs#L43
+#[async_trait]
+pub trait TendermintRpc: Send + Sync {
+    async fn abci_info(&self) -> ProtocolResult<AbciInfo>;
+
+    async fn abci_query<V>(
+        &self,
+        path: Option<abci::Path>,
+        data: V,
+        height: Option<Height>,
+        prove: bool,
+    ) -> ProtocolResult<AbciQuery>
+    where
+        V: Into<Vec<u8>> + Send;
+
+    // get block at a given height. If none, get the latest block.
+    async fn block<H>(&self, height: Option<H>) -> ProtocolResult<block::Response>
+    where
+        H: Into<Height> + Send;
+
+    async fn block_results<H>(&self, height: Option<H>) -> ProtocolResult<block_results::Response>
+    where
+        H: Into<Height> + Send;
+
+    async fn block_search(
+        &self,
+        query: Query,
+        page: u32,
+        per_page: u8,
+        order: Order,
+    ) -> ProtocolResult<block_search::Response>;
+
+    async fn blockchain<H>(&self, min: H, max: H) -> ProtocolResult<blockchain::Response>
+    where
+        H: Into<Height> + Send;
+
+    async fn broadcast_tx_async(
+        &self,
+        tx: abci::Transaction,
+    ) -> ProtocolResult<broadcast::tx_async::Response>;
+
+    async fn broadcast_tx_sync(
+        &self,
+        tx: abci::Transaction,
+    ) -> ProtocolResult<broadcast::tx_sync::Response>;
+
+    async fn broadcast_tx_commit(
+        &self,
+        tx: abci::Transaction,
+    ) -> ProtocolResult<broadcast::tx_commit::Response>;
+
+    async fn commit<H>(&self, height: Option<H>) -> ProtocolResult<commit::Response>
+    where
+        H: Into<Height> + Send;
+
+    async fn consensus_params<H>(
+        &self,
+        height: Option<H>,
+    ) -> ProtocolResult<consensus_params::Response>
+    where
+        H: Into<Height> + Send;
+
+    async fn consensus_state(&self) -> ProtocolResult<consensus_state::Response>;
+
+    async fn validators<H>(
+        &self,
+        height: H,
+        paging: Paging,
+    ) -> ProtocolResult<validators::Response>
+    where
+        H: Into<Height> + Send;
+
+    async fn health(&self) -> ProtocolResult<()>;
+
+    async fn genesis<AppState>(&self) -> ProtocolResult<Genesis<AppState>>
+    where
+        AppState: fmt::Debug + Serialize + DeserializeOwned + Send;
+
+    async fn net_info(&self) -> ProtocolResult<net_info::Response>;
+
+    async fn status(&self) -> ProtocolResult<status::Response>;
+
+    async fn broadcast_evidence(&self, e: Evidence) -> ProtocolResult<evidence::Response>;
+
+    async fn tx(&self, hash: abci::transaction::Hash, prove: bool) -> ProtocolResult<tx::Response>;
+
+    async fn tx_search(
+        &self,
+        query: Query,
+        prove: bool,
+        page: u32,
+        per_page: u8,
+        order: Order,
+    ) -> ProtocolResult<tx_search::Response>;
 }

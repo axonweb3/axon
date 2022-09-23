@@ -2,9 +2,9 @@ mod adapter;
 mod client;
 mod error;
 mod grpc;
+mod tmrpc;
 mod transfer;
 
-pub use adapter::DefaultIbcAdapter;
 use std::borrow::Borrow;
 use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, RwLock};
@@ -39,7 +39,9 @@ use ibc::{
 use protocol::traits::{Context, IbcAdapter};
 use protocol::types::Hasher;
 
+pub use crate::adapter::DefaultIbcAdapter;
 use crate::grpc::GrpcService;
+pub use crate::tmrpc::{run_tm_rpc, TendermintRpcAdapter};
 
 pub async fn run_ibc_grpc<Adapter, Ctx>(adapter: Adapter, addr: String, ctx: Ctx)
 where

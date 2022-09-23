@@ -87,7 +87,9 @@ acs_lock_code_hash = "0x97e6179be134d47ca10322a1534d8dcb65052de7e099b5556bea9241
 request_type_code_hash = "0xd8f9afaad8eb3e26a1ef2538bac91d68635502508358ae901941513bfe2edb1d"
 
 [ibc]
-uri = "127.0.0.1:8118"
+grpc = "127.0.0.1:8118"
+# Tendermint rpc
+tmrpc = "127.0.0.1:8119"
 
 [interoperability_extension]
 blockchain_extension_transaction_hashes = [

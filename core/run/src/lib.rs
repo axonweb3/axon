@@ -41,7 +41,9 @@ use core_cross_client::{
     END_GOSSIP_BUILD_CKB_TX, END_GOSSIP_CKB_TX_SIGNATURE,
 };
 use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB};
-use core_ibc::{run_ibc_grpc, DefaultIbcAdapter, IbcImpl, IbcRouter};
+use core_ibc::{
+    run_ibc_grpc, run_tm_rpc, DefaultIbcAdapter, IbcImpl, IbcRouter, TendermintRpcAdapter,
+};
 use core_interoperation::InteroperationImpl;
 use core_mempool::{
     DefaultMemPoolAdapter, MemPoolImpl, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
@@ -600,12 +602,15 @@ impl Axon {
                 DefaultIbcAdapter::new(Arc::clone(&storage), Arc::clone(&metadata_controller))
                     .await;
             let router = IbcRouter::default();
-            let addr = config.ibc.unwrap().uri;
+            let ibc_config = config.ibc.unwrap();
+            let addr = ibc_config.grpc;
             let ibc_impl = IbcImpl::new(Arc::new(ibc_adapter), router);
             let ibc_adapter =
                 DefaultIbcAdapter::new(Arc::clone(&storage), Arc::clone(&metadata_controller))
                     .await;
             tokio::spawn(async move { run_ibc_grpc(ibc_adapter, addr, ibc_impl).await });
+            let tmrpc = TendermintRpcAdapter::new(Arc::clone(&storage));
+            tokio::spawn(async move { run_tm_rpc(tmrpc, ibc_config.tmrpc) });
         }
 
         // Run API
