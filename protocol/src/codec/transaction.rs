@@ -96,7 +96,7 @@ impl LegacyTransaction {
         };
 
         let v: u64 = r.val_at(6)?;
-        let id = SignatureComponents::extract_chain_id(v).unwrap_or_else(|| **CHAIN_ID.load());
+        let id = SignatureComponents::extract_chain_id(v);
 
         Ok(UnverifiedTransaction {
             unsigned:  UnsignedTransaction::Legacy(tx),
@@ -174,7 +174,7 @@ impl Eip2930Transaction {
             hash:      Hasher::digest([&[tx.as_u8()], r.as_raw()].concat()),
             unsigned:  tx,
             signature: Some(SignatureComponents::rlp_decode(r, 8, None)?),
-            chain_id:  id,
+            chain_id:  Some(id),
         })
     }
 }
@@ -248,19 +248,23 @@ impl Eip1559Transaction {
             hash:      Hasher::digest([&[tx.as_u8()], r.as_raw()].concat()),
             unsigned:  tx,
             signature: Some(SignatureComponents::rlp_decode(r, 9, None)?),
-            chain_id:  id,
+            chain_id:  Some(id),
         })
     }
 }
 
 impl Encodable for UnverifiedTransaction {
     fn rlp_append(&self, s: &mut RlpStream) {
-        let chain_id = Some(self.chain_id);
-
         match &self.unsigned {
-            UnsignedTransaction::Legacy(tx) => tx.rlp_encode(s, chain_id, self.signature.as_ref()),
-            UnsignedTransaction::Eip2930(tx) => tx.rlp_encode(s, chain_id, self.signature.as_ref()),
-            UnsignedTransaction::Eip1559(tx) => tx.rlp_encode(s, chain_id, self.signature.as_ref()),
+            UnsignedTransaction::Legacy(tx) => {
+                tx.rlp_encode(s, self.chain_id, self.signature.as_ref())
+            }
+            UnsignedTransaction::Eip2930(tx) => {
+                tx.rlp_encode(s, self.chain_id, self.signature.as_ref())
+            }
+            UnsignedTransaction::Eip1559(tx) => {
+                tx.rlp_encode(s, self.chain_id, self.signature.as_ref())
+            }
         };
     }
 
@@ -364,7 +368,7 @@ mod tests {
     fn mock_unverfied_tx() -> UnverifiedTransaction {
         UnverifiedTransaction {
             unsigned:  UnsignedTransaction::Eip1559(mock_eip1559_transaction()),
-            chain_id:  random::<u64>(),
+            chain_id:  Some(random::<u64>()),
             hash:      H256::default(),
             signature: Some(mock_sig_component()),
         }
@@ -397,7 +401,7 @@ mod tests {
             public_to_address(&tx.recover_public(false).unwrap()),
             H160::from_slice(&hex_decode("0f65fe9276bc9a24ae7083ae28e2660ef72df99e").unwrap())
         );
-        assert_eq!(tx.chain_id, 0);
+        assert_eq!(tx.chain_id, Some(0));
     }
 
     #[test]

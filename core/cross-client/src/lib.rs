@@ -399,7 +399,7 @@ pub fn build_axon_txs(
 
     let id = **CHAIN_ID.load();
     let signature = priv_key.sign_message(
-        &Hasher::digest(tx.encode(id, None))
+        &Hasher::digest(tx.encode(Some(id), None))
             .as_bytes()
             .try_into()
             .unwrap(),
@@ -408,7 +408,7 @@ pub fn build_axon_txs(
     let utx = UnverifiedTransaction {
         unsigned:  tx,
         signature: Some(signature.to_bytes().into()),
-        chain_id:  id,
+        chain_id:  Some(id),
         hash:      Default::default(),
     }
     .calc_hash();

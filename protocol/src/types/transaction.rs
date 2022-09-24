@@ -115,7 +115,11 @@ impl UnsignedTransaction {
         }
     }
 
-    pub fn encode(&self, chain_id: u64, signature: Option<SignatureComponents>) -> BytesMut {
+    pub fn encode(
+        &self,
+        chain_id: Option<u64>,
+        signature: Option<SignatureComponents>,
+    ) -> BytesMut {
         UnverifiedTransaction {
             unsigned: self.clone(),
             chain_id,
@@ -286,7 +290,7 @@ impl Eip1559Transaction {
 pub struct UnverifiedTransaction {
     pub unsigned:  UnsignedTransaction,
     pub signature: Option<SignatureComponents>,
-    pub chain_id:  u64,
+    pub chain_id:  Option<u64>,
     pub hash:      H256,
 }
 
