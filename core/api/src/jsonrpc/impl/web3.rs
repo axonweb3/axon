@@ -787,7 +787,7 @@ pub fn from_receipt_to_web3_log(
     for (log_idex, log) in receipt.logs.iter().enumerate() {
         if contains_topic!(topics, log) {
             let web3_log = Web3Log {
-                address:           receipt.sender,
+                address:           log.address,
                 topics:            log.topics.clone(),
                 data:              Hex::encode(&log.data),
                 block_hash:        Some(receipt.block_hash),
