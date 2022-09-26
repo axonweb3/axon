@@ -5017,9 +5017,9 @@ dependencies = [
 
 [[package]]
 name = "revm"
-version = "2.0.0"
+version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cca8a6f68427a4a11f0652c1562484dcf9a153087441ad254e8e2b6398232f3d"
+checksum = "87344ffd3eec06b568e1fc69c225e4cbd8d68d8d9051b6d2652d596947efa1ce"
 dependencies = [
  "arrayref",
  "auto_impl 1.0.1",
@@ -5078,9 +5078,9 @@ dependencies = [
 
 [[package]]
 name = "ripemd"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74e2ee464e763f6527991a6d532142e3c2016eb9907cc081401c11862c26a840"
+checksum = "bd124222d17ad93a644ed9d011a40f4fb64aa54275c08cc216524a9ea82fb09f"
 dependencies = [
  "digest 0.10.5",
 ]
