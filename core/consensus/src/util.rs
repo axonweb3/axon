@@ -202,7 +202,7 @@ mod tests {
             hex_decode("a694f4e48a5a173b61731998f8f1204342dc5c8eb1e32cdae37415c20d11ae035ddac4a39f105e9c2d4d3691024d385d").unwrap(),
         ];
 
-        let msg = Hasher::digest(Bytes::from("muta-consensus"));
+        let msg = Hasher::digest(Bytes::from("axon-consensus"));
         let hash = HashValue::try_from(msg.as_bytes()).unwrap();
         let mut sigs_and_pub_keys = Vec::new();
         for i in 0..3 {
@@ -222,7 +222,7 @@ mod tests {
         )
         .unwrap();
 
-        let res = signature.verify(&hash, &aggregate_key, &"muta".into());
+        let res = signature.verify(&hash, &aggregate_key, &"axon".into());
         assert!(res.is_ok());
     }
 
