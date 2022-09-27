@@ -136,8 +136,8 @@ where
         ))
     }
 
-    fn get_paths_by_prefix(&self, _key_prefix: &Path) -> ProtocolResult<Vec<Path>> {
-        todo!()
+    fn get_paths_by_prefix(&self, key_prefix: &Path) -> ProtocolResult<Vec<Path>> {
+        self.storage.get_keys_by_prefix(key_prefix)
     }
 }
 

@@ -1,3 +1,5 @@
+use crate::types::{Header, Metadata, Path, StoreHeight};
+use crate::{async_trait, ProtocolResult};
 use cosmos_ibc::core::ics02_client::client_consensus::AnyConsensusState;
 use cosmos_ibc::core::ics02_client::client_state::AnyClientState;
 use cosmos_ibc::core::ics02_client::client_type::ClientType;
@@ -11,9 +13,6 @@ use cosmos_ibc::core::ics24_host::path::{
     CommitmentsPath, ConnectionsPath, ReceiptsPath,
 };
 use creep::Context;
-
-use crate::types::{Header, Metadata, Path, StoreHeight};
-use crate::{async_trait, ProtocolResult};
 
 #[async_trait]
 pub trait IbcGrpcAdapter {
