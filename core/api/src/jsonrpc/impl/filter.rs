@@ -330,17 +330,13 @@ where
 
         let extend_logs = |logs: &mut Vec<Web3Log>, receipts: Vec<Option<Receipt>>| {
             for (index, receipt) in receipts.into_iter().flatten().enumerate() {
-                match filter.address {
-                    Some(ref s)
-                        if s.contains(
-                            &receipt.code_address.map(Into::into).unwrap_or_default(),
-                        ) =>
-                    {
-                        from_receipt_to_web3_log(index, topics, &receipt, logs)
-                    }
-                    None => from_receipt_to_web3_log(index, topics, &receipt, logs),
-                    _ => (),
-                }
+                from_receipt_to_web3_log(
+                    index,
+                    topics,
+                    filter.address.as_ref().unwrap_or(&Vec::new()),
+                    &receipt,
+                    logs,
+                )
             }
         };
 

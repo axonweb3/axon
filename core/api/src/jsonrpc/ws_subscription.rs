@@ -179,27 +179,14 @@ where
                 for receipt in receipts.into_iter().flatten() {
                     let log_len = receipt.logs.len();
                     for hub in self.log_hubs.iter_mut() {
-                        match hub.filter.address {
-                            Some(ref s)
-                                if s.contains(
-                                    &receipt.code_address.map(Into::into).unwrap_or_default(),
-                                ) =>
-                            {
-                                from_receipt_to_web3_log(
-                                    index,
-                                    hub.filter.topics.as_slice(),
-                                    &receipt,
-                                    &mut logs,
-                                )
-                            }
-                            None => from_receipt_to_web3_log(
-                                index,
-                                hub.filter.topics.as_slice(),
-                                &receipt,
-                                &mut logs,
-                            ),
-                            _ => (),
-                        }
+                        from_receipt_to_web3_log(
+                            index,
+                            hub.filter.topics.as_slice(),
+                            hub.filter.address.as_ref().unwrap_or(&Vec::new()),
+                            &receipt,
+                            &mut logs,
+                        );
+
                         for log in logs.drain(..) {
                             // unbound sender can ignore it's return
                             let _ignore = hub.sink.send(&log);
