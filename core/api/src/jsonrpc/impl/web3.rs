@@ -445,17 +445,14 @@ impl<Adapter: APIAdapter + 'static> AxonWeb3RpcServer for Web3RpcImpl<Adapter> {
                                receipts: Vec<Option<Receipt>>,
                                early_return: &mut bool| {
                 for (index, receipt) in receipts.into_iter().flatten().enumerate() {
-                    match address {
-                        Some(s)
-                            if s.contains(
-                                &receipt.code_address.map(Into::into).unwrap_or_default(),
-                            ) =>
-                        {
-                            from_receipt_to_web3_log(index, topics, &receipt, logs)
-                        }
-                        None => from_receipt_to_web3_log(index, topics, &receipt, logs),
-                        _ => (),
-                    }
+                    from_receipt_to_web3_log(
+                        index,
+                        topics,
+                        address.as_ref().unwrap_or(&&Vec::new()),
+                        &receipt,
+                        logs,
+                    );
+
                     if logs.len() > MAX_LOG_NUM {
                         *early_return = true;
                         return;
@@ -762,6 +759,7 @@ fn mock_header_by_call_req(latest_header: Header, call_req: &Web3CallRequest) ->
 pub fn from_receipt_to_web3_log(
     index: usize,
     topics: &[Option<Vec<Option<Hash>>>],
+    address: &[H160],
     receipt: &Receipt,
     logs: &mut Vec<Web3Log>,
 ) {
@@ -785,7 +783,7 @@ pub fn from_receipt_to_web3_log(
     }
 
     for (log_idex, log) in receipt.logs.iter().enumerate() {
-        if contains_topic!(topics, log) {
+        if (address.is_empty() || address.contains(&log.address)) && contains_topic!(topics, log) {
             let web3_log = Web3Log {
                 address:           log.address,
                 topics:            log.topics.clone(),
