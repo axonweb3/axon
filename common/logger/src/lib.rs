@@ -181,8 +181,8 @@ struct TraceContext {
     span_id:  u64,
 }
 
-// NOTE: Reference muta_apm::MutaTracer::span_state.
-// Copy code to avoid depends on muta_apm crate.
+// NOTE: Reference axon_apm::AxonTracer::span_state.
+// Copy code to avoid depends on axon_apm crate.
 fn trace_context(ctx: &Context) -> Option<TraceContext> {
     match ctx.get::<Option<SpanContext>>("parent_span_ctx") {
         Some(Some(parent_ctx)) => {
