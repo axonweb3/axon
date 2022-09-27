@@ -139,38 +139,6 @@ macro_rules! get_keys_by_schema {
 }
 
 macro_rules! impl_get_keys_by_schemas_for {
-    ($self_: ident, $vec: expr, $key_prefix: expr, $ibc_prefix: expr) => {{
-        get_keys_by_schema!($self_, $vec, $key_prefix, $ibc_prefix, ClientTypeSchema);
-        get_keys_by_schema!($self_, $vec, $key_prefix, $ibc_prefix, ClientStateSchema);
-        get_keys_by_schema!(
-            $self_,
-            $vec,
-            $key_prefix,
-            $ibc_prefix,
-            ClientConsensusStateSchema
-        );
-        get_keys_by_schema!($self_, $vec, $key_prefix, $ibc_prefix, ConnectionEndSchema);
-        get_keys_by_schema!($self_, $vec, $key_prefix, $ibc_prefix, ConnectionIdsSchema);
-        get_keys_by_schema!($self_, $vec, $key_prefix, $ibc_prefix, ChannelEndSchema);
-        get_keys_by_schema!($self_, $vec, $key_prefix, $ibc_prefix, SeqSendsSchema);
-        get_keys_by_schema!($self_, $vec, $key_prefix, $ibc_prefix, SeqRecvsSchema);
-        get_keys_by_schema!($self_, $vec, $key_prefix, $ibc_prefix, SeqAcksSchema);
-        get_keys_by_schema!(
-            $self_,
-            $vec,
-            $key_prefix,
-            $ibc_prefix,
-            PacketCommitmentSchema
-        );
-        get_keys_by_schema!(
-            $self_,
-            $vec,
-            $key_prefix,
-            $ibc_prefix,
-            AcknowledgementCommitmentSchema
-        );
-        get_keys_by_schema!($self_, $vec, $key_prefix, $ibc_prefix, IbcReceiptSchema);
-    }};
     ($self_: ident, $vec: expr, $key_prefix: expr, $ibc_prefix: expr$(, $schema: ty)+) => {
         $(get_keys_by_schema!($self_, $vec, $key_prefix, $ibc_prefix, $schema);)+
     };
@@ -1025,12 +993,8 @@ impl<Adapter: StorageAdapter> IbcCrossChainStorage for ImplStorage<Adapter> {
     ) -> ProtocolResult<Vec<LocalIbcPath>> {
         let key_prefix = KeyPrefix::from(local_ibc_prefix);
         let mut all_vec: Vec<LocalIbcPath> = Vec::new();
-        match local_ibc_prefix {
-            prefix
-                if prefix.starts_with(
-                    &<String as TryInto<LocalIbcPath>>::try_into(String::from("clients")).unwrap(),
-                ) =>
-            {
+        match local_ibc_prefix.to_string() {
+            prefix if prefix.starts_with("clients") => {
                 impl_get_keys_by_schemas_for!(
                     self,
                     all_vec,
@@ -1042,12 +1006,7 @@ impl<Adapter: StorageAdapter> IbcCrossChainStorage for ImplStorage<Adapter> {
                     ConnectionIdsSchema
                 );
             }
-            prefix
-                if prefix.starts_with(
-                    &<String as TryInto<LocalIbcPath>>::try_into(String::from("connections"))
-                        .unwrap(),
-                ) =>
-            {
+            prefix if prefix.starts_with("connections") => {
                 impl_get_keys_by_schemas_for!(
                     self,
                     all_vec,
@@ -1056,12 +1015,7 @@ impl<Adapter: StorageAdapter> IbcCrossChainStorage for ImplStorage<Adapter> {
                     ConnectionEndSchema
                 );
             }
-            prefix
-                if prefix.starts_with(
-                    &<String as TryInto<LocalIbcPath>>::try_into(String::from("channelEnds"))
-                        .unwrap(),
-                ) =>
-            {
+            prefix if prefix.starts_with("channelEnds") => {
                 impl_get_keys_by_schemas_for!(
                     self,
                     all_vec,
@@ -1070,12 +1024,7 @@ impl<Adapter: StorageAdapter> IbcCrossChainStorage for ImplStorage<Adapter> {
                     ChannelEndSchema
                 );
             }
-            prefix
-                if prefix.starts_with(
-                    &<String as TryInto<LocalIbcPath>>::try_into(String::from("nextSequence"))
-                        .unwrap(),
-                ) =>
-            {
+            prefix if prefix.starts_with("nextSequence") => {
                 impl_get_keys_by_schemas_for!(
                     self,
                     all_vec,
@@ -1086,12 +1035,7 @@ impl<Adapter: StorageAdapter> IbcCrossChainStorage for ImplStorage<Adapter> {
                     SeqAcksSchema
                 );
             }
-            prefix
-                if prefix.starts_with(
-                    &<String as TryInto<LocalIbcPath>>::try_into(String::from("commitments"))
-                        .unwrap(),
-                ) =>
-            {
+            prefix if prefix.starts_with("commitments") => {
                 impl_get_keys_by_schemas_for!(
                     self,
                     all_vec,
@@ -1100,11 +1044,7 @@ impl<Adapter: StorageAdapter> IbcCrossChainStorage for ImplStorage<Adapter> {
                     PacketCommitmentSchema
                 );
             }
-            prefix
-                if prefix.starts_with(
-                    &<String as TryInto<LocalIbcPath>>::try_into(String::from("acks")).unwrap(),
-                ) =>
-            {
+            prefix if prefix.starts_with("acks") => {
                 impl_get_keys_by_schemas_for!(
                     self,
                     all_vec,
@@ -1113,11 +1053,7 @@ impl<Adapter: StorageAdapter> IbcCrossChainStorage for ImplStorage<Adapter> {
                     AcknowledgementCommitmentSchema
                 );
             }
-            prefix
-                if prefix.starts_with(
-                    &<String as TryInto<LocalIbcPath>>::try_into(String::from("receipts")).unwrap(),
-                ) =>
-            {
+            prefix if prefix.starts_with("receipts") => {
                 impl_get_keys_by_schemas_for!(
                     self,
                     all_vec,
