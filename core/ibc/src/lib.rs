@@ -2,9 +2,12 @@ mod adapter;
 mod client;
 mod error;
 mod grpc;
+mod handler;
 mod transfer;
 
-pub use adapter::DefaultIbcAdapter;
+pub use crate::adapter::DefaultIbcAdapter;
+pub use crate::handler::{IbcHandle, IBC_HANDLER};
+
 use std::borrow::Borrow;
 use std::collections::{BTreeMap, HashMap};
 use std::sync::{Arc, RwLock};
@@ -39,15 +42,18 @@ use ibc::{
 use protocol::traits::{Context, IbcAdapter};
 use protocol::types::Hasher;
 
-use crate::grpc::GrpcService;
+use crate::{grpc::GrpcService, handler::IbcHandlerImpl};
 
-pub async fn run_ibc_grpc<Adapter, Ctx>(adapter: Adapter, addr: String, ctx: Ctx)
+pub async fn run_ibc_grpc<Adapter, Ctx>(adapter: Arc<Adapter>, addr: String, ctx: Ctx)
 where
     Adapter: IbcAdapter + 'static,
     Ctx: Ics26Context + Sync + Send + 'static,
 {
     log::info!("ibc start");
-    GrpcService::new(Arc::new(adapter), addr, Arc::new(RwLock::new(ctx)))
+    let _ = IBC_HANDLER
+        .set(Box::new(IbcHandlerImpl::new(Arc::clone(&adapter))))
+        .map_err(|_| panic!(""));
+    GrpcService::new(adapter, addr, Arc::new(RwLock::new(ctx)))
         .run()
         .await;
 }

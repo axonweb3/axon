@@ -602,9 +602,10 @@ impl Axon {
             let router = IbcRouter::default();
             let addr = config.ibc.unwrap().uri;
             let ibc_impl = IbcImpl::new(Arc::new(ibc_adapter), router);
-            let ibc_adapter =
+            let ibc_adapter = Arc::new(
                 DefaultIbcAdapter::new(Arc::clone(&storage), Arc::clone(&metadata_controller))
-                    .await;
+                    .await,
+            );
             tokio::spawn(async move { run_ibc_grpc(ibc_adapter, addr, ibc_impl).await });
         }
 

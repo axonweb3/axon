@@ -8,6 +8,7 @@ edition = "2021"
 ibc = "0.19"
 ibc-proto = { version = "0.20", features = ["server"] }
 log = "0.4"
+once_cell = "1.15"
 tonic = { version = "0.8", features = ["tls", "tls-roots"] }
 
 [dependencies.core-storage]

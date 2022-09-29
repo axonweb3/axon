@@ -1507,6 +1507,7 @@ dependencies = [
  "common-crypto",
  "common-merkle",
  "core-cross-client",
+ "core-ibc",
  "core-interoperation",
  "core-rpc-client",
  "core-storage",
@@ -1562,6 +1563,7 @@ dependencies = [
  "ibc",
  "ibc-proto",
  "log",
+ "once_cell",
  "tonic",
 ]
 

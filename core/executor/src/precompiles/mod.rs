@@ -4,6 +4,8 @@ mod ec_add;
 mod ec_mul;
 mod ec_pairing;
 mod ecrecover;
+#[cfg(feature = "ibc")]
+mod ibc_handle;
 mod identity;
 mod modexp;
 mod ripemd160;
