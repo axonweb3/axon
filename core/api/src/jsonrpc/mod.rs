@@ -1,6 +1,8 @@
 mod crosschain_types;
 mod error;
 mod r#impl;
+#[cfg(feature = "tendermint")]
+mod tendermint;
 mod web3_types;
 mod ws_subscription;
 
@@ -22,7 +24,7 @@ use crate::jsonrpc::web3_types::{
 use crate::jsonrpc::ws_subscription::{ws_subscription_module, HexIdProvider};
 use crate::{jsonrpc::crosschain_types::CrossChainTransaction, APIError};
 
-type RpcResult<T> = Result<T, Error>;
+pub type RpcResult<T> = Result<T, Error>;
 
 #[rpc(server)]
 pub trait AxonWeb3Rpc {
@@ -204,6 +206,14 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
     rpc.merge(node_rpc).unwrap();
     rpc.merge(crosschain_rpc).unwrap();
     rpc.merge(filter).unwrap();
+
+    #[cfg(feature = "tendermint")]
+    {
+        use crate::jsonrpc::tendermint::{TendermintRpcImpl, TendermintRpcServer};
+
+        let tendermint_rpc = TendermintRpcImpl::new(Arc::clone(&adapter)).into_rpc();
+        rpc.merge(tendermint_rpc).unwrap();
+    }
 
     if let Some(addr) = config.rpc.http_listening_address {
         let server = HttpServerBuilder::new()
