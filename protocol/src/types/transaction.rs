@@ -391,12 +391,10 @@ impl SignatureComponents {
         self.standard_v as u64 + id
     }
 
-    pub fn extract_standard_v(v: u64) -> u8 {
+    pub fn extract_standard_v(v: u64) -> Option<u8> {
         match v {
-            v if v == 27 => 0,
-            v if v == 28 => 1,
-            v if v >= 35 => ((v - 1) % 2) as u8,
-            _ => 4,
+            v if v >= 35 => Some(((v - 1) % 2) as u8),
+            _ => None,
         }
     }
 

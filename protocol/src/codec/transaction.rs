@@ -31,29 +31,51 @@ impl Encodable for SignatureComponents {
 }
 
 impl SignatureComponents {
-    fn rlp_decode(r: &Rlp, offset: usize, legacy_v: Option<u64>) -> Result<Self, DecoderError> {
+    fn rlp_decode(rlp: &Rlp, offset: usize, legacy_v: Option<u64>) -> Result<Self, DecoderError> {
         let v: u8 = if let Some(n) = legacy_v {
             SignatureComponents::extract_standard_v(n)
+                .ok_or(DecoderError::Custom("invalid legacy v in signature"))?
         } else {
-            r.val_at(offset)?
+            rlp.val_at(offset)?
         };
 
         let eth_tx_flag = v <= 1;
+        let (r, s) = match eth_tx_flag {
+            true => {
+                let tmp_r: U256 = rlp.val_at(offset + 1)?;
+                let tmp_s: U256 = rlp.val_at(offset + 2)?;
+                (
+                    Bytes::from(
+                        <H256 as BigEndianHash>::from_uint(&tmp_r)
+                            .as_bytes()
+                            .to_vec(),
+                    ),
+                    Bytes::from(
+                        <H256 as BigEndianHash>::from_uint(&tmp_s)
+                            .as_bytes()
+                            .to_vec(),
+                    ),
+                )
+            }
+            false => {
+                let tmp_r: Bytes = rlp.val_at(offset + 1)?;
+                let tmp_s: Bytes = rlp.val_at(offset + 2)?;
+
+                if tmp_r.len() != 32 {
+                    return Err(DecoderError::Custom("invalid r in signature"));
+                }
+                if tmp_s.len() != 32 {
+                    return Err(DecoderError::Custom("invalid s in signature"));
+                }
+
+                (tmp_r, tmp_s)
+            }
+        };
 
         Ok(SignatureComponents {
             standard_v: v,
-            r:          if eth_tx_flag {
-                let tmp: U256 = r.val_at(offset + 1)?;
-                Bytes::from(<H256 as BigEndianHash>::from_uint(&tmp).as_bytes().to_vec())
-            } else {
-                r.val_at(offset + 1)?
-            },
-            s:          if eth_tx_flag {
-                let tmp: U256 = r.val_at(offset + 2)?;
-                Bytes::from(<H256 as BigEndianHash>::from_uint(&tmp).as_bytes().to_vec())
-            } else {
-                r.val_at(offset + 2)?
-            },
+            r,
+            s,
         })
     }
 }
