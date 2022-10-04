@@ -11,11 +11,18 @@ use crate::types::{
     UnsignedTransaction, UnverifiedTransaction, H256, U256,
 };
 
+fn truncate_slice<T>(s: &[T], n: usize) -> &[T] {
+    match s.len() {
+        l if l <= n => s,
+        _ => &s[0..n],
+    }
+}
+
 impl Encodable for SignatureComponents {
     fn rlp_append(&self, s: &mut RlpStream) {
         if self.is_eth_sig() {
-            let r = U256::from(&self.r[0..32]);
-            let s_ = U256::from(&self.s[0..32]);
+            let r = U256::from(truncate_slice(&self.r, 32));
+            let s_ = U256::from(truncate_slice(&self.s, 32));
             s.append(&self.standard_v).append(&r).append(&s_);
         } else {
             s.append(&self.standard_v).append(&self.r).append(&self.s);
@@ -74,8 +81,8 @@ impl LegacyTransaction {
 
         if let Some(sig) = signature {
             rlp.append(&sig.add_chain_replay_protection(chain_id))
-                .append(&U256::from(&sig.r[0..32]))
-                .append(&U256::from(&sig.s[0..32]));
+                .append(&U256::from(truncate_slice(&sig.r, 32)))
+                .append(&U256::from(truncate_slice(&sig.s, 32)));
         } else if let Some(id) = chain_id {
             rlp.append(&id).append(&0u8).append(&0u8);
         }
