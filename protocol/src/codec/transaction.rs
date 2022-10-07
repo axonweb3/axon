@@ -11,11 +11,18 @@ use crate::types::{
     UnsignedTransaction, UnverifiedTransaction, H256, U256,
 };
 
+fn truncate_slice<T>(s: &[T], n: usize) -> &[T] {
+    match s.len() {
+        l if l <= n => s,
+        _ => &s[0..n],
+    }
+}
+
 impl Encodable for SignatureComponents {
     fn rlp_append(&self, s: &mut RlpStream) {
         if self.is_eth_sig() {
-            let r = U256::from(&self.r[0..32]);
-            let s_ = U256::from(&self.s[0..32]);
+            let r = U256::from(truncate_slice(&self.r, 32));
+            let s_ = U256::from(truncate_slice(&self.s, 32));
             s.append(&self.standard_v).append(&r).append(&s_);
         } else {
             s.append(&self.standard_v).append(&self.r).append(&self.s);
@@ -24,29 +31,51 @@ impl Encodable for SignatureComponents {
 }
 
 impl SignatureComponents {
-    fn rlp_decode(r: &Rlp, offset: usize, legacy_v: Option<u64>) -> Result<Self, DecoderError> {
+    fn rlp_decode(rlp: &Rlp, offset: usize, legacy_v: Option<u64>) -> Result<Self, DecoderError> {
         let v: u8 = if let Some(n) = legacy_v {
             SignatureComponents::extract_standard_v(n)
+                .ok_or(DecoderError::Custom("invalid legacy v in signature"))?
         } else {
-            r.val_at(offset)?
+            rlp.val_at(offset)?
         };
 
         let eth_tx_flag = v <= 1;
+        let (r, s) = match eth_tx_flag {
+            true => {
+                let tmp_r: U256 = rlp.val_at(offset + 1)?;
+                let tmp_s: U256 = rlp.val_at(offset + 2)?;
+                (
+                    Bytes::from(
+                        <H256 as BigEndianHash>::from_uint(&tmp_r)
+                            .as_bytes()
+                            .to_vec(),
+                    ),
+                    Bytes::from(
+                        <H256 as BigEndianHash>::from_uint(&tmp_s)
+                            .as_bytes()
+                            .to_vec(),
+                    ),
+                )
+            }
+            false => {
+                let tmp_r: Bytes = rlp.val_at(offset + 1)?;
+                let tmp_s: Bytes = rlp.val_at(offset + 2)?;
+
+                if tmp_r.len() != 32 {
+                    return Err(DecoderError::Custom("invalid r in signature"));
+                }
+                if tmp_s.len() != 32 {
+                    return Err(DecoderError::Custom("invalid s in signature"));
+                }
+
+                (tmp_r, tmp_s)
+            }
+        };
 
         Ok(SignatureComponents {
             standard_v: v,
-            r:          if eth_tx_flag {
-                let tmp: U256 = r.val_at(offset + 1)?;
-                Bytes::from(<H256 as BigEndianHash>::from_uint(&tmp).as_bytes().to_vec())
-            } else {
-                r.val_at(offset + 1)?
-            },
-            s:          if eth_tx_flag {
-                let tmp: U256 = r.val_at(offset + 2)?;
-                Bytes::from(<H256 as BigEndianHash>::from_uint(&tmp).as_bytes().to_vec())
-            } else {
-                r.val_at(offset + 2)?
-            },
+            r,
+            s,
         })
     }
 }
@@ -74,8 +103,8 @@ impl LegacyTransaction {
 
         if let Some(sig) = signature {
             rlp.append(&sig.add_chain_replay_protection(chain_id))
-                .append(&U256::from(&sig.r[0..32]))
-                .append(&U256::from(&sig.s[0..32]));
+                .append(&U256::from(truncate_slice(&sig.r, 32)))
+                .append(&U256::from(truncate_slice(&sig.s, 32)));
         } else if let Some(id) = chain_id {
             rlp.append(&id).append(&0u8).append(&0u8);
         }
