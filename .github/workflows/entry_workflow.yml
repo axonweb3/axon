@@ -30,7 +30,7 @@ jobs:
         id: dispatch
         uses: actions/github-script@v6
         with:
-          github-token: ${{ steps.generate_axon_bot_token.outputs.token }}
+          github-token: ${{ secrets.TOKEN }}
           script: |
             const dispatch = {
               comment_body: `${{ github.event.comment.body }}`,
