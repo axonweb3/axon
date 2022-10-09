@@ -17,11 +17,37 @@ pub fn expand_rpc_metrics(attr: TokenStream, func: TokenStream) -> TokenStream {
         ReturnType::Type(_, ty) => quote! { #ty },
     };
     let ret_ty = func_return.return_type();
+    let args = func_sig
+        .inputs
+        .iter()
+        .filter_map(|arg| match arg {
+            syn::FnArg::Receiver(_) => None,
+            syn::FnArg::Typed(inner) => match &*inner.pat {
+                syn::Pat::Ident(pat) => Some(pat.ident.clone()),
+                _ => None,
+            },
+        })
+        .collect::<Vec<_>>();
+
+    let fn_name = func_ident.to_string();
+    let mut debug = if args.is_empty() {
+        "call rpc {}".to_string()
+    } else {
+        "call rpc {} with args,".to_string()
+    };
+    for (index, name) in args.iter().enumerate() {
+        if index != 0 {
+            debug.push(',')
+        }
+        debug.push_str(&format!(" {}: {{:?}}", name.to_string()));
+    }
 
     let func_block_wrapper = if func_return.is_ret_pin_box_fut() {
         quote! {
             Box::pin(async move {
                 let inst = common_apm::Instant::now();
+
+                log::debug!(#debug, #fn_name, #( #args, )*);
 
                 let ret: #ret_ty = #func_block.await;
 
@@ -47,6 +73,8 @@ pub fn expand_rpc_metrics(attr: TokenStream, func: TokenStream) -> TokenStream {
     } else {
         quote! {
             let inst = common_apm::Instant::now();
+
+            log::debug!(#debug, #fn_name, #( #args, )*);
 
             let ret: #func_ret_ty = #func_block;
 

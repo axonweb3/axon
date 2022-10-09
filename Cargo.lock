@@ -1292,6 +1292,7 @@ dependencies = [
  "common-apm",
  "fut-ret",
  "jsonrpsee",
+ "log",
  "proc-macro2",
  "quote",
  "serde_json",
