@@ -12,23 +12,26 @@ on:
         required: true
 
 jobs:
-  dispatch-v3-core-test:
+  v3-core-test:
     strategy:
       fail-fast: false
       matrix:
         net: ["axon"]
-    if: contains(github.event_name, 'workflow_dispatch')
     runs-on: ubuntu-latest
     outputs:
       output-sha: ${{ steps.escape_multiple_lines_test_inputs.outputs.result }}
     steps:
       - name: Generate axon-bot token
+        if: contains(github.event_name, 'workflow_dispatch') &&
+            github.repository_owner == 'axonweb3'
         id: generate_axon_bot_token
         uses: wow-actions/use-app-token@v1
         with:
           app_id: ${{ secrets.AXON_BOT_APP_ID }}
           private_key: ${{ secrets.AXON_BOT_PRIVATE_KEY }}
       - name: Event is dispatch
+        if: contains(github.event_name, 'workflow_dispatch') &&
+            github.repository_owner == 'axonweb3'
         uses: actions/github-script@v6
         id: get_sha
         with:
@@ -116,7 +119,7 @@ jobs:
           path: v3-core/mochawesome-report/
   finally:
     name: Finally
-    needs: [ dispatch-v3-core-test ]
+    needs: [ v3-core-test ]
     if: always() && contains(github.event_name, 'workflow_dispatch')
     runs-on: ubuntu-latest
     steps:
@@ -138,115 +141,6 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               context: '${{ github.workflow }}',
-              sha: '${{ needs.dispatch-v3-core-test.outputs.output-sha }}',
+              sha: '${{ needs.v3-core-test.outputs.output-sha }}',
               target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
             })
-
-  v3-core-test:
-    strategy:
-      fail-fast: false
-      matrix:
-        net: ["axon"]
-    if: |
-      (contains(fromJson('["dependabot[bot]" ]'), github.actor) && github.event_name == 'pull_request') ||
-      (contains(github.event_name, 'push') && github.ref == 'refs/heads/main' )
-    runs-on: ubuntu-latest
-    outputs:
-      output-sha: ${{ steps.escape_multiple_lines_test_inputs.outputs.result }}
-    steps:
-      - name: Generate axon-bot token
-        if: contains(github.event_name, 'workflow_dispatch') &&
-            github.repository_owner == 'axonweb3'
-        id: generate_axon_bot_token
-        uses: wow-actions/use-app-token@v1
-        with:
-          app_id: ${{ secrets.AXON_BOT_APP_ID }}
-          private_key: ${{ secrets.AXON_BOT_PRIVATE_KEY }}
-      - name: Event is dispatch
-        if: contains(github.event_name, 'workflow_dispatch') &&
-            github.repository_owner == 'axonweb3'
-        uses: actions/github-script@v6
-        id: get_sha
-        with:
-          github-token: ${{ steps.generate_axon_bot_token.outputs.token }}
-          script: |
-            const dispatch = JSON.parse(`${{ github.event.inputs.dispatch }}`);
-            const pr = (
-             await github.rest.pulls.get({
-               owner: dispatch.repo.owner,
-               repo: dispatch.repo.repo,
-               pull_number: dispatch.issue.number,
-            })
-            ).data.head;
-            github.rest.repos.createCommitStatus({
-              state: 'pending',
-              owner: dispatch.repo.owner,
-              repo: dispatch.repo.repo,
-              context: '${{ github.workflow }}',
-              sha: pr.sha,
-              target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-            })
-            return pr.sha
-      - name: Escape multiple lines test inputs
-        id: escape_multiple_lines_test_inputs
-        run: |
-          inputs=${{ steps.get_sha.outputs.result}}
-          inputs="${inputs//'%'/'%25'}"
-          inputs="${inputs//'\n'/'%0A'}"
-          inputs="${inputs//'\r'/'%0D'}"
-          echo "::set-output name=result::$inputs"
-      - name: Git checkout
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ steps.escape_multiple_lines_test_inputs.outputs.result || 'main' }}
-      - uses: actions/checkout@v3
-        with:
-          repository: gpBlockchain/v3-core
-          path: v3-core
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 16.x
-
-      - id: yarn-cache
-        run: echo "::set-output name=dir::$(yarn cache dir)"
-
-      - name: Deploy Local Network of Axon
-        run: |
-          cargo build
-          rm -rf ./devtools/chain/data
-          ./target/debug/axon --config devtools/chain/config.toml --genesis devtools/chain/genesis_single_node.json > /tmp/log 2>&1 &
-      - name: Install dependencies
-        run: |
-          cd /home/runner/work/axon/axon/v3-core
-          yarn install
-      # This is required separately from yarn test because it generates the typechain definitions
-      - name: Compile
-        run: |
-          cd /home/runner/work/axon/axon/v3-core
-          yarn compile
-      - name: Run tests 0
-        id: runtest
-        run: |
-          cd /home/runner/work/axon/axon/v3-core
-          yarn test:prepare
-          yarn test:runAll0
-      - name: Run test 1
-        if: success() || failure()
-        run: |
-          cd /home/runner/work/axon/axon/v3-core
-          yarn test:runAll1
-      - name: Run test 2
-        if: success() || failure()
-        run: |
-          cd /home/runner/work/axon/axon/v3-core
-          yarn test:runAll2
-      - name: Check Axon Status
-        if: success() || failure()
-        run: |
-          curl http://localhost:8000 -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params": [],"id":1}'
-      - name: Publish reports
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: jfoa-build-reports-${{ runner.os }}
-          path: v3-core/mochawesome-report/

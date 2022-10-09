@@ -39,7 +39,7 @@ NIL
 
 **CI Usage**
 
-> Check the CI you want to run below, and then comment `\run-ci`.
+> Check the CI you want to run below, and then comment `/run-ci`.
 
 **CI Switch**
 
