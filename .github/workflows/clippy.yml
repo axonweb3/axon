@@ -62,7 +62,6 @@ jobs:
       - uses: lyricwulf/abc@v1
         with:
           linux: m4
-      - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
