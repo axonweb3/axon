@@ -4,6 +4,7 @@ use proc_macro2 as pm2;
 use quote::quote;
 use syn::{parse_macro_input, AttributeArgs, Ident, ItemFn, Lit, NestedMeta, ReturnType};
 
+#[allow(clippy::format_push_string)]
 pub fn expand_rpc_metrics(attr: TokenStream, func: TokenStream) -> TokenStream {
     let attr = parse_macro_input!(attr as AttributeArgs);
     let func = parse_macro_input!(func as ItemFn);
@@ -39,7 +40,7 @@ pub fn expand_rpc_metrics(attr: TokenStream, func: TokenStream) -> TokenStream {
         if index != 0 {
             debug.push(',')
         }
-        debug.push_str(&format!(" {}: {{:?}}", name.to_string()));
+        debug.push_str(&format!(" {}: {{:?}}", name));
     }
 
     let func_block_wrapper = if func_return.is_ret_pin_box_fut() {
