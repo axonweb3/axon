@@ -428,7 +428,7 @@ where
     }
 
     #[trace_span(kind = "consensus.adapter")]
-    async fn verify_proof(&self, ctx: Context, block: Block, proof: Proof) -> ProtocolResult<()> {
+    fn verify_proof(&self, ctx: Context, block: Block, proof: Proof) -> ProtocolResult<()> {
         // the block 0 has no proof, which is consensus-ed by community, not by chain
         if block.header.number == 0 {
             return Ok(());

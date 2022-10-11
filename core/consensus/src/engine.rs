@@ -521,7 +521,6 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
                 previous_block.clone(),
                 proposal.proof.clone(),
             )
-            .await
             .map_err(|e| {
                 error!(
                     "[consensus] check_block, verify_proof error, previous block header: {:?}, proof: {:?}",

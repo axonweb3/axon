@@ -233,7 +233,6 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
                 consenting_rich_block.block.clone(),
                 consenting_proof.clone(),
             )
-            .await
             .map_err(|e| {
                 log::error!(
                     "[synchronization]: verify_proof error, syncing block header: {:?}, proof: {:?}",
@@ -272,7 +271,6 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
                 previous_block.clone(),
                 consenting_rich_block.block.header.proof.clone(),
             )
-            .await
             .map_err(|e| {
                 log::error!(
                     "[synchronization]: verify_proof error, previous block header: {:?}, proof: {:?}",

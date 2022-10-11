@@ -146,7 +146,7 @@ pub trait CommonConsensusAdapter: Send + Sync {
 
     fn tag_consensus(&self, ctx: Context, peer_ids: Vec<Bytes>) -> ProtocolResult<()>;
 
-    async fn verify_proof(&self, ctx: Context, block: Block, proof: Proof) -> ProtocolResult<()>;
+    fn verify_proof(&self, ctx: Context, block: Block, proof: Proof) -> ProtocolResult<()>;
 
     async fn verify_block_header(&self, ctx: Context, block: &Proposal) -> ProtocolResult<()>;
 
