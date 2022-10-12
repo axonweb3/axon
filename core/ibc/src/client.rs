@@ -1,6 +1,6 @@
 use ibc::core::ics02_client::{
     client_consensus::AnyConsensusState, client_def::ClientDef, client_state::AnyClientState,
-    context::ClientReader, error::Error, height::Height,
+    context::ClientReader, error::Error, error::Error as Ics02Error, height::Height,
 };
 use ibc::core::ics03_connection::connection::ConnectionEnd;
 use ibc::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
@@ -8,13 +8,16 @@ use ibc::core::ics04_channel::{channel::ChannelEnd, context::ChannelReader, pack
 use ibc::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
 };
-use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 
 use protocol::types::{AxonClientState, ConsensusStateWithHeight, Header};
 
 #[derive(Clone)]
-pub struct IbcLightClient {}
+pub struct IbcLightClient {
+    pub chain_id:      ChainId,
+    pub latest_height: Height,
+}
 
 impl ClientDef for IbcLightClient {
     type ClientState = AxonClientState;
@@ -23,11 +26,21 @@ impl ClientDef for IbcLightClient {
 
     fn check_header_and_update_state(
         &self,
-        _ctx: &dyn ClientReader,
-        _client_id: ClientId,
-        _client_state: Self::ClientState,
-        _header: Self::Header,
+        ctx: &dyn ClientReader,
+        client_id: ClientId,
+        client_state: Self::ClientState,
+        header: Self::Header,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Error> {
+        let prev_height = Height::new(1, header.number - 1).unwrap();
+        let prev_hash = header.prev_hash;
+        let prev_state = ctx.consensus_state(&client_id, prev_height);
+        if prev_state.is_err() {
+            return Err(Ics02Error::consensus_state_not_found(
+                client_id,
+                prev_height,
+            ));
+        }
+        let prev_state = prev_state.unwrap();
         todo!()
     }
 

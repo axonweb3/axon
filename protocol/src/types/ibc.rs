@@ -63,7 +63,7 @@ impl ConsensusStateWithHeight {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AxonClientState {
-    pub chian_id:      u64,
+    pub chain_id:      u64,
     pub latest_height: u64,
     pub frozen_height: u64,
     pub is_frozen:     bool,
