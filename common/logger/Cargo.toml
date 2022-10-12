@@ -14,6 +14,6 @@ json = "0.12"
 log = "0.4"
 # Turn off gzip feature, it hurts performance. For more information, reference
 # log4rs document.
-log4rs = { version = "1.1", features = ["all_components", "file_appender", "yaml_format"] }
+log4rs = { version = "1.2", features = ["all_components", "file_appender", "yaml_format"] }
 rustracing_jaeger = "0.7"
 serde = { version = "1.0", features = ["derive"] }
