@@ -473,11 +473,13 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@chainsafe/dappeteer@^2.4.0":
-  version "2.4.1"
-  resolved "https://registry.yarnpkg.com/@chainsafe/dappeteer/-/dappeteer-2.4.1.tgz#c41db251566fb2783a2d752ce345a8cfc3161fb9"
-  integrity sha512-Yix+0yeaMsVbmx0iSWKA4ZeGr8Lu4f65yin0tuV/ySWPG1B220mZADpObjGrU2yuOnPyheml0PiVGOo5Ryl/4A==
+"@chainsafe/dappeteer@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@chainsafe/dappeteer/-/dappeteer-3.0.0.tgz#0a54d399b74d88ce634f6d1b712376144bad5764"
+  integrity sha512-/0sGAVSwp9KlG/gxclZDtKZWw/W0PUG0nUuYEUVI3XVVyCNvvCnZ95ZX/efRY9BVLPl8Qd5dAz98XdkQqVfGvQ==
   dependencies:
+    "@types/chai-as-promised" "^7.1.5"
+    chai-as-promised "^7.1.1"
     node-stream-zip "^1.13.0"
 
 "@eslint/eslintrc@^1.3.1":
@@ -1112,6 +1114,18 @@
     "@types/keyv" "*"
     "@types/node" "*"
     "@types/responselike" "*"
+
+"@types/chai-as-promised@^7.1.5":
+  version "7.1.5"
+  resolved "https://registry.yarnpkg.com/@types/chai-as-promised/-/chai-as-promised-7.1.5.tgz#6e016811f6c7a64f2eed823191c3a6955094e255"
+  integrity sha512-jStwss93SITGBwt/niYrkf2C+/1KTeZCZl1LaeezTlqppAKeoQC7jxyqYuP72sxBGKCIbw7oHgbYssIRzT5FCQ==
+  dependencies:
+    "@types/chai" "*"
+
+"@types/chai@*":
+  version "4.3.3"
+  resolved "https://registry.yarnpkg.com/@types/chai/-/chai-4.3.3.tgz#3c90752792660c4b562ad73b3fbd68bf3bc7ae07"
+  integrity sha512-hC7OMnszpxhZPduX+m+nrx+uFoLkWOMiR4oa/AZF3MuSETYTZmFfJAHqZEM8MVlvfG7BEUcgvtwoCTxBp6hm3g==
 
 "@types/graceful-fs@^4.1.3":
   version "4.1.5"
@@ -1760,6 +1774,13 @@ caseless@~0.12.0:
   resolved "https://registry.yarnpkg.com/caseless/-/caseless-0.12.0.tgz#1b681c21ff84033c826543090689420d187151dc"
   integrity sha1-G2gcIf+EAzyCZUMJBolCDRhxUdw=
 
+chai-as-promised@^7.1.1:
+  version "7.1.1"
+  resolved "https://registry.yarnpkg.com/chai-as-promised/-/chai-as-promised-7.1.1.tgz#08645d825deb8696ee61725dbf590c012eb00ca0"
+  integrity sha512-azL6xMoi+uxu6z4rhWQ1jbdUhOMhis2PvscD/xjLqNMkv3BPPp2JyyuTHOrf9BOosGpNQ11v6BKv/g57RXbiaA==
+  dependencies:
+    check-error "^1.0.2"
+
 chalk@^2.0.0:
   version "2.4.2"
   resolved "https://registry.yarnpkg.com/chalk/-/chalk-2.4.2.tgz#cd42541677a54333cf541a49108c1432b44c9424"
@@ -1781,6 +1802,11 @@ char-regex@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/char-regex/-/char-regex-1.0.2.tgz#d744358226217f981ed58f479b1d6bcc29545dcf"
   integrity sha512-kWWXztvZ5SBQV+eRgKFeh8q5sLuZY2+8WUIzlxWVTg+oGwY14qylx1KbKzHd8P6ZYkAg0xyIDU9JMHhyJMZ1jw==
+
+check-error@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/check-error/-/check-error-1.0.2.tgz#574d312edd88bb5dd8912e9286dd6c0aed4aac82"
+  integrity sha512-BrgHpW9NURQgzoNyjfq0Wu6VFO6D7IZEmJNdtgNqpzGG8RuNFHt2jQxWlAs4HMe119chBnv+34syEZtc6IhLtA==
 
 chownr@^1.1.1, chownr@^1.1.4:
   version "1.1.4"
