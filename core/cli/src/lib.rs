@@ -20,7 +20,7 @@ impl AxonCli {
                     .long("config")
                     .help("Axon config path")
                     .required(true)
-                    .takes_value(true),
+                    .num_args(1),
             )
             .arg(
                 Arg::new("genesis_path")
@@ -28,7 +28,7 @@ impl AxonCli {
                     .long("genesis")
                     .help("Axon genesis path")
                     .required(true)
-                    .takes_value(true),
+                    .num_args(1),
             )
             .subcommand(Command::new("run").about("Run axon process"))
             .get_matches();
@@ -37,8 +37,7 @@ impl AxonCli {
     }
 
     pub fn start(&self) {
-        let config_path = self.matches.value_of("config_path").unwrap();
-        let path = Path::new(config_path).parent().unwrap();
+        let path = Path::new(self.matches.get_one::<String>("config_path").unwrap()).parent().unwrap();
 
         let mut config: Config = parse_file(config_path, false).unwrap();
 
@@ -46,7 +45,7 @@ impl AxonCli {
             *f = path.join(&f)
         }
         let genesis: RichBlock =
-            parse_file(self.matches.value_of("genesis_path").unwrap(), true).unwrap();
+            parse_file(self.matches.get_one::<String>("genesis_path").unwrap(), true).unwrap();
 
         register_log(&config);
 
