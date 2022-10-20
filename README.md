@@ -7,6 +7,7 @@
     <a href="https://github.com/axonweb3/axon/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg"></a>
     <a href="https://github.com/axonweb3/axon"><img src="https://github.com/axonweb3/axon/actions/workflows/web3_compatible.yml/badge.svg?branch=main"></a>
     <a href="https://github.com/axonweb3/axon"><img src="https://img.shields.io/github/contributors/axonweb3/axon"></a>
+    <a href="https://twitter.com/AxonWeb3"><img src="https://img.shields.io/twitter/follow/AxonWeb3?style=social"></a>
   </p>
   <p align="center">
      Developed by AxonWeb3<br>
@@ -24,20 +25,19 @@ Axon is a high-performance layer2 framework with native cross-chain function. B
 
 ### Developer-Friendly Design
 
-Axon is compatible with [Ethereum](https://ethereum.org) so that all of the develop utilities can be used on it directly. And the [Axon CLI](https://github.com/axonweb3/axon-devops/axon-cli) provides an all-in-one client which includes initialization, DevOps, cross-chain request and so on. Seeing is believing, there is a [15 minutes tutorial]() that will lead you to build your own chain and deploy a tiny application.
+Axon is compatible with [Ethereum](https://ethereum.org) so that all of the develop utilities can be used on it directly. And the [Axon CLI](https://github.com/axonweb3/axon-devops/axon-cli) provides an all-in-one client which includes initialization, DevOps, cross-chain request and so on. Seeing is believing, there is a [15 minutes tutorial](https://docs.axonweb3.io/for-dapp-devs/Zero_To_Axon_With_Axon_Cli) that will lead you to build your own chain and deploy a tiny application.
 
 ### Native Cross-chain Communication
 
-Openness and mobility are the foundation of social development, so is blockchain. Cross-chain function enhances liquidity for the web3 ecosystem. Axon develops native cross-chain communication without any bridge. Each the Axon-based chain can speak to [CKB](https://www.nervos.org), other Axon-based chains, and any [IBC](https://ibcprotocol.org) compatible chains. Axon will embed more cross-chain protocols in the future.
+Openness and mobility are the foundation of social development, so is blockchain. Cross-chain function enhances liquidity for the web3 ecosystem. Axon develops native cross-chain communication without any bridge. Each Axon-based chain can speak to [CKB](https://www.nervos.org), other Axon-based chains, and any [IBC](https://ibcprotocol.org) compatible chains. Axon will embed more cross-chain protocols in the future.
 
 ## Roadmap
 
 Most of the infrastructure has been done and some substantial features to be developed are as below:
 
 1. Compatible with [IBC](https://github.com/cosmos/ibc) protocol.
-2. Implement the original homologous cross-chain protocol.
-3. Design a cross-chain protocol for EVM-based chains.
-4. Compatible with more cross-chain protocols in the future.
+2. Design a cross-chain protocol for EVM-based chains.
+3. Compatible with more cross-chain protocols in the future.
 
 ## Install
 
