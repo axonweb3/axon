@@ -260,7 +260,7 @@ dependencies = [
  "hasher",
  "hex",
  "ibc",
- "ibc-proto",
+ "ibc-proto 0.21.0",
  "lazy_static",
  "ophelia",
  "ophelia-secp256k1",
@@ -270,7 +270,7 @@ dependencies = [
  "rlp",
  "serde",
  "serde_json",
- "tendermint-proto",
+ "tendermint-proto 0.23.9",
  "tokio",
  "toml",
 ]
@@ -1585,7 +1585,7 @@ dependencies = [
  "axon-protocol",
  "core-storage",
  "ibc",
- "ibc-proto",
+ "ibc-proto 0.21.0",
  "log",
  "tonic",
 ]
@@ -3309,7 +3309,7 @@ dependencies = [
  "bytes",
  "derive_more",
  "flex-error",
- "ibc-proto",
+ "ibc-proto 0.20.1",
  "ics23",
  "num-traits",
  "primitive-types",
@@ -3322,7 +3322,7 @@ dependencies = [
  "subtle-encoding",
  "tendermint",
  "tendermint-light-client-verifier",
- "tendermint-proto",
+ "tendermint-proto 0.23.9",
  "tendermint-testgen",
  "time 0.3.11",
  "tracing",
@@ -3339,7 +3339,22 @@ dependencies = [
  "bytes",
  "prost 0.11.0",
  "serde",
- "tendermint-proto",
+ "tendermint-proto 0.23.9",
+]
+
+[[package]]
+name = "ibc-proto"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf16b17e83004295df8f6cad5a08a447c37be1465f9b5d6e652dbed527172bd3"
+dependencies = [
+ "base64 0.13.0",
+ "bytes",
+ "flex-error",
+ "prost 0.11.0",
+ "serde",
+ "subtle-encoding",
+ "tendermint-proto 0.25.0",
  "tonic",
 ]
 
@@ -6105,7 +6120,7 @@ dependencies = [
  "signature",
  "subtle",
  "subtle-encoding",
- "tendermint-proto",
+ "tendermint-proto 0.23.9",
  "time 0.3.11",
  "zeroize",
 ]
@@ -6128,6 +6143,24 @@ name = "tendermint-proto"
 version = "0.23.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68ce80bf536476db81ecc9ebab834dc329c9c1509a694f211a73858814bfe023"
+dependencies = [
+ "bytes",
+ "flex-error",
+ "num-derive",
+ "num-traits",
+ "prost 0.11.0",
+ "prost-types 0.11.1",
+ "serde",
+ "serde_bytes",
+ "subtle-encoding",
+ "time 0.3.11",
+]
+
+[[package]]
+name = "tendermint-proto"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "41d7f0f8cba8816446b330eeb25f73c3ba7cb9b261677bf78e6ea560b8e1880b"
 dependencies = [
  "bytes",
  "flex-error",

@@ -22,7 +22,7 @@ ethereum-types = { version = "0.13", features = ["arbitrary", "codec", "rlp", "s
 evm = { version = "0.35", features = ["with-serde"] }
 faster-hex = "0.6"
 hasher = { version = "0.1", features = ["hash-keccak"] }
-ibc-proto = { version = "0.20", optional = true }
+ibc-proto = { version = "0.21", optional = true }
 lazy_static = "1.4"
 ophelia = "0.3"
 ophelia-secp256k1 = "0.3"
