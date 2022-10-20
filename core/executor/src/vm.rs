@@ -5,16 +5,6 @@ use evm::executor::stack::{MemoryStackState, PrecompileFn, StackExecutor, StackS
 use protocol::traits::{ApplyBackend, Backend};
 use protocol::types::{Config, SignedTransaction, TransactionAction, TxResp, H160};
 
-pub const METADATA_CONTRACT_ADDRESS: H160 = H160([
-    176, 13, 97, 107, 130, 12, 57, 97, 158, 226, 158, 81, 68, 208, 34, 108, 248, 181, 193, 90,
-]);
-pub const WCKB_CONTRACT_ADDRESS: H160 = H160([
-    74, 245, 236, 94, 61, 41, 217, 221, 215, 244, 191, 145, 160, 34, 19, 28, 65, 183, 35, 82,
-]);
-pub const CROSSCHAIN_CONTRACT_ADDRESS: H160 = H160([
-    180, 132, 253, 72, 14, 89, 134, 33, 99, 143, 56, 15, 64, 70, 151, 205, 159, 88, 176, 248,
-]);
-
 // deprecated
 #[allow(dead_code)]
 #[derive(Default)]

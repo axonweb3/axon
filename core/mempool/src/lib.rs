@@ -20,7 +20,7 @@ use std::sync::Arc;
 use futures::future::try_join_all;
 
 use common_apm::Instant;
-use core_executor::{is_call_system_script, is_crosschain_transaction};
+use core_executor::{is_call_system_script, is_transaction_call};
 use core_network::NetworkContext;
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
 use protocol::types::{BlockNumber, Hash, PackedTxHashes, SignedTransaction, H160, H256, U256};
@@ -30,8 +30,9 @@ use crate::context::TxContext;
 use crate::pool::PriorityPool;
 
 pub struct MemPoolImpl<Adapter> {
-    pool:    PriorityPool,
-    adapter: Arc<Adapter>,
+    pool:                PriorityPool,
+    adapter:             Arc<Adapter>,
+    cross_chain_address: H160,
 }
 
 impl<Adapter> MemPoolImpl<Adapter>
@@ -43,10 +44,12 @@ where
         timeout_gap: u64,
         adapter: Adapter,
         initial_txs: Vec<SignedTransaction>,
+        cross_chain_address: H160,
     ) -> Self {
         let mempool = MemPoolImpl {
-            pool:    PriorityPool::new(pool_size, timeout_gap).await,
+            pool: PriorityPool::new(pool_size, timeout_gap).await,
             adapter: Arc::new(adapter),
+            cross_chain_address,
         };
 
         for tx in initial_txs.into_iter() {
@@ -188,7 +191,7 @@ where
 {
     async fn insert(&self, ctx: Context, tx: SignedTransaction) -> ProtocolResult<()> {
         let is_call_system_script = is_call_system_script(tx.transaction.unsigned.action())
-            || is_crosschain_transaction(tx.transaction.unsigned.action());
+            || is_transaction_call(tx.transaction.unsigned.action(), &self.cross_chain_address);
 
         log::debug!(
             "[mempool]: is call system script {:?}",
