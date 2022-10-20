@@ -50,6 +50,8 @@ git clone https://github.com/axonweb3/axon.git && cd axon
 cargo run --release -- -c devtools/chain/config.toml -g devtools/chain/genesis_single_node.json
 ```
 
+Read the docs and follow the tutorials: [docs.axonweb3.io](docs.axonweb3.io)
+
 ## Toolchain
 
 Apart from the framework, Axon has toolchains:
@@ -67,6 +69,8 @@ Please read the [CONTRIBUTING.md](./CONTRIBUTING.md) for details on code of cond
 ## Communication
 
 Contact us through email: axon@axonweb3.io
+
+## Socials
 
 Linktree: https://linktr.ee/axonweb3
 
