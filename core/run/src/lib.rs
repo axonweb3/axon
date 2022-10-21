@@ -314,6 +314,7 @@ impl Axon {
         let metadata_controller = Arc::new(MetadataController::new(
             Arc::new(metadata_adapter),
             self.config.epoch_len,
+            self.config.metadata_contract_address,
         ));
 
         let metadata = metadata_controller.get_metadata(Context::new(), &current_block.header)?;
@@ -351,6 +352,7 @@ impl Axon {
                 config.mempool.timeout_gap,
                 mempool_adapter,
                 current_stxs.clone(),
+                config.crosschain_contract_address,
             )
             .await,
         );
@@ -468,6 +470,8 @@ impl Axon {
             config.cross_client.clone(),
             Arc::clone(&ckb_client),
             Arc::new(crosschain_adapter),
+            config.crosschain_contract_address,
+            config.wckb_contract_address,
         )
         .await;
 
@@ -512,7 +516,7 @@ impl Axon {
 
         let overlord_consensus = Arc::new(OverlordConsensus::new(
             status_agent.clone(),
-            self.config.metadata_contract_address.into(),
+            self.config.metadata_contract_address,
             node_info,
             Arc::clone(&crypto),
             Arc::clone(&txs_wal),

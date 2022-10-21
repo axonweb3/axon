@@ -7,19 +7,22 @@ use std::sync::Arc;
 use ethers_core::abi::AbiEncode;
 
 use core_executor::adapter::{MPTTrie, RocksTrieDB};
-use core_executor::{AxonExecutor, AxonExecutorAdapter, METADATA_CONTRACT_ADDRESS};
+use core_executor::{AxonExecutor, AxonExecutorAdapter};
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{CommonStorage, Context, Executor, Storage};
 use protocol::types::{
     Account, Address, Bytes, Eip1559Transaction, Header, Metadata, Proposal, Public, RichBlock,
     SignatureComponents, SignedTransaction, TransactionAction, UnsignedTransaction,
-    UnverifiedTransaction, H256, NIL_DATA, RLP_NULL, U256,
+    UnverifiedTransaction, H160, H256, NIL_DATA, RLP_NULL, U256,
 };
 
 use crate::{calc_epoch, metadata_abi as abi, MetadataAdapterImpl, MetadataController, EPOCH_LEN};
 
 const GENESIS_PATH: &str = "../../devtools/chain/genesis_single_node.json";
+pub const METADATA_CONTRACT_ADDRESS: H160 = H160([
+    176, 13, 97, 107, 130, 12, 57, 97, 158, 226, 158, 81, 68, 208, 34, 108, 248, 181, 193, 90,
+]);
 
 struct TestHandle {
     storage:    Arc<ImplStorage<RocksAdapter>>,
@@ -105,7 +108,7 @@ impl TestHandle {
     ) -> MetadataController<MetadataAdapterImpl<ImplStorage<RocksAdapter>, RocksTrieDB>> {
         let adapter =
             MetadataAdapterImpl::new(Arc::clone(&self.storage), Arc::clone(&self.trie_db));
-        MetadataController::new(Arc::new(adapter), epoch_len)
+        MetadataController::new(Arc::new(adapter), epoch_len, METADATA_CONTRACT_ADDRESS)
     }
 
     pub fn exec(&mut self, txs: Vec<SignedTransaction>) {

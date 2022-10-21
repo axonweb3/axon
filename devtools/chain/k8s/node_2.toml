@@ -6,8 +6,9 @@ data_path = "./devtools/chain/data2"
 
 epoch_len = 100_000_000
 
-metadata_contract_address = "0xc2fd48d60ae16b3fe6e333a9a13763691970d9373d4fab7cc323d7ba06fa9986"
-crosschain_contract_address = "0x2c3a9349df5b162519b17621f67bc4e50d1df92b0e4c61794a4517af6a995cb2"
+metadata_contract_address = "0xb00d616b820c39619ee29e5144d0226cf8b5c15a"
+crosschain_contract_address = "0xb484fd480e598621638f380f404697cd9f58b0f8"
+wckb_contract_address = "0x4af5ec5e3d29d9ddd7f4bf91a022131c41b72352"
 
 [accounts]
 mnemonic = "test test test test test test test test test test test junk"

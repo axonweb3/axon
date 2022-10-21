@@ -12,8 +12,7 @@ use protocol::{codec::hex_decode, tokio};
 use core_cross_client::crosschain_abi as abi;
 use core_cross_client::{build_axon_txs, monitor::search_tx};
 
-use crate::debugger::{clear_data, mock_signed_tx, EvmDebugger};
-use crate::CROSSCHAIN_CONTRACT_ADDRESS;
+use crate::debugger::{clear_data, mock_signed_tx, EvmDebugger, CROSSCHAIN_CONTRACT_ADDRESS};
 
 const CKB_BLOCK_5910757: &str = "./src/debugger/block_5910757.json";
 const ACS_CODE_HASH: ckb_types::H256 =
@@ -60,7 +59,12 @@ async fn test_cross_from_ckb() {
     let mut ckb_tx_hash = [0u8; 32];
     ckb_tx_hash.copy_from_slice(&ckb_txs[0].hash().raw_data()[..32]);
 
-    let (_, stx) = build_axon_txs(ckb_txs, debugger.nonce(address), &priv_key);
+    let (_, stx) = build_axon_txs(
+        ckb_txs,
+        debugger.nonce(address),
+        &priv_key,
+        CROSSCHAIN_CONTRACT_ADDRESS,
+    );
     let resp = debugger.exec(1, vec![stx]);
 
     println!("{:?}", resp);
