@@ -36,8 +36,6 @@ use protocol::types::{
 };
 use protocol::{async_trait, lazy::CHAIN_ID, tokio, ProtocolResult};
 
-use core_executor::{CROSSCHAIN_CONTRACT_ADDRESS, WCKB_CONTRACT_ADDRESS};
-
 use crate::error::CrossChainError;
 use crate::task::{message::CrossChainMessage, RequestCkbTask};
 use crate::{adapter::fixed_array, monitor::CrossChainMonitor, sidechain::SidechainTask};
@@ -58,6 +56,9 @@ pub struct CrossChainImpl<Adapter> {
     reqs_tx:  UnboundedSender<Requests>,
 
     adapter: Arc<Adapter>,
+
+    cross_chain_address: H160,
+    wckb_address:        H160,
 }
 
 impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
@@ -66,6 +67,8 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
         config: ConfigCrossChain,
         ckb_client: Arc<C>,
         adapter: Arc<Adapter>,
+        cross_chain_address: H160,
+        wckb_address: H160,
     ) -> (
         Self,
         CrossChainHandler<C>,
@@ -114,6 +117,8 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
             req_rx,
             reqs_tx,
             adapter,
+            cross_chain_address,
+            wckb_address,
         };
 
         crosschain
@@ -133,7 +138,7 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
                     if !to_ckbs.is_empty() {
                         let tx_clone = self.reqs_tx.clone();
                         tokio::spawn(async move {
-                            build_ckb_tx_process(to_ckbs, tx_clone).await;
+                            build_ckb_tx_process(to_ckbs, tx_clone, &self.wckb_address).await;
                         });
                     }
 
@@ -145,7 +150,7 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
                 Some(reqs) = self.req_rx.recv() => {
                     log::info!("[cross-chain]: receive requests {:?} from CKB", reqs);
                     let nonce = self.nonce(self.address).await;
-                    let (reqs, stx) = build_axon_txs(reqs, nonce, &self.priv_key);
+                    let (reqs, stx) = build_axon_txs(reqs, nonce, &self.priv_key, self.cross_chain_address);
                     self.adapter.insert_in_process(
                         Context::new(),
                         &rlp::encode(&reqs).freeze(),
@@ -320,12 +325,13 @@ pub fn decode_resp_nonce(data: &[u8]) -> U256 {
 async fn build_ckb_tx_process(
     to_ckbs: Vec<crosschain_abi::CrossToCKBFilter>,
     request_tx: UnboundedSender<Requests>,
+    wckb_address: &H160,
 ) {
     let _ = request_tx.send(Requests(
         to_ckbs
             .iter()
             .map(|log| {
-                let (s_amount, c_amount) = if log.token == WCKB_CONTRACT_ADDRESS {
+                let (s_amount, c_amount) = if &log.token == wckb_address {
                     (0, log.amount.as_u64() + BASE_CROSSCHAIN_CELL_CAPACITY)
                 } else {
                     (log.amount.as_u128(), BASE_CROSSCHAIN_CELL_CAPACITY)
@@ -349,6 +355,7 @@ pub fn build_axon_txs(
     txs: Vec<TransactionView>,
     addr_nonce: U256,
     priv_key: &Secp256k1RecoverablePrivateKey,
+    cross_chain_address: H160,
 ) -> (Requests, SignedTransaction) {
     let reqs = txs
         .iter()
@@ -391,7 +398,7 @@ pub fn build_axon_txs(
         max_priority_fee_per_gas: MAX_PRIORITY_FEE_PER_GAS.into(),
         gas_price:                U256::zero(),
         gas_limit:                MAX_BLOCK_GAS_LIMIT.into(),
-        action:                   TransactionAction::Call(CROSSCHAIN_CONTRACT_ADDRESS),
+        action:                   TransactionAction::Call(cross_chain_address),
         value:                    U256::zero(),
         data:                     AbiEncode::encode(call_data).into(),
         access_list:              vec![],

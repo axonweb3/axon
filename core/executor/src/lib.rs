@@ -13,9 +13,6 @@ mod vm;
 pub use crate::adapter::{AxonExecutorAdapter, MPTTrie, RocksTrieDB};
 pub use crate::system::NATIVE_TOKEN_ISSUE_ADDRESS;
 pub use crate::utils::{code_address, decode_revert_msg, logs_bloom};
-pub use crate::vm::{
-    CROSSCHAIN_CONTRACT_ADDRESS, METADATA_CONTRACT_ADDRESS, WCKB_CONTRACT_ADDRESS,
-};
 
 use std::collections::BTreeMap;
 
@@ -253,9 +250,6 @@ pub fn is_call_system_script(action: &TransactionAction) -> bool {
     }
 }
 
-pub fn is_crosschain_transaction(action: &TransactionAction) -> bool {
-    match action {
-        TransactionAction::Call(addr) => addr == &CROSSCHAIN_CONTRACT_ADDRESS,
-        TransactionAction::Create => false,
-    }
+pub fn is_transaction_call(action: &TransactionAction, addr: &H160) -> bool {
+    action == &TransactionAction::Call(*addr)
 }
