@@ -16,7 +16,7 @@ ethabi = "17.2"
 ethabi-contract = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
 ethabi-derive = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
 ethers-contract = { version = "0.17", features = ["abigen"] }
-ethers-core = "0.17"
+ethers-core = "1.0"
 ethers-providers = "0.17"
 futures = "0.3"
 jsonrpc-core = "18.0"

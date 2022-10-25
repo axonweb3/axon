@@ -9,7 +9,7 @@ arc-swap = "1.5"
 cita_trie = "3.0"
 common-apm = { path = "../../common/apm" }
 ethers-contract = { version = "0.17", features = ["abigen"] }
-ethers-core = "0.17"
+ethers-core = "1.0"
 ethers-providers = "0.17"
 lazy_static = "1.4"
 parking_lot = "0.12"
