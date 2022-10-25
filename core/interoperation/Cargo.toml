@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 arc-swap = "1.5"
-ckb-types = "0.104"
+ckb-types = "0.105"
 lazy_static = "1.4"
 log = "0.4"
 

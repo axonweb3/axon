@@ -2,10 +2,11 @@ use std::{future::Future, pin::Pin};
 
 use ckb_jsonrpc_types::{
     BlockNumber, BlockView, HeaderView, JsonBytes, OutputsValidator, Transaction,
-    TransactionWithStatus,
+    TransactionWithStatusResponse,
 };
 use ckb_sdk::rpc::ckb_indexer::{Cell, Pagination, SearchKey};
 use ckb_types::H256;
+use ckb_types::core::TransactionWithStatus;
 
 use crate::types::{
     CrossChainTransferPayload, SubmitCheckpointPayload, TransactionCompletionResponse,
@@ -23,12 +24,13 @@ pub trait CkbClient: Send + Sync {
 
     // async fn verify_check_point(&self, ctx: Context, header: Header) ->
     // ProtocolResult<()>;
+
     fn get_block_by_number(&self, ctx: OtherContext, number: BlockNumber) -> RPC<BlockView>;
 
     fn get_tip_header(&self, ctx: OtherContext) -> RPC<HeaderView>;
 
     fn get_transaction(&self, ctx: OtherContext, hash: &H256)
-        -> RPC<Option<TransactionWithStatus>>;
+        -> RPC<Option<TransactionWithStatusResponse>>;
 
     fn send_transaction(
         &self,
