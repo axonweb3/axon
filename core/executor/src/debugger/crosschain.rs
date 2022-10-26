@@ -77,16 +77,13 @@ async fn test_cross_from_ckb() {
         .unwrap()])
     .unwrap();
 
-    assert_eq!(
-        logs[0].records[0],
-        (
-            to,
-            H160::default(),
-            U256::zero(),
-            U256::from(450),
-            ckb_tx_hash
-        )
-    );
+    assert_eq!(logs[0].records[0], abi::CkbtoAxonRecord {
+        to,
+        token_address: H160::default(),
+        s_udt_amount: U256::zero(),
+        ckb_amount: U256::from(450),
+        tx_hash: ckb_tx_hash,
+    });
 
     let tx = mock_signed_tx(
         build_change_limit_tx(debugger.nonce(address).as_u64()),
