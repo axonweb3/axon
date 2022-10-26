@@ -6,7 +6,7 @@ edition = "2021"
 
 [dependencies]
 arc-swap = "1.5"
-ckb-jsonrpc-types = "0.104"
+ckb-jsonrpc-types = "0.105"
 ckb-sdk = "2.1"
 ckb-types = "0.104"
 common-crypto = { path = "../../common/crypto" }
