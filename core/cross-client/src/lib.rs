@@ -219,7 +219,7 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
                 let hashes = event[0]
                     .records
                     .iter()
-                    .map(|r| H256(r.4))
+                    .map(|r| H256(r.tx_hash))
                     .collect::<Vec<_>>();
                 self.adapter
                     .insert_record(
@@ -435,11 +435,11 @@ impl From<crosschain_abi::CrossFromCKBFilter> for Requests {
                 .map(|r| Transfer {
                     direction:     Direction::FromCkb,
                     ckb_address:   String::new(),
-                    address:       r.0,
-                    erc20_address: r.1,
-                    sudt_amount:   r.2.as_u128(),
-                    ckb_amount:    r.3.as_u64(),
-                    tx_hash:       H256(r.4),
+                    address:       r.to,
+                    erc20_address: r.token_address,
+                    sudt_amount:   r.s_udt_amount.as_u128(),
+                    ckb_amount:    r.ckb_amount.as_u64(),
+                    tx_hash:       H256(r.tx_hash),
                 })
                 .collect(),
         )
@@ -465,11 +465,11 @@ mod tests {
     #[test]
     #[ignore]
     fn gen_abi_binding() {
-        ethers_contract::Abigen::new("crosschain", "./crosschain_abi.json")
+        ethers_contract::Abigen::new("wckb", "./wckb_abi.json")
             .unwrap()
             .generate()
             .unwrap()
-            .write_to_file("src/abi/crosschain_abi.rs")
+            .write_to_file("src/abi/wckb_abi.rs")
             .unwrap();
     }
 }

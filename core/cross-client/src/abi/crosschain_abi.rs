@@ -1,6 +1,6 @@
-pub use crosschain_mod::*;
+pub use crosschain::*;
 #[allow(clippy::too_many_arguments, non_camel_case_types)]
-pub mod crosschain_mod {
+pub mod crosschain {
     #![allow(clippy::enum_variant_names)]
     #![allow(dead_code)]
     #![allow(clippy::type_complexity)]
@@ -16,9 +16,11 @@ pub mod crosschain_mod {
     use ethers_providers::Middleware;
     #[doc = "crosschain was auto-generated with ethers-rs Abigen. More information at: https://github.com/gakonst/ethers-rs"]
     use std::sync::Arc;
+    # [rustfmt::skip] const __ABI : & str = "[\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"metadata\",\n        \"type\": \"address\"\n      },\n      {\n        \"internalType\": \"address\",\n        \"name\": \"wCKB\",\n        \"type\": \"address\"\n      }\n    ],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"constructor\"\n  },\n  {\n    \"anonymous\": false,\n    \"inputs\": [\n      {\n        \"indexed\": false,\n        \"internalType\": \"uint256\",\n        \"name\": \"minWCKB\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"ChangeMinWCKB\",\n    \"type\": \"event\"\n  },\n  {\n    \"anonymous\": false,\n    \"inputs\": [\n      {\n        \"indexed\": false,\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"components\": [\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"feeRatio\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"threshold\",\n            \"type\": \"uint256\"\n          }\n        ],\n        \"indexed\": false,\n        \"internalType\": \"struct DataType.TokenConfig\",\n        \"name\": \"config\",\n        \"type\": \"tuple\"\n      }\n    ],\n    \"name\": \"ChangeTokenConfig\",\n    \"type\": \"event\"\n  },\n  {\n    \"anonymous\": false,\n    \"inputs\": [\n      {\n        \"components\": [\n          {\n            \"internalType\": \"address\",\n            \"name\": \"to\",\n            \"type\": \"address\"\n          },\n          {\n            \"internalType\": \"address\",\n            \"name\": \"tokenAddress\",\n            \"type\": \"address\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"sUDTAmount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"CKBAmount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"txHash\",\n            \"type\": \"bytes32\"\n          }\n        ],\n        \"indexed\": false,\n        \"internalType\": \"struct DataType.CKBToAxonRecord[]\",\n        \"name\": \"records\",\n        \"type\": \"tuple[]\"\n      }\n    ],\n    \"name\": \"CrossFromCKB\",\n    \"type\": \"event\"\n  },\n  {\n    \"anonymous\": false,\n    \"inputs\": [\n      {\n        \"indexed\": false,\n        \"internalType\": \"bytes32\",\n        \"name\": \"currentRecordHash\",\n        \"type\": \"bytes32\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"bytes32[]\",\n        \"name\": \"remainRecordsHash\",\n        \"type\": \"bytes32[]\"\n      }\n    ],\n    \"name\": \"CrossLimitRecord\",\n    \"type\": \"event\"\n  },\n  {\n    \"anonymous\": false,\n    \"inputs\": [\n      {\n        \"indexed\": false,\n        \"internalType\": \"string\",\n        \"name\": \"to\",\n        \"type\": \"string\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"uint256\",\n        \"name\": \"amount\",\n        \"type\": \"uint256\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"uint256\",\n        \"name\": \"minWCKBAmount\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"CrossToCKB\",\n    \"type\": \"event\"\n  },\n  {\n    \"anonymous\": false,\n    \"inputs\": [\n      {\n        \"indexed\": false,\n        \"internalType\": \"string\",\n        \"name\": \"to\",\n        \"type\": \"string\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"uint256\",\n        \"name\": \"amount\",\n        \"type\": \"uint256\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"uint256\",\n        \"name\": \"minWCKBAmount\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"CrossToCKBAlert\",\n    \"type\": \"event\"\n  },\n  {\n    \"inputs\": [],\n    \"name\": \"AT_ADDRESS\",\n    \"outputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"\",\n        \"type\": \"address\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"internalType\": \"bytes32\",\n        \"name\": \"typehash\",\n        \"type\": \"bytes32\"\n      }\n    ],\n    \"name\": \"addMirrorToken\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"internalType\": \"bytes32\",\n        \"name\": \"typehash\",\n        \"type\": \"bytes32\"\n      }\n    ],\n    \"name\": \"addToken\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      }\n    ],\n    \"name\": \"addWhitelist\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"components\": [\n          {\n            \"internalType\": \"address\",\n            \"name\": \"tokenAddress\",\n            \"type\": \"address\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"amount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"minWCKBAmount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"string\",\n            \"name\": \"to\",\n            \"type\": \"string\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"limitSign\",\n            \"type\": \"uint256\"\n          }\n        ],\n        \"internalType\": \"struct DataType.AxonToCKBRecord\",\n        \"name\": \"record\",\n        \"type\": \"tuple\"\n      }\n    ],\n    \"name\": \"approveLimitTx\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"components\": [\n          {\n            \"internalType\": \"address\",\n            \"name\": \"to\",\n            \"type\": \"address\"\n          },\n          {\n            \"internalType\": \"address\",\n            \"name\": \"tokenAddress\",\n            \"type\": \"address\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"sUDTAmount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"CKBAmount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"txHash\",\n            \"type\": \"bytes32\"\n          }\n        ],\n        \"internalType\": \"struct DataType.CKBToAxonRecord[]\",\n        \"name\": \"records\",\n        \"type\": \"tuple[]\"\n      },\n      {\n        \"internalType\": \"uint256\",\n        \"name\": \"nonce\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"crossFromCKB\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"string\",\n        \"name\": \"to\",\n        \"type\": \"string\"\n      },\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"internalType\": \"uint256\",\n        \"name\": \"amount\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"crossTokenToCKB\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"internalType\": \"uint256\",\n        \"name\": \"value\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"fee\",\n    \"outputs\": [\n      {\n        \"internalType\": \"uint256\",\n        \"name\": \"\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"bytes32\",\n        \"name\": \"typehash\",\n        \"type\": \"bytes32\"\n      }\n    ],\n    \"name\": \"getTokenAddress\",\n    \"outputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"\",\n        \"type\": \"address\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      }\n    ],\n    \"name\": \"getTokenConfig\",\n    \"outputs\": [\n      {\n        \"components\": [\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"feeRatio\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"threshold\",\n            \"type\": \"uint256\"\n          }\n        ],\n        \"internalType\": \"struct DataType.TokenConfig\",\n        \"name\": \"\",\n        \"type\": \"tuple\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      }\n    ],\n    \"name\": \"getTypehash\",\n    \"outputs\": [\n      {\n        \"internalType\": \"bytes32\",\n        \"name\": \"\",\n        \"type\": \"bytes32\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [],\n    \"name\": \"getWCKBAddress\",\n    \"outputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"\",\n        \"type\": \"address\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [],\n    \"name\": \"getWCKBMin\",\n    \"outputs\": [\n      {\n        \"internalType\": \"uint256\",\n        \"name\": \"\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      }\n    ],\n    \"name\": \"isMirrorToken\",\n    \"outputs\": [\n      {\n        \"internalType\": \"bool\",\n        \"name\": \"\",\n        \"type\": \"bool\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      }\n    ],\n    \"name\": \"isWhitelist\",\n    \"outputs\": [\n      {\n        \"internalType\": \"bool\",\n        \"name\": \"\",\n        \"type\": \"bool\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [],\n    \"name\": \"limitTxes\",\n    \"outputs\": [\n      {\n        \"components\": [\n          {\n            \"internalType\": \"address\",\n            \"name\": \"tokenAddress\",\n            \"type\": \"address\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"amount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"minWCKBAmount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"string\",\n            \"name\": \"to\",\n            \"type\": \"string\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"limitSign\",\n            \"type\": \"uint256\"\n          }\n        ],\n        \"internalType\": \"struct DataType.AxonToCKBRecord[]\",\n        \"name\": \"\",\n        \"type\": \"tuple[]\"\n      },\n      {\n        \"internalType\": \"bytes32[]\",\n        \"name\": \"\",\n        \"type\": \"bytes32[]\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"string\",\n        \"name\": \"to\",\n        \"type\": \"string\"\n      }\n    ],\n    \"name\": \"lockAT\",\n    \"outputs\": [],\n    \"stateMutability\": \"payable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [],\n    \"name\": \"mirrorTokens\",\n    \"outputs\": [\n      {\n        \"internalType\": \"address[]\",\n        \"name\": \"\",\n        \"type\": \"address[]\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      }\n    ],\n    \"name\": \"removeWhitelist\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"components\": [\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"feeRatio\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"threshold\",\n            \"type\": \"uint256\"\n          }\n        ],\n        \"internalType\": \"struct DataType.TokenConfig\",\n        \"name\": \"config\",\n        \"type\": \"tuple\"\n      }\n    ],\n    \"name\": \"setTokenConfig\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"uint256\",\n        \"name\": \"amount\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"setWCKBMin\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [],\n    \"name\": \"whitelist\",\n    \"outputs\": [\n      {\n        \"internalType\": \"address[]\",\n        \"name\": \"\",\n        \"type\": \"address[]\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  }\n]\n" ;
+    #[doc = r" The parsed JSON-ABI of the contract."]
     pub static CROSSCHAIN_ABI: ethers_contract::Lazy<ethers_core::abi::Abi> =
         ethers_contract::Lazy::new(|| {
-            serde_json::from_str ("[\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"metadata\",\n        \"type\": \"address\"\n      },\n      {\n        \"internalType\": \"address\",\n        \"name\": \"wCKB\",\n        \"type\": \"address\"\n      }\n    ],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"constructor\"\n  },\n  {\n    \"anonymous\": false,\n    \"inputs\": [\n      {\n        \"indexed\": false,\n        \"internalType\": \"uint256\",\n        \"name\": \"minWCKB\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"ChangeMinWCKB\",\n    \"type\": \"event\"\n  },\n  {\n    \"anonymous\": false,\n    \"inputs\": [\n      {\n        \"indexed\": false,\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"components\": [\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"feeRatio\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"threshold\",\n            \"type\": \"uint256\"\n          }\n        ],\n        \"indexed\": false,\n        \"internalType\": \"struct DataType.TokenConfig\",\n        \"name\": \"config\",\n        \"type\": \"tuple\"\n      }\n    ],\n    \"name\": \"ChangeTokenConfig\",\n    \"type\": \"event\"\n  },\n  {\n    \"anonymous\": false,\n    \"inputs\": [\n      {\n        \"components\": [\n          {\n            \"internalType\": \"address\",\n            \"name\": \"to\",\n            \"type\": \"address\"\n          },\n          {\n            \"internalType\": \"address\",\n            \"name\": \"tokenAddress\",\n            \"type\": \"address\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"sUDTAmount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"CKBAmount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"txHash\",\n            \"type\": \"bytes32\"\n          }\n        ],\n        \"indexed\": false,\n        \"internalType\": \"struct DataType.CKBToAxonRecord[]\",\n        \"name\": \"records\",\n        \"type\": \"tuple[]\"\n      }\n    ],\n    \"name\": \"CrossFromCKB\",\n    \"type\": \"event\"\n  },\n  {\n    \"anonymous\": false,\n    \"inputs\": [\n      {\n        \"indexed\": false,\n        \"internalType\": \"bytes32\",\n        \"name\": \"currentRecordHash\",\n        \"type\": \"bytes32\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"bytes32[]\",\n        \"name\": \"remainRecordsHash\",\n        \"type\": \"bytes32[]\"\n      }\n    ],\n    \"name\": \"CrossLimitRecord\",\n    \"type\": \"event\"\n  },\n  {\n    \"anonymous\": false,\n    \"inputs\": [\n      {\n        \"indexed\": false,\n        \"internalType\": \"string\",\n        \"name\": \"to\",\n        \"type\": \"string\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"uint256\",\n        \"name\": \"amount\",\n        \"type\": \"uint256\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"uint256\",\n        \"name\": \"minWCKBAmount\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"CrossToCKB\",\n    \"type\": \"event\"\n  },\n  {\n    \"anonymous\": false,\n    \"inputs\": [\n      {\n        \"indexed\": false,\n        \"internalType\": \"string\",\n        \"name\": \"to\",\n        \"type\": \"string\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"uint256\",\n        \"name\": \"amount\",\n        \"type\": \"uint256\"\n      },\n      {\n        \"indexed\": false,\n        \"internalType\": \"uint256\",\n        \"name\": \"minWCKBAmount\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"CrossToCKBAlert\",\n    \"type\": \"event\"\n  },\n  {\n    \"inputs\": [],\n    \"name\": \"AT_ADDRESS\",\n    \"outputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"\",\n        \"type\": \"address\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"internalType\": \"bytes32\",\n        \"name\": \"typehash\",\n        \"type\": \"bytes32\"\n      }\n    ],\n    \"name\": \"addMirrorToken\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"internalType\": \"bytes32\",\n        \"name\": \"typehash\",\n        \"type\": \"bytes32\"\n      }\n    ],\n    \"name\": \"addToken\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      }\n    ],\n    \"name\": \"addWhitelist\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"components\": [\n          {\n            \"internalType\": \"address\",\n            \"name\": \"tokenAddress\",\n            \"type\": \"address\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"amount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"minWCKBAmount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"string\",\n            \"name\": \"to\",\n            \"type\": \"string\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"limitSign\",\n            \"type\": \"uint256\"\n          }\n        ],\n        \"internalType\": \"struct DataType.AxonToCKBRecord\",\n        \"name\": \"record\",\n        \"type\": \"tuple\"\n      }\n    ],\n    \"name\": \"approveLimitTx\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"components\": [\n          {\n            \"internalType\": \"address\",\n            \"name\": \"to\",\n            \"type\": \"address\"\n          },\n          {\n            \"internalType\": \"address\",\n            \"name\": \"tokenAddress\",\n            \"type\": \"address\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"sUDTAmount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"CKBAmount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"txHash\",\n            \"type\": \"bytes32\"\n          }\n        ],\n        \"internalType\": \"struct DataType.CKBToAxonRecord[]\",\n        \"name\": \"records\",\n        \"type\": \"tuple[]\"\n      },\n      {\n        \"internalType\": \"uint256\",\n        \"name\": \"nonce\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"crossFromCKB\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"string\",\n        \"name\": \"to\",\n        \"type\": \"string\"\n      },\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"internalType\": \"uint256\",\n        \"name\": \"amount\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"crossTokenToCKB\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"internalType\": \"uint256\",\n        \"name\": \"value\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"fee\",\n    \"outputs\": [\n      {\n        \"internalType\": \"uint256\",\n        \"name\": \"\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"bytes32\",\n        \"name\": \"typehash\",\n        \"type\": \"bytes32\"\n      }\n    ],\n    \"name\": \"getTokenAddress\",\n    \"outputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"\",\n        \"type\": \"address\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      }\n    ],\n    \"name\": \"getTokenConfig\",\n    \"outputs\": [\n      {\n        \"components\": [\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"feeRatio\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"threshold\",\n            \"type\": \"uint256\"\n          }\n        ],\n        \"internalType\": \"struct DataType.TokenConfig\",\n        \"name\": \"\",\n        \"type\": \"tuple\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      }\n    ],\n    \"name\": \"getTypehash\",\n    \"outputs\": [\n      {\n        \"internalType\": \"bytes32\",\n        \"name\": \"\",\n        \"type\": \"bytes32\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [],\n    \"name\": \"getWCKBAddress\",\n    \"outputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"\",\n        \"type\": \"address\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [],\n    \"name\": \"getWCKBMin\",\n    \"outputs\": [\n      {\n        \"internalType\": \"uint256\",\n        \"name\": \"\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      }\n    ],\n    \"name\": \"isMirrorToken\",\n    \"outputs\": [\n      {\n        \"internalType\": \"bool\",\n        \"name\": \"\",\n        \"type\": \"bool\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      }\n    ],\n    \"name\": \"isWhitelist\",\n    \"outputs\": [\n      {\n        \"internalType\": \"bool\",\n        \"name\": \"\",\n        \"type\": \"bool\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [],\n    \"name\": \"limitTxes\",\n    \"outputs\": [\n      {\n        \"components\": [\n          {\n            \"internalType\": \"address\",\n            \"name\": \"tokenAddress\",\n            \"type\": \"address\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"amount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"minWCKBAmount\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"string\",\n            \"name\": \"to\",\n            \"type\": \"string\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"limitSign\",\n            \"type\": \"uint256\"\n          }\n        ],\n        \"internalType\": \"struct DataType.AxonToCKBRecord[]\",\n        \"name\": \"\",\n        \"type\": \"tuple[]\"\n      },\n      {\n        \"internalType\": \"bytes32[]\",\n        \"name\": \"\",\n        \"type\": \"bytes32[]\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"string\",\n        \"name\": \"to\",\n        \"type\": \"string\"\n      }\n    ],\n    \"name\": \"lockAT\",\n    \"outputs\": [],\n    \"stateMutability\": \"payable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [],\n    \"name\": \"mirrorTokens\",\n    \"outputs\": [\n      {\n        \"internalType\": \"address[]\",\n        \"name\": \"\",\n        \"type\": \"address[]\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      }\n    ],\n    \"name\": \"removeWhitelist\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"address\",\n        \"name\": \"token\",\n        \"type\": \"address\"\n      },\n      {\n        \"components\": [\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"feeRatio\",\n            \"type\": \"uint256\"\n          },\n          {\n            \"internalType\": \"uint256\",\n            \"name\": \"threshold\",\n            \"type\": \"uint256\"\n          }\n        ],\n        \"internalType\": \"struct DataType.TokenConfig\",\n        \"name\": \"config\",\n        \"type\": \"tuple\"\n      }\n    ],\n    \"name\": \"setTokenConfig\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"uint256\",\n        \"name\": \"amount\",\n        \"type\": \"uint256\"\n      }\n    ],\n    \"name\": \"setWCKBMin\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [],\n    \"name\": \"whitelist\",\n    \"outputs\": [\n      {\n        \"internalType\": \"address[]\",\n        \"name\": \"\",\n        \"type\": \"address[]\"\n      }\n    ],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  }\n]\n") . expect ("invalid abi")
+            ethers_core::utils::__serde_json::from_str(__ABI).expect("invalid abi")
         });
     pub struct crosschain<M>(ethers_contract::Contract<M>);
     impl<M> Clone for crosschain<M> {
@@ -33,7 +35,7 @@ pub mod crosschain_mod {
             &self.0
         }
     }
-    impl<M: ethers_providers::Middleware> std::fmt::Debug for crosschain<M> {
+    impl<M> std::fmt::Debug for crosschain<M> {
         fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
             f.debug_tuple(stringify!(crosschain))
                 .field(&self.address())
@@ -325,14 +327,14 @@ pub mod crosschain_mod {
         }
     }
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthEvent, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthEvent, ethers_contract::EthDisplay, Default,
     )]
     #[ethevent(name = "ChangeMinWCKB", abi = "ChangeMinWCKB(uint256)")]
     pub struct ChangeMinWCKBFilter {
         pub min_wckb: ethers_core::types::U256,
     }
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthEvent, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthEvent, ethers_contract::EthDisplay, Default,
     )]
     #[ethevent(
         name = "ChangeTokenConfig",
@@ -340,26 +342,20 @@ pub mod crosschain_mod {
     )]
     pub struct ChangeTokenConfigFilter {
         pub token:  ethers_core::types::Address,
-        pub config: (ethers_core::types::U256, ethers_core::types::U256),
+        pub config: TokenConfig,
     }
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthEvent, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthEvent, ethers_contract::EthDisplay, Default,
     )]
     #[ethevent(
         name = "CrossFromCKB",
         abi = "CrossFromCKB((address,address,uint256,uint256,bytes32)[])"
     )]
     pub struct CrossFromCKBFilter {
-        pub records: Vec<(
-            ethers_core::types::Address,
-            ethers_core::types::Address,
-            ethers_core::types::U256,
-            ethers_core::types::U256,
-            [u8; 32],
-        )>,
+        pub records: ::std::vec::Vec<CkbtoAxonRecord>,
     }
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthEvent, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthEvent, ethers_contract::EthDisplay, Default,
     )]
     #[ethevent(name = "CrossLimitRecord", abi = "CrossLimitRecord(bytes32,bytes32[])")]
     pub struct CrossLimitRecordFilter {
@@ -367,7 +363,7 @@ pub mod crosschain_mod {
         pub remain_records_hash: Vec<[u8; 32]>,
     }
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthEvent, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthEvent, ethers_contract::EthDisplay, Default,
     )]
     #[ethevent(
         name = "CrossToCKB",
@@ -380,7 +376,7 @@ pub mod crosschain_mod {
         pub min_wckb_amount: ethers_core::types::U256,
     }
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthEvent, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthEvent, ethers_contract::EthDisplay, Default,
     )]
     #[ethevent(
         name = "CrossToCKBAlert",
@@ -402,7 +398,9 @@ pub mod crosschain_mod {
         CrossToCKBAlertFilter(CrossToCKBAlertFilter),
     }
     impl ethers_contract::EthLogDecode for crosschainEvents {
-        fn decode_log(log: &ethers_core::abi::RawLog) -> Result<Self, ethers_core::abi::Error>
+        fn decode_log(
+            log: &ethers_core::abi::RawLog,
+        ) -> ::std::result::Result<Self, ethers_core::abi::Error>
         where
             Self: Sized,
         {
@@ -439,41 +437,41 @@ pub mod crosschain_mod {
             }
         }
     }
-    #[doc = "Container type for all input parameters for the `AT_ADDRESS`function with signature `AT_ADDRESS()` and selector `[84, 15, 109, 236]`"]
+    #[doc = "Container type for all input parameters for the `AT_ADDRESS` function with signature `AT_ADDRESS()` and selector `[84, 15, 109, 236]`"]
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay, Default,
     )]
     #[ethcall(name = "AT_ADDRESS", abi = "AT_ADDRESS()")]
     pub struct AtAddressCall;
-    #[doc = "Container type for all input parameters for the `addMirrorToken`function with signature `addMirrorToken(address,bytes32)` and selector `[101, 116, 77, 36]`"]
+    #[doc = "Container type for all input parameters for the `addMirrorToken` function with signature `addMirrorToken(address,bytes32)` and selector `[101, 116, 77, 36]`"]
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay, Default,
     )]
     #[ethcall(name = "addMirrorToken", abi = "addMirrorToken(address,bytes32)")]
     pub struct AddMirrorTokenCall {
         pub token:    ethers_core::types::Address,
         pub typehash: [u8; 32],
     }
-    #[doc = "Container type for all input parameters for the `addToken`function with signature `addToken(address,bytes32)` and selector `[192, 193, 238, 188]`"]
+    #[doc = "Container type for all input parameters for the `addToken` function with signature `addToken(address,bytes32)` and selector `[192, 193, 238, 188]`"]
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay, Default,
     )]
     #[ethcall(name = "addToken", abi = "addToken(address,bytes32)")]
     pub struct AddTokenCall {
         pub token:    ethers_core::types::Address,
         pub typehash: [u8; 32],
     }
-    #[doc = "Container type for all input parameters for the `addWhitelist`function with signature `addWhitelist(address)` and selector `[248, 15, 93, 213]`"]
+    #[doc = "Container type for all input parameters for the `addWhitelist` function with signature `addWhitelist(address)` and selector `[248, 15, 93, 213]`"]
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay, Default,
     )]
     #[ethcall(name = "addWhitelist", abi = "addWhitelist(address)")]
     pub struct AddWhitelistCall {
         pub token: ethers_core::types::Address,
     }
-    #[doc = "Container type for all input parameters for the `approveLimitTx`function with signature `approveLimitTx((address,uint256,uint256,string,uint256))` and selector `[120, 25, 107, 214]`"]
+    #[doc = "Container type for all input parameters for the `approveLimitTx` function with signature `approveLimitTx((address,uint256,uint256,string,uint256))` and selector `[120, 25, 107, 214]`"]
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay, Default,
     )]
     #[ethcall(
         name = "approveLimitTx",
@@ -482,9 +480,9 @@ pub mod crosschain_mod {
     pub struct ApproveLimitTxCall {
         pub record: AxonToCKBRecord,
     }
-    #[doc = "Container type for all input parameters for the `crossFromCKB`function with signature `crossFromCKB((address,address,uint256,uint256,bytes32)[],uint256)` and selector `[107, 35, 253, 32]`"]
+    #[doc = "Container type for all input parameters for the `crossFromCKB` function with signature `crossFromCKB((address,address,uint256,uint256,bytes32)[],uint256)` and selector `[107, 35, 253, 32]`"]
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay, Default,
     )]
     #[ethcall(
         name = "crossFromCKB",
@@ -494,9 +492,9 @@ pub mod crosschain_mod {
         pub records: ::std::vec::Vec<CkbtoAxonRecord>,
         pub nonce:   ethers_core::types::U256,
     }
-    #[doc = "Container type for all input parameters for the `crossTokenToCKB`function with signature `crossTokenToCKB(string,address,uint256)` and selector `[184, 245, 100, 248]`"]
+    #[doc = "Container type for all input parameters for the `crossTokenToCKB` function with signature `crossTokenToCKB(string,address,uint256)` and selector `[184, 245, 100, 248]`"]
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay, Default,
     )]
     #[ethcall(
         name = "crossTokenToCKB",
@@ -507,98 +505,98 @@ pub mod crosschain_mod {
         pub token:  ethers_core::types::Address,
         pub amount: ethers_core::types::U256,
     }
-    #[doc = "Container type for all input parameters for the `fee`function with signature `fee(address,uint256)` and selector `[158, 110, 218, 24]`"]
+    #[doc = "Container type for all input parameters for the `fee` function with signature `fee(address,uint256)` and selector `[158, 110, 218, 24]`"]
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay, Default,
     )]
     #[ethcall(name = "fee", abi = "fee(address,uint256)")]
     pub struct FeeCall {
         pub token: ethers_core::types::Address,
         pub value: ethers_core::types::U256,
     }
-    #[doc = "Container type for all input parameters for the `getTokenAddress`function with signature `getTokenAddress(bytes32)` and selector `[177, 46, 68, 16]`"]
+    #[doc = "Container type for all input parameters for the `getTokenAddress` function with signature `getTokenAddress(bytes32)` and selector `[177, 46, 68, 16]`"]
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay, Default,
     )]
     #[ethcall(name = "getTokenAddress", abi = "getTokenAddress(bytes32)")]
     pub struct GetTokenAddressCall {
         pub typehash: [u8; 32],
     }
-    #[doc = "Container type for all input parameters for the `getTokenConfig`function with signature `getTokenConfig(address)` and selector `[203, 103, 227, 177]`"]
+    #[doc = "Container type for all input parameters for the `getTokenConfig` function with signature `getTokenConfig(address)` and selector `[203, 103, 227, 177]`"]
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay, Default,
     )]
     #[ethcall(name = "getTokenConfig", abi = "getTokenConfig(address)")]
     pub struct GetTokenConfigCall {
         pub token: ethers_core::types::Address,
     }
-    #[doc = "Container type for all input parameters for the `getTypehash`function with signature `getTypehash(address)` and selector `[230, 200, 40, 62]`"]
+    #[doc = "Container type for all input parameters for the `getTypehash` function with signature `getTypehash(address)` and selector `[230, 200, 40, 62]`"]
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay, Default,
     )]
     #[ethcall(name = "getTypehash", abi = "getTypehash(address)")]
     pub struct GetTypehashCall {
         pub token: ethers_core::types::Address,
     }
-    #[doc = "Container type for all input parameters for the `getWCKBAddress`function with signature `getWCKBAddress()` and selector `[32, 131, 210, 103]`"]
+    #[doc = "Container type for all input parameters for the `getWCKBAddress` function with signature `getWCKBAddress()` and selector `[32, 131, 210, 103]`"]
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay, Default,
     )]
     #[ethcall(name = "getWCKBAddress", abi = "getWCKBAddress()")]
     pub struct GetWCKBAddressCall;
-    #[doc = "Container type for all input parameters for the `getWCKBMin`function with signature `getWCKBMin()` and selector `[25, 228, 217, 137]`"]
+    #[doc = "Container type for all input parameters for the `getWCKBMin` function with signature `getWCKBMin()` and selector `[25, 228, 217, 137]`"]
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay, Default,
     )]
     #[ethcall(name = "getWCKBMin", abi = "getWCKBMin()")]
     pub struct GetWCKBMinCall;
-    #[doc = "Container type for all input parameters for the `isMirrorToken`function with signature `isMirrorToken(address)` and selector `[203, 110, 187, 155]`"]
+    #[doc = "Container type for all input parameters for the `isMirrorToken` function with signature `isMirrorToken(address)` and selector `[203, 110, 187, 155]`"]
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay, Default,
     )]
     #[ethcall(name = "isMirrorToken", abi = "isMirrorToken(address)")]
     pub struct IsMirrorTokenCall {
         pub token: ethers_core::types::Address,
     }
-    #[doc = "Container type for all input parameters for the `isWhitelist`function with signature `isWhitelist(address)` and selector `[198, 131, 99, 13]`"]
+    #[doc = "Container type for all input parameters for the `isWhitelist` function with signature `isWhitelist(address)` and selector `[198, 131, 99, 13]`"]
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay, Default,
     )]
     #[ethcall(name = "isWhitelist", abi = "isWhitelist(address)")]
     pub struct IsWhitelistCall {
         pub token: ethers_core::types::Address,
     }
-    #[doc = "Container type for all input parameters for the `limitTxes`function with signature `limitTxes()` and selector `[191, 86, 251, 208]`"]
+    #[doc = "Container type for all input parameters for the `limitTxes` function with signature `limitTxes()` and selector `[191, 86, 251, 208]`"]
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay, Default,
     )]
     #[ethcall(name = "limitTxes", abi = "limitTxes()")]
     pub struct LimitTxesCall;
-    #[doc = "Container type for all input parameters for the `lockAT`function with signature `lockAT(string)` and selector `[219, 43, 116, 159]`"]
+    #[doc = "Container type for all input parameters for the `lockAT` function with signature `lockAT(string)` and selector `[219, 43, 116, 159]`"]
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay, Default,
     )]
     #[ethcall(name = "lockAT", abi = "lockAT(string)")]
     pub struct LockATCall {
         pub to: String,
     }
-    #[doc = "Container type for all input parameters for the `mirrorTokens`function with signature `mirrorTokens()` and selector `[153, 56, 21, 93]`"]
+    #[doc = "Container type for all input parameters for the `mirrorTokens` function with signature `mirrorTokens()` and selector `[153, 56, 21, 93]`"]
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay, Default,
     )]
     #[ethcall(name = "mirrorTokens", abi = "mirrorTokens()")]
     pub struct MirrorTokensCall;
-    #[doc = "Container type for all input parameters for the `removeWhitelist`function with signature `removeWhitelist(address)` and selector `[120, 200, 205, 167]`"]
+    #[doc = "Container type for all input parameters for the `removeWhitelist` function with signature `removeWhitelist(address)` and selector `[120, 200, 205, 167]`"]
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay, Default,
     )]
     #[ethcall(name = "removeWhitelist", abi = "removeWhitelist(address)")]
     pub struct RemoveWhitelistCall {
         pub token: ethers_core::types::Address,
     }
-    #[doc = "Container type for all input parameters for the `setTokenConfig`function with signature `setTokenConfig(address,(uint256,uint256))` and selector `[62, 223, 219, 176]`"]
+    #[doc = "Container type for all input parameters for the `setTokenConfig` function with signature `setTokenConfig(address,(uint256,uint256))` and selector `[62, 223, 219, 176]`"]
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay, Default,
     )]
     #[ethcall(
         name = "setTokenConfig",
@@ -608,17 +606,17 @@ pub mod crosschain_mod {
         pub token:  ethers_core::types::Address,
         pub config: TokenConfig,
     }
-    #[doc = "Container type for all input parameters for the `setWCKBMin`function with signature `setWCKBMin(uint256)` and selector `[169, 56, 215, 69]`"]
+    #[doc = "Container type for all input parameters for the `setWCKBMin` function with signature `setWCKBMin(uint256)` and selector `[169, 56, 215, 69]`"]
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay, Default,
     )]
     #[ethcall(name = "setWCKBMin", abi = "setWCKBMin(uint256)")]
     pub struct SetWCKBMinCall {
         pub amount: ethers_core::types::U256,
     }
-    #[doc = "Container type for all input parameters for the `whitelist`function with signature `whitelist()` and selector `[147, 229, 157, 193]`"]
+    #[doc = "Container type for all input parameters for the `whitelist` function with signature `whitelist()` and selector `[147, 229, 157, 193]`"]
     #[derive(
-        Clone, Debug, Default, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay,
+        Clone, Debug, Eq, PartialEq, ethers_contract::EthCall, ethers_contract::EthDisplay, Default,
     )]
     #[ethcall(name = "whitelist", abi = "whitelist()")]
     pub struct WhitelistCall;
@@ -648,7 +646,9 @@ pub mod crosschain_mod {
         Whitelist(WhitelistCall),
     }
     impl ethers_core::abi::AbiDecode for crosschainCalls {
-        fn decode(data: impl AsRef<[u8]>) -> Result<Self, ethers_core::abi::AbiError> {
+        fn decode(
+            data: impl AsRef<[u8]>,
+        ) -> ::std::result::Result<Self, ethers_core::abi::AbiError> {
             if let Ok(decoded) =
                 <AtAddressCall as ethers_core::abi::AbiDecode>::decode(data.as_ref())
             {
@@ -925,6 +925,141 @@ pub mod crosschain_mod {
             crosschainCalls::Whitelist(var)
         }
     }
+    #[doc = "Container type for all return fields from the `AT_ADDRESS` function with signature `AT_ADDRESS()` and selector `[84, 15, 109, 236]`"]
+    #[derive(
+        Clone,
+        Debug,
+        Eq,
+        PartialEq,
+        ethers_contract::EthAbiType,
+        ethers_contract::EthAbiCodec,
+        Default,
+    )]
+    pub struct AtAddressReturn(pub ethers_core::types::Address);
+    #[doc = "Container type for all return fields from the `fee` function with signature `fee(address,uint256)` and selector `[158, 110, 218, 24]`"]
+    #[derive(
+        Clone,
+        Debug,
+        Eq,
+        PartialEq,
+        ethers_contract::EthAbiType,
+        ethers_contract::EthAbiCodec,
+        Default,
+    )]
+    pub struct FeeReturn(pub ethers_core::types::U256);
+    #[doc = "Container type for all return fields from the `getTokenAddress` function with signature `getTokenAddress(bytes32)` and selector `[177, 46, 68, 16]`"]
+    #[derive(
+        Clone,
+        Debug,
+        Eq,
+        PartialEq,
+        ethers_contract::EthAbiType,
+        ethers_contract::EthAbiCodec,
+        Default,
+    )]
+    pub struct GetTokenAddressReturn(pub ethers_core::types::Address);
+    #[doc = "Container type for all return fields from the `getTokenConfig` function with signature `getTokenConfig(address)` and selector `[203, 103, 227, 177]`"]
+    #[derive(
+        Clone,
+        Debug,
+        Eq,
+        PartialEq,
+        ethers_contract::EthAbiType,
+        ethers_contract::EthAbiCodec,
+        Default,
+    )]
+    pub struct GetTokenConfigReturn(pub TokenConfig);
+    #[doc = "Container type for all return fields from the `getTypehash` function with signature `getTypehash(address)` and selector `[230, 200, 40, 62]`"]
+    #[derive(
+        Clone,
+        Debug,
+        Eq,
+        PartialEq,
+        ethers_contract::EthAbiType,
+        ethers_contract::EthAbiCodec,
+        Default,
+    )]
+    pub struct GetTypehashReturn(pub [u8; 32]);
+    #[doc = "Container type for all return fields from the `getWCKBAddress` function with signature `getWCKBAddress()` and selector `[32, 131, 210, 103]`"]
+    #[derive(
+        Clone,
+        Debug,
+        Eq,
+        PartialEq,
+        ethers_contract::EthAbiType,
+        ethers_contract::EthAbiCodec,
+        Default,
+    )]
+    pub struct GetWCKBAddressReturn(pub ethers_core::types::Address);
+    #[doc = "Container type for all return fields from the `getWCKBMin` function with signature `getWCKBMin()` and selector `[25, 228, 217, 137]`"]
+    #[derive(
+        Clone,
+        Debug,
+        Eq,
+        PartialEq,
+        ethers_contract::EthAbiType,
+        ethers_contract::EthAbiCodec,
+        Default,
+    )]
+    pub struct GetWCKBMinReturn(pub ethers_core::types::U256);
+    #[doc = "Container type for all return fields from the `isMirrorToken` function with signature `isMirrorToken(address)` and selector `[203, 110, 187, 155]`"]
+    #[derive(
+        Clone,
+        Debug,
+        Eq,
+        PartialEq,
+        ethers_contract::EthAbiType,
+        ethers_contract::EthAbiCodec,
+        Default,
+    )]
+    pub struct IsMirrorTokenReturn(pub bool);
+    #[doc = "Container type for all return fields from the `isWhitelist` function with signature `isWhitelist(address)` and selector `[198, 131, 99, 13]`"]
+    #[derive(
+        Clone,
+        Debug,
+        Eq,
+        PartialEq,
+        ethers_contract::EthAbiType,
+        ethers_contract::EthAbiCodec,
+        Default,
+    )]
+    pub struct IsWhitelistReturn(pub bool);
+    #[doc = "Container type for all return fields from the `limitTxes` function with signature `limitTxes()` and selector `[191, 86, 251, 208]`"]
+    #[derive(
+        Clone,
+        Debug,
+        Eq,
+        PartialEq,
+        ethers_contract::EthAbiType,
+        ethers_contract::EthAbiCodec,
+        Default,
+    )]
+    pub struct LimitTxesReturn(
+        pub ::std::vec::Vec<AxonToCKBRecord>,
+        pub ::std::vec::Vec<[u8; 32]>,
+    );
+    #[doc = "Container type for all return fields from the `mirrorTokens` function with signature `mirrorTokens()` and selector `[153, 56, 21, 93]`"]
+    #[derive(
+        Clone,
+        Debug,
+        Eq,
+        PartialEq,
+        ethers_contract::EthAbiType,
+        ethers_contract::EthAbiCodec,
+        Default,
+    )]
+    pub struct MirrorTokensReturn(pub ::std::vec::Vec<ethers_core::types::Address>);
+    #[doc = "Container type for all return fields from the `whitelist` function with signature `whitelist()` and selector `[147, 229, 157, 193]`"]
+    #[derive(
+        Clone,
+        Debug,
+        Eq,
+        PartialEq,
+        ethers_contract::EthAbiType,
+        ethers_contract::EthAbiCodec,
+        Default,
+    )]
+    pub struct WhitelistReturn(pub ::std::vec::Vec<ethers_core::types::Address>);
     #[doc = "`AxonToCKBRecord(address,uint256,uint256,string,uint256)`"]
     #[derive(
         Clone,
