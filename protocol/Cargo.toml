@@ -12,7 +12,7 @@ bytes = { version = "1.2", features = ["serde"] }
 ckb-hash = "0.104"
 ckb-jsonrpc-types = "0.104"
 ckb-sdk = "2.1"
-ckb-types = "0.104"
+ckb-types = "0.105"
 common-crypto = { path = "../common/crypto" }
 cosmos-ibc = { package = "ibc", version = "0.19", optional = true }
 creep = "0.2"
