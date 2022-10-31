@@ -8,7 +8,7 @@ version = "0.1.0"
 jemalloc-ctl = { version = "0.5", package = "tikv-jemalloc-ctl" }
 libc = "0.2"
 log = "0.4"
-once_cell = "1.15.0"
+once_cell = "1.16.0"
 rocksdb = { version = "0.18", package = "ckb-rocksdb" }
 
 common-apm = { path = "../apm" }
