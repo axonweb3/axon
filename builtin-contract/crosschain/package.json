@@ -20,7 +20,7 @@
     "ethereum-waffle": "^3.4.4",
     "ethereumjs-util": "^7.1.4",
     "ethers": "^5.7.1",
-    "hardhat": "^2.11.2"
+    "hardhat": "^2.12.1"
   },
   "dependencies": {
     "dotenv": "^16.0.3"
