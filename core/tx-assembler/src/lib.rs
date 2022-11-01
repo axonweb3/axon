@@ -73,9 +73,11 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssemblerImpl<Adapter> {
     ) -> ProtocolResult<packed::OutPoint> {
         let stake_typescript = util::build_typeid_script(stake_typeid_args);
         let search_key = SearchKey {
-            script:      stake_typescript.into(),
-            script_type: ScriptType::Type,
-            filter:      None,
+            script:               stake_typescript.into(),
+            script_type:          ScriptType::Type,
+            filter:               None,
+            with_data:            Some(true),
+            group_by_transaction: None,
         };
         let stake_cell = self.fetch_live_cells(search_key, 1, None).await?;
 
@@ -93,9 +95,11 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssemblerImpl<Adapter> {
     ) -> ProtocolResult<(Metadata, H256, packed::OutPoint)> {
         let metadata_typescript = util::build_typeid_script(metadata_typeid_args);
         let search_key = SearchKey {
-            script:      metadata_typescript.clone().into(),
-            script_type: ScriptType::Type,
-            filter:      None,
+            script:               metadata_typescript.clone().into(),
+            script_type:          ScriptType::Type,
+            filter:               None,
+            with_data:            Some(true),
+            group_by_transaction: None,
         };
 
         let metadata_cell = self.fetch_live_cells(search_key, 1, None).await?;
@@ -166,9 +170,11 @@ impl<Adapter: TxAssemblerAdapter + 'static> TxAssemblerImpl<Adapter> {
             &required_sudt_set,
         ) {
             let search_key = SearchKey {
-                script:      acs_lock_script.clone().into(),
-                script_type: ScriptType::Lock,
-                filter:      None,
+                script:               acs_lock_script.clone().into(),
+                script_type:          ScriptType::Lock,
+                filter:               None,
+                with_data:            Some(true),
+                group_by_transaction: None,
             };
 
             let lock_cells = self.fetch_live_cells(search_key, 20, cursor).await?;

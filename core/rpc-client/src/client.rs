@@ -8,8 +8,8 @@ use std::{
 };
 
 use ckb_jsonrpc_types::{
-    BlockNumber, BlockView, HeaderView, JsonBytes, OutputsValidator, Transaction,
-    TransactionWithStatus, Uint32,
+    BlockNumber, BlockView, HeaderView, JsonBytes, OutputsValidator, Transaction, TransactionView,
+    Uint32,
 };
 use ckb_sdk::rpc::ckb_indexer::{Cell, Order, Pagination, SearchKey};
 use ckb_types::H256;
@@ -97,12 +97,12 @@ impl RpcClient {
     fn get_transaction(
         &self,
         hash: &H256,
-    ) -> impl Future<Output = Result<Option<TransactionWithStatus>, ProtocolError>> {
+    ) -> impl Future<Output = Result<Option<TransactionView>, ProtocolError>> {
         jsonrpc!(
             "get_transaction",
             Target::CKB,
             self,
-            Option<TransactionWithStatus>,
+            Option<TransactionView>,
             hash
         )
     }
@@ -118,7 +118,7 @@ impl CkbClient for RpcClient {
         jsonrpc!("get_tip_header", Target::CKB, self, HeaderView).boxed()
     }
 
-    fn get_transaction(&self, _ctx: Context, hash: &H256) -> RPC<Option<TransactionWithStatus>> {
+    fn get_transaction(&self, _ctx: Context, hash: &H256) -> RPC<Option<TransactionView>> {
         self.get_transaction(hash).boxed()
     }
 
@@ -143,7 +143,7 @@ impl CkbClient for RpcClient {
         &self,
         _ctx: Context,
         hashes: Vec<H256>,
-    ) -> RPC<Vec<Option<TransactionWithStatus>>> {
+    ) -> RPC<Vec<Option<TransactionView>>> {
         let mut list = Vec::with_capacity(hashes.len());
         let mut res = Vec::with_capacity(hashes.len());
         for hash in hashes {

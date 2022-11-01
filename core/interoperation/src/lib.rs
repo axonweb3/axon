@@ -7,7 +7,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use arc_swap::ArcSwap;
-use ckb_types::packed::Transaction;
 use ckb_vm::machine::asm::{AsmCoreMachine, AsmMachine};
 use ckb_vm::machine::{DefaultMachineBuilder, SupportMachine, VERSION1};
 use ckb_vm::{Error as VMError, ISA_B, ISA_IMC, ISA_MOP};
@@ -120,7 +119,7 @@ async fn init_dispatcher_from_rpc<T: CkbClient>(
             .get_txs_by_hashes(Default::default(), ckb_hashes.clone())
             .await
         {
-            Ok(v) => break v.into_iter().map(|v| v.unwrap().transaction.unwrap()),
+            Ok(v) => break v.into_iter().map(|v| v.unwrap()),
             Err(e) => {
                 log::debug!("Get tx from ckb err {:?}", e);
                 sleep(Duration::from_secs(PULL_CKB_TX_INTERVAL)).await;
@@ -131,13 +130,10 @@ async fn init_dispatcher_from_rpc<T: CkbClient>(
     let program_map = transactions
         .into_iter()
         .map(|tx| {
-            let contract_binary = Transaction::from(tx.inner)
-                .into_view()
-                .output_with_data(0)
-                .unwrap()
-                .1;
-
-            (H256(tx.hash.0), contract_binary)
+            (
+                H256(tx.hash.0),
+                tx.inner.outputs_data[0].clone().into_bytes(),
+            )
         })
         .collect::<HashMap<_, _>>();
 
