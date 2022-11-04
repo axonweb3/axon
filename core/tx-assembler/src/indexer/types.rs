@@ -28,7 +28,12 @@ impl From<&indexer::Cell> for Cell {
         };
         let block_number = u64::from(json_cell.block_number);
         let tx_index = u32::from(json_cell.tx_index);
-        let output_data = json_cell.output_data.clone().into_bytes();
+        let output_data = json_cell
+            .output_data
+            .clone()
+            .unwrap_or_default()
+            .into_bytes();
+
         Cell {
             output,
             out_point,

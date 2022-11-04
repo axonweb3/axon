@@ -5,9 +5,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ckb-jsonrpc-types = "0.104"
-ckb-sdk = "2.1"
-ckb-types = "0.104"
+ckb-jsonrpc-types = "0.105"
+ckb-sdk = "2.3"
+ckb-types = "0.105"
 futures = "0.3"
 jsonrpc-core = "18.0"
 reqwest = { version = "0.11", features = ["json"] }

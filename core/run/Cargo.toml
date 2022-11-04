@@ -7,7 +7,6 @@ edition = "2021"
 [dependencies]
 backtrace = "0.3"
 cita_trie = "3.0"
-clap = "3.1"
 ethers-signers = "1.0"
 futures = "0.3"
 log = "0.4"
