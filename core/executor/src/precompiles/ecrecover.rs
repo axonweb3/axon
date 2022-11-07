@@ -19,7 +19,7 @@ impl PrecompileContract for EcRecover {
         gas_limit: Option<u64>,
         _context: &Context,
         _is_static: bool,
-    ) -> Result<PrecompileOutput, PrecompileFailure> {
+    ) -> Result<(PrecompileOutput, u64), PrecompileFailure> {
         let gas = Self::gas_cost(origin_input);
         if let Some(limit) = gas_limit {
             if limit < gas {
@@ -44,12 +44,13 @@ impl PrecompileContract for EcRecover {
                 let mut recover = [0u8; 32];
                 recover[12..].copy_from_slice(&r.as_bytes()[12..]);
 
-                return Ok(PrecompileOutput {
-                    exit_status: ExitSucceed::Returned,
-                    cost:        gas,
-                    output:      recover.to_vec(),
-                    logs:        vec![],
-                });
+                return Ok((
+                    PrecompileOutput {
+                        exit_status: ExitSucceed::Returned,
+                        output:      recover.to_vec(),
+                    },
+                    gas,
+                ));
             }
         }
 

@@ -19,7 +19,7 @@ impl PrecompileContract for Sha256 {
         gas_limit: Option<u64>,
         _context: &Context,
         _is_static: bool,
-    ) -> Result<PrecompileOutput, PrecompileFailure> {
+    ) -> Result<(PrecompileOutput, u64), PrecompileFailure> {
         let gas = Self::gas_cost(input);
         if let Some(limit) = gas_limit {
             if gas > limit {
@@ -30,12 +30,13 @@ impl PrecompileContract for Sha256 {
         let mut hasher = sha2::Sha256::default();
         hasher.update(input);
 
-        Ok(PrecompileOutput {
-            exit_status: ExitSucceed::Returned,
-            cost:        gas,
-            output:      hasher.finalize().to_vec(),
-            logs:        vec![],
-        })
+        Ok((
+            PrecompileOutput {
+                exit_status: ExitSucceed::Returned,
+                output:      hasher.finalize().to_vec(),
+            },
+            gas,
+        ))
     }
 
     fn gas_cost(input: &[u8]) -> u64 {

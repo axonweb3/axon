@@ -21,17 +21,18 @@ impl PrecompileContract for EcPairing {
         gas_limit: Option<u64>,
         _context: &Context,
         _is_static: bool,
-    ) -> Result<PrecompileOutput, PrecompileFailure> {
+    ) -> Result<(PrecompileOutput, u64), PrecompileFailure> {
         if input.is_empty() {
             let mut res = [0u8; 32];
             U256::one().to_big_endian(&mut res);
 
-            return Ok(PrecompileOutput {
-                exit_status: ExitSucceed::Returned,
-                cost:        Self::MIN_GAS,
-                output:      res.to_vec(),
-                logs:        Default::default(),
-            });
+            return Ok((
+                PrecompileOutput {
+                    exit_status: ExitSucceed::Returned,
+                    output:      res.to_vec(),
+                },
+                Self::MIN_GAS,
+            ));
         }
 
         let gas = Self::gas_cost(input);
@@ -83,12 +84,13 @@ impl PrecompileContract for EcPairing {
             U256::zero().to_big_endian(&mut res);
         }
 
-        Ok(PrecompileOutput {
-            exit_status: ExitSucceed::Returned,
-            cost:        gas,
-            output:      res.to_vec(),
-            logs:        Default::default(),
-        })
+        Ok((
+            PrecompileOutput {
+                exit_status: ExitSucceed::Returned,
+                output:      res.to_vec(),
+            },
+            gas,
+        ))
     }
 
     fn gas_cost(input: &[u8]) -> u64 {

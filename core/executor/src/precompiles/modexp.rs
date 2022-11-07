@@ -23,7 +23,7 @@ impl PrecompileContract for ModExp {
         gas_limit: Option<u64>,
         _context: &Context,
         _is_static: bool,
-    ) -> Result<PrecompileOutput, PrecompileFailure> {
+    ) -> Result<(PrecompileOutput, u64), PrecompileFailure> {
         let large_number = LargeNumber::parse(input)?;
 
         let gas = Self::gas_cost(input);
@@ -45,20 +45,22 @@ impl PrecompileContract for ModExp {
             let mut ret = vec![0u8; m_size - res_len];
             ret.append(&mut res);
 
-            return Ok(PrecompileOutput {
-                exit_status: ExitSucceed::Returned,
-                cost:        gas,
-                output:      ret,
-                logs:        vec![],
-            });
+            return Ok((
+                PrecompileOutput {
+                    exit_status: ExitSucceed::Returned,
+                    output:      ret,
+                },
+                gas,
+            ));
         }
 
-        Ok(PrecompileOutput {
-            exit_status: ExitSucceed::Returned,
-            cost:        gas,
-            output:      res,
-            logs:        vec![],
-        })
+        Ok((
+            PrecompileOutput {
+                exit_status: ExitSucceed::Returned,
+                output:      res,
+            },
+            gas,
+        ))
     }
 
     fn gas_cost(input: &[u8]) -> u64 {
