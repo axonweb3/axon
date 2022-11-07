@@ -1691,6 +1691,7 @@ dependencies = [
  "futures",
  "jsonrpc-core",
  "reqwest",
+ "serde",
  "serde_json",
 ]
 

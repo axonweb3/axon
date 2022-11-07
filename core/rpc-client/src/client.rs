@@ -9,7 +9,7 @@ use std::{
 
 use ckb_jsonrpc_types::{
     BlockNumber, BlockView, HeaderView, JsonBytes, OutputsValidator, Transaction, TransactionView,
-    Uint32,
+    TxStatus, Uint32,
 };
 use ckb_sdk::rpc::ckb_indexer::{Cell, Order, Pagination, SearchKey};
 use ckb_types::H256;
@@ -98,13 +98,24 @@ impl RpcClient {
         &self,
         hash: &H256,
     ) -> impl Future<Output = Result<Option<TransactionView>, ProtocolError>> {
-        jsonrpc!(
+        #[derive(serde::Serialize, serde::Deserialize, PartialEq, Eq, Hash, Debug)]
+        struct TransactionWithStatusResponse {
+            /// The transaction.
+            pub transaction: Option<TransactionView>,
+            /// The Transaction status.
+            pub tx_status:   TxStatus,
+        }
+        let task = jsonrpc!(
             "get_transaction",
             Target::CKB,
             self,
-            Option<TransactionView>,
+            TransactionWithStatusResponse,
             hash
-        )
+        );
+        async {
+            let res = task.await?;
+            Ok(res.transaction)
+        }
     }
 }
 
