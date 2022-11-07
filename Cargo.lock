@@ -1093,9 +1093,9 @@ dependencies = [
 
 [[package]]
 name = "ckb-vm"
-version = "0.21.7"
+version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d357472f6a3759b86f4a63ef78ca2f6d80f9e470ae4f1482fee1c6a12375f37"
+checksum = "0f1126bf0240d100234bc06efa7020f0d50ca35fe90e5ac7cac1b7721e1bacb7"
 dependencies = [
  "byteorder",
  "bytes",
@@ -1104,18 +1104,33 @@ dependencies = [
  "derive_more",
  "goblin 0.2.3",
  "goblin 0.4.0",
- "libc",
- "mapr",
  "rand 0.7.3",
  "scroll",
  "serde",
 ]
 
 [[package]]
-name = "ckb-vm-definitions"
-version = "0.21.7"
+name = "ckb-vm-aot"
+version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f7a838aab5ce5999add288511f719fa7af13e6790a5746f74d2538bbc47bb59"
+checksum = "97d90662540a6a3b0d71e58d789016efe817d2cd0c4ec6b26bcaf7f9b18fe7cf"
+dependencies = [
+ "cc",
+ "ckb-vm",
+ "ckb-vm-definitions",
+ "derive_more",
+ "goblin 0.2.3",
+ "goblin 0.4.0",
+ "libc",
+ "memmap2",
+ "scroll",
+]
+
+[[package]]
+name = "ckb-vm-definitions"
+version = "0.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14739bf59648c169de9257ec7dd6aba1aeb6a41725d636005f1c91853df58fcc"
 
 [[package]]
 name = "clang-sys"
@@ -1604,6 +1619,7 @@ dependencies = [
  "cardano-serialization-lib",
  "ckb-types",
  "ckb-vm",
+ "ckb-vm-aot",
  "core-rpc-client",
  "ed25519-dalek",
  "lazy_static",
@@ -3762,16 +3778,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6e8aaa3f231bb4bd57b84b2d5dc3ae7f350265df8aa96492e0bc394a1571909"
 dependencies = [
  "hashbrown",
-]
-
-[[package]]
-name = "mapr"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "46a28a55dbc005b2f6f123c4058933d57add373d362f6fd3a76aab4fe6973500"
-dependencies = [
- "libc",
- "winapi",
 ]
 
 [[package]]

@@ -45,7 +45,7 @@ impl IntervalTxsBroadcaster {
         G: Gossip + Clone + Unpin + 'static,
     {
         let mut stx_rx = stx_rx;
-        let mut txs_cache = HashMap::with_capacity(10);
+        let mut txs_cache: HashMap<_, Vec<SignedTransaction>> = HashMap::with_capacity(10);
         let mut interval = tokio::time::interval(Duration::from_millis(interval_ms));
         interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
@@ -53,7 +53,7 @@ impl IntervalTxsBroadcaster {
             tokio::select! {
                 opt_stx = stx_rx.next() => {
                     if let Some((origin, stx)) = opt_stx {
-                        txs_cache.entry(origin).or_insert(Vec::new()).push(stx);
+                        txs_cache.entry(origin).or_default().push(stx);
 
                         let len: usize = {
                             txs_cache.values().map(|v| v.len()).sum()

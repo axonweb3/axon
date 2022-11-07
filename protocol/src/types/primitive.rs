@@ -278,7 +278,7 @@ impl FromStr for Address {
 
 impl fmt::Debug for Address {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let eip55 = checksum(&hex_encode(&self.0));
+        let eip55 = checksum(&hex_encode(self.0));
         eip55.fmt(f)?;
         Ok(())
     }
@@ -286,7 +286,7 @@ impl fmt::Debug for Address {
 
 impl fmt::Display for Address {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let eip55 = checksum(&hex_encode(&self.0));
+        let eip55 = checksum(&hex_encode(self.0));
         eip55.fmt(f)?;
         Ok(())
     }
