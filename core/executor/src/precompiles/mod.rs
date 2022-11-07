@@ -68,7 +68,7 @@ trait PrecompileContract {
         gas_limit: Option<u64>,
         context: &Context,
         is_static: bool,
-    ) -> Result<PrecompileOutput, PrecompileFailure>;
+    ) -> Result<(PrecompileOutput, u64), PrecompileFailure>;
 
     fn gas_cost(input: &[u8]) -> u64;
 }

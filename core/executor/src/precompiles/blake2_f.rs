@@ -18,7 +18,7 @@ impl PrecompileContract for Blake2F {
         gas_limit: Option<u64>,
         _context: &Context,
         _is_static: bool,
-    ) -> Result<PrecompileOutput, PrecompileFailure> {
+    ) -> Result<(PrecompileOutput, u64), PrecompileFailure> {
         if input.len() != Self::INPUT_LEN {
             return err!("Input length must be 213");
         }
@@ -49,12 +49,13 @@ impl PrecompileContract for Blake2F {
             res[i * 8..(i + 1) * 8].copy_from_slice(&state.to_le_bytes());
         }
 
-        Ok(PrecompileOutput {
-            exit_status: ExitSucceed::Returned,
-            cost:        gas,
-            output:      res.to_vec(),
-            logs:        vec![],
-        })
+        Ok((
+            PrecompileOutput {
+                exit_status: ExitSucceed::Returned,
+                output:      res.to_vec(),
+            },
+            gas,
+        ))
     }
 
     fn gas_cost(input: &[u8]) -> u64 {

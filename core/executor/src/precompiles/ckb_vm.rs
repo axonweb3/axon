@@ -26,7 +26,7 @@ impl PrecompileContract for CkbVM {
         gas_limit: Option<u64>,
         _context: &Context,
         _is_static: bool,
-    ) -> Result<PrecompileOutput, PrecompileFailure> {
+    ) -> Result<(PrecompileOutput, u64), PrecompileFailure> {
         if let Some(gas) = gas_limit {
             let rlp = Rlp::new(input);
             let res = InteroperationImpl::default()
@@ -38,12 +38,13 @@ impl PrecompileContract for CkbVM {
                 )
                 .map_err(|e| err!(_, e.to_string()))?;
 
-            return Ok(PrecompileOutput {
-                exit_status: ExitSucceed::Returned,
-                cost:        cycle_to_gas(res.cycles).max(Self::MIN_GAS),
-                output:      res.exit_code.to_le_bytes().to_vec(),
-                logs:        vec![],
-            });
+            return Ok((
+                PrecompileOutput {
+                    exit_status: ExitSucceed::Returned,
+                    output:      res.exit_code.to_le_bytes().to_vec(),
+                },
+                cycle_to_gas(res.cycles).max(Self::MIN_GAS),
+            ));
         }
 
         err!()

@@ -19,7 +19,7 @@ impl PrecompileContract for EcAdd {
         gas_limit: Option<u64>,
         _context: &Context,
         _is_static: bool,
-    ) -> Result<PrecompileOutput, PrecompileFailure> {
+    ) -> Result<(PrecompileOutput, u64), PrecompileFailure> {
         let gas = Self::gas_cost(input);
         if let Some(limit) = gas_limit {
             if limit < gas {
@@ -40,12 +40,13 @@ impl PrecompileContract for EcAdd {
                 .map_err(|_| err!(_, "Invalid sum Y"))?;
         }
 
-        Ok(PrecompileOutput {
-            exit_status: ExitSucceed::Returned,
-            cost:        gas,
-            output:      res.to_vec(),
-            logs:        vec![],
-        })
+        Ok((
+            PrecompileOutput {
+                exit_status: ExitSucceed::Returned,
+                output:      res.to_vec(),
+            },
+            gas,
+        ))
     }
 
     fn gas_cost(_input: &[u8]) -> u64 {

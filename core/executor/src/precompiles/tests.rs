@@ -14,7 +14,7 @@ macro_rules! test_precompile {
         let gas_cost = <$ty as PrecompileContract>::gas_cost($input);
         let resp = <$ty as PrecompileContract>::exec_fn($input, None, &mock_context(), false);
         assert!(resp.is_ok());
-        assert_eq!(resp.unwrap().output, $output);
+        assert_eq!(resp.unwrap().0.output, $output);
         assert_eq!(gas_cost, $expect_gas_cost);
     };
 
