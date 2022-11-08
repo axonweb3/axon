@@ -7,8 +7,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use arc_swap::ArcSwap;
-use ckb_vm::machine::asm::AsmCoreMachine;
-use ckb_vm::machine::{DefaultMachineBuilder, SupportMachine, VERSION1};
+use ckb_vm::machine::{asm::AsmCoreMachine, DefaultMachineBuilder, SupportMachine, VERSION1};
 use ckb_vm::{Error as VMError, ISA_B, ISA_IMC, ISA_MOP};
 
 use protocol::traits::{CkbClient, Context, Interoperation};
