@@ -473,10 +473,9 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@chainsafe/dappeteer@^2.4.0":
+"@chainsafe/dappeteer@git+ssh://git@github.com:hongda3141/dappeteer.git#v2.4.0-rc0":
   version "2.4.1"
-  resolved "https://registry.yarnpkg.com/@chainsafe/dappeteer/-/dappeteer-2.4.1.tgz#c41db251566fb2783a2d752ce345a8cfc3161fb9"
-  integrity sha512-Yix+0yeaMsVbmx0iSWKA4ZeGr8Lu4f65yin0tuV/ySWPG1B220mZADpObjGrU2yuOnPyheml0PiVGOo5Ryl/4A==
+  resolved "git+ssh://git@github.com:hongda3141/dappeteer.git#5debef94c65ef3af35e17ca8111291f2629d4dfe"
   dependencies:
     node-stream-zip "^1.13.0"
 
