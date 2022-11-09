@@ -30,7 +30,7 @@ overlord = "0.4"
 prost = "0.11"
 rlp = "0.5"
 serde = { version = "1.0", features = ["derive"] }
-tendermint-proto = { version = "0.23", optional = true }
+tendermint-proto = { version = "0.26", optional = true }
 tokio = { version = "1.21", features = ["full"] }
 
 [dev-dependencies]
