@@ -183,7 +183,7 @@ pub fn clear_data(db_path: &str) {
 fn rand_hash() -> Hash {
     let mut data = [0u8; 128];
     getrandom(&mut data).unwrap();
-    Hasher::digest(&data)
+    Hasher::digest(data)
 }
 
 fn time_now() -> u64 {

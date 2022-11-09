@@ -95,7 +95,7 @@ mod tests {
     #[test]
     fn test_parse_config() {
         let file_path = "../../devtools/chain/config.toml";
-        let _config: Config = parse_file(&file_path, false).unwrap();
+        let _config: Config = parse_file(file_path, false).unwrap();
     }
 
     #[test]

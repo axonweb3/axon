@@ -7,8 +7,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use arc_swap::ArcSwap;
-use ckb_vm::machine::asm::{AsmCoreMachine, AsmMachine};
-use ckb_vm::machine::{DefaultMachineBuilder, SupportMachine, VERSION1};
+use ckb_vm::machine::{asm::AsmCoreMachine, DefaultMachineBuilder, SupportMachine, VERSION1};
 use ckb_vm::{Error as VMError, ISA_B, ISA_IMC, ISA_MOP};
 
 use protocol::traits::{CkbClient, Context, Interoperation};
@@ -72,17 +71,16 @@ impl Interoperation for InteroperationImpl {
         args: &[Bytes],
         max_cycles: u64,
     ) -> ProtocolResult<VMResp> {
-        let core =
+        let machine =
             DefaultMachineBuilder::new(AsmCoreMachine::new(ISA, VERSION1, max_cycles)).build();
         let program = DISPATCHER.load().get_program(&tx_hash)?;
 
         #[cfg(not(target_arch = "aarch64"))]
-        let aot_code = Some(&(*program.aot));
+        let mut vm = ckb_vm_aot::AotMachine::new(machine, Some(&(*program.aot)));
 
         #[cfg(target_arch = "aarch64")]
-        let aot_code = None;
+        let mut vm = ckb_vm::machine::asm::AsmMachine::new(machine);
 
-        let mut vm = AsmMachine::new(core, aot_code);
         let _ = vm
             .load_program(&program.code, args)
             .map_err(InteroperationError::CkbVM)?;
@@ -172,10 +170,9 @@ impl ProgramDispatcher {
         let mut inner = HashMap::with_capacity(program_map.len());
 
         for (tx_hash, code) in program_map.into_iter() {
-            let aot_code =
-                ckb_vm::machine::aot::AotCompilingMachine::load(&code, None, ISA, VERSION1)
-                    .and_then(|mut m| m.compile())
-                    .map_err(InteroperationError::CkbVM)?;
+            let aot_code = ckb_vm_aot::AotCompilingMachine::load(&code, None, ISA, VERSION1)
+                .and_then(|mut m| m.compile())
+                .map_err(InteroperationError::CkbVM)?;
             inner.insert(tx_hash, Program::new(code, aot_code));
         }
 
@@ -204,12 +201,12 @@ impl ProgramDispatcher {
 struct Program {
     code: Bytes,
     #[cfg(not(target_arch = "aarch64"))]
-    aot:  Arc<ckb_vm::machine::asm::AotCode>,
+    aot:  Arc<ckb_vm_aot::AotCode>,
 }
 
 impl Program {
     #[cfg(not(target_arch = "aarch64"))]
-    fn new(code: Bytes, aot: ckb_vm::machine::asm::AotCode) -> Self {
+    fn new(code: Bytes, aot: ckb_vm_aot::AotCode) -> Self {
         Program {
             code,
             aot: Arc::new(aot),

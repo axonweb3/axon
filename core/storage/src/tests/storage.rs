@@ -103,7 +103,7 @@ fn test_storage_evm_code_insert() {
 
     let code = get_random_bytes(1000);
     let code_hash = Hasher::digest(&code);
-    let address = Hasher::digest(&code_hash);
+    let address = Hasher::digest(code_hash);
 
     exec!(storage.insert_code(Context::new(), address, code_hash, code.clone()));
 
