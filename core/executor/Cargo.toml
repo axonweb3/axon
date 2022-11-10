@@ -45,7 +45,7 @@ ethabi-derive = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7e
 ethers-contract = "1.0"
 ethers-core = "1.0"
 getrandom = "0.2"
-hashbrown = "0.12"
+hashbrown = "0.13"
 rand7 = { package = "rand", version = "0.7" }
 revm = "2.1"
 rlp = "0.5"
