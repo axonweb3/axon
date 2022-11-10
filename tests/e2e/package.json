@@ -14,7 +14,7 @@
   },
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.19.6",
-    "eslint": "^8.23.0",
+    "eslint": "^8.27.0",
     "eslint-config-airbnb": "^19.0.4",
     "eslint-plugin-import": "^2.26.0",
     "eslint-plugin-sonarjs": "^0.16.0",
