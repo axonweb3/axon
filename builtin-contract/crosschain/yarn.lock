@@ -1018,24 +1018,24 @@
   resolved "https://registry.npmmirror.com/@openzeppelin/contracts/-/contracts-4.7.3.tgz#939534757a81f8d69cc854c7692805684ff3111e"
   integrity sha512-dGRS0agJzu8ybo44pCIf3xBaPQN/65AIXNgK8+4gzKd5kbvlqyxryUYVLJv7fK98Seyd2hDZzVEHSWAh0Bt1Yw==
 
-"@openzeppelin/hardhat-upgrades@^1.20.1":
-  version "1.20.1"
-  resolved "https://registry.npmmirror.com/@openzeppelin/hardhat-upgrades/-/hardhat-upgrades-1.20.1.tgz#19462b52869e00232760fe919a016767c3f2c287"
-  integrity sha512-z/H/KX6asXiY4xkjotPwJz9UXnt5DnbzqPQaWvi26IkgwPKVVvYco5/YgOair4f6BATNNNuPwI8eVoBKeuthIw==
+"@openzeppelin/hardhat-upgrades@^1.21.0":
+  version "1.21.0"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/hardhat-upgrades/-/hardhat-upgrades-1.21.0.tgz#e90fb7d858093f35a300b3a5a2fd32bca6179dfc"
+  integrity sha512-Kwl7IN0Hlhj4HluMTTl0DrtU90OI/Q6rG3sAyd2pv3fababe9EuZqs9DydOlkWM45JwTzC+eBzX3TgHsqI13eA==
   dependencies:
-    "@openzeppelin/upgrades-core" "^1.18.0"
+    "@openzeppelin/upgrades-core" "^1.20.0"
     chalk "^4.1.0"
     debug "^4.1.1"
     proper-lockfile "^4.1.1"
 
-"@openzeppelin/upgrades-core@^1.18.0":
-  version "1.18.0"
-  resolved "https://registry.npmmirror.com/@openzeppelin/upgrades-core/-/upgrades-core-1.18.0.tgz#a5db80d15e6b87d45307ad27314c91807a506c00"
-  integrity sha512-fFp5sscGC876yhq7BU595LG45yky21sZFa6cDJigluUjAyJSPoLwF7GD9bSwQMMo4jC7ii1UJBtLipUxN6PVTA==
+"@openzeppelin/upgrades-core@^1.20.0":
+  version "1.20.4"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/upgrades-core/-/upgrades-core-1.20.4.tgz#bd79d87ff395af851cd0f4d66ef77f64c690641b"
+  integrity sha512-Y4/+BPIbnopfE6ZhPOE2CD0V5fnvDxKKm7+kryx5+WrcRCTW3B5DjbXL9xyyoviG8Rn5EXUh5Fk1GLbiYDfu0g==
   dependencies:
     cbor "^8.0.0"
     chalk "^4.1.0"
-    compare-versions "^4.0.0"
+    compare-versions "^5.0.0"
     debug "^4.1.1"
     ethereumjs-util "^7.0.3"
     proper-lockfile "^4.1.1"
@@ -2519,10 +2519,10 @@ commander@3.0.2:
   version "3.0.2"
   resolved "https://registry.npmjs.org/commander/-/commander-3.0.2.tgz"
 
-compare-versions@^4.0.0:
-  version "4.1.3"
-  resolved "https://registry.npmmirror.com/compare-versions/-/compare-versions-4.1.3.tgz#8f7b8966aef7dc4282b45dfa6be98434fc18a1a4"
-  integrity sha512-WQfnbDcrYnGr55UwbxKiQKASnTtNnaAWVi8jZyy8NTpVAXWACSne8lMD1iaIo9AiU6mnuLvSVshCzewVuWxHUg==
+compare-versions@^5.0.0:
+  version "5.0.1"
+  resolved "https://registry.yarnpkg.com/compare-versions/-/compare-versions-5.0.1.tgz#14c6008436d994c3787aba38d4087fabe858555e"
+  integrity sha512-v8Au3l0b+Nwkp4G142JcgJFh1/TUhdxut7wzD1Nq1dyp5oa3tXaqb03EXOAB6jS4gMlalkjAUPZBMiAfKUixHQ==
 
 component-emitter@^1.2.1:
   version "1.3.0"
