@@ -56,7 +56,7 @@ jobs:
           inputs="${inputs//'%'/'%25'}"
           inputs="${inputs//'\n'/'%0A'}"
           inputs="${inputs//'\r'/'%0D'}"
-          echo "::set-output name=result::$inputs"
+          echo "result=$inputs" >> $GITHUB_OUTPUT
       - uses: actions/checkout@v3
         with:
           ref: ${{ steps.escape_multiple_lines_test_inputs.outputs.result || 'main' }}

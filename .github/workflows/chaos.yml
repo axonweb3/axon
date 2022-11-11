@@ -57,9 +57,9 @@ jobs:
           ref=$(echo "${{ steps.get_sha.outputs.result }}" | awk -F ':' '{print $2}'| awk -F ',' '{print $1}')
           pr_number=$(echo "${{ steps.get_sha.outputs.result }}" | awk -F ':' '{print $3}'| awk -F ',' '{print $1}')
           sha=$(echo "${{ steps.get_sha.outputs.result }}" | awk -F ':' '{print $4}'| awk -F '}' '{print $1}')
-          echo "::set-output name=ref::$ref"
-          echo "::set-output name=pr_number::$pr_number"
-          echo "::set-output name=sha::$sha"
+          echo "ref=$ref" >> $GITHUB_OUTPUT
+          echo "pr_number=$pr_number" >> $GITHUB_OUTPUT
+          echo "sha=$sha" >> $GITHUB_OUTPUT
          
       - name: Git checkout
         uses: actions/checkout@v3

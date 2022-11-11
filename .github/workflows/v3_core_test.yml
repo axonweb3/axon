@@ -61,7 +61,7 @@ jobs:
           inputs="${inputs//'%'/'%25'}"
           inputs="${inputs//'\n'/'%0A'}"
           inputs="${inputs//'\r'/'%0D'}"
-          echo "::set-output name=result::$inputs"
+          echo "result=$inputs" >> $GITHUB_OUTPUT
       - name: Git checkout
         uses: actions/checkout@v3
         with:
@@ -75,7 +75,7 @@ jobs:
           node-version: 16.x
 
       - id: yarn-cache
-        run: echo "::set-output name=dir::$(yarn cache dir)"
+        run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
 
       - name: Deploy Local Network of Axon
         run: |

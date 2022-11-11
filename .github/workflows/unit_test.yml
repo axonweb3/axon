@@ -59,7 +59,7 @@ jobs:
           inputs="${inputs//'%'/'%25'}"
           inputs="${inputs//'\n'/'%0A'}"
           inputs="${inputs//'\r'/'%0D'}"
-          echo "::set-output name=result::$inputs"
+          echo "result=$inputs" >> $GITHUB_OUTPUT
   Test:
     if: | 
        (contains(github.event_name, 'workflow_dispatch')) || 
