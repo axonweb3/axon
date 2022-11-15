@@ -92,7 +92,7 @@ fn criterion_10000_txs(c: &mut Criterion) {
         let mut axon_adapter = AxonExecutorAdapter::init(storage, db, exec_ctx, account, addr);
         let executor = AxonExecutor::default();
         b.iter(|| {
-            executor.exec(&mut axon_adapter, &txs);
+            executor.exec(&mut axon_adapter, &txs, &[]);
         })
     });
 }

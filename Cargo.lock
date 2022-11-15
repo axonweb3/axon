@@ -1531,6 +1531,7 @@ dependencies = [
 name = "core-executor"
 version = "0.1.0"
 dependencies = [
+ "arc-swap",
  "axon-protocol",
  "az",
  "bytemuck",

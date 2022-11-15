@@ -12,10 +12,13 @@ mod vm;
 
 pub use crate::adapter::{AxonExecutorAdapter, MPTTrie, RocksTrieDB};
 pub use crate::system::NATIVE_TOKEN_ISSUE_ADDRESS;
-pub use crate::utils::{code_address, decode_revert_msg, logs_bloom};
+pub use crate::utils::{
+    code_address, decode_revert_msg, logs_bloom, DefaultFeeAllocator, FeeInlet,
+};
 
 use std::collections::BTreeMap;
 
+use arc_swap::ArcSwap;
 use evm::executor::stack::{MemoryStackState, PrecompileFn, StackExecutor, StackSubstateMetadata};
 use evm::CreateScheme;
 
@@ -24,10 +27,24 @@ use protocol::codec::ProtocolCodec;
 use protocol::traits::{ApplyBackend, Backend, Executor, ExecutorAdapter as Adapter};
 use protocol::types::{
     data_gas_cost, Account, Config, ExecResp, Hasher, SignedTransaction, TransactionAction, TxResp,
-    GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160, NIL_DATA, RLP_NULL, U256,
+    ValidatorExtend, GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160, NIL_DATA, RLP_NULL, U256,
 };
 
 use crate::{precompiles::build_precompile_set, system::SystemExecutor};
+
+lazy_static::lazy_static! {
+    pub static ref FEE_ALLOCATOR: ArcSwap<Box<dyn FeeAllocate>> = ArcSwap::from_pointee(Box::new(DefaultFeeAllocator::default()));
+}
+
+pub trait FeeAllocate: Sync + Send {
+    fn allocate(
+        &self,
+        block_number: U256,
+        fee_collect: U256,
+        proposer: H160,
+        validators: &[ValidatorExtend],
+    ) -> Vec<FeeInlet>;
+}
 
 #[derive(Default)]
 pub struct AxonExecutor;
@@ -94,11 +111,13 @@ impl Executor for AxonExecutor {
         &self,
         backend: &mut B,
         txs: &[SignedTransaction],
+        validators: &[ValidatorExtend],
     ) -> ExecResp {
         let txs_len = txs.len();
+        let block_number = backend.block_number();
         let mut res = Vec::with_capacity(txs_len);
         let mut hashes = Vec::with_capacity(txs_len);
-        let mut gas_use = 0u64;
+        let mut fee = 0u64;
 
         let sys_executor = SystemExecutor::new();
         let precompiles = build_precompile_set();
@@ -115,10 +134,28 @@ impl Executor for AxonExecutor {
             };
 
             r.logs = backend.get_logs();
-            gas_use += r.gas_used;
+            fee += r.gas_used;
 
             hashes.push(Hasher::digest(&r.ret));
             res.push(r);
+        }
+
+        // Allocate collected fee for validators
+        if !block_number.is_zero() {
+            let alloc = (*FEE_ALLOCATOR).load().allocate(
+                block_number,
+                fee.into(),
+                backend.origin(),
+                validators,
+            );
+
+            for i in alloc.iter() {
+                if !i.amount.is_zero() {
+                    let mut account = backend.get_account(&i.address);
+                    account.balance += i.amount;
+                    backend.save_account(&i.address, &account);
+                }
+            }
         }
 
         // commit changes by all txs included in this block only once
@@ -129,7 +166,7 @@ impl Executor for AxonExecutor {
             receipt_root: Merkle::from_hashes(hashes)
                 .get_root_hash()
                 .unwrap_or_default(),
-            gas_used:     gas_use,
+            gas_used:     fee,
             tx_resp:      res,
         }
     }

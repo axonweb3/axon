@@ -1,8 +1,8 @@
 pub use evm::backend::{ApplyBackend, Backend};
 
 use crate::types::{
-    Account, Bytes, ExecResp, ExecutorContext, Log, MerkleRoot, SignedTransaction, TxResp, H160,
-    U256,
+    Account, Bytes, ExecResp, ExecutorContext, Log, MerkleRoot, SignedTransaction, TxResp,
+    ValidatorExtend, H160, U256,
 };
 
 pub trait ExecutorAdapter {
@@ -38,6 +38,7 @@ pub trait Executor: Send + Sync {
         &self,
         backend: &mut B,
         txs: &[SignedTransaction],
+        validators: &[ValidatorExtend],
     ) -> ExecResp;
 
     fn get_account<B: Backend + ExecutorAdapter>(&self, backend: &B, address: &H160) -> Account;
