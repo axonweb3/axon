@@ -85,11 +85,17 @@ impl Executor for AxonExecutor {
             executor.transact_create(from.unwrap_or_default(), value, data, gas_limit, Vec::new())
         };
 
+        let used_gas = executor.used_gas() + base_gas;
+
         TxResp {
             exit_reason:  exit,
             ret:          res,
             remain_gas:   executor.gas(),
-            gas_used:     executor.used_gas() + base_gas,
+            gas_used:     used_gas,
+            fee_cost:     backend
+                .gas_price()
+                .checked_mul(used_gas.into())
+                .unwrap_or(U256::max_value()),
             logs:         vec![],
             code_address: if to.is_none() {
                 Some(
@@ -117,7 +123,7 @@ impl Executor for AxonExecutor {
         let block_number = backend.block_number();
         let mut res = Vec::with_capacity(txs_len);
         let mut hashes = Vec::with_capacity(txs_len);
-        let mut fee = 0u64;
+        let (mut gas, mut fee) = (0u64, U256::zero());
 
         let sys_executor = SystemExecutor::new();
         let precompiles = build_precompile_set();
@@ -134,7 +140,8 @@ impl Executor for AxonExecutor {
             };
 
             r.logs = backend.get_logs();
-            fee += r.gas_used;
+            gas += r.gas_used;
+            fee = fee.checked_add(r.fee_cost).unwrap_or(U256::max_value());
 
             hashes.push(Hasher::digest(&r.ret));
             res.push(r);
@@ -142,12 +149,10 @@ impl Executor for AxonExecutor {
 
         // Allocate collected fee for validators
         if !block_number.is_zero() {
-            let alloc = (*FEE_ALLOCATOR).load().allocate(
-                block_number,
-                fee.into(),
-                backend.origin(),
-                validators,
-            );
+            let alloc =
+                (*FEE_ALLOCATOR)
+                    .load()
+                    .allocate(block_number, fee, backend.origin(), validators);
 
             for i in alloc.iter() {
                 if !i.amount.is_zero() {
@@ -166,7 +171,7 @@ impl Executor for AxonExecutor {
             receipt_root: Merkle::from_hashes(hashes)
                 .get_root_hash()
                 .unwrap_or_default(),
-            gas_used:     fee,
+            gas_used:     gas,
             tx_resp:      res,
         }
     }
@@ -218,7 +223,7 @@ impl AxonExecutor {
             .map(|x| (x.address, x.storage_keys))
             .collect::<Vec<_>>();
 
-        let (exit_reason, ret) = match tx.transaction.unsigned.action() {
+        let (exit, res) = match tx.transaction.unsigned.action() {
             TransactionAction::Call(addr) => executor.transact_call(
                 tx.sender,
                 *addr,
@@ -236,18 +241,18 @@ impl AxonExecutor {
             ),
         };
 
-        let remain_gas = executor.gas();
-        let gas_used = executor.used_gas();
+        let remained_gas = executor.gas();
+        let used_gas = executor.used_gas();
 
-        let code_address = if tx.transaction.unsigned.action() == &TransactionAction::Create
-            && exit_reason.is_succeed()
+        let code_addr = if tx.transaction.unsigned.action() == &TransactionAction::Create
+            && exit.is_succeed()
         {
             Some(code_address(&tx.sender, &old_nonce))
         } else {
             None
         };
 
-        if exit_reason.is_succeed() {
+        if exit.is_succeed() {
             let (values, logs) = executor.into_state().deconstruct();
             backend.apply(values, logs, true);
         }
@@ -256,9 +261,9 @@ impl AxonExecutor {
         account.nonce = old_nonce + U256::one();
 
         // Add remain gas
-        if remain_gas != 0 {
-            let remain_gas = U256::from(remain_gas)
-                .checked_mul(backend.gas_price())
+        if remained_gas != 0 {
+            let remain_gas = U256::from(remained_gas)
+                .checked_mul(tx_gas_price)
                 .unwrap_or_else(U256::max_value);
             account.balance = account
                 .balance
@@ -269,13 +274,16 @@ impl AxonExecutor {
         backend.save_account(&tx.sender, &account);
 
         TxResp {
-            exit_reason,
-            ret,
-            remain_gas,
-            gas_used,
-            logs: vec![],
-            code_address,
-            removed: false,
+            exit_reason:  exit,
+            ret:          res,
+            remain_gas:   remained_gas,
+            gas_used:     used_gas,
+            fee_cost:     tx_gas_price
+                .checked_mul(used_gas.into())
+                .unwrap_or(U256::max_value()),
+            logs:         vec![],
+            code_address: code_addr,
+            removed:      false,
         }
     }
 }

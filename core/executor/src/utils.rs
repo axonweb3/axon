@@ -36,7 +36,7 @@ impl FeeAllocate for DefaultFeeAllocator {
             .iter()
             .map(|v| FeeInlet {
                 address: v.address,
-                amount:  (fee_collect * v.vote_weight) / weight_sum,
+                amount:  (fee_collect / weight_sum) * v.vote_weight,
             })
             .collect()
     }

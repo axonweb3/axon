@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use evm::executor::stack::{MemoryStackState, PrecompileFn, StackExecutor, StackSubstateMetadata};
 
 use protocol::traits::{ApplyBackend, Backend};
-use protocol::types::{Config, SignedTransaction, TransactionAction, TxResp, H160};
+use protocol::types::{Config, SignedTransaction, TransactionAction, TxResp, H160, U256};
 
 // deprecated
 #[allow(dead_code)]
@@ -70,6 +70,7 @@ impl EvmExecutor {
             ret,
             remain_gas,
             gas_used,
+            fee_cost: U256::default(),
             logs: vec![],
             code_address,
             removed: false,

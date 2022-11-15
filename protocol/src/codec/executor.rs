@@ -9,6 +9,7 @@ impl Encodable for TxResp {
             .append(&self.ret)
             .append(&self.gas_used)
             .append(&self.remain_gas)
+            .append(&self.fee_cost)
             .append_list(&self.logs)
             .append(&self.code_address)
             .append(&self.removed);
@@ -27,9 +28,10 @@ impl Decodable for TxResp {
                 ret:          r.val_at(1)?,
                 gas_used:     r.val_at(2)?,
                 remain_gas:   r.val_at(3)?,
-                logs:         r.list_at(4)?,
-                code_address: r.val_at(5)?,
-                removed:      r.val_at(6)?,
+                fee_cost:     r.val_at(4)?,
+                logs:         r.list_at(5)?,
+                code_address: r.val_at(6)?,
+                removed:      r.val_at(7)?,
             }),
             _ => Err(DecoderError::RlpExpectedToBeList),
         }
