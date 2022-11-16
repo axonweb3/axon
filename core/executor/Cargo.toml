@@ -16,7 +16,7 @@ common-crypto = { path = "../../common/crypto" }
 common-merkle = { path = "../../common/merkle" }
 core-interoperation = { path = "../interoperation" }
 crossbeam-channel = "0.5"
-evm = { version = "0.36", features = ["tracing"] }
+evm = { version = "0.37", features = ["tracing"] }
 futures = "0.3"
 hasher = "0.1"
 lazy_static = "1.4"
