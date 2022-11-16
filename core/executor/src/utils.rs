@@ -1,11 +1,46 @@
 use protocol::types::{Bloom, Hasher, Log, H160, H256, U256};
 
+use crate::FeeAllocate;
+
 const FUNC_SELECTOR_LEN: usize = 4;
 const U256_BE_BYTES_LEN: usize = 32;
 const REVERT_MSG_LEN_OFFSET: usize = FUNC_SELECTOR_LEN + U256_BE_BYTES_LEN;
 const REVERT_EFFECT_MSG_OFFSET: usize = REVERT_MSG_LEN_OFFSET + U256_BE_BYTES_LEN;
 const BLOOM_BYTE_LENGTH: usize = 256;
 const EXEC_REVERT: &str = "execution reverted: ";
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FeeInlet {
+    pub address: H160,
+    pub amount:  U256,
+}
+
+#[derive(Default, Clone, Debug)]
+pub struct DefaultFeeAllocator;
+
+impl FeeAllocate for DefaultFeeAllocator {
+    fn allocate(
+        &self,
+        block_number: U256,
+        fee_collect: U256,
+        _proposer: H160,
+        validators: &[protocol::types::ValidatorExtend],
+    ) -> Vec<FeeInlet> {
+        if fee_collect.is_zero() || block_number.is_zero() {
+            return Vec::new();
+        }
+
+        let weight_sum = U256::from(validators.iter().map(|v| v.vote_weight).sum::<u32>());
+
+        validators
+            .iter()
+            .map(|v| FeeInlet {
+                address: v.address,
+                amount:  (fee_collect / weight_sum) * v.vote_weight,
+            })
+            .collect()
+    }
+}
 
 pub fn code_address(sender: &H160, nonce: &U256) -> H256 {
     let mut stream = rlp::RlpStream::new_list(2);

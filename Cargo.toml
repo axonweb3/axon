@@ -10,7 +10,9 @@ repository = "https://github.com/axonweb3/axon"
 core-api = { path = "./core/api" }
 core-cli = { path = "./core/cli" }
 core-consensus = { path = "./core/consensus" }
+core-executor = { path = "./core/executor" }
 core-run = { path = "./core/run" }
+protocol = { path = "./protocol", package = "axon-protocol" }
 
 [workspace]
 members = [
@@ -61,3 +63,7 @@ inherits = "release"
 debug = true
 overflow-checks = true
 opt-level = 3
+
+[[example]]
+name = "custom_chain"
+crate-type = ["bin"]

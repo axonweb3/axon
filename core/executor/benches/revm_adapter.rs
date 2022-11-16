@@ -259,6 +259,7 @@ pub fn revm_call<T: Database>(
         },
         gas_used:     res.gas_used,
         remain_gas:   gas_limit - res.gas_used,
+        fee_cost:     res.gas_used.into(),
         logs:         vec![],
         code_address: None,
         removed:      false,
@@ -315,6 +316,7 @@ where
             ret,
             gas_used: res.gas_used,
             remain_gas: tx.transaction.unsigned.gas_limit().as_u64() - res.gas_used,
+            fee_cost: res.gas_used.into(),
             // todo
             logs: vec![],
             code_address,

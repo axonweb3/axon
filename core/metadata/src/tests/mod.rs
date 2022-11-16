@@ -81,7 +81,7 @@ impl TestHandle {
         )
         .unwrap();
 
-        let resp = executor.exec(&mut backend, &genesis.txs);
+        let resp = executor.exec(&mut backend, &genesis.txs, &[]);
 
         self.state_root = resp.state_root;
         self.storage
@@ -119,7 +119,7 @@ impl TestHandle {
             mock_proposal().into(),
         )
         .unwrap();
-        let resp = AxonExecutor::default().exec(&mut backend, &txs);
+        let resp = AxonExecutor::default().exec(&mut backend, &txs, &[]);
         self.state_root = resp.state_root;
     }
 }
