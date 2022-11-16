@@ -1,0 +1,95 @@
+name: Automated PR to DEVOPS
+on:
+  push:
+    branches:
+      - main
+    paths:
+    - 'devtools/chain/config.toml'
+    - 'devtools/chain/genesis_multi_nodes.json'
+    - 'devtools/chain/default.db-options'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v3
+        with:
+         fetch-depth: 2
+      - name: get file patch and output current_commit
+        id: file_patch
+        run: |
+          current_commit=`git log -n 1 --pretty=format:%H`
+          echo $current_commit
+          last_commit=`git log HEAD^1 --pretty=format:%H`
+          echo $last_commit
+          git diff $last_commit $current_commit -- "${{ github.workspace}}/devtools/chain/config.toml" > config_toml.patch
+          cat ${{ github.workspace}}/config_toml.patch
+          echo "current_commit=$current_commit" >> $GITHUB_OUTPUT
+      - name: Git checkout devops
+        uses: actions/checkout@v3
+        with:
+          repository: liya2017/axon-devops
+          path: ${{ github.workspace}}/axon-devops
+      - name: apply config toml config_toml.patch
+        run: |
+          # copy default.db-options & genesis_multi_nodes.json to axon-devops always
+          cp ${{ github.workspace}}/devtools/chain/default.db-options ${{ github.workspace}}/axon-devops/deploy/templates
+          cp ${{ github.workspace}}/devtools/chain/default.db-options ${{ github.workspace}}/axon-devops/docker-deploy/templates
+          cp ${{ github.workspace}}/devtools/chain/default.db-options ${{ github.workspace}}/axon-devops/k8s-deploy/k8s/axon/axon-config
+          cp ${{ github.workspace}}/devtools/chain/nodes/genesis_multi_nodes.json ${{ github.workspace}}/axon-devops/deploy/templates/genesis.json
+          cp ${{ github.workspace}}/devtools/chain/nodes/genesis_multi_nodes.json ${{ github.workspace}}/axon-devops/docker-deploy/templates/genesis.json
+          cp ${{ github.workspace}}/devtools/chain/nodes/genesis_multi_nodes.json ${{ github.workspace}}/axon-devops/k8s-deploy/k8s/axon/axon-config/genesis.json
+          if [[ -s ${{ github.workspace}}/config_toml.patch ]]; then
+            # take actions when config.toml changed
+            cp ${{ github.workspace}}/devtools/chain/config.toml ${{ github.workspace}}/axon-devops/deploy/templates
+            cp ${{ github.workspace}}/devtools/chain/config.toml ${{ github.workspace}}/axon-devops/docker-deploy/templates
+            sed -i 's/privkey =.*$/privkey = "#private_key"/g' ${{ github.workspace}}/axon-devops/deploy/templates/config.toml
+            sed -i 's/multi_address =.*$/multi_address = "\/ip4\/#bootstraps\/tcp\/8001\/p2p\/QmNk6bBwkLPuqnsrtxpp819XLZY3ymgjs3p1nKtxBVgqxj"/g' ${{ github.workspace}}/axon-devops/deploy/templates/config.toml
+            sed -i 's/mercury_uri =.*$/mercury_uri = "#mercury_uri"/g' ${{ github.workspace}}/axon-devops/deploy/templates/config.toml
+            sed -i "s/enable = .*$/enable = #enable_cross_client/g" ${{ github.workspace}}/axon-devops/deploy/templates/config.toml
+            sed -i 's/privkey =.*$/privkey = "#private_key"/g' ${{ github.workspace}}/axon-devops/docker-deploy/templates/config.toml
+            sed -i 's/multi_address =.*$/multi_address = "\/ip4\/#bootstraps\/tcp\/8001\/p2p\/QmNk6bBwkLPuqnsrtxpp819XLZY3ymgjs3p1nKtxBVgqxj"/g' ${{ github.workspace}}/axon-devops/docker-deploy/templates/config.toml
+            sed -i 's/mercury_uri =.*$/mercury_uri = "#mercury_uri"/g' ${{ github.workspace}}/axon-devops/docker-deploy/templates/config.toml
+            sed -i "s/enable = .*$/enable = #enable_cross_client/g" ${{ github.workspace}}/axon-devops/docker-deploy/templates/config.toml
+            cp ${{ github.workspace}}/config_toml.patch ${{ github.workspace}}/axon-devops/node_1.patch
+            cp ${{ github.workspace}}/config_toml.patch ${{ github.workspace}}/axon-devops/node_2.patch
+            cp ${{ github.workspace}}/config_toml.patch ${{ github.workspace}}/axon-devops/node_3.patch
+            cp ${{ github.workspace}}/config_toml.patch ${{ github.workspace}}/axon-devops/node_4.patch
+            sed -i "s/a\/devtools\/chain\/config.toml/a\/k8s-deploy\/k8s\/axon\/axon-config\/node_1.toml/g" ${{ github.workspace}}/axon-devops/node_1.patch
+            sed -i "s/b\/devtools\/chain\/config.toml/b\/k8s-deploy\/k8s\/axon\/axon_config\/node_1.toml/g" ${{ github.workspace}}/axon-devops/node_1.patch
+            sed -i "s/a\/devtools\/chain\/config.toml/a\/k8s-deploy\/k8s\/axon\/axon-config\/node_2.toml/g" ${{ github.workspace}}/axon-devops/node_2.patch
+            sed -i "s/b\/devtools\/chain\/config.toml/b\/k8s-deploy\/k8s\/axon\/axon_config\/node_2.toml/g" ${{ github.workspace}}/axon-devops/node_2.patch
+            sed -i "s/a\/devtools\/chain\/config.toml/a\/k8s-deploy\/k8s\/axon\/axon-config\/node_3.toml/g" ${{ github.workspace}}/axon-devops/node_3.patch
+            sed -i "s/b\/devtools\/chain\/config.toml/b\/k8s-deploy\/k8s\/axon\/axon_config\/node_3.toml/g" ${{ github.workspace}}/axon-devops/node_3.patch
+            sed -i "s/a\/devtools\/chain\/config.toml/a\/k8s-deploy\/k8s\/axon\/axon-config\/node_4.toml/g" ${{ github.workspace}}/axon-devops/node_4.patch
+            sed -i "s/b\/devtools\/chain\/config.toml/b\/k8s-deploy\/k8s\/axon\/axon_config\/node_4.toml/g" ${{ github.workspace}}/axon-devops/node_4.patch
+          fi
+          cd ${{ github.workspace}}/axon-devops
+          git apply --ignore-space-change --ignore-whitespace ${{ github.workspace}}/axon-devops/node_1.patch
+          git apply --ignore-space-change --ignore-whitespace ${{ github.workspace}}/axon-devops/node_2.patch
+          git apply --ignore-space-change --ignore-whitespace ${{ github.workspace}}/axon-devops/node_3.patch
+          git apply --ignore-space-change --ignore-whitespace ${{ github.workspace}}/axon-devops/node_4.patch
+          rm -rf ${{ github.workspace}}/axon-devops/node_*.patch
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v4
+        with:
+           token: ${{ secrets.TOKEN }}
+           path: ${{ github.workspace}}/axon-devops
+           signoff: false
+           commit-message: "feat: automated pr to change config files"
+           branch: bot-${{ github.repository }}
+           title: "feat: automated pr to change config files"
+           body: "Automated pr to changes config files by GitHub action"
+      - name: Send some mail
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.163.com
+          server_port: 465
+          secure: true
+          username: ${{secrets.MAIL_USERNAME}}
+          password: ${{secrets.MAIL_PASSWORD}}
+          subject: Workflow finished
+          body: ${{ github.job }} job in worflow ${{ github.workflow }} of ${{ github.repository }} has ${{ job.status }},please have a check:https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          to: liya@cryptape.com
+          from: me
