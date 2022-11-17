@@ -12,7 +12,7 @@ ckb-jsonrpc-types = "0.105"
 ckb-sdk = "2.3"
 ckb-types = "0.105"
 crossbeam = "0.8"
-ethabi = "17.2"
+ethabi = "18.0"
 ethabi-contract = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
 ethabi-derive = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
 ethers-contract = "1.0"

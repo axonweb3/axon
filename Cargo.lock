@@ -254,7 +254,7 @@ dependencies = [
  "creep",
  "derive_more",
  "ethereum",
- "ethereum-types",
+ "ethereum-types 0.13.1",
  "evm",
  "faster-hex",
  "getrandom 0.2.8",
@@ -1510,7 +1510,7 @@ dependencies = [
  "common-crypto",
  "core-executor",
  "crossbeam",
- "ethabi 17.2.0",
+ "ethabi 18.0.0",
  "ethabi-contract",
  "ethabi-derive",
  "ethers-contract",
@@ -1551,7 +1551,7 @@ dependencies = [
  "core-storage",
  "criterion",
  "crossbeam-channel",
- "ethabi 17.2.0",
+ "ethabi 18.0.0",
  "ethabi-contract",
  "ethabi-derive",
  "ethers-contract",
@@ -2298,7 +2298,7 @@ name = "ethabi"
 version = "17.0.0"
 source = "git+https://github.com/rust-ethereum/ethabi.git?rev=7edf185#7edf185125a9560d43bba0f84432a7cc874a5218"
 dependencies = [
- "ethereum-types",
+ "ethereum-types 0.13.1",
  "hex",
  "once_cell",
  "regex",
@@ -2315,7 +2315,24 @@ version = "17.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e4966fba78396ff92db3b817ee71143eccd98acf0f876b8d600e585a670c5d1b"
 dependencies = [
- "ethereum-types",
+ "ethereum-types 0.13.1",
+ "hex",
+ "once_cell",
+ "regex",
+ "serde",
+ "serde_json",
+ "sha3",
+ "thiserror",
+ "uint",
+]
+
+[[package]]
+name = "ethabi"
+version = "18.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7413c5f74cc903ea37386a8965a936cbeb334bd270862fdece542c1b2dcbc898"
+dependencies = [
+ "ethereum-types 0.14.0",
  "hex",
  "once_cell",
  "regex",
@@ -2350,11 +2367,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "11da94e443c60508eb62cf256243a64da87304c2802ac2528847f79d750007ef"
 dependencies = [
  "crunchy",
- "fixed-hash",
+ "fixed-hash 0.7.0",
  "impl-codec",
  "impl-rlp",
- "impl-serde",
+ "impl-serde 0.3.2",
  "scale-info",
+ "tiny-keccak",
+]
+
+[[package]]
+name = "ethbloom"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c22d4b5885b6aa2fe5e8b9329fb8d232bf739e434e6b87347c63bdd00c120f60"
+dependencies = [
+ "crunchy",
+ "fixed-hash 0.8.0",
+ "impl-rlp",
+ "impl-serde 0.4.0",
  "tiny-keccak",
 ]
 
@@ -2365,7 +2395,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23750149fe8834c0e24bb9adcbacbe06c45b9861f15df53e09f26cb7c4ab91ef"
 dependencies = [
  "bytes",
- "ethereum-types",
+ "ethereum-types 0.13.1",
  "hash-db",
  "hash256-std-hasher",
  "parity-scale-codec",
@@ -2383,13 +2413,27 @@ version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b2827b94c556145446fcce834ca86b7abf0c39a805883fe20e72c5bfdb5a0dc6"
 dependencies = [
- "ethbloom",
- "fixed-hash",
+ "ethbloom 0.12.1",
+ "fixed-hash 0.7.0",
  "impl-codec",
  "impl-rlp",
- "impl-serde",
- "primitive-types",
+ "impl-serde 0.3.2",
+ "primitive-types 0.11.1",
  "scale-info",
+ "uint",
+]
+
+[[package]]
+name = "ethereum-types"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81224dc661606574f5a0f28c9947d0ee1d93ff11c5f1c4e7272f52e8c0b5483c"
+dependencies = [
+ "ethbloom 0.13.0",
+ "fixed-hash 0.8.0",
+ "impl-rlp",
+ "impl-serde 0.4.0",
+ "primitive-types 0.12.1",
  "uint",
 ]
 
@@ -2552,7 +2596,7 @@ dependencies = [
  "evm-runtime",
  "log",
  "parity-scale-codec",
- "primitive-types",
+ "primitive-types 0.11.1",
  "rlp",
  "scale-info",
  "serde",
@@ -2566,7 +2610,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c5fb3a449a544a67c879d2f74e1c3d9022de3ec31c9a20817015816f687aa2af"
 dependencies = [
  "parity-scale-codec",
- "primitive-types",
+ "primitive-types 0.11.1",
  "scale-info",
  "serde",
 ]
@@ -2580,7 +2624,7 @@ dependencies = [
  "environmental",
  "evm-core",
  "evm-runtime",
- "primitive-types",
+ "primitive-types 0.11.1",
 ]
 
 [[package]]
@@ -2592,7 +2636,7 @@ dependencies = [
  "auto_impl 0.5.0",
  "environmental",
  "evm-core",
- "primitive-types",
+ "primitive-types 0.11.1",
  "sha3",
 ]
 
@@ -2666,6 +2710,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cfcf0ed7fe52a17a03854ec54a9f76d6d84508d1c0e66bc1793301c73fc8493c"
 dependencies = [
  "arbitrary 0.4.7",
+ "byteorder",
+ "rand 0.8.5",
+ "rustc-hex",
+ "static_assertions",
+]
+
+[[package]]
+name = "fixed-hash"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "835c052cb0c08c1acf6ffd71c022172e18723949c8282f2b9f27efbc51e64534"
+dependencies = [
  "byteorder",
  "rand 0.8.5",
  "rustc-hex",
@@ -3303,7 +3359,7 @@ dependencies = [
  "ibc-proto",
  "ics23",
  "num-traits",
- "primitive-types",
+ "primitive-types 0.11.1",
  "prost",
  "safe-regex",
  "serde",
@@ -3382,6 +3438,15 @@ name = "impl-serde"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4551f042f3438e64dbd6226b20527fc84a6e1fe65688b58746a2f53623f25f5c"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "impl-serde"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ebc88fc67028ae3db0c853baa36269d398d5f45b6982f95549ff5def78c935cd"
 dependencies = [
  "serde",
 ]
@@ -4184,7 +4249,7 @@ dependencies = [
  "arrayvec",
  "auto_impl 1.0.1",
  "bytes",
- "ethereum-types",
+ "ethereum-types 0.13.1",
  "open-fastrlp-derive",
 ]
 
@@ -4671,11 +4736,24 @@ version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e28720988bff275df1f51b171e1b2a18c30d194c4d2b61defdacecd625a5d94a"
 dependencies = [
- "fixed-hash",
+ "fixed-hash 0.7.0",
  "impl-codec",
  "impl-rlp",
- "impl-serde",
+ "impl-serde 0.3.2",
  "scale-info",
+ "uint",
+]
+
+[[package]]
+name = "primitive-types"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9f3486ccba82358b11a77516035647c34ba167dfa53312630de83b12bd4f3d66"
+dependencies = [
+ "fixed-hash 0.8.0",
+ "impl-codec",
+ "impl-rlp",
+ "impl-serde 0.4.0",
  "uint",
 ]
 
@@ -5106,7 +5184,7 @@ dependencies = [
  "bytes",
  "hashbrown",
  "num_enum",
- "primitive-types",
+ "primitive-types 0.11.1",
  "revm_precompiles",
  "rlp",
  "sha3",
@@ -5122,7 +5200,7 @@ dependencies = [
  "hashbrown",
  "num",
  "once_cell",
- "primitive-types",
+ "primitive-types 0.11.1",
  "ripemd",
  "secp256k1 0.24.1",
  "sha2 0.10.6",
