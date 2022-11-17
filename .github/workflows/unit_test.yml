@@ -80,7 +80,7 @@ jobs:
           profile: minimal
           components: rustfmt, clippy
 
-      - uses: Swatinem/rust-cache@v1
+      - uses: Swatinem/rust-cache@v2
 
       - name: CI
         run: make test
