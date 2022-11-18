@@ -1397,8 +1397,11 @@ name = "common-merkle"
 version = "0.2.1"
 dependencies = [
  "axon-protocol",
+ "cita_trie",
  "criterion",
+ "hasher",
  "rand 0.7.3",
+ "rlp",
  "static_merkle_tree",
 ]
 
