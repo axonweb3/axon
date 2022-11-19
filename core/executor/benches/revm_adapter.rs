@@ -328,7 +328,6 @@ where
     ExecResp {
         state_root:   evm.db().unwrap().trie.commit().unwrap(),
         receipt_root: TrieMerkle::from_iter(hashes.iter().enumerate())
-            .unwrap()
             .root()
             .unwrap_or_default(),
         gas_used:     total_gas_used,

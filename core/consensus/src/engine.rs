@@ -78,7 +78,6 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         let signed_txs = self.adapter.get_full_txs(ctx.clone(), &txs.hashes).await?;
         let txs_root = if !txs.hashes.is_empty() {
             TrieMerkle::from_iter(txs.hashes.iter().enumerate())
-                .map_err(|e| ProtocolError::from(ConsensusError::BuildMerkle(e.to_string())))?
                 .root()
                 .unwrap_or_default()
         } else {
@@ -555,7 +554,6 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         signed_txs: &[SignedTransaction],
     ) -> ProtocolResult<()> {
         let txs_root = TrieMerkle::from_iter(proposal.tx_hashes.iter().enumerate())
-            .map_err(|e| ProtocolError::from(ConsensusError::BuildMerkle(e.to_string())))?
             .root()
             .unwrap_or(RLP_NULL);
 

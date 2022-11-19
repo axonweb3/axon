@@ -17,6 +17,7 @@ pub use crate::utils::{
 };
 
 use std::collections::BTreeMap;
+use std::iter::FromIterator;
 
 use arc_swap::ArcSwap;
 use evm::executor::stack::{MemoryStackState, PrecompileFn, StackExecutor, StackSubstateMetadata};
@@ -169,7 +170,6 @@ impl Executor for AxonExecutor {
         ExecResp {
             state_root:   new_state_root,
             receipt_root: TrieMerkle::from_iter(hashes.iter().enumerate())
-                .expect("should not panic when build receipts root")
                 .root()
                 .unwrap_or_default(),
             gas_used:     gas,

@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::iter::FromIterator;
 use std::sync::Arc;
 
 use cita_trie::{MemoryDB, PatriciaTrie, Trie};
@@ -65,20 +66,21 @@ impl Default for TrieMerkle {
     }
 }
 
-impl TrieMerkle {
-    pub fn from_iter<'a, T: ProtocolCodec + 'a>(
-        iter: impl Iterator<Item = (usize, &'a T)>,
-    ) -> Result<Self, Box<dyn Error + 'static>> {
+impl<'a, C: ProtocolCodec + 'a> FromIterator<(usize, &'a C)> for TrieMerkle {
+    fn from_iter<T: IntoIterator<Item = (usize, &'a C)>>(iter: T) -> Self {
         let mut trie = Self::default();
 
-        for (i, val) in iter {
+        iter.into_iter().for_each(|(i, val)| {
             trie.0
-                .insert(rlp::encode(&i).to_vec(), val.encode().unwrap().to_vec())?;
-        }
+                .insert(rlp::encode(&i).to_vec(), val.encode().unwrap().to_vec())
+                .unwrap()
+        });
 
-        Ok(trie)
+        trie
     }
+}
 
+impl TrieMerkle {
     pub fn root(&mut self) -> Result<Hash, Box<dyn Error + 'static>> {
         Ok(Hash::from_slice(&self.0.root()?))
     }
