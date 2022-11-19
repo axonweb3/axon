@@ -81,7 +81,7 @@ impl<'a, C: ProtocolCodec + 'a> FromIterator<(usize, &'a C)> for TrieMerkle {
 }
 
 impl TrieMerkle {
-    pub fn root(&mut self) -> Result<Hash, Box<dyn Error + 'static>> {
+    pub fn root_hash(&mut self) -> Result<Hash, Box<dyn Error + 'static>> {
         Ok(Hash::from_slice(&self.0.root()?))
     }
 

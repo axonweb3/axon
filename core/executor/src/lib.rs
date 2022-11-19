@@ -170,7 +170,7 @@ impl Executor for AxonExecutor {
         ExecResp {
             state_root:   new_state_root,
             receipt_root: TrieMerkle::from_iter(hashes.iter().enumerate())
-                .root()
+                .root_hash()
                 .unwrap_or_default(),
             gas_used:     gas,
             tx_resp:      res,
