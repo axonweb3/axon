@@ -22,7 +22,7 @@ use arc_swap::ArcSwap;
 use evm::executor::stack::{MemoryStackState, PrecompileFn, StackExecutor, StackSubstateMetadata};
 use evm::CreateScheme;
 
-use common_merkle::Merkle;
+use common_merkle::TrieMerkle;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ApplyBackend, Backend, Executor, ExecutorAdapter as Adapter};
 use protocol::types::{
@@ -168,8 +168,9 @@ impl Executor for AxonExecutor {
 
         ExecResp {
             state_root:   new_state_root,
-            receipt_root: Merkle::from_hashes(hashes)
-                .get_root_hash()
+            receipt_root: TrieMerkle::from_iter(hashes.iter().enumerate())
+                .expect("should not panic when build receipts root")
+                .root()
                 .unwrap_or_default(),
             gas_used:     gas,
             tx_resp:      res,

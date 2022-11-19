@@ -4,7 +4,7 @@ use evm::{ExitReason, ExitSucceed};
 use hashbrown::HashMap;
 use revm::{AccountInfo, Bytecode, Database, DatabaseCommit};
 
-use common_merkle::Merkle;
+use common_merkle::TrieMerkle;
 use core_executor::{code_address, MPTTrie};
 use protocol::traits::{Context, Storage};
 use protocol::types::{
@@ -327,8 +327,9 @@ where
 
     ExecResp {
         state_root:   evm.db().unwrap().trie.commit().unwrap(),
-        receipt_root: Merkle::from_hashes(hashes)
-            .get_root_hash()
+        receipt_root: TrieMerkle::from_iter(hashes.iter().enumerate())
+            .unwrap()
+            .root()
             .unwrap_or_default(),
         gas_used:     total_gas_used,
         tx_resp:      tx_outputs,
