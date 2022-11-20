@@ -1,3 +1,4 @@
+mod account;
 mod indexer;
 #[allow(clippy::all)]
 mod molecule;

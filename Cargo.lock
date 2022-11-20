@@ -1776,6 +1776,7 @@ dependencies = [
  "ckb-types",
  "common-crypto",
  "core-rpc-client",
+ "hasher",
  "lazy_static",
  "log",
  "molecule",
