@@ -27,7 +27,7 @@ rand = { version = "0.8", features = ["small_rng"] }
 ripemd = "0.1"
 rlp = "0.5"
 rocksdb = { version = "0.18", package = "ckb-rocksdb" }
-rug = "1.17"
+rug = "1.18"
 sha2 = "0.10"
 
 [dev-dependencies]
