@@ -242,8 +242,8 @@ dependencies = [
  "getrandom 0.2.8",
  "hasher",
  "hex",
- "ibc",
- "ibc-proto",
+ "ibc 0.19.0",
+ "ibc-proto 0.20.1",
  "lazy_static",
  "ophelia",
  "ophelia-secp256k1",
@@ -253,7 +253,7 @@ dependencies = [
  "rlp",
  "serde",
  "serde_json",
- "tendermint-proto",
+ "tendermint-proto 0.23.9",
  "tokio",
  "toml",
 ]
@@ -1584,8 +1584,8 @@ version = "0.1.0"
 dependencies = [
  "axon-protocol",
  "core-storage",
- "ibc",
- "ibc-proto",
+ "ibc 0.22.0",
+ "ibc-proto 0.20.1",
  "log",
  "tonic",
 ]
@@ -1742,7 +1742,7 @@ dependencies = [
  "common-crypto",
  "criterion",
  "futures",
- "ibc",
+ "ibc 0.19.0",
  "lazy_static",
  "log",
  "lru 0.8.1",
@@ -2256,6 +2256,15 @@ name = "environmental"
 version = "1.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68b91989ae21441195d7d9b9993a2f9295c7e1a8c96255d8b729accddc124797"
+
+[[package]]
+name = "erased-serde"
+version = "0.3.23"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "54558e0ba96fbe24280072642eceb9d7d442e32c7ec0ea9e7ecd7b4ea2cf4e11"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "eth-keystore"
@@ -3341,7 +3350,7 @@ dependencies = [
  "bytes",
  "derive_more",
  "flex-error",
- "ibc-proto",
+ "ibc-proto 0.20.1",
  "ics23",
  "num-traits",
  "primitive-types 0.11.1",
@@ -3352,10 +3361,40 @@ dependencies = [
  "serde_json",
  "sha2 0.10.6",
  "subtle-encoding",
- "tendermint",
- "tendermint-light-client-verifier",
- "tendermint-proto",
+ "tendermint 0.23.9",
+ "tendermint-light-client-verifier 0.23.9",
+ "tendermint-proto 0.23.9",
  "tendermint-testgen",
+ "time 0.3.11",
+ "tracing",
+ "uint",
+]
+
+[[package]]
+name = "ibc"
+version = "0.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d3da1a3bc78ffcb6961e61239835c86094ab967ce2cc91c0a8088cab73880a0"
+dependencies = [
+ "bytes",
+ "derive_more",
+ "dyn-clone",
+ "erased-serde",
+ "flex-error",
+ "ibc-proto 0.21.0",
+ "ics23",
+ "num-traits",
+ "primitive-types 0.12.1",
+ "prost",
+ "safe-regex",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "sha2 0.10.6",
+ "subtle-encoding",
+ "tendermint 0.25.0",
+ "tendermint-light-client-verifier 0.25.0",
+ "tendermint-proto 0.25.0",
  "time 0.3.11",
  "tracing",
  "uint",
@@ -3371,8 +3410,23 @@ dependencies = [
  "bytes",
  "prost",
  "serde",
- "tendermint-proto",
+ "tendermint-proto 0.23.9",
  "tonic",
+]
+
+[[package]]
+name = "ibc-proto"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf16b17e83004295df8f6cad5a08a447c37be1465f9b5d6e652dbed527172bd3"
+dependencies = [
+ "base64 0.13.1",
+ "bytes",
+ "flex-error",
+ "prost",
+ "serde",
+ "subtle-encoding",
+ "tendermint-proto 0.25.0",
 ]
 
 [[package]]
@@ -6105,7 +6159,36 @@ dependencies = [
  "signature",
  "subtle",
  "subtle-encoding",
- "tendermint-proto",
+ "tendermint-proto 0.23.9",
+ "time 0.3.11",
+ "zeroize",
+]
+
+[[package]]
+name = "tendermint"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8b18e007aee6b81b449e92ea6e8c2dceec5e26d340a8f244450caf40938c5d9"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "ed25519",
+ "ed25519-dalek",
+ "flex-error",
+ "futures",
+ "num-traits",
+ "once_cell",
+ "prost",
+ "prost-types",
+ "serde",
+ "serde_bytes",
+ "serde_json",
+ "serde_repr",
+ "sha2 0.9.9",
+ "signature",
+ "subtle",
+ "subtle-encoding",
+ "tendermint-proto 0.25.0",
  "time 0.3.11",
  "zeroize",
 ]
@@ -6119,7 +6202,20 @@ dependencies = [
  "derive_more",
  "flex-error",
  "serde",
- "tendermint",
+ "tendermint 0.23.9",
+ "time 0.3.11",
+]
+
+[[package]]
+name = "tendermint-light-client-verifier"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "516a490fd9a3a584fab43b634bedbbc00bc6844e65ea1b54b77d59da6fee1d4e"
+dependencies = [
+ "derive_more",
+ "flex-error",
+ "serde",
+ "tendermint 0.25.0",
  "time 0.3.11",
 ]
 
@@ -6128,6 +6224,24 @@ name = "tendermint-proto"
 version = "0.23.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68ce80bf536476db81ecc9ebab834dc329c9c1509a694f211a73858814bfe023"
+dependencies = [
+ "bytes",
+ "flex-error",
+ "num-derive",
+ "num-traits",
+ "prost",
+ "prost-types",
+ "serde",
+ "serde_bytes",
+ "subtle-encoding",
+ "time 0.3.11",
+]
+
+[[package]]
+name = "tendermint-proto"
+version = "0.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "41d7f0f8cba8816446b330eeb25f73c3ba7cb9b261677bf78e6ea560b8e1880b"
 dependencies = [
  "bytes",
  "flex-error",
@@ -6153,7 +6267,7 @@ dependencies = [
  "serde_json",
  "simple-error",
  "tempfile",
- "tendermint",
+ "tendermint 0.23.9",
  "time 0.3.11",
 ]
 
