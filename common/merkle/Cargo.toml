@@ -9,7 +9,7 @@ edition = "2021"
 cita_trie = "3.0"
 hasher = "0.1"
 rlp = "0.5"
-static_merkle_tree = "1.1.0"
+static_merkle_tree = "1.1"
 
 protocol = { path = "../../protocol", package = "axon-protocol" }
 
