@@ -15,7 +15,7 @@ use common_apm::Instant;
 use common_apm_derive::trace_span;
 use common_crypto::BlsPublicKey;
 use common_logger::{json, log};
-use common_merkle::Merkle;
+use common_merkle::TrieMerkle;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
     Block, Bytes, ExecResp, Hash, Hasher, Hex, Log, MerkleRoot, Metadata, Proof, Proposal, Receipt,
@@ -76,9 +76,9 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             )
             .await?;
         let signed_txs = self.adapter.get_full_txs(ctx.clone(), &txs.hashes).await?;
-        let order_root = if !txs.hashes.is_empty() {
-            Merkle::from_hashes(txs.hashes.clone())
-                .get_root_hash()
+        let txs_root = if !txs.hashes.is_empty() {
+            TrieMerkle::from_iter(txs.hashes.iter().enumerate())
+                .root_hash()
                 .unwrap_or_default()
         } else {
             RLP_NULL
@@ -87,7 +87,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         let proposal = Proposal {
             prev_hash:                  status.prev_hash,
             proposer:                   self.node_info.self_address.0,
-            transactions_root:          order_root,
+            transactions_root:          txs_root,
             signed_txs_hash:            digest_signed_transactions(&signed_txs),
             timestamp:                  time_now(),
             number:                     next_number,
@@ -553,8 +553,8 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         proposal: &Proposal,
         signed_txs: &[SignedTransaction],
     ) -> ProtocolResult<()> {
-        let order_root = Merkle::from_hashes(proposal.tx_hashes.clone())
-            .get_root_hash()
+        let txs_root = TrieMerkle::from_iter(proposal.tx_hashes.iter().enumerate())
+            .root_hash()
             .unwrap_or(RLP_NULL);
 
         let stxs_hash = Hasher::digest(rlp::encode_list(signed_txs));
@@ -567,9 +567,9 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             .into());
         }
 
-        if order_root != proposal.transactions_root {
+        if txs_root != proposal.transactions_root {
             return Err(ConsensusError::InvalidOrderRoot {
-                expect: order_root,
+                expect: txs_root,
                 actual: proposal.transactions_root,
             }
             .into());

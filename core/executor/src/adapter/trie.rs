@@ -7,20 +7,16 @@ use protocol::codec::hex_encode;
 use protocol::types::{Bytes, MerkleRoot};
 use protocol::{Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
-lazy_static::lazy_static! {
-    static ref HASHER_INST: Arc<HasherKeccak> = Arc::new(HasherKeccak::new());
-}
-
 pub struct MPTTrie<DB: TrieDB>(PatriciaTrie<DB, HasherKeccak>);
 
 impl<DB: TrieDB> MPTTrie<DB> {
     pub fn new(db: Arc<DB>) -> Self {
-        MPTTrie(PatriciaTrie::new(db, Arc::clone(&HASHER_INST)))
+        MPTTrie(PatriciaTrie::new(db, Arc::new(HasherKeccak::new())))
     }
 
     pub fn from_root(root: MerkleRoot, db: Arc<DB>) -> ProtocolResult<Self> {
         Ok(MPTTrie(
-            PatriciaTrie::from(db, Arc::clone(&HASHER_INST), root.as_bytes())
+            PatriciaTrie::from(db, Arc::new(HasherKeccak::new()), root.as_bytes())
                 .map_err(MPTTrieError::from)?,
         ))
     }

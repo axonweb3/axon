@@ -17,12 +17,13 @@ pub use crate::utils::{
 };
 
 use std::collections::BTreeMap;
+use std::iter::FromIterator;
 
 use arc_swap::ArcSwap;
 use evm::executor::stack::{MemoryStackState, PrecompileFn, StackExecutor, StackSubstateMetadata};
 use evm::CreateScheme;
 
-use common_merkle::Merkle;
+use common_merkle::TrieMerkle;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{ApplyBackend, Backend, Executor, ExecutorAdapter as Adapter};
 use protocol::types::{
@@ -168,8 +169,8 @@ impl Executor for AxonExecutor {
 
         ExecResp {
             state_root:   new_state_root,
-            receipt_root: Merkle::from_hashes(hashes)
-                .get_root_hash()
+            receipt_root: TrieMerkle::from_iter(hashes.iter().enumerate())
+                .root_hash()
                 .unwrap_or_default(),
             gas_used:     gas,
             tx_resp:      res,

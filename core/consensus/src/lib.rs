@@ -186,6 +186,9 @@ pub enum ConsensusError {
 
     #[display(fmt = "Confused metadata range [{}, {})!", _0, _1)]
     ConfusedMetadata(u64, u64),
+
+    #[display(fmt = "Build trie merkle tree error {}", _0)]
+    BuildMerkle(String),
 }
 
 #[derive(Debug, Display)]
