@@ -6,7 +6,7 @@ edition = "2021"
 
 [dependencies]
 ibc = "0.19"
-ibc-proto = { version = "0.20", features = ["server"] }
+ibc-proto = { version = "0.22", features = ["server"] }
 log = "0.4"
 tonic = { version = "0.8", features = ["tls", "tls-roots"] }
 
