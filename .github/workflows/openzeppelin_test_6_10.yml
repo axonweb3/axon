@@ -25,7 +25,7 @@ jobs:
         if: contains(github.event_name, 'workflow_dispatch') &&
             github.repository_owner == 'axonweb3'
         id: generate_axon_bot_token
-        uses: wow-actions/use-app-token@v1
+        uses: wow-actions/use-app-token@v2
         with:
           app_id: ${{ secrets.AXON_BOT_APP_ID }}
           private_key: ${{ secrets.AXON_BOT_PRIVATE_KEY }}
@@ -144,7 +144,7 @@ jobs:
     steps:
       - name: Generate axon-bot token
         id: generate_axon_bot_token
-        uses: wow-actions/use-app-token@v1
+        uses: wow-actions/use-app-token@v2
         with:
           app_id: ${{ secrets.AXON_BOT_APP_ID }}
           private_key: ${{ secrets.AXON_BOT_PRIVATE_KEY }}
