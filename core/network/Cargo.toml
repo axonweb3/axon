@@ -27,4 +27,4 @@ common-apm-derive = { path = "../../common/apm-derive" }
 protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [dev-dependencies]
-env_logger = "0.9"
+env_logger = "0.10"

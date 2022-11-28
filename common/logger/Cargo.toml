@@ -9,7 +9,7 @@ edition = "2021"
 anyhow = "1.0"
 chrono = "0.4"
 creep = "0.2"
-env_logger = "0.9"
+env_logger = "0.10"
 json = "0.12"
 log = "0.4"
 # Turn off gzip feature, it hurts performance. For more information, reference
