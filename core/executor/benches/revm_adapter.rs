@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use evm::{ExitReason, ExitSucceed};
 use hashbrown::HashMap;
-use primitive_types::{H160, H256, U256};
 use revm::{AccountInfo, Bytecode, Database, DatabaseCommit};
 
 use common_merkle::TrieMerkle;
@@ -10,7 +9,7 @@ use core_executor::{code_address, MPTTrie};
 use protocol::traits::{Context, Storage};
 use protocol::types::{
     Account, Address, Bytes, ExecResp, ExecutorContext, Hasher, Proposal, SignedTransaction,
-    TransactionAction, TxResp, NIL_DATA, RLP_NULL,
+    TransactionAction, TxResp, H160, H256, NIL_DATA, RLP_NULL, U256,
 };
 use protocol::{codec::ProtocolCodec, ProtocolError};
 
@@ -53,7 +52,7 @@ where
         Ok(Some(Account::decode(raw).map(|a| AccountInfo {
             balance:   U256(a.balance.0),
             nonce:     a.nonce.as_u64(),
-            code_hash: a.code_hash.0.into(),
+            code_hash: a.code_hash,
             code:      None,
         })?))
     }
@@ -110,7 +109,7 @@ where
             .map(|b| Proposal::from(&b).hash())
             .unwrap_or_default();
 
-        Ok(res.0.into())
+        Ok(res)
     }
 }
 
@@ -144,7 +143,6 @@ where
                 let _ =
                     storage_trie.insert(u256_to_u8_slice(&k), u256_to_u8_slice(&v.present_value()));
             });
-            let code_addr = protocol::types::H160::from(addr.0);
 
             let code_hash = if let Some(code) = change.info.code {
                 let code_hash = change.info.code_hash;
@@ -154,21 +152,21 @@ where
                         storage,
                         insert_code,
                         Context::new(),
-                        code_addr.into(),
-                        code_hash.0.into(),
+                        addr.into(),
+                        code_hash,
                         code.bytes().clone()
                     );
                 }
                 code_hash
             } else {
-                NIL_DATA.0.into()
+                NIL_DATA
             };
 
             let new_account = Account {
-                nonce:        change.info.nonce.into(),
-                balance:      change.info.balance.as_u128().into(),
+                nonce: change.info.nonce.into(),
+                balance: change.info.balance,
                 storage_root: storage_trie.commit().unwrap(),
-                code_hash:    code_hash.0.into(),
+                code_hash,
             };
 
             let account_bytes = new_account.encode().unwrap();
@@ -233,7 +231,7 @@ fn set_revm<T: Database>(
 ) {
     evm.env.tx.gas_limit = gas_limit;
     if let Some(caller) = from {
-        evm.env.tx.caller = caller.0.into();
+        evm.env.tx.caller = caller;
     }
     evm.env.tx.data = Bytes::from(data);
     evm.env.tx.value = value;
@@ -292,16 +290,16 @@ where
             .db
             .as_mut()
             .unwrap()
-            .basic(tx.sender.0.into())
+            .basic(tx.sender)
             .unwrap()
             .unwrap_or_default()
             .nonce;
         set_revm(
             evm,
             tx.transaction.unsigned.gas_limit().as_u64(),
-            Some(tx.sender.0.into()),
-            tx.transaction.unsigned.to().map(|t| t.0.into()),
-            (*tx.transaction.unsigned.value()).as_u128().into(),
+            Some(tx.sender),
+            tx.transaction.unsigned.to(),
+            *tx.transaction.unsigned.value(),
             tx.transaction.unsigned.data().to_vec(),
         );
         let res = evm.transact_commit();
