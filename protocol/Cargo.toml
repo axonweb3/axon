@@ -32,6 +32,7 @@ rlp = "0.5"
 serde = { version = "1.0", features = ["derive"] }
 tendermint-proto = { version = "0.23", optional = true }
 tokio = { version = "1.21", features = ["full"] }
+trie = { package = "cita_trie", version = "4.0" }
 
 [dev-dependencies]
 getrandom = "0.2"

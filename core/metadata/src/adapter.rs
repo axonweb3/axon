@@ -3,7 +3,7 @@ use std::sync::Arc;
 use core_executor::{AxonExecutor, AxonExecutorAdapter};
 use protocol::traits::{Context, Executor, MetadataControlAdapter, Storage};
 use protocol::types::{Header, TxResp, H160};
-use protocol::ProtocolResult;
+use protocol::{trie, ProtocolResult};
 
 pub struct MetadataAdapterImpl<S, DB> {
     storage: Arc<S>,
@@ -13,7 +13,7 @@ pub struct MetadataAdapterImpl<S, DB> {
 impl<S, DB> MetadataControlAdapter for MetadataAdapterImpl<S, DB>
 where
     S: Storage + 'static,
-    DB: cita_trie::DB + 'static,
+    DB: trie::DB + 'static,
 {
     fn call_evm(
         &self,
@@ -43,7 +43,7 @@ where
 impl<S, DB> MetadataAdapterImpl<S, DB>
 where
     S: Storage + 'static,
-    DB: cita_trie::DB + 'static,
+    DB: trie::DB + 'static,
 {
     pub fn new(storage: Arc<S>, trie_db: Arc<DB>) -> Self {
         MetadataAdapterImpl { storage, trie_db }

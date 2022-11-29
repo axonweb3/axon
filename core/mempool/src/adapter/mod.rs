@@ -25,8 +25,8 @@ use protocol::types::{
     recover_intact_pub_key, BatchSignedTxs, Bytes, Hash, MerkleRoot, SignedTransaction, H160, U256,
 };
 use protocol::{
-    async_trait, codec::ProtocolCodec, lazy::CURRENT_STATE_ROOT, tokio, Display, ProtocolError,
-    ProtocolErrorKind, ProtocolResult,
+    async_trait, codec::ProtocolCodec, lazy::CURRENT_STATE_ROOT, tokio, trie, Display,
+    ProtocolError, ProtocolErrorKind, ProtocolResult,
 };
 
 use crate::adapter::message::{MsgPullTxs, END_GOSSIP_NEW_TXS, RPC_PULL_TXS};
@@ -133,7 +133,7 @@ where
     C: Crypto,
     N: Rpc + PeerTrust + Gossip + Clone + Unpin + 'static,
     S: Storage,
-    DB: cita_trie::DB + 'static,
+    DB: trie::DB + 'static,
     M: MetadataControl + 'static,
     I: Interoperation + 'static,
 {
@@ -208,7 +208,7 @@ where
     C: Crypto + Send + Sync + 'static,
     N: Rpc + PeerTrust + Gossip + Clone + Unpin + 'static,
     S: Storage + 'static,
-    DB: cita_trie::DB + 'static,
+    DB: trie::DB + 'static,
     M: MetadataControl + 'static,
     I: Interoperation + 'static,
 {

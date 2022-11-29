@@ -6,7 +6,6 @@ edition = "2021"
 
 [dependencies]
 arc-swap = "1.5"
-cita_trie = "3.0"
 ckb-hash = "0.105"
 ckb-jsonrpc-types = "0.105"
 ckb-sdk = "2.3"

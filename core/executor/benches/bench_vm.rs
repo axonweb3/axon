@@ -9,6 +9,7 @@ use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie};
 use protocol::{
     codec::ProtocolCodec,
     traits::{Executor, Storage},
+    trie,
     types::{Account, Address, ExecutorContext},
 };
 
@@ -17,7 +18,7 @@ use crate::mock::{
 };
 use crate::revm_adapter::{revm_exec, RevmAdapter};
 
-trait BackendInit<S: Storage + 'static, DB: cita_trie::DB + 'static> {
+trait BackendInit<S: Storage + 'static, DB: trie::DB + 'static> {
     fn init(
         storage: S,
         db: DB,
@@ -30,7 +31,7 @@ trait BackendInit<S: Storage + 'static, DB: cita_trie::DB + 'static> {
 impl<S, DB> BackendInit<S, DB> for RevmAdapter<S, DB>
 where
     S: Storage + 'static,
-    DB: cita_trie::DB + 'static,
+    DB: trie::DB + 'static,
 {
     fn init(
         storage: S,
@@ -48,7 +49,7 @@ where
 impl<S, DB> BackendInit<S, DB> for AxonExecutorAdapter<S, DB>
 where
     S: Storage + 'static,
-    DB: cita_trie::DB + 'static,
+    DB: trie::DB + 'static,
 {
     fn init(
         storage: S,

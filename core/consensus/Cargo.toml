@@ -6,7 +6,7 @@ edition = "2021"
 
 [dependencies]
 arc-swap = "1.5"
-cita_trie = "3.0"
+
 creep = "0.2"
 futures = { version = "0.3", features = ["async-await"] }
 json = "0.12"

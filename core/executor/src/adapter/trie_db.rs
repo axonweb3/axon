@@ -8,7 +8,7 @@ use rocksdb::{FullOptions, Options, WriteBatch, DB};
 use common_apm::metrics::storage::{on_storage_get_state, on_storage_put_state};
 use common_apm::Instant;
 use common_config_parser::types::ConfigRocksDB;
-use protocol::{Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
+use protocol::{trie, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 // 49999 is the largest prime number within 50000.
 const RAND_SEED: u64 = 49999;
@@ -45,7 +45,7 @@ impl RocksTrieDB {
     }
 
     fn inner_get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, RocksTrieDBError> {
-        use cita_trie::DB;
+        use trie::DB;
 
         let res = { self.cache.read().get(key).cloned() };
 
@@ -78,7 +78,7 @@ impl RocksTrieDB {
     }
 }
 
-impl cita_trie::DB for RocksTrieDB {
+impl trie::DB for RocksTrieDB {
     type Error = RocksTrieDBError;
 
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, Self::Error> {
@@ -239,8 +239,8 @@ fn to_store_err(e: rocksdb::Error) -> RocksTrieDBError {
 
 #[cfg(test)]
 mod tests {
-    use cita_trie::DB;
     use getrandom::getrandom;
+    use trie::DB;
 
     use super::*;
 

@@ -239,6 +239,7 @@ dependencies = [
  "async-trait",
  "bincode",
  "bytes",
+ "cita_trie",
  "ckb-hash",
  "ckb-jsonrpc-types",
  "ckb-sdk",
@@ -853,9 +854,9 @@ dependencies = [
 
 [[package]]
 name = "cita_trie"
-version = "3.0.2"
+version = "4.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "20bef4b9e0e4b3c642551260ee5284d6756dfa8c845fba3bf043bd836b16ebdc"
+checksum = "afe7baab47f510f52ca8dc9c0eb9082020c627c7f22285bea30edc3511f7ee29"
 dependencies = [
  "hasher",
  "parking_lot 0.12.1",
@@ -1436,7 +1437,6 @@ name = "common-merkle"
 version = "0.2.1"
 dependencies = [
  "axon-protocol",
- "cita_trie",
  "criterion",
  "hasher",
  "rand 0.7.3",
@@ -1475,7 +1475,6 @@ version = "0.1.0"
 dependencies = [
  "axon-protocol",
  "beef",
- "cita_trie",
  "common-apm",
  "common-config-parser",
  "core-consensus",
@@ -1510,7 +1509,6 @@ dependencies = [
  "arc-swap",
  "axon-protocol",
  "bit-vec",
- "cita_trie",
  "common-apm",
  "common-apm-derive",
  "common-crypto",
@@ -1543,7 +1541,6 @@ version = "0.1.0"
 dependencies = [
  "arc-swap",
  "axon-protocol",
- "cita_trie",
  "ckb-hash",
  "ckb-jsonrpc-types",
  "ckb-sdk",
@@ -1579,7 +1576,6 @@ dependencies = [
  "axon-protocol",
  "az",
  "bytemuck",
- "cita_trie",
  "ckb-jsonrpc-types",
  "ckb-rocksdb",
  "ckb-types",
@@ -1669,7 +1665,6 @@ name = "core-mempool"
 version = "0.1.0"
 dependencies = [
  "axon-protocol",
- "cita_trie",
  "common-apm",
  "common-apm-derive",
  "common-config-parser",
@@ -1694,7 +1689,6 @@ version = "0.1.0"
 dependencies = [
  "arc-swap",
  "axon-protocol",
- "cita_trie",
  "common-apm",
  "core-executor",
  "core-storage",
@@ -1754,7 +1748,6 @@ version = "0.1.0"
 dependencies = [
  "axon-protocol",
  "backtrace",
- "cita_trie",
  "common-apm",
  "common-apm-derive",
  "common-config-parser",

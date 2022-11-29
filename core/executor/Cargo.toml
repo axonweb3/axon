@@ -8,7 +8,6 @@ version = "0.1.0"
 arc-swap = "1.5"
 az = "1.2"
 bn = { package = "substrate-bn", version = "0.6" }
-cita_trie = "3.0"
 
 common-apm = { path = "../../common/apm" }
 common-config-parser = { path = "../../common/config-parser" }
@@ -33,7 +32,6 @@ sha2 = "0.10"
 [dev-dependencies]
 bytemuck = "1.12"
 ckb-jsonrpc-types = "0.105"
-
 ckb-types = "0.105"
 common-crypto = { path = "../../common/crypto" }
 core-cross-client = { path = "../cross-client" }

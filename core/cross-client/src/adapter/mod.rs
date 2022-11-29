@@ -8,6 +8,7 @@ use ckb_jsonrpc_types::OutputsValidator;
 use ckb_types::core::TransactionView;
 
 use common_crypto::{BlsPublicKey, BlsSignature};
+use core_executor::{AxonExecutor, AxonExecutorAdapter};
 use protocol::traits::{
     Backend, CkbClient, Context, CrossAdapter, Executor, MemPool, MessageTarget, MetadataControl,
     Storage, TxAssembler,
@@ -15,9 +16,7 @@ use protocol::traits::{
 use protocol::types::{
     Metadata, RequestTxHashes, SignedTransaction, Transfer, TxResp, H160, H256, U256,
 };
-use protocol::{async_trait, lazy::CURRENT_STATE_ROOT, ProtocolResult};
-
-use core_executor::{AxonExecutor, AxonExecutorAdapter};
+use protocol::{async_trait, lazy::CURRENT_STATE_ROOT, trie, ProtocolResult};
 
 pub trait CrossChainDB: Sync + Send {
     fn get(&self, key: &[u8]) -> ProtocolResult<Option<Vec<u8>>>;
@@ -47,7 +46,7 @@ where
     D: MetadataControl + 'static,
     S: Storage + 'static,
     A: TxAssembler + 'static,
-    TrieDB: cita_trie::DB + 'static,
+    TrieDB: trie::DB + 'static,
     DB: CrossChainDB + 'static,
     Rpc: CkbClient + 'static,
 {
@@ -181,7 +180,7 @@ where
     D: MetadataControl + 'static,
     S: Storage + 'static,
     A: TxAssembler + 'static,
-    TrieDB: cita_trie::DB + 'static,
+    TrieDB: trie::DB + 'static,
     DB: CrossChainDB + 'static,
     Rpc: CkbClient + 'static,
 {
