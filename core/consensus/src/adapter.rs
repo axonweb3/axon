@@ -18,7 +18,7 @@ use protocol::types::{
     BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Header, Hex, Log, MerkleRoot,
     Metadata, PackedTxHashes, Proof, Proposal, Receipt, SignedTransaction, Validator, U256,
 };
-use protocol::{async_trait, tokio::task, ProtocolResult};
+use protocol::{async_trait, tokio::task, trie, ProtocolResult};
 
 use crate::consensus::gen_overlord_status;
 use crate::message::{
@@ -36,7 +36,7 @@ pub struct OverlordConsensusAdapter<
     S: Storage,
     CS: CrossChain,
     MT: MetadataControl,
-    DB: cita_trie::DB,
+    DB: trie::DB,
 > {
     network: Arc<N>,
     mempool: Arc<M>,
@@ -57,7 +57,7 @@ where
     S: Storage + 'static,
     CS: CrossChain + 'static,
     MT: MetadataControl + 'static,
-    DB: cita_trie::DB + 'static,
+    DB: trie::DB + 'static,
 {
     #[trace_span(kind = "consensus.adapter")]
     async fn get_txs_from_mempool(
@@ -136,7 +136,7 @@ where
     S: Storage + 'static,
     CS: CrossChain + 'static,
     MT: MetadataControl + 'static,
-    DB: cita_trie::DB + 'static,
+    DB: trie::DB + 'static,
 {
     #[trace_span(kind = "consensus.adapter")]
     fn update_status(
@@ -239,7 +239,7 @@ where
     S: Storage + 'static,
     CS: CrossChain + 'static,
     MT: MetadataControl + 'static,
-    DB: cita_trie::DB + 'static,
+    DB: trie::DB + 'static,
 {
     /// Save a block to the database.
     #[trace_span(kind = "consensus.adapter", logs = "{txs_len: block.tx_hashes.len()}")]
@@ -635,7 +635,7 @@ where
     S: Storage + 'static,
     CS: CrossChain + 'static,
     MT: MetadataControl + 'static,
-    DB: cita_trie::DB + 'static,
+    DB: trie::DB + 'static,
 {
     pub fn new(
         network: Arc<N>,

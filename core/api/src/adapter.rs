@@ -7,7 +7,7 @@ use protocol::types::{
     Header, Proposal, Receipt, SignedTransaction, TxResp, H160, MAX_BLOCK_GAS_LIMIT, NIL_DATA,
     RLP_NULL, U256,
 };
-use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
+use protocol::{async_trait, codec::ProtocolCodec, trie, ProtocolResult};
 
 use crate::APIError;
 
@@ -23,7 +23,7 @@ impl<M, S, DB, Net> DefaultAPIAdapter<M, S, DB, Net>
 where
     M: MemPool + 'static,
     S: Storage + 'static,
-    DB: cita_trie::DB + 'static,
+    DB: trie::DB + 'static,
     Net: Network + 'static,
 {
     pub fn new(mempool: Arc<M>, storage: Arc<S>, trie_db: Arc<DB>, net: Arc<Net>) -> Self {
@@ -60,7 +60,7 @@ impl<M, S, DB, Net> APIAdapter for DefaultAPIAdapter<M, S, DB, Net>
 where
     M: MemPool + 'static,
     S: Storage + 'static,
-    DB: cita_trie::DB + 'static,
+    DB: trie::DB + 'static,
     Net: Network + 'static,
 {
     async fn insert_signed_txs(

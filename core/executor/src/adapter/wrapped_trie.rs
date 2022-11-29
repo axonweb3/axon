@@ -1,11 +1,12 @@
 use std::sync::Arc;
 
-use cita_trie::{PatriciaTrie, Trie, TrieError, DB as TrieDB};
 use hasher::HasherKeccak;
 
-use protocol::codec::hex_encode;
+use protocol::trie::{PatriciaTrie, Trie, TrieError, DB as TrieDB};
 use protocol::types::{Bytes, MerkleRoot};
-use protocol::{Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
+use protocol::{
+    codec::hex_encode, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
+};
 
 pub struct MPTTrie<DB: TrieDB>(PatriciaTrie<DB, HasherKeccak>);
 

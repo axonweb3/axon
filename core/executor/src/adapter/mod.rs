@@ -1,8 +1,8 @@
-mod trie;
 mod trie_db;
+mod wrapped_trie;
 
-pub use trie::MPTTrie;
 pub use trie_db::RocksTrieDB;
+pub use wrapped_trie::MPTTrie;
 
 use std::sync::Arc;
 
@@ -13,7 +13,7 @@ use protocol::types::{
     Account, Bytes, ExecutorContext, Hasher, Log, MerkleRoot, Proposal, H160, H256, NIL_DATA,
     RLP_NULL, U256,
 };
-use protocol::{codec::ProtocolCodec, ProtocolResult};
+use protocol::{codec::ProtocolCodec, trie, ProtocolResult};
 
 const GET_BLOCK_HASH_NUMBER_RANGE: u64 = 256;
 
@@ -28,7 +28,7 @@ macro_rules! blocking_async {
     }};
 }
 
-pub struct AxonExecutorAdapter<S, DB: cita_trie::DB> {
+pub struct AxonExecutorAdapter<S, DB: trie::DB> {
     exec_ctx: ExecutorContext,
     trie:     MPTTrie<DB>,
     storage:  Arc<S>,
@@ -38,7 +38,7 @@ pub struct AxonExecutorAdapter<S, DB: cita_trie::DB> {
 impl<S, DB> ExecutorAdapter for AxonExecutorAdapter<S, DB>
 where
     S: Storage + 'static,
-    DB: cita_trie::DB + 'static,
+    DB: trie::DB + 'static,
 {
     fn get_ctx(&self) -> ExecutorContext {
         self.exec_ctx.clone()
@@ -89,7 +89,7 @@ where
 impl<S, DB> Backend for AxonExecutorAdapter<S, DB>
 where
     S: Storage + 'static,
-    DB: cita_trie::DB + 'static,
+    DB: trie::DB + 'static,
 {
     fn gas_price(&self) -> U256 {
         self.exec_ctx.gas_price
@@ -218,7 +218,7 @@ where
 impl<S, DB> ApplyBackend for AxonExecutorAdapter<S, DB>
 where
     S: Storage + 'static,
-    DB: cita_trie::DB + 'static,
+    DB: trie::DB + 'static,
 {
     fn apply<A, I, L>(&mut self, values: A, logs: L, delete_empty: bool)
     where
@@ -253,7 +253,7 @@ where
 impl<S, DB> AxonExecutorAdapter<S, DB>
 where
     S: Storage + 'static,
-    DB: cita_trie::DB + 'static,
+    DB: trie::DB + 'static,
 {
     pub fn new(db: Arc<DB>, storage: Arc<S>, exec_ctx: ExecutorContext) -> ProtocolResult<Self> {
         let trie = MPTTrie::new(Arc::clone(&db));

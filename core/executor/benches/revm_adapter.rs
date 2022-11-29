@@ -11,7 +11,7 @@ use protocol::types::{
     Account, Address, Bytes, ExecResp, ExecutorContext, Hasher, Proposal, SignedTransaction,
     TransactionAction, TxResp, H160, H256, NIL_DATA, RLP_NULL, U256,
 };
-use protocol::{codec::ProtocolCodec, ProtocolError};
+use protocol::{codec::ProtocolCodec, trie, ProtocolError};
 
 lazy_static::lazy_static! {
     static ref DISTRIBUTE_ADDRESS: Address = Address::from_hex("0x35e70c3f5a794a77efc2ec5ba964bffcc7fd2c0a").unwrap();
@@ -28,7 +28,7 @@ macro_rules! blocking_async {
     }};
 }
 
-pub struct RevmAdapter<S, DB: cita_trie::DB> {
+pub struct RevmAdapter<S, DB: trie::DB> {
     exec_ctx: ExecutorContext,
     trie:     MPTTrie<DB>,
     storage:  Arc<S>,
@@ -38,7 +38,7 @@ pub struct RevmAdapter<S, DB: cita_trie::DB> {
 impl<S, DB> Database for RevmAdapter<S, DB>
 where
     S: Storage + 'static,
-    DB: cita_trie::DB + 'static,
+    DB: trie::DB + 'static,
 {
     type Error = ProtocolError;
 
@@ -116,7 +116,7 @@ where
 impl<S, DB> DatabaseCommit for RevmAdapter<S, DB>
 where
     S: Storage + 'static,
-    DB: cita_trie::DB + 'static,
+    DB: trie::DB + 'static,
 {
     fn commit(&mut self, changes: HashMap<H160, revm::Account>) {
         changes.into_iter().for_each(|(addr, change)| {
@@ -180,7 +180,7 @@ where
 impl<S, DB> RevmAdapter<S, DB>
 where
     S: Storage + 'static,
-    DB: cita_trie::DB + 'static,
+    DB: trie::DB + 'static,
 {
     pub fn init_mpt(&mut self, account: Account, addr: Address) {
         let mut mpt = MPTTrie::new(Arc::clone(&self.db));
@@ -278,7 +278,7 @@ pub fn revm_exec<S, DB>(
 ) -> ExecResp
 where
     S: Storage + 'static,
-    DB: cita_trie::DB + 'static,
+    DB: trie::DB + 'static,
 {
     let txs_len = txs.len();
     let mut tx_outputs = Vec::with_capacity(txs_len);

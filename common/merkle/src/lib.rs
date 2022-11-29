@@ -2,11 +2,11 @@ use std::error::Error;
 use std::iter::FromIterator;
 use std::sync::Arc;
 
-use cita_trie::{MemoryDB, PatriciaTrie, Trie};
 use hasher::HasherKeccak;
 use static_merkle_tree::Tree;
 
 use protocol::codec::ProtocolCodec;
+use protocol::trie::{MemoryDB, PatriciaTrie, Trie};
 use protocol::types::{Bytes, Hash, Hasher};
 
 #[derive(Debug, Clone)]
