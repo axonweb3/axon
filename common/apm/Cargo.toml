@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 arc-swap = "1.5"
-axum = "0.5"
+axum = "0.6"
 beef = "0.5"
 derive_more = "0.99"
 hyper = { version = "0.14", features = ["http1", "server"] }
