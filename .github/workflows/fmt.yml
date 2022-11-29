@@ -20,7 +20,7 @@ jobs:
         if: contains(github.event_name, 'workflow_dispatch') &&
             github.repository_owner == 'axonweb3'
         id: generate_axon_bot_token
-        uses: wow-actions/use-app-token@v1
+        uses: wow-actions/use-app-token@v2
         with:
           app_id: ${{ secrets.AXON_BOT_APP_ID }}
           private_key: ${{ secrets.AXON_BOT_PRIVATE_KEY }}
@@ -30,7 +30,7 @@ jobs:
         uses: actions/github-script@v6
         id: get_sha
         with:
-          github-token: ${{ steps.generate_axon_bot_token.outputs.token }}
+          github-token: ${{ steps.generate_axon_bot_token.outputs.BOT_TOKEN }}
           script: |
             const dispatch = JSON.parse(`${{ github.event.inputs.dispatch }}`);
             const pr = (
@@ -83,7 +83,7 @@ jobs:
     steps:
       - name: Generate axon-bot token
         id: generate_axon_bot_token
-        uses: wow-actions/use-app-token@v1
+        uses: wow-actions/use-app-token@v2
         with:
           app_id: ${{ secrets.AXON_BOT_APP_ID }}
           private_key: ${{ secrets.AXON_BOT_PRIVATE_KEY }}
@@ -92,7 +92,7 @@ jobs:
       - uses: actions/github-script@v6
         if: ${{ always() }}
         with:
-          github-token: ${{ steps.generate_axon_bot_token.outputs.token }}
+          github-token: ${{ steps.generate_axon_bot_token.outputs.BOT_TOKEN }}
           script: |
             github.rest.repos.createCommitStatus({
               state: '${{ job.status }}',

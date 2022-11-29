@@ -20,7 +20,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.TOKEN }}
       - name: Generate axon-bot token
         id: generate_axon_bot_token
-        uses: wow-actions/use-app-token@v1
+        uses: wow-actions/use-app-token@v2
         with:
           app_id: ${{ secrets.AXON_BOT_APP_ID }}
           private_key: ${{ secrets.AXON_BOT_PRIVATE_KEY }}
@@ -30,7 +30,7 @@ jobs:
         id: dispatch
         uses: actions/github-script@v6
         with:
-          github-token: ${{ steps.generate_axon_bot_token.outputs.token }}
+          github-token: ${{ steps.generate_axon_bot_token.outputs.BOT_TOKEN }}
           script: |
             const dispatch = {
               comment_body: `${{ github.event.comment.body }}`,
@@ -247,7 +247,7 @@ jobs:
         id: post_workflow_run_comment
         uses: actions/github-script@v6
         with:
-          github-token: ${{ steps.generate_axon_bot_token.outputs.token }}
+          github-token: ${{ steps.generate_axon_bot_token.outputs.BOT_TOKEN }}
           script: |
             console.log(`${{ steps.escape_multiple_lines_test_inputs.outputs.result }}`);
             const dispatch = {
