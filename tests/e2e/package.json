@@ -9,7 +9,7 @@
     "@chainsafe/dappeteer": "https://github.com/hongda3141/dappeteer.git#v2.4.0-rc1",
     "ethereumjs-tx": "^2.1.2",
     "puppeteer": "^19.2.2",
-    "web3": "^1.8.0",
+    "web3": "^1.8.1",
     "xhr2": "^0.2.1"
   },
   "devDependencies": {
