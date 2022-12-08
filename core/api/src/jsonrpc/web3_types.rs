@@ -289,7 +289,7 @@ impl From<Block> for Web3Block {
             receipts_root:     b.header.receipts_root,
             miner:             b.header.proposer,
             difficulty:        b.header.difficulty,
-            total_difficulty:  None,
+            total_difficulty:  Some(U256::zero()),
             seal_fields:       vec![],
             base_fee_per_gas:  b.header.base_fee_per_gas,
             extra_data:        Hex::encode(&b.header.extra_data),
