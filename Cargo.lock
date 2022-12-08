@@ -248,7 +248,7 @@ dependencies = [
  "creep",
  "derive_more",
  "ethereum",
- "ethereum-types 0.14.0",
+ "ethereum-types 0.14.1",
  "evm",
  "faster-hex",
  "getrandom 0.2.8",
@@ -2345,7 +2345,7 @@ version = "18.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7413c5f74cc903ea37386a8965a936cbeb334bd270862fdece542c1b2dcbc898"
 dependencies = [
- "ethereum-types 0.14.0",
+ "ethereum-types 0.14.1",
  "hex",
  "once_cell",
  "regex",
@@ -2408,7 +2408,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a89fb87a9e103f71b903b80b670200b54cc67a07578f070681f1fffb7396fb7"
 dependencies = [
  "bytes",
- "ethereum-types 0.14.0",
+ "ethereum-types 0.14.1",
  "hash-db",
  "hash256-std-hasher",
  "parity-scale-codec",
@@ -2435,9 +2435,9 @@ dependencies = [
 
 [[package]]
 name = "ethereum-types"
-version = "0.14.0"
+version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81224dc661606574f5a0f28c9947d0ee1d93ff11c5f1c4e7272f52e8c0b5483c"
+checksum = "02d215cbf040552efcbe99a38372fe80ab9d00268e20012b79fcd0f073edd8ee"
 dependencies = [
  "ethbloom 0.13.0",
  "fixed-hash 0.8.0",
@@ -4316,7 +4316,7 @@ dependencies = [
  "arrayvec",
  "auto_impl",
  "bytes",
- "ethereum-types 0.14.0",
+ "ethereum-types 0.14.1",
  "open-fastrlp-derive",
 ]
 
