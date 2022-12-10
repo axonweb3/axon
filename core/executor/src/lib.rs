@@ -4,14 +4,13 @@ pub mod adapter;
 #[cfg(test)]
 mod debugger;
 mod precompiles;
-mod system;
+pub mod system_contract;
 #[cfg(test)]
 mod tests;
 mod utils;
 mod vm;
 
 pub use crate::adapter::{AxonExecutorAdapter, MPTTrie, RocksTrieDB};
-pub use crate::system::NATIVE_TOKEN_ISSUE_ADDRESS;
 pub use crate::utils::{
     code_address, decode_revert_msg, logs_bloom, DefaultFeeAllocator, FeeInlet,
 };
@@ -31,7 +30,8 @@ use protocol::types::{
     ValidatorExtend, GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160, NIL_DATA, RLP_NULL, U256,
 };
 
-use crate::{precompiles::build_precompile_set, system::SystemExecutor};
+use crate::precompiles::build_precompile_set;
+use crate::system_contract::{system_contract_dispatch, NativeTokenContract, SystemContract};
 
 lazy_static::lazy_static! {
     pub static ref FEE_ALLOCATOR: ArcSwap<Box<dyn FeeAllocate>> = ArcSwap::from_pointee(Box::new(DefaultFeeAllocator::default()));
@@ -125,8 +125,6 @@ impl Executor for AxonExecutor {
         let mut res = Vec::with_capacity(txs_len);
         let mut hashes = Vec::with_capacity(txs_len);
         let (mut gas, mut fee) = (0u64, U256::zero());
-
-        let sys_executor = SystemExecutor::new();
         let precompiles = build_precompile_set();
         let config = Config::london();
 
@@ -134,11 +132,10 @@ impl Executor for AxonExecutor {
             backend.set_gas_price(tx.transaction.unsigned.gas_price());
             backend.set_origin(tx.sender);
 
-            let mut r = if is_call_system_script(tx.transaction.unsigned.action()) {
-                sys_executor.inner_exec(backend, tx)
-            } else {
-                Self::evm_exec(backend, &config, &precompiles, tx)
-            };
+            // Execute a transaction, if system contract dispatch return None, means the
+            // transaction called EVM
+            let mut r = system_contract_dispatch(backend, tx)
+                .unwrap_or_else(|| Self::evm_exec(backend, &config, &precompiles, tx));
 
             r.logs = backend.get_logs();
             gas += r.gas_used;
@@ -291,7 +288,7 @@ impl AxonExecutor {
 
 pub fn is_call_system_script(action: &TransactionAction) -> bool {
     match action {
-        TransactionAction::Call(addr) => addr == &NATIVE_TOKEN_ISSUE_ADDRESS,
+        TransactionAction::Call(addr) => addr == &NativeTokenContract::ADDRESS,
         TransactionAction::Create => false,
     }
 }

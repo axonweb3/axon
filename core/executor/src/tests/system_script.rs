@@ -1,5 +1,5 @@
 use super::*;
-use crate::{SystemExecutor, NATIVE_TOKEN_ISSUE_ADDRESS};
+use crate::system_contract::{NativeTokenContract, SystemContract};
 
 fn mock_data(direction: u8, address: H160) -> Vec<u8> {
     let mut ret = vec![direction];
@@ -11,12 +11,12 @@ fn mock_data(direction: u8, address: H160) -> Vec<u8> {
 fn test_issue_token() {
     let vicinity = gen_vicinity();
     let mut backend = MemoryBackend::new(&vicinity, BTreeMap::new());
-    let executor = SystemExecutor::default();
+    let executor = NativeTokenContract::default();
     let addr = H160::from_str("0xf000000000000000000000000000000000000000").unwrap();
     let data = mock_data(0, addr);
-    let tx = gen_tx(addr, NATIVE_TOKEN_ISSUE_ADDRESS, 1000, data);
+    let tx = gen_tx(addr, NativeTokenContract::ADDRESS, 1000, data);
 
-    let r = executor.inner_exec(&mut backend, &tx);
+    let r = executor.exec_(&mut backend, &tx);
     assert!(r.exit_reason.is_succeed());
     assert_eq!(r.ret, rlp::encode(&U256::from(1000)).to_vec());
 
@@ -37,11 +37,11 @@ fn test_burn_token() {
     });
     let vicinity = gen_vicinity();
     let mut backend = MemoryBackend::new(&vicinity, state);
-    let executor = SystemExecutor::default();
+    let executor = NativeTokenContract::default();
     let data = mock_data(1, addr);
-    let tx = gen_tx(addr, NATIVE_TOKEN_ISSUE_ADDRESS, 1000, data);
+    let tx = gen_tx(addr, NativeTokenContract::ADDRESS, 1000, data);
 
-    let r = executor.inner_exec(&mut backend, &tx);
+    let r = executor.exec_(&mut backend, &tx);
     assert!(r.exit_reason.is_succeed());
     assert_eq!(r.ret, rlp::encode(&U256::from(1000)).to_vec());
 
@@ -62,11 +62,11 @@ fn test_burn_token_failed() {
     });
     let vicinity = gen_vicinity();
     let mut backend = MemoryBackend::new(&vicinity, state);
-    let executor = SystemExecutor::default();
+    let executor = NativeTokenContract::default();
     let data = mock_data(1, addr);
-    let tx = gen_tx(addr, NATIVE_TOKEN_ISSUE_ADDRESS, 1000, data);
+    let tx = gen_tx(addr, NativeTokenContract::ADDRESS, 1000, data);
 
-    let r = executor.inner_exec(&mut backend, &tx);
+    let r = executor.exec_(&mut backend, &tx);
     assert!(r.exit_reason.is_revert());
     assert!(r.ret.is_empty());
 

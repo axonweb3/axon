@@ -8,12 +8,12 @@ use common_crypto::{
     Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey,
     Secp256k1RecoverablePublicKey, Signature, ToPublicKey, UncompressedPublicKey,
 };
-use core_executor::NATIVE_TOKEN_ISSUE_ADDRESS;
+use core_executor::system_contract::system_contract_address;
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
 use protocol::types::{
     public_to_address, recover_intact_pub_key, Bytes, Eip1559Transaction, Hash, PackedTxHashes,
-    Public, SignedTransaction, TransactionAction, UnsignedTransaction, UnverifiedTransaction, H256,
-    U256,
+    Public, SignedTransaction, TransactionAction, UnsignedTransaction, UnverifiedTransaction, H160,
+    H256, U256,
 };
 use protocol::{async_trait, tokio, ProtocolResult};
 
@@ -26,6 +26,7 @@ pub const POOL_SIZE: usize = 100_000;
 pub const MAX_TX_SIZE: u64 = 1024; // 1KB
 pub const TIMEOUT: u64 = 1000;
 pub const TIMEOUT_GAP: u64 = 100;
+pub const NATIVE_TOKEN_ISSUE_ADDRESS: H160 = system_contract_address(0x0);
 
 pub struct HashMemPoolAdapter {
     network_txs: DashMap<Hash, SignedTransaction>,
