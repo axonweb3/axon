@@ -32,7 +32,6 @@ members = [
     "core/consensus",
     "core/cross-client",
     "core/executor",
-    "core/ibc",
     "core/mempool",
     "core/metadata",
     "core/network",
