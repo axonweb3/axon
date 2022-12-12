@@ -69,6 +69,7 @@ jobs:
           PKG_NAME="axon_${{ needs.version.outputs.tag }}_${REL_PKG%%.*}"
           mkdir "releases/$PKG_NAME"
           cp "target/${{ matrix.job.target }}/release/axon" "releases/$PKG_NAME"
+          cp "devtools/chain/config.toml" "releases/$PKG_NAME"
           cp "devtools/chain/default.db-options" "releases/$PKG_NAME"
           cp "devtools/chain/genesis_single_node.json" "releases/$PKG_NAME"
           cp "devtools/chain/nodes/genesis_multi_nodes.json" "releases/$PKG_NAME"
