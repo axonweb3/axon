@@ -6,7 +6,6 @@ version = "0.1.0"
 
 [dependencies]
 arc-swap = "1.5"
-cosmos-ibc = { package = "ibc", version = "0.19", optional = true, features = ["mocks"] }
 futures = "0.3"
 lazy_static = "1.4"
 log = "0.4"
@@ -24,9 +23,6 @@ common-crypto = { path = "../../common/crypto" }
 criterion = "0.4"
 num-traits = "0.2"
 rand = "0.7"
-
-[features]
-ibc = ["dep:cosmos-ibc", "protocol/ibc"]
 
 [[bench]]
 harness = false
