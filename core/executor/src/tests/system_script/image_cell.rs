@@ -1,0 +1,243 @@
+use ckb_types::{bytes::Bytes, packed, prelude::*};
+use ethers::abi::AbiEncode;
+
+use common_config_parser::types::ConfigRocksDB;
+use protocol::types::H256;
+
+use crate::system_contract::image_cell::{
+    image_cell_abi, CellInfo, CellKey, HeaderKey, ImageCellContract, MptConfig,
+};
+use crate::system_contract::SystemContract;
+
+use super::*;
+
+lazy_static::lazy_static! {
+    static ref MPT_ROOT_KEY: H256 = H256::default();
+}
+
+#[test]
+fn test_update() {
+    let vicinity = gen_vicinity();
+    let mut backend = MemoryBackend::new(&vicinity, BTreeMap::new());
+
+    let mpt_config: MptConfig = MptConfig {
+        path:          "./free-space/image-cell".to_owned(),
+        cache_size:    100,
+        rockdb_config: ConfigRocksDB::default(),
+    };
+
+    let executor = ImageCellContract::new(mpt_config);
+
+    test_update_first(&mut backend, &executor);
+    test_update_second(&mut backend, &executor);
+}
+
+fn test_update_first(backend: &mut MemoryBackend, executor: &ImageCellContract) {
+    let data = image_cell_abi::UpdateCall {
+        header:  prepare_header(),
+        inputs:  prepare_inputs(),
+        outputs: prepare_outputs(),
+    };
+
+    let addr = H160::from_str("0xf000000000000000000000000000000000000000").unwrap();
+    let tx = gen_tx(addr, ImageCellContract::ADDRESS, 1000, data.encode());
+
+    let r = executor.exec_(backend, &tx);
+    assert!(r.exit_reason.is_succeed());
+
+    let account = backend.state().get(&ImageCellContract::ADDRESS).unwrap();
+    assert_eq!(
+        account.storage.get(&MPT_ROOT_KEY).unwrap(),
+        &executor.get_root().unwrap()
+    );
+
+    let header_key = HeaderKey {
+        block_number: 0x1,
+        block_hash:   [5u8; 32].pack().as_bytes(),
+    };
+    let get_header = executor.get(&rlp::encode(&header_key)).unwrap().unwrap();
+    check_header(&get_header);
+
+    let cell_key = CellKey {
+        tx_hash: [7u8; 32].pack().as_bytes(),
+        index:   0x0,
+    };
+    let get_cell = executor.get(&rlp::encode(&cell_key)).unwrap().unwrap();
+    check_cell(get_cell, 0x1, None);
+
+    let get_block_number = executor.get_block_number().unwrap().unwrap();
+    let get_block_number: u64 = rlp::decode(&get_block_number).unwrap();
+    assert_eq!(get_block_number, 0x1);
+}
+
+fn test_update_second(backend: &mut MemoryBackend, executor: &ImageCellContract) {
+    let data = image_cell_abi::UpdateCall {
+        header:  prepare_header_2(),
+        inputs:  prepare_inputs_2(),
+        outputs: vec![],
+    };
+
+    let addr = H160::from_str("0xf000000000000000000000000000000000000000").unwrap();
+    let tx = gen_tx(addr, ImageCellContract::ADDRESS, 1000, data.encode());
+
+    let r = executor.exec_(backend, &tx);
+    assert!(r.exit_reason.is_succeed());
+
+    let cell_key = CellKey {
+        tx_hash: [7u8; 32].pack().as_bytes(),
+        index:   0x0,
+    };
+    let get_cell = executor.get(&rlp::encode(&cell_key)).unwrap().unwrap();
+    check_cell(get_cell, 0x1, Some(0x2));
+}
+
+fn check_header(get_header: &Bytes) {
+    let header = prepare_header();
+    let get_header = packed::Header::from_slice(get_header).unwrap().raw();
+
+    assert_eq!(get_header.dao(), header.dao.pack());
+    assert_eq!(get_header.extra_hash(), header.block_hash.pack());
+    assert_eq!(get_header.parent_hash(), header.parent_hash.pack());
+    assert_eq!(get_header.proposals_hash(), header.proposals_hash.pack());
+    assert_eq!(
+        get_header.transactions_root(),
+        header.transactions_root.pack()
+    );
+
+    let version: packed::Uint32 = header.version.pack();
+    assert_eq!(get_header.version().raw_data(), version.raw_data());
+
+    let compact_target: packed::Uint32 = header.compact_target.pack();
+    assert_eq!(
+        get_header.compact_target().raw_data(),
+        compact_target.raw_data()
+    );
+
+    let timestamp: packed::Uint64 = header.timestamp.pack();
+    assert_eq!(get_header.timestamp().raw_data(), timestamp.raw_data());
+
+    let number: packed::Uint64 = header.number.pack();
+    assert_eq!(get_header.number().raw_data(), number.raw_data());
+
+    let epoch: packed::Uint64 = header.epoch.pack();
+    assert_eq!(get_header.epoch().raw_data(), epoch.raw_data());
+}
+
+fn check_cell(get_cell: Bytes, created_number: u64, consumed_number: Option<u64>) {
+    let cell = &prepare_outputs()[0];
+    let get_cell: CellInfo = rlp::decode(&get_cell).unwrap();
+
+    let data: packed::Bytes = cell.data.pack();
+    assert_eq!(get_cell.cell_data, data.raw_data());
+
+    check_cell_output(&get_cell.cell_output);
+
+    assert_eq!(get_cell.created_number, created_number);
+    if get_cell.consumed_number.is_some() {
+        assert_eq!(get_cell.consumed_number.unwrap(), consumed_number.unwrap());
+    }
+}
+
+fn check_cell_output(get_output: &Bytes) {
+    let output = &prepare_outputs()[0].output;
+    let get_output: packed::CellOutput = packed::CellOutput::from_slice(get_output).unwrap();
+
+    let capacity: packed::Uint64 = output.capacity.pack();
+    assert_eq!(get_output.capacity().raw_data(), capacity.raw_data());
+
+    check_script(&get_output.lock(), &output.lock);
+
+    if !output.type_.is_empty() {
+        check_script(&get_output.type_().to_opt().unwrap(), &output.type_[0]);
+    } else {
+        assert!(get_output.type_().to_opt().is_none());
+    }
+}
+
+fn check_script(get_script: &packed::Script, script: &image_cell_abi::Script) {
+    assert_eq!(get_script.code_hash(), script.code_hash.pack());
+
+    let hash_type: packed::Byte = packed::Byte::new(script.hash_type);
+    assert_eq!(get_script.hash_type(), hash_type);
+
+    let args: packed::Bytes = script.args.pack();
+    assert_eq!(get_script.args().raw_data(), args.raw_data());
+}
+
+fn prepare_header() -> image_cell_abi::Header {
+    image_cell_abi::Header {
+        version:           0x0,
+        compact_target:    0x1a9c7b1a,
+        timestamp:         0x16e62df76ed,
+        number:            0x1,
+        epoch:             0x7080291000049,
+        parent_hash:       [0u8; 32],
+        transactions_root: [1u8; 32],
+        proposals_hash:    [2u8; 32],
+        uncles_hash:       [3u8; 32],
+        dao:               [4u8; 32],
+        nonce:             0x78b105de64fc38a200000004139b0200,
+        block_hash:        [5u8; 32],
+    }
+}
+
+fn prepare_header_2() -> image_cell_abi::Header {
+    image_cell_abi::Header {
+        version:           0x0,
+        compact_target:    0x1a9c7b1a,
+        timestamp:         0x16e62df76ed,
+        number:            0x2,
+        epoch:             0x7080291000049,
+        parent_hash:       [0u8; 32],
+        transactions_root: [1u8; 32],
+        proposals_hash:    [2u8; 32],
+        uncles_hash:       [3u8; 32],
+        dao:               [4u8; 32],
+        nonce:             0x78b105de64fc38a200000004139b0200,
+        block_hash:        [5u8; 32],
+    }
+}
+
+fn prepare_inputs() -> Vec<image_cell_abi::OutPoint> {
+    vec![image_cell_abi::OutPoint {
+        tx_hash: [6u8; 32],
+        index:   0x0,
+    }]
+}
+
+fn prepare_inputs_2() -> Vec<image_cell_abi::OutPoint> {
+    vec![image_cell_abi::OutPoint {
+        tx_hash: [7u8; 32],
+        index:   0x0,
+    }]
+}
+
+fn prepare_outputs() -> Vec<image_cell_abi::CellInfo> {
+    vec![image_cell_abi::CellInfo {
+        out_point: image_cell_abi::OutPoint {
+            tx_hash: [7u8; 32],
+            index:   0x0,
+        },
+        output:    image_cell_abi::CellOutput {
+            capacity: 0x34e62ce00,
+            lock:     image_cell_abi::Script {
+                args:      ethers::core::types::Bytes::from_str(
+                    "0x927f3e74dceb87c81ba65a19da4f098b4de75a0d",
+                )
+                .unwrap(),
+                code_hash: [8u8; 32],
+                hash_type: 1,
+            },
+            type_:    vec![image_cell_abi::Script {
+                args:      ethers::core::types::Bytes::from_str(
+                    "0x6e9b17739760ffc617017f157ed40641f7aa51b2af9ee017b35a0b35a1e2297b",
+                )
+                .unwrap(),
+                code_hash: [9u8; 32],
+                hash_type: 0,
+            }],
+        },
+        data:      ethers::core::types::Bytes::from_str("0x40420f00000000000000000000000000")
+            .unwrap(),
+    }]
+}

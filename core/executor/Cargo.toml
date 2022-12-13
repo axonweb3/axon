@@ -9,6 +9,7 @@ arc-swap = "1.5"
 az = "1.2"
 bn = { package = "substrate-bn", version = "0.6" }
 
+ckb-types = "0.105"
 common-apm = { path = "../../common/apm" }
 common-config-parser = { path = "../../common/config-parser" }
 common-crypto = { path = "../../common/crypto" }
