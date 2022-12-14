@@ -9,20 +9,27 @@ template: |
 categories:
   - title: 'feature'
     label: 'feature'
+    collapse-after: 3
   - title: 'enhancement'
     label: 'enhancement'
+    collapse-after: 3
   - title: 'Bug Fixes'
     label: 'bugfix'
+    collapse-after: 3
   - title: 'chore'
     label: 'chore'
+    collapse-after: 3
   - title: 'Documentation'
     label: 'document'
+    collapse-after: 3
   - title: 'Other changes'
+    collapse-after: 3
   - title: 'Dependency Updates'
     label: 'dependencies'
+    collapse-after: 3
   - title: 'style'
     label: 'style'
-    collapse-after: 5
+    collapse-after: 3
 
 version-resolver:
   minor:
