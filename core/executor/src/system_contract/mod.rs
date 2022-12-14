@@ -1,3 +1,4 @@
+mod image_cell;
 mod native_token;
 
 pub use crate::system_contract::native_token::NativeTokenContract;
