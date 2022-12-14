@@ -16,7 +16,7 @@ categories:
   - title: '🧰 Chore'
     label: 'chore'
   - title: '📖 Documentation'
-    label: 'document'
+    label: 'docs'
   - title: '✨ Other changes'
   - title: '⬆️ Dependency Updates'
     label: 'dependencies'

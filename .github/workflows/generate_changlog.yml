@@ -1,14 +1,52 @@
-name: Release Drafter
-
+name: Generate changelog
 on:
+  release:
+    types: [created, edited]
   push:
     branches:
-      - main
+      - "main"
+
 jobs:
-  update_release_draft:
+  generate-changelog:
     runs-on: ubuntu-latest
     steps:
-     - uses: actions/checkout@v3
-     - name: Changelog
-       uses: scottbrenner/generate-changelog-action@master
-       id: Changelog
+    - uses: actions/checkout@v3
+    - name: "✏️ Generate release changelog"
+      uses: heinrichreimer/github-changelog-generator-action@v2.3
+      with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          headerLabel: "# 📑 Changelog"
+          breakingLabel: '### 💥 Breaking'
+          enhancementLabel: '### 🚀 Enhancements'
+          bugsLabel: '### 🐛 Bug fixes'
+          deprecatedLabel: '### ⚠️ Deprecations'
+          removedLabel: '### 🔥 Removals'
+          securityLabel: '### 🛡️ Security'
+          issuesLabel: '### 📁 Other issues'
+          prLabel: '### 📁 Other pull requests'
+          addSections: '{"documentation":{"prefix":"### 📖 Documentation","labels":["documentation"]},"tests":{"prefix":"### ✅ Testing","labels":["tests"]}}'
+          issues: true
+          issuesWoLabels: true
+          pullRequests: true
+          prWoLabels: true
+          author: true
+          unreleased: true
+          compareLink: true
+          stripGeneratorNotice: true
+          verbose: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        USE_MILESTONE_TITLE: "false"
+    - run: |
+       ls -al
+       cat ${{ github.workspace }}/CHANGELOG.md
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v4
+      with:
+        token: ${{ secrets.TOKEN }}
+        # path: ${{ github.workspace}}/axon
+        signoff: false
+        commit-message: "feat: automated pr to change config files"
+        branch: bot-${{ github.repository }}
+        title: "feat: automated pr to change log"
+        body: "automated pr to change log"
