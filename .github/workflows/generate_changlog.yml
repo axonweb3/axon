@@ -1,0 +1,14 @@
+name: Release Drafter
+
+on:
+  push:
+    branches:
+      - main
+jobs:
+  update_release_draft:
+    runs-on: ubuntu-latest
+    steps:
+     - uses: actions/checkout@v3
+     - name: Changelog
+       uses: scottbrenner/generate-changelog-action@master
+       id: Changelog
