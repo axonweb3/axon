@@ -1,5 +1,5 @@
-name-template: 'v$RESOLVED_VERSION'
-tag-template: 'v$RESOLVED_VERSION'
+name-template: 'v$RESOLVED_VERSION-alpha'
+tag-template: 'v$RESOLVED_VERSION-alpha'
 template: |
   # What's Changed
 
@@ -23,7 +23,7 @@ categories:
     label: 'document'
     collapse-after: 3
   - title: 'Other changes'
-    collapse-after: 3
+    collapse-after: 2
   - title: 'Dependency Updates'
     label: 'dependencies'
     collapse-after: 3
