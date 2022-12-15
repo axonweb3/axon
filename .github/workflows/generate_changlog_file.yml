@@ -16,7 +16,11 @@ jobs:
       with:
           token: ${{ secrets.GITHUB_TOKEN }}
           headerLabel: "# 📑 Changelog"
+<<<<<<< HEAD
           addSections: '{"documentation":{"prefix":"### 📖 Documentation","labels":["document"]},"Features":{"prefix":"### 🚀 Features","labels":["feature"]},"Enhancement":{"prefix":"### 🔥 Enhancement","labels":["enhancement"]},"bugfix":{"prefix":"🐛 Bug Fixes","labels":["bugfix"]},"refactor":{"prefix":"### 🐝  refactor","labels":["refactor"]},"chore":{"prefix":"### 🧰 Chore","labels":["chore"]},"Otherchanges":{"prefix":"✨ Other changes","labels":[""]},"dependencies":{"prefix":"⬆️ Dependency Updates","labels":["dependencies"]},"style":{"prefix":"🌈 Style","labels":["style"]}}'
+=======
+          addSections: '{"documentation":{"prefix":"### 📖 Documentation","labels":["document"]},"Features":{"prefix":"### 🚀 Features","labels":["feature"]},"Enhancement":{"prefix":"### 🚀 Enhancement","labels":["enhancement"]},"bugfix":{"prefix":"🐛 Bug Fixes","labels":["bugfix"]},"refactor":{"prefix":"### 🐝  refactor","labels":["refactor"]},"chore":{"prefix":"### 🧰 Chore","labels":["chore"]},"Otherchanges":{"prefix":"✨ Other changes","labels":[""]},"dependencies":{"prefix":"⬆️ Dependency Updates","labels":["dependencies"]},"style":{"prefix":"🌈 Style","labels":["style"]}}'
+>>>>>>> c3ddb29 (ci: workflow to generate changlog)
           author: true
           compareLink: true
           stripGeneratorNotice: true
@@ -37,4 +41,7 @@ jobs:
         commit-message: "docs: automated update CHANGELOG.md"
         branch: bot-${{ github.repository }}
         title: "docs: automated update CHANGELOG.md"
+        commit-message: "feat: automated pr to change config files"
+        branch: bot-${{ github.repository }}
+        title: "feat: automated pr to change log"
         body: "automated pr to change log"
