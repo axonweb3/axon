@@ -1,5 +1,5 @@
-name-template: 'v$RESOLVED_VERSION'
-tag-template: 'v$RESOLVED_VERSION'
+name-template: 'v$RESOLVED_VERSION-alpha.1'
+tag-template: 'v$RESOLVED_VERSION-alpha.1'
 template: |
   # What's Changed
 
@@ -7,22 +7,23 @@ template: |
 
   **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
 categories:
-  - title: 'feature'
+  - title: '🚀 Features'
     label: 'feature'
-  - title: 'enhancement'
+  - title: '🚀 Enhancement'
     label: 'enhancement'
-  - title: 'Bug Fixes'
+  - title: '🐛 Bug Fixes'
     label: 'bugfix'
-  - title: 'chore'
+  - title: '🐝 refactor'
+    label: 'refactor'
+  - title: '🧰 Chore'
     label: 'chore'
-  - title: 'Documentation'
+  - title: '📖 Documentation'
     label: 'document'
-  - title: 'Other changes'
-  - title: 'Dependency Updates'
+  - title: '✨ Other changes'
+  - title: '⬆️ Dependency Updates'
     label: 'dependencies'
-  - title: 'style'
+  - title: '🌈 Style'
     label: 'style'
-    collapse-after: 5
 
 version-resolver:
   minor:
