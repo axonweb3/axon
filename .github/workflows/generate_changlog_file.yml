@@ -1,0 +1,40 @@
+name: Generate changelog
+on:
+  release:
+    types: [created, edited]
+
+jobs:
+  generate-changelog:
+    runs-on: ubuntu-latest
+    outputs:
+      changelog: ${{ steps.changelog.outputs.changelog }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: "✏️ Generate release changelog"
+      id: changelog
+      uses: liya2017/auto-generator-changelog@main
+      with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          headerLabel: "# 📑 Changelog"
+          addSections: '{"documentation":{"prefix":"### 📖 Documentation","labels":["document"]},"Features":{"prefix":"### 🚀 Features","labels":["feature"]},"Enhancement":{"prefix":"### 🚀 Enhancement","labels":["enhancement"]},"bugfix":{"prefix":"🐛 Bug Fixes","labels":["bugfix"]},"refactor":{"prefix":"### 🐝  refactor","labels":["refactor"]},"chore":{"prefix":"### 🧰 Chore","labels":["chore"]},"Otherchanges":{"prefix":"✨ Other changes","labels":[""]},"dependencies":{"prefix":"⬆️ Dependency Updates","labels":["dependencies"]},"style":{"prefix":"🌈 Style","labels":["style"]}}'
+          author: true
+          compareLink: true
+          stripGeneratorNotice: true
+  create-changelog-pr:
+    runs-on: ubuntu-latest
+    needs: generate-changelog
+    steps:
+    - uses: actions/checkout@v3
+      with: 
+        ref: main
+    - run: |
+       echo "${{ needs.generate-changelog.outputs.changelog }}" >${{ github.workspace }}/CHANGELOG.md
+    - name: Create Pull Request
+      uses: peter-evans/create-pull-request@v4
+      with:
+        token: ${{ secrets.TOKEN }}
+        signoff: false
+        commit-message: "feat: automated pr to change config files"
+        branch: bot-${{ github.repository }}
+        title: "feat: automated pr to change log"
+        body: "automated pr to change log"
