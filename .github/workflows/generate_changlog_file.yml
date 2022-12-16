@@ -36,5 +36,5 @@ jobs:
         signoff: false
         commit-message: "docs: automated update CHANGELOG.mds"
         branch: bot-${{ github.repository }}
-        title: "feat: automated pr to change log"
+        title: "docs: automated update CHANGELOG.md"
         body: "automated pr to change log"
