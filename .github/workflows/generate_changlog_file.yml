@@ -16,7 +16,7 @@ jobs:
       with:
           token: ${{ secrets.GITHUB_TOKEN }}
           headerLabel: "# 📑 Changelog"
-          addSections: '{"documentation":{"prefix":"### 📖 Documentation","labels":["document"]},"Features":{"prefix":"### 🚀 Features","labels":["feature"]},"Enhancement":{"prefix":"### 🚀 Enhancement","labels":["enhancement"]},"bugfix":{"prefix":"🐛 Bug Fixes","labels":["bugfix"]},"refactor":{"prefix":"### 🐝  refactor","labels":["refactor"]},"chore":{"prefix":"### 🧰 Chore","labels":["chore"]},"Otherchanges":{"prefix":"✨ Other changes","labels":[""]},"dependencies":{"prefix":"⬆️ Dependency Updates","labels":["dependencies"]},"style":{"prefix":"🌈 Style","labels":["style"]}}'
+          addSections: '{"documentation":{"prefix":"### 📖 Documentation","labels":["document"]},"Features":{"prefix":"### 🚀 Features","labels":["feature"]},"Enhancement":{"prefix":"### 🔥 Enhancement","labels":["enhancement"]},"bugfix":{"prefix":"🐛 Bug Fixes","labels":["bugfix"]},"refactor":{"prefix":"### 🐝  refactor","labels":["refactor"]},"chore":{"prefix":"### 🧰 Chore","labels":["chore"]},"Otherchanges":{"prefix":"✨ Other changes","labels":[""]},"dependencies":{"prefix":"⬆️ Dependency Updates","labels":["dependencies"]},"style":{"prefix":"🌈 Style","labels":["style"]}}'
           author: true
           compareLink: true
           stripGeneratorNotice: true
@@ -34,7 +34,7 @@ jobs:
       with:
         token: ${{ secrets.TOKEN }}
         signoff: false
-        commit-message: "docs: automated update CHANGELOG.mds"
+        commit-message: "docs: automated update CHANGELOG.md"
         branch: bot-${{ github.repository }}
         title: "docs: automated update CHANGELOG.md"
         body: "automated pr to change log"
