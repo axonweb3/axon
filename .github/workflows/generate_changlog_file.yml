@@ -38,10 +38,14 @@ jobs:
       with:
         token: ${{ secrets.TOKEN }}
         signoff: false
+<<<<<<< HEAD
         commit-message: "docs: automated update CHANGELOG.md"
         branch: bot-${{ github.repository }}
         title: "docs: automated update CHANGELOG.md"
         commit-message: "feat: automated pr to change config files"
+=======
+        commit-message: "docs: automated update CHANGELOG.mds"
+>>>>>>> 94bbc12 (ci: update commit message)
         branch: bot-${{ github.repository }}
         title: "feat: automated pr to change log"
         body: "automated pr to change log"
