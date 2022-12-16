@@ -17,10 +17,14 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           headerLabel: "# 📑 Changelog"
 <<<<<<< HEAD
+<<<<<<< HEAD
           addSections: '{"documentation":{"prefix":"### 📖 Documentation","labels":["document"]},"Features":{"prefix":"### 🚀 Features","labels":["feature"]},"Enhancement":{"prefix":"### 🔥 Enhancement","labels":["enhancement"]},"bugfix":{"prefix":"🐛 Bug Fixes","labels":["bugfix"]},"refactor":{"prefix":"### 🐝  refactor","labels":["refactor"]},"chore":{"prefix":"### 🧰 Chore","labels":["chore"]},"Otherchanges":{"prefix":"✨ Other changes","labels":[""]},"dependencies":{"prefix":"⬆️ Dependency Updates","labels":["dependencies"]},"style":{"prefix":"🌈 Style","labels":["style"]}}'
 =======
           addSections: '{"documentation":{"prefix":"### 📖 Documentation","labels":["document"]},"Features":{"prefix":"### 🚀 Features","labels":["feature"]},"Enhancement":{"prefix":"### 🚀 Enhancement","labels":["enhancement"]},"bugfix":{"prefix":"🐛 Bug Fixes","labels":["bugfix"]},"refactor":{"prefix":"### 🐝  refactor","labels":["refactor"]},"chore":{"prefix":"### 🧰 Chore","labels":["chore"]},"Otherchanges":{"prefix":"✨ Other changes","labels":[""]},"dependencies":{"prefix":"⬆️ Dependency Updates","labels":["dependencies"]},"style":{"prefix":"🌈 Style","labels":["style"]}}'
 >>>>>>> c3ddb29 (ci: workflow to generate changlog)
+=======
+          addSections: '{"documentation":{"prefix":"### 📖 Documentation","labels":["document"]},"Features":{"prefix":"### 🚀 Features","labels":["feature"]},"Enhancement":{"prefix":"### 🔥 Enhancement","labels":["enhancement"]},"bugfix":{"prefix":"🐛 Bug Fixes","labels":["bugfix"]},"refactor":{"prefix":"### 🐝  refactor","labels":["refactor"]},"chore":{"prefix":"### 🧰 Chore","labels":["chore"]},"Otherchanges":{"prefix":"✨ Other changes","labels":[""]},"dependencies":{"prefix":"⬆️ Dependency Updates","labels":["dependencies"]},"style":{"prefix":"🌈 Style","labels":["style"]}}'
+>>>>>>> 0308bf9 (ci: update prefix image)
           author: true
           compareLink: true
           stripGeneratorNotice: true
@@ -39,6 +43,7 @@ jobs:
         token: ${{ secrets.TOKEN }}
         signoff: false
 <<<<<<< HEAD
+<<<<<<< HEAD
         commit-message: "docs: automated update CHANGELOG.md"
         branch: bot-${{ github.repository }}
         title: "docs: automated update CHANGELOG.md"
@@ -46,6 +51,9 @@ jobs:
 =======
         commit-message: "docs: automated update CHANGELOG.mds"
 >>>>>>> 94bbc12 (ci: update commit message)
+=======
+        commit-message: "docs: automated update CHANGELOG.md"
+>>>>>>> 0308bf9 (ci: update prefix image)
         branch: bot-${{ github.repository }}
         title: "docs: automated update CHANGELOG.md"
         body: "automated pr to change log"
