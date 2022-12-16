@@ -2,7 +2,7 @@ use ckb_types::{bytes::Bytes, packed, prelude::*};
 use ethers::abi::AbiEncode;
 
 use common_config_parser::types::ConfigRocksDB;
-use protocol::types::H256;
+use protocol::types::{TxResp, H256};
 
 use crate::system_contract::image_cell::{
     image_cell_abi, CellInfo, CellKey, HeaderKey, ImageCellContract, MptConfig,
@@ -16,7 +16,7 @@ lazy_static::lazy_static! {
 }
 
 #[test]
-fn test_update() {
+fn test_update_rollback() {
     let vicinity = gen_vicinity();
     let mut backend = MemoryBackend::new(&vicinity, BTreeMap::new());
 
@@ -30,26 +30,22 @@ fn test_update() {
 
     test_update_first(&mut backend, &executor);
     test_update_second(&mut backend, &executor);
+
+    test_rollback_first(&mut backend, &executor);
+    test_rollback_second(&mut backend, &executor);
 }
 
 fn test_update_first(backend: &mut MemoryBackend, executor: &ImageCellContract) {
     let data = image_cell_abi::UpdateCall {
         header:  prepare_header(),
-        inputs:  prepare_inputs(),
-        outputs: prepare_outputs(),
+        inputs:  vec![],
+        outputs: prepare_outputs_updated(),
     };
 
-    let addr = H160::from_str("0xf000000000000000000000000000000000000000").unwrap();
-    let tx = gen_tx(addr, ImageCellContract::ADDRESS, 1000, data.encode());
-
-    let r = executor.exec_(backend, &tx);
+    let r = exec(backend, executor, data.encode());
     assert!(r.exit_reason.is_succeed());
 
-    let account = backend.state().get(&ImageCellContract::ADDRESS).unwrap();
-    assert_eq!(
-        account.storage.get(&MPT_ROOT_KEY).unwrap(),
-        &executor.get_root().unwrap()
-    );
+    check_root(backend, executor);
 
     let header_key = HeaderKey {
         block_number: 0x1,
@@ -65,23 +61,23 @@ fn test_update_first(backend: &mut MemoryBackend, executor: &ImageCellContract) 
     let get_cell = executor.get(&rlp::encode(&cell_key)).unwrap().unwrap();
     check_cell(get_cell, 0x1, None);
 
-    let get_block_number = executor.get_block_number().unwrap().unwrap();
-    let get_block_number: u64 = rlp::decode(&get_block_number).unwrap();
-    assert_eq!(get_block_number, 0x1);
+    check_number(executor, 0x1);
 }
 
 fn test_update_second(backend: &mut MemoryBackend, executor: &ImageCellContract) {
     let data = image_cell_abi::UpdateCall {
         header:  prepare_header_2(),
-        inputs:  prepare_inputs_2(),
+        inputs:  vec![image_cell_abi::OutPoint {
+            tx_hash: [7u8; 32],
+            index:   0x0,
+        }],
         outputs: vec![],
     };
 
-    let addr = H160::from_str("0xf000000000000000000000000000000000000000").unwrap();
-    let tx = gen_tx(addr, ImageCellContract::ADDRESS, 1000, data.encode());
-
-    let r = executor.exec_(backend, &tx);
+    let r = exec(backend, executor, data.encode());
     assert!(r.exit_reason.is_succeed());
+
+    check_root(backend, executor);
 
     let cell_key = CellKey {
         tx_hash: [7u8; 32].pack().as_bytes(),
@@ -89,6 +85,83 @@ fn test_update_second(backend: &mut MemoryBackend, executor: &ImageCellContract)
     };
     let get_cell = executor.get(&rlp::encode(&cell_key)).unwrap().unwrap();
     check_cell(get_cell, 0x1, Some(0x2));
+}
+
+fn test_rollback_first(backend: &mut MemoryBackend, executor: &ImageCellContract) {
+    let data = image_cell_abi::RollbackCall {
+        block_hash:   [5u8; 32],
+        block_number: 0x2,
+        inputs:       vec![image_cell_abi::OutPoint {
+            tx_hash: [7u8; 32],
+            index:   0x0,
+        }],
+        outputs:      vec![],
+    };
+
+    let r = exec(backend, executor, data.encode());
+    assert!(r.exit_reason.is_succeed());
+
+    check_root(backend, executor);
+
+    let header_key = HeaderKey {
+        block_number: 0x2,
+        block_hash:   [5u8; 32].pack().as_bytes(),
+    };
+    let get_header = executor.get(&rlp::encode(&header_key)).unwrap();
+    assert!(get_header.is_none());
+
+    let cell_key = CellKey {
+        tx_hash: [7u8; 32].pack().as_bytes(),
+        index:   0x0,
+    };
+    let get_cell = executor.get(&rlp::encode(&cell_key)).unwrap().unwrap();
+    check_cell(get_cell, 0x1, None);
+
+    let get_block_number = executor.get_block_number().unwrap().unwrap();
+    assert_eq!(get_block_number, 0x1);
+}
+
+fn test_rollback_second(backend: &mut MemoryBackend, executor: &ImageCellContract) {
+    let data = image_cell_abi::RollbackCall {
+        block_hash:   [5u8; 32],
+        block_number: 0x1,
+        inputs:       vec![],
+        outputs:      vec![image_cell_abi::OutPoint {
+            tx_hash: [7u8; 32],
+            index:   0x0,
+        }],
+    };
+
+    let r = exec(backend, executor, data.encode());
+    assert!(r.exit_reason.is_succeed());
+
+    check_root(backend, executor);
+
+    let cell_key = CellKey {
+        tx_hash: [7u8; 32].pack().as_bytes(),
+        index:   0x0,
+    };
+    let get_cell = executor.get(&rlp::encode(&cell_key)).unwrap();
+    assert!(get_cell.is_none());
+}
+
+fn exec(backend: &mut MemoryBackend, executor: &ImageCellContract, data: Vec<u8>) -> TxResp {
+    let addr = H160::from_str("0xf000000000000000000000000000000000000000").unwrap();
+    let tx = gen_tx(addr, ImageCellContract::ADDRESS, 1000, data);
+    executor.exec_(backend, &tx)
+}
+
+fn check_root(backend: &MemoryBackend, executor: &ImageCellContract) {
+    let account = backend.state().get(&ImageCellContract::ADDRESS).unwrap();
+    assert_eq!(
+        account.storage.get(&MPT_ROOT_KEY).unwrap(),
+        &executor.get_root().unwrap()
+    );
+}
+
+fn check_number(executor: &ImageCellContract, number: u64) {
+    let get_block_number = executor.get_block_number().unwrap().unwrap();
+    assert_eq!(get_block_number, number);
 }
 
 fn check_header(get_header: &Bytes) {
@@ -124,7 +197,7 @@ fn check_header(get_header: &Bytes) {
 }
 
 fn check_cell(get_cell: Bytes, created_number: u64, consumed_number: Option<u64>) {
-    let cell = &prepare_outputs()[0];
+    let cell = &prepare_outputs_updated()[0];
     let get_cell: CellInfo = rlp::decode(&get_cell).unwrap();
 
     let data: packed::Bytes = cell.data.pack();
@@ -139,7 +212,7 @@ fn check_cell(get_cell: Bytes, created_number: u64, consumed_number: Option<u64>
 }
 
 fn check_cell_output(get_output: &Bytes) {
-    let output = &prepare_outputs()[0].output;
+    let output = &prepare_outputs_updated()[0].output;
     let get_output: packed::CellOutput = packed::CellOutput::from_slice(get_output).unwrap();
 
     let capacity: packed::Uint64 = output.capacity.pack();
@@ -198,21 +271,7 @@ fn prepare_header_2() -> image_cell_abi::Header {
     }
 }
 
-fn prepare_inputs() -> Vec<image_cell_abi::OutPoint> {
-    vec![image_cell_abi::OutPoint {
-        tx_hash: [6u8; 32],
-        index:   0x0,
-    }]
-}
-
-fn prepare_inputs_2() -> Vec<image_cell_abi::OutPoint> {
-    vec![image_cell_abi::OutPoint {
-        tx_hash: [7u8; 32],
-        index:   0x0,
-    }]
-}
-
-fn prepare_outputs() -> Vec<image_cell_abi::CellInfo> {
+fn prepare_outputs_updated() -> Vec<image_cell_abi::CellInfo> {
     vec![image_cell_abi::CellInfo {
         out_point: image_cell_abi::OutPoint {
             tx_hash: [7u8; 32],

@@ -47,7 +47,7 @@ pub fn update(
 ) -> Result<(), ImageCellError> {
     let new_block_number = data.header.number;
 
-    check_block_number(mpt, new_block_number)?;
+    check_block_number_updated(mpt, new_block_number)?;
 
     save_cells(mpt, data.outputs, new_block_number)?;
 
@@ -55,30 +55,54 @@ pub fn update(
 
     save_header(mpt, &data.header, new_block_number)?;
 
-    save_block_number(mpt, new_block_number)?;
+    update_block_number(mpt, new_block_number)?;
 
     Ok(())
 }
 
-fn check_block_number(
+pub fn rollback(
     mpt: &mut MPTTrie<RocksTrieDB>,
+    data: image_cell_abi::RollbackCall,
+) -> Result<(), ImageCellError> {
+    let cur_block_number = data.block_number;
+    let new_block_number = cur_block_number - 1;
+
+    check_block_number_rolled(mpt, cur_block_number)?;
+
+    remove_cells(mpt, data.outputs)?;
+
+    mark_cells_not_consumed(mpt, data.inputs)?;
+
+    remove_header(mpt, cur_block_number, &data.block_hash)?;
+
+    update_block_number(mpt, new_block_number)?;
+
+    Ok(())
+}
+
+fn check_block_number_updated(
+    mpt: &MPTTrie<RocksTrieDB>,
     new_block_number: u64,
 ) -> Result<(), ImageCellError> {
-    let cur_block_number = match mpt.get(BLOCK_NUMBER_KEY.as_bytes()) {
-        Ok(n) => match n {
-            Some(n) => match rlp::decode(&n) {
-                Ok(n) => n,
-                Err(e) => return Err(ImageCellError::RlpDecoder(e)),
-            },
-            None => new_block_number - 1,
-        },
-        Err(e) => return Err(ImageCellError::Protocol(e)),
-    };
-
-    if new_block_number != cur_block_number + 1 {
-        return Err(ImageCellError::InvalidBlockNumber(new_block_number));
+    if let Some(cur_block_number) = get_block_number(mpt)? {
+        if new_block_number != cur_block_number + 1 {
+            return Err(ImageCellError::InvalidBlockNumber(new_block_number));
+        }
     }
     Ok(())
+}
+
+pub fn get_block_number(mpt: &MPTTrie<RocksTrieDB>) -> Result<Option<u64>, ImageCellError> {
+    match mpt.get(BLOCK_NUMBER_KEY.as_bytes()) {
+        Ok(n) => match n {
+            Some(n) => match rlp::decode(&n) {
+                Ok(n) => Ok(Some(n)),
+                Err(e) => Err(ImageCellError::RlpDecoder(e)),
+            },
+            None => Ok(None),
+        },
+        Err(e) => Err(ImageCellError::Protocol(e)),
+    }
 }
 
 fn save_cells(
@@ -144,23 +168,41 @@ fn mark_cells_consumed(
             index:   input.index,
         };
 
-        let cell = match mpt.get(&rlp::encode(&key)) {
-            Ok(c) => match c {
-                Some(c) => c,
-                None => continue,
-            },
-            Err(e) => return Err(ImageCellError::Protocol(e)),
-        };
-
-        let mut cell: CellInfo = match rlp::decode(&cell) {
-            Ok(c) => c,
-            Err(e) => return Err(ImageCellError::RlpDecoder(e)),
-        };
-        cell.consumed_number = Some(new_block_number);
-
-        if let Err(e) = mpt.insert(&rlp::encode(&key), &rlp::encode(&cell)) {
-            return Err(ImageCellError::Protocol(e));
+        if let Some(ref mut cell) = get_cell(mpt, &key)? {
+            cell.consumed_number = Some(new_block_number);
+            insert_cell(mpt, &key, cell)?;
         }
+    }
+    Ok(())
+}
+
+fn get_cell(
+    mpt: &MPTTrie<RocksTrieDB>,
+    key: &CellKey,
+) -> Result<Option<CellInfo>, ImageCellError> {
+    let cell = match mpt.get(&rlp::encode(key)) {
+        Ok(c) => match c {
+            Some(c) => c,
+            None => return Ok(None),
+        },
+        Err(e) => return Err(ImageCellError::Protocol(e)),
+    };
+
+    let cell: CellInfo = match rlp::decode(&cell) {
+        Ok(c) => c,
+        Err(e) => return Err(ImageCellError::RlpDecoder(e)),
+    };
+
+    Ok(Some(cell))
+}
+
+fn insert_cell(
+    mpt: &mut MPTTrie<RocksTrieDB>,
+    key: &CellKey,
+    cell: &CellInfo,
+) -> Result<(), ImageCellError> {
+    if let Err(e) = mpt.insert(&rlp::encode(key), &rlp::encode(cell)) {
+        return Err(ImageCellError::Protocol(e));
     }
     Ok(())
 }
@@ -200,12 +242,76 @@ fn save_header(
     Ok(())
 }
 
-fn save_block_number(
+fn update_block_number(
     mpt: &mut MPTTrie<RocksTrieDB>,
     new_block_number: u64,
 ) -> Result<(), ImageCellError> {
     if let Err(e) = mpt.insert(BLOCK_NUMBER_KEY.as_bytes(), &rlp::encode(&new_block_number)) {
         return Err(ImageCellError::Protocol(e));
     }
+    Ok(())
+}
+
+fn check_block_number_rolled(
+    mpt: &MPTTrie<RocksTrieDB>,
+    cur_block_number: u64,
+) -> Result<(), ImageCellError> {
+    if let Some(block_number) = get_block_number(mpt)? {
+        if block_number != cur_block_number {
+            return Err(ImageCellError::InvalidBlockNumber(cur_block_number));
+        }
+    }
+    Ok(())
+}
+
+fn remove_cells(
+    mpt: &mut MPTTrie<RocksTrieDB>,
+    outputs: Vec<image_cell_abi::OutPoint>,
+) -> Result<(), ImageCellError> {
+    for output in outputs {
+        let key = CellKey {
+            tx_hash: output.tx_hash.pack().as_bytes(),
+            index:   output.index,
+        };
+
+        if let Err(e) = mpt.remove(&rlp::encode(&key)) {
+            return Err(ImageCellError::Protocol(e));
+        }
+    }
+    Ok(())
+}
+
+fn mark_cells_not_consumed(
+    mpt: &mut MPTTrie<RocksTrieDB>,
+    inputs: Vec<image_cell_abi::OutPoint>,
+) -> Result<(), ImageCellError> {
+    for input in inputs {
+        let key = CellKey {
+            tx_hash: input.tx_hash.pack().as_bytes(),
+            index:   input.index,
+        };
+
+        if let Some(ref mut cell) = get_cell(mpt, &key)? {
+            cell.consumed_number = None;
+            insert_cell(mpt, &key, cell)?;
+        }
+    }
+    Ok(())
+}
+
+fn remove_header(
+    mpt: &mut MPTTrie<RocksTrieDB>,
+    block_number: u64,
+    block_hash: &[u8; 32],
+) -> Result<(), ImageCellError> {
+    let header_key = HeaderKey {
+        block_number,
+        block_hash: block_hash.pack().as_bytes(),
+    };
+
+    if let Err(e) = mpt.remove(&rlp::encode(&header_key)) {
+        return Err(ImageCellError::Protocol(e));
+    }
+
     Ok(())
 }

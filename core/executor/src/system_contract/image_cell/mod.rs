@@ -19,7 +19,7 @@ use crate::system_contract::{system_contract_address, SystemContract};
 use crate::MPTTrie;
 
 pub use abi::image_cell_abi;
-pub use exec::{CellInfo, CellKey, HeaderKey};
+pub use exec::{get_block_number, CellInfo, CellKey, HeaderKey, ImageCellError};
 use trie_db::RocksTrieDB;
 
 const BLOCK_NUMBER_KEY: &str = "BlockNumber";
@@ -79,8 +79,21 @@ impl SystemContract for ImageCellContract {
                     return revert_resp(*tx.gas_limit());
                 }
             }
-            Ok(image_cell_abi::ImageCellCalls::Rollback(_)) => {
-                // todo
+            Ok(image_cell_abi::ImageCellCalls::Rollback(data)) => {
+                let mut mpt = self.mpt.borrow_mut();
+
+                if exec::rollback(&mut mpt, data).is_err() {
+                    return revert_resp(*tx.gas_limit());
+                }
+
+                let root = match mpt.commit() {
+                    Ok(root) => root,
+                    Err(_) => return revert_resp(*tx.gas_limit()),
+                };
+
+                if self.update_mpt_root(backend, root).is_err() {
+                    return revert_resp(*tx.gas_limit());
+                }
             }
             Err(_) => {
                 return revert_resp(*tx.gas_limit());
@@ -134,8 +147,8 @@ impl ImageCellContract {
         mpt.commit()
     }
 
-    pub fn get_block_number(&self) -> ProtocolResult<Option<Bytes>> {
-        self.mpt.borrow().get(BLOCK_NUMBER_KEY.as_bytes())
+    pub fn get_block_number(&self) -> Result<Option<u64>, ImageCellError> {
+        get_block_number(&mut self.mpt.borrow_mut())
     }
 }
 
