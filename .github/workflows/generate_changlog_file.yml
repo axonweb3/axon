@@ -47,5 +47,5 @@ jobs:
         commit-message: "docs: automated update CHANGELOG.mds"
 >>>>>>> 94bbc12 (ci: update commit message)
         branch: bot-${{ github.repository }}
-        title: "feat: automated pr to change log"
+        title: "docs: automated update CHANGELOG.md"
         body: "automated pr to change log"
