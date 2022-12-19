@@ -33,6 +33,8 @@ fn test_update_rollback() {
 
     test_rollback_first(&mut backend, &executor);
     test_rollback_second(&mut backend, &executor);
+
+    test_set_state(&mut backend, &executor);
 }
 
 fn test_update_first(backend: &mut MemoryBackend, executor: &ImageCellContract) {
@@ -143,6 +145,17 @@ fn test_rollback_second(backend: &mut MemoryBackend, executor: &ImageCellContrac
     };
     let get_cell = executor.get(&rlp::encode(&cell_key)).unwrap();
     assert!(get_cell.is_none());
+}
+
+fn test_set_state(backend: &mut MemoryBackend, executor: &ImageCellContract) {
+    let data = image_cell_abi::SetStateCall { allow_read: true };
+
+    assert!(!executor.allow_read());
+
+    let r = exec(backend, executor, data.encode());
+    assert!(r.exit_reason.is_succeed());
+
+    assert!(executor.allow_read());
 }
 
 fn exec(backend: &mut MemoryBackend, executor: &ImageCellContract, data: Vec<u8>) -> TxResp {

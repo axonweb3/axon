@@ -3,6 +3,7 @@ mod exec;
 mod trie_db;
 
 use std::cell::RefCell;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use ethers::abi::AbiDecode;
@@ -23,6 +24,8 @@ pub use exec::{get_block_number, CellInfo, CellKey, HeaderKey, ImageCellError};
 use trie_db::RocksTrieDB;
 
 const BLOCK_NUMBER_KEY: &str = "BlockNumber";
+
+static ALLOW_READ: AtomicBool = AtomicBool::new(false);
 
 lazy_static::lazy_static! {
     static ref MPT_ROOT_KEY: H256 = H256::default();
@@ -60,8 +63,8 @@ impl SystemContract for ImageCellContract {
         let tx_data = tx.data();
 
         match image_cell_abi::ImageCellCalls::decode(tx_data) {
-            Ok(image_cell_abi::ImageCellCalls::SetState(_)) => {
-                // todo
+            Ok(image_cell_abi::ImageCellCalls::SetState(data)) => {
+                ALLOW_READ.store(data.allow_read, Ordering::Relaxed);
             }
             Ok(image_cell_abi::ImageCellCalls::Update(data)) => {
                 let mut mpt = self.mpt.borrow_mut();
@@ -148,7 +151,11 @@ impl ImageCellContract {
     }
 
     pub fn get_block_number(&self) -> Result<Option<u64>, ImageCellError> {
-        get_block_number(&mut self.mpt.borrow_mut())
+        get_block_number(&self.mpt.borrow())
+    }
+
+    pub fn allow_read(&self) -> bool {
+        ALLOW_READ.load(Ordering::Relaxed)
     }
 }
 

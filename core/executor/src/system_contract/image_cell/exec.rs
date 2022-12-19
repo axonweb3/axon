@@ -176,10 +176,7 @@ fn mark_cells_consumed(
     Ok(())
 }
 
-fn get_cell(
-    mpt: &MPTTrie<RocksTrieDB>,
-    key: &CellKey,
-) -> Result<Option<CellInfo>, ImageCellError> {
+fn get_cell(mpt: &MPTTrie<RocksTrieDB>, key: &CellKey) -> Result<Option<CellInfo>, ImageCellError> {
     let cell = match mpt.get(&rlp::encode(key)) {
         Ok(c) => match c {
             Some(c) => c,
