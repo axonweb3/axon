@@ -1,13 +1,12 @@
-use core::fmt;
-
 use ckb_types::{bytes::Bytes, packed, prelude::*};
-use rlp::{RlpDecodable, RlpEncodable};
+use rlp::{DecoderError, RlpDecodable, RlpEncodable};
 
+use protocol::{Display, ProtocolError};
+
+use crate::system_contract::image_cell::abi::image_cell_abi;
+use crate::system_contract::image_cell::trie_db::RocksTrieDB;
+use crate::system_contract::image_cell::BLOCK_NUMBER_KEY;
 use crate::MPTTrie;
-
-use super::abi::image_cell_abi;
-use super::trie_db::RocksTrieDB;
-use super::BLOCK_NUMBER_KEY;
 
 #[derive(RlpEncodable, RlpDecodable)]
 pub struct CellKey {
@@ -29,32 +28,27 @@ pub struct HeaderKey {
     pub block_hash:   Bytes,
 }
 
-#[derive(RlpEncodable, RlpDecodable)]
-pub struct Header {
-    pub data: Bytes, // packed::Header
-    pub hash: Bytes,
+#[derive(Debug, Display)]
+pub enum ImageCellError {
+    #[display(fmt = "Invalid block number: {:?}", _0)]
+    InvalidBlockNumber(u64),
+
+    #[display(fmt = "RLP decoding failed: {:?}", _0)]
+    RlpDecoder(DecoderError),
+
+    #[display(fmt = "Protocol error: {:?}", _0)]
+    Protocol(ProtocolError),
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub enum ExecError {
-    InvalidBlockNumber,
-}
-
-impl fmt::Display for ExecError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Debug::fmt(&self, f)
-    }
-}
-
+// todo: only contract cells will be saved in the cache
 pub fn update(
     mpt: &mut MPTTrie<RocksTrieDB>,
     data: image_cell_abi::UpdateCall,
-) -> Result<(), String> {
+) -> Result<(), ImageCellError> {
     let new_block_number = data.header.number;
 
     check_block_number(mpt, new_block_number)?;
 
-    // todo: only contract cells will be saved in the cache
     save_cells(mpt, data.outputs, new_block_number)?;
 
     mark_cells_consumed(mpt, data.inputs, new_block_number)?;
@@ -66,20 +60,23 @@ pub fn update(
     Ok(())
 }
 
-fn check_block_number(mpt: &mut MPTTrie<RocksTrieDB>, new_block_number: u64) -> Result<(), String> {
+fn check_block_number(
+    mpt: &mut MPTTrie<RocksTrieDB>,
+    new_block_number: u64,
+) -> Result<(), ImageCellError> {
     let cur_block_number = match mpt.get(BLOCK_NUMBER_KEY.as_bytes()) {
         Ok(n) => match n {
             Some(n) => match rlp::decode(&n) {
                 Ok(n) => n,
-                Err(e) => return Err(e.to_string()),
+                Err(e) => return Err(ImageCellError::RlpDecoder(e)),
             },
             None => new_block_number - 1,
         },
-        Err(e) => return Err(e.to_string()),
+        Err(e) => return Err(ImageCellError::Protocol(e)),
     };
 
     if new_block_number != cur_block_number + 1 {
-        return Err(ExecError::InvalidBlockNumber.to_string());
+        return Err(ImageCellError::InvalidBlockNumber(new_block_number));
     }
     Ok(())
 }
@@ -88,7 +85,7 @@ fn save_cells(
     mpt: &mut MPTTrie<RocksTrieDB>,
     outputs: Vec<image_cell_abi::CellInfo>,
     new_block_number: u64,
-) -> Result<(), String> {
+) -> Result<(), ImageCellError> {
     for cell in outputs {
         let key = CellKey {
             tx_hash: cell.out_point.tx_hash.pack().as_bytes(),
@@ -130,7 +127,7 @@ fn save_cells(
         };
 
         if let Err(e) = mpt.insert(&rlp::encode(&key), &rlp::encode(&cell)) {
-            return Err(e.to_string());
+            return Err(ImageCellError::Protocol(e));
         }
     }
     Ok(())
@@ -140,7 +137,7 @@ fn mark_cells_consumed(
     mpt: &mut MPTTrie<RocksTrieDB>,
     inputs: Vec<image_cell_abi::OutPoint>,
     new_block_number: u64,
-) -> Result<(), String> {
+) -> Result<(), ImageCellError> {
     for input in inputs {
         let key = CellKey {
             tx_hash: input.tx_hash.pack().as_bytes(),
@@ -152,17 +149,17 @@ fn mark_cells_consumed(
                 Some(c) => c,
                 None => continue,
             },
-            Err(e) => return Err(e.to_string()),
+            Err(e) => return Err(ImageCellError::Protocol(e)),
         };
 
         let mut cell: CellInfo = match rlp::decode(&cell) {
             Ok(c) => c,
-            Err(e) => return Err(e.to_string()),
+            Err(e) => return Err(ImageCellError::RlpDecoder(e)),
         };
         cell.consumed_number = Some(new_block_number);
 
         if let Err(e) = mpt.insert(&rlp::encode(&key), &rlp::encode(&cell)) {
-            return Err(e.to_string());
+            return Err(ImageCellError::Protocol(e));
         }
     }
     Ok(())
@@ -172,7 +169,7 @@ fn save_header(
     mpt: &mut MPTTrie<RocksTrieDB>,
     header: &image_cell_abi::Header,
     new_block_number: u64,
-) -> Result<(), String> {
+) -> Result<(), ImageCellError> {
     let header_key = HeaderKey {
         block_number: new_block_number,
         block_hash:   header.block_hash.pack().as_bytes(),
@@ -197,15 +194,18 @@ fn save_header(
         .build();
 
     if let Err(e) = mpt.insert(&rlp::encode(&header_key), &packed_header.as_bytes()) {
-        return Err(e.to_string());
+        return Err(ImageCellError::Protocol(e));
     }
 
     Ok(())
 }
 
-fn save_block_number(mpt: &mut MPTTrie<RocksTrieDB>, new_block_number: u64) -> Result<(), String> {
+fn save_block_number(
+    mpt: &mut MPTTrie<RocksTrieDB>,
+    new_block_number: u64,
+) -> Result<(), ImageCellError> {
     if let Err(e) = mpt.insert(BLOCK_NUMBER_KEY.as_bytes(), &rlp::encode(&new_block_number)) {
-        return Err(e.to_string());
+        return Err(ImageCellError::Protocol(e));
     }
     Ok(())
 }

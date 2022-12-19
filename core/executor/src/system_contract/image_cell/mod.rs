@@ -19,7 +19,7 @@ use crate::system_contract::{system_contract_address, SystemContract};
 use crate::MPTTrie;
 
 pub use abi::image_cell_abi;
-pub use exec::{CellInfo, CellKey, Header, HeaderKey};
+pub use exec::{CellInfo, CellKey, HeaderKey};
 use trie_db::RocksTrieDB;
 
 const BLOCK_NUMBER_KEY: &str = "BlockNumber";
