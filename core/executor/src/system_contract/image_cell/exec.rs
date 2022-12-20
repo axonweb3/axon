@@ -1,50 +1,21 @@
-use ckb_types::{bytes::Bytes, packed, prelude::*};
-use rlp::{DecoderError, RlpDecodable, RlpEncodable};
+use ckb_types::{packed, prelude::*};
 
-use protocol::{Display, ProtocolError};
+use protocol::types::MerkleRoot;
 
 use crate::system_contract::image_cell::abi::image_cell_abi;
+use crate::system_contract::image_cell::error::ImageCellError;
+use crate::system_contract::image_cell::store::{
+    cell_key, commit, get_block_number, get_cell, header_key, insert_cell, insert_header,
+    remove_cell, remove_header as remove_h, update_block_number, CellInfo,
+};
 use crate::system_contract::image_cell::trie_db::RocksTrieDB;
-use crate::system_contract::image_cell::BLOCK_NUMBER_KEY;
 use crate::MPTTrie;
-
-#[derive(RlpEncodable, RlpDecodable)]
-pub struct CellKey {
-    pub tx_hash: Bytes,
-    pub index:   u32,
-}
-
-#[derive(RlpEncodable, RlpDecodable)]
-pub struct CellInfo {
-    pub cell_output:     Bytes, // packed::CellOutput
-    pub cell_data:       Bytes,
-    pub created_number:  u64,
-    pub consumed_number: Option<u64>,
-}
-
-#[derive(RlpEncodable, RlpDecodable)]
-pub struct HeaderKey {
-    pub block_number: u64,
-    pub block_hash:   Bytes,
-}
-
-#[derive(Debug, Display)]
-pub enum ImageCellError {
-    #[display(fmt = "Invalid block number: {:?}", _0)]
-    InvalidBlockNumber(u64),
-
-    #[display(fmt = "RLP decoding failed: {:?}", _0)]
-    RlpDecoder(DecoderError),
-
-    #[display(fmt = "Protocol error: {:?}", _0)]
-    Protocol(ProtocolError),
-}
 
 // todo: only contract cells will be saved in the cache
 pub fn update(
     mpt: &mut MPTTrie<RocksTrieDB>,
     data: image_cell_abi::UpdateCall,
-) -> Result<(), ImageCellError> {
+) -> Result<MerkleRoot, ImageCellError> {
     let new_block_number = data.header.number;
 
     check_block_number_updated(mpt, new_block_number)?;
@@ -57,13 +28,13 @@ pub fn update(
 
     update_block_number(mpt, new_block_number)?;
 
-    Ok(())
+    commit(mpt)
 }
 
 pub fn rollback(
     mpt: &mut MPTTrie<RocksTrieDB>,
     data: image_cell_abi::RollbackCall,
-) -> Result<(), ImageCellError> {
+) -> Result<MerkleRoot, ImageCellError> {
     let cur_block_number = data.block_number;
     let new_block_number = cur_block_number - 1;
 
@@ -77,7 +48,7 @@ pub fn rollback(
 
     update_block_number(mpt, new_block_number)?;
 
-    Ok(())
+    commit(mpt)
 }
 
 fn check_block_number_updated(
@@ -92,30 +63,12 @@ fn check_block_number_updated(
     Ok(())
 }
 
-pub fn get_block_number(mpt: &MPTTrie<RocksTrieDB>) -> Result<Option<u64>, ImageCellError> {
-    match mpt.get(BLOCK_NUMBER_KEY.as_bytes()) {
-        Ok(n) => match n {
-            Some(n) => match rlp::decode(&n) {
-                Ok(n) => Ok(Some(n)),
-                Err(e) => Err(ImageCellError::RlpDecoder(e)),
-            },
-            None => Ok(None),
-        },
-        Err(e) => Err(ImageCellError::Protocol(e)),
-    }
-}
-
 fn save_cells(
     mpt: &mut MPTTrie<RocksTrieDB>,
     outputs: Vec<image_cell_abi::CellInfo>,
     new_block_number: u64,
 ) -> Result<(), ImageCellError> {
     for cell in outputs {
-        let key = CellKey {
-            tx_hash: cell.out_point.tx_hash.pack().as_bytes(),
-            index:   cell.out_point.index,
-        };
-
         let lock = cell.output.lock;
         let lock = packed::Script::new_builder()
             .args(lock.args.0.pack())
@@ -143,16 +96,16 @@ fn save_cells(
             .capacity(cell.output.capacity.pack())
             .build();
 
-        let cell = CellInfo {
+        let cell_info = CellInfo {
             cell_output:     cell_output.as_bytes(),
             cell_data:       cell.data.0,
             created_number:  new_block_number,
             consumed_number: None,
         };
 
-        if let Err(e) = mpt.insert(&rlp::encode(&key), &rlp::encode(&cell)) {
-            return Err(ImageCellError::Protocol(e));
-        }
+        let key = cell_key(&cell.out_point.tx_hash, cell.out_point.index);
+
+        insert_cell(mpt, &key, &cell_info)?;
     }
     Ok(())
 }
@@ -163,10 +116,7 @@ fn mark_cells_consumed(
     new_block_number: u64,
 ) -> Result<(), ImageCellError> {
     for input in inputs {
-        let key = CellKey {
-            tx_hash: input.tx_hash.pack().as_bytes(),
-            index:   input.index,
-        };
+        let key = cell_key(&input.tx_hash, input.index);
 
         if let Some(ref mut cell) = get_cell(mpt, &key)? {
             cell.consumed_number = Some(new_block_number);
@@ -176,44 +126,11 @@ fn mark_cells_consumed(
     Ok(())
 }
 
-fn get_cell(mpt: &MPTTrie<RocksTrieDB>, key: &CellKey) -> Result<Option<CellInfo>, ImageCellError> {
-    let cell = match mpt.get(&rlp::encode(key)) {
-        Ok(c) => match c {
-            Some(c) => c,
-            None => return Ok(None),
-        },
-        Err(e) => return Err(ImageCellError::Protocol(e)),
-    };
-
-    let cell: CellInfo = match rlp::decode(&cell) {
-        Ok(c) => c,
-        Err(e) => return Err(ImageCellError::RlpDecoder(e)),
-    };
-
-    Ok(Some(cell))
-}
-
-fn insert_cell(
-    mpt: &mut MPTTrie<RocksTrieDB>,
-    key: &CellKey,
-    cell: &CellInfo,
-) -> Result<(), ImageCellError> {
-    if let Err(e) = mpt.insert(&rlp::encode(key), &rlp::encode(cell)) {
-        return Err(ImageCellError::Protocol(e));
-    }
-    Ok(())
-}
-
 fn save_header(
     mpt: &mut MPTTrie<RocksTrieDB>,
     header: &image_cell_abi::Header,
     new_block_number: u64,
 ) -> Result<(), ImageCellError> {
-    let header_key = HeaderKey {
-        block_number: new_block_number,
-        block_hash:   header.block_hash.pack().as_bytes(),
-    };
-
     let raw = packed::RawHeader::new_builder()
         .compact_target(header.compact_target.pack())
         .dao(header.dao.pack())
@@ -232,21 +149,9 @@ fn save_header(
         .nonce(header.nonce.pack())
         .build();
 
-    if let Err(e) = mpt.insert(&rlp::encode(&header_key), &packed_header.as_bytes()) {
-        return Err(ImageCellError::Protocol(e));
-    }
+    let key = header_key(&header.block_hash, new_block_number);
 
-    Ok(())
-}
-
-fn update_block_number(
-    mpt: &mut MPTTrie<RocksTrieDB>,
-    new_block_number: u64,
-) -> Result<(), ImageCellError> {
-    if let Err(e) = mpt.insert(BLOCK_NUMBER_KEY.as_bytes(), &rlp::encode(&new_block_number)) {
-        return Err(ImageCellError::Protocol(e));
-    }
-    Ok(())
+    insert_header(mpt, &key, &packed_header)
 }
 
 fn check_block_number_rolled(
@@ -266,14 +171,8 @@ fn remove_cells(
     outputs: Vec<image_cell_abi::OutPoint>,
 ) -> Result<(), ImageCellError> {
     for output in outputs {
-        let key = CellKey {
-            tx_hash: output.tx_hash.pack().as_bytes(),
-            index:   output.index,
-        };
-
-        if let Err(e) = mpt.remove(&rlp::encode(&key)) {
-            return Err(ImageCellError::Protocol(e));
-        }
+        let key = cell_key(&output.tx_hash, output.index);
+        remove_cell(mpt, &key)?;
     }
     Ok(())
 }
@@ -283,11 +182,7 @@ fn mark_cells_not_consumed(
     inputs: Vec<image_cell_abi::OutPoint>,
 ) -> Result<(), ImageCellError> {
     for input in inputs {
-        let key = CellKey {
-            tx_hash: input.tx_hash.pack().as_bytes(),
-            index:   input.index,
-        };
-
+        let key = cell_key(&input.tx_hash, input.index);
         if let Some(ref mut cell) = get_cell(mpt, &key)? {
             cell.consumed_number = None;
             insert_cell(mpt, &key, cell)?;
@@ -301,14 +196,6 @@ fn remove_header(
     block_number: u64,
     block_hash: &[u8; 32],
 ) -> Result<(), ImageCellError> {
-    let header_key = HeaderKey {
-        block_number,
-        block_hash: block_hash.pack().as_bytes(),
-    };
-
-    if let Err(e) = mpt.remove(&rlp::encode(&header_key)) {
-        return Err(ImageCellError::Protocol(e));
-    }
-
-    Ok(())
+    let key = header_key(block_hash, block_number);
+    remove_h(mpt, &key)
 }

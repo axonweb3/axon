@@ -2,10 +2,10 @@ use ckb_types::{bytes::Bytes, packed, prelude::*};
 use ethers::abi::AbiEncode;
 
 use common_config_parser::types::ConfigRocksDB;
-use protocol::types::{TxResp, H256};
+use protocol::types::TxResp;
 
 use crate::system_contract::image_cell::{
-    image_cell_abi, CellInfo, CellKey, HeaderKey, ImageCellContract, MptConfig,
+    cell_key, header_key, image_cell_abi, CellInfo, ImageCellContract, MptConfig,
 };
 use crate::system_contract::SystemContract;
 
@@ -16,7 +16,7 @@ lazy_static::lazy_static! {
 }
 
 #[test]
-fn test_update_rollback() {
+fn test_write_functions() {
     let vicinity = gen_vicinity();
     let mut backend = MemoryBackend::new(&vicinity, BTreeMap::new());
 
@@ -41,7 +41,7 @@ fn test_update_first(backend: &mut MemoryBackend, executor: &ImageCellContract) 
     let data = image_cell_abi::UpdateCall {
         header:  prepare_header(),
         inputs:  vec![],
-        outputs: prepare_outputs_updated(),
+        outputs: prepare_outputs(),
     };
 
     let r = exec(backend, executor, data.encode());
@@ -49,21 +49,15 @@ fn test_update_first(backend: &mut MemoryBackend, executor: &ImageCellContract) 
 
     check_root(backend, executor);
 
-    let header_key = HeaderKey {
-        block_number: 0x1,
-        block_hash:   [5u8; 32].pack().as_bytes(),
-    };
-    let get_header = executor.get(&rlp::encode(&header_key)).unwrap().unwrap();
+    let header_key = header_key(&[5u8; 32], 0x1);
+    let get_header = executor.get_header(backend, &header_key).unwrap().unwrap();
     check_header(&get_header);
 
-    let cell_key = CellKey {
-        tx_hash: [7u8; 32].pack().as_bytes(),
-        index:   0x0,
-    };
-    let get_cell = executor.get(&rlp::encode(&cell_key)).unwrap().unwrap();
-    check_cell(get_cell, 0x1, None);
+    let cell_key = cell_key(&[7u8; 32], 0x0);
+    let get_cell = executor.get_cell(backend, &cell_key).unwrap().unwrap();
+    check_cell(&get_cell, 0x1, None);
 
-    check_number(executor, 0x1);
+    check_number(backend, executor, 0x1);
 }
 
 fn test_update_second(backend: &mut MemoryBackend, executor: &ImageCellContract) {
@@ -81,12 +75,9 @@ fn test_update_second(backend: &mut MemoryBackend, executor: &ImageCellContract)
 
     check_root(backend, executor);
 
-    let cell_key = CellKey {
-        tx_hash: [7u8; 32].pack().as_bytes(),
-        index:   0x0,
-    };
-    let get_cell = executor.get(&rlp::encode(&cell_key)).unwrap().unwrap();
-    check_cell(get_cell, 0x1, Some(0x2));
+    let cell_key = cell_key(&[7u8; 32], 0x0);
+    let get_cell = executor.get_cell(backend, &cell_key).unwrap().unwrap();
+    check_cell(&get_cell, 0x1, Some(0x2));
 }
 
 fn test_rollback_first(backend: &mut MemoryBackend, executor: &ImageCellContract) {
@@ -105,22 +96,15 @@ fn test_rollback_first(backend: &mut MemoryBackend, executor: &ImageCellContract
 
     check_root(backend, executor);
 
-    let header_key = HeaderKey {
-        block_number: 0x2,
-        block_hash:   [5u8; 32].pack().as_bytes(),
-    };
-    let get_header = executor.get(&rlp::encode(&header_key)).unwrap();
+    let header_key = header_key(&[5u8; 32], 0x2);
+    let get_header = executor.get_header(backend, &header_key).unwrap();
     assert!(get_header.is_none());
 
-    let cell_key = CellKey {
-        tx_hash: [7u8; 32].pack().as_bytes(),
-        index:   0x0,
-    };
-    let get_cell = executor.get(&rlp::encode(&cell_key)).unwrap().unwrap();
-    check_cell(get_cell, 0x1, None);
+    let cell_key = cell_key(&[7u8; 32], 0x0);
+    let get_cell = executor.get_cell(backend, &cell_key).unwrap().unwrap();
+    check_cell(&get_cell, 0x1, None);
 
-    let get_block_number = executor.get_block_number().unwrap().unwrap();
-    assert_eq!(get_block_number, 0x1);
+    check_number(backend, executor, 0x1);
 }
 
 fn test_rollback_second(backend: &mut MemoryBackend, executor: &ImageCellContract) {
@@ -139,11 +123,8 @@ fn test_rollback_second(backend: &mut MemoryBackend, executor: &ImageCellContrac
 
     check_root(backend, executor);
 
-    let cell_key = CellKey {
-        tx_hash: [7u8; 32].pack().as_bytes(),
-        index:   0x0,
-    };
-    let get_cell = executor.get(&rlp::encode(&cell_key)).unwrap();
+    let cell_key = cell_key(&[7u8; 32], 0x0);
+    let get_cell = executor.get_cell(backend, &cell_key).unwrap();
     assert!(get_cell.is_none());
 }
 
@@ -167,19 +148,23 @@ fn exec(backend: &mut MemoryBackend, executor: &ImageCellContract, data: Vec<u8>
 fn check_root(backend: &MemoryBackend, executor: &ImageCellContract) {
     let account = backend.state().get(&ImageCellContract::ADDRESS).unwrap();
     assert_eq!(
+        &executor.get_root(backend),
         account.storage.get(&MPT_ROOT_KEY).unwrap(),
-        &executor.get_root().unwrap()
     );
 }
 
-fn check_number(executor: &ImageCellContract, number: u64) {
-    let get_block_number = executor.get_block_number().unwrap().unwrap();
+fn check_number(backend: &mut MemoryBackend, executor: &ImageCellContract, number: u64) {
+    let get_block_number = executor.get_block_number(backend).unwrap().unwrap();
     assert_eq!(get_block_number, number);
 }
 
-fn check_header(get_header: &Bytes) {
+fn check_header(get_header: &packed::Header) {
     let header = prepare_header();
-    let get_header = packed::Header::from_slice(get_header).unwrap().raw();
+
+    let nonce: packed::Uint128 = header.nonce.pack();
+    assert_eq!(get_header.nonce().raw_data(), nonce.raw_data());
+
+    let get_header = get_header.raw();
 
     assert_eq!(get_header.dao(), header.dao.pack());
     assert_eq!(get_header.extra_hash(), header.block_hash.pack());
@@ -209,9 +194,8 @@ fn check_header(get_header: &Bytes) {
     assert_eq!(get_header.epoch().raw_data(), epoch.raw_data());
 }
 
-fn check_cell(get_cell: Bytes, created_number: u64, consumed_number: Option<u64>) {
-    let cell = &prepare_outputs_updated()[0];
-    let get_cell: CellInfo = rlp::decode(&get_cell).unwrap();
+fn check_cell(get_cell: &CellInfo, created_number: u64, consumed_number: Option<u64>) {
+    let cell = &prepare_outputs()[0];
 
     let data: packed::Bytes = cell.data.pack();
     assert_eq!(get_cell.cell_data, data.raw_data());
@@ -225,7 +209,7 @@ fn check_cell(get_cell: Bytes, created_number: u64, consumed_number: Option<u64>
 }
 
 fn check_cell_output(get_output: &Bytes) {
-    let output = &prepare_outputs_updated()[0].output;
+    let output = &prepare_outputs()[0].output;
     let get_output: packed::CellOutput = packed::CellOutput::from_slice(get_output).unwrap();
 
     let capacity: packed::Uint64 = output.capacity.pack();
@@ -284,7 +268,7 @@ fn prepare_header_2() -> image_cell_abi::Header {
     }
 }
 
-fn prepare_outputs_updated() -> Vec<image_cell_abi::CellInfo> {
+fn prepare_outputs() -> Vec<image_cell_abi::CellInfo> {
     vec![image_cell_abi::CellInfo {
         out_point: image_cell_abi::OutPoint {
             tx_hash: [7u8; 32],

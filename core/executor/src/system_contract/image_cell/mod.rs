@@ -1,34 +1,38 @@
 mod abi;
+mod error;
 mod exec;
+mod store;
 mod trie_db;
 
-use std::cell::RefCell;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
+use ckb_types::packed;
 use ethers::abi::AbiDecode;
+use once_cell::sync::OnceCell;
 
 use common_config_parser::types::ConfigRocksDB;
 use protocol::traits::{ApplyBackend, Backend};
 use protocol::types::{
-    Apply, Basic, Bytes, ExitReason, ExitRevert, ExitSucceed, MerkleRoot, SignedTransaction,
-    TxResp, H160, H256, U256,
+    Apply, Basic, ExitReason, ExitRevert, ExitSucceed, MerkleRoot, SignedTransaction, TxResp, H160,
+    H256, U256,
 };
-use protocol::ProtocolResult;
 
 use crate::system_contract::{system_contract_address, SystemContract};
 use crate::MPTTrie;
 
 pub use abi::image_cell_abi;
-pub use exec::{get_block_number, CellInfo, CellKey, HeaderKey, ImageCellError};
+pub use error::ImageCellError;
+pub use store::{cell_key, header_key, CellInfo, CellKey, HeaderKey};
+use store::{get_block_number, get_cell, get_header};
 use trie_db::RocksTrieDB;
 
-const BLOCK_NUMBER_KEY: &str = "BlockNumber";
-
 static ALLOW_READ: AtomicBool = AtomicBool::new(false);
+static TRIE_DB: OnceCell<Arc<RocksTrieDB>> = OnceCell::new();
 
 lazy_static::lazy_static! {
     static ref MPT_ROOT_KEY: H256 = H256::default();
+    static ref H256_DEFAULT: H256 = H256::default();
 }
 
 pub struct MptConfig {
@@ -37,21 +41,17 @@ pub struct MptConfig {
     pub rockdb_config: ConfigRocksDB,
 }
 
-pub struct ImageCellContract {
-    // todo: convert to static
-    mpt: RefCell<MPTTrie<RocksTrieDB>>,
-}
+pub struct ImageCellContract;
 
 impl ImageCellContract {
     pub fn new(config: MptConfig) -> Self {
-        let trie_db = Arc::new(
-            RocksTrieDB::new(config.path, config.rockdb_config, config.cache_size)
-                .expect("new rocksdb error"),
-        );
-
-        ImageCellContract {
-            mpt: RefCell::new(MPTTrie::new(trie_db)),
-        }
+        TRIE_DB.get_or_init(|| {
+            Arc::new(
+                RocksTrieDB::new(config.path, config.rockdb_config, config.cache_size)
+                    .expect("new rocksdb error"),
+            )
+        });
+        ImageCellContract {}
     }
 }
 
@@ -67,36 +67,33 @@ impl SystemContract for ImageCellContract {
                 ALLOW_READ.store(data.allow_read, Ordering::Relaxed);
             }
             Ok(image_cell_abi::ImageCellCalls::Update(data)) => {
-                let mut mpt = self.mpt.borrow_mut();
+                let mut mpt = match get_mpt(backend) {
+                    Ok(m) => m,
+                    Err(e) => {
+                        println!("{:?}", e);
+                        return revert_resp(*tx.gas_limit());
+                    }
+                };
 
-                if exec::update(&mut mpt, data).is_err() {
-                    return revert_resp(*tx.gas_limit());
-                }
-
-                let root = match mpt.commit() {
-                    Ok(root) => root,
+                let root: MerkleRoot = match exec::update(&mut mpt, data) {
+                    Ok(r) => r,
                     Err(_) => return revert_resp(*tx.gas_limit()),
                 };
 
-                if self.update_mpt_root(backend, root).is_err() {
-                    return revert_resp(*tx.gas_limit());
-                }
+                update_mpt_root(backend, root);
             }
             Ok(image_cell_abi::ImageCellCalls::Rollback(data)) => {
-                let mut mpt = self.mpt.borrow_mut();
-
-                if exec::rollback(&mut mpt, data).is_err() {
-                    return revert_resp(*tx.gas_limit());
-                }
-
-                let root = match mpt.commit() {
-                    Ok(root) => root,
+                let mut mpt = match get_mpt(backend) {
+                    Ok(m) => m,
                     Err(_) => return revert_resp(*tx.gas_limit()),
                 };
 
-                if self.update_mpt_root(backend, root).is_err() {
-                    return revert_resp(*tx.gas_limit());
-                }
+                let root: MerkleRoot = match exec::rollback(&mut mpt, data) {
+                    Ok(r) => r,
+                    Err(_) => return revert_resp(*tx.gas_limit()),
+                };
+
+                update_mpt_root(backend, root);
             }
             Err(_) => {
                 return revert_resp(*tx.gas_limit());
@@ -116,47 +113,41 @@ impl SystemContract for ImageCellContract {
     }
 }
 
-impl ImageCellContract {
-    fn update_mpt_root<B: Backend + ApplyBackend>(
-        &self,
-        backend: &mut B,
-        root: H256,
-    ) -> Result<(), String> {
-        let account = backend.basic(ImageCellContract::ADDRESS);
+fn get_mpt<B: Backend + ApplyBackend>(backend: &B) -> Result<MPTTrie<RocksTrieDB>, ImageCellError> {
+    let trie_db = match TRIE_DB.get() {
+        Some(db) => db,
+        None => return Err(ImageCellError::TrieDbNotInit),
+    };
 
-        backend.apply(
-            vec![Apply::Modify {
-                address:       ImageCellContract::ADDRESS,
-                basic:         Basic {
-                    balance: account.balance,
-                    nonce:   account.nonce + U256::one(),
-                },
-                code:          None,
-                storage:       vec![(*MPT_ROOT_KEY, root)],
-                reset_storage: false,
-            }],
-            vec![],
-            false,
-        );
-        Ok(())
-    }
+    let root = backend.storage(ImageCellContract::ADDRESS, *MPT_ROOT_KEY);
 
-    pub fn get(&self, key: &[u8]) -> ProtocolResult<Option<Bytes>> {
-        self.mpt.borrow().get(key)
+    if root == *H256_DEFAULT {
+        Ok(MPTTrie::new(Arc::clone(trie_db)))
+    } else {
+        match MPTTrie::from_root(root, Arc::clone(trie_db)) {
+            Ok(m) => Ok(m),
+            Err(e) => Err(ImageCellError::Protocol(e)),
+        }
     }
+}
 
-    pub fn get_root(&self) -> ProtocolResult<MerkleRoot> {
-        let mut mpt = self.mpt.borrow_mut();
-        mpt.commit()
-    }
+fn update_mpt_root<B: Backend + ApplyBackend>(backend: &mut B, root: H256) {
+    let account = backend.basic(ImageCellContract::ADDRESS);
 
-    pub fn get_block_number(&self) -> Result<Option<u64>, ImageCellError> {
-        get_block_number(&self.mpt.borrow())
-    }
-
-    pub fn allow_read(&self) -> bool {
-        ALLOW_READ.load(Ordering::Relaxed)
-    }
+    backend.apply(
+        vec![Apply::Modify {
+            address:       ImageCellContract::ADDRESS,
+            basic:         Basic {
+                balance: account.balance,
+                nonce:   account.nonce + U256::one(),
+            },
+            code:          None,
+            storage:       vec![(*MPT_ROOT_KEY, root)],
+            reset_storage: false,
+        }],
+        vec![],
+        false,
+    );
 }
 
 fn revert_resp(gas_limit: U256) -> TxResp {
@@ -169,5 +160,41 @@ fn revert_resp(gas_limit: U256) -> TxResp {
         logs:         vec![],
         code_address: None,
         removed:      false,
+    }
+}
+
+impl ImageCellContract {
+    pub fn get_root<B: Backend + ApplyBackend>(&self, backend: &B) -> H256 {
+        backend.storage(ImageCellContract::ADDRESS, *MPT_ROOT_KEY)
+    }
+
+    pub fn get_block_number<B: Backend + ApplyBackend>(
+        &self,
+        backend: &B,
+    ) -> Result<Option<u64>, ImageCellError> {
+        let mpt = get_mpt(backend)?;
+        get_block_number(&mpt)
+    }
+
+    pub fn get_header<B: Backend + ApplyBackend>(
+        &self,
+        backend: &B,
+        key: &HeaderKey,
+    ) -> Result<Option<packed::Header>, ImageCellError> {
+        let mpt = get_mpt(backend)?;
+        get_header(&mpt, key)
+    }
+
+    pub fn get_cell<B: Backend + ApplyBackend>(
+        &self,
+        backend: &B,
+        key: &CellKey,
+    ) -> Result<Option<CellInfo>, ImageCellError> {
+        let mpt = get_mpt(backend)?;
+        get_cell(&mpt, key)
+    }
+
+    pub fn allow_read(&self) -> bool {
+        ALLOW_READ.load(Ordering::Relaxed)
     }
 }
