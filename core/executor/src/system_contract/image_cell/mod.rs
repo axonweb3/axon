@@ -22,7 +22,7 @@ use crate::system_contract::{system_contract_address, SystemContract};
 use crate::MPTTrie;
 
 pub use abi::image_cell_abi;
-pub use error::ImageCellError;
+pub use error::{ImageCellError, ImageCellResult};
 pub use store::{cell_key, header_key, CellInfo, CellKey, HeaderKey};
 use store::{get_block_number, get_cell, get_header};
 use trie_db::RocksTrieDB;
@@ -48,7 +48,7 @@ impl ImageCellContract {
         TRIE_DB.get_or_init(|| {
             Arc::new(
                 RocksTrieDB::new(config.path, config.rockdb_config, config.cache_size)
-                    .expect("new rocksdb error"),
+                    .expect("[image cell] new rocksdb error"),
             )
         });
         ImageCellContract {}
@@ -70,14 +70,17 @@ impl SystemContract for ImageCellContract {
                 let mut mpt = match get_mpt(backend) {
                     Ok(m) => m,
                     Err(e) => {
-                        println!("{:?}", e);
+                        log::error!("[image cell] get mpt error: {:?}", e);
                         return revert_resp(*tx.gas_limit());
                     }
                 };
 
                 let root: MerkleRoot = match exec::update(&mut mpt, data) {
                     Ok(r) => r,
-                    Err(_) => return revert_resp(*tx.gas_limit()),
+                    Err(e) => {
+                        log::error!("[image cell] update error: {:?}", e);
+                        return revert_resp(*tx.gas_limit());
+                    }
                 };
 
                 update_mpt_root(backend, root);
@@ -85,17 +88,24 @@ impl SystemContract for ImageCellContract {
             Ok(image_cell_abi::ImageCellCalls::Rollback(data)) => {
                 let mut mpt = match get_mpt(backend) {
                     Ok(m) => m,
-                    Err(_) => return revert_resp(*tx.gas_limit()),
+                    Err(e) => {
+                        log::error!("[image cell] get mpt error: {:?}", e);
+                        return revert_resp(*tx.gas_limit());
+                    }
                 };
 
                 let root: MerkleRoot = match exec::rollback(&mut mpt, data) {
                     Ok(r) => r,
-                    Err(_) => return revert_resp(*tx.gas_limit()),
+                    Err(e) => {
+                        log::error!("[image cell] rollback error: {:?}", e);
+                        return revert_resp(*tx.gas_limit());
+                    }
                 };
 
                 update_mpt_root(backend, root);
             }
-            Err(_) => {
+            Err(e) => {
+                log::error!("[image cell] invalid tx data: {:?}", e);
                 return revert_resp(*tx.gas_limit());
             }
         }
@@ -113,7 +123,7 @@ impl SystemContract for ImageCellContract {
     }
 }
 
-fn get_mpt<B: Backend + ApplyBackend>(backend: &B) -> Result<MPTTrie<RocksTrieDB>, ImageCellError> {
+fn get_mpt<B: Backend + ApplyBackend>(backend: &B) -> ImageCellResult<MPTTrie<RocksTrieDB>> {
     let trie_db = match TRIE_DB.get() {
         Some(db) => db,
         None => return Err(ImageCellError::TrieDbNotInit),
@@ -126,7 +136,7 @@ fn get_mpt<B: Backend + ApplyBackend>(backend: &B) -> Result<MPTTrie<RocksTrieDB
     } else {
         match MPTTrie::from_root(root, Arc::clone(trie_db)) {
             Ok(m) => Ok(m),
-            Err(e) => Err(ImageCellError::Protocol(e)),
+            Err(e) => Err(ImageCellError::RestoreMpt(e)),
         }
     }
 }
@@ -171,7 +181,7 @@ impl ImageCellContract {
     pub fn get_block_number<B: Backend + ApplyBackend>(
         &self,
         backend: &B,
-    ) -> Result<Option<u64>, ImageCellError> {
+    ) -> ImageCellResult<Option<u64>> {
         let mpt = get_mpt(backend)?;
         get_block_number(&mpt)
     }
@@ -180,7 +190,7 @@ impl ImageCellContract {
         &self,
         backend: &B,
         key: &HeaderKey,
-    ) -> Result<Option<packed::Header>, ImageCellError> {
+    ) -> ImageCellResult<Option<packed::Header>> {
         let mpt = get_mpt(backend)?;
         get_header(&mpt, key)
     }
@@ -189,7 +199,7 @@ impl ImageCellContract {
         &self,
         backend: &B,
         key: &CellKey,
-    ) -> Result<Option<CellInfo>, ImageCellError> {
+    ) -> ImageCellResult<Option<CellInfo>> {
         let mpt = get_mpt(backend)?;
         get_cell(&mpt, key)
     }

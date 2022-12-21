@@ -4,7 +4,7 @@ use rlp::{RlpDecodable, RlpEncodable};
 
 use protocol::types::MerkleRoot;
 
-use crate::system_contract::image_cell::error::ImageCellError;
+use crate::system_contract::image_cell::error::{ImageCellError, ImageCellResult};
 use crate::system_contract::image_cell::trie_db::RocksTrieDB;
 use crate::MPTTrie;
 
@@ -44,109 +44,90 @@ pub fn cell_key(tx_hash: &[u8; 32], index: u32) -> CellKey {
     }
 }
 
-pub fn commit(mpt: &mut MPTTrie<RocksTrieDB>) -> Result<MerkleRoot, ImageCellError> {
-    match mpt.commit() {
-        Ok(root) => Ok(root),
-        Err(e) => Err(ImageCellError::Protocol(e)),
-    }
+pub fn commit(mpt: &mut MPTTrie<RocksTrieDB>) -> ImageCellResult<MerkleRoot> {
+    mpt.commit().map_err(ImageCellError::CommitError)
 }
 
 pub fn update_block_number(
     mpt: &mut MPTTrie<RocksTrieDB>,
     new_block_number: u64,
-) -> Result<(), ImageCellError> {
-    if let Err(e) = mpt.insert(BLOCK_NUMBER_KEY.as_bytes(), &rlp::encode(&new_block_number)) {
-        return Err(ImageCellError::Protocol(e));
-    }
-    Ok(())
+) -> ImageCellResult<()> {
+    mpt.insert(BLOCK_NUMBER_KEY.as_bytes(), &rlp::encode(&new_block_number))
+        .map_err(|e| ImageCellError::UpdateBlockNumber {
+            e,
+            number: new_block_number,
+        })
 }
 
-pub fn get_block_number(mpt: &MPTTrie<RocksTrieDB>) -> Result<Option<u64>, ImageCellError> {
+pub fn get_block_number(mpt: &MPTTrie<RocksTrieDB>) -> ImageCellResult<Option<u64>> {
     let block_number = match mpt.get(BLOCK_NUMBER_KEY.as_bytes()) {
         Ok(n) => match n {
             Some(n) => n,
             None => return Ok(None),
         },
-        Err(e) => return Err(ImageCellError::Protocol(e)),
+        Err(e) => return Err(ImageCellError::GetBlockNumber(e)),
     };
 
-    match rlp::decode(&block_number) {
-        Ok(n) => Ok(Some(n)),
-        Err(e) => Err(ImageCellError::RlpDecoder(e)),
-    }
+    Ok(Some(
+        rlp::decode(&block_number).map_err(ImageCellError::RlpDecodeBlockNumber)?,
+    ))
 }
 
 pub fn insert_header(
     mpt: &mut MPTTrie<RocksTrieDB>,
     key: &HeaderKey,
     header: &packed::Header,
-) -> Result<(), ImageCellError> {
-    if let Err(e) = mpt.insert(&rlp::encode(key), &header.as_bytes()) {
-        return Err(ImageCellError::Protocol(e));
-    }
-    Ok(())
+) -> ImageCellResult<()> {
+    mpt.insert(&rlp::encode(key), &header.as_bytes())
+        .map_err(ImageCellError::InsertHeader)
 }
 
-pub fn remove_header(
-    mpt: &mut MPTTrie<RocksTrieDB>,
-    key: &HeaderKey,
-) -> Result<(), ImageCellError> {
-    if let Err(e) = mpt.remove(&rlp::encode(key)) {
-        return Err(ImageCellError::Protocol(e));
-    }
-    Ok(())
+pub fn remove_header(mpt: &mut MPTTrie<RocksTrieDB>, key: &HeaderKey) -> ImageCellResult<()> {
+    mpt.remove(&rlp::encode(key))
+        .map_err(ImageCellError::RemoveHeader)
 }
 
 pub fn get_header(
     mpt: &MPTTrie<RocksTrieDB>,
     key: &HeaderKey,
-) -> Result<Option<packed::Header>, ImageCellError> {
+) -> ImageCellResult<Option<packed::Header>> {
     let header = match mpt.get(&rlp::encode(key)) {
         Ok(n) => match n {
             Some(n) => n,
             None => return Ok(None),
         },
-        Err(e) => return Err(ImageCellError::Protocol(e)),
+        Err(e) => return Err(ImageCellError::GetHeader(e)),
     };
 
-    match packed::Header::from_slice(&header) {
-        Ok(h) => Ok(Some(h)),
-        Err(e) => Err(ImageCellError::MoleculeVerification(e)),
-    }
+    Ok(Some(
+        packed::Header::from_slice(&header).map_err(ImageCellError::MoleculeVerification)?,
+    ))
 }
 
 pub fn insert_cell(
     mpt: &mut MPTTrie<RocksTrieDB>,
     key: &CellKey,
     cell: &CellInfo,
-) -> Result<(), ImageCellError> {
-    if let Err(e) = mpt.insert(&rlp::encode(key), &rlp::encode(cell)) {
-        return Err(ImageCellError::Protocol(e));
-    }
-    Ok(())
+) -> ImageCellResult<()> {
+    mpt.insert(&rlp::encode(key), &rlp::encode(cell))
+        .map_err(ImageCellError::InsertCell)
 }
 
-pub fn remove_cell(mpt: &mut MPTTrie<RocksTrieDB>, key: &CellKey) -> Result<(), ImageCellError> {
-    if let Err(e) = mpt.remove(&rlp::encode(key)) {
-        return Err(ImageCellError::Protocol(e));
-    }
-    Ok(())
+pub fn remove_cell(mpt: &mut MPTTrie<RocksTrieDB>, key: &CellKey) -> ImageCellResult<()> {
+    mpt.remove(&rlp::encode(key))
+        .map_err(ImageCellError::RemoveCell)
 }
 
-pub fn get_cell(
-    mpt: &MPTTrie<RocksTrieDB>,
-    key: &CellKey,
-) -> Result<Option<CellInfo>, ImageCellError> {
+pub fn get_cell(mpt: &MPTTrie<RocksTrieDB>, key: &CellKey) -> ImageCellResult<Option<CellInfo>> {
     let cell = match mpt.get(&rlp::encode(key)) {
         Ok(n) => match n {
             Some(n) => n,
             None => return Ok(None),
         },
-        Err(e) => return Err(ImageCellError::Protocol(e)),
+        Err(e) => return Err(ImageCellError::GetCell(e)),
     };
 
-    match rlp::decode(&cell) {
-        Ok(h) => Ok(Some(h)),
-        Err(e) => Err(ImageCellError::RlpDecoder(e)),
-    }
+    Ok(Some(
+        rlp::decode(&cell).map_err(ImageCellError::RlpDecodeCell)?,
+    ))
 }

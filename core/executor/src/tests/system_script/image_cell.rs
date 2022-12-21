@@ -153,7 +153,7 @@ fn check_root(backend: &MemoryBackend, executor: &ImageCellContract) {
     );
 }
 
-fn check_number(backend: &mut MemoryBackend, executor: &ImageCellContract, number: u64) {
+fn check_number(backend: &MemoryBackend, executor: &ImageCellContract, number: u64) {
     let get_block_number = executor.get_block_number(backend).unwrap().unwrap();
     assert_eq!(get_block_number, number);
 }
