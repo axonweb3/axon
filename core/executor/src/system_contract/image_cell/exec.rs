@@ -11,7 +11,6 @@ use crate::system_contract::image_cell::store::{
 use crate::system_contract::image_cell::trie_db::RocksTrieDB;
 use crate::MPTTrie;
 
-// todo: only contract cells will be saved in the cache
 pub fn update(
     mpt: &mut MPTTrie<RocksTrieDB>,
     data: image_cell_abi::UpdateCall,

@@ -4,6 +4,7 @@ mod exec;
 mod store;
 mod trie_db;
 
+use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -35,20 +36,13 @@ lazy_static::lazy_static! {
     static ref H256_DEFAULT: H256 = H256::default();
 }
 
-pub struct MptConfig {
-    pub path:          String,
-    pub cache_size:    usize,
-    pub rockdb_config: ConfigRocksDB,
-}
-
 pub struct ImageCellContract;
 
 impl ImageCellContract {
-    pub fn new(config: MptConfig) -> Self {
+    pub fn new<P: AsRef<Path>>(path: P, config: ConfigRocksDB, cache_size: usize) -> Self {
         TRIE_DB.get_or_init(|| {
             Arc::new(
-                RocksTrieDB::new(config.path, config.rockdb_config, config.cache_size)
-                    .expect("[image cell] new rocksdb error"),
+                RocksTrieDB::new(path, config, cache_size).expect("[image cell] new rocksdb error"),
             )
         });
         ImageCellContract {}

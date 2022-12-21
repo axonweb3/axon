@@ -5,11 +5,13 @@ use common_config_parser::types::ConfigRocksDB;
 use protocol::types::TxResp;
 
 use crate::system_contract::image_cell::{
-    cell_key, header_key, image_cell_abi, CellInfo, ImageCellContract, MptConfig,
+    cell_key, header_key, image_cell_abi, CellInfo, ImageCellContract,
 };
 use crate::system_contract::SystemContract;
 
 use super::*;
+
+static ROCKDB_PATH: &str = "./free-space/image-cell";
 
 lazy_static::lazy_static! {
     static ref MPT_ROOT_KEY: H256 = H256::default();
@@ -20,13 +22,7 @@ fn test_write_functions() {
     let vicinity = gen_vicinity();
     let mut backend = MemoryBackend::new(&vicinity, BTreeMap::new());
 
-    let mpt_config: MptConfig = MptConfig {
-        path:          "./free-space/image-cell".to_owned(),
-        cache_size:    100,
-        rockdb_config: ConfigRocksDB::default(),
-    };
-
-    let executor = ImageCellContract::new(mpt_config);
+    let executor = ImageCellContract::new(ROCKDB_PATH, ConfigRocksDB::default(), 100);
 
     test_update_first(&mut backend, &executor);
     test_update_second(&mut backend, &executor);
