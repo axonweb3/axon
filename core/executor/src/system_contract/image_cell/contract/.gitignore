@@ -5,7 +5,7 @@ coverage.json
 typechain
 scripts/*.json
 
-#Hardhat files
+# Hardhat files
 cache
 artifacts
 .openzeppelin
