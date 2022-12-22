@@ -16,7 +16,7 @@ pub mod image_cell {
     use ethers::providers::Middleware;
     #[doc = "ImageCell was auto-generated with ethers-rs Abigen. More information at: https://github.com/gakonst/ethers-rs"]
     use std::sync::Arc;
-    # [rustfmt :: skip] const __ABI : & str = "[\n    {\n      \"inputs\": [\n        {\n          \"internalType\": \"bytes32\",\n          \"name\": \"blockHash\",\n          \"type\": \"bytes32\"\n        },\n        {\n          \"internalType\": \"uint64\",\n          \"name\": \"blockNumber\",\n          \"type\": \"uint64\"\n        },\n        {\n          \"components\": [\n            {\n              \"internalType\": \"bytes32\",\n              \"name\": \"txHash\",\n              \"type\": \"bytes32\"\n            },\n            {\n              \"internalType\": \"uint32\",\n              \"name\": \"index\",\n              \"type\": \"uint32\"\n            }\n          ],\n          \"internalType\": \"struct CkbType.OutPoint[]\",\n          \"name\": \"inputs\",\n          \"type\": \"tuple[]\"\n        },\n        {\n          \"components\": [\n            {\n              \"internalType\": \"bytes32\",\n              \"name\": \"txHash\",\n              \"type\": \"bytes32\"\n            },\n            {\n              \"internalType\": \"uint32\",\n              \"name\": \"index\",\n              \"type\": \"uint32\"\n            }\n          ],\n          \"internalType\": \"struct CkbType.OutPoint[]\",\n          \"name\": \"outputs\",\n          \"type\": \"tuple[]\"\n        }\n      ],\n      \"name\": \"rollback\",\n      \"outputs\": [],\n      \"stateMutability\": \"view\",\n      \"type\": \"function\"\n    },\n    {\n      \"inputs\": [\n        {\n          \"internalType\": \"bool\",\n          \"name\": \"allowRead\",\n          \"type\": \"bool\"\n        }\n      ],\n      \"name\": \"setState\",\n      \"outputs\": [],\n      \"stateMutability\": \"view\",\n      \"type\": \"function\"\n    },\n    {\n      \"inputs\": [\n        {\n          \"components\": [\n            {\n              \"internalType\": \"uint32\",\n              \"name\": \"version\",\n              \"type\": \"uint32\"\n            },\n            {\n              \"internalType\": \"uint32\",\n              \"name\": \"compactTarget\",\n              \"type\": \"uint32\"\n            },\n            {\n              \"internalType\": \"uint64\",\n              \"name\": \"timestamp\",\n              \"type\": \"uint64\"\n            },\n            {\n              \"internalType\": \"uint64\",\n              \"name\": \"number\",\n              \"type\": \"uint64\"\n            },\n            {\n              \"internalType\": \"uint64\",\n              \"name\": \"epoch\",\n              \"type\": \"uint64\"\n            },\n            {\n              \"internalType\": \"bytes32\",\n              \"name\": \"parentHash\",\n              \"type\": \"bytes32\"\n            },\n            {\n              \"internalType\": \"bytes32\",\n              \"name\": \"transactionsRoot\",\n              \"type\": \"bytes32\"\n            },\n            {\n              \"internalType\": \"bytes32\",\n              \"name\": \"proposalsHash\",\n              \"type\": \"bytes32\"\n            },\n            {\n              \"internalType\": \"bytes32\",\n              \"name\": \"unclesHash\",\n              \"type\": \"bytes32\"\n            },\n            {\n              \"internalType\": \"bytes32\",\n              \"name\": \"dao\",\n              \"type\": \"bytes32\"\n            },\n            {\n              \"internalType\": \"uint128\",\n              \"name\": \"nonce\",\n              \"type\": \"uint128\"\n            },\n            {\n              \"internalType\": \"bytes32\",\n              \"name\": \"blockHash\",\n              \"type\": \"bytes32\"\n            }\n          ],\n          \"internalType\": \"struct CkbType.Header\",\n          \"name\": \"header\",\n          \"type\": \"tuple\"\n        },\n        {\n          \"components\": [\n            {\n              \"internalType\": \"bytes32\",\n              \"name\": \"txHash\",\n              \"type\": \"bytes32\"\n            },\n            {\n              \"internalType\": \"uint32\",\n              \"name\": \"index\",\n              \"type\": \"uint32\"\n            }\n          ],\n          \"internalType\": \"struct CkbType.OutPoint[]\",\n          \"name\": \"inputs\",\n          \"type\": \"tuple[]\"\n        },\n        {\n          \"components\": [\n            {\n              \"components\": [\n                {\n                  \"internalType\": \"bytes32\",\n                  \"name\": \"txHash\",\n                  \"type\": \"bytes32\"\n                },\n                {\n                  \"internalType\": \"uint32\",\n                  \"name\": \"index\",\n                  \"type\": \"uint32\"\n                }\n              ],\n              \"internalType\": \"struct CkbType.OutPoint\",\n              \"name\": \"outPoint\",\n              \"type\": \"tuple\"\n            },\n            {\n              \"components\": [\n                {\n                  \"internalType\": \"uint64\",\n                  \"name\": \"capacity\",\n                  \"type\": \"uint64\"\n                },\n                {\n                  \"components\": [\n                    {\n                      \"internalType\": \"bytes32\",\n                      \"name\": \"codeHash\",\n                      \"type\": \"bytes32\"\n                    },\n                    {\n                      \"internalType\": \"enum CkbType.ScriptHashType\",\n                      \"name\": \"hashType\",\n                      \"type\": \"uint8\"\n                    },\n                    {\n                      \"internalType\": \"bytes\",\n                      \"name\": \"args\",\n                      \"type\": \"bytes\"\n                    }\n                  ],\n                  \"internalType\": \"struct CkbType.Script\",\n                  \"name\": \"lock\",\n                  \"type\": \"tuple\"\n                },\n                {\n                  \"components\": [\n                    {\n                      \"internalType\": \"bytes32\",\n                      \"name\": \"codeHash\",\n                      \"type\": \"bytes32\"\n                    },\n                    {\n                      \"internalType\": \"enum CkbType.ScriptHashType\",\n                      \"name\": \"hashType\",\n                      \"type\": \"uint8\"\n                    },\n                    {\n                      \"internalType\": \"bytes\",\n                      \"name\": \"args\",\n                      \"type\": \"bytes\"\n                    }\n                  ],\n                  \"internalType\": \"struct CkbType.Script[]\",\n                  \"name\": \"type_\",\n                  \"type\": \"tuple[]\"\n                }\n              ],\n              \"internalType\": \"struct CkbType.CellOutput\",\n              \"name\": \"output\",\n              \"type\": \"tuple\"\n            },\n            {\n              \"internalType\": \"bytes\",\n              \"name\": \"data\",\n              \"type\": \"bytes\"\n            }\n          ],\n          \"internalType\": \"struct CkbType.CellInfo[]\",\n          \"name\": \"outputs\",\n          \"type\": \"tuple[]\"\n        }\n      ],\n      \"name\": \"update\",\n      \"outputs\": [],\n      \"stateMutability\": \"view\",\n      \"type\": \"function\"\n    }\n]\n" ;
+    # [rustfmt::skip] const __ABI : & str = "[\n    {\n      \"inputs\": [\n        {\n          \"internalType\": \"bytes32\",\n          \"name\": \"blockHash\",\n          \"type\": \"bytes32\"\n        },\n        {\n          \"internalType\": \"uint64\",\n          \"name\": \"blockNumber\",\n          \"type\": \"uint64\"\n        },\n        {\n          \"components\": [\n            {\n              \"internalType\": \"bytes32\",\n              \"name\": \"txHash\",\n              \"type\": \"bytes32\"\n            },\n            {\n              \"internalType\": \"uint32\",\n              \"name\": \"index\",\n              \"type\": \"uint32\"\n            }\n          ],\n          \"internalType\": \"struct CkbType.OutPoint[]\",\n          \"name\": \"inputs\",\n          \"type\": \"tuple[]\"\n        },\n        {\n          \"components\": [\n            {\n              \"internalType\": \"bytes32\",\n              \"name\": \"txHash\",\n              \"type\": \"bytes32\"\n            },\n            {\n              \"internalType\": \"uint32\",\n              \"name\": \"index\",\n              \"type\": \"uint32\"\n            }\n          ],\n          \"internalType\": \"struct CkbType.OutPoint[]\",\n          \"name\": \"outputs\",\n          \"type\": \"tuple[]\"\n        }\n      ],\n      \"name\": \"rollback\",\n      \"outputs\": [],\n      \"stateMutability\": \"view\",\n      \"type\": \"function\"\n    },\n    {\n      \"inputs\": [\n        {\n          \"internalType\": \"bool\",\n          \"name\": \"allowRead\",\n          \"type\": \"bool\"\n        }\n      ],\n      \"name\": \"setState\",\n      \"outputs\": [],\n      \"stateMutability\": \"view\",\n      \"type\": \"function\"\n    },\n    {\n      \"inputs\": [\n        {\n          \"components\": [\n            {\n              \"internalType\": \"uint32\",\n              \"name\": \"version\",\n              \"type\": \"uint32\"\n            },\n            {\n              \"internalType\": \"uint32\",\n              \"name\": \"compactTarget\",\n              \"type\": \"uint32\"\n            },\n            {\n              \"internalType\": \"uint64\",\n              \"name\": \"timestamp\",\n              \"type\": \"uint64\"\n            },\n            {\n              \"internalType\": \"uint64\",\n              \"name\": \"number\",\n              \"type\": \"uint64\"\n            },\n            {\n              \"internalType\": \"uint64\",\n              \"name\": \"epoch\",\n              \"type\": \"uint64\"\n            },\n            {\n              \"internalType\": \"bytes32\",\n              \"name\": \"parentHash\",\n              \"type\": \"bytes32\"\n            },\n            {\n              \"internalType\": \"bytes32\",\n              \"name\": \"transactionsRoot\",\n              \"type\": \"bytes32\"\n            },\n            {\n              \"internalType\": \"bytes32\",\n              \"name\": \"proposalsHash\",\n              \"type\": \"bytes32\"\n            },\n            {\n              \"internalType\": \"bytes32\",\n              \"name\": \"unclesHash\",\n              \"type\": \"bytes32\"\n            },\n            {\n              \"internalType\": \"bytes32\",\n              \"name\": \"dao\",\n              \"type\": \"bytes32\"\n            },\n            {\n              \"internalType\": \"uint128\",\n              \"name\": \"nonce\",\n              \"type\": \"uint128\"\n            },\n            {\n              \"internalType\": \"bytes32\",\n              \"name\": \"blockHash\",\n              \"type\": \"bytes32\"\n            }\n          ],\n          \"internalType\": \"struct CkbType.Header\",\n          \"name\": \"header\",\n          \"type\": \"tuple\"\n        },\n        {\n          \"components\": [\n            {\n              \"internalType\": \"bytes32\",\n              \"name\": \"txHash\",\n              \"type\": \"bytes32\"\n            },\n            {\n              \"internalType\": \"uint32\",\n              \"name\": \"index\",\n              \"type\": \"uint32\"\n            }\n          ],\n          \"internalType\": \"struct CkbType.OutPoint[]\",\n          \"name\": \"inputs\",\n          \"type\": \"tuple[]\"\n        },\n        {\n          \"components\": [\n            {\n              \"components\": [\n                {\n                  \"internalType\": \"bytes32\",\n                  \"name\": \"txHash\",\n                  \"type\": \"bytes32\"\n                },\n                {\n                  \"internalType\": \"uint32\",\n                  \"name\": \"index\",\n                  \"type\": \"uint32\"\n                }\n              ],\n              \"internalType\": \"struct CkbType.OutPoint\",\n              \"name\": \"outPoint\",\n              \"type\": \"tuple\"\n            },\n            {\n              \"components\": [\n                {\n                  \"internalType\": \"uint64\",\n                  \"name\": \"capacity\",\n                  \"type\": \"uint64\"\n                },\n                {\n                  \"components\": [\n                    {\n                      \"internalType\": \"bytes32\",\n                      \"name\": \"codeHash\",\n                      \"type\": \"bytes32\"\n                    },\n                    {\n                      \"internalType\": \"enum CkbType.ScriptHashType\",\n                      \"name\": \"hashType\",\n                      \"type\": \"uint8\"\n                    },\n                    {\n                      \"internalType\": \"bytes\",\n                      \"name\": \"args\",\n                      \"type\": \"bytes\"\n                    }\n                  ],\n                  \"internalType\": \"struct CkbType.Script\",\n                  \"name\": \"lock\",\n                  \"type\": \"tuple\"\n                },\n                {\n                  \"components\": [\n                    {\n                      \"internalType\": \"bytes32\",\n                      \"name\": \"codeHash\",\n                      \"type\": \"bytes32\"\n                    },\n                    {\n                      \"internalType\": \"enum CkbType.ScriptHashType\",\n                      \"name\": \"hashType\",\n                      \"type\": \"uint8\"\n                    },\n                    {\n                      \"internalType\": \"bytes\",\n                      \"name\": \"args\",\n                      \"type\": \"bytes\"\n                    }\n                  ],\n                  \"internalType\": \"struct CkbType.Script[]\",\n                  \"name\": \"type_\",\n                  \"type\": \"tuple[]\"\n                }\n              ],\n              \"internalType\": \"struct CkbType.CellOutput\",\n              \"name\": \"output\",\n              \"type\": \"tuple\"\n            },\n            {\n              \"internalType\": \"bytes\",\n              \"name\": \"data\",\n              \"type\": \"bytes\"\n            }\n          ],\n          \"internalType\": \"struct CkbType.CellInfo[]\",\n          \"name\": \"outputs\",\n          \"type\": \"tuple[]\"\n        }\n      ],\n      \"name\": \"update\",\n      \"outputs\": [],\n      \"stateMutability\": \"view\",\n      \"type\": \"function\"\n    }\n]\n" ;
     #[doc = r" The parsed JSON-ABI of the contract."]
     pub static IMAGECELL_ABI: ethers::contract::Lazy<ethers::core::abi::Abi> =
         ethers::contract::Lazy::new(|| {
@@ -103,8 +103,8 @@ pub mod image_cell {
         Debug,
         Eq,
         PartialEq,
-        ethers :: contract :: EthCall,
-        ethers :: contract :: EthDisplay,
+        ethers::contract::EthCall,
+        ethers::contract::EthDisplay,
         Default,
     )]
     #[ethcall(
@@ -123,8 +123,8 @@ pub mod image_cell {
         Debug,
         Eq,
         PartialEq,
-        ethers :: contract :: EthCall,
-        ethers :: contract :: EthDisplay,
+        ethers::contract::EthCall,
+        ethers::contract::EthDisplay,
         Default,
     )]
     #[ethcall(name = "setState", abi = "setState(bool)")]
@@ -137,8 +137,8 @@ pub mod image_cell {
         Debug,
         Eq,
         PartialEq,
-        ethers :: contract :: EthCall,
-        ethers :: contract :: EthDisplay,
+        ethers::contract::EthCall,
+        ethers::contract::EthDisplay,
         Default,
     )]
     #[ethcall(
@@ -150,7 +150,7 @@ pub mod image_cell {
         pub inputs:  ::std::vec::Vec<OutPoint>,
         pub outputs: ::std::vec::Vec<CellInfo>,
     }
-    #[derive(Debug, Clone, PartialEq, Eq, ethers :: contract :: EthAbiType)]
+    #[derive(Debug, Clone, PartialEq, Eq, ethers::contract::EthAbiType)]
     pub enum ImageCellCalls {
         Rollback(RollbackCall),
         SetState(SetStateCall),
@@ -217,8 +217,8 @@ pub mod image_cell {
         Default,
         Eq,
         PartialEq,
-        ethers :: contract :: EthAbiType,
-        ethers :: contract :: EthAbiCodec,
+        ethers::contract::EthAbiType,
+        ethers::contract::EthAbiCodec,
     )]
     pub struct CellInfo {
         pub out_point: OutPoint,
@@ -232,8 +232,8 @@ pub mod image_cell {
         Default,
         Eq,
         PartialEq,
-        ethers :: contract :: EthAbiType,
-        ethers :: contract :: EthAbiCodec,
+        ethers::contract::EthAbiType,
+        ethers::contract::EthAbiCodec,
     )]
     pub struct CellOutput {
         pub capacity: u64,
@@ -247,8 +247,8 @@ pub mod image_cell {
         Default,
         Eq,
         PartialEq,
-        ethers :: contract :: EthAbiType,
-        ethers :: contract :: EthAbiCodec,
+        ethers::contract::EthAbiType,
+        ethers::contract::EthAbiCodec,
     )]
     pub struct Header {
         pub version:           u32,
@@ -271,8 +271,8 @@ pub mod image_cell {
         Default,
         Eq,
         PartialEq,
-        ethers :: contract :: EthAbiType,
-        ethers :: contract :: EthAbiCodec,
+        ethers::contract::EthAbiType,
+        ethers::contract::EthAbiCodec,
     )]
     pub struct OutPoint {
         pub tx_hash: [u8; 32],
@@ -285,8 +285,8 @@ pub mod image_cell {
         Default,
         Eq,
         PartialEq,
-        ethers :: contract :: EthAbiType,
-        ethers :: contract :: EthAbiCodec,
+        ethers::contract::EthAbiType,
+        ethers::contract::EthAbiCodec,
     )]
     pub struct Script {
         pub code_hash: [u8; 32],
