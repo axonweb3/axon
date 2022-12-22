@@ -34,6 +34,8 @@ static TRIE_DB: OnceCell<Arc<RocksTrieDB>> = OnceCell::new();
 lazy_static::lazy_static! {
     static ref CELL_ROOT_KEY: H256 = Hasher::digest("cell_mpt_root");
 }
+
+#[derive(Default)]
 pub struct ImageCellContract;
 
 impl ImageCellContract {
