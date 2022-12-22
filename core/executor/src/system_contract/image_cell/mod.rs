@@ -15,8 +15,8 @@ use once_cell::sync::OnceCell;
 use common_config_parser::types::ConfigRocksDB;
 use protocol::traits::{ApplyBackend, Backend};
 use protocol::types::{
-    Apply, Basic, ExitReason, ExitRevert, ExitSucceed, MerkleRoot, SignedTransaction, TxResp, H160,
-    H256, U256,
+    Apply, Basic, ExitReason, ExitRevert, ExitSucceed, Hasher, MerkleRoot, SignedTransaction,
+    TxResp, H160, H256, U256,
 };
 
 use crate::system_contract::{system_contract_address, SystemContract};
@@ -32,10 +32,8 @@ static ALLOW_READ: AtomicBool = AtomicBool::new(false);
 static TRIE_DB: OnceCell<Arc<RocksTrieDB>> = OnceCell::new();
 
 lazy_static::lazy_static! {
-    static ref MPT_ROOT_KEY: H256 = H256::default();
-    static ref H256_DEFAULT: H256 = H256::default();
+    static ref CELL_ROOT_KEY: H256 = Hasher::digest("cell_mpt_root");
 }
-
 pub struct ImageCellContract;
 
 impl ImageCellContract {
@@ -123,9 +121,9 @@ fn get_mpt<B: Backend + ApplyBackend>(backend: &B) -> ImageCellResult<MPTTrie<Ro
         None => return Err(ImageCellError::TrieDbNotInit),
     };
 
-    let root = backend.storage(ImageCellContract::ADDRESS, *MPT_ROOT_KEY);
+    let root = backend.storage(ImageCellContract::ADDRESS, *CELL_ROOT_KEY);
 
-    if root == *H256_DEFAULT {
+    if root == H256::default() {
         Ok(MPTTrie::new(Arc::clone(trie_db)))
     } else {
         match MPTTrie::from_root(root, Arc::clone(trie_db)) {
@@ -146,7 +144,7 @@ fn update_mpt_root<B: Backend + ApplyBackend>(backend: &mut B, root: H256) {
                 nonce:   account.nonce + U256::one(),
             },
             code:          None,
-            storage:       vec![(*MPT_ROOT_KEY, root)],
+            storage:       vec![(*CELL_ROOT_KEY, root)],
             reset_storage: false,
         }],
         vec![],
@@ -169,7 +167,7 @@ fn revert_resp(gas_limit: U256) -> TxResp {
 
 impl ImageCellContract {
     pub fn get_root<B: Backend + ApplyBackend>(&self, backend: &B) -> H256 {
-        backend.storage(ImageCellContract::ADDRESS, *MPT_ROOT_KEY)
+        backend.storage(ImageCellContract::ADDRESS, *CELL_ROOT_KEY)
     }
 
     pub fn get_block_number<B: Backend + ApplyBackend>(

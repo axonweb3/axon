@@ -2,7 +2,7 @@ use ckb_types::{bytes::Bytes, packed, prelude::*};
 use ethers::abi::AbiEncode;
 
 use common_config_parser::types::ConfigRocksDB;
-use protocol::types::TxResp;
+use protocol::types::{Hasher, TxResp};
 
 use crate::system_contract::image_cell::{
     cell_key, header_key, image_cell_abi, CellInfo, ImageCellContract,
@@ -14,7 +14,7 @@ use super::*;
 static ROCKDB_PATH: &str = "./free-space/image-cell";
 
 lazy_static::lazy_static! {
-    static ref MPT_ROOT_KEY: H256 = H256::default();
+    static ref CELL_ROOT_KEY: H256 = Hasher::digest("cell_mpt_root");
 }
 
 #[test]
@@ -145,7 +145,7 @@ fn check_root(backend: &MemoryBackend, executor: &ImageCellContract) {
     let account = backend.state().get(&ImageCellContract::ADDRESS).unwrap();
     assert_eq!(
         &executor.get_root(backend),
-        account.storage.get(&MPT_ROOT_KEY).unwrap(),
+        account.storage.get(&CELL_ROOT_KEY).unwrap(),
     );
 }
 

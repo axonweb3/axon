@@ -8,7 +8,7 @@ use crate::system_contract::image_cell::error::{ImageCellError, ImageCellResult}
 use crate::system_contract::image_cell::trie_db::RocksTrieDB;
 use crate::MPTTrie;
 
-const BLOCK_NUMBER_KEY: &str = "BlockNumber";
+const BLOCK_NUMBER_KEY: &str = "block_number";
 
 #[derive(RlpEncodable, RlpDecodable)]
 pub struct CellKey {
