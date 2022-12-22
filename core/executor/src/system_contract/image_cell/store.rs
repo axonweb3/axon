@@ -1,5 +1,5 @@
 use ckb_types::prelude::Entity;
-use ckb_types::{bytes::Bytes, packed, prelude::*};
+use ckb_types::{bytes::Bytes, packed};
 use rlp::{RlpDecodable, RlpEncodable};
 
 use protocol::types::MerkleRoot;
@@ -33,19 +33,20 @@ pub struct HeaderKey {
 pub fn header_key(block_hash: &[u8; 32], block_number: u64) -> HeaderKey {
     HeaderKey {
         block_number,
-        block_hash: block_hash.pack().as_bytes(),
+        block_hash: block_hash.to_vec().into(),
     }
 }
 
 pub fn cell_key(tx_hash: &[u8; 32], index: u32) -> CellKey {
     CellKey {
-        tx_hash: tx_hash.pack().as_bytes(),
+        tx_hash: tx_hash.to_vec().into(),
         index,
     }
 }
 
 pub fn commit(mpt: &mut MPTTrie<RocksTrieDB>) -> ImageCellResult<MerkleRoot> {
-    mpt.commit().map_err(ImageCellError::CommitError)
+    mpt.commit()
+        .map_err(|e| ImageCellError::CommitError(e.to_string()))
 }
 
 pub fn update_block_number(
@@ -54,7 +55,7 @@ pub fn update_block_number(
 ) -> ImageCellResult<()> {
     mpt.insert(BLOCK_NUMBER_KEY.as_bytes(), &rlp::encode(&new_block_number))
         .map_err(|e| ImageCellError::UpdateBlockNumber {
-            e,
+            e:      e.to_string(),
             number: new_block_number,
         })
 }
@@ -65,7 +66,7 @@ pub fn get_block_number(mpt: &MPTTrie<RocksTrieDB>) -> ImageCellResult<Option<u6
             Some(n) => n,
             None => return Ok(None),
         },
-        Err(e) => return Err(ImageCellError::GetBlockNumber(e)),
+        Err(e) => return Err(ImageCellError::GetBlockNumber(e.to_string())),
     };
 
     Ok(Some(
@@ -79,12 +80,12 @@ pub fn insert_header(
     header: &packed::Header,
 ) -> ImageCellResult<()> {
     mpt.insert(&rlp::encode(key), &header.as_bytes())
-        .map_err(ImageCellError::InsertHeader)
+        .map_err(|e| ImageCellError::InsertHeader(e.to_string()))
 }
 
 pub fn remove_header(mpt: &mut MPTTrie<RocksTrieDB>, key: &HeaderKey) -> ImageCellResult<()> {
     mpt.remove(&rlp::encode(key))
-        .map_err(ImageCellError::RemoveHeader)
+        .map_err(|e| ImageCellError::RemoveHeader(e.to_string()))
 }
 
 pub fn get_header(
@@ -96,7 +97,7 @@ pub fn get_header(
             Some(n) => n,
             None => return Ok(None),
         },
-        Err(e) => return Err(ImageCellError::GetHeader(e)),
+        Err(e) => return Err(ImageCellError::GetHeader(e.to_string())),
     };
 
     Ok(Some(
@@ -110,12 +111,12 @@ pub fn insert_cell(
     cell: &CellInfo,
 ) -> ImageCellResult<()> {
     mpt.insert(&rlp::encode(key), &rlp::encode(cell))
-        .map_err(ImageCellError::InsertCell)
+        .map_err(|e| ImageCellError::InsertCell(e.to_string()))
 }
 
 pub fn remove_cell(mpt: &mut MPTTrie<RocksTrieDB>, key: &CellKey) -> ImageCellResult<()> {
     mpt.remove(&rlp::encode(key))
-        .map_err(ImageCellError::RemoveCell)
+        .map_err(|e| ImageCellError::RemoveCell(e.to_string()))
 }
 
 pub fn get_cell(mpt: &MPTTrie<RocksTrieDB>, key: &CellKey) -> ImageCellResult<Option<CellInfo>> {
@@ -124,7 +125,7 @@ pub fn get_cell(mpt: &MPTTrie<RocksTrieDB>, key: &CellKey) -> ImageCellResult<Op
             Some(n) => n,
             None => return Ok(None),
         },
-        Err(e) => return Err(ImageCellError::GetCell(e)),
+        Err(e) => return Err(ImageCellError::GetCell(e.to_string())),
     };
 
     Ok(Some(

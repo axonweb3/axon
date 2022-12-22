@@ -130,7 +130,7 @@ fn get_mpt<B: Backend + ApplyBackend>(backend: &B) -> ImageCellResult<MPTTrie<Ro
     } else {
         match MPTTrie::from_root(root, Arc::clone(trie_db)) {
             Ok(m) => Ok(m),
-            Err(e) => Err(ImageCellError::RestoreMpt(e)),
+            Err(e) => Err(ImageCellError::RestoreMpt(e.to_string())),
         }
     }
 }

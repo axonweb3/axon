@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs, io, path::Path, sync::Arc};
+use std::{collections::HashMap, fs, path::Path, sync::Arc};
 
 use parking_lot::Mutex;
 use rand::{rngs::SmallRng, Rng, SeedableRng};
@@ -6,7 +6,9 @@ use rocksdb::ops::{Delete, Get, Open, Put};
 use rocksdb::{FullOptions, Options, DB};
 
 use common_config_parser::types::ConfigRocksDB;
-use protocol::{trie, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
+use protocol::trie;
+
+use crate::system_contract::image_cell::error::{ImageCellError, ImageCellResult};
 
 // 49999 is the largest prime number within 50000.
 const RAND_SEED: u64 = 49999;
@@ -22,13 +24,13 @@ impl RocksTrieDB {
         path: P,
         config: ConfigRocksDB,
         cache_size: usize,
-    ) -> ProtocolResult<Self> {
+    ) -> ImageCellResult<Self> {
         if !path.as_ref().is_dir() {
-            fs::create_dir_all(&path).map_err(RocksTrieDBError::CreateDB)?;
+            fs::create_dir_all(&path).map_err(ImageCellError::CreateDB)?;
         }
 
         let opts = rocksdb_opts(config)?;
-        let db = Arc::new(DB::open(&opts, path).map_err(RocksTrieDBError::from)?);
+        let db = Arc::new(DB::open(&opts, path).map_err(ImageCellError::RocksDB)?);
 
         // Init HashMap with capacity 2 * cache_size to avoid reallocate memory.
         Ok(RocksTrieDB {
@@ -38,13 +40,17 @@ impl RocksTrieDB {
         })
     }
 
-    fn inner_get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, RocksTrieDBError> {
+    fn inner_get(&self, key: &[u8]) -> ImageCellResult<Option<Vec<u8>>> {
         use trie::DB;
 
         let res = { self.cache.lock().get(key).cloned() };
 
         if res.is_none() {
-            let ret = self.db.get(key).map_err(to_store_err)?.map(|r| r.to_vec());
+            let ret = self
+                .db
+                .get(key)
+                .map_err(ImageCellError::RocksDB)?
+                .map(|r| r.to_vec());
 
             if let Some(val) = &ret {
                 {
@@ -71,7 +77,7 @@ impl RocksTrieDB {
 }
 
 impl trie::DB for RocksTrieDB {
-    type Error = RocksTrieDBError;
+    type Error = ImageCellError;
 
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, Self::Error> {
         self.inner_get(key)
@@ -83,7 +89,12 @@ impl trie::DB for RocksTrieDB {
         if res {
             Ok(true)
         } else {
-            if let Some(val) = self.db.get(key).map_err(to_store_err)?.map(|r| r.to_vec()) {
+            if let Some(val) = self
+                .db
+                .get(key)
+                .map_err(ImageCellError::RocksDB)?
+                .map(|r| r.to_vec())
+            {
                 self.cache.lock().insert(key.to_owned(), val);
                 return Ok(true);
             }
@@ -92,7 +103,7 @@ impl trie::DB for RocksTrieDB {
     }
 
     fn insert(&self, key: Vec<u8>, value: Vec<u8>) -> Result<(), Self::Error> {
-        self.db.put(&key, &value).map_err(to_store_err)?;
+        self.db.put(&key, &value).map_err(ImageCellError::RocksDB)?;
 
         {
             self.cache.lock().insert(key, value);
@@ -102,7 +113,7 @@ impl trie::DB for RocksTrieDB {
     }
 
     fn remove(&self, key: &[u8]) -> Result<(), Self::Error> {
-        self.db.delete(key).map_err(to_remove_err)?;
+        self.db.delete(key).map_err(ImageCellError::RocksDB)?;
 
         {
             self.cache.lock().remove(key);
@@ -133,14 +144,14 @@ impl trie::DB for RocksTrieDB {
     }
 }
 
-fn rocksdb_opts(config: ConfigRocksDB) -> ProtocolResult<Options> {
+fn rocksdb_opts(config: ConfigRocksDB) -> ImageCellResult<Options> {
     let mut opts = if let Some(ref file) = config.options_file {
         let cache_size = match config.cache_size {
             0 => None,
             size => Some(size),
         };
-        let full_opts =
-            FullOptions::load_from_file(file, cache_size, false).map_err(RocksTrieDBError::from)?;
+        let full_opts = FullOptions::load_from_file(file, cache_size, false)
+            .map_err(ImageCellError::RocksDB)?;
         let FullOptions { db_opts, .. } = full_opts;
         db_opts
     } else {
@@ -168,45 +179,6 @@ fn rand_remove_list<T: Clone>(keys: Vec<&T>, num: usize) -> impl Iterator<Item =
     }
 
     ret.into_iter()
-}
-
-#[derive(Debug, Display, From)]
-pub enum RocksTrieDBError {
-    #[display(fmt = "store error")]
-    Store,
-
-    #[display(fmt = "remove error")]
-    Remove,
-
-    #[display(fmt = "rocksdb {}", _0)]
-    RocksDB(rocksdb::Error),
-
-    #[display(fmt = "parameters do not match")]
-    InsertParameter,
-
-    #[display(fmt = "batch length do not match")]
-    BatchLengthMismatch,
-
-    #[display(fmt = "Create DB path {}", _0)]
-    CreateDB(io::Error),
-}
-
-impl std::error::Error for RocksTrieDBError {}
-
-impl From<RocksTrieDBError> for ProtocolError {
-    fn from(err: RocksTrieDBError) -> ProtocolError {
-        ProtocolError::new(ProtocolErrorKind::Executor, Box::new(err))
-    }
-}
-
-fn to_store_err(e: rocksdb::Error) -> RocksTrieDBError {
-    log::error!("[executor] trie db {:?}", e);
-    RocksTrieDBError::Store
-}
-
-fn to_remove_err(e: rocksdb::Error) -> RocksTrieDBError {
-    log::error!("[executor] trie db {:?}", e);
-    RocksTrieDBError::Remove
 }
 
 #[cfg(test)]
