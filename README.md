@@ -25,7 +25,7 @@ Axon is a high-performance layer2 framework with native cross-chain function. B
 
 ### Developer-Friendly Design
 
-Axon is compatible with [Ethereum](https://ethereum.org) so that all of the develop utilities can be used on it directly. And the [Axon CLI](https://github.com/axonweb3/axon-cli) provides an all-in-one client which includes initialization, DevOps, cross-chain request and so on. Seeing is believing, there is a [15 minutes tutorial](https://docs.axonweb3.io/for-dapp-devs/Zero_To_Axon_With_Axon_Cli) that will lead you to build your own chain and deploy a tiny application.
+Axon is compatible with [Ethereum](https://ethereum.org) so that all of the develop utilities can be used on it directly. And the [Axon CLI](https://github.com/axonweb3/axon-cli) provides an all-in-one client which includes initialization, DevOps, cross-chain request and so on. Seeing is believing, there is a [15 minutes tutorial](https://docs.axonweb3.io/getting-started/for-dapp-devs/zero_to_axon_with_axon_cli) that will lead you to build your own chain and deploy a tiny application.
 
 ### Native Cross-chain Communication
 
@@ -50,7 +50,7 @@ git clone https://github.com/axonweb3/axon.git && cd axon
 cargo run --release -- -c devtools/chain/config.toml -g devtools/chain/genesis_single_node.json
 ```
 
-Read the [docs](https://docs.axonweb3.io/) and follow the [tutorials](https://docs.axonweb3.io/for-dapp-devs/Zero_To_Axon_With_Axon_Cli).
+Read the [docs](https://docs.axonweb3.io/) and follow the [tutorials](https://docs.axonweb3.io/getting-started/for-dapp-devs/zero_to_axon_with_axon_cli).
 
 ## Toolchain
 
