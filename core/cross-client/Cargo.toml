@@ -9,7 +9,7 @@ arc-swap = "1.5"
 ckb-hash = "0.105"
 ckb-jsonrpc-types = "0.105"
 ckb-sdk = "2.3"
-ckb-types = "0.105"
+ckb-types = "0.106"
 crossbeam = "0.8"
 ethabi = "17.2"
 ethabi-contract = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
