@@ -35,7 +35,7 @@ sha2 = "0.10"
 
 [dev-dependencies]
 bytemuck = "1.12"
-ckb-jsonrpc-types = "0.105"
+ckb-jsonrpc-types = "0.106"
 ckb-types = "0.105"
 common-crypto = { path = "../../common/crypto" }
 core-cross-client = { path = "../cross-client" }

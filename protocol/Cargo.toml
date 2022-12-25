@@ -10,7 +10,7 @@ async-trait = "0.1"
 bincode = "1.3"
 bytes = { version = "1.3", features = ["serde"] }
 ckb-hash = "0.105"
-ckb-jsonrpc-types = "0.105"
+ckb-jsonrpc-types = "0.106"
 ckb-sdk = "2.3"
 ckb-types = "0.105"
 common-crypto = { path = "../common/crypto" }

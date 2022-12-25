@@ -7,7 +7,7 @@ edition = "2021"
 [dependencies]
 arc-swap = "1.5"
 ckb-hash = "0.105"
-ckb-jsonrpc-types = "0.105"
+ckb-jsonrpc-types = "0.106"
 ckb-sdk = "2.3"
 ckb-types = "0.105"
 crossbeam = "0.8"
