@@ -8,7 +8,7 @@ use crate::system_contract::image_cell::{
     cell_key, header_key, image_cell_abi, CellInfo, ImageCellContract,
 };
 use crate::system_contract::SystemContract;
-
+use crate::system_contract::image_cell::init_image_cell;
 use super::*;
 
 static ROCKDB_PATH: &str = "./free-space/image-cell";
@@ -22,7 +22,8 @@ fn test_write_functions() {
     let vicinity = gen_vicinity();
     let mut backend = MemoryBackend::new(&vicinity, BTreeMap::new());
 
-    let executor = ImageCellContract::new(ROCKDB_PATH, ConfigRocksDB::default(), 100);
+    let executor = ImageCellContract::default();
+    init_image_cell(ROCKDB_PATH, ConfigRocksDB::default(), 100);
 
     test_update_first(&mut backend, &executor);
     test_update_second(&mut backend, &executor);

@@ -259,6 +259,14 @@ pub struct Config {
 }
 
 impl Config {
+    pub fn data_path_for_image_cell(&self) -> PathBuf {
+        let mut path_state = self.data_path.clone();
+        path_state.push("rocksdb");
+        path_state.push("image_cell_data");
+        path_state
+
+    }
+
     pub fn data_path_for_state(&self) -> PathBuf {
         let mut path_state = self.data_path.clone();
         path_state.push("rocksdb");
