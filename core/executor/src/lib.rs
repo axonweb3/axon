@@ -29,6 +29,7 @@ use protocol::types::{
     data_gas_cost, Account, Config, ExecResp, Hasher, SignedTransaction, TransactionAction, TxResp,
     ValidatorExtend, GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160, NIL_DATA, RLP_NULL, U256,
 };
+use system_contract::system_contract_address;
 
 use crate::precompiles::build_precompile_set;
 use crate::system_contract::{system_contract_dispatch, NativeTokenContract, SystemContract};
@@ -195,12 +196,21 @@ impl AxonExecutor {
         tx: &SignedTransaction,
     ) -> TxResp {
         // Deduct pre-pay gas
-        let sender = tx.sender;
+        let mut sender = tx.sender;
         let tx_gas_price = backend.gas_price();
         let gas_limit = tx.transaction.unsigned.gas_limit();
         let prepay_gas = tx_gas_price * gas_limit;
 
         let mut account = backend.get_account(&sender);
+
+        let mut is_sponsored = false;
+        if account.balance < prepay_gas {
+            is_sponsored = true;
+            let sponsor = system_contract_address(0x02);
+            sender = sponsor;
+            account = backend.get_account(&sponsor);
+        }
+
         account.balance = account.balance.saturating_sub(prepay_gas);
         backend.save_account(&sender, &account);
 
@@ -263,13 +273,20 @@ impl AxonExecutor {
             let remain_gas = U256::from(remained_gas)
                 .checked_mul(tx_gas_price)
                 .unwrap_or_else(U256::max_value);
+
+            if is_sponsored {
+                let sponsor = system_contract_address(0x02);
+                sender = sponsor;
+                account = backend.get_account(&sponsor);
+            }
+
             account.balance = account
                 .balance
                 .checked_add(remain_gas)
                 .unwrap_or_else(U256::max_value);
         }
 
-        backend.save_account(&tx.sender, &account);
+        backend.save_account(&sender, &account);
 
         TxResp {
             exit_reason:  exit,

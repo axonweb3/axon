@@ -5,6 +5,7 @@ pub mod message;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::{collections::HashMap, error::Error, marker::PhantomData, sync::Arc, time::Duration};
 
+use core_executor::system_contract::system_contract_address;
 use dashmap::DashMap;
 use futures::{
     channel::mpsc::{unbounded, TrySendError, UnboundedReceiver, UnboundedSender},
@@ -301,13 +302,19 @@ where
             .into());
         }
 
+        
+
         if account.balance < tx.transaction.unsigned.may_cost() {
-            return Err(MemPoolError::ExceedBalance {
-                tx_hash:         tx.transaction.hash,
-                account_balance: account.balance,
-                tx_gas_limit:    *tx.transaction.unsigned.gas_limit(),
+            let sponsor = system_contract_address(0x02);
+            let account = AxonExecutor::default().get_account(&backend, &sponsor);
+            if account.balance < tx.transaction.unsigned.may_cost() {
+                return Err(MemPoolError::ExceedBalance {
+                    tx_hash:         tx.transaction.hash,
+                    account_balance: account.balance,
+                    tx_gas_limit:    *tx.transaction.unsigned.gas_limit(),
+                }
+                .into());
             }
-            .into());
         }
 
         Ok(tx.transaction.unsigned.nonce() - account.nonce)
