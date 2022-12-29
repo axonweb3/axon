@@ -6100,9 +6100,9 @@ dependencies = [
 
 [[package]]
 name = "tentacle"
-version = "0.4.1"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "93b22d7b895652fdc6989d1078e6f1d2281074c44da4454a77010d8a65785c77"
+checksum = "6ffbbdb4f54a9605ceda168884efcf5fb24ef655103362af211e6cfe61eff832"
 dependencies = [
  "async-trait",
  "bytes",
