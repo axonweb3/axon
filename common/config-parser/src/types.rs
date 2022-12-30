@@ -264,7 +264,6 @@ impl Config {
         path_state.push("rocksdb");
         path_state.push("image_cell_data");
         path_state
-
     }
 
     pub fn data_path_for_state(&self) -> PathBuf {

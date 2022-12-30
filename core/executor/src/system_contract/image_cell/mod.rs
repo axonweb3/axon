@@ -38,7 +38,7 @@ lazy_static::lazy_static! {
 #[derive(Default)]
 pub struct ImageCellContract;
 
-pub fn init_image_cell<P: AsRef<Path>>(path: P, config: ConfigRocksDB, cache_size: usize){
+pub fn init<P: AsRef<Path>>(path: P, config: ConfigRocksDB, cache_size: usize) {
     TRIE_DB.get_or_init(|| {
         Arc::new(
             RocksTrieDB::new(path, config, cache_size).expect("[image cell] new rocksdb error"),

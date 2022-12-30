@@ -22,7 +22,7 @@ use common_crypto::{
     BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey, ToPublicKey,
     UncompressedPublicKey,
 };
-use core_executor::system_contract::image_cell::init_image_cell;
+
 use core_api::{jsonrpc::run_jsonrpc_server, DefaultAPIAdapter};
 use core_consensus::message::{
     ChokeMessageHandler, ProposalMessageHandler, PullBlockRpcHandler, PullProofRpcHandler,
@@ -41,6 +41,7 @@ use core_cross_client::{
     CrossChainDBImpl, CrossChainImpl, CrossChainMessageHandler, DefaultCrossChainAdapter,
     END_GOSSIP_BUILD_CKB_TX, END_GOSSIP_CKB_TX_SIGNATURE,
 };
+use core_executor::system_contract::image_cell;
 use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB};
 use core_interoperation::InteroperationImpl;
 use core_mempool::{
@@ -277,7 +278,7 @@ impl Axon {
             path_state,
             config.rocksdb.clone(),
             config.executor.triedb_cache_size,
-        )?);  
+        )?);
 
         #[cfg(all(
             not(target_env = "msvc"),
@@ -288,10 +289,14 @@ impl Axon {
             "triedb",
             trie_db.inner_db(),
         ));
-        
+
         // Init image_cell
         let path_state = config.data_path_for_image_cell();
-        init_image_cell(path_state, config.rocksdb.clone(), config.executor.triedb_cache_size);
+        image_cell::init(
+            path_state,
+            config.rocksdb.clone(),
+            config.executor.triedb_cache_size,
+        );
 
         // Init full transactions wal
         let txs_wal_path = config.data_path_for_txs_wal().to_str().unwrap().to_string();
