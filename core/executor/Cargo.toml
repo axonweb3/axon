@@ -23,7 +23,7 @@ hasher = "0.1"
 lazy_static = "1.4"
 log = "0.4"
 molecule = "0.7"
-once_cell = "1.16"
+once_cell = "1.17"
 parking_lot = "0.12"
 protocol = { path = "../../protocol", package = "axon-protocol" }
 rand = { version = "0.8", features = ["small_rng"] }
