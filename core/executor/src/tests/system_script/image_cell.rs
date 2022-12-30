@@ -1,11 +1,14 @@
+use std::sync::Arc;
+
 use ckb_types::{bytes::Bytes, packed, prelude::*};
 use ethers::abi::AbiEncode;
 
 use common_config_parser::types::ConfigRocksDB;
 use protocol::types::{Hasher, TxResp};
 
+use super::*;
 use crate::system_contract::image_cell::{
-    cell_key, header_key, image_cell_abi, init, CellInfo, ImageCellContract,
+    image_cell_abi, init, CellInfo, CellKey, HeaderKey, ImageCellContract,
 };
 use crate::system_contract::SystemContract;
 
@@ -23,7 +26,12 @@ fn test_write_functions() {
     let mut backend = MemoryBackend::new(&vicinity, BTreeMap::new());
 
     let executor = ImageCellContract::default();
-    init(ROCKDB_PATH, ConfigRocksDB::default(), 100);
+    init(
+        ROCKDB_PATH,
+        ConfigRocksDB::default(),
+        100,
+        Arc::new(backend.clone()),
+    );
 
     test_update_first(&mut backend, &executor);
     test_update_second(&mut backend, &executor);
@@ -46,11 +54,11 @@ fn test_update_first(backend: &mut MemoryBackend, executor: &ImageCellContract) 
 
     check_root(backend, executor);
 
-    let header_key = header_key(&[5u8; 32], 0x1);
+    let header_key = HeaderKey::new([5u8; 32], 0x1);
     let get_header = executor.get_header(backend, &header_key).unwrap().unwrap();
     check_header(&get_header);
 
-    let cell_key = cell_key(&[7u8; 32], 0x0);
+    let cell_key = CellKey::new([7u8; 32], 0x0);
     let get_cell = executor.get_cell(backend, &cell_key).unwrap().unwrap();
     check_cell(&get_cell, 0x1, None);
 }
@@ -70,7 +78,7 @@ fn test_update_second(backend: &mut MemoryBackend, executor: &ImageCellContract)
 
     check_root(backend, executor);
 
-    let cell_key = cell_key(&[7u8; 32], 0x0);
+    let cell_key = CellKey::new([7u8; 32], 0x0);
     let get_cell = executor.get_cell(backend, &cell_key).unwrap().unwrap();
     check_cell(&get_cell, 0x1, Some(0x2));
 }
@@ -91,11 +99,11 @@ fn test_rollback_first(backend: &mut MemoryBackend, executor: &ImageCellContract
 
     check_root(backend, executor);
 
-    let header_key = header_key(&[5u8; 32], 0x2);
+    let header_key = HeaderKey::new([5u8; 32], 0x2);
     let get_header = executor.get_header(backend, &header_key).unwrap();
     assert!(get_header.is_none());
 
-    let cell_key = cell_key(&[7u8; 32], 0x0);
+    let cell_key = CellKey::new([7u8; 32], 0x0);
     let get_cell = executor.get_cell(backend, &cell_key).unwrap().unwrap();
     check_cell(&get_cell, 0x1, None);
 }
@@ -116,7 +124,7 @@ fn test_rollback_second(backend: &mut MemoryBackend, executor: &ImageCellContrac
 
     check_root(backend, executor);
 
-    let cell_key = cell_key(&[7u8; 32], 0x0);
+    let cell_key = CellKey::new([7u8; 32], 0x0);
     let get_cell = executor.get_cell(backend, &cell_key).unwrap();
     assert!(get_cell.is_none());
 }

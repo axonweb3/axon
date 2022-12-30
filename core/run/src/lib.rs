@@ -290,14 +290,6 @@ impl Axon {
             trie_db.inner_db(),
         ));
 
-        // Init image_cell
-        let path_state = config.data_path_for_image_cell();
-        image_cell::init(
-            path_state,
-            config.rocksdb.clone(),
-            config.executor.triedb_cache_size,
-        );
-
         // Init full transactions wal
         let txs_wal_path = config.data_path_for_txs_wal().to_str().unwrap().to_string();
         let txs_wal = Arc::new(SignedTxsWAL::new(txs_wal_path));
@@ -317,6 +309,21 @@ impl Axon {
             "Recover {} tx of number {} from wal",
             current_stxs.len(),
             current_block.header.number + 1
+        );
+
+        // Init image_cell
+        let path_state = config.data_path_for_image_cell();
+        let backend = AxonExecutorAdapter::from_root(
+            current_block.header.state_root,
+            Arc::clone(&trie_db),
+            Arc::clone(&storage),
+            Proposal::from(current_block.header.clone()).into(),
+        )?;
+        image_cell::init(
+            path_state,
+            config.rocksdb.clone(),
+            config.executor.triedb_cache_size,
+            Arc::new(backend),
         );
 
         let metadata_adapter = MetadataAdapterImpl::new(Arc::clone(&storage), Arc::clone(&trie_db));

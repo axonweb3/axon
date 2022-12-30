@@ -8,7 +8,7 @@ use rocksdb::{FullOptions, Options, DB};
 use common_config_parser::types::ConfigRocksDB;
 use protocol::trie;
 
-use crate::system_contract::image_cell::error::{ImageCellError, ImageCellResult};
+use crate::system_contract::error::{SystemScriptError, SystemScriptResult};
 
 // 49999 is the largest prime number within 50000.
 const RAND_SEED: u64 = 49999;
@@ -24,13 +24,13 @@ impl RocksTrieDB {
         path: P,
         config: ConfigRocksDB,
         cache_size: usize,
-    ) -> ImageCellResult<Self> {
+    ) -> SystemScriptResult<Self> {
         if !path.as_ref().is_dir() {
-            fs::create_dir_all(&path).map_err(ImageCellError::CreateDB)?;
+            fs::create_dir_all(&path).map_err(SystemScriptError::CreateDB)?;
         }
 
         let opts = rocksdb_opts(config)?;
-        let db = Arc::new(DB::open(&opts, path).map_err(ImageCellError::RocksDB)?);
+        let db = Arc::new(DB::open(&opts, path).map_err(SystemScriptError::RocksDB)?);
 
         // Init HashMap with capacity 2 * cache_size to avoid reallocate memory.
         Ok(RocksTrieDB {
@@ -40,7 +40,7 @@ impl RocksTrieDB {
         })
     }
 
-    fn inner_get(&self, key: &[u8]) -> ImageCellResult<Option<Vec<u8>>> {
+    fn inner_get(&self, key: &[u8]) -> SystemScriptResult<Option<Vec<u8>>> {
         use trie::DB;
 
         let res = { self.cache.lock().get(key).cloned() };
@@ -49,7 +49,7 @@ impl RocksTrieDB {
             let ret = self
                 .db
                 .get(key)
-                .map_err(ImageCellError::RocksDB)?
+                .map_err(SystemScriptError::RocksDB)?
                 .map(|r| r.to_vec());
 
             if let Some(val) = &ret {
@@ -77,7 +77,7 @@ impl RocksTrieDB {
 }
 
 impl trie::DB for RocksTrieDB {
-    type Error = ImageCellError;
+    type Error = SystemScriptError;
 
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, Self::Error> {
         self.inner_get(key)
@@ -92,7 +92,7 @@ impl trie::DB for RocksTrieDB {
             if let Some(val) = self
                 .db
                 .get(key)
-                .map_err(ImageCellError::RocksDB)?
+                .map_err(SystemScriptError::RocksDB)?
                 .map(|r| r.to_vec())
             {
                 self.cache.lock().insert(key.to_owned(), val);
@@ -103,7 +103,9 @@ impl trie::DB for RocksTrieDB {
     }
 
     fn insert(&self, key: Vec<u8>, value: Vec<u8>) -> Result<(), Self::Error> {
-        self.db.put(&key, &value).map_err(ImageCellError::RocksDB)?;
+        self.db
+            .put(&key, &value)
+            .map_err(SystemScriptError::RocksDB)?;
 
         {
             self.cache.lock().insert(key, value);
@@ -113,7 +115,7 @@ impl trie::DB for RocksTrieDB {
     }
 
     fn remove(&self, key: &[u8]) -> Result<(), Self::Error> {
-        self.db.delete(key).map_err(ImageCellError::RocksDB)?;
+        self.db.delete(key).map_err(SystemScriptError::RocksDB)?;
 
         {
             self.cache.lock().remove(key);
@@ -144,14 +146,14 @@ impl trie::DB for RocksTrieDB {
     }
 }
 
-fn rocksdb_opts(config: ConfigRocksDB) -> ImageCellResult<Options> {
+fn rocksdb_opts(config: ConfigRocksDB) -> SystemScriptResult<Options> {
     let mut opts = if let Some(ref file) = config.options_file {
         let cache_size = match config.cache_size {
             0 => None,
             size => Some(size),
         };
         let full_opts = FullOptions::load_from_file(file, cache_size, false)
-            .map_err(ImageCellError::RocksDB)?;
+            .map_err(SystemScriptError::RocksDB)?;
         let FullOptions { db_opts, .. } = full_opts;
         db_opts
     } else {

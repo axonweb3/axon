@@ -1,13 +1,16 @@
 mod abi;
-mod error;
 mod exec;
 mod store;
 mod trie_db;
+
+pub use abi::image_cell_abi;
+pub use store::{CellInfo, CellKey, HeaderKey};
 
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
+use arc_swap::ArcSwap;
 use ckb_types::packed;
 use ethers::abi::AbiDecode;
 use once_cell::sync::OnceCell;
@@ -19,7 +22,11 @@ use protocol::types::{
     TxResp, H160, H256, U256,
 };
 
-use crate::system_contract::{system_contract_address, SystemContract};
+use crate::system_contract::error::{SystemScriptError, SystemScriptResult};
+use crate::system_contract::image_cell::store::{get_block_number, get_cell, get_header};
+use crate::system_contract::{
+    image_cell::trie_db::RocksTrieDB, system_contract_address, SystemContract,
+};
 use crate::MPTTrie;
 
 pub use abi::image_cell_abi;
@@ -33,18 +40,28 @@ static TRIE_DB: OnceCell<Arc<RocksTrieDB>> = OnceCell::new();
 
 lazy_static::lazy_static! {
     static ref CELL_ROOT_KEY: H256 = Hasher::digest("cell_mpt_root");
+    static ref CURRENT_CELL_ROOT: ArcSwap<H256> = ArcSwap::from_pointee(H256::default());
 }
 
-#[derive(Default)]
-pub struct ImageCellContract;
+pub fn init<P: AsRef<Path>, B: Backend>(
+    path: P,
+    config: ConfigRocksDB,
+    cache_size: usize,
+    backend: Arc<B>,
+) {
+    let current_cell_root = backend.storage(ImageCellContract::ADDRESS, *CELL_ROOT_KEY);
 
-pub fn init<P: AsRef<Path>>(path: P, config: ConfigRocksDB, cache_size: usize) {
+    CURRENT_CELL_ROOT.store(Arc::new(current_cell_root));
+
     TRIE_DB.get_or_init(|| {
         Arc::new(
             RocksTrieDB::new(path, config, cache_size).expect("[image cell] new rocksdb error"),
         )
     });
 }
+
+#[derive(Default)]
+pub struct ImageCellContract;
 
 impl SystemContract for ImageCellContract {
     const ADDRESS: H160 = system_contract_address(0x1);
@@ -114,10 +131,10 @@ impl SystemContract for ImageCellContract {
     }
 }
 
-fn get_mpt<B: Backend + ApplyBackend>(backend: &B) -> ImageCellResult<MPTTrie<RocksTrieDB>> {
+fn get_mpt<B: Backend + ApplyBackend>(backend: &B) -> SystemScriptResult<MPTTrie<RocksTrieDB>> {
     let trie_db = match TRIE_DB.get() {
         Some(db) => db,
-        None => return Err(ImageCellError::TrieDbNotInit),
+        None => return Err(SystemScriptError::TrieDbNotInit),
     };
 
     let root = backend.storage(ImageCellContract::ADDRESS, *CELL_ROOT_KEY);
@@ -127,7 +144,7 @@ fn get_mpt<B: Backend + ApplyBackend>(backend: &B) -> ImageCellResult<MPTTrie<Ro
     } else {
         match MPTTrie::from_root(root, Arc::clone(trie_db)) {
             Ok(m) => Ok(m),
-            Err(e) => Err(ImageCellError::RestoreMpt(e.to_string())),
+            Err(e) => Err(SystemScriptError::RestoreMpt(e.to_string())),
         }
     }
 }
@@ -173,7 +190,7 @@ impl ImageCellContract {
         &self,
         backend: &B,
         key: &HeaderKey,
-    ) -> ImageCellResult<Option<packed::Header>> {
+    ) -> SystemScriptResult<Option<packed::Header>> {
         let mpt = get_mpt(backend)?;
         get_header(&mpt, key)
     }
@@ -182,7 +199,7 @@ impl ImageCellContract {
         &self,
         backend: &B,
         key: &CellKey,
-    ) -> ImageCellResult<Option<CellInfo>> {
+    ) -> SystemScriptResult<Option<CellInfo>> {
         let mpt = get_mpt(backend)?;
         get_cell(&mpt, key)
     }
