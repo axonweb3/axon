@@ -147,3 +147,22 @@ jobs:
           workflow: Somking test suit
           token: ${{ secrets.GITHUB_TOKEN }}
           inputs: '{ "axon_linux_release_tag": "${{ needs.version.outputs.tag }}" }'
+
+  trigger-build-docker-image:
+    runs-on: ubuntu-latest
+    needs:
+      - version
+    steps:
+      - uses: actions/checkout@v3
+      - name: Generate axon-bot token
+        id: generate_axon_bot_token
+        uses: wow-actions/use-app-token@v2
+        with:
+          app_id: ${{ secrets.AXON_BOT_APP_ID }}
+          private_key: ${{ secrets.AXON_BOT_PRIVATE_KEY }}
+      - name: Invoke build docker image with inputs
+        uses: aurelien-baudet/workflow-dispatch@v2
+        with:
+          workflow: Build docker image
+          token: ${{ secrets.GITHUB_TOKEN }}
+          inputs: '{ "dispatch": "${{ needs.version.outputs.tag }}" }'
