@@ -1018,10 +1018,10 @@
   resolved "https://registry.npmmirror.com/@openzeppelin/contracts/-/contracts-4.7.3.tgz#939534757a81f8d69cc854c7692805684ff3111e"
   integrity sha512-dGRS0agJzu8ybo44pCIf3xBaPQN/65AIXNgK8+4gzKd5kbvlqyxryUYVLJv7fK98Seyd2hDZzVEHSWAh0Bt1Yw==
 
-"@openzeppelin/hardhat-upgrades@^1.21.0":
-  version "1.21.0"
-  resolved "https://registry.yarnpkg.com/@openzeppelin/hardhat-upgrades/-/hardhat-upgrades-1.21.0.tgz#e90fb7d858093f35a300b3a5a2fd32bca6179dfc"
-  integrity sha512-Kwl7IN0Hlhj4HluMTTl0DrtU90OI/Q6rG3sAyd2pv3fababe9EuZqs9DydOlkWM45JwTzC+eBzX3TgHsqI13eA==
+"@openzeppelin/hardhat-upgrades@^1.22.0":
+  version "1.22.0"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/hardhat-upgrades/-/hardhat-upgrades-1.22.0.tgz#2a432c72a428a9f277201646bc1a248021538f06"
+  integrity sha512-1qyZnDaxl0C8tne7ykNRa/fxw3FrNCY2M3fGuCiQW5DDkJoXhLgm3JVsXwl6X7q9mQSrik4vgBbI3ErmxmZTYg==
   dependencies:
     "@openzeppelin/upgrades-core" "^1.20.0"
     chalk "^4.1.0"
