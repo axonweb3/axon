@@ -6,7 +6,7 @@ edition = "2021"
 
 [dependencies]
 ckb-jsonrpc-types = "0.105"
-ckb-sdk = "2.3"
+ckb-sdk = "2.4"
 ckb-types = "0.105"
 futures = "0.3"
 jsonrpc-core = "18.0"
