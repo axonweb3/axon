@@ -5,7 +5,7 @@ version = "0.1.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-arc-swap = "1.5"
+arc-swap = "1.6"
 az = "1.2"
 bn = { package = "substrate-bn", version = "0.6" }
 
