@@ -6,9 +6,9 @@ edition = "2021"
 
 [dependencies]
 arc-swap = "1.5"
-ckb-jsonrpc-types = "0.105"
-ckb-sdk = "2.3"
-ckb-types = "0.105"
+ckb-jsonrpc-types = "0.106"
+ckb-sdk = "2.4"
+ckb-types = "0.106"
 common-crypto = { path = "../../common/crypto" }
 lazy_static = "1.4"
 log = "0.4"
