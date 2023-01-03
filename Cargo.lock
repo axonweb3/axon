@@ -1814,7 +1814,7 @@ dependencies = [
  "futures",
  "lazy_static",
  "log",
- "lru 0.8.1",
+ "lru 0.9.0",
  "num-traits",
  "parking_lot 0.12.1",
  "rand 0.7.3",
@@ -3955,11 +3955,11 @@ dependencies = [
 
 [[package]]
 name = "lru"
-version = "0.8.1"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6e8aaa3f231bb4bd57b84b2d5dc3ae7f350265df8aa96492e0bc394a1571909"
+checksum = "71e7d46de488603ffdd5f30afbc64fbba2378214a2c3a2fb83abf3d33126df17"
 dependencies = [
- "hashbrown 0.12.3",
+ "hashbrown 0.13.1",
 ]
 
 [[package]]
