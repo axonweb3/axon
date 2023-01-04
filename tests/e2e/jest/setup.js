@@ -1,5 +1,6 @@
 import puppeteer from "puppeteer";
 import { bootstrap,launch, setupMetamask, getMetamaskWindow } from "@chainsafe/dappeteer";
+import {RECOMMENDED_METAMASK_VERSION} from "@chainsafe/dappeteer/dist/index";
 
 import Config from "../config";
 import createTransactionData from "../src/create_test_data/createTestDataManage";
@@ -18,21 +19,28 @@ export const DAPPETEER_DEFAULT_CONFIG = {
     process.env.WSL ? "-no-sandbox" : "",
   ],
 };
-export default async function setup() {
-  // const browser = await launch(puppeteer, DAPPETEER_DEFAULT_CONFIG);
-  // const browser = await launch(puppeteer, DAPPETEER_DEFAULT_CONFIG);
-  // const { metaMask, browser } = await dappeteer.bootstrap();
-  const { browser, metaMask, metaMaskPage } = await bootstrap({
-    automation: "puppeteer",
+export const DappeteerLaunchOptions = {
+  automation: "puppeteer",
     browser: "chrome",
-    metaMaskVersion: "v10.14.0",
+    metaMaskVersion: RECOMMENDED_METAMASK_VERSION,
     puppeteerOptions: {
       args: [
         process.env.HEADLESS ? "--headless=chrome" : "",
         process.env.WSL ? "-no-sandbox" : "",
       ],
     },
-  });
+};
+export const MetaMaskOptions = {
+  seed: "bubble young armed shed unusual acid pilot chase caught crop defense only",
+  password: "12345678",
+  showTestNets: true,
+};
+export default async function setup() {
+  // const browser = await launch(puppeteer, DAPPETEER_DEFAULT_CONFIG);
+  // const browser = await launch(puppeteer, DAPPETEER_DEFAULT_CONFIG);
+  // const { metaMask, browser } = await dappeteer.bootstrap();
+  const { metaMask,browser, metaMaskPage } = await bootstrap(DappeteerLaunchOptions&MetaMaskOptions);
+  // const { metaMask,browser, metaMaskPage} = await bootstrap(puppeteer, { seed: "bubble young armed shed unusual acid pilot chase caught crop defense only", password: 12345678, metamaskVersion: RECOMMENDED_METAMASK_VERSION });
   // const { metaMask,browser } = await bootstrap();
   try {
     await createTransactionData.resetTestTmpFiles();
