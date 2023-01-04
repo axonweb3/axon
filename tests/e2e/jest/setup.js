@@ -22,7 +22,7 @@ export const DAPPETEER_DEFAULT_CONFIG = {
 export const DappeteerLaunchOptions = {
   automation: "puppeteer",
     browser: "chrome",
-    metaMaskVersion: RECOMMENDED_METAMASK_VERSION,
+    metaMaskVersion: "v10.15.0",
     puppeteerOptions: {
       args: [
         process.env.HEADLESS ? "--headless=chrome" : "",
@@ -36,13 +36,28 @@ export const MetaMaskOptions = {
   showTestNets: true,
 };
 export default async function setup() {
-  // const browser = await launch(puppeteer, DAPPETEER_DEFAULT_CONFIG);
+  const browser = await launch(puppeteer, DAPPETEER_DEFAULT_CONFIG);
   // const browser = await launch(puppeteer, DAPPETEER_DEFAULT_CONFIG);
   // const { metaMask, browser } = await dappeteer.bootstrap();
   // const { metaMask,browser, metaMaskPage } = await bootstrap(DappeteerLaunchOptions&MetaMaskOptions);
-  const { metaMask,browser } = await bootstrap(DappeteerLaunchOptions&MetaMaskOptions);
+  // const { metaMask,browser } = await bootstrap(DappeteerLaunchOptions&MetaMaskOptions);
   // const { metaMask,browser, metaMaskPage} = await bootstrap(puppeteer, { seed: "bubble young armed shed unusual acid pilot chase caught crop defense only", password: 12345678, metamaskVersion: RECOMMENDED_METAMASK_VERSION });
   // const { metaMask,browser } = await bootstrap();
+  console.log('begin setup metamask...');
+  // const browser = await dappeteer.launch(puppeteer, {
+  //   metamaskVersion: 'v10.15.0',
+  //   // defaultViewport: { width: 1920, height: 1080 },
+  //   headless: false, // limitation of puppeteer, chrome can't be used in headless mode
+  // });
+
+  console.log('Loading metamask...');
+  const metamask = await dappeteer.setupMetamask(browser, {
+      seed: "bubble young armed shed unusual acid pilot chase caught crop defense only",
+      password: "12345678",
+      showTestNets: false,
+      // hideSeed: true,
+  });
+  console.log('go on Loading metamask...');
   try {
     await createTransactionData.resetTestTmpFiles();
     await createTransactionData.createTransactionData(); // create test data
