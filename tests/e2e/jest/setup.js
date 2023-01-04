@@ -43,7 +43,7 @@ export default async function setup() {
   // const { metaMask,browser } = await bootstrap(DappeteerLaunchOptions&MetaMaskOptions);
   // const { metaMask,browser, metaMaskPage} = await bootstrap(puppeteer, { seed: "bubble young armed shed unusual acid pilot chase caught crop defense only", password: 12345678, metamaskVersion: RECOMMENDED_METAMASK_VERSION });
   // const { metaMask,browser } = await bootstrap();
-  const { metaMask, browser, metaMaskPage } = await bootstrap(puppeteer, {
+  const [metaMask, metaMaskPage ,browser] = await bootstrap(puppeteer, {
     seed: "bubble young armed shed unusual acid pilot chase caught crop defense only", 
     password: "12345678", 
     metamaskVersion: RECOMMENDED_METAMASK_VERSION });
@@ -72,22 +72,27 @@ export default async function setup() {
     console.log(error);
     throw error;
   }
-  console.log('in there...?');
-  // process.env.PUPPETEER_WS_ENDPOINT = browser.wsEndpoint();
-  console.log('in there...?');
+  
+  process.env.PUPPETEER_WS_ENDPOINT = browser.wsEndpoint();
+  console.log('is there...?');
   global.browser = browser;
   // global.metamask = await getMetamaskWindow(browser);
   global.metamask = metaMask;
 
   // await Config.getIns().initialize();
+  console.log('is there...?');
+  const x = Config.getIns().axonRpc;
+  console.log(x);
+  // await metaMask.addNetwork({
   await metamask.addNetwork({
     networkName: Config.getIns().axonRpc.netWorkName,
     rpc: Config.getIns().axonRpc.url,
     chainId: Config.getIns().axonRpc.chainId,
     // chainId: 5,
   });
-
+  console.log('is there...?');
   const page = await browser.newPage();
   await page.bringToFront();
   global.page = page;
+  console.log('is there...?');
 }
