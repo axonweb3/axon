@@ -46,7 +46,7 @@ export default async function setup() {
   try {
     await createTransactionData.resetTestTmpFiles();
     await createTransactionData.createTransactionData(); // create test data
-    // await setupMetamask(browser, {});
+    // await setupMetamask(browser, {}); //
     global.browser = browser;
   } catch (error) {
     // eslint-disable-next-line no-console
