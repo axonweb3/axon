@@ -22,7 +22,7 @@ export const DAPPETEER_DEFAULT_CONFIG = {
 export const DappeteerLaunchOptions = {
   automation: "puppeteer",
     browser: "chrome",
-    metaMaskVersion: "v10.15.0",
+    metaMaskVersion: RECOMMENDED_METAMASK_VERSION,
     puppeteerOptions: {
       args: [
         process.env.HEADLESS ? "--headless=chrome" : "",
@@ -36,13 +36,17 @@ export const MetaMaskOptions = {
   showTestNets: true,
 };
 export default async function setup() {
-  const browser = await launch(puppeteer, DAPPETEER_DEFAULT_CONFIG);
+  // const browser = await launch(puppeteer, DAPPETEER_DEFAULT_CONFIG);
   // const browser = await launch(puppeteer, DAPPETEER_DEFAULT_CONFIG);
   // const { metaMask, browser } = await dappeteer.bootstrap();
   // const { metaMask,browser, metaMaskPage } = await bootstrap(DappeteerLaunchOptions&MetaMaskOptions);
   // const { metaMask,browser } = await bootstrap(DappeteerLaunchOptions&MetaMaskOptions);
   // const { metaMask,browser, metaMaskPage} = await bootstrap(puppeteer, { seed: "bubble young armed shed unusual acid pilot chase caught crop defense only", password: 12345678, metamaskVersion: RECOMMENDED_METAMASK_VERSION });
   // const { metaMask,browser } = await bootstrap();
+  const { metaMask, browser } = await bootstrap(puppeteer, {
+    seed: "bubble young armed shed unusual acid pilot chase caught crop defense only", 
+    password: "12345678", 
+    metamaskVersion: RECOMMENDED_METAMASK_VERSION });
   console.log('begin setup metamask...');
   // const browser = await dappeteer.launch(puppeteer, {
   //   metamaskVersion: 'v10.15.0',
@@ -50,13 +54,13 @@ export default async function setup() {
   //   headless: false, // limitation of puppeteer, chrome can't be used in headless mode
   // });
 
-  console.log('Loading metamask...');
-  const metamask = await dappeteer.setupMetamask(browser, {
-      seed: "bubble young armed shed unusual acid pilot chase caught crop defense only",
-      password: "12345678",
-      showTestNets: false,
-      // hideSeed: true,
-  });
+  // console.log('Loading metamask...');
+  // const metamask = await setupMetamask(browser, {
+  //     seed: "bubble young armed shed unusual acid pilot chase caught crop defense only",
+  //     password: "12345678",
+  //     showTestNets: false,
+  //     hideSeed: true,
+  // });
   console.log('go on Loading metamask...');
   try {
     await createTransactionData.resetTestTmpFiles();

@@ -2,10 +2,8 @@
 
 
 ```shell
-begin setup metamask...
-Loading metamask...
-ReferenceError: Jest: Got error running globalSetup - /home/gumayusi/projects/cryptape.com/axon/tests/e2e/jest/setup.js, reason: dappeteer is not defined 
-    at setup (/home/gumayusi/projects/cryptape.com/axon/tests/e2e/jest/setup.js:64:20)                                                                    
+TypeError: Jest: Got error running globalSetup - /home/gumayusi/projects/cryptape.com/axon/tests/e2e/jest/setup.js, reason: Cannot read properties of undefined (reading 'wsEndpoint')                                                 
+    at setup (/home/gumayusi/projects/cryptape.com/axon/tests/e2e/jest/setup.js:92:47)                                                                    
     at processTicksAndRejections (node:internal/process/task_queues:96:5)
     at async /home/gumayusi/projects/cryptape.com/axon/tests/e2e/node_modules/@jest/core/build/runGlobalHook.js:109:13                                    
     at async waitForPromiseWithCleanup (/home/gumayusi/projects/cryptape.com/axon/tests/e2e/node_modules/@jest/transform/build/ScriptTransformer.js:160:5)
