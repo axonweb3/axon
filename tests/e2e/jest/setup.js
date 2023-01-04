@@ -39,7 +39,8 @@ export default async function setup() {
   // const browser = await launch(puppeteer, DAPPETEER_DEFAULT_CONFIG);
   // const browser = await launch(puppeteer, DAPPETEER_DEFAULT_CONFIG);
   // const { metaMask, browser } = await dappeteer.bootstrap();
-  const { metaMask,browser, metaMaskPage } = await bootstrap(DappeteerLaunchOptions&MetaMaskOptions);
+  // const { metaMask,browser, metaMaskPage } = await bootstrap(DappeteerLaunchOptions&MetaMaskOptions);
+  const { metaMask,browser } = await bootstrap(DappeteerLaunchOptions&MetaMaskOptions);
   // const { metaMask,browser, metaMaskPage} = await bootstrap(puppeteer, { seed: "bubble young armed shed unusual acid pilot chase caught crop defense only", password: 12345678, metamaskVersion: RECOMMENDED_METAMASK_VERSION });
   // const { metaMask,browser } = await bootstrap();
   try {
