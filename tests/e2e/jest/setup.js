@@ -72,8 +72,9 @@ export default async function setup() {
     console.log(error);
     throw error;
   }
-  process.env.PUPPETEER_WS_ENDPOINT = browser.wsEndpoint();
-
+  console.log('in there...?');
+  // process.env.PUPPETEER_WS_ENDPOINT = browser.wsEndpoint();
+  console.log('in there...?');
   global.browser = browser;
   // global.metamask = await getMetamaskWindow(browser);
   global.metamask = metaMask;

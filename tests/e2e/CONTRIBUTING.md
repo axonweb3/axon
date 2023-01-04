@@ -2,8 +2,8 @@
 
 
 ```shell
-TypeError: Jest: Got error running globalSetup - /home/gumayusi/projects/cryptape.com/axon/tests/e2e/jest/setup.js, reason: Cannot read properties of undefined (reading 'wsEndpoint')                                                 
-    at setup (/home/gumayusi/projects/cryptape.com/axon/tests/e2e/jest/setup.js:92:47)                                                                    
+TypeError: Jest: Got error running globalSetup - /home/gumayusi/projects/cryptape.com/axon/tests/e2e/jest/setup.js, reason: Cannot read properties of undefined (reading 'addNetwork')                                                 
+    at setup (/home/gumayusi/projects/cryptape.com/axon/tests/e2e/jest/setup.js:99:18)                                                                    
     at processTicksAndRejections (node:internal/process/task_queues:96:5)
     at async /home/gumayusi/projects/cryptape.com/axon/tests/e2e/node_modules/@jest/core/build/runGlobalHook.js:109:13                                    
     at async waitForPromiseWithCleanup (/home/gumayusi/projects/cryptape.com/axon/tests/e2e/node_modules/@jest/transform/build/ScriptTransformer.js:160:5)
@@ -15,5 +15,7 @@ TypeError: Jest: Got error running globalSetup - /home/gumayusi/projects/cryptap
     at async Object.run (/home/gumayusi/projects/cryptape.com/axon/tests/e2e/node_modules/jest-cli/build/run.js:124:37)                                   
 error Command failed with exit code 1.
 info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.
+
+
 
 ```
