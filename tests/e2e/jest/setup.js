@@ -88,6 +88,7 @@ export default async function setup() {
     networkName: Config.getIns().axonRpc.netWorkName,
     rpc: Config.getIns().axonRpc.url,
     chainId: Config.getIns().axonRpc.chainId,
+    symbol: "AXON"
     // chainId: 5,
   });
   console.log('is there...?');
