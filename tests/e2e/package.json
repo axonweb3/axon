@@ -6,9 +6,9 @@
     "lint": "eslint src/*.js ./*.js"
   },
   "dependencies": {
-    "@chainsafe/dappeteer": "https://github.com/hongda3141/dappeteer.git#v2.4.0-rc1",
+    "@chainsafe/dappeteer": "^3.0.0",
     "ethereumjs-tx": "^2.1.2",
-    "puppeteer": "^19.3.0",
+    "puppeteer": "^19.4.1",
     "web3": "^1.8.0",
     "xhr2": "^0.2.1"
   },
