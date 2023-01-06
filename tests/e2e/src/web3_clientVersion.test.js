@@ -7,13 +7,13 @@ describe("web3_clientVersion", () => {
     await goto.goto(page, pageName);
   });
 
-  it("should returns MetaMask/v10.10.2", async () => {
+  it("should returns right MetaMask version", async () => {
     await page.click("#getClientVersion");
 
     await page.waitForFunction(
       () => document.getElementById("clientVersion").innerText !== "",
     );
 
-    await expect(page.$eval("#clientVersion", (e) => e.innerText)).resolves.toBe("MetaMask/v10.10.2");
+    await expect(page.$eval("#clientVersion", (e) => e.innerText)).resolves.toBe("MetaMask/v10.15.0");
   });
 });
