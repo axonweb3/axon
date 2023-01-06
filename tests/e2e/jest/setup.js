@@ -1,6 +1,6 @@
 import puppeteer from "puppeteer";
-import bootstrap from "@chainsafe/dappeteer";
-import {RECOMMENDED_METAMASK_VERSION} from "@chainsafe/dappeteer/dist/index";
+import { bootstrap } from "@chainsafe/dappeteer";
+import { RECOMMENDED_METAMASK_VERSION } from "@chainsafe/dappeteer/dist/index";
 
 import Config from "../config";
 import createTransactionData from "../src/create_test_data/createTestDataManage";
