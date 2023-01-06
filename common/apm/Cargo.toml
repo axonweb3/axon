@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-arc-swap = "1.5"
+arc-swap = "1.6"
 axum = "0.6"
 beef = "0.5"
 derive_more = "0.99"

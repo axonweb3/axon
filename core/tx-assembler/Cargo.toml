@@ -5,7 +5,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-arc-swap = "1.5"
+arc-swap = "1.6"
 ckb-jsonrpc-types = "0.106"
 ckb-sdk = "2.4"
 ckb-types = "0.106"
