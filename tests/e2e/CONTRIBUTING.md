@@ -1,1 +1,1 @@
-[简体中文](./CONTRIBUTING_zh-Hans.md)
+[English](./CONTRIBUTING_en-Hans.md)

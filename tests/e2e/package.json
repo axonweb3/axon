@@ -6,21 +6,21 @@
     "lint": "eslint src/*.js ./*.js"
   },
   "dependencies": {
-    "@chainsafe/dappeteer": "https://github.com/hongda3141/dappeteer.git#v2.4.0-rc1",
+    "@chainsafe/dappeteer": "^3.0.0",
     "ethereumjs-tx": "^2.1.2",
-    "puppeteer": "^19.3.0",
+    "puppeteer": "^19.4.1",
     "web3": "^1.8.0",
     "xhr2": "^0.2.1"
   },
   "devDependencies": {
-    "@babel/plugin-transform-modules-commonjs": "^7.19.6",
-    "eslint": "^8.28.0",
+    "@babel/plugin-transform-modules-commonjs": "^7.20.11",
+    "eslint": "^8.31.0",
     "eslint-config-airbnb": "^19.0.4",
     "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-sonarjs": "^0.16.0",
+    "eslint-plugin-sonarjs": "^0.17.0",
     "http-server": "^14.1.1",
     "jest": "^29.3.1",
-    "wait-on": "^6.0.1"
+    "wait-on": "^7.0.1"
   },
   "jest": {
     "preset": "@chainsafe/dappeteer",
