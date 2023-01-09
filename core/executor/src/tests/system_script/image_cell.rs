@@ -1,15 +1,15 @@
 use ckb_types::{bytes::Bytes, packed, prelude::*};
 use ethers::abi::AbiEncode;
 
-use super::*;
-use crate::system_contract::image_cell::init;
 use common_config_parser::types::ConfigRocksDB;
 use protocol::types::{Hasher, TxResp};
 
 use crate::system_contract::image_cell::{
-    cell_key, header_key, image_cell_abi, CellInfo, ImageCellContract,
+    cell_key, header_key, image_cell_abi, init, CellInfo, ImageCellContract,
 };
 use crate::system_contract::SystemContract;
+
+use super::*;
 
 static ROCKDB_PATH: &str = "./free-space/image-cell";
 
