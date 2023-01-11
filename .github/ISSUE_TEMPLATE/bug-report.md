@@ -6,6 +6,9 @@ labels: t:bug
 
 <!-- Please use this template while reporting a bug and provide as much info as possible. Not doing so may result in your bug not being addressed in a timely manner. Thanks!
 -->
+## Bug Report
+
+<!-- Thanks for your bug report! We appreciate your time to fill following sections to help us locate the root cause. -->
 
 **What happened**:
 
