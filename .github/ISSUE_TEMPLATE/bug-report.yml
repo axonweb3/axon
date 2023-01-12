@@ -32,7 +32,7 @@ body:
       value: "Expected Behavior:"
     validations:
       required: true
-  - type: textarea
+  - type: input
     attributes:
       label: OS
       description: |
@@ -40,13 +40,13 @@ body:
           - **OS**: Ubuntu 20.04
     validations:
       required: true
-  - type: textarea
+  - type: input
     attributes:
       label: Axon version
       description: |
         examples:
           - **Axon version or commit hash (git log -1):**
-  - type: textarea
+  - type: input
     attributes:
       label: Kernel
       description: |
