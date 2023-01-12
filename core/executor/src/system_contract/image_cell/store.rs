@@ -8,8 +8,6 @@ use crate::system_contract::image_cell::error::{ImageCellError, ImageCellResult}
 use crate::system_contract::image_cell::trie_db::RocksTrieDB;
 use crate::MPTTrie;
 
-const BLOCK_NUMBER_KEY: &str = "block_number";
-
 #[derive(RlpEncodable, RlpDecodable)]
 pub struct CellKey {
     pub tx_hash: Bytes,
@@ -47,31 +45,6 @@ pub fn cell_key(tx_hash: &[u8; 32], index: u32) -> CellKey {
 pub fn commit(mpt: &mut MPTTrie<RocksTrieDB>) -> ImageCellResult<MerkleRoot> {
     mpt.commit()
         .map_err(|e| ImageCellError::CommitError(e.to_string()))
-}
-
-pub fn update_block_number(
-    mpt: &mut MPTTrie<RocksTrieDB>,
-    new_block_number: u64,
-) -> ImageCellResult<()> {
-    mpt.insert(BLOCK_NUMBER_KEY.as_bytes(), &rlp::encode(&new_block_number))
-        .map_err(|e| ImageCellError::UpdateBlockNumber {
-            e:      e.to_string(),
-            number: new_block_number,
-        })
-}
-
-pub fn get_block_number(mpt: &MPTTrie<RocksTrieDB>) -> ImageCellResult<Option<u64>> {
-    let block_number = match mpt.get(BLOCK_NUMBER_KEY.as_bytes()) {
-        Ok(n) => match n {
-            Some(n) => n,
-            None => return Ok(None),
-        },
-        Err(e) => return Err(ImageCellError::GetBlockNumber(e.to_string())),
-    };
-
-    Ok(Some(
-        rlp::decode(&block_number).map_err(ImageCellError::RlpDecodeBlockNumber)?,
-    ))
 }
 
 pub fn insert_header(

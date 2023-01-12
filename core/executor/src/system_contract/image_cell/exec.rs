@@ -3,10 +3,10 @@ use ckb_types::{packed, prelude::*};
 use protocol::types::MerkleRoot;
 
 use crate::system_contract::image_cell::abi::image_cell_abi;
-use crate::system_contract::image_cell::error::{ImageCellError, ImageCellResult};
+use crate::system_contract::image_cell::error::ImageCellResult;
 use crate::system_contract::image_cell::store::{
-    cell_key, commit, get_block_number, get_cell, header_key, insert_cell, insert_header,
-    remove_cell, remove_header as remove_h, update_block_number, CellInfo,
+    cell_key, commit, get_cell, header_key, insert_cell, insert_header, remove_cell,
+    remove_header as remove_h, CellInfo,
 };
 use crate::system_contract::image_cell::trie_db::RocksTrieDB;
 use crate::MPTTrie;
@@ -15,17 +15,11 @@ pub fn update(
     mpt: &mut MPTTrie<RocksTrieDB>,
     data: image_cell_abi::UpdateCall,
 ) -> ImageCellResult<MerkleRoot> {
-    let new_block_number = data.header.number;
+    save_cells(mpt, data.outputs, data.header.number)?;
 
-    check_block_number_updated(mpt, new_block_number)?;
+    mark_cells_consumed(mpt, data.inputs, data.header.number)?;
 
-    save_cells(mpt, data.outputs, new_block_number)?;
-
-    mark_cells_consumed(mpt, data.inputs, new_block_number)?;
-
-    save_header(mpt, &data.header, new_block_number)?;
-
-    update_block_number(mpt, new_block_number)?;
+    save_header(mpt, &data.header)?;
 
     commit(mpt)
 }
@@ -34,38 +28,19 @@ pub fn rollback(
     mpt: &mut MPTTrie<RocksTrieDB>,
     data: image_cell_abi::RollbackCall,
 ) -> ImageCellResult<MerkleRoot> {
-    let cur_block_number = data.block_number;
-    let new_block_number = cur_block_number - 1;
-
-    check_block_number_rolled(mpt, cur_block_number)?;
-
     remove_cells(mpt, data.outputs)?;
 
     mark_cells_not_consumed(mpt, data.inputs)?;
 
-    remove_header(mpt, cur_block_number, &data.block_hash)?;
-
-    update_block_number(mpt, new_block_number)?;
+    remove_header(mpt, data.block_number, &data.block_hash)?;
 
     commit(mpt)
-}
-
-fn check_block_number_updated(
-    mpt: &MPTTrie<RocksTrieDB>,
-    new_block_number: u64,
-) -> ImageCellResult<()> {
-    if let Some(cur_block_number) = get_block_number(mpt)? {
-        if new_block_number != cur_block_number + 1 {
-            return Err(ImageCellError::InvalidBlockNumber(new_block_number));
-        }
-    }
-    Ok(())
 }
 
 fn save_cells(
     mpt: &mut MPTTrie<RocksTrieDB>,
     outputs: Vec<image_cell_abi::CellInfo>,
-    new_block_number: u64,
+    created_number: u64,
 ) -> ImageCellResult<()> {
     for cell in outputs {
         let lock = cell.output.lock;
@@ -96,9 +71,9 @@ fn save_cells(
             .build();
 
         let cell_info = CellInfo {
-            cell_output:     cell_output.as_bytes(),
-            cell_data:       cell.data.0,
-            created_number:  new_block_number,
+            cell_output: cell_output.as_bytes(),
+            cell_data: cell.data.0,
+            created_number,
             consumed_number: None,
         };
 
@@ -112,13 +87,13 @@ fn save_cells(
 fn mark_cells_consumed(
     mpt: &mut MPTTrie<RocksTrieDB>,
     inputs: Vec<image_cell_abi::OutPoint>,
-    new_block_number: u64,
+    consumed_number: u64,
 ) -> ImageCellResult<()> {
     for input in inputs {
         let key = cell_key(&input.tx_hash, input.index);
 
         if let Some(ref mut cell) = get_cell(mpt, &key)? {
-            cell.consumed_number = Some(new_block_number);
+            cell.consumed_number = Some(consumed_number);
             insert_cell(mpt, &key, cell)?;
         }
     }
@@ -128,7 +103,6 @@ fn mark_cells_consumed(
 fn save_header(
     mpt: &mut MPTTrie<RocksTrieDB>,
     header: &image_cell_abi::Header,
-    new_block_number: u64,
 ) -> ImageCellResult<()> {
     let raw = packed::RawHeader::new_builder()
         .compact_target(header.compact_target.pack())
@@ -148,21 +122,9 @@ fn save_header(
         .nonce(header.nonce.pack())
         .build();
 
-    let key = header_key(&header.block_hash, new_block_number);
+    let key = header_key(&header.block_hash, header.number);
 
     insert_header(mpt, &key, &packed_header)
-}
-
-fn check_block_number_rolled(
-    mpt: &MPTTrie<RocksTrieDB>,
-    cur_block_number: u64,
-) -> ImageCellResult<()> {
-    if let Some(block_number) = get_block_number(mpt)? {
-        if block_number != cur_block_number {
-            return Err(ImageCellError::InvalidBlockNumber(cur_block_number));
-        }
-    }
-    Ok(())
 }
 
 fn remove_cells(

@@ -53,8 +53,6 @@ fn test_update_first(backend: &mut MemoryBackend, executor: &ImageCellContract) 
     let cell_key = cell_key(&[7u8; 32], 0x0);
     let get_cell = executor.get_cell(backend, &cell_key).unwrap().unwrap();
     check_cell(&get_cell, 0x1, None);
-
-    check_number(backend, executor, 0x1);
 }
 
 fn test_update_second(backend: &mut MemoryBackend, executor: &ImageCellContract) {
@@ -100,8 +98,6 @@ fn test_rollback_first(backend: &mut MemoryBackend, executor: &ImageCellContract
     let cell_key = cell_key(&[7u8; 32], 0x0);
     let get_cell = executor.get_cell(backend, &cell_key).unwrap().unwrap();
     check_cell(&get_cell, 0x1, None);
-
-    check_number(backend, executor, 0x1);
 }
 
 fn test_rollback_second(backend: &mut MemoryBackend, executor: &ImageCellContract) {
@@ -148,11 +144,6 @@ fn check_root(backend: &MemoryBackend, executor: &ImageCellContract) {
         &executor.get_root(backend),
         account.storage.get(&CELL_ROOT_KEY).unwrap(),
     );
-}
-
-fn check_number(backend: &MemoryBackend, executor: &ImageCellContract, number: u64) {
-    let get_block_number = executor.get_block_number(backend).unwrap().unwrap();
-    assert_eq!(get_block_number, number);
 }
 
 fn check_header(get_header: &packed::Header) {
