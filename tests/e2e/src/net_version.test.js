@@ -7,13 +7,13 @@ describe("net_version", () => {
     await goto.goto(page, pageName);
   });
 
-  it("should returns 0x05", async () => {
+  it("should returns version", async () => {
     await page.click("#getChainId");
 
     await page.waitForFunction(
       () => document.getElementById("chainId").innerText !== "",
     );
 
-    await expect(page.$eval("#chainId", (e) => e.innerText)).resolves.toBe("0x7e6");
+    await expect(page.$eval("#chainId", (e) => e.innerText)).resolves.toBe(2022);
   });
 });
