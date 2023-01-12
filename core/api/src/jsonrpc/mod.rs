@@ -147,7 +147,7 @@ pub trait AxonNodeRpc {
     fn chain_id(&self) -> RpcResult<U256>;
 
     #[method(name = "net_version")]
-    fn net_version(&self) -> RpcResult<U256>;
+    fn net_version(&self) -> RpcResult<String>;
 
     #[method(name = "web3_clientVersion")]
     fn client_version(&self) -> RpcResult<String>;
