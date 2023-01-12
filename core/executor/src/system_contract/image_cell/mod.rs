@@ -25,7 +25,7 @@ use crate::MPTTrie;
 pub use abi::image_cell_abi;
 pub use error::{ImageCellError, ImageCellResult};
 pub use store::{cell_key, header_key, CellInfo, CellKey, HeaderKey};
-use store::{get_block_number, get_cell, get_header};
+use store::{get_cell, get_header};
 use trie_db::RocksTrieDB;
 
 static ALLOW_READ: AtomicBool = AtomicBool::new(false);
@@ -167,14 +167,6 @@ fn revert_resp(gas_limit: U256) -> TxResp {
 impl ImageCellContract {
     pub fn get_root<B: Backend + ApplyBackend>(&self, backend: &B) -> H256 {
         backend.storage(ImageCellContract::ADDRESS, *CELL_ROOT_KEY)
-    }
-
-    pub fn get_block_number<B: Backend + ApplyBackend>(
-        &self,
-        backend: &B,
-    ) -> ImageCellResult<Option<u64>> {
-        let mpt = get_mpt(backend)?;
-        get_block_number(&mpt)
     }
 
     pub fn get_header<B: Backend + ApplyBackend>(
