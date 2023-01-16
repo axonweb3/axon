@@ -4,6 +4,7 @@ mod ec_add;
 mod ec_mul;
 mod ec_pairing;
 mod ecrecover;
+mod get_cell;
 mod identity;
 mod modexp;
 mod ripemd160;

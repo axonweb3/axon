@@ -2,19 +2,17 @@ use ckb_types::{packed, prelude::*};
 
 use protocol::types::MerkleRoot;
 
-use crate::system_contract::image_cell::abi::image_cell_abi;
-use crate::system_contract::image_cell::error::ImageCellResult;
+use crate::system_contract::error::SystemScriptResult;
 use crate::system_contract::image_cell::store::{
-    cell_key, commit, get_cell, header_key, insert_cell, insert_header, remove_cell,
-    remove_header as remove_h, CellInfo,
+    commit, get_cell, insert_cell, insert_header, remove_cell, remove_header as remove_h, CellInfo,
 };
-use crate::system_contract::image_cell::trie_db::RocksTrieDB;
-use crate::MPTTrie;
+use crate::system_contract::image_cell::{abi::image_cell_abi, trie_db::RocksTrieDB};
+use crate::system_contract::image_cell::{CellKey, HeaderKey, MPTTrie};
 
 pub fn update(
     mpt: &mut MPTTrie<RocksTrieDB>,
     data: image_cell_abi::UpdateCall,
-) -> ImageCellResult<MerkleRoot> {
+) -> SystemScriptResult<MerkleRoot> {
     save_cells(mpt, data.outputs, data.header.number)?;
 
     mark_cells_consumed(mpt, data.inputs, data.header.number)?;
@@ -27,7 +25,7 @@ pub fn update(
 pub fn rollback(
     mpt: &mut MPTTrie<RocksTrieDB>,
     data: image_cell_abi::RollbackCall,
-) -> ImageCellResult<MerkleRoot> {
+) -> SystemScriptResult<MerkleRoot> {
     remove_cells(mpt, data.outputs)?;
 
     mark_cells_not_consumed(mpt, data.inputs)?;
@@ -41,7 +39,7 @@ fn save_cells(
     mpt: &mut MPTTrie<RocksTrieDB>,
     outputs: Vec<image_cell_abi::CellInfo>,
     created_number: u64,
-) -> ImageCellResult<()> {
+) -> SystemScriptResult<()> {
     for cell in outputs {
         let lock = cell.output.lock;
         let lock = packed::Script::new_builder()
@@ -77,7 +75,7 @@ fn save_cells(
             consumed_number: None,
         };
 
-        let key = cell_key(&cell.out_point.tx_hash, cell.out_point.index);
+        let key = CellKey::new(cell.out_point.tx_hash, cell.out_point.index);
 
         insert_cell(mpt, &key, &cell_info)?;
     }
@@ -87,13 +85,13 @@ fn save_cells(
 fn mark_cells_consumed(
     mpt: &mut MPTTrie<RocksTrieDB>,
     inputs: Vec<image_cell_abi::OutPoint>,
-    consumed_number: u64,
-) -> ImageCellResult<()> {
+    new_block_number: u64,
+) -> SystemScriptResult<()> {
     for input in inputs {
-        let key = cell_key(&input.tx_hash, input.index);
+        let key = CellKey::new(input.tx_hash, input.index);
 
         if let Some(ref mut cell) = get_cell(mpt, &key)? {
-            cell.consumed_number = Some(consumed_number);
+            cell.consumed_number = Some(new_block_number);
             insert_cell(mpt, &key, cell)?;
         }
     }
@@ -103,7 +101,7 @@ fn mark_cells_consumed(
 fn save_header(
     mpt: &mut MPTTrie<RocksTrieDB>,
     header: &image_cell_abi::Header,
-) -> ImageCellResult<()> {
+) -> SystemScriptResult<()> {
     let raw = packed::RawHeader::new_builder()
         .compact_target(header.compact_target.pack())
         .dao(header.dao.pack())
@@ -122,7 +120,7 @@ fn save_header(
         .nonce(header.nonce.pack())
         .build();
 
-    let key = header_key(&header.block_hash, header.number);
+    let key = HeaderKey::new(header.block_hash, header.number);
 
     insert_header(mpt, &key, &packed_header)
 }
@@ -130,9 +128,9 @@ fn save_header(
 fn remove_cells(
     mpt: &mut MPTTrie<RocksTrieDB>,
     outputs: Vec<image_cell_abi::OutPoint>,
-) -> ImageCellResult<()> {
+) -> SystemScriptResult<()> {
     for output in outputs {
-        let key = cell_key(&output.tx_hash, output.index);
+        let key = CellKey::new(output.tx_hash, output.index);
         remove_cell(mpt, &key)?;
     }
     Ok(())
@@ -141,9 +139,9 @@ fn remove_cells(
 fn mark_cells_not_consumed(
     mpt: &mut MPTTrie<RocksTrieDB>,
     inputs: Vec<image_cell_abi::OutPoint>,
-) -> ImageCellResult<()> {
+) -> SystemScriptResult<()> {
     for input in inputs {
-        let key = cell_key(&input.tx_hash, input.index);
+        let key = CellKey::new(input.tx_hash, input.index);
         if let Some(ref mut cell) = get_cell(mpt, &key)? {
             cell.consumed_number = None;
             insert_cell(mpt, &key, cell)?;
@@ -156,7 +154,7 @@ fn remove_header(
     mpt: &mut MPTTrie<RocksTrieDB>,
     block_number: u64,
     block_hash: &[u8; 32],
-) -> ImageCellResult<()> {
-    let key = header_key(block_hash, block_number);
+) -> SystemScriptResult<()> {
+    let key = HeaderKey::new(*block_hash, block_number);
     remove_h(mpt, &key)
 }

@@ -1,3 +1,4 @@
+mod error;
 pub mod image_cell;
 mod native_token;
 
