@@ -2,10 +2,9 @@ use ckb_types::{packed, prelude::*};
 
 use protocol::types::MerkleRoot;
 
-use crate::system_contract::error::{SystemScriptResult};
+use crate::system_contract::error::SystemScriptResult;
 use crate::system_contract::image_cell::store::{
-    commit, get_cell, insert_cell, insert_header, remove_cell,
-    remove_header as remove_h, CellInfo,
+    commit, get_cell, insert_cell, insert_header, remove_cell, remove_header as remove_h, CellInfo,
 };
 use crate::system_contract::image_cell::{abi::image_cell_abi, trie_db::RocksTrieDB};
 use crate::system_contract::image_cell::{CellKey, HeaderKey, MPTTrie};
