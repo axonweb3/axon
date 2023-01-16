@@ -1,0 +1,27 @@
+name: Help me
+description: What kind of help do you want?
+labels: ["t:help"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        What kind of help do you want?
+  - type: input
+    id: contact
+    attributes:
+      label: Contact Details
+      description: How can we get in touch with you if we need more info?
+      placeholder: ex. email@example.com
+    validations:
+      required: false
+  - type: textarea
+    id: what-happend
+    attributes:
+      label: What happened
+      description: What kind of help do you want?
+      placeholder: What kind of help do you want?
+      value: "Describe the problem details:"
+    validations:
+      required: true
+

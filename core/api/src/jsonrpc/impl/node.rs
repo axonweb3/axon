@@ -31,8 +31,8 @@ impl AxonNodeRpcServer for NodeRpcImpl {
         Ok((**CHAIN_ID.load()).into())
     }
 
-    fn net_version(&self) -> RpcResult<U256> {
-        self.chain_id()
+    fn net_version(&self) -> RpcResult<String> {
+        Ok((**CHAIN_ID.load()).to_string())
     }
 
     fn client_version(&self) -> RpcResult<String> {

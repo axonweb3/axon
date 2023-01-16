@@ -1,6 +1,7 @@
 pub mod image_cell;
 mod native_token;
 
+pub use crate::system_contract::image_cell::ImageCellContract;
 pub use crate::system_contract::native_token::NativeTokenContract;
 
 use protocol::traits::{ApplyBackend, Backend};
@@ -23,11 +24,11 @@ pub fn system_contract_dispatch<B: Backend + ApplyBackend>(
     backend: &mut B,
     tx: &SignedTransaction,
 ) -> Option<TxResp> {
-    // todo: dispatch to image cell contract too
-    let native_token_address = NativeTokenContract::ADDRESS;
     if let Some(addr) = tx.get_to() {
-        if addr == native_token_address {
+        if addr == NativeTokenContract::ADDRESS {
             return Some(NativeTokenContract::default().exec_(backend, tx));
+        } else if addr == ImageCellContract::ADDRESS {
+            return Some(ImageCellContract::default().exec_(backend, tx));
         }
     }
 
