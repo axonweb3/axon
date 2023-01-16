@@ -1,0 +1,63 @@
+name: Issue comments
+on:
+  issues:
+    types: [assigned]
+jobs:
+  issue-comments:
+    runs-on: ubuntu-latest
+    steps:
+      - name: get assignees 
+        uses: actions/github-script@v6
+        id: assignees
+        with:
+          script: |
+            const assignees = (
+              await github.rest.issues.get({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo
+              })
+              ).data.assignees;
+              console.log(assignees);
+              let assignees_list=``;
+              for (const name in assignees) {
+              const assigned = assignees[name];
+              console.log(assigned.login);
+              assignees_list=`${assignees_list} @${assigned.login}`;
+              }
+            return assignees_list
+      - name: set output comments
+        if: contains(github.event.issue.labels.*.name, 't:bug')
+        run: |
+           comments="Please fix this bug."
+           echo "comments=$comments" >> $GITHUB_ENV
+      - name: set output comments
+        if: contains(github.event.issue.labels.*.name, 't:feature')
+        run: |
+           comments="Please develop this feature."
+           echo "comments=$comments" >> $GITHUB_ENV
+      - name: set output comments
+        if: contains(github.event.issue.labels.*.name, 't:help')
+        run: |
+           comments="Please explain this question."
+           echo "comments=$comments" >> $GITHUB_ENV
+      - name: set output comments
+        if: contains(github.event.issue.labels.*.name, 't:others')
+        run: |
+           comments="Please work on it."
+           echo "comments=$comments" >> $GITHUB_ENV
+      - name: get assignees
+        id: get_assignees
+        run: |
+          echo ${{ steps.assignees.outputs.result}}
+          inputs=${{ steps.assignees.outputs.result}}
+          echo "result=$inputs" >> $GITHUB_OUTPUT
+      - name: Create comment
+        uses: actions-cool/issues-helper@v3
+        with:
+          actions: 'create-comment'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.issue.number }}
+          body: |
+            Hello ${{ steps.get_assignees.outputs.result}}. ${{ env.comments }}
+          emoji: 'heart'
