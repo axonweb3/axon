@@ -23,17 +23,11 @@ use protocol::types::{
 };
 
 use crate::system_contract::error::{SystemScriptError, SystemScriptResult};
-use crate::system_contract::image_cell::store::{get_block_number, get_cell, get_header};
+use crate::system_contract::image_cell::store::{get_cell, get_header};
 use crate::system_contract::{
     image_cell::trie_db::RocksTrieDB, system_contract_address, SystemContract,
 };
 use crate::MPTTrie;
-
-pub use abi::image_cell_abi;
-pub use error::{ImageCellError, ImageCellResult};
-pub use store::{cell_key, header_key, CellInfo, CellKey, HeaderKey};
-use store::{get_cell, get_header};
-use trie_db::RocksTrieDB;
 
 static ALLOW_READ: AtomicBool = AtomicBool::new(false);
 static TRIE_DB: OnceCell<Arc<RocksTrieDB>> = OnceCell::new();

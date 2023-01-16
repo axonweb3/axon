@@ -2,10 +2,10 @@ use ckb_types::{packed, prelude::*};
 
 use protocol::types::MerkleRoot;
 
-use crate::system_contract::error::{SystemScriptError, SystemScriptResult};
+use crate::system_contract::error::{SystemScriptResult};
 use crate::system_contract::image_cell::store::{
-    commit, get_block_number, get_cell, insert_cell, insert_header, remove_cell,
-    remove_header as remove_h, update_block_number, CellInfo,
+    commit, get_cell, insert_cell, insert_header, remove_cell,
+    remove_header as remove_h, CellInfo,
 };
 use crate::system_contract::image_cell::{abi::image_cell_abi, trie_db::RocksTrieDB};
 use crate::system_contract::image_cell::{CellKey, HeaderKey, MPTTrie};
@@ -38,7 +38,7 @@ fn save_cells(
     mpt: &mut MPTTrie<RocksTrieDB>,
     outputs: Vec<image_cell_abi::CellInfo>,
     created_number: u64,
-) -> ImageCellResult<()> {
+) -> SystemScriptResult<()> {
     for cell in outputs {
         let lock = cell.output.lock;
         let lock = packed::Script::new_builder()
@@ -90,7 +90,7 @@ fn mark_cells_consumed(
         let key = CellKey::new(input.tx_hash, input.index);
 
         if let Some(ref mut cell) = get_cell(mpt, &key)? {
-            cell.consumed_number = Some(consumed_number);
+            cell.consumed_number = Some(new_block_number);
             insert_cell(mpt, &key, cell)?;
         }
     }
@@ -119,7 +119,7 @@ fn save_header(
         .nonce(header.nonce.pack())
         .build();
 
-    let key = header_key(&header.block_hash, header.number);
+    let key = HeaderKey::new(header.block_hash, header.number);
 
     insert_header(mpt, &key, &packed_header)
 }
