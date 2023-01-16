@@ -12,9 +12,7 @@ use crate::system_contract::image_cell::{
 };
 use crate::system_contract::SystemContract;
 
-use super::*;
-
-static ROCKDB_PATH: &str = "./free-space/image-cell";
+static ROCKSDB_PATH: &str = "./free-space/image-cell";
 
 lazy_static::lazy_static! {
     static ref CELL_ROOT_KEY: H256 = Hasher::digest("cell_mpt_root");
@@ -27,7 +25,7 @@ fn test_write_functions() {
 
     let executor = ImageCellContract::default();
     init(
-        ROCKDB_PATH,
+        ROCKSDB_PATH,
         ConfigRocksDB::default(),
         100,
         Arc::new(backend.clone()),

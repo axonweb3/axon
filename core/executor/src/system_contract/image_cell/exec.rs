@@ -13,6 +13,8 @@ pub fn update(
     mpt: &mut MPTTrie<RocksTrieDB>,
     data: image_cell_abi::UpdateCall,
 ) -> SystemScriptResult<MerkleRoot> {
+    save_cells(mpt, data.outputs, data.header.number)?;
+
     mark_cells_consumed(mpt, data.inputs, data.header.number)?;
 
     save_header(mpt, &data.header)?;

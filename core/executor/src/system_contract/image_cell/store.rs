@@ -8,8 +8,6 @@ use crate::system_contract::error::{SystemScriptError, SystemScriptResult};
 use crate::system_contract::image_cell::trie_db::RocksTrieDB;
 use crate::system_contract::image_cell::MPTTrie;
 
-const BLOCK_NUMBER_KEY: &str = "block_number";
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CellKey {
     pub tx_hash: H256,

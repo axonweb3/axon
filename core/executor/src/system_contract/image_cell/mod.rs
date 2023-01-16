@@ -145,7 +145,7 @@ fn get_mpt<B: Backend + ApplyBackend>(backend: &B) -> SystemScriptResult<MPTTrie
 
 fn update_mpt_root<B: Backend + ApplyBackend>(backend: &mut B, root: H256) {
     let account = backend.basic(ImageCellContract::ADDRESS);
-
+    CURRENT_CELL_ROOT.swap(Arc::new(root));
     backend.apply(
         vec![Apply::Modify {
             address:       ImageCellContract::ADDRESS,
