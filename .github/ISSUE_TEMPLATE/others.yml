@@ -1,0 +1,28 @@
+name: Others
+description: File out a others that you met
+labels: ["t:others"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this issue!
+  - type: input
+    id: contact
+    attributes:
+      label: Contact Details
+      description: How can we get in touch with you if we need more info?
+      placeholder: ex. email@example.com
+    validations:
+      required: false
+  - type: textarea
+    id: what-happend
+    attributes:
+      label: What happened
+      description: Tell us what happened, or what you want.
+      placeholder: Tell us what problem that you met!
+      value: "Describe the problem details:"
+    validations:
+      required: true
+
+
