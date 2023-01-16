@@ -53,11 +53,11 @@ fn test_update_first(backend: &mut MemoryBackend, executor: &ImageCellContract) 
     check_root(backend, executor);
 
     let header_key = HeaderKey::new([5u8; 32], 0x1);
-    let get_header = executor.get_header(backend, &header_key).unwrap().unwrap();
+    let get_header = executor.get_header(&header_key).unwrap().unwrap();
     check_header(&get_header);
 
     let cell_key = CellKey::new([7u8; 32], 0x0);
-    let get_cell = executor.get_cell(backend, &cell_key).unwrap().unwrap();
+    let get_cell = executor.get_cell(&cell_key).unwrap().unwrap();
     check_cell(&get_cell, 0x1, None);
 }
 
@@ -77,7 +77,7 @@ fn test_update_second(backend: &mut MemoryBackend, executor: &ImageCellContract)
     check_root(backend, executor);
 
     let cell_key = CellKey::new([7u8; 32], 0x0);
-    let get_cell = executor.get_cell(backend, &cell_key).unwrap().unwrap();
+    let get_cell = executor.get_cell(&cell_key).unwrap().unwrap();
     check_cell(&get_cell, 0x1, Some(0x2));
 }
 
@@ -98,11 +98,11 @@ fn test_rollback_first(backend: &mut MemoryBackend, executor: &ImageCellContract
     check_root(backend, executor);
 
     let header_key = HeaderKey::new([5u8; 32], 0x2);
-    let get_header = executor.get_header(backend, &header_key).unwrap();
+    let get_header = executor.get_header(&header_key).unwrap();
     assert!(get_header.is_none());
 
     let cell_key = CellKey::new([7u8; 32], 0x0);
-    let get_cell = executor.get_cell(backend, &cell_key).unwrap().unwrap();
+    let get_cell = executor.get_cell(&cell_key).unwrap().unwrap();
     check_cell(&get_cell, 0x1, None);
 }
 
@@ -123,7 +123,7 @@ fn test_rollback_second(backend: &mut MemoryBackend, executor: &ImageCellContrac
     check_root(backend, executor);
 
     let cell_key = CellKey::new([7u8; 32], 0x0);
-    let get_cell = executor.get_cell(backend, &cell_key).unwrap();
+    let get_cell = executor.get_cell(&cell_key).unwrap();
     assert!(get_cell.is_none());
 }
 
@@ -147,7 +147,7 @@ fn exec(backend: &mut MemoryBackend, executor: &ImageCellContract, data: Vec<u8>
 fn check_root(backend: &MemoryBackend, executor: &ImageCellContract) {
     let account = backend.state().get(&ImageCellContract::ADDRESS).unwrap();
     assert_eq!(
-        &executor.get_root(backend),
+        &executor.get_root(),
         account.storage.get(&CELL_ROOT_KEY).unwrap(),
     );
 }

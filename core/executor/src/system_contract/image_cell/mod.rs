@@ -69,7 +69,7 @@ impl SystemContract for ImageCellContract {
                 ALLOW_READ.store(data.allow_read, Ordering::Relaxed);
             }
             Ok(image_cell_abi::ImageCellCalls::Update(data)) => {
-                let mut mpt = match get_mpt(backend) {
+                let mut mpt = match get_mpt() {
                     Ok(m) => m,
                     Err(e) => {
                         log::error!("[image cell] get mpt error: {:?}", e);
@@ -88,7 +88,7 @@ impl SystemContract for ImageCellContract {
                 update_mpt_root(backend, root);
             }
             Ok(image_cell_abi::ImageCellCalls::Rollback(data)) => {
-                let mut mpt = match get_mpt(backend) {
+                let mut mpt = match get_mpt() {
                     Ok(m) => m,
                     Err(e) => {
                         log::error!("[image cell] get mpt error: {:?}", e);
@@ -125,13 +125,13 @@ impl SystemContract for ImageCellContract {
     }
 }
 
-fn get_mpt<B: Backend + ApplyBackend>(backend: &B) -> SystemScriptResult<MPTTrie<RocksTrieDB>> {
+fn get_mpt() -> SystemScriptResult<MPTTrie<RocksTrieDB>> {
     let trie_db = match TRIE_DB.get() {
         Some(db) => db,
         None => return Err(SystemScriptError::TrieDbNotInit),
     };
 
-    let root = backend.storage(ImageCellContract::ADDRESS, *CELL_ROOT_KEY);
+    let root = **CURRENT_CELL_ROOT.load();
 
     if root == H256::default() {
         Ok(MPTTrie::new(Arc::clone(trie_db)))
@@ -176,25 +176,17 @@ fn revert_resp(gas_limit: U256) -> TxResp {
 }
 
 impl ImageCellContract {
-    pub fn get_root<B: Backend + ApplyBackend>(&self, backend: &B) -> H256 {
-        backend.storage(ImageCellContract::ADDRESS, *CELL_ROOT_KEY)
+    pub fn get_root(&self) -> H256 {
+        **CURRENT_CELL_ROOT.load()
     }
 
-    pub fn get_header<B: Backend + ApplyBackend>(
-        &self,
-        backend: &B,
-        key: &HeaderKey,
-    ) -> SystemScriptResult<Option<packed::Header>> {
-        let mpt = get_mpt(backend)?;
+    pub fn get_header(&self, key: &HeaderKey) -> SystemScriptResult<Option<packed::Header>> {
+        let mpt = get_mpt()?;
         get_header(&mpt, key)
     }
 
-    pub fn get_cell<B: Backend + ApplyBackend>(
-        &self,
-        backend: &B,
-        key: &CellKey,
-    ) -> SystemScriptResult<Option<CellInfo>> {
-        let mpt = get_mpt(backend)?;
+    pub fn get_cell(&self, key: &CellKey) -> SystemScriptResult<Option<CellInfo>> {
+        let mpt = get_mpt()?;
         get_cell(&mpt, key)
     }
 
