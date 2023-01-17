@@ -4,7 +4,7 @@ mod store;
 mod trie_db;
 
 pub use abi::image_cell_abi;
-pub use store::{CellInfo, CellKey, HeaderKey};
+pub use store::{CellInfo, CellKey};
 
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -180,7 +180,7 @@ impl ImageCellContract {
         **CURRENT_CELL_ROOT.load()
     }
 
-    pub fn get_header(&self, key: &HeaderKey) -> SystemScriptResult<Option<packed::Header>> {
+    pub fn get_header(&self, key: &H256) -> SystemScriptResult<Option<packed::Header>> {
         let mpt = get_mpt()?;
         get_header(&mpt, key)
     }
