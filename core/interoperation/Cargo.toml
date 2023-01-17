@@ -7,6 +7,9 @@ edition = "2021"
 
 [dependencies]
 arc-swap = "1.5"
+ckb-error = "0.106"
+ckb-script = "0.106"
+ckb-traits = "0.106"
 ckb-types = "0.106"
 lazy_static = "1.4"
 log = "0.4"
@@ -14,11 +17,11 @@ log = "0.4"
 protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [target.'cfg(not(target_arch = "aarch64"))'.dependencies]
-ckb-vm = "0.22"
+ckb-vm = { version = "0.23", features = ["asm"] }
 ckb-vm-aot = "0.22"
 
 [target.'cfg(target_arch = "aarch64")'.dependencies]
-ckb-vm = { version = "0.22", features = ["asm"] }
+ckb-vm = { version = "0.23", features = ["asm"] }
 
 [dev-dependencies]
 cardano-serialization-lib = "7.0"

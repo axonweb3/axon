@@ -12,6 +12,7 @@ bytes = { version = "1.4", features = ["serde"] }
 ckb-hash = "0.106"
 ckb-jsonrpc-types = "0.106"
 ckb-sdk = "2.4"
+ckb-traits = "0.106"
 ckb-types = "0.106"
 common-crypto = { path = "../common/crypto" }
 creep = "0.2"

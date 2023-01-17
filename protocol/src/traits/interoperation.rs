@@ -1,14 +1,23 @@
-use crate::types::{Bytes, SignedTransaction, VMResp, H256};
+use ckb_traits::{CellDataProvider, HeaderProvider};
+use ckb_types::core::{cell::ResolvedTransaction, Cycle};
+use ckb_types::packed;
+
+use crate::types::{Bytes, VMResp};
 use crate::{traits::Context, ProtocolResult};
 
 pub trait Interoperation: Sync + Send {
-    fn verify_external_signature(&self, ctx: Context, tx: SignedTransaction) -> ProtocolResult<()>;
-
-    fn call_ckb_vm(
-        &self,
-        ctx: Context,
-        tx_hash: H256,
+    fn call_ckb_vm<'a, DL: CellDataProvider>(
+        _ctx: Context,
+        data_loader: &'a DL,
+        data_cell_dep: packed::CellDep,
         args: &[Bytes],
         max_cycles: u64,
     ) -> ProtocolResult<VMResp>;
+
+    fn verify_by_ckb_vm<'a, DL: CellDataProvider + HeaderProvider>(
+        ctx: Context,
+        data_loader: &'a DL,
+        mocked_tx: &'a ResolvedTransaction,
+        max_cycles: u64,
+    ) -> ProtocolResult<Cycle>;
 }

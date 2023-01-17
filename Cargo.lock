@@ -234,6 +234,7 @@ dependencies = [
  "ckb-hash",
  "ckb-jsonrpc-types",
  "ckb-sdk",
+ "ckb-traits",
  "ckb-types",
  "common-crypto",
  "creep",
@@ -1072,7 +1073,7 @@ dependencies = [
  "ckb-logger",
  "ckb-traits",
  "ckb-types",
- "ckb-vm",
+ "ckb-vm 0.22.1",
  "faster-hex",
  "serde",
 ]
@@ -1180,7 +1181,25 @@ dependencies = [
  "byteorder",
  "bytes",
  "cc",
- "ckb-vm-definitions",
+ "ckb-vm-definitions 0.22.1",
+ "derive_more",
+ "goblin 0.2.3",
+ "goblin 0.4.0",
+ "rand 0.7.3",
+ "scroll",
+ "serde",
+]
+
+[[package]]
+name = "ckb-vm"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce75cd7670394461f5e7b078cdf4a640e710fa96f9e78561529f182b466b9730"
+dependencies = [
+ "byteorder",
+ "bytes",
+ "cc",
+ "ckb-vm-definitions 0.23.0",
  "derive_more",
  "goblin 0.2.3",
  "goblin 0.4.0",
@@ -1196,8 +1215,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97d90662540a6a3b0d71e58d789016efe817d2cd0c4ec6b26bcaf7f9b18fe7cf"
 dependencies = [
  "cc",
- "ckb-vm",
- "ckb-vm-definitions",
+ "ckb-vm 0.22.1",
+ "ckb-vm-definitions 0.22.1",
  "derive_more",
  "goblin 0.2.3",
  "goblin 0.4.0",
@@ -1211,6 +1230,12 @@ name = "ckb-vm-definitions"
 version = "0.22.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5445b62604e7ab2bf5abb37bf6cca7ac26b2e4a76fddb27ceb61850f24864d58"
+
+[[package]]
+name = "ckb-vm-definitions"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d921cbfefdca9679d049c9304fe54243ae79f08838c58d2ed7bdeed5022d5e6e"
 
 [[package]]
 name = "clang-sys"
@@ -1677,8 +1702,11 @@ dependencies = [
  "axon-protocol",
  "cardano-message-signing",
  "cardano-serialization-lib",
+ "ckb-error",
+ "ckb-script",
+ "ckb-traits",
  "ckb-types",
- "ckb-vm",
+ "ckb-vm 0.23.0",
  "ckb-vm-aot",
  "core-rpc-client",
  "ed25519-dalek",
