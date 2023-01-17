@@ -7,7 +7,7 @@ use std::error::Error;
 
 use ckb_script::TransactionScriptsVerifier;
 use ckb_traits::{CellDataProvider, HeaderProvider};
-use ckb_types::core::{cell::ResolvedTransaction, Cycle};
+use ckb_types::core::{cell::ResolvedTransaction, Cycle, TransactionView};
 use ckb_types::packed;
 use ckb_vm::machine::{asm::AsmCoreMachine, DefaultMachineBuilder, SupportMachine, VERSION1};
 use ckb_vm::{Error as VMError, ISA_B, ISA_IMC, ISA_MOP};
@@ -71,12 +71,15 @@ impl Interoperation for InteroperationImpl {
     fn verify_by_ckb_vm<'a, DL: CellDataProvider + HeaderProvider>(
         _ctx: Context,
         data_loader: &'a DL,
-        mocked_tx: &'a ResolvedTransaction,
+        mocked_tx: &'a TransactionView,
         max_cycles: u64,
     ) -> ProtocolResult<Cycle> {
-        let cycles = TransactionScriptsVerifier::new(mocked_tx, data_loader)
-            .verify(max_cycles)
-            .map_err(InteroperationError::Ckb)?;
+        let cycles = TransactionScriptsVerifier::new(
+            &ResolvedTransaction::dummy_resolve(mocked_tx.clone()),
+            data_loader,
+        )
+        .verify(max_cycles)
+        .map_err(InteroperationError::Ckb)?;
         Ok(cycles)
     }
 }

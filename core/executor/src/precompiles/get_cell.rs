@@ -10,7 +10,7 @@ use crate::precompiles::{precompile_address, PrecompileContract};
 pub struct GetCell;
 
 impl PrecompileContract for GetCell {
-    const ADDRESS: H160 = precompile_address(0x04);
+    const ADDRESS: H160 = precompile_address(0xf0);
     const MIN_GAS: u64 = 15;
 
     fn exec_fn(

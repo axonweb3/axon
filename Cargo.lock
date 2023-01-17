@@ -1672,6 +1672,7 @@ dependencies = [
  "revm",
  "ripemd",
  "rlp",
+ "rlp-derive",
  "rug",
  "serde_json",
  "sha2 0.10.6",
