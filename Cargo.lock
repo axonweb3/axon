@@ -1639,6 +1639,7 @@ dependencies = [
  "bytemuck",
  "ckb-jsonrpc-types",
  "ckb-rocksdb",
+ "ckb-traits",
  "ckb-types",
  "common-apm",
  "common-config-parser",
