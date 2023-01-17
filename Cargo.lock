@@ -1637,6 +1637,7 @@ dependencies = [
  "axon-protocol",
  "az",
  "bytemuck",
+ "ckb-hash",
  "ckb-jsonrpc-types",
  "ckb-rocksdb",
  "ckb-traits",

@@ -1,9 +1,11 @@
 mod abi;
+mod data_provider;
 mod exec;
 mod store;
 mod trie_db;
 
 pub use abi::image_cell_abi;
+pub use data_provider::DataProvider;
 pub use store::{CellInfo, CellKey};
 
 use std::path::Path;

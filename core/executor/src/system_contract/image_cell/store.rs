@@ -1,5 +1,5 @@
 use ckb_types::prelude::Entity;
-use ckb_types::{bytes::Bytes, packed};
+use ckb_types::{bytes::Bytes, packed, prelude::Unpack};
 use rlp::{RlpDecodable, RlpEncodable};
 
 use protocol::types::{MerkleRoot, H256};
@@ -12,6 +12,17 @@ use crate::system_contract::image_cell::MPTTrie;
 pub struct CellKey {
     pub tx_hash: H256,
     pub index:   u32,
+}
+
+impl From<&packed::OutPoint> for CellKey {
+    fn from(out_point: &packed::OutPoint) -> Self {
+        let tmp: ckb_types::H256 = out_point.tx_hash().unpack();
+
+        CellKey {
+            tx_hash: H256(tmp.0),
+            index:   out_point.index().unpack(),
+        }
+    }
 }
 
 impl CellKey {
