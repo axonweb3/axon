@@ -13,6 +13,7 @@ use {
     jemallocator::Jemalloc,
 };
 
+use core_interoperation::InteroperationImpl;
 use ethers_signers::{coins_bip39::English, MnemonicBuilder, Signer};
 
 use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
@@ -43,7 +44,6 @@ use core_cross_client::{
 };
 use core_executor::system_contract::image_cell;
 use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB};
-use core_interoperation::InteroperationImpl;
 use core_mempool::{
     DefaultMemPoolAdapter, MemPoolImpl, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
     RPC_PULL_TXS, RPC_RESP_PULL_TXS, RPC_RESP_PULL_TXS_SYNC,
@@ -341,21 +341,12 @@ impl Axon {
             &self.config.cross_client.indexer_uri.clone(),
         ));
 
-        let interoperation = Arc::new(
-            InteroperationImpl::new(
-                self.config.interoperability_extension.clone().into(),
-                Arc::clone(&ckb_client),
-            )
-            .await?,
-        );
-
         // Init mempool
-        let mempool_adapter = DefaultMemPoolAdapter::<Secp256k1, _, _, _, _, _>::new(
+        let mempool_adapter = DefaultMemPoolAdapter::<Secp256k1, _, _, _, _, InteroperationImpl>::new(
             network_service.handle(),
             Arc::clone(&storage),
             Arc::clone(&trie_db),
             Arc::clone(&metadata_controller),
-            Arc::clone(&interoperation),
             self.genesis.block.header.chain_id,
             self.genesis.block.header.gas_limit.as_u64(),
             config.mempool.pool_size as usize,

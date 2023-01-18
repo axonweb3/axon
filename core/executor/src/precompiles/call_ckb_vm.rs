@@ -70,7 +70,11 @@ fn get_cell_dep(rlp: &Rlp) -> Result<packed::CellDep, PrecompileFailure> {
     let index: u32 = try_rlp!(rlp, val_at, 1);
     let dep_type: u8 = try_rlp!(rlp, val_at, 2);
 
-    Ok(packed::CellDepBuilder::default()
+    Ok(build_cell_dep(tx_hash, index, dep_type))
+}
+
+pub fn build_cell_dep(tx_hash: H256, index: u32, dep_type: u8) -> packed::CellDep {
+    packed::CellDepBuilder::default()
         .out_point(
             packed::OutPointBuilder::default()
                 .tx_hash(tx_hash.0.pack())
@@ -78,5 +82,5 @@ fn get_cell_dep(rlp: &Rlp) -> Result<packed::CellDep, PrecompileFailure> {
                 .build(),
         )
         .dep_type(packed::Byte::new(dep_type))
-        .build())
+        .build()
 }

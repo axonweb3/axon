@@ -141,10 +141,8 @@ mod tests {
                 tx_hash: H256::random(),
                 index:   random(),
             };
-            let header_key = H256::random();
 
             assert_eq!(CellKey::decode(&cell_key.encode()).unwrap(), cell_key);
-            assert_eq!(HeaderKey::decode(&header_key.encode()).unwrap(), header_key);
         }
     }
 }

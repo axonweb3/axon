@@ -7,7 +7,7 @@
 pub mod adapter;
 #[cfg(test)]
 mod debugger;
-mod precompiles;
+pub mod precompiles;
 pub mod system_contract;
 #[cfg(test)]
 mod tests;

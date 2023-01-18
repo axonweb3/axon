@@ -373,6 +373,8 @@ impl From<SignatureComponents> for Bytes {
 }
 
 impl SignatureComponents {
+    pub const ETHEREUM_TX_LEN: usize = 65;
+
     pub fn as_bytes(&self) -> Bytes {
         self.clone().into()
     }
@@ -404,6 +406,11 @@ impl SignatureComponents {
         } else {
             None
         }
+    }
+
+    #[allow(clippy::len_without_is_empty)]
+    pub fn len(&self) -> usize {
+        self.r.len() + self.s.len() + 1
     }
 }
 

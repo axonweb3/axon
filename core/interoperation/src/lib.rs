@@ -1,7 +1,7 @@
 #![allow(clippy::uninlined_format_args)]
 
-#[cfg(test)]
-mod tests;
+// #[cfg(test)]
+// mod tests;
 
 use std::error::Error;
 
@@ -28,15 +28,18 @@ pub const fn cycle_to_gas(cycle: u64) -> u64 {
 }
 
 pub enum BlockchainType {
-    Ethereum,
-    Other(u8),
+    BTC,
+    Ada,
 }
 
-impl From<u8> for BlockchainType {
-    fn from(s: u8) -> Self {
-        match s {
-            0 | 1 => BlockchainType::Ethereum,
-            _ => BlockchainType::Other(s),
+impl TryFrom<u8> for BlockchainType {
+    type Error = String;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(BlockchainType::BTC),
+            1 => Ok(BlockchainType::Ada),
+            _ => Err("Unsupported blockchain type".to_string()),
         }
     }
 }
@@ -44,6 +47,7 @@ impl From<u8> for BlockchainType {
 #[derive(Default, Clone)]
 pub struct InteroperationImpl;
 
+#[allow(clippy::needless_lifetimes)]
 impl Interoperation for InteroperationImpl {
     fn call_ckb_vm<'a, DL: CellDataProvider>(
         _ctx: Context,

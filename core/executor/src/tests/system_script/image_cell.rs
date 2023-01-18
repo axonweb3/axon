@@ -8,7 +8,7 @@ use protocol::types::{Hasher, TxResp};
 
 use super::*;
 use crate::system_contract::image_cell::{
-    image_cell_abi, init, CellInfo, CellKey, HeaderKey, ImageCellContract,
+    image_cell_abi, init, CellInfo, CellKey, ImageCellContract,
 };
 use crate::system_contract::SystemContract;
 
@@ -52,7 +52,7 @@ fn test_update_first(backend: &mut MemoryBackend, executor: &ImageCellContract) 
 
     check_root(backend, executor);
 
-    let header_key = HeaderKey::new([5u8; 32], 0x1);
+    let header_key = H256([5u8; 32]);
     let get_header = executor.get_header(&header_key).unwrap().unwrap();
     check_header(&get_header);
 
@@ -97,7 +97,7 @@ fn test_rollback_first(backend: &mut MemoryBackend, executor: &ImageCellContract
 
     check_root(backend, executor);
 
-    let header_key = HeaderKey::new([5u8; 32], 0x2);
+    let header_key = H256([5u8; 32]);
     let get_header = executor.get_header(&header_key).unwrap();
     assert!(get_header.is_none());
 

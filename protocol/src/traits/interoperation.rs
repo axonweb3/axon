@@ -5,6 +5,7 @@ use ckb_types::packed;
 use crate::types::{Bytes, VMResp};
 use crate::{traits::Context, ProtocolResult};
 
+#[allow(clippy::needless_lifetimes)]
 pub trait Interoperation: Sync + Send {
     fn call_ckb_vm<'a, DL: CellDataProvider>(
         ctx: Context,

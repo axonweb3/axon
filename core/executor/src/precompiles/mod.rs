@@ -15,6 +15,9 @@ mod sha256;
 mod tests;
 mod verify_by_ckb_vm;
 
+pub use call_ckb_vm::build_cell_dep;
+pub use verify_by_ckb_vm::{build_mock_tx, CellDep, CellWithWitness};
+
 use std::collections::BTreeMap;
 
 use bn::{AffineG1, Fq, Fr, Group, G1};

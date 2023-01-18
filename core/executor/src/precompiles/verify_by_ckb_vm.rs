@@ -97,7 +97,15 @@ fn mock_transaction(rlp: &Rlp) -> Result<TransactionView, PrecompileFailure> {
     let cell_deps: Vec<CellDep> = try_rlp!(rlp, list_at, 1);
     let header_deps: Vec<H256> = try_rlp!(rlp, list_at, 2);
 
-    Ok(TransactionView::new_advanced_builder()
+    Ok(build_mock_tx(inputs, cell_deps, header_deps))
+}
+
+pub fn build_mock_tx(
+    inputs: Vec<CellWithWitness>,
+    cell_deps: Vec<CellDep>,
+    header_deps: Vec<H256>,
+) -> TransactionView {
+    TransactionView::new_advanced_builder()
         .inputs(inputs.iter().map(|i| {
             packed::CellInput::new(
                 packed::OutPointBuilder::default()
@@ -125,5 +133,5 @@ fn mock_transaction(rlp: &Rlp) -> Result<TransactionView, PrecompileFailure> {
         }))
         .cell_deps(cell_deps.into_iter().map(Into::into))
         .header_deps(header_deps.iter().map(|dep| dep.0.pack()))
-        .build())
+        .build()
 }
