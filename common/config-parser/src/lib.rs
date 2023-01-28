@@ -9,9 +9,9 @@ use std::path::Path;
 
 /// Parse a config from reader.
 pub fn parse_reader<R: io::Read, T: de::DeserializeOwned>(r: &mut R) -> Result<T, ParseError> {
-    let mut buf = Vec::new();
-    r.read_to_end(&mut buf)?;
-    Ok(toml::from_slice(&buf)?)
+    let mut buf = String::new();
+    r.read_to_string(&mut buf)?;
+    Ok(toml::from_str(&buf)?)
 }
 
 pub fn parse_json<R: io::Read, T: de::DeserializeOwned>(r: &mut R) -> Result<T, ParseError> {
