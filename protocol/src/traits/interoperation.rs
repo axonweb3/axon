@@ -5,20 +5,19 @@ use ckb_types::packed;
 use crate::types::{Bytes, VMResp};
 use crate::{traits::Context, ProtocolResult};
 
-#[allow(clippy::needless_lifetimes)]
 pub trait Interoperation: Sync + Send {
-    fn call_ckb_vm<'a, DL: CellDataProvider>(
+    fn call_ckb_vm<DL: CellDataProvider>(
         ctx: Context,
-        data_loader: &'a DL,
+        data_loader: &DL,
         data_cell_dep: packed::CellDep,
         args: &[Bytes],
         max_cycles: u64,
     ) -> ProtocolResult<VMResp>;
 
-    fn verify_by_ckb_vm<'a, DL: CellDataProvider + HeaderProvider>(
+    fn verify_by_ckb_vm<DL: CellDataProvider + HeaderProvider>(
         ctx: Context,
-        data_loader: &'a DL,
-        mocked_tx: &'a TransactionView,
+        data_loader: DL,
+        mocked_tx: &TransactionView,
         max_cycles: u64,
     ) -> ProtocolResult<Cycle>;
 }

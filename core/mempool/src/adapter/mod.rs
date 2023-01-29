@@ -421,7 +421,7 @@ where
 
                 <InteroperationImpl as Interoperation>::verify_by_ckb_vm(
                     Default::default(),
-                    &DataProvider::default(),
+                    DataProvider::default(),
                     &build_mock_tx(
                         r.out_points
                             .iter()

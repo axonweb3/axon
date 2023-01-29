@@ -47,11 +47,10 @@ impl TryFrom<u8> for BlockchainType {
 #[derive(Default, Clone)]
 pub struct InteroperationImpl;
 
-#[allow(clippy::needless_lifetimes)]
 impl Interoperation for InteroperationImpl {
-    fn call_ckb_vm<'a, DL: CellDataProvider>(
+    fn call_ckb_vm<DL: CellDataProvider>(
         _ctx: Context,
-        data_loader: &'a DL,
+        data_loader: &DL,
         data_cell_dep: packed::CellDep,
         args: &[Bytes],
         max_cycles: u64,
@@ -72,15 +71,15 @@ impl Interoperation for InteroperationImpl {
         })
     }
 
-    fn verify_by_ckb_vm<'a, DL: CellDataProvider + HeaderProvider>(
+    fn verify_by_ckb_vm<DL: CellDataProvider + HeaderProvider>(
         _ctx: Context,
-        data_loader: &'a DL,
-        mocked_tx: &'a TransactionView,
+        data_loader: DL,
+        mocked_tx: &TransactionView,
         max_cycles: u64,
     ) -> ProtocolResult<Cycle> {
         let cycles = TransactionScriptsVerifier::new(
             &ResolvedTransaction::dummy_resolve(mocked_tx.clone()),
-            data_loader,
+            &data_loader,
         )
         .verify(max_cycles)
         .map_err(InteroperationError::Ckb)?;
