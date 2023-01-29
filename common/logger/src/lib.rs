@@ -1,3 +1,5 @@
+#![allow(clippy::uninlined_format_args)]
+
 mod date_fixed_roller;
 
 use std::collections::HashMap;

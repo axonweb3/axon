@@ -1,4 +1,9 @@
-#![allow(clippy::mutable_key_type, clippy::derive_hash_xor_eq, dead_code)]
+#![allow(
+    clippy::uninlined_format_args,
+    clippy::mutable_key_type,
+    clippy::derive_hash_xor_eq,
+    dead_code
+)]
 
 pub mod codec;
 pub mod lazy;

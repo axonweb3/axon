@@ -1,3 +1,5 @@
+#![allow(clippy::uninlined_format_args)]
+
 #[cfg(test)]
 mod tests;
 
@@ -97,7 +99,7 @@ impl InteroperationImpl {
         transaction_hash_map: HashMap<u8, H256>,
         rpc_client: Arc<T>,
     ) -> ProtocolResult<Self> {
-        let tx_hashes = transaction_hash_map.iter().map(|(_, v)| *v).collect();
+        let tx_hashes = transaction_hash_map.values().copied().collect();
         init_dispatcher_from_rpc(rpc_client, tx_hashes).await?;
         init_ckb_transaction_hashes(transaction_hash_map);
         Ok(InteroperationImpl::default())

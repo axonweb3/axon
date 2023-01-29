@@ -34,7 +34,7 @@ pub struct OverlordConsensus<Adapter: ConsensusAdapter + 'static> {
 impl<Adapter: ConsensusAdapter + 'static> Consensus for OverlordConsensus<Adapter> {
     #[trace_span(kind = "consensus")]
     async fn set_proposal(&self, ctx: Context, proposal: Vec<u8>) -> ProtocolResult<()> {
-        let signed_proposal = SignedProposal::<Proposal>::decode(&proposal)
+        let signed_proposal = SignedProposal::<Proposal>::decode(proposal)
             .map_err(|_| ConsensusError::DecodeErr(ConsensusType::SignedProposal))?;
 
         let msg = OverlordMsg::SignedProposal(signed_proposal);
@@ -59,7 +59,7 @@ impl<Adapter: ConsensusAdapter + 'static> Consensus for OverlordConsensus<Adapte
             None => ctx,
         };
 
-        let signed_vote = SignedVote::decode(&vote)
+        let signed_vote = SignedVote::decode(vote)
             .map_err(|_| ConsensusError::DecodeErr(ConsensusType::SignedVote))?;
 
         let msg = OverlordMsg::SignedVote(signed_vote);
@@ -73,7 +73,7 @@ impl<Adapter: ConsensusAdapter + 'static> Consensus for OverlordConsensus<Adapte
 
     #[trace_span(kind = "consensus")]
     async fn set_qc(&self, ctx: Context, qc: Vec<u8>) -> ProtocolResult<()> {
-        let aggregated_vote = AggregatedVote::decode(&qc)
+        let aggregated_vote = AggregatedVote::decode(qc)
             .map_err(|_| ConsensusError::DecodeErr(ConsensusType::AggregateVote))?;
 
         let msg = OverlordMsg::AggregatedVote(aggregated_vote);
@@ -87,7 +87,7 @@ impl<Adapter: ConsensusAdapter + 'static> Consensus for OverlordConsensus<Adapte
 
     #[trace_span(kind = "consensus")]
     async fn set_choke(&self, ctx: Context, choke: Vec<u8>) -> ProtocolResult<()> {
-        let signed_choke = SignedChoke::decode(&choke)
+        let signed_choke = SignedChoke::decode(choke)
             .map_err(|_| ConsensusError::DecodeErr(ConsensusType::SignedChoke))?;
 
         let msg = OverlordMsg::SignedChoke(signed_choke);

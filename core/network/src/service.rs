@@ -431,7 +431,7 @@ impl NetworkService {
             .peer_mgr_handle
             .with_registry(|reg| reg.connection_status());
         let count = (self.config.max_connections - self.config.inbound_conn_limit)
-            .saturating_sub(status.inbound) as usize;
+            .saturating_sub(status.inbound);
         if count == 0 {
             self.try_identify_count = 0;
             return;

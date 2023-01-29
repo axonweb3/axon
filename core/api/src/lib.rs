@@ -1,3 +1,5 @@
+#![allow(clippy::uninlined_format_args)]
+
 pub mod adapter;
 pub mod graphql;
 pub mod jsonrpc;

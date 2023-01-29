@@ -1,5 +1,5 @@
 // https://rust-lang.github.io/rust-clippy/master/index.html#float_cmp
-#![allow(clippy::float_cmp)]
+#![allow(clippy::float_cmp, clippy::uninlined_format_args)]
 
 pub mod metrics;
 pub mod server;
