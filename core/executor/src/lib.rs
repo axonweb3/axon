@@ -1,4 +1,8 @@
-#![allow(clippy::derive_partial_eq_without_eq)]
+#![allow(
+    clippy::uninlined_format_args,
+    clippy::derive_partial_eq_without_eq,
+    clippy::box_default
+)]
 
 pub mod adapter;
 #[cfg(test)]

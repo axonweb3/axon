@@ -29,7 +29,7 @@ struct Output {
     pub keypairs:   Vec<Keypair>,
 }
 
-#[allow(clippy::needless_range_loop)]
+#[allow(clippy::needless_range_loop, clippy::uninlined_format_args)]
 pub fn main() {
     let yml = load_yaml!("keypair.yml");
     let m = App::from(yml).get_matches();

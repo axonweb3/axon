@@ -1,3 +1,5 @@
+#![allow(clippy::uninlined_format_args)]
+
 mod adapter;
 pub mod metadata_abi;
 #[cfg(test)]

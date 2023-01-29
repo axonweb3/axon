@@ -1,3 +1,5 @@
+#![allow(clippy::uninlined_format_args)]
+
 use core_network::{NetworkConfig, NetworkService, NetworkServiceHandle};
 use protocol::{
     async_trait,

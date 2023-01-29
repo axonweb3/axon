@@ -1,4 +1,8 @@
-#![allow(clippy::suspicious_else_formatting, clippy::mutable_key_type)]
+#![allow(
+    clippy::uninlined_format_args,
+    clippy::suspicious_else_formatting,
+    clippy::mutable_key_type
+)]
 
 mod adapter;
 mod context;

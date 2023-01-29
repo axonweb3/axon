@@ -1,3 +1,5 @@
+#![allow(clippy::uninlined_format_args)]
+
 use std::fs;
 
 use clap::{load_yaml, value_t, App};

@@ -1,3 +1,5 @@
+#![allow(clippy::uninlined_format_args)]
+
 mod kv_parser;
 mod rpc_expand;
 mod trace_expand;

@@ -1,4 +1,9 @@
-#![allow(dead_code, unused_variables, clippy::derive_partial_eq_without_eq)]
+#![allow(
+    dead_code,
+    unused_variables,
+    clippy::derive_partial_eq_without_eq,
+    clippy::uninlined_format_args
+)]
 
 mod abi;
 mod adapter;

@@ -1,4 +1,4 @@
-#![allow(clippy::mutable_key_type)]
+#![allow(clippy::uninlined_format_args, clippy::mutable_key_type)]
 
 use std::{collections::HashMap, panic::PanicInfo, str::FromStr, sync::Arc, time::Duration};
 

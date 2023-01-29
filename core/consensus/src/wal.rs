@@ -141,7 +141,7 @@ impl SignedTxsWAL {
 
     fn recover_stxs(&self, file_path: PathBuf) -> ProtocolResult<Vec<SignedTransaction>> {
         let mut read_buf = Vec::new();
-        let mut file = fs::File::open(&file_path).map_err(ConsensusError::WALErr)?;
+        let mut file = fs::File::open(file_path).map_err(ConsensusError::WALErr)?;
         let _ = file
             .read_to_end(&mut read_buf)
             .map_err(ConsensusError::WALErr)?;
