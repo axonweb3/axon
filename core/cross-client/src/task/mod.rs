@@ -221,7 +221,7 @@ where
 struct ReqRecords(HashMap<H256, ReqBucket>, usize);
 
 impl ReqRecords {
-    fn new(threshold: usize) -> Self {
+    fn _new(threshold: usize) -> Self {
         ReqRecords(HashMap::new(), threshold)
     }
 

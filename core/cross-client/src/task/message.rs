@@ -18,7 +18,7 @@ pub struct CrossChainMessageHandler(UnboundedSender<CrossChainMessage>);
 impl MessageHandler for CrossChainMessageHandler {
     type Message = CrossChainMessage;
 
-    async fn process(&self, ctx: Context, msg: Self::Message) -> TrustFeedback {
+    async fn process(&self, _ctx: Context, msg: Self::Message) -> TrustFeedback {
         if let Err(e) = self.0.send(msg) {
             log::warn!("set crosschain message {:?}", e);
             return TrustFeedback::Worse(e.to_string());

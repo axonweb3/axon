@@ -99,7 +99,7 @@ where
                         ));
                         break;
                     }
-                    Err(e) => {
+                    Err(_e) => {
                         log::error!("[cross-chain]: get block from ckb node failed");
                         time::sleep(Duration::from_secs(2)).await;
                     }

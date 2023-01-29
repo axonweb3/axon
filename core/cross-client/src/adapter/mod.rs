@@ -68,19 +68,19 @@ where
         Ok(())
     }
 
-    async fn insert_in_process(&self, ctx: Context, key: &[u8], val: &[u8]) -> ProtocolResult<()> {
+    async fn insert_in_process(&self, _ctx: Context, key: &[u8], val: &[u8]) -> ProtocolResult<()> {
         self.db.insert(key, val)
     }
 
-    async fn get_in_process(&self, ctx: Context, key: &[u8]) -> ProtocolResult<Option<Vec<u8>>> {
+    async fn get_in_process(&self, _ctx: Context, key: &[u8]) -> ProtocolResult<Option<Vec<u8>>> {
         self.db.get(key)
     }
 
-    async fn get_all_in_process(&self, ctx: Context) -> ProtocolResult<Vec<(Vec<u8>, Vec<u8>)>> {
+    async fn get_all_in_process(&self, _ctx: Context) -> ProtocolResult<Vec<(Vec<u8>, Vec<u8>)>> {
         self.db.get_all()
     }
 
-    async fn remove_in_process(&self, ctx: Context, key: &[u8]) -> ProtocolResult<()> {
+    async fn remove_in_process(&self, _ctx: Context, key: &[u8]) -> ProtocolResult<()> {
         self.db.remove(key)
     }
 
@@ -165,10 +165,10 @@ where
 
     async fn transmit(
         &self,
-        ctx: Context,
-        msg: Vec<u8>,
-        end: &str,
-        target: MessageTarget,
+        _ctx: Context,
+        _msg: Vec<u8>,
+        _end: &str,
+        _target: MessageTarget,
     ) -> ProtocolResult<()> {
         Ok(())
     }

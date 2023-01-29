@@ -342,17 +342,18 @@ impl Axon {
         ));
 
         // Init mempool
-        let mempool_adapter = DefaultMemPoolAdapter::<Secp256k1, _, _, _, _, InteroperationImpl>::new(
-            network_service.handle(),
-            Arc::clone(&storage),
-            Arc::clone(&trie_db),
-            Arc::clone(&metadata_controller),
-            self.genesis.block.header.chain_id,
-            self.genesis.block.header.gas_limit.as_u64(),
-            config.mempool.pool_size as usize,
-            config.mempool.broadcast_txs_size,
-            config.mempool.broadcast_txs_interval,
-        );
+        let mempool_adapter =
+            DefaultMemPoolAdapter::<Secp256k1, _, _, _, _, InteroperationImpl>::new(
+                network_service.handle(),
+                Arc::clone(&storage),
+                Arc::clone(&trie_db),
+                Arc::clone(&metadata_controller),
+                self.genesis.block.header.chain_id,
+                self.genesis.block.header.gas_limit.as_u64(),
+                config.mempool.pool_size as usize,
+                config.mempool.broadcast_txs_size,
+                config.mempool.broadcast_txs_interval,
+            );
         let mempool = Arc::new(
             MemPoolImpl::new(
                 config.mempool.pool_size as usize,
