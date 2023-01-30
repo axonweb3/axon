@@ -231,7 +231,7 @@ dependencies = [
  "bincode",
  "bytes",
  "cita_trie",
- "ckb-hash",
+ "ckb-hash 0.107.0",
  "ckb-jsonrpc-types",
  "ckb-sdk",
  "ckb-types",
@@ -828,7 +828,7 @@ dependencies = [
  "ckb-crypto",
  "ckb-dao-utils",
  "ckb-error",
- "ckb-hash",
+ "ckb-hash 0.106.0",
  "ckb-jsonrpc-types",
  "ckb-pow",
  "ckb-rational",
@@ -936,6 +936,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "ckb-hash"
+version = "0.107.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "34277b3ac8889e37cf0029b4dabe26f42261bc36bc1a9551af7f74ad89afc6a8"
+dependencies = [
+ "blake2b-ref",
+ "blake2b-rs",
+]
+
+[[package]]
 name = "ckb-jsonrpc-types"
 version = "0.106.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1016,7 +1026,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a3ea66fa0ac3dc84cada2d2696903afb28dbea1211d05f04b0ed444874ee8623"
 dependencies = [
  "byteorder",
- "ckb-hash",
+ "ckb-hash 0.106.0",
  "ckb-types",
  "eaglesong",
  "log",
@@ -1068,7 +1078,7 @@ dependencies = [
  "byteorder",
  "ckb-chain-spec",
  "ckb-error",
- "ckb-hash",
+ "ckb-hash 0.106.0",
  "ckb-logger",
  "ckb-traits",
  "ckb-types",
@@ -1089,7 +1099,7 @@ dependencies = [
  "bytes",
  "ckb-crypto",
  "ckb-dao-utils",
- "ckb-hash",
+ "ckb-hash 0.106.0",
  "ckb-jsonrpc-types",
  "ckb-resource",
  "ckb-script",
@@ -1148,7 +1158,7 @@ dependencies = [
  "ckb-channel",
  "ckb-error",
  "ckb-fixed-hash",
- "ckb-hash",
+ "ckb-hash 0.106.0",
  "ckb-merkle-mountain-range",
  "ckb-occupied-capacity",
  "ckb-rational",
@@ -1578,7 +1588,7 @@ version = "0.1.0"
 dependencies = [
  "arc-swap",
  "axon-protocol",
- "ckb-hash",
+ "ckb-hash 0.107.0",
  "ckb-jsonrpc-types",
  "ckb-sdk",
  "ckb-types",
