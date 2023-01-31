@@ -1,90 +1,196 @@
-use std::collections::HashMap;
+mod verify_in_mempool;
+use std::fs::File;
+use std::io::BufReader;
 use std::sync::Arc;
 
-use cardano_message_signing::{self as MS, utils::ToBytes};
-use cardano_serialization_lib as Cardano;
+use core_executor::adapter::{MPTTrie, RocksTrieDB};
+use core_executor::{system_contract::system_contract_address, AxonExecutor, AxonExecutorAdapter};
 use core_rpc_client::RpcClient;
-use ed25519_dalek::Keypair;
-use rand::rngs::ThreadRng;
+use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
+use protocol::codec::ProtocolCodec;
+use protocol::traits::{CommonStorage, Context, Executor, Storage};
+use protocol::types::{
+    Account, Address, Bytes, Eip1559Transaction, ExecResp, Proposal, Public, RichBlock,
+    SignatureComponents, SignedTransaction, TransactionAction, UnsignedTransaction,
+    UnverifiedTransaction, H256, NIL_DATA, RLP_NULL, U256,
+};
 
-use protocol::{codec::hex_decode, tokio, traits::Interoperation, types::H256};
+const GENESIS_PATH: &str = "../../devtools/chain/genesis_single_node.json";
 
-use crate::{get_ckb_transaction_hash, InteroperationImpl};
-
-const MAX_CYCLES: u64 = 100_000_000;
-
-async fn init_interoperation_handler(
-    transaction_hash_map: HashMap<u8, H256>,
-) -> InteroperationImpl {
-    let rpc_client = RpcClient::new(
-        "http://127.0.0.1:8114",
-        "http://127.0.0.1:8116",
-        "http://127.0.0.1:8118",
-    );
-    InteroperationImpl::new(transaction_hash_map, Arc::new(rpc_client))
-        .await
-        .unwrap()
+lazy_static::lazy_static! {
+    pub static ref RPC: RpcClient = init_rpc_client();
 }
 
-fn parse_h256(hex_str: &str) -> H256 {
-    let bytes = hex_decode(hex_str).unwrap();
-    let mut hash = [0u8; 32];
-    hash.copy_from_slice(bytes.as_slice());
-    hash.into()
+struct TestHandle {
+    storage:    Arc<ImplStorage<RocksAdapter>>,
+    trie_db:    Arc<RocksTrieDB>,
+    state_root: H256,
 }
 
-#[ignore]
-#[tokio::test]
-async fn test_ckb_cardano() {
-    // fetch contract binary via rpc client
-    let tx_hash = parse_h256("b1af175009413bf9670dffb7b120f0eca52896a9798bda123df9b25ff7d8f721");
-    let mut transaction_hash_map = HashMap::new();
-    transaction_hash_map.insert(2u8, tx_hash);
-    let handler = init_interoperation_handler(transaction_hash_map).await;
-    assert!(tx_hash == get_ckb_transaction_hash(2u8).unwrap());
-
-    // generate random keypair
-    let mut csprng = ThreadRng::default();
-    let keypair = Keypair::generate(&mut csprng);
-    let payload = vec![1u8; 32]; // represent axon transaction hash
-
-    // generate Cardano singing key
-    let private_key =
-        Cardano::crypto::PrivateKey::from_normal_bytes(keypair.secret.to_bytes().as_ref()).unwrap();
-    let public_key = private_key.to_public();
-    let mut address = vec![2u8; 57];
-
-    // generate signing message
-    let mut protected_headers = MS::HeaderMap::new();
-    protected_headers.set_algorithm_id(&MS::Label::from_algorithm_id(
-        MS::builders::AlgorithmId::EdDSA,
-    ));
-    protected_headers
-        .set_header(
-            &MS::Label::new_text("address".into()),
-            &MS::cbor::CBORValue::new_bytes(address.clone()),
+impl TestHandle {
+    pub async fn new(salt: u64) -> Self {
+        let path = "./free-space/interoperation/".to_string();
+        let storage_adapter = RocksAdapter::new(
+            path.clone() + &salt.to_string() + "/rocks",
+            Default::default(),
         )
         .unwrap();
-    let protected_serialized = MS::ProtectedHeaderMap::new(&protected_headers);
-    let unprotected = MS::HeaderMap::new();
-    let headers = MS::Headers::new(&protected_serialized, &unprotected);
-    let builder = MS::builders::COSESign1Builder::new(&headers, payload.clone(), false);
-    let message = builder.make_data_to_sign().to_bytes();
+        let trie_db = RocksTrieDB::new(
+            path.clone() + &salt.to_string() + "/trie",
+            Default::default(),
+            50,
+        )
+        .unwrap();
 
-    // verify signature by Cardano self
-    let signature = private_key.sign(message.as_slice());
-    assert!(public_key.verify(&message, &signature));
+        let mut handle = TestHandle {
+            storage:    Arc::new(ImplStorage::new(Arc::new(storage_adapter), 10)),
+            trie_db:    Arc::new(trie_db),
+            state_root: H256::default(),
+        };
+        handle.load_genesis().await;
 
-    // run ckv-vm
-    let mut pubkey_plus_address = public_key.as_bytes().to_vec();
-    pubkey_plus_address.append(&mut address);
-    let args = vec![
-        payload.into(),
-        signature.to_bytes().into(),
-        pubkey_plus_address.into(),
-    ];
-    let result = handler
-        .call_ckb_vm(Default::default(), tx_hash, &args, MAX_CYCLES)
-        .expect("vm");
-    assert!(result.exit_code == 0);
+        let backend = AxonExecutorAdapter::from_root(
+            handle.state_root,
+            Arc::clone(&handle.trie_db),
+            Arc::clone(&handle.storage),
+            mock_proposal().into(),
+        )
+        .unwrap();
+
+        core_executor::system_contract::image_cell::init(
+            path + &salt.to_string() + "/sc",
+            Default::default(),
+            50,
+            Arc::new(backend),
+        );
+
+        handle
+    }
+
+    async fn load_genesis(&mut self) {
+        let reader = BufReader::new(File::open(GENESIS_PATH).unwrap());
+        let genesis: RichBlock = serde_json::from_reader(reader).unwrap();
+        let distribute_address =
+            Address::from_hex("0x8ab0cf264df99d83525e9e11c7e4db01558ae1b1").unwrap();
+        let distribute_account = Account {
+            nonce:        0u64.into(),
+            balance:      32000001100000000000u128.into(),
+            storage_root: RLP_NULL,
+            code_hash:    NIL_DATA,
+        };
+
+        let mut mpt = MPTTrie::new(Arc::clone(&self.trie_db));
+
+        mpt.insert(
+            distribute_address.as_slice(),
+            distribute_account.encode().unwrap().as_ref(),
+        )
+        .unwrap();
+
+        let proposal = Proposal::from(&genesis.block);
+        let executor = AxonExecutor::default();
+        let mut backend = AxonExecutorAdapter::from_root(
+            mpt.commit().unwrap(),
+            Arc::clone(&self.trie_db),
+            Arc::clone(&self.storage),
+            proposal.into(),
+        )
+        .unwrap();
+
+        let resp = executor.exec(&mut backend, &genesis.txs, &[]);
+
+        self.state_root = resp.state_root;
+        self.storage
+            .update_latest_proof(Context::new(), genesis.block.header.proof.clone())
+            .await
+            .unwrap();
+        self.storage
+            .insert_block(Context::new(), genesis.block.clone())
+            .await
+            .unwrap();
+        self.storage
+            .insert_transactions(
+                Context::new(),
+                genesis.block.header.number,
+                genesis.txs.clone(),
+            )
+            .await
+            .unwrap();
+    }
+
+    pub fn exec(&mut self, txs: Vec<SignedTransaction>) -> ExecResp {
+        let mut backend = AxonExecutorAdapter::from_root(
+            self.state_root,
+            Arc::clone(&self.trie_db),
+            Arc::clone(&self.storage),
+            mock_proposal().into(),
+        )
+        .unwrap();
+        let resp = AxonExecutor::default().exec(&mut backend, &txs, &[]);
+        self.state_root = resp.state_root;
+        resp
+    }
+}
+
+fn mock_proposal() -> Proposal {
+    Proposal {
+        prev_hash:                  Default::default(),
+        proposer:                   Default::default(),
+        transactions_root:          Default::default(),
+        signed_txs_hash:            Default::default(),
+        timestamp:                  Default::default(),
+        number:                     Default::default(),
+        gas_limit:                  1000000000u64.into(),
+        extra_data:                 Default::default(),
+        mixed_hash:                 Default::default(),
+        base_fee_per_gas:           U256::one(),
+        proof:                      Default::default(),
+        last_checkpoint_block_hash: Default::default(),
+        chain_id:                   Default::default(),
+        call_system_script_count:   1,
+        tx_hashes:                  vec![],
+    }
+}
+
+fn mock_transaction(nonce: u64, data: Vec<u8>) -> Eip1559Transaction {
+    Eip1559Transaction {
+        nonce:                    nonce.into(),
+        gas_limit:                100000000u64.into(),
+        max_priority_fee_per_gas: U256::one(),
+        gas_price:                U256::one(),
+        action:                   TransactionAction::Call(system_contract_address(0x1)),
+        value:                    U256::zero(),
+        data:                     data.into(),
+        access_list:              vec![],
+    }
+}
+
+fn mock_signed_tx(nonce: u64, data: Vec<u8>) -> SignedTransaction {
+    let raw = mock_transaction(nonce, data);
+    let tx = UnverifiedTransaction {
+        unsigned:  UnsignedTransaction::Eip1559(raw),
+        signature: Some(SignatureComponents {
+            standard_v: 2,
+            r:          Bytes::default(),
+            s:          Bytes::default(),
+        }),
+        chain_id:  0,
+        hash:      Default::default(),
+    };
+
+    SignedTransaction {
+        transaction: tx.calc_hash(),
+        sender:      Address::from_hex("0x8ab0cf264df99d83525e9e11c7e4db01558ae1b1")
+            .unwrap()
+            .0,
+        public:      Some(Public::default()),
+    }
+}
+
+fn init_rpc_client() -> RpcClient {
+    RpcClient::new(
+        "https://testnet.ckb.dev/",
+        "http://127.0.0.1:8116",
+        "http://127.0.0.1:8118",
+    )
 }

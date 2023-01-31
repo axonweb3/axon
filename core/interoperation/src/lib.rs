@@ -1,7 +1,7 @@
 #![allow(clippy::uninlined_format_args)]
 
-// #[cfg(test)]
-// mod tests;
+#[cfg(test)]
+mod tests;
 
 use std::error::Error;
 
