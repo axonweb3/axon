@@ -12,18 +12,11 @@ use crate::{parse_dep_group_data, tests::TestHandle, InteroperationImpl};
 const JOYID_TEST_TX_HASH: ckb_types::H256 =
     h256!("0x718930de57046ced9eba895b0c9d8ecba41f08ebe8b3ef2e6cc5bc8e1cd88d4f");
 
-#[test]
-fn test_verify_joyid() {
-    let rt = tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()
-        .unwrap();
-
-    rt.block_on(async {
-        let mut handle = TestHandle::new(0).await;
-        let tx = mock_signed_tx(1, build_image_cell_payload().await);
-        let _ = handle.exec(vec![tx]);
-    });
+#[tokio::test(flavor = "multi_thread")]
+async fn test_verify_joyid() {
+    let mut handle = TestHandle::new(0).await;
+    let tx = mock_signed_tx(1, build_image_cell_payload().await);
+    let _ = handle.exec(vec![tx]);
 
     let case = OutPoint {
         tx_hash: h256!("0xf8fc23655fe15dd4a39337155f4dcfe0ef59a6f2d7fb7f083cc3c351e9ff80d2"),
@@ -63,6 +56,15 @@ fn test_verify_joyid() {
         ],
         vec![],
     );
+
+    // The following process is only for test
+    let origin_tx = get_ckb_tx(JOYID_TEST_TX_HASH).await;
+    let mock_tx = mock_tx
+        .as_advanced_builder()
+        .outputs(origin_tx.outputs())
+        .outputs_data(origin_tx.outputs_data())
+        .build();
+
     println!(
         "{:?}\n",
         serde_json::to_string(&ckb_jsonrpc_types::TransactionView::from(mock_tx.clone())).unwrap()
