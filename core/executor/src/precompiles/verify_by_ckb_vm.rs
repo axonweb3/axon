@@ -112,7 +112,7 @@ pub fn build_mock_tx(
                     .tx_hash(i.tx_hash.0.pack())
                     .index(i.index.pack())
                     .build(),
-                5u64,
+                0u64,
             )
         }))
         .witnesses(inputs.iter().map(|i| {
@@ -124,7 +124,7 @@ pub fn build_mock_tx(
                 )
                 .lock(
                     packed::BytesOptBuilder::default()
-                        .set(i.witness_type.clone().map(|inner| inner.pack()))
+                        .set(i.witness_lock.clone().map(|inner| inner.pack()))
                         .build(),
                 )
                 .build()

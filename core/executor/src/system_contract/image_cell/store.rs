@@ -1,5 +1,4 @@
-use ckb_types::prelude::Entity;
-use ckb_types::{bytes::Bytes, packed, prelude::Unpack};
+use ckb_types::{bytes::Bytes, core::cell::CellMeta, packed, prelude::*};
 use rlp::{RlpDecodable, RlpEncodable};
 
 use protocol::types::{MerkleRoot, H256};
@@ -65,6 +64,19 @@ pub struct CellInfo {
     pub consumed_number: Option<u64>,
 }
 
+impl CellInfo {
+    pub fn into_meta(self, out_point: &packed::OutPoint) -> CellMeta {
+        CellMeta {
+            cell_output:        packed::CellOutput::new_unchecked(self.cell_output),
+            out_point:          out_point.clone(),
+            transaction_info:   None,
+            data_bytes:         self.cell_data.len() as u64,
+            mem_cell_data_hash: Some(cell_data_hash(&self.cell_data)),
+            mem_cell_data:      Some(self.cell_data),
+        }
+    }
+}
+
 pub fn commit(mpt: &mut MPTTrie<RocksTrieDB>) -> SystemScriptResult<MerkleRoot> {
     mpt.commit()
         .map_err(|e| SystemScriptError::CommitError(e.to_string()))
@@ -127,6 +139,14 @@ pub fn get_cell(mpt: &MPTTrie<RocksTrieDB>, key: &CellKey) -> SystemScriptResult
     Ok(Some(
         rlp::decode(&cell).map_err(SystemScriptError::DecodeCell)?,
     ))
+}
+
+fn cell_data_hash(data: &Bytes) -> packed::Byte32 {
+    if !data.is_empty() {
+        return ckb_hash::blake2b_256(data).pack();
+    }
+
+    packed::Byte32::zero()
 }
 
 #[cfg(test)]

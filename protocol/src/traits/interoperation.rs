@@ -1,5 +1,5 @@
 use ckb_traits::{CellDataProvider, HeaderProvider};
-use ckb_types::core::{Cycle, TransactionView};
+use ckb_types::core::{cell::CellProvider, Cycle, TransactionView};
 use ckb_types::packed;
 
 use crate::types::{Bytes, VMResp};
@@ -14,7 +14,7 @@ pub trait Interoperation: Sync + Send {
         max_cycles: u64,
     ) -> ProtocolResult<VMResp>;
 
-    fn verify_by_ckb_vm<DL: CellDataProvider + HeaderProvider>(
+    fn verify_by_ckb_vm<DL: CellProvider + CellDataProvider + HeaderProvider>(
         ctx: Context,
         data_loader: DL,
         mocked_tx: &TransactionView,
