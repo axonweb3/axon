@@ -6,8 +6,8 @@ use core_executor::precompiles::{build_mock_tx, CellDep, CellWithWitness};
 use core_executor::system_contract::image_cell::{image_cell_abi, DataProvider};
 use protocol::{codec::hex_decode, tokio, traits::CkbClient, traits::Interoperation, types::H256};
 
-use super::*;
-use crate::{parse_dep_group_data, tests::TestHandle, InteroperationImpl};
+use crate::tests::{init_rpc_client, mock_signed_tx, TestHandle, RPC};
+use crate::{utils::parse_dep_group_data, InteroperationImpl};
 
 const JOYID_TEST_TX_HASH: ckb_types::H256 =
     h256!("0x718930de57046ced9eba895b0c9d8ecba41f08ebe8b3ef2e6cc5bc8e1cd88d4f");
@@ -194,7 +194,7 @@ async fn get_tx_cells<T: Into<ckb_types::H256>>(hash: T) -> Vec<image_cell_abi::
 
 async fn get_ckb_tx<T: Into<ckb_types::H256>>(hash: T) -> TransactionView {
     let tx: packed::Transaction = RPC
-        .get_txs_by_hashes(Context::new(), vec![hash.into()])
+        .get_txs_by_hashes(Default::default(), vec![hash.into()])
         .await
         .unwrap()
         .get(0)
@@ -218,7 +218,7 @@ fn build_witness(raw: &str) -> (Option<Bytes>, Option<Bytes>) {
 async fn mock_header() -> image_cell_abi::Header {
     let rpc = init_rpc_client();
     let header: HeaderView = rpc
-        .get_block_by_number(Context::new(), 7990521u64.into())
+        .get_block_by_number(Default::default(), 7990521u64.into())
         .await
         .unwrap()
         .header
