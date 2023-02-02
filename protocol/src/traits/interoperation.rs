@@ -16,13 +16,13 @@ pub trait Interoperation: Sync + Send {
 
     fn verify_by_ckb_vm<DL: CellProvider + CellDataProvider + HeaderProvider>(
         ctx: Context,
-        data_loader: DL,
+        data_loader: &DL,
         mocked_tx: &TransactionView,
         max_cycles: u64,
     ) -> ProtocolResult<Cycle>;
 
     /// The function construct the `TransactionView` payload required by
-    /// `verify_by_ckb_vm`.
+    /// `verify_by_ckb_vm()`.
     fn dummy_transaction(
         cell_deps: Vec<CellDep>,
         header_deps: Vec<H256>,

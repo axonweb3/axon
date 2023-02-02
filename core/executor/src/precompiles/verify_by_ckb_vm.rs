@@ -44,7 +44,7 @@ impl PrecompileContract for CkbVM {
         if let Some(gas) = gas_limit {
             let res = InteroperationImpl::verify_by_ckb_vm(
                 Default::default(),
-                DataProvider::default(),
+                &DataProvider::default(),
                 &InteroperationImpl::dummy_transaction(cell_deps, header_deps, inputs, witnesses),
                 gas_to_cycle(gas),
             )

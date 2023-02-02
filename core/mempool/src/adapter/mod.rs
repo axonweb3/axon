@@ -421,7 +421,7 @@ where
 
                 InteroperationImpl::verify_by_ckb_vm(
                     Default::default(),
-                    DataProvider::default(),
+                    &DataProvider::default(),
                     &InteroperationImpl::dummy_transaction(
                         r.cell_deps,
                         r.header_deps,

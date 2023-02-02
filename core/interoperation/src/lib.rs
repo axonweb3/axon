@@ -14,7 +14,7 @@ use ckb_vm::machine::{asm::AsmCoreMachine, DefaultMachineBuilder, SupportMachine
 use ckb_vm::{Error as VMError, ISA_B, ISA_IMC, ISA_MOP};
 
 use protocol::traits::{Context, Interoperation};
-use protocol::types::{Bytes, CellDep, VMResp};
+use protocol::types::{Bytes, CellDep, OutPoint, VMResp};
 use protocol::{Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 use crate::utils::resolve_transaction;
@@ -77,16 +77,13 @@ impl Interoperation for InteroperationImpl {
 
     fn verify_by_ckb_vm<DL: CellProvider + CellDataProvider + HeaderProvider>(
         _ctx: Context,
-        data_loader: DL,
+        data_loader: &DL,
         mocked_tx: &TransactionView,
         max_cycles: u64,
     ) -> ProtocolResult<Cycle> {
-        TransactionScriptsVerifier::new(
-            &resolve_transaction(&data_loader, mocked_tx)?,
-            &data_loader,
-        )
-        .verify(max_cycles)
-        .map_err(|e| InteroperationError::Ckb(e).into())
+        TransactionScriptsVerifier::new(&resolve_transaction(data_loader, mocked_tx)?, data_loader)
+            .verify(max_cycles)
+            .map_err(|e| InteroperationError::Ckb(e).into())
     }
 }
 
@@ -107,8 +104,8 @@ pub enum InteroperationError {
     #[display(fmt = "Unsupported blockchain id {:?}", _0)]
     GetBlockchainCodeHash(u8),
 
-    #[display(fmt = "Get unknown cell")]
-    GetUnknownCell,
+    #[display(fmt = "Get unknown cell by out point {:?}", _0)]
+    GetUnknownCell(OutPoint),
 
     #[display(fmt = "Invalid dep group {:?}", _0)]
     InvalidDepGroup(String),

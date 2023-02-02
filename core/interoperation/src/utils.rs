@@ -13,7 +13,7 @@ pub fn resolve_transaction<CL: CellProvider>(
     let resolve_cell = |out_point: &packed::OutPoint| -> ProtocolResult<CellMeta> {
         match cell_loader.cell(out_point, true) {
             CellStatus::Live(meta) => Ok(meta),
-            _ => Err(InteroperationError::GetUnknownCell.into()),
+            _ => Err(InteroperationError::GetUnknownCell(out_point.into()).into()),
         }
     };
 
@@ -29,8 +29,7 @@ pub fn resolve_transaction<CL: CellProvider>(
 
     for cell_dep in tx.cell_deps_iter() {
         if cell_dep.dep_type() == DepType::DepGroup.into() {
-            let outpoint = cell_dep.out_point();
-            let dep_group = resolve_cell(&outpoint)?;
+            let dep_group = resolve_cell(&cell_dep.out_point())?;
             let data = dep_group.mem_cell_data.as_ref().unwrap();
             let sub_out_points =
                 parse_dep_group_data(data).map_err(InteroperationError::InvalidDepGroup)?;

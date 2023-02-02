@@ -11,6 +11,8 @@ use crate::{utils::parse_dep_group_data, InteroperationImpl};
 
 const JOYID_MAIN_KEY_TEST_TX_HASH: ckb_types::H256 =
     h256!("0x718930de57046ced9eba895b0c9d8ecba41f08ebe8b3ef2e6cc5bc8e1cd88d4f");
+const JOYID_SUB_KEY_TEST_TX_HASH: ckb_types::H256 =
+    h256!("0xb18f9d2a719a77a85d73535acaf871950b99cd481ad2ceaafae009dbb6d46f69");
 
 #[tokio::test(flavor = "multi_thread")]
 async fn test_verify_joyid_with_main_key() {
@@ -73,7 +75,77 @@ async fn test_verify_joyid_with_main_key() {
 
     let r = InteroperationImpl::verify_by_ckb_vm(
         Default::default(),
-        DataProvider::default(),
+        &DataProvider::default(),
+        &mock_tx,
+        u64::MAX,
+    )
+    .unwrap();
+    println!("{:?}", r);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_verify_joyid_with_sub_key() {
+    let mut handle = TestHandle::new(1).await;
+    let tx = mock_signed_tx(
+        1,
+        build_image_cell_payload(JOYID_SUB_KEY_TEST_TX_HASH.0).await,
+    );
+    let _ = handle.exec(vec![tx]);
+
+    let case = OutPoint {
+        tx_hash: H256(
+            h256!("0xfda887b673dbc8af7ef64b03c37854d5f6eac3ec18c1961159572c1ee4ab499b").0,
+        ),
+        index:   0,
+    };
+    let witness = build_witness("0xe80100001000000083010000830100006f010000021b155901e901eafebb7b6f4c9f9d3c46e60348f5d2e1adae0c04edfadaa84b4af56aac3dac2f0a56112161b773bf15be41ba5061f25130023c0ac4d03695e21daec35a04b6a9fb2f0cb59aad8dc26aed7e35df661eda4e75ed9c95d78ee9f65d8639e3fe5b2ada115867d1584b091a3ea9560108cb571835abd3182fb46671175913119670aa30099572b168ab0df94c4478648f2501f5f3c823023cff3529dc05000000097b2274797065223a22776562617574686e2e676574222c226368616c6c656e6765223a224d6a4130595752694e6a67334f4455795a6a637a4e324a6d5a4445344d6a59345a475a6a4f4441354f47566d5a4467314d6a417a5a474d774d57466b59574977596a6c6c5a444d78596a566d4e7a51334d6a637a5951222c226f726967696e223a2268747470733a5c2f5c2f6170702e6a6f7969642e646576222c22616e64726f69645061636b6167654e616d65223a22636f6d2e616e64726f69642e6368726f6d65227d6100000061000000100000001400000016000000000000010001470000004c4f595159db911f0aaf38c0729f381b5762b08fd46237424ec35a579a8b950284d1646c04ff007375626b65790000000000000000000000000000000000000000000000004fa6");
+
+    let mock_tx = InteroperationImpl::dummy_transaction(
+        vec![
+            CellDep {
+                tx_hash:  H256(
+                    h256!("0xfda887b673dbc8af7ef64b03c37854d5f6eac3ec18c1961159572c1ee4ab499b").0,
+                ),
+                index:    0,
+                dep_type: DepType::Code.into(),
+            },
+            CellDep {
+                tx_hash:  H256(
+                    h256!("0x073e67aec72467d75b36b2f2a3b8d211b91f687119e88a03639541b4c009e274").0,
+                ),
+                index:    0,
+                dep_type: DepType::DepGroup.into(),
+            },
+            CellDep {
+                tx_hash:  H256(
+                    h256!("0x636a786001f87cb615acfcf408be0f9a1f077001f0bbc75ca54eadfe7e221713").0,
+                ),
+                index:    0,
+                dep_type: DepType::DepGroup.into(),
+            },
+        ],
+        vec![],
+        vec![case],
+        vec![witness],
+    );
+
+    // The following process is only for test
+    let origin_tx = get_ckb_tx(JOYID_SUB_KEY_TEST_TX_HASH).await;
+    let mock_tx = mock_tx
+        .as_advanced_builder()
+        .outputs(origin_tx.outputs())
+        .outputs_data(origin_tx.outputs_data())
+        .witnesses(vec![origin_tx.witnesses().get(1).unwrap()])
+        .build();
+
+    println!(
+        "{:?}\n",
+        serde_json::to_string(&ckb_jsonrpc_types::TransactionView::from(mock_tx.clone())).unwrap()
+    );
+
+    let r = InteroperationImpl::verify_by_ckb_vm(
+        Default::default(),
+        &DataProvider::default(),
         &mock_tx,
         u64::MAX,
     )
@@ -144,10 +216,10 @@ async fn get_tx_cells<T: Into<ckb_types::H256>>(hash: T) -> Vec<image_cell_abi::
         ret.push(info.clone());
 
         if cell_dep.dep_type() == DepType::DepGroup.into() {
-            for op in parse_dep_group_data(&info.data).unwrap().into_iter() {
+            for sub_out_point in parse_dep_group_data(&info.data).unwrap().into_iter() {
                 let cell = get_cell_by_out_point(OutPoint {
-                    tx_hash: H256(op.tx_hash().unpack().0),
-                    index:   op.index().unpack(),
+                    tx_hash: H256(sub_out_point.tx_hash().unpack().0),
+                    index:   sub_out_point.index().unpack(),
                 })
                 .await;
                 ret.push(cell.clone());
