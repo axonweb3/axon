@@ -435,22 +435,6 @@ where
             _ => return Err(AdapterError::VerifySignature("Invalid signature".to_string()).into()),
         }
 
-        // match BlockchainType::from(signature.r[0]) {
-        //     BlockchainType::Other(blockchain_id) => {
-        //         let tx_hash = get_ckb_transaction_hash(blockchain_id)?;
-        //         let args = [
-        //             Bytes::from(Vec::from(
-        //                 stx.transaction.signature_hash(true).to_fixed_bytes(),
-        //             )),
-        //             signature.r,
-        //             signature.s,
-        //         ];
-        //         self.interoperation
-        //             .call_ckb_vm(Default::default(), tx_hash, &args, u64::MAX)
-        //             .map_err(|err| AdapterError::VerifySignature(err.to_string()))?;
-        //     }
-        // };
-
         Ok(())
     }
 

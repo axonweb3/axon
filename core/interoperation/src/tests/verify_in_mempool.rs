@@ -32,29 +32,13 @@ async fn test_verify_joyid_with_main_key() {
     let witness = build_witness("0x830100001000000083010000830100006f01000001780326dedc58aef92d9a76f46e3517eb90e84e966360db25ed128500368c02cbc3a7d5af2f8805ead57f7effa9dba177911abde069838cdd03aaaaf5a8ba5da067ae11e8a7282b178d133b183f32450d413c2ed5231d6e47785aa659bf112cfb492042e7f9cc68e1a8097ea068f3a305424ee33c712aa067a2ac65ea7db542825913119670aa30099572b168ab0df94c4478648f2501f5f3c823023cff3529dc05000000477b2274797065223a22776562617574686e2e676574222c226368616c6c656e6765223a224e6a517959544e6d5a44597a4d7a6c6d4d5755354e5451304f54466b5954637a4d7a6c6a4e57457a4e6d4d355a44526c597a4932596d497a4d3245334d6a45784e57566a4e4451784e3256695a4452684e324a6a5951222c226f726967696e223a2268747470733a5c2f5c2f6170702e6a6f7969642e646576222c22616e64726f69645061636b6167654e616d65223a22636f6d2e616e64726f69642e6368726f6d65227d");
 
     let mock_tx = InteroperationImpl::dummy_transaction(
-        vec![
-            CellDep {
-                tx_hash:  H256(
-                    h256!("0xe778611f59d65bc0c558a0a14a7fe12c4a937712f9cae6ca7aa952802703bd5a").0,
-                ),
-                index:    0,
-                dep_type: DepType::DepGroup.into(),
-            },
-            // CellDep {
-            //     tx_hash:  H256(
-            //         h256!("0x073e67aec72467d75b36b2f2a3b8d211b91f687119e88a03639541b4c009e274").
-            // 0,     ),
-            //     index:    0,
-            //     dep_type: DepType::DepGroup.into(),
-            // },
-            // CellDep {
-            //     tx_hash:  H256(
-            //         h256!("0x636a786001f87cb615acfcf408be0f9a1f077001f0bbc75ca54eadfe7e221713").
-            // 0,     ),
-            //     index:    0,
-            //     dep_type: DepType::DepGroup.into(),
-            // },
-        ],
+        vec![CellDep {
+            tx_hash:  H256(
+                h256!("0xe778611f59d65bc0c558a0a14a7fe12c4a937712f9cae6ca7aa952802703bd5a").0,
+            ),
+            index:    0,
+            dep_type: DepType::DepGroup.into(),
+        }],
         vec![],
         vec![case],
         vec![witness],

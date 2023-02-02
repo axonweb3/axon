@@ -16,12 +16,6 @@ macro_rules! try_rlp {
     }};
 }
 
-// pub struct Payload {
-//     pub inputs:      Vec<CellWithWitness>,
-//     pub cell_deps:   Vec<packed::CellDep>,
-//     pub header_deps: Vec<packed::Byte32>,
-// }
-
 #[derive(Default, Clone)]
 pub struct CkbVM;
 

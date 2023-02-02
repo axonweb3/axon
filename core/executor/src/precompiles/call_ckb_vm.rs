@@ -16,13 +16,6 @@ macro_rules! try_rlp {
     }};
 }
 
-// pub struct Payload {
-//     pub tx_hash:  packed::Byte32,
-//     pub index:    packed::Uint32,
-//     pub dep_type: packed::Uint8,
-//     pub arguments: Vec<Bytes>,
-// }
-
 #[derive(Default, Clone)]
 pub struct CkbVM;
 
