@@ -62,9 +62,8 @@ async fn test_verify_joyid_with_main_key() {
         &DataProvider::default(),
         &mock_tx,
         u64::MAX,
-    )
-    .unwrap();
-    println!("{:?}", r);
+    );
+    assert!(r.is_ok());
 }
 
 #[tokio::test(flavor = "multi_thread")]
@@ -132,9 +131,8 @@ async fn test_verify_joyid_with_sub_key() {
         &DataProvider::default(),
         &mock_tx,
         u64::MAX,
-    )
-    .unwrap();
-    println!("{:?}", r);
+    );
+    assert!(r.is_ok());
 }
 
 async fn build_image_cell_payload<T: Into<ckb_types::H256>>(tx_hash: T) -> Vec<u8> {

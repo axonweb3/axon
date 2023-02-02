@@ -40,7 +40,9 @@ use core_cross_client::{
     CrossChainDBImpl, CrossChainImpl, CrossChainMessageHandler, DefaultCrossChainAdapter,
     END_GOSSIP_BUILD_CKB_TX, END_GOSSIP_CKB_TX_SIGNATURE,
 };
-use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB, system_contract::image_cell};
+use core_executor::{
+    system_contract::image_cell, AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB,
+};
 use core_interoperation::InteroperationImpl;
 use core_mempool::{
     DefaultMemPoolAdapter, MemPoolImpl, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
