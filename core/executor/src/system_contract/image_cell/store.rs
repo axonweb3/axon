@@ -15,10 +15,8 @@ pub struct CellKey {
 
 impl From<&packed::OutPoint> for CellKey {
     fn from(out_point: &packed::OutPoint) -> Self {
-        let tmp: ckb_types::H256 = out_point.tx_hash().unpack();
-
         CellKey {
-            tx_hash: H256(tmp.0),
+            tx_hash: H256(out_point.tx_hash().unpack().0),
             index:   out_point.index().unpack(),
         }
     }

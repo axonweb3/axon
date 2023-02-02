@@ -61,7 +61,7 @@ impl Interoperation for InteroperationImpl {
         let data_cell_dep: packed::CellDep = data_cell_dep.into();
         let program = data_loader
             .get_cell_data(&data_cell_dep.out_point())
-            .ok_or_else(|| InteroperationError::GetProgram(data_cell_dep.out_point()))?;
+            .ok_or_else(|| InteroperationError::GetProgram((&data_cell_dep.out_point()).into()))?;
         let mut vm = ckb_vm::machine::asm::AsmMachine::new(
             DefaultMachineBuilder::new(AsmCoreMachine::new(ISA, VERSION1, max_cycles)).build(),
         );
@@ -93,7 +93,7 @@ pub enum InteroperationError {
     MissingSignature,
 
     #[display(fmt = "Cannot get program of out point {:?}", _0)]
-    GetProgram(packed::OutPoint),
+    GetProgram(OutPoint),
 
     #[display(fmt = "CKB VM verify script failed {:?}", _0)]
     Ckb(ckb_error::Error),
