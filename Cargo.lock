@@ -253,6 +253,7 @@ dependencies = [
  "prost",
  "rand 0.7.3",
  "rlp",
+ "rlp-derive",
  "serde",
  "serde_json",
  "tendermint-proto",

@@ -9,7 +9,7 @@ pub use evm::{backend::*, ExitError, ExitRevert, ExitSucceed};
 pub use executor::{
     AccessList, AccessListItem, Account, Config, ExecResp, ExecutorContext, ExitReason, TxResp,
 };
-pub use interoperation::VMResp;
+pub use interoperation::*;
 pub use primitive::*;
 pub use receipt::*;
 pub use transaction::*;

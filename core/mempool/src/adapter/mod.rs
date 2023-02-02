@@ -1,13 +1,10 @@
 use super::TxContext;
 
 pub mod message;
-mod utils;
 
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::{collections::HashMap, error::Error, marker::PhantomData, sync::Arc, time::Duration};
 
-use core_executor::precompiles::{build_mock_tx, CellWithWitness};
-use core_executor::system_contract::image_cell::DataProvider;
 use dashmap::DashMap;
 use futures::{
     channel::mpsc::{unbounded, TrySendError, UnboundedReceiver, UnboundedSender},
@@ -18,15 +15,18 @@ use parking_lot::Mutex;
 
 use common_apm_derive::trace_span;
 use common_crypto::{Crypto, Secp256k1Recoverable};
-use core_executor::{is_call_system_script, AxonExecutor, AxonExecutorAdapter};
+use core_executor::{
+    is_call_system_script, system_contract::image_cell::DataProvider, AxonExecutor,
+    AxonExecutorAdapter,
+};
 use core_interoperation::InteroperationImpl;
 use protocol::traits::{
     Context, Executor, Gossip, Interoperation, MemPoolAdapter, MetadataControl, PeerTrust,
     Priority, Rpc, Storage, TrustFeedback,
 };
 use protocol::types::{
-    recover_intact_pub_key, BatchSignedTxs, Hash, MerkleRoot, SignatureComponents,
-    SignedTransaction, H160, U256,
+    recover_intact_pub_key, BatchSignedTxs, CellDepWithPubKey, Hash, MerkleRoot,
+    SignatureComponents, SignatureR, SignatureS, SignedTransaction, H160, U256,
 };
 use protocol::{
     async_trait, codec::ProtocolCodec, lazy::CURRENT_STATE_ROOT, tokio, trie, Display,
@@ -396,10 +396,10 @@ where
 
         match signature.r[0] {
             0u8 => {
-                let r = rlp::decode::<utils::CellDepWithPubKey>(&signature.r[1..])
+                let r = rlp::decode::<CellDepWithPubKey>(&signature.r[1..])
                     .map_err(AdapterError::Rlp)?;
 
-                <InteroperationImpl as Interoperation>::call_ckb_vm(
+                InteroperationImpl::call_ckb_vm(
                     Default::default(),
                     &DataProvider::default(),
                     r.cell_dep.into(),
@@ -409,8 +409,8 @@ where
                 .map_err(|e| AdapterError::VerifySignature(e.to_string()))?;
             }
             1u8 => {
-                let r = rlp::decode::<utils::R>(&signature.r[1..]).map_err(AdapterError::Rlp)?;
-                let s = rlp::decode::<utils::S>(&signature.s).map_err(AdapterError::Rlp)?;
+                let r = rlp::decode::<SignatureR>(&signature.r[1..]).map_err(AdapterError::Rlp)?;
+                let s = rlp::decode::<SignatureS>(&signature.s).map_err(AdapterError::Rlp)?;
 
                 if r.out_points.len() != s.witnesses.len() {
                     return Err(AdapterError::VerifySignature(
@@ -419,22 +419,14 @@ where
                     .into());
                 }
 
-                <InteroperationImpl as Interoperation>::verify_by_ckb_vm(
+                InteroperationImpl::verify_by_ckb_vm(
                     Default::default(),
                     DataProvider::default(),
-                    &build_mock_tx(
-                        r.out_points
-                            .iter()
-                            .zip(s.witnesses.iter())
-                            .map(|(p, w)| CellWithWitness {
-                                tx_hash:      p.tx_hash,
-                                index:        p.index,
-                                witness_type: w.input_type.clone(),
-                                witness_lock: w.lock.clone(),
-                            })
-                            .collect(),
+                    &InteroperationImpl::dummy_transaction(
                         r.cell_deps,
                         r.header_deps,
+                        r.out_points,
+                        s.witnesses,
                     ),
                     u64::MAX,
                 )
