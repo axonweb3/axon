@@ -402,7 +402,7 @@ where
                 InteroperationImpl::call_ckb_vm(
                     Default::default(),
                     &DataProvider::default(),
-                    r.cell_dep.into(),
+                    r.cell_dep,
                     &[r.pub_key, signature.s],
                     u64::MAX,
                 )

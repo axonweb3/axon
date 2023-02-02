@@ -14,7 +14,7 @@ use ckb_vm::machine::{asm::AsmCoreMachine, DefaultMachineBuilder, SupportMachine
 use ckb_vm::{Error as VMError, ISA_B, ISA_IMC, ISA_MOP};
 
 use protocol::traits::{Context, Interoperation};
-use protocol::types::{Bytes, VMResp};
+use protocol::types::{Bytes, CellDep, VMResp};
 use protocol::{Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 use crate::utils::resolve_transaction;
@@ -54,10 +54,11 @@ impl Interoperation for InteroperationImpl {
     fn call_ckb_vm<DL: CellDataProvider>(
         _ctx: Context,
         data_loader: &DL,
-        data_cell_dep: packed::CellDep,
+        data_cell_dep: CellDep,
         args: &[Bytes],
         max_cycles: u64,
     ) -> ProtocolResult<VMResp> {
+        let data_cell_dep: packed::CellDep = data_cell_dep.into();
         let program = data_loader
             .get_cell_data(&data_cell_dep.out_point())
             .ok_or_else(|| InteroperationError::GetProgram(data_cell_dep.out_point()))?;

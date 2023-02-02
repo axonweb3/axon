@@ -1,10 +1,9 @@
-use ckb_types::{packed, prelude::*};
 use evm::executor::stack::{PrecompileFailure, PrecompileOutput};
 use evm::{Context, ExitError, ExitSucceed};
 use rlp::Rlp;
 
 use protocol::traits::Interoperation;
-use protocol::types::{H160, H256};
+use protocol::types::{CellDep, H160, H256};
 
 use core_interoperation::{cycle_to_gas, gas_to_cycle, InteroperationImpl};
 
@@ -65,22 +64,14 @@ impl PrecompileContract for CkbVM {
     }
 }
 
-fn get_cell_dep(rlp: &Rlp) -> Result<packed::CellDep, PrecompileFailure> {
+fn get_cell_dep(rlp: &Rlp) -> Result<CellDep, PrecompileFailure> {
     let tx_hash: H256 = try_rlp!(rlp, val_at, 0);
     let index: u32 = try_rlp!(rlp, val_at, 1);
     let dep_type: u8 = try_rlp!(rlp, val_at, 2);
 
-    Ok(build_cell_dep(tx_hash, index, dep_type))
-}
-
-pub fn build_cell_dep(tx_hash: H256, index: u32, dep_type: u8) -> packed::CellDep {
-    packed::CellDepBuilder::default()
-        .out_point(
-            packed::OutPointBuilder::default()
-                .tx_hash(tx_hash.0.pack())
-                .index(index.pack())
-                .build(),
-        )
-        .dep_type(packed::Byte::new(dep_type))
-        .build()
+    Ok(CellDep {
+        tx_hash,
+        index,
+        dep_type,
+    })
 }

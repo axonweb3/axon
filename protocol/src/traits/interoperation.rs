@@ -9,7 +9,7 @@ pub trait Interoperation: Sync + Send {
     fn call_ckb_vm<DL: CellDataProvider>(
         ctx: Context,
         data_loader: &DL,
-        data_cell_dep: packed::CellDep,
+        data_cell_dep: CellDep,
         args: &[Bytes],
         max_cycles: u64,
     ) -> ProtocolResult<VMResp>;
@@ -21,6 +21,8 @@ pub trait Interoperation: Sync + Send {
         max_cycles: u64,
     ) -> ProtocolResult<Cycle>;
 
+    /// The function construct the `TransactionView` payload required by
+    /// `verify_by_ckb_vm`.
     fn dummy_transaction(
         cell_deps: Vec<CellDep>,
         header_deps: Vec<H256>,
