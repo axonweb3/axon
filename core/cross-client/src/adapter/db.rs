@@ -44,7 +44,7 @@ impl CrossChainDB for CrossChainDBImpl {
 }
 
 impl CrossChainDBImpl {
-    pub fn new<P: AsRef<Path>>(path: P, config: ConfigRocksDB) -> ProtocolResult<Self> {
+    pub fn new<P: AsRef<Path>>(path: P, _config: ConfigRocksDB) -> ProtocolResult<Self> {
         if !path.as_ref().is_dir() {
             fs::create_dir_all(&path).map_err(|_| CrossChainError::CreateDB)?;
         }

@@ -3,6 +3,7 @@
 use std::{collections::HashMap, panic::PanicInfo, str::FromStr, sync::Arc, time::Duration};
 
 use backtrace::Backtrace;
+use ethers_signers::{coins_bip39::English, MnemonicBuilder, Signer};
 #[cfg(all(
     not(target_env = "msvc"),
     not(target_os = "macos"),
@@ -12,8 +13,6 @@ use {
     jemalloc_ctl::{Access, AsName},
     jemallocator::Jemalloc,
 };
-
-use ethers_signers::{coins_bip39::English, MnemonicBuilder, Signer};
 
 use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
 use common_apm::{server::run_prometheus_server, tracing::global_tracer_register};
@@ -41,8 +40,9 @@ use core_cross_client::{
     CrossChainDBImpl, CrossChainImpl, CrossChainMessageHandler, DefaultCrossChainAdapter,
     END_GOSSIP_BUILD_CKB_TX, END_GOSSIP_CKB_TX_SIGNATURE,
 };
-use core_executor::system_contract::image_cell;
-use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB};
+use core_executor::{
+    system_contract::image_cell, AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB,
+};
 use core_interoperation::InteroperationImpl;
 use core_mempool::{
     DefaultMemPoolAdapter, MemPoolImpl, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
@@ -341,27 +341,19 @@ impl Axon {
             &self.config.cross_client.indexer_uri.clone(),
         ));
 
-        let interoperation = Arc::new(
-            InteroperationImpl::new(
-                self.config.interoperability_extension.clone().into(),
-                Arc::clone(&ckb_client),
-            )
-            .await?,
-        );
-
         // Init mempool
-        let mempool_adapter = DefaultMemPoolAdapter::<Secp256k1, _, _, _, _, _>::new(
-            network_service.handle(),
-            Arc::clone(&storage),
-            Arc::clone(&trie_db),
-            Arc::clone(&metadata_controller),
-            Arc::clone(&interoperation),
-            self.genesis.block.header.chain_id,
-            self.genesis.block.header.gas_limit.as_u64(),
-            config.mempool.pool_size as usize,
-            config.mempool.broadcast_txs_size,
-            config.mempool.broadcast_txs_interval,
-        );
+        let mempool_adapter =
+            DefaultMemPoolAdapter::<Secp256k1, _, _, _, _, InteroperationImpl>::new(
+                network_service.handle(),
+                Arc::clone(&storage),
+                Arc::clone(&trie_db),
+                Arc::clone(&metadata_controller),
+                self.genesis.block.header.chain_id,
+                self.genesis.block.header.gas_limit.as_u64(),
+                config.mempool.pool_size as usize,
+                config.mempool.broadcast_txs_size,
+                config.mempool.broadcast_txs_interval,
+            );
         let mempool = Arc::new(
             MemPoolImpl::new(
                 config.mempool.pool_size as usize,

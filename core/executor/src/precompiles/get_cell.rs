@@ -3,14 +3,15 @@ use evm::{Context, ExitError, ExitSucceed};
 
 use protocol::types::H160;
 
-use crate::err;
 use crate::precompiles::{precompile_address, PrecompileContract};
+use crate::system_contract::image_cell::CellKey;
+use crate::{err, system_contract::image_cell::ImageCellContract};
 
 #[derive(Default, Clone)]
 pub struct GetCell;
 
 impl PrecompileContract for GetCell {
-    const ADDRESS: H160 = precompile_address(0x04);
+    const ADDRESS: H160 = precompile_address(0xf0);
     const MIN_GAS: u64 = 15;
 
     fn exec_fn(
@@ -26,10 +27,14 @@ impl PrecompileContract for GetCell {
             }
         }
 
+        let ret = ImageCellContract::default()
+            .get_cell(&CellKey::decode(input).map_err(|_| err!(_, "decode cell key"))?)
+            .map_err(|_| err!(_, "get cell"))?;
+
         Ok((
             PrecompileOutput {
                 exit_status: ExitSucceed::Returned,
-                output:      input.to_vec(),
+                output:      rlp::encode(&ret).to_vec(),
             },
             gas,
         ))

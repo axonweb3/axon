@@ -1,13 +1,13 @@
 use ckb_types::{packed, prelude::*};
 
-use protocol::types::MerkleRoot;
+use protocol::types::{MerkleRoot, H256};
 
 use crate::system_contract::error::SystemScriptResult;
 use crate::system_contract::image_cell::store::{
     commit, get_cell, insert_cell, insert_header, remove_cell, remove_header as remove_h, CellInfo,
 };
 use crate::system_contract::image_cell::{abi::image_cell_abi, trie_db::RocksTrieDB};
-use crate::system_contract::image_cell::{CellKey, HeaderKey, MPTTrie};
+use crate::system_contract::image_cell::{CellKey, MPTTrie};
 
 pub fn update(
     mpt: &mut MPTTrie<RocksTrieDB>,
@@ -30,7 +30,7 @@ pub fn rollback(
 
     mark_cells_not_consumed(mpt, data.inputs)?;
 
-    remove_header(mpt, data.block_number, &data.block_hash)?;
+    remove_header(mpt, &data.block_hash)?;
 
     commit(mpt)
 }
@@ -120,9 +120,7 @@ fn save_header(
         .nonce(header.nonce.pack())
         .build();
 
-    let key = HeaderKey::new(header.block_hash, header.number);
-
-    insert_header(mpt, &key, &packed_header)
+    insert_header(mpt, &H256(header.block_hash), &packed_header)
 }
 
 fn remove_cells(
@@ -150,11 +148,6 @@ fn mark_cells_not_consumed(
     Ok(())
 }
 
-fn remove_header(
-    mpt: &mut MPTTrie<RocksTrieDB>,
-    block_number: u64,
-    block_hash: &[u8; 32],
-) -> SystemScriptResult<()> {
-    let key = HeaderKey::new(*block_hash, block_number);
-    remove_h(mpt, &key)
+fn remove_header(mpt: &mut MPTTrie<RocksTrieDB>, block_hash: &[u8; 32]) -> SystemScriptResult<()> {
+    remove_h(mpt, &H256(*block_hash))
 }

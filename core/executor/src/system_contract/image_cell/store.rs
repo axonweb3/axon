@@ -1,5 +1,4 @@
-use ckb_types::prelude::Entity;
-use ckb_types::{bytes::Bytes, packed};
+use ckb_types::{bytes::Bytes, core::cell::CellMeta, packed, prelude::*};
 use rlp::{RlpDecodable, RlpEncodable};
 
 use protocol::types::{MerkleRoot, H256};
@@ -12,6 +11,15 @@ use crate::system_contract::image_cell::MPTTrie;
 pub struct CellKey {
     pub tx_hash: H256,
     pub index:   u32,
+}
+
+impl From<&packed::OutPoint> for CellKey {
+    fn from(out_point: &packed::OutPoint) -> Self {
+        CellKey {
+            tx_hash: H256(out_point.tx_hash().unpack().0),
+            index:   out_point.index().unpack(),
+        }
+    }
 }
 
 impl CellKey {
@@ -54,47 +62,16 @@ pub struct CellInfo {
     pub consumed_number: Option<u64>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct HeaderKey {
-    pub block_number: u64,
-    pub block_hash:   H256,
-}
-
-impl HeaderKey {
-    const ENCODED_LEN: usize = 8 + 32;
-
-    pub fn new(block_hash: [u8; 32], block_number: u64) -> Self {
-        let block_hash = H256(block_hash);
-        HeaderKey {
-            block_number,
-            block_hash,
+impl CellInfo {
+    pub fn into_meta(self, out_point: &packed::OutPoint) -> CellMeta {
+        CellMeta {
+            cell_output:        packed::CellOutput::new_unchecked(self.cell_output),
+            out_point:          out_point.clone(),
+            transaction_info:   None,
+            data_bytes:         self.cell_data.len() as u64,
+            mem_cell_data_hash: Some(cell_data_hash(&self.cell_data)),
+            mem_cell_data:      Some(self.cell_data),
         }
-    }
-
-    pub fn decode(input: &[u8]) -> SystemScriptResult<Self> {
-        if input.len() != Self::ENCODED_LEN {
-            return Err(SystemScriptError::DataLengthMismatch {
-                expect: Self::ENCODED_LEN,
-                actual: input.len(),
-            });
-        }
-
-        let block_hash = H256::from_slice(&input[8..40]);
-        let mut buf = [0u8; 8];
-        buf.copy_from_slice(&input[0..8]);
-        let block_number = u64::from_le_bytes(buf);
-
-        Ok(HeaderKey {
-            block_number,
-            block_hash,
-        })
-    }
-
-    pub fn encode(&self) -> Bytes {
-        let mut ret = Vec::with_capacity(Self::ENCODED_LEN);
-        ret.extend_from_slice(&self.block_number.to_le_bytes());
-        ret.extend_from_slice(&self.block_hash.0);
-        ret.into()
     }
 }
 
@@ -105,23 +82,23 @@ pub fn commit(mpt: &mut MPTTrie<RocksTrieDB>) -> SystemScriptResult<MerkleRoot> 
 
 pub fn insert_header(
     mpt: &mut MPTTrie<RocksTrieDB>,
-    key: &HeaderKey,
+    key: &H256,
     header: &packed::Header,
 ) -> SystemScriptResult<()> {
-    mpt.insert(&key.encode(), &header.as_bytes())
+    mpt.insert(&key.0, &header.as_bytes())
         .map_err(|e| SystemScriptError::InsertHeader(e.to_string()))
 }
 
-pub fn remove_header(mpt: &mut MPTTrie<RocksTrieDB>, key: &HeaderKey) -> SystemScriptResult<()> {
-    mpt.remove(&key.encode())
+pub fn remove_header(mpt: &mut MPTTrie<RocksTrieDB>, key: &H256) -> SystemScriptResult<()> {
+    mpt.remove(&key.0)
         .map_err(|e| SystemScriptError::RemoveHeader(e.to_string()))
 }
 
 pub fn get_header(
     mpt: &MPTTrie<RocksTrieDB>,
-    key: &HeaderKey,
+    key: &H256,
 ) -> SystemScriptResult<Option<packed::Header>> {
-    let header = match mpt.get(&key.encode()) {
+    let header = match mpt.get(&key.0) {
         Ok(n) => match n {
             Some(n) => n,
             None => return Ok(None),
@@ -162,6 +139,14 @@ pub fn get_cell(mpt: &MPTTrie<RocksTrieDB>, key: &CellKey) -> SystemScriptResult
     ))
 }
 
+fn cell_data_hash(data: &Bytes) -> packed::Byte32 {
+    if !data.is_empty() {
+        return ckb_hash::blake2b_256(data).pack();
+    }
+
+    packed::Byte32::zero()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -174,13 +159,8 @@ mod tests {
                 tx_hash: H256::random(),
                 index:   random(),
             };
-            let header_key = HeaderKey {
-                block_number: random(),
-                block_hash:   H256::random(),
-            };
 
             assert_eq!(CellKey::decode(&cell_key.encode()).unwrap(), cell_key);
-            assert_eq!(HeaderKey::decode(&header_key.encode()).unwrap(), header_key);
         }
     }
 }

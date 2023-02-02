@@ -15,14 +15,18 @@ use parking_lot::Mutex;
 
 use common_apm_derive::trace_span;
 use common_crypto::{Crypto, Secp256k1Recoverable};
-use core_executor::{is_call_system_script, AxonExecutor, AxonExecutorAdapter};
-use core_interoperation::{get_ckb_transaction_hash, BlockchainType};
+use core_executor::{
+    is_call_system_script, system_contract::image_cell::DataProvider, AxonExecutor,
+    AxonExecutorAdapter,
+};
+use core_interoperation::InteroperationImpl;
 use protocol::traits::{
     Context, Executor, Gossip, Interoperation, MemPoolAdapter, MetadataControl, PeerTrust,
     Priority, Rpc, Storage, TrustFeedback,
 };
 use protocol::types::{
-    recover_intact_pub_key, BatchSignedTxs, Bytes, Hash, MerkleRoot, SignedTransaction, H160, U256,
+    recover_intact_pub_key, BatchSignedTxs, CellDepWithPubKey, Hash, MerkleRoot,
+    SignatureComponents, SignatureR, SignatureS, SignedTransaction, H160, U256,
 };
 use protocol::{
     async_trait, codec::ProtocolCodec, lazy::CURRENT_STATE_ROOT, tokio, trie, Display,
@@ -111,11 +115,10 @@ impl IntervalTxsBroadcaster {
 }
 
 pub struct DefaultMemPoolAdapter<C, N, S, DB, M, I> {
-    network:        N,
-    storage:        Arc<S>,
-    trie_db:        Arc<DB>,
-    metadata:       Arc<M>,
-    interoperation: Arc<I>,
+    network:  N,
+    storage:  Arc<S>,
+    trie_db:  Arc<DB>,
+    metadata: Arc<M>,
 
     addr_nonce:  DashMap<H160, (U256, U256)>,
     gas_limit:   AtomicU64,
@@ -126,6 +129,7 @@ pub struct DefaultMemPoolAdapter<C, N, S, DB, M, I> {
     err_rx: Mutex<UnboundedReceiver<ProtocolError>>,
 
     pin_c: PhantomData<C>,
+    pin_i: PhantomData<I>,
 }
 
 impl<C, N, S, DB, M, I> DefaultMemPoolAdapter<C, N, S, DB, M, I>
@@ -142,7 +146,6 @@ where
         storage: Arc<S>,
         trie_db: Arc<DB>,
         metadata: Arc<M>,
-        interoperation: Arc<I>,
         chain_id: u64,
         gas_limit: u64,
         max_tx_size: usize,
@@ -165,7 +168,6 @@ where
             storage,
             trie_db,
             metadata,
-            interoperation,
 
             addr_nonce: DashMap::new(),
             gas_limit: AtomicU64::new(gas_limit),
@@ -176,6 +178,7 @@ where
             err_rx: Mutex::new(err_rx),
 
             pin_c: PhantomData,
+            pin_i: PhantomData,
         }
     }
 
@@ -379,30 +382,58 @@ where
 
         // Verify signature
         let signature = stx.transaction.signature.clone().unwrap();
-        match BlockchainType::from(signature.standard_v) {
-            BlockchainType::Ethereum => {
-                // use original Secp256k1 library to verify
-                Secp256k1Recoverable::verify_signature(
-                    stx.transaction.signature_hash(true).as_bytes(),
-                    signature.as_bytes().as_ref(),
-                    recover_intact_pub_key(&stx.public.unwrap()).as_bytes(),
+        if signature.len() == SignatureComponents::ETHEREUM_TX_LEN {
+            // use original Secp256k1 library to verify
+            Secp256k1Recoverable::verify_signature(
+                stx.transaction.signature_hash(true).as_bytes(),
+                signature.as_bytes().as_ref(),
+                recover_intact_pub_key(&stx.public.unwrap()).as_bytes(),
+            )
+            .map_err(|err| AdapterError::VerifySignature(err.to_string()))?;
+
+            return Ok(());
+        }
+
+        match signature.r[0] {
+            0u8 => {
+                let r = rlp::decode::<CellDepWithPubKey>(&signature.r[1..])
+                    .map_err(AdapterError::Rlp)?;
+
+                InteroperationImpl::call_ckb_vm(
+                    Default::default(),
+                    &DataProvider::default(),
+                    r.cell_dep,
+                    &[r.pub_key, signature.s],
+                    u64::MAX,
                 )
-                .map_err(|err| AdapterError::VerifySignature(err.to_string()))?;
+                .map_err(|e| AdapterError::VerifySignature(e.to_string()))?;
             }
-            BlockchainType::Other(blockchain_id) => {
-                let tx_hash = get_ckb_transaction_hash(blockchain_id)?;
-                let args = [
-                    Bytes::from(Vec::from(
-                        stx.transaction.signature_hash(true).to_fixed_bytes(),
-                    )),
-                    signature.r,
-                    signature.s,
-                ];
-                self.interoperation
-                    .call_ckb_vm(Default::default(), tx_hash, &args, u64::MAX)
-                    .map_err(|err| AdapterError::VerifySignature(err.to_string()))?;
+            1u8 => {
+                let r = rlp::decode::<SignatureR>(&signature.r[1..]).map_err(AdapterError::Rlp)?;
+                let s = rlp::decode::<SignatureS>(&signature.s).map_err(AdapterError::Rlp)?;
+
+                if r.out_points.len() != s.witnesses.len() {
+                    return Err(AdapterError::VerifySignature(
+                        "signature item mismatch".to_string(),
+                    )
+                    .into());
+                }
+
+                InteroperationImpl::verify_by_ckb_vm(
+                    Default::default(),
+                    &DataProvider::default(),
+                    &InteroperationImpl::dummy_transaction(
+                        r.cell_deps,
+                        r.header_deps,
+                        r.out_points,
+                        s.witnesses,
+                    ),
+                    u64::MAX,
+                )
+                .map_err(|e| AdapterError::VerifySignature(e.to_string()))?;
             }
-        };
+            _ => return Err(AdapterError::VerifySignature("Invalid signature".to_string()).into()),
+        }
 
         Ok(())
     }
@@ -471,6 +502,9 @@ pub enum AdapterError {
 
     #[display(fmt = "adapter: verify signature error {:?}", _0)]
     VerifySignature(String),
+
+    #[display(fmt = "adapter: rlp decode error {:?}", _0)]
+    Rlp(rlp::DecoderError),
 }
 
 impl Error for AdapterError {}

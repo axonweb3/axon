@@ -12,6 +12,7 @@ bytes = { version = "1.4", features = ["serde"] }
 ckb-hash = "0.106"
 ckb-jsonrpc-types = "0.106"
 ckb-sdk = "2.4"
+ckb-traits = "0.106"
 ckb-types = "0.106"
 common-crypto = { path = "../common/crypto" }
 creep = "0.2"
@@ -27,6 +28,7 @@ ophelia-secp256k1 = "0.3"
 overlord = "0.4"
 prost = "0.11"
 rlp = "0.5"
+rlp-derive = "0.1"
 serde = { version = "1.0", features = ["derive"] }
 tendermint-proto = { version = "0.23", optional = true }
 tokio = { version = "1.25", features = ["full"] }

@@ -1,13 +1,9 @@
-#![allow(
-    dead_code,
-    unused_variables,
-    clippy::derive_partial_eq_without_eq,
-    clippy::uninlined_format_args
-)]
+#![allow(clippy::uninlined_format_args)]
 
 mod abi;
 mod adapter;
 mod error;
+#[allow(dead_code)]
 mod generated;
 pub mod monitor;
 mod sidechain;
@@ -88,7 +84,7 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
         let (log_tx, log_rx) = unbounded_channel();
         let (req_tx, req_rx) = unbounded_channel();
         let client_clone = Arc::clone(&ckb_client);
-        let init_monitor_number = adapter
+        let _init_monitor_number = adapter
             .get_monitor_ckb_number(Context::new())
             .await
             .unwrap_or(config.start_block_number);
@@ -255,7 +251,7 @@ impl<Adapter: CrossAdapter + 'static> CrossChainImpl<Adapter> {
         Ok((to_ckbs, to_ckb_alerts))
     }
 
-    async fn nonce(&self, address: H160) -> U256 {
+    async fn nonce(&self, _address: H160) -> U256 {
         self.adapter
             .nonce(Context::new(), self.address)
             .await
@@ -275,8 +271,8 @@ pub struct CrossChainHandler<C> {
 impl<C: CkbClient + 'static> CrossChain for CrossChainHandler<C> {
     async fn set_evm_log(
         &self,
-        ctx: Context,
-        block_number: BlockNumber,
+        _ctx: Context,
+        _block_number: BlockNumber,
         block_hash: Hash,
         logs: &[Vec<Log>],
     ) {
@@ -285,7 +281,7 @@ impl<C: CkbClient + 'static> CrossChain for CrossChainHandler<C> {
         }
     }
 
-    async fn set_checkpoint(&self, ctx: Context, block: Block, proof: Proof) {
+    async fn set_checkpoint(&self, _ctx: Context, block: Block, proof: Proof) {
         let priv_key = self.priv_key.clone();
         let node_address = self.config.node_address;
         let admin_address = self.config.admin_address;

@@ -1,5 +1,5 @@
 mod blake2_f;
-mod ckb_vm;
+mod call_ckb_vm;
 mod ec_add;
 mod ec_mul;
 mod ec_pairing;
@@ -13,6 +13,7 @@ mod secp256r1;
 mod sha256;
 #[cfg(test)]
 mod tests;
+mod verify_by_ckb_vm;
 
 use std::collections::BTreeMap;
 
