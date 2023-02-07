@@ -52,7 +52,7 @@ fn test_update_first(backend: &mut MemoryBackend, executor: &ImageCellContract) 
 
     check_root(backend, executor);
 
-    let header_key = H256([5u8; 32]);
+    let header_key = H256([4u8; 32]);
     let get_header = executor.get_header(&header_key).unwrap().unwrap();
     check_header(&get_header);
 
@@ -83,7 +83,7 @@ fn test_update_second(backend: &mut MemoryBackend, executor: &ImageCellContract)
 
 fn test_rollback_first(backend: &mut MemoryBackend, executor: &ImageCellContract) {
     let data = image_cell_abi::RollbackCall {
-        block_hash:   [5u8; 32],
+        block_hash:   [4u8; 32],
         block_number: 0x2,
         inputs:       vec![image_cell_abi::OutPoint {
             tx_hash: [7u8; 32],
@@ -97,7 +97,7 @@ fn test_rollback_first(backend: &mut MemoryBackend, executor: &ImageCellContract
 
     check_root(backend, executor);
 
-    let header_key = H256([5u8; 32]);
+    let header_key = H256([4u8; 32]);
     let get_header = executor.get_header(&header_key).unwrap();
     assert!(get_header.is_none());
 
@@ -241,7 +241,7 @@ fn prepare_header() -> image_cell_abi::Header {
         uncles_hash:       [3u8; 32],
         dao:               [4u8; 32],
         nonce:             0x78b105de64fc38a200000004139b0200,
-        block_hash:        [5u8; 32],
+        block_hash:        [4u8; 32],
     }
 }
 
