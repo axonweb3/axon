@@ -1,16 +1,56 @@
 # 📑 Changelog
 
-## [Unreleased](https://github.com/axonweb3/axon/tree/HEAD)
+## [v0](https://github.com/axonweb3/axon/tree/v0) (2023-02-07)
 
-[Full Changelog](https://github.com/axonweb3/axon/compare/v0...HEAD)
+[Full Changelog](https://github.com/axonweb3/axon/compare/v0.1.0-alpha.5...v0)
+
+## [v0.1.0-alpha.5](https://github.com/axonweb3/axon/tree/v0.1.0-alpha.5) (2023-02-07)
+
+[Full Changelog](https://github.com/axonweb3/axon/compare/v0.1.0-alpha.4...v0.1.0-alpha.5)
+
+### 📖 Documentation
+
+- docs: automated update CHANGELOG.md [\#986](https://github.com/axonweb3/axon/pull/986) ([liya2017](https://github.com/liya2017))
+
+### 🚀 Features
+
+- feat\(interoperation\): add verify image cell by ckb vm [\#984](https://github.com/axonweb3/axon/pull/984) ([KaoImin](https://github.com/KaoImin))
+
+🐛 Bug Fixes
+
+- fix\(executor\): unit test of update image cell [\#1022](https://github.com/axonweb3/axon/pull/1022) ([KaoImin](https://github.com/KaoImin))
+
+### 🧰 Chore
+
+- chore: bump rust toolchain to 1.67 [\#997](https://github.com/axonweb3/axon/pull/997) ([KaoImin](https://github.com/KaoImin))
+- chore\(deps\): bump toml from 0.5.10 to 0.6.0 [\#995](https://github.com/axonweb3/axon/pull/995) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump CondeNast/conventional-pull-request-action from 0.1.2 to 0.2.0 [\#959](https://github.com/axonweb3/axon/pull/959) ([dependabot[bot]](https://github.com/apps/dependabot))
+
+⬆️ Dependency Updates
+
+- chore\(deps\): bump bytes from 1.3.0 to 1.4.0 [\#1015](https://github.com/axonweb3/axon/pull/1015) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps-dev\): bump jest from 29.3.1 to 29.4.1 in /tests/e2e [\#1011](https://github.com/axonweb3/axon/pull/1011) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps-dev\): bump eslint from 8.31.0 to 8.33.0 in /tests/e2e [\#1007](https://github.com/axonweb3/axon/pull/1007) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump puppeteer from 19.4.1 to 19.6.2 in /tests/e2e [\#1006](https://github.com/axonweb3/axon/pull/1006) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump async-trait from 0.1.63 to 0.1.64 [\#1004](https://github.com/axonweb3/axon/pull/1004) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump futures from 0.3.25 to 0.3.26 [\#1002](https://github.com/axonweb3/axon/pull/1002) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump docker/build-push-action from 3 to 4 [\#998](https://github.com/axonweb3/axon/pull/998) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump toml from 0.6.0 to 0.7.0 [\#996](https://github.com/axonweb3/axon/pull/996) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump axum from 0.6.2 to 0.6.4 [\#994](https://github.com/axonweb3/axon/pull/994) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump async-trait from 0.1.61 to 0.1.63 [\#993](https://github.com/axonweb3/axon/pull/993) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump bytemuck from 1.12.3 to 1.13.0 [\#989](https://github.com/axonweb3/axon/pull/989) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump reqwest from 0.11.13 to 0.11.14 [\#988](https://github.com/axonweb3/axon/pull/988) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump tokio from 1.24.1 to 1.24.2 [\#987](https://github.com/axonweb3/axon/pull/987) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump proc-macro2 from 1.0.49 to 1.0.50 [\#983](https://github.com/axonweb3/axon/pull/983) ([dependabot[bot]](https://github.com/apps/dependabot))
 
 **Closed issues:**
 
 - Axon Development Updates 12/21/2022  [\#927](https://github.com/axonweb3/axon/issues/927)
 
-## [v0](https://github.com/axonweb3/axon/tree/v0) (2023-01-17)
+**Merged pull requests:**
 
-[Full Changelog](https://github.com/axonweb3/axon/compare/v0.1.0-alpha.4...v0)
+- chore\(deps\): bump hyper from 0.14.23 to 0.14.24 [\#1018](https://github.com/axonweb3/axon/pull/1018) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump tokio from 1.24.2 to 1.25.0 [\#1003](https://github.com/axonweb3/axon/pull/1003) ([dependabot[bot]](https://github.com/apps/dependabot))
 
 ## [v0.1.0-alpha.4](https://github.com/axonweb3/axon/tree/v0.1.0-alpha.4) (2023-01-17)
 
