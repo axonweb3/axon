@@ -27,7 +27,6 @@ fn test_write_functions() {
     init(
         ROCKSDB_PATH,
         ConfigRocksDB::default(),
-        100,
         Arc::new(backend.clone()),
     );
 

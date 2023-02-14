@@ -34,24 +34,22 @@ use crate::MPTTrie;
 static ALLOW_READ: AtomicBool = AtomicBool::new(false);
 static TRIE_DB: OnceCell<Arc<RocksTrieDB>> = OnceCell::new();
 
+const DEFAULE_CACHE_SIZE: usize = 20;
+
 lazy_static::lazy_static! {
     static ref CELL_ROOT_KEY: H256 = Hasher::digest("cell_mpt_root");
     static ref CURRENT_CELL_ROOT: ArcSwap<H256> = ArcSwap::from_pointee(H256::default());
 }
 
-pub fn init<P: AsRef<Path>, B: Backend>(
-    path: P,
-    config: ConfigRocksDB,
-    cache_size: usize,
-    backend: Arc<B>,
-) {
+pub fn init<P: AsRef<Path>, B: Backend>(path: P, config: ConfigRocksDB, backend: Arc<B>) {
     let current_cell_root = backend.storage(ImageCellContract::ADDRESS, *CELL_ROOT_KEY);
 
     CURRENT_CELL_ROOT.store(Arc::new(current_cell_root));
 
     TRIE_DB.get_or_init(|| {
         Arc::new(
-            RocksTrieDB::new(path, config, cache_size).expect("[image cell] new rocksdb error"),
+            RocksTrieDB::new(path, config, DEFAULE_CACHE_SIZE)
+                .expect("[image cell] new rocksdb error"),
         )
     });
 }

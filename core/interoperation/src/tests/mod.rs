@@ -60,7 +60,6 @@ impl TestHandle {
         core_executor::system_contract::image_cell::init(
             path + &salt.to_string() + "/sc",
             Default::default(),
-            50,
             Arc::new(backend),
         );
 
