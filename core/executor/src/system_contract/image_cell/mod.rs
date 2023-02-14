@@ -5,6 +5,7 @@ mod trie_db;
 
 pub use abi::image_cell_abi;
 pub use store::{CellInfo, CellKey};
+pub(crate) use trie_db::RocksTrieDB;
 
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
