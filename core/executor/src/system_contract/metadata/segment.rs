@@ -1,8 +1,6 @@
 use protocol::ProtocolResult;
 
-use crate::system_contract::error::SystemScriptError;
-
-type Epoch = u64;
+use crate::system_contract::{error::SystemScriptError, metadata::Epoch};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EpochSegment {
@@ -36,11 +34,11 @@ impl EpochSegment {
         Err(SystemScriptError::FutureEpoch.into())
     }
 
-    pub fn encode(&self) -> Vec<u8> {
+    pub fn as_bytes(&self) -> Vec<u8> {
         self.seg.iter().flat_map(|s| s.to_be_bytes()).collect()
     }
 
-    pub fn decode(raw: Vec<u8>) -> ProtocolResult<Self> {
+    pub fn from_raw(raw: Vec<u8>) -> ProtocolResult<Self> {
         const U64_BYTES_LEN: usize = 8;
 
         if raw.len() % U64_BYTES_LEN != 0 {
@@ -93,7 +91,7 @@ mod tests {
     #[test]
     fn test_codec() {
         let origin = EpochSegment::random(100);
-        let raw = origin.encode();
-        assert_eq!(EpochSegment::decode(raw).unwrap(), origin);
+        let raw = origin.as_bytes();
+        assert_eq!(EpochSegment::from_raw(raw).unwrap(), origin);
     }
 }

@@ -7,6 +7,7 @@ mod trie_db;
 pub use abi::image_cell_abi;
 pub use data_provider::DataProvider;
 pub use store::{CellInfo, CellKey};
+pub(crate) use trie_db::RocksTrieDB;
 
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -27,9 +28,7 @@ use protocol::ProtocolResult;
 
 use crate::system_contract::error::SystemScriptError;
 use crate::system_contract::image_cell::store::{get_cell, get_header};
-use crate::system_contract::{
-    image_cell::trie_db::RocksTrieDB, system_contract_address, SystemContract,
-};
+use crate::system_contract::{system_contract_address, SystemContract};
 use crate::MPTTrie;
 
 static ALLOW_READ: AtomicBool = AtomicBool::new(false);

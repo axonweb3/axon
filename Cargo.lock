@@ -1641,6 +1641,7 @@ dependencies = [
  "hasher",
  "lazy_static",
  "log",
+ "lru 0.9.0",
  "molecule",
  "once_cell",
  "parking_lot 0.12.1",
