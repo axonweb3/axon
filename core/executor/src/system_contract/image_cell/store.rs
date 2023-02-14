@@ -2,8 +2,9 @@ use ckb_types::{bytes::Bytes, core::cell::CellMeta, packed, prelude::*};
 use rlp::{RlpDecodable, RlpEncodable};
 
 use protocol::types::{MerkleRoot, H256};
+use protocol::ProtocolResult;
 
-use crate::system_contract::error::{SystemScriptError, SystemScriptResult};
+use crate::system_contract::error::SystemScriptError;
 use crate::system_contract::image_cell::trie_db::RocksTrieDB;
 use crate::system_contract::image_cell::MPTTrie;
 
@@ -30,12 +31,13 @@ impl CellKey {
         CellKey { tx_hash, index }
     }
 
-    pub fn decode(input: &[u8]) -> SystemScriptResult<Self> {
+    pub fn decode(input: &[u8]) -> ProtocolResult<Self> {
         if input.len() != Self::ENCODED_LEN {
             return Err(SystemScriptError::DataLengthMismatch {
                 expect: Self::ENCODED_LEN,
                 actual: input.len(),
-            });
+            }
+            .into());
         }
 
         let tx_hash = H256::from_slice(&input[0..32]);
@@ -75,35 +77,35 @@ impl CellInfo {
     }
 }
 
-pub fn commit(mpt: &mut MPTTrie<RocksTrieDB>) -> SystemScriptResult<MerkleRoot> {
+pub fn commit(mpt: &mut MPTTrie<RocksTrieDB>) -> ProtocolResult<MerkleRoot> {
     mpt.commit()
-        .map_err(|e| SystemScriptError::CommitError(e.to_string()))
+        .map_err(|e| SystemScriptError::CommitError(e.to_string()).into())
 }
 
 pub fn insert_header(
     mpt: &mut MPTTrie<RocksTrieDB>,
     key: &H256,
     header: &packed::Header,
-) -> SystemScriptResult<()> {
+) -> ProtocolResult<()> {
     mpt.insert(&key.0, &header.as_bytes())
-        .map_err(|e| SystemScriptError::InsertHeader(e.to_string()))
+        .map_err(|e| SystemScriptError::InsertHeader(e.to_string()).into())
 }
 
-pub fn remove_header(mpt: &mut MPTTrie<RocksTrieDB>, key: &H256) -> SystemScriptResult<()> {
+pub fn remove_header(mpt: &mut MPTTrie<RocksTrieDB>, key: &H256) -> ProtocolResult<()> {
     mpt.remove(&key.0)
-        .map_err(|e| SystemScriptError::RemoveHeader(e.to_string()))
+        .map_err(|e| SystemScriptError::RemoveHeader(e.to_string()).into())
 }
 
 pub fn get_header(
     mpt: &MPTTrie<RocksTrieDB>,
     key: &H256,
-) -> SystemScriptResult<Option<packed::Header>> {
+) -> ProtocolResult<Option<packed::Header>> {
     let header = match mpt.get(&key.0) {
         Ok(n) => match n {
             Some(n) => n,
             None => return Ok(None),
         },
-        Err(e) => return Err(SystemScriptError::GetHeader(e.to_string())),
+        Err(e) => return Err(SystemScriptError::GetHeader(e.to_string()).into()),
     };
 
     Ok(Some(
@@ -115,23 +117,23 @@ pub fn insert_cell(
     mpt: &mut MPTTrie<RocksTrieDB>,
     key: &CellKey,
     cell: &CellInfo,
-) -> SystemScriptResult<()> {
+) -> ProtocolResult<()> {
     mpt.insert(&key.encode(), &rlp::encode(cell))
-        .map_err(|e| SystemScriptError::InsertCell(e.to_string()))
+        .map_err(|e| SystemScriptError::InsertCell(e.to_string()).into())
 }
 
-pub fn remove_cell(mpt: &mut MPTTrie<RocksTrieDB>, key: &CellKey) -> SystemScriptResult<()> {
+pub fn remove_cell(mpt: &mut MPTTrie<RocksTrieDB>, key: &CellKey) -> ProtocolResult<()> {
     mpt.remove(&key.encode())
-        .map_err(|e| SystemScriptError::RemoveCell(e.to_string()))
+        .map_err(|e| SystemScriptError::RemoveCell(e.to_string()).into())
 }
 
-pub fn get_cell(mpt: &MPTTrie<RocksTrieDB>, key: &CellKey) -> SystemScriptResult<Option<CellInfo>> {
+pub fn get_cell(mpt: &MPTTrie<RocksTrieDB>, key: &CellKey) -> ProtocolResult<Option<CellInfo>> {
     let cell = match mpt.get(&key.encode()) {
         Ok(n) => match n {
             Some(n) => n,
             None => return Ok(None),
         },
-        Err(e) => return Err(SystemScriptError::GetCell(e.to_string())),
+        Err(e) => return Err(SystemScriptError::GetCell(e.to_string()).into()),
     };
 
     Ok(Some(

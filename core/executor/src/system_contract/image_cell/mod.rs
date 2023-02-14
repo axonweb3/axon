@@ -23,8 +23,9 @@ use protocol::types::{
     Apply, Basic, ExitReason, ExitRevert, ExitSucceed, Hasher, MerkleRoot, SignedTransaction,
     TxResp, H160, H256, U256,
 };
+use protocol::ProtocolResult;
 
-use crate::system_contract::error::{SystemScriptError, SystemScriptResult};
+use crate::system_contract::error::SystemScriptError;
 use crate::system_contract::image_cell::store::{get_cell, get_header};
 use crate::system_contract::{
     image_cell::trie_db::RocksTrieDB, system_contract_address, SystemContract,
@@ -125,10 +126,10 @@ impl SystemContract for ImageCellContract {
     }
 }
 
-fn get_mpt() -> SystemScriptResult<MPTTrie<RocksTrieDB>> {
+fn get_mpt() -> ProtocolResult<MPTTrie<RocksTrieDB>> {
     let trie_db = match TRIE_DB.get() {
         Some(db) => db,
-        None => return Err(SystemScriptError::TrieDbNotInit),
+        None => return Err(SystemScriptError::TrieDbNotInit.into()),
     };
 
     let root = **CURRENT_CELL_ROOT.load();
@@ -138,7 +139,7 @@ fn get_mpt() -> SystemScriptResult<MPTTrie<RocksTrieDB>> {
     } else {
         match MPTTrie::from_root(root, Arc::clone(trie_db)) {
             Ok(m) => Ok(m),
-            Err(e) => Err(SystemScriptError::RestoreMpt(e.to_string())),
+            Err(e) => Err(SystemScriptError::RestoreMpt(e.to_string()).into()),
         }
     }
 }
@@ -180,12 +181,12 @@ impl ImageCellContract {
         **CURRENT_CELL_ROOT.load()
     }
 
-    pub fn get_header(&self, key: &H256) -> SystemScriptResult<Option<packed::Header>> {
+    pub fn get_header(&self, key: &H256) -> ProtocolResult<Option<packed::Header>> {
         let mpt = get_mpt()?;
         get_header(&mpt, key)
     }
 
-    pub fn get_cell(&self, key: &CellKey) -> SystemScriptResult<Option<CellInfo>> {
+    pub fn get_cell(&self, key: &CellKey) -> ProtocolResult<Option<CellInfo>> {
         let mpt = get_mpt()?;
         get_cell(&mpt, key)
     }

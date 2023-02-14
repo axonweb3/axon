@@ -1,5 +1,6 @@
 mod error;
 pub mod image_cell;
+pub mod metadata;
 mod native_token;
 
 pub use crate::system_contract::image_cell::ImageCellContract;
