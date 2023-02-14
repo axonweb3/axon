@@ -1,3 +1,4 @@
+use rlp_derive::{RlpDecodable, RlpEncodable};
 use serde::{Deserialize, Serialize};
 
 use crate::codec::ProtocolCodec;
@@ -85,7 +86,9 @@ pub struct PackedTxHashes {
     pub call_system_script_count: u32,
 }
 
-#[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq)]
+#[derive(
+    RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq,
+)]
 pub struct Block {
     pub header:    Header,
     pub tx_hashes: Vec<Hash>,
@@ -134,7 +137,9 @@ impl Block {
     }
 }
 
-#[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq)]
+#[derive(
+    RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq,
+)]
 pub struct Header {
     pub prev_hash:                  Hash,
     pub proposer:                   H160,
@@ -164,7 +169,9 @@ impl Header {
     }
 }
 
-#[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq)]
+#[derive(
+    RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq,
+)]
 pub struct Proof {
     pub number:     u64,
     pub round:      u64,

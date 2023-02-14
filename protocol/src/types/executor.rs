@@ -1,6 +1,8 @@
 pub use ethereum::{AccessList, AccessListItem, Account};
 pub use evm::{backend::Log, Config, ExitError, ExitFatal, ExitReason, ExitRevert, ExitSucceed};
 
+use rlp_derive::{RlpEncodable, RlpDecodable};
+
 use crate::codec::ProtocolCodec;
 use crate::types::{Hash, Hasher, Header, MerkleRoot, Proposal, H160, U256};
 
@@ -39,7 +41,7 @@ impl Default for TxResp {
     }
 }
 
-#[derive(Default, Clone, Debug, PartialEq, Eq)]
+#[derive(RlpEncodable, RlpDecodable, Default, Clone, Debug, PartialEq, Eq)]
 pub struct ExecutorContext {
     pub block_number:           U256,
     pub block_hash:             Hash,
