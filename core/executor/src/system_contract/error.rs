@@ -2,7 +2,7 @@ use std::io;
 
 use thiserror::Error;
 
-pub type SystemScriptResult<T> = std::result::Result<T, SystemScriptError>;
+use protocol::{ProtocolError, ProtocolErrorKind};
 
 #[derive(Error, Debug)]
 pub enum SystemScriptError {
@@ -59,4 +59,19 @@ pub enum SystemScriptError {
 
     #[error("Data length mismatch expect {expect:?}, actual: {actual:?}")]
     DataLengthMismatch { expect: usize, actual: usize },
+
+    #[error("Query for future epoch")]
+    FutureEpoch,
+
+    #[error("Decode epoch segment error {0}")]
+    DecodeEpochSegment(String),
+
+    #[error("Invalid epoch end {0}")]
+    InvalidEpochEnd(u64),
+}
+
+impl From<SystemScriptError> for ProtocolError {
+    fn from(error: SystemScriptError) -> ProtocolError {
+        ProtocolError::new(ProtocolErrorKind::Executor, Box::new(error))
+    }
 }

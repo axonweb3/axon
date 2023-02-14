@@ -1,5 +1,6 @@
 mod error;
 pub mod image_cell;
+pub mod metadata;
 mod native_token;
 
 use ckb_traits::{CellDataProvider, HeaderProvider};
