@@ -1,6 +1,6 @@
 use rlp::{Decodable, DecoderError, Encodable, Prototype, Rlp, RlpStream};
 
-use crate::types::{TxResp, H160, H256, U256};
+use crate::types::TxResp;
 
 impl Encodable for TxResp {
     fn rlp_append(&self, s: &mut RlpStream) {

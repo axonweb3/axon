@@ -1,7 +1,7 @@
 pub use ethereum::{AccessList, AccessListItem, Account};
 pub use evm::{backend::Log, Config, ExitError, ExitFatal, ExitReason, ExitRevert, ExitSucceed};
 
-use rlp_derive::{RlpEncodable, RlpDecodable};
+use rlp_derive::{RlpDecodable, RlpEncodable};
 
 use crate::codec::ProtocolCodec;
 use crate::types::{Hash, Hasher, Header, MerkleRoot, Proposal, H160, U256};
