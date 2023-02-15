@@ -1,7 +1,10 @@
 mod convert;
+mod handle;
 mod metadata_abi;
 mod segment;
 mod store;
+
+pub use handle::MetadataHandle;
 
 use std::num::NonZeroUsize;
 use std::path::Path;

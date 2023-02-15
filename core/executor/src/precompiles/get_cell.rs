@@ -8,15 +8,15 @@ use evm::{Context, ExitError, ExitSucceed};
 
 use protocol::types::{H160, H256};
 
-use crate::precompiles::{precompile_address, PrecompileContract};
 use crate::system_contract::image_cell::{CellInfo, CellKey};
+use crate::precompiles::{eip_precompile_address, PrecompileContract};
 use crate::{err, system_contract::image_cell::ImageCellContract};
 
 #[derive(Default, Clone)]
 pub struct GetCell;
 
 impl PrecompileContract for GetCell {
-    const ADDRESS: H160 = precompile_address(0xf0);
+    const ADDRESS: H160 = eip_precompile_address(0xf0);
     const MIN_GAS: u64 = 15;
 
     fn exec_fn(

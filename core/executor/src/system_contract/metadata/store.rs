@@ -10,7 +10,7 @@ use crate::system_contract::{error::SystemScriptError, image_cell::RocksTrieDB};
 use crate::MPTTrie;
 
 pub struct MetadataStore {
-    trie: MPTTrie<RocksTrieDB>,
+    pub trie: MPTTrie<RocksTrieDB>,
 }
 
 impl MetadataStore {
@@ -50,10 +50,24 @@ impl MetadataStore {
 
         self.trie
             .insert(EPOCH_SEGMENT_KEY.as_bytes(), &epoch_segment.as_bytes())?;
-        self.trie.insert(&metadata.epoch.to_be_bytes(), &[])?;
+        self.trie
+            .insert(&metadata.epoch.to_be_bytes(), &metadata.encode()?)?;
         let new_root = self.trie.commit()?;
         CURRENT_METADATA_ROOT.swap(Arc::new(new_root));
 
         Ok(())
+    }
+
+    pub fn get_epoch_segment(&self) -> ProtocolResult<EpochSegment> {
+        let raw = self.trie.get(EPOCH_SEGMENT_KEY.as_bytes())?.unwrap();
+        EpochSegment::from_raw(raw.to_vec())
+    }
+
+    pub fn get_metadata(&self, epoch: u64) -> ProtocolResult<Metadata> {
+        let raw = self
+            .trie
+            .get(&epoch.to_be_bytes())?
+            .ok_or_else(|| SystemScriptError::FutureEpoch)?;
+        Metadata::decode(raw)
     }
 }

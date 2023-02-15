@@ -5,13 +5,13 @@ use common_crypto::{secp256k1_recover, Secp256k1RecoverableSignature, Signature}
 use protocol::types::{Hasher, H160};
 
 use crate::err;
-use crate::precompiles::{precompile_address, PrecompileContract};
+use crate::precompiles::{eip_precompile_address, PrecompileContract};
 
 #[derive(Default, Clone)]
 pub struct EcRecover;
 
 impl PrecompileContract for EcRecover {
-    const ADDRESS: H160 = precompile_address(0x01);
+    const ADDRESS: H160 = eip_precompile_address(0x01);
     const MIN_GAS: u64 = 3000;
 
     fn exec_fn(
