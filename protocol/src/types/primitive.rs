@@ -5,10 +5,12 @@ pub use ethereum_types::{
     BigEndianHash, Bloom, Public, Secret, Signature, H128, H160, H256, H512, H520, H64, U128, U256,
     U512, U64,
 };
+
 use hasher::{Hasher as KeccakHasher, HasherKeccak};
 use ophelia::{PublicKey, UncompressedPublicKey};
 use ophelia_secp256k1::Secp256k1PublicKey;
 use overlord::DurationConfig;
+use rlp_derive::{RlpDecodable, RlpEncodable};
 use serde::{de, Deserialize, Serialize};
 
 use crate::codec::{hex_decode, hex_encode};
@@ -292,7 +294,9 @@ impl fmt::Display for Address {
     }
 }
 
-#[derive(Serialize, Deserialize, Default, Clone, Debug, Copy, PartialEq, Eq)]
+#[derive(
+    RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Debug, Copy, PartialEq, Eq,
+)]
 pub struct MetadataVersion {
     pub start: BlockNumber,
     pub end:   BlockNumber,
@@ -308,7 +312,9 @@ impl MetadataVersion {
     }
 }
 
-#[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq)]
+#[derive(
+    RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq,
+)]
 pub struct Metadata {
     pub version:                    MetadataVersion,
     pub epoch:                      u64,
@@ -337,14 +343,14 @@ impl From<Metadata> for DurationConfig {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(RlpEncodable, RlpDecodable, Clone, Debug, PartialEq, Eq)]
 pub struct Validator {
     pub pub_key:        Bytes,
     pub propose_weight: u32,
     pub vote_weight:    u32,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Default)]
+#[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, PartialEq, Eq, Default)]
 pub struct ValidatorExtend {
     pub bls_pub_key:    Hex,
     pub pub_key:        Hex,

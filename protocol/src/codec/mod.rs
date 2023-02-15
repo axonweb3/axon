@@ -7,7 +7,7 @@ pub mod transaction;
 
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 
-use crate::types::{Address, Bytes, DBBytes, TypesError, H160};
+use crate::types::{Address, Bytes, DBBytes, Hex, TypesError};
 use crate::ProtocolResult;
 
 pub trait ProtocolCodec: Sized + Send {
@@ -46,8 +46,19 @@ impl Encodable for Address {
 
 impl Decodable for Address {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
-        let inner: H160 = r.val_at(0)?;
-        Ok(Address(inner))
+        Ok(Address(r.val_at(0)?))
+    }
+}
+
+impl Encodable for Hex {
+    fn rlp_append(&self, s: &mut RlpStream) {
+        s.begin_list(1).append(&self.as_string_trim0x());
+    }
+}
+
+impl Decodable for Hex {
+    fn decode(r: &Rlp) -> Result<Self, DecoderError> {
+        Hex::from_string(r.val_at(0)?).map_err(|_| DecoderError::Custom("hex check"))
     }
 }
 
@@ -78,6 +89,14 @@ mod tests {
     use super::*;
     use getrandom::getrandom;
 
+    impl Hex {
+        fn random() -> Self {
+            let mut data = [0u8; 128];
+            getrandom(&mut data).unwrap();
+            Self::from_string(hex_encode(data)).unwrap()
+        }
+    }
+
     #[test]
     fn test_hex_codec() {
         let mut data = [0u8; 128];
@@ -90,5 +109,12 @@ mod tests {
             hex::decode(hex::encode(data)).unwrap()
         );
         assert!(hex_decode(String::new().as_str()).unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_hex_rlp() {
+        let origin = Hex::random();
+        let raw = rlp::encode(&origin);
+        assert_eq!(rlp::decode::<Hex>(&raw).unwrap(), origin)
     }
 }
