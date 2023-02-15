@@ -23,7 +23,7 @@ use protocol::types::{
 };
 
 use crate::system_contract::{
-    image_cell::RocksTrieDB, succeed_resp, system_contract_address, SystemContract,
+    image_cell::RocksTrieDB, revert_resp, succeed_resp, system_contract_address, SystemContract,
 };
 use crate::{exec_try, system_contract::metadata::store::MetadataStore};
 
@@ -60,21 +60,44 @@ impl SystemContract for MetadataContract {
         let tx = &tx.transaction.unsigned;
         let tx_data = tx.data();
         let gas_limit = *tx.gas_limit();
+        let block_number = backend.block_number().as_u64();
+        let sender = backend.origin();
+
+        let mut store = exec_try!(
+            MetadataStore::new(),
+            gas_limit,
+            "[metadata] init metadata mpt"
+        );
+        let epoch_segment = exec_try!(
+            store.get_epoch_segment(),
+            gas_limit,
+            "[metadata] get epoch segment"
+        );
+        let epoch_number = exec_try!(
+            epoch_segment.get_epoch_number(block_number),
+            gas_limit,
+            "get_epoch"
+        );
+        let current_metadata =
+            exec_try!(store.get_metadata(epoch_number), gas_limit, "get_metadata");
+
+        if current_metadata
+            .verifier_list
+            .iter()
+            .all(|v| v.address != sender)
+        {
+            log::error!("[metadata]: invalid sender");
+            return revert_resp(gas_limit);
+        }
 
         let call_abi = exec_try!(
             metadata_abi::MetadataContractCalls::decode(tx_data),
             gas_limit,
-            "[image cell] invalid tx data"
+            "[metadata] invalid tx data"
         );
 
         match call_abi {
             metadata_abi::MetadataContractCalls::AppendMetadata(c) => {
-                let mut store = exec_try!(
-                    MetadataStore::new(),
-                    gas_limit,
-                    "[metadata] init metadata mpt"
-                );
-
                 exec_try!(
                     store.append_metadata(c.metadata.into()),
                     gas_limit,
