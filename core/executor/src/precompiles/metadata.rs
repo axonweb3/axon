@@ -11,9 +11,8 @@ const INPUT_LEN: usize = 1 + 8;
 /// The input argument must includes 9 bytes schema:
 /// input[0]: an u8 on behalf of the call type. 0u8 means get metadata by block
 /// number and 1u8 means get metadata by epoch number.
-/// input[1..9]: 8 bytes of a **big endian** u64 value. If call type is 0u8, it
-/// means a block number. If call type is 1u8, it means a epoch number.
-
+/// input[1..9]: 8 bytes of a **little endian** u64 value. If call type is 0u8,
+/// it means a block number. If call type is 1u8, it means a epoch number.
 #[derive(Default, Clone)]
 pub struct Metadata;
 
