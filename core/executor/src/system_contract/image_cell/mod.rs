@@ -20,8 +20,7 @@ use common_config_parser::types::ConfigRocksDB;
 use protocol::lazy::ALWAYS_SUCCESS_DEPLOY_TX_HASH;
 use protocol::traits::{ApplyBackend, Backend};
 use protocol::types::{
-    Apply, Basic, ExitReason, ExitRevert, ExitSucceed, Hasher, MerkleRoot, SignedTransaction,
-    TxResp, H160, H256, U256,
+    Apply, Basic, Hasher, MerkleRoot, SignedTransaction, TxResp, H160, H256, U256,
 };
 use protocol::ProtocolResult;
 
@@ -73,65 +72,41 @@ impl SystemContract for ImageCellContract {
     fn exec_<B: Backend + ApplyBackend>(&self, backend: &mut B, tx: &SignedTransaction) -> TxResp {
         let tx = &tx.transaction.unsigned;
         let tx_data = tx.data();
+        let gas_limit = *tx.gas_limit();
 
         match image_cell_abi::ImageCellCalls::decode(tx_data) {
             Ok(image_cell_abi::ImageCellCalls::SetState(data)) => {
                 ALLOW_READ.store(data.allow_read, Ordering::Relaxed);
             }
             Ok(image_cell_abi::ImageCellCalls::Update(data)) => {
-                let mut mpt = match get_mpt() {
-                    Ok(m) => m,
-                    Err(e) => {
-                        log::error!("[image cell] get mpt error: {:?}", e);
-                        return revert_resp(*tx.gas_limit());
-                    }
-                };
+                let mut mpt = exec_try!(get_mpt(), gas_limit, "[image cell] get mpt error:");
 
-                let root: MerkleRoot = match exec::update(&mut mpt, data) {
-                    Ok(r) => r,
-                    Err(e) => {
-                        log::error!("[image cell] update error: {:?}", e);
-                        return revert_resp(*tx.gas_limit());
-                    }
-                };
+                let root: MerkleRoot = exec_try!(
+                    exec::update(&mut mpt, data),
+                    gas_limit,
+                    "[image cell] update error:"
+                );
 
                 update_mpt_root(backend, root);
             }
             Ok(image_cell_abi::ImageCellCalls::Rollback(data)) => {
-                let mut mpt = match get_mpt() {
-                    Ok(m) => m,
-                    Err(e) => {
-                        log::error!("[image cell] get mpt error: {:?}", e);
-                        return revert_resp(*tx.gas_limit());
-                    }
-                };
+                let mut mpt = exec_try!(get_mpt(), gas_limit, "[image cell] get mpt error:");
 
-                let root: MerkleRoot = match exec::rollback(&mut mpt, data) {
-                    Ok(r) => r,
-                    Err(e) => {
-                        log::error!("[image cell] rollback error: {:?}", e);
-                        return revert_resp(*tx.gas_limit());
-                    }
-                };
+                let root: MerkleRoot = exec_try!(
+                    exec::rollback(&mut mpt, data),
+                    gas_limit,
+                    "[image cell] rollback error:"
+                );
 
                 update_mpt_root(backend, root);
             }
             Err(e) => {
                 log::error!("[image cell] invalid tx data: {:?}", e);
-                return revert_resp(*tx.gas_limit());
+                return revert_resp(gas_limit);
             }
         }
 
-        TxResp {
-            exit_reason:  ExitReason::Succeed(ExitSucceed::Returned),
-            ret:          vec![],
-            gas_used:     0u64,
-            remain_gas:   tx.gas_limit().as_u64(),
-            fee_cost:     U256::zero(),
-            logs:         vec![],
-            code_address: None,
-            removed:      false,
-        }
+        succeed_resp(gas_limit)
     }
 }
 
@@ -170,19 +145,6 @@ fn update_mpt_root<B: Backend + ApplyBackend>(backend: &mut B, root: H256) {
         vec![],
         false,
     );
-}
-
-fn revert_resp(gas_limit: U256) -> TxResp {
-    TxResp {
-        exit_reason:  ExitReason::Revert(ExitRevert::Reverted),
-        ret:          vec![],
-        gas_used:     1u64,
-        remain_gas:   (gas_limit - 1).as_u64(),
-        fee_cost:     U256::one(),
-        logs:         vec![],
-        code_address: None,
-        removed:      false,
-    }
 }
 
 impl ImageCellContract {

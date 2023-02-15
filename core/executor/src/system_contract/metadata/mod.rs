@@ -16,12 +16,13 @@ use parking_lot::RwLock;
 use common_config_parser::types::ConfigRocksDB;
 use protocol::traits::{ApplyBackend, Backend};
 use protocol::types::{
-    Apply, Basic, ExitReason, ExitRevert, ExitSucceed, Hasher, Metadata, SignedTransaction, TxResp,
-    H160, H256, U256,
+    Apply, Basic, Hasher, Metadata, SignedTransaction, TxResp, H160, H256, U256,
 };
 
-use crate::system_contract::metadata::store::MetadataStore;
-use crate::system_contract::{image_cell::RocksTrieDB, system_contract_address, SystemContract};
+use crate::system_contract::{
+    image_cell::RocksTrieDB, succeed_resp, system_contract_address, SystemContract,
+};
+use crate::{exec_try, system_contract::metadata::store::MetadataStore};
 
 type Epoch = u64;
 
@@ -55,48 +56,34 @@ impl SystemContract for MetadataContract {
     fn exec_<B: Backend + ApplyBackend>(&self, backend: &mut B, tx: &SignedTransaction) -> TxResp {
         let tx = &tx.transaction.unsigned;
         let tx_data = tx.data();
+        let gas_limit = *tx.gas_limit();
 
-        let call_abi = match metadata_abi::MetadataContractCalls::decode(tx_data) {
-            Ok(r) => r,
-            Err(e) => {
-                log::error!("[image cell] invalid tx data: {:?}", e);
-                return revert_resp(*tx.gas_limit());
-            }
-        };
+        let call_abi = exec_try!(
+            metadata_abi::MetadataContractCalls::decode(tx_data),
+            gas_limit,
+            "[image cell] invalid tx data"
+        );
 
         match call_abi {
             metadata_abi::MetadataContractCalls::AppendMetadata(c) => {
-                let mut store = match MetadataStore::new() {
-                    Ok(s) => s,
-                    Err(e) => {
-                        log::error!("[metadata] init metadata mpt {:?}", e);
-                        return revert_resp(*tx.gas_limit());
-                    }
-                };
+                let mut store = exec_try!(
+                    MetadataStore::new(),
+                    gas_limit,
+                    "[metadata] init metadata mpt"
+                );
 
-                match store.append_metadata(c.metadata.into()) {
-                    Ok(_) => (),
-                    Err(e) => {
-                        log::error!("[metadata] append metadata {:?}", e);
-                        return revert_resp(*tx.gas_limit());
-                    }
-                }
+                exec_try!(
+                    store.append_metadata(c.metadata.into()),
+                    gas_limit,
+                    "[metadata] append metadata"
+                );
             }
             _ => unreachable!(),
         }
 
         update_mpt_root(backend);
 
-        TxResp {
-            exit_reason:  ExitReason::Succeed(ExitSucceed::Returned),
-            ret:          vec![],
-            gas_used:     0u64,
-            remain_gas:   tx.gas_limit().as_u64(),
-            fee_cost:     U256::zero(),
-            logs:         vec![],
-            code_address: None,
-            removed:      false,
-        }
+        succeed_resp(gas_limit)
     }
 }
 
@@ -116,17 +103,4 @@ fn update_mpt_root<B: Backend + ApplyBackend>(backend: &mut B) {
         vec![],
         false,
     );
-}
-
-fn revert_resp(gas_limit: U256) -> TxResp {
-    TxResp {
-        exit_reason:  ExitReason::Revert(ExitRevert::Reverted),
-        ret:          vec![],
-        gas_used:     1u64,
-        remain_gas:   (gas_limit - 1).as_u64(),
-        fee_cost:     U256::one(),
-        logs:         vec![],
-        code_address: None,
-        removed:      false,
-    }
 }

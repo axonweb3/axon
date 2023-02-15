@@ -12,7 +12,20 @@ pub use crate::system_contract::native_token::NativeTokenContract;
 
 use protocol::ckb_blake2b_256;
 use protocol::traits::{ApplyBackend, Backend};
-use protocol::types::{Bytes, SignedTransaction, TxResp, H160};
+use protocol::types::{ExitReason, ExitRevert, ExitSucceed, SignedTransaction, TxResp, H160, U256};
+
+#[macro_export]
+macro_rules! exec_try {
+    ($func: expr, $gas_limit: expr, $log_msg: literal) => {
+        match $func {
+            Ok(r) => r,
+            Err(e) => {
+                log::error!("{:?} {:?}", $log_msg, e);
+                return $crate::system_contract::revert_resp($gas_limit);
+            }
+        }
+    };
+}
 
 pub const fn system_contract_address(addr: u8) -> H160 {
     H160([

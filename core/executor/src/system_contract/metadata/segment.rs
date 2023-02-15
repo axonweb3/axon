@@ -53,7 +53,7 @@ impl EpochSegment {
                 .chunks(U64_BYTES_LEN)
                 .map(|r| {
                     let mut buf = [0u8; 8];
-                    buf.copy_from_slice(&r);
+                    buf.copy_from_slice(r);
                     u64::from_be_bytes(buf)
                 })
                 .collect(),
