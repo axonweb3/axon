@@ -294,7 +294,9 @@ impl fmt::Display for Address {
     }
 }
 
-#[derive(Serialize, Deserialize, Default, Clone, Debug, Copy, PartialEq, Eq)]
+#[derive(
+    RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Debug, Copy, PartialEq, Eq,
+)]
 pub struct MetadataVersion {
     pub start: BlockNumber,
     pub end:   BlockNumber,
@@ -310,7 +312,9 @@ impl MetadataVersion {
     }
 }
 
-#[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq)]
+#[derive(
+    RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq,
+)]
 pub struct Metadata {
     pub version:                    MetadataVersion,
     pub epoch:                      u64,
@@ -346,7 +350,7 @@ pub struct Validator {
     pub vote_weight:    u32,
 }
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Default)]
+#[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, PartialEq, Eq, Default)]
 pub struct ValidatorExtend {
     pub bls_pub_key:    Hex,
     pub pub_key:        Hex,
