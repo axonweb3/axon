@@ -7,7 +7,20 @@ pub use crate::system_contract::image_cell::ImageCellContract;
 pub use crate::system_contract::native_token::NativeTokenContract;
 
 use protocol::traits::{ApplyBackend, Backend};
-use protocol::types::{SignedTransaction, TxResp, H160};
+use protocol::types::{ExitReason, ExitRevert, ExitSucceed, SignedTransaction, TxResp, H160, U256};
+
+#[macro_export]
+macro_rules! exec_try {
+    ($func: expr, $gas_limit: expr, $log_msg: literal) => {
+        match $func {
+            Ok(r) => r,
+            Err(e) => {
+                log::error!("{:?} {:?}", $log_msg, e);
+                return $crate::system_contract::revert_resp($gas_limit);
+            }
+        }
+    };
+}
 
 pub const fn system_contract_address(addr: u8) -> H160 {
     H160([
@@ -35,4 +48,30 @@ pub fn system_contract_dispatch<B: Backend + ApplyBackend>(
     }
 
     None
+}
+
+pub fn revert_resp(gas_limit: U256) -> TxResp {
+    TxResp {
+        exit_reason:  ExitReason::Revert(ExitRevert::Reverted),
+        ret:          vec![],
+        gas_used:     (gas_limit - 1).as_u64(),
+        remain_gas:   1u64,
+        fee_cost:     U256::one(),
+        logs:         vec![],
+        code_address: None,
+        removed:      false,
+    }
+}
+
+pub fn succeed_resp(gas_limit: U256) -> TxResp {
+    TxResp {
+        exit_reason:  ExitReason::Succeed(ExitSucceed::Returned),
+        ret:          vec![],
+        gas_used:     1u64,
+        remain_gas:   gas_limit.as_u64() - 1,
+        fee_cost:     U256::one(),
+        logs:         vec![],
+        code_address: None,
+        removed:      false,
+    }
 }
