@@ -1,10 +1,11 @@
-mod convert;
+mod abi;
 mod handle;
-mod metadata_abi;
 mod segment;
 mod store;
 
+pub use abi::metadata_abi;
 pub use handle::MetadataHandle;
+pub use store::MetadataStore;
 
 use std::num::NonZeroUsize;
 use std::path::Path;
@@ -22,10 +23,10 @@ use protocol::types::{
     Apply, Basic, Hasher, Metadata, SignedTransaction, TxResp, H160, H256, U256,
 };
 
+use crate::exec_try;
 use crate::system_contract::{
     image_cell::RocksTrieDB, revert_resp, succeed_resp, system_contract_address, SystemContract,
 };
-use crate::{exec_try, system_contract::metadata::store::MetadataStore};
 
 type Epoch = u64;
 
@@ -41,11 +42,15 @@ lazy_static::lazy_static! {
     static ref METADATA_CACHE: RwLock<LruCache<Epoch, Metadata>> =  RwLock::new(LruCache::new(METADATA_CACHE_SIZE));
 }
 
-pub fn init<P: AsRef<Path>>(path: P, config: ConfigRocksDB) {
+pub fn init<P: AsRef<Path>, B: Backend>(path: P, config: ConfigRocksDB, backend: Arc<B>) {
+    let current_cell_root = backend.storage(MetadataContract::ADDRESS, *METADATA_ROOT_KEY);
+
+    CURRENT_METADATA_ROOT.store(Arc::new(current_cell_root));
+
     METADATA_DB.get_or_init(|| {
         Arc::new(
             RocksTrieDB::new(path, config, METADATA_DB_CACHE_SIZE)
-                .expect("[image cell] new rocksdb error"),
+                .expect("[metadata] new rocksdb error"),
         )
     });
 }
@@ -54,40 +59,31 @@ pub fn init<P: AsRef<Path>>(path: P, config: ConfigRocksDB) {
 pub struct MetadataContract;
 
 impl SystemContract for MetadataContract {
-    const ADDRESS: H160 = system_contract_address(0x00);
+    const ADDRESS: H160 = system_contract_address(0x1);
 
     fn exec_<B: Backend + ApplyBackend>(&self, backend: &mut B, tx: &SignedTransaction) -> TxResp {
+        let sender = tx.sender;
         let tx = &tx.transaction.unsigned;
         let tx_data = tx.data();
         let gas_limit = *tx.gas_limit();
         let block_number = backend.block_number().as_u64();
-        let sender = backend.origin();
 
         let mut store = exec_try!(
             MetadataStore::new(),
             gas_limit,
             "[metadata] init metadata mpt"
         );
-        let epoch_segment = exec_try!(
-            store.get_epoch_segment(),
-            gas_limit,
-            "[metadata] get epoch segment"
-        );
-        let epoch_number = exec_try!(
-            epoch_segment.get_epoch_number(block_number),
-            gas_limit,
-            "get_epoch"
-        );
-        let current_metadata =
-            exec_try!(store.get_metadata(epoch_number), gas_limit, "get_metadata");
 
-        if current_metadata
-            .verifier_list
-            .iter()
-            .all(|v| v.address != sender)
-        {
-            log::error!("[metadata]: invalid sender");
-            return revert_resp(gas_limit);
+        if block_number != 0 {
+            let handle = MetadataHandle::default();
+
+            if !exec_try!(
+                handle.is_validator(block_number, sender),
+                gas_limit,
+                "[metadata] is validator"
+            ) {
+                return revert_resp(gas_limit);
+            }
         }
 
         let call_abi = exec_try!(
@@ -99,7 +95,7 @@ impl SystemContract for MetadataContract {
         match call_abi {
             metadata_abi::MetadataContractCalls::AppendMetadata(c) => {
                 exec_try!(
-                    store.append_metadata(c.metadata.into()),
+                    store.append_metadata(&c.metadata.into()),
                     gas_limit,
                     "[metadata] append metadata"
                 );

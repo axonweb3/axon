@@ -39,14 +39,24 @@ impl MetadataStore {
         Ok(MetadataStore { trie })
     }
 
-    pub fn append_metadata(&mut self, metadata: Metadata) -> ProtocolResult<()> {
+    pub fn append_metadata(&mut self, metadata: &Metadata) -> ProtocolResult<()> {
         let mut epoch_segment = EpochSegment::from_raw(
             self.trie
                 .get(EPOCH_SEGMENT_KEY.as_bytes())?
                 .unwrap()
                 .to_vec(),
         )?;
-        epoch_segment.push_endpoint(metadata.version.end)?;
+
+        // epoch should be 0 at the first time
+        // and should be the latest epoch + 1 after that.
+        let latest_epoch_number = epoch_segment.get_latest_epoch_number();
+        if (epoch_segment.is_empty() && metadata.epoch != 0)
+            || (!epoch_segment.is_empty() && metadata.epoch != latest_epoch_number + 1)
+        {
+            return Err(SystemScriptError::PastEpoch.into());
+        }
+
+        epoch_segment.append_endpoint(metadata.version.end)?;
 
         self.trie
             .insert(EPOCH_SEGMENT_KEY.as_bytes(), &epoch_segment.as_bytes())?;

@@ -68,6 +68,9 @@ pub enum SystemScriptError {
 
     #[error("Invalid epoch end {0}")]
     InvalidEpochEnd(u64),
+
+    #[error("Add for past epoch")]
+    PastEpoch,
 }
 
 impl From<SystemScriptError> for ProtocolError {
