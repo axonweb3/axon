@@ -1,5 +1,41 @@
 # 📑 Changelog
 
+## [Unreleased](https://github.com/axonweb3/axon/tree/HEAD)
+
+[Full Changelog](https://github.com/axonweb3/axon/compare/v0.1.0-alpha.6...HEAD)
+
+**Closed issues:**
+
+- Axon Development Updates 01/18/2023 [\#985](https://github.com/axonweb3/axon/issues/985)
+- Axon Development Updates 01/04/2023  [\#965](https://github.com/axonweb3/axon/issues/965)
+
+## [v0.1.0-alpha.6](https://github.com/axonweb3/axon/tree/v0.1.0-alpha.6) (2023-02-16)
+
+[Full Changelog](https://github.com/axonweb3/axon/compare/v0...v0.1.0-alpha.6)
+
+### 📖 Documentation
+
+- docs: automated update CHANGELOG.md [\#1025](https://github.com/axonweb3/axon/pull/1025) ([liya2017](https://github.com/liya2017))
+
+### 🐝  refactor
+
+- refactor: change some rlp impl into proc macro [\#1031](https://github.com/axonweb3/axon/pull/1031) ([KaoImin](https://github.com/KaoImin))
+
+⬆️ Dependency Updates
+
+- chore\(deps\): bump once\_cell from 1.17.0 to 1.17.1 [\#1033](https://github.com/axonweb3/axon/pull/1033) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump rug from 1.19.0 to 1.19.1 [\#1032](https://github.com/axonweb3/axon/pull/1032) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump axum from 0.6.4 to 0.6.6 [\#1028](https://github.com/axonweb3/axon/pull/1028) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump tokio-util from 0.7.4 to 0.7.7 [\#1027](https://github.com/axonweb3/axon/pull/1027) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump serde\_json from 1.0.91 to 1.0.93 [\#1026](https://github.com/axonweb3/axon/pull/1026) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump toml from 0.7.0 to 0.7.2 [\#1023](https://github.com/axonweb3/axon/pull/1023) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump anyhow from 1.0.68 to 1.0.69 [\#1019](https://github.com/axonweb3/axon/pull/1019) ([dependabot[bot]](https://github.com/apps/dependabot))
+
+**Merged pull requests:**
+
+- chore: remove the useless ci caches daily [\#1034](https://github.com/axonweb3/axon/pull/1034) ([liya2017](https://github.com/liya2017))
+- refactor: change the cache size of system contract to 20 [\#1029](https://github.com/axonweb3/axon/pull/1029) ([liya2017](https://github.com/liya2017))
+
 ## [v0](https://github.com/axonweb3/axon/tree/v0) (2023-02-07)
 
 [Full Changelog](https://github.com/axonweb3/axon/compare/v0.1.0-alpha.5...v0)
