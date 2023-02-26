@@ -85,7 +85,7 @@ jobs:
           popd
           mv ${{ github.workspace }}/releases/axon_${{ needs.version.outputs.tag }}_${{ matrix.job.REL_PKG}} ${{ github.workspace }}
       - name: upload-zip-file
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: axon_${{ needs.version.outputs.tag }}_${{ matrix.job.REL_PKG }}
           path: axon_${{ needs.version.outputs.tag }}_${{ matrix.job.REL_PKG }}  
