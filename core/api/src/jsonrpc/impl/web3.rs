@@ -3,6 +3,7 @@ use std::sync::Arc;
 use jsonrpsee::core::Error;
 
 use common_apm::metrics_rpc;
+use protocol::lazy::PROTOCOL_VERSION;
 use protocol::traits::{APIAdapter, Context};
 use protocol::types::{
     Block, BlockNumber, Bytes, Hash, Header, Hex, Receipt, SignedTransaction, TxResp,
@@ -716,6 +717,39 @@ impl<Adapter: APIAdapter + 'static> AxonWeb3RpcServer for Web3RpcImpl<Adapter> {
             .unwrap_or_else(|_| H256::default().as_bytes().to_vec().into());
 
         Ok(Hex::encode(&value))
+    }
+
+    #[metrics_rpc("eth_protocolVersion")]
+    async fn protocol_version(&self) -> RpcResult<Hex> {
+        Ok((**PROTOCOL_VERSION.load()).clone())
+    }
+
+    #[metrics_rpc("eth_getUncleByBlockHashAndIndex")]
+    async fn get_uncle_by_block_hash_and_index(
+        &self,
+        _hash: Hash,
+        _index: U256,
+    ) -> RpcResult<Option<Web3Block>> {
+        Ok(None)
+    }
+
+    #[metrics_rpc("eth_getUncleByBlockNumberAndIndex")]
+    async fn get_uncle_by_block_number_and_index(
+        &self,
+        _number: BlockId,
+        _index: U256,
+    ) -> RpcResult<Option<Web3Block>> {
+        Ok(None)
+    }
+
+    #[metrics_rpc("eth_getUncleCountByBlockHash")]
+    async fn get_uncle_count_by_block_hash(&self, _hash: Hash) -> RpcResult<U256> {
+        Ok(U256::zero())
+    }
+
+    #[metrics_rpc("eth_getUncleCountByBlockNumber")]
+    async fn get_uncle_count_by_block_number(&self, _number: BlockId) -> RpcResult<U256> {
+        Ok(U256::zero())
     }
 }
 

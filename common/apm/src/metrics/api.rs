@@ -38,6 +38,11 @@ make_auto_flush_static_metric! {
         eth_getTransactionByBlockHashAndIndex,
         eth_getTransactionByBlockNumberAndIndex,
         eth_getStorageAt,
+        eth_protocolVersion,
+        eth_getUncleByBlockHashAndIndex,
+        eth_getUncleByBlockNumberAndIndex,
+        eth_getUncleCountByBlockHash,
+        eth_getUncleCountByBlockNumber,
     }
 
     pub label_enum Request_Result {
