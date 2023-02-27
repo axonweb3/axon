@@ -486,7 +486,7 @@ where
                 .map_err(|e| AdapterError::VerifySignature(e.to_string()))?;
             }
             _ => {
-                let r = SignatureR::from_raw(&signature.r)?;
+                let r = SignatureR::decode(&signature.r)?;
                 let s = SignatureS::decode(&signature.s)?;
 
                 if r.input_len() != s.witnesses.len() {

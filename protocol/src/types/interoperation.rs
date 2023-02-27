@@ -15,8 +15,10 @@ pub struct VMResp {
 /// The address mapping for calculate an Axon address by the input cell, which
 /// is `keccak(input[index].content).into()`. The `type_` field means the type
 /// of content to calculate hash with the following rules:
-/// 0u8 => use type script hash.
-/// 1u8 => use lock script hash.
+/// `0u8`: use lock script hash.
+/// `1u8`: use type script hash.
+/// So that the default value of `AddressMapping` means using
+/// `blake2b_256(input[0].lock().as_bytes())` as `keccak()` input.
 #[derive(
     RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Copy, Debug, PartialEq, Eq,
 )]
@@ -46,7 +48,7 @@ impl SignatureR {
         })
     }
 
-    pub fn from_raw(data: &[u8]) -> ProtocolResult<Self> {
+    pub fn decode(data: &[u8]) -> ProtocolResult<Self> {
         if data.is_empty() {
             return Err(TypesError::SignatureRIsEmpty.into());
         }
@@ -68,7 +70,7 @@ impl SignatureR {
     pub fn address_mapping(&self) -> AddressMapping {
         match self {
             SignatureR::RealityInput(i) => i.address_map,
-            SignatureR::DummyInput(i) => i.address_map,
+            SignatureR::DummyInput(_) => AddressMapping::default(),
         }
     }
 
@@ -121,7 +123,7 @@ pub struct DummyInput {
     pub cell_deps:   Vec<CellDep>,
     pub header_deps: Vec<H256>,
     pub input_lock:  InputLock,
-    pub address_map: AddressMapping,
+    // pub address_map: AddressMapping,
 }
 
 #[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
