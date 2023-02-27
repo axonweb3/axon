@@ -63,7 +63,7 @@ impl SignatureR {
     pub fn input_len(&self) -> usize {
         match self {
             SignatureR::RealityInput(i) => i.out_points.len(),
-            SignatureR::DummyInput(_) => 0usize,
+            SignatureR::DummyInput(_) => 1usize,
         }
     }
 
