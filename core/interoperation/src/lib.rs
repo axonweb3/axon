@@ -2,7 +2,7 @@
 
 #[cfg(test)]
 mod tests;
-mod utils;
+pub mod utils;
 
 use std::error::Error;
 
@@ -14,7 +14,7 @@ use ckb_vm::machine::{asm::AsmCoreMachine, DefaultMachineBuilder, SupportMachine
 use ckb_vm::{Error as VMError, ISA_B, ISA_IMC, ISA_MOP};
 
 use protocol::traits::{Context, Interoperation};
-use protocol::types::{Bytes, CellDep, OutPoint, VMResp};
+use protocol::types::{Bytes, CellDep, InputLock, OutPoint, VMResp};
 use protocol::{Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 use crate::utils::resolve_transaction;
@@ -58,7 +58,7 @@ impl Interoperation for InteroperationImpl {
         args: &[Bytes],
         max_cycles: u64,
     ) -> ProtocolResult<VMResp> {
-        let data_cell_dep: packed::CellDep = data_cell_dep.into();
+        let data_cell_dep: packed::CellDep = (&data_cell_dep).into();
         let program = data_loader
             .get_cell_data(&data_cell_dep.out_point())
             .ok_or_else(|| InteroperationError::GetProgram((&data_cell_dep.out_point()).into()))?;
@@ -79,11 +79,15 @@ impl Interoperation for InteroperationImpl {
         _ctx: Context,
         data_loader: &DL,
         mocked_tx: &TransactionView,
+        dummy_input: Option<InputLock>,
         max_cycles: u64,
     ) -> ProtocolResult<Cycle> {
-        TransactionScriptsVerifier::new(&resolve_transaction(data_loader, mocked_tx)?, data_loader)
-            .verify(max_cycles)
-            .map_err(|e| InteroperationError::Ckb(e).into())
+        TransactionScriptsVerifier::new(
+            &resolve_transaction(data_loader, mocked_tx, dummy_input)?,
+            data_loader,
+        )
+        .verify(max_cycles)
+        .map_err(|e| InteroperationError::Ckb(e).into())
     }
 }
 
@@ -109,6 +113,9 @@ pub enum InteroperationError {
 
     #[display(fmt = "Invalid dep group {:?}", _0)]
     InvalidDepGroup(String),
+
+    #[display(fmt = "Invalid dummy input")]
+    InvalidDummyInput,
 }
 
 impl Error for InteroperationError {}

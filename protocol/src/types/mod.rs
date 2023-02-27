@@ -70,6 +70,12 @@ pub enum TypesError {
 
     #[display(fmt = "Invalid crosschain direction")]
     InvalidDirection,
+
+    #[display(fmt = "Signature R is empty")]
+    SignatureRIsEmpty,
+
+    #[display(fmt = "Invalid signature R type")]
+    InvalidSignatureRType,
 }
 
 impl Error for TypesError {}

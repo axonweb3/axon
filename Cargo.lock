@@ -1683,6 +1683,7 @@ dependencies = [
  "cardano-message-signing",
  "cardano-serialization-lib",
  "ckb-error",
+ "ckb-hash",
  "ckb-jsonrpc-types",
  "ckb-script",
  "ckb-traits",
@@ -1705,6 +1706,8 @@ name = "core-mempool"
 version = "0.1.0"
 dependencies = [
  "axon-protocol",
+ "ckb-hash",
+ "ckb-types",
  "common-apm",
  "common-apm-derive",
  "common-config-parser",
