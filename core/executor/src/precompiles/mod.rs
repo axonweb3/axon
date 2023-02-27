@@ -11,6 +11,7 @@ mod ripemd160;
 mod rsa;
 mod secp256r1;
 mod sha256;
+
 #[cfg(test)]
 mod tests;
 mod verify_by_ckb_vm;
@@ -25,7 +26,7 @@ use protocol::types::H160;
 
 use crate::precompiles::{
     blake2_f::Blake2F, ec_add::EcAdd, ec_mul::EcMul, ec_pairing::EcPairing, ecrecover::EcRecover,
-    identity::Identity, modexp::ModExp, ripemd160::Ripemd160, sha256::Sha256,
+    get_cell::GetCell, identity::Identity, modexp::ModExp, ripemd160::Ripemd160, sha256::Sha256,
 };
 
 #[macro_export]
@@ -83,7 +84,9 @@ const fn precompile_address(addr: u8) -> H160 {
 }
 
 pub fn build_precompile_set() -> BTreeMap<H160, PrecompileFn> {
-    precompiles!(EcRecover, Sha256, Ripemd160, Identity, ModExp, EcAdd, EcMul, EcPairing, Blake2F)
+    precompiles!(
+        EcRecover, Sha256, Ripemd160, Identity, ModExp, EcAdd, EcMul, EcPairing, Blake2F, GetCell
+    )
 }
 
 pub(crate) fn read_point(input: &[u8], start: usize) -> Result<G1, PrecompileFailure> {
