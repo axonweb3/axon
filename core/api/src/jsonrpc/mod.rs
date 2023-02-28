@@ -121,6 +121,30 @@ pub trait AxonWeb3Rpc {
         position: U256,
         number: Option<BlockId>,
     ) -> RpcResult<Hex>;
+
+    #[method(name = "eth_protocolVersion")]
+    async fn protocol_version(&self) -> RpcResult<Hex>;
+
+    #[method(name = "eth_getUncleByBlockHashAndIndex")]
+    async fn get_uncle_by_block_hash_and_index(
+        &self,
+        hash: Hash,
+        position: U256,
+    ) -> RpcResult<Option<Web3Block>>;
+
+    #[method(name = "eth_getUncleByBlockNumberAndIndex")]
+    async fn get_uncle_by_block_number_and_index(
+        &self,
+        number: BlockId,
+        position: U256,
+    ) -> RpcResult<Option<Web3Block>>;
+
+    #[method(name = "eth_getUncleCountByBlockHash")]
+    async fn get_uncle_count_by_block_hash(&self, hash: Hash) -> RpcResult<U256>;
+
+    #[method(name = "eth_getUncleCountByBlockNumber")]
+    async fn get_uncle_count_by_block_number(&self, number: BlockId) -> RpcResult<U256>;
+
 }
 
 #[rpc(server)]
