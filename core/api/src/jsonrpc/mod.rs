@@ -141,10 +141,8 @@ pub trait AxonWeb3Rpc {
 
     #[method(name = "eth_getUncleCountByBlockHash")]
     async fn get_uncle_count_by_block_hash(&self, hash: Hash) -> RpcResult<U256>;
-
     #[method(name = "eth_getUncleCountByBlockNumber")]
     async fn get_uncle_count_by_block_number(&self, number: BlockId) -> RpcResult<U256>;
-
 }
 
 #[rpc(server)]
