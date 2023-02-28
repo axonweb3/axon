@@ -1,6 +1,6 @@
-use protocol::types::{Hash, Hex, Metadata, MetadataVersion, ValidatorExtend};
+pub mod metadata_abi;
 
-use crate::system_contract::metadata::metadata_abi;
+use protocol::types::{Hash, Hex, Metadata, MetadataVersion, ValidatorExtend};
 
 impl From<metadata_abi::Metadata> for Metadata {
     fn from(m: metadata_abi::Metadata) -> Metadata {

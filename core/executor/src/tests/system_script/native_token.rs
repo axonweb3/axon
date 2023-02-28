@@ -1,5 +1,11 @@
-use super::*;
-use crate::system_contract::{NativeTokenContract, SystemContract};
+use std::{collections::BTreeMap, str::FromStr};
+
+use protocol::types::{MemoryAccount, MemoryBackend, H160, U256};
+
+use crate::{
+    system_contract::{NativeTokenContract, SystemContract},
+    tests::{gen_tx, gen_vicinity},
+};
 
 fn mock_data(direction: u8, address: H160) -> Vec<u8> {
     let mut ret = vec![direction];

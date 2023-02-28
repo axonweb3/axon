@@ -67,7 +67,7 @@ pub fn init<P: AsRef<Path>, B: Backend + ApplyBackend>(
 pub struct ImageCellContract;
 
 impl SystemContract for ImageCellContract {
-    const ADDRESS: H160 = system_contract_address(0x1);
+    const ADDRESS: H160 = system_contract_address(0x2);
 
     fn exec_<B: Backend + ApplyBackend>(&self, backend: &mut B, tx: &SignedTransaction) -> TxResp {
         let tx = &tx.transaction.unsigned;
