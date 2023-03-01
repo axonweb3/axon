@@ -3,7 +3,7 @@ use ckb_types::core::{cell::CellProvider, Cycle, ScriptHashType, TransactionView
 use ckb_types::{packed, prelude::*};
 
 use crate::lazy::{CELL_VERIFIER_CODE_HASH, DUMMY_INPUT_OUT_POINT};
-use crate::types::{Bytes, CellDep, InputLock, SignatureR, SignatureS, VMResp};
+use crate::types::{Bytes, CellDep, CellWithData, SignatureR, SignatureS, VMResp};
 use crate::{traits::Context, ProtocolResult};
 
 const OUTPUT_CAPACITY_OF_REALITY_INPUT: u64 = 100;
@@ -21,7 +21,7 @@ pub trait Interoperation: Sync + Send {
         ctx: Context,
         data_loader: &DL,
         mocked_tx: &TransactionView,
-        dummy_input: Option<InputLock>,
+        dummy_input: Option<CellWithData>,
         max_cycles: u64,
     ) -> ProtocolResult<Cycle>;
 
@@ -56,9 +56,9 @@ pub trait Interoperation: Sync + Send {
                     .pack()
             }));
 
-        if r.is_reality() {
+        if r.is_only_by_ref() {
             return tx_builder
-                .inputs(r.reality_inputs().iter().map(|i| {
+                .inputs(r.out_points().iter().map(|i| {
                     packed::CellInput::new(
                         packed::OutPointBuilder::default()
                             .tx_hash(i.tx_hash.0.pack())

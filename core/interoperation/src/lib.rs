@@ -14,7 +14,7 @@ use ckb_vm::machine::{asm::AsmCoreMachine, DefaultMachineBuilder, SupportMachine
 use ckb_vm::{Error as VMError, ISA_B, ISA_IMC, ISA_MOP};
 
 use protocol::traits::{Context, Interoperation};
-use protocol::types::{Bytes, CellDep, InputLock, OutPoint, VMResp};
+use protocol::types::{Bytes, CellDep, CellWithData, OutPoint, VMResp};
 use protocol::{Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 use crate::utils::resolve_transaction;
@@ -79,7 +79,7 @@ impl Interoperation for InteroperationImpl {
         _ctx: Context,
         data_loader: &DL,
         mocked_tx: &TransactionView,
-        dummy_input: Option<InputLock>,
+        dummy_input: Option<CellWithData>,
         max_cycles: u64,
     ) -> ProtocolResult<Cycle> {
         TransactionScriptsVerifier::new(

@@ -2,7 +2,7 @@ use ckb_types::core::cell::{CellMeta, CellProvider, CellStatus, ResolvedTransact
 use ckb_types::core::{DepType, TransactionView};
 use ckb_types::{packed, prelude::*};
 
-use protocol::types::InputLock;
+use protocol::types::CellWithData;
 use protocol::{lazy::DUMMY_INPUT_OUT_POINT, ProtocolResult};
 
 use crate::InteroperationError;
@@ -10,7 +10,7 @@ use crate::InteroperationError;
 pub fn resolve_transaction<CL: CellProvider>(
     cell_loader: &CL,
     tx: &TransactionView,
-    dummy_input: Option<InputLock>,
+    dummy_input: Option<CellWithData>,
 ) -> ProtocolResult<ResolvedTransaction> {
     let resolve_cell = |out_point: &packed::OutPoint| -> ProtocolResult<CellMeta> {
         match cell_loader.cell(out_point, true) {
@@ -27,23 +27,17 @@ pub fn resolve_transaction<CL: CellProvider>(
 
     for outpoint in tx.input_pts_iter() {
         if is_dummy_out_point(&outpoint) {
-            if let Some(ref lock) = dummy_input {
-                let input_lock = packed::ScriptBuilder::default()
-                    .code_hash(lock.lock_code_hash.0.pack())
-                    .args(lock.lock_args.pack())
-                    .hash_type(lock.hash_type.into())
-                    .build();
-
+            if let Some(ref cell) = dummy_input {
                 resolved_inputs.push(CellMeta {
                     cell_output:        packed::CellOutputBuilder::default()
-                        .lock(input_lock)
-                        .capacity(lock.capacity().pack())
+                        .lock(cell.lock_script())
+                        .capacity(cell.capacity().pack())
                         .build(),
                     out_point:          outpoint,
                     transaction_info:   None,
-                    data_bytes:         lock.data.len() as u64,
-                    mem_cell_data_hash: Some(ckb_hash::blake2b_256(&lock.data).pack()),
-                    mem_cell_data:      Some(lock.data.clone()),
+                    data_bytes:         cell.data.len() as u64,
+                    mem_cell_data_hash: Some(ckb_hash::blake2b_256(&cell.data).pack()),
+                    mem_cell_data:      Some(cell.data.clone()),
                 });
             } else {
                 return Err(InteroperationError::InvalidDummyInput.into());

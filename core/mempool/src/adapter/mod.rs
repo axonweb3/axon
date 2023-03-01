@@ -27,9 +27,8 @@ use protocol::traits::{
     Priority, Rpc, Storage, TrustFeedback,
 };
 use protocol::types::{
-    recover_intact_pub_key, AddressMapping, BatchSignedTxs, CellDepWithPubKey, Hash, Hasher,
-    InputLock, MerkleRoot, SignatureComponents, SignatureR, SignatureS, SignedTransaction, H160,
-    U256,
+    recover_intact_pub_key, AddressSource, BatchSignedTxs, CellDepWithPubKey, CellWithData, Hash,
+    Hasher, MerkleRoot, SignatureComponents, SignatureR, SignatureS, SignedTransaction, H160, U256,
 };
 use protocol::{
     async_trait, codec::ProtocolCodec, lazy::CURRENT_STATE_ROOT, tokio, trie, Display,
@@ -213,8 +212,8 @@ where
         &self,
         sender: H160,
         ckb_tx_view: &TransactionView,
-        dummy_input: Option<InputLock>,
-        address_map: AddressMapping,
+        dummy_input: Option<CellWithData>,
+        address_map: AddressSource,
     ) -> ProtocolResult<()> {
         let input = ckb_tx_view
             .inputs()
@@ -222,8 +221,9 @@ where
             .ok_or(MemPoolError::InvalidAddressMapping(address_map))?;
 
         if is_dummy_out_point(&input.previous_output()) {
-            if let Some(lock) = dummy_input {
-                let lock_hash = ckb_hash::blake2b_256(lock.as_script().as_bytes());
+            if let Some(cell) = dummy_input {
+                // Todo
+                let lock_hash = ckb_hash::blake2b_256(cell.lock_script().as_bytes());
                 let right_sender: H160 = Hasher::digest(lock_hash).into();
                 if right_sender != sender {
                     return Err(MemPoolError::InvalidSender {
@@ -489,7 +489,7 @@ where
                 let r = SignatureR::decode(&signature.r)?;
                 let s = SignatureS::decode(&signature.s)?;
 
-                if r.input_len() != s.witnesses.len() {
+                if r.inputs_len() != s.witnesses.len() {
                     return Err(AdapterError::VerifySignature(
                         "signature item mismatch".to_string(),
                     )
@@ -503,7 +503,7 @@ where
                     stx.sender,
                     &dummy_ckb_tx,
                     dummy_input.clone(),
-                    r.address_mapping(),
+                    r.address_source(),
                 )?;
 
                 InteroperationImpl::verify_by_ckb_vm(

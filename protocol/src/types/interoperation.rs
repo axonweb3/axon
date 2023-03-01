@@ -17,30 +17,30 @@ pub struct VMResp {
 /// of content to calculate hash with the following rules:
 /// `0u8`: use lock script hash.
 /// `1u8`: use type script hash.
-/// So that the default value of `AddressMapping` means using
+/// So that the default value of `AddressSource` means using
 /// `blake2b_256(input[0].lock().as_bytes())` as `keccak()` input.
 #[derive(
     RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Copy, Debug, PartialEq, Eq,
 )]
-pub struct AddressMapping {
+pub struct AddressSource {
     pub type_: u8,
     pub index: u32,
 }
 
 #[derive(Clone, Debug)]
 pub enum SignatureR {
-    RealityInput(RealityInput),
-    DummyInput(DummyInput),
+    ByRef(CKBTxMockByRef),
+    ByRefAndOneInput(CKBTxMockByRefAndOneInput),
 }
 
 impl SignatureR {
-    pub fn new_reality(
+    pub fn new_by_ref(
         cell_deps: Vec<CellDep>,
         header_deps: Vec<H256>,
         out_points: Vec<OutPoint>,
-        address_map: AddressMapping,
+        address_map: AddressSource,
     ) -> Self {
-        SignatureR::RealityInput(RealityInput {
+        SignatureR::ByRef(CKBTxMockByRef {
             cell_deps,
             header_deps,
             out_points,
@@ -54,98 +54,131 @@ impl SignatureR {
         }
 
         match data[0] {
-            1u8 => Ok(SignatureR::RealityInput(RealityInput::decode(&data[1..])?)),
-            2u8 => Ok(SignatureR::DummyInput(DummyInput::decode(&data[1..])?)),
+            1u8 => Ok(SignatureR::ByRef(CKBTxMockByRef::decode(&data[1..])?)),
+            2u8 => Ok(SignatureR::ByRefAndOneInput(
+                CKBTxMockByRefAndOneInput::decode(&data[1..])?,
+            )),
             _ => Err(TypesError::InvalidSignatureRType.into()),
         }
     }
 
-    pub fn input_len(&self) -> usize {
+    pub fn inputs_len(&self) -> usize {
         match self {
-            SignatureR::RealityInput(i) => i.out_points.len(),
-            SignatureR::DummyInput(_) => 1usize,
+            SignatureR::ByRef(i) => i.out_points.len(),
+            SignatureR::ByRefAndOneInput(_) => 1usize,
         }
     }
 
-    pub fn address_mapping(&self) -> AddressMapping {
+    pub fn address_source(&self) -> AddressSource {
         match self {
-            SignatureR::RealityInput(i) => i.address_map,
-            SignatureR::DummyInput(_) => AddressMapping::default(),
+            SignatureR::ByRef(i) => i.address_map,
+            SignatureR::ByRefAndOneInput(_) => AddressSource::default(),
         }
     }
 
     pub fn cell_deps(&self) -> &[CellDep] {
         match self {
-            SignatureR::RealityInput(i) => &i.cell_deps,
-            SignatureR::DummyInput(i) => &i.cell_deps,
+            SignatureR::ByRef(i) => &i.cell_deps,
+            SignatureR::ByRefAndOneInput(i) => &i.cell_deps,
         }
     }
 
     pub fn header_deps(&self) -> &[H256] {
         match self {
-            SignatureR::RealityInput(i) => &i.header_deps,
-            SignatureR::DummyInput(i) => &i.header_deps,
+            SignatureR::ByRef(i) => &i.header_deps,
+            SignatureR::ByRefAndOneInput(i) => &i.header_deps,
         }
     }
 
-    pub(crate) fn reality_inputs(&self) -> &[OutPoint] {
+    pub(crate) fn out_points(&self) -> &[OutPoint] {
         match self {
-            SignatureR::RealityInput(i) => &i.out_points,
+            SignatureR::ByRef(i) => &i.out_points,
             _ => unreachable!(),
         }
     }
 
-    pub fn dummy_input(&self) -> Option<InputLock> {
+    pub fn dummy_input(&self) -> Option<CellWithData> {
         match self {
-            SignatureR::DummyInput(i) => Some(i.input_lock.clone()),
-            SignatureR::RealityInput(_) => None,
+            SignatureR::ByRefAndOneInput(i) => Some(i.input_lock.clone()),
+            SignatureR::ByRef(_) => None,
         }
     }
 
-    pub fn is_reality(&self) -> bool {
+    pub fn is_only_by_ref(&self) -> bool {
         match self {
-            SignatureR::RealityInput(_) => true,
-            SignatureR::DummyInput(_) => false,
+            SignatureR::ByRef(_) => true,
+            SignatureR::ByRefAndOneInput(_) => false,
         }
     }
 }
 
 #[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct RealityInput {
+pub struct CKBTxMockByRef {
     pub cell_deps:   Vec<CellDep>,
     pub header_deps: Vec<H256>,
     pub out_points:  Vec<OutPoint>,
-    pub address_map: AddressMapping,
+    pub address_map: AddressSource,
 }
 
 #[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct DummyInput {
+pub struct CKBTxMockByRefAndOneInput {
     pub cell_deps:   Vec<CellDep>,
     pub header_deps: Vec<H256>,
-    pub input_lock:  InputLock,
-    // pub address_map: AddressMapping,
+    pub input_lock:  CellWithData,
+    // pub address_map: AddressSource,
 }
 
 #[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-pub struct InputLock {
-    pub lock_code_hash: H256,
-    pub lock_args:      Bytes,
-    pub hash_type:      u8,
-    pub data:           Bytes,
+pub struct CellWithData {
+    pub type_script: Option<Script>,
+    pub lock_script: Script,
+    pub data:        Bytes,
 }
 
-impl InputLock {
+impl CellWithData {
     pub fn capacity(&self) -> u64 {
-        let capacity = 32 + self.lock_args.len() + 1 + self.data.len();
+        let capacity = self
+            .type_script
+            .as_ref()
+            .map(|s| s.len())
+            .unwrap_or_default()
+            + self.lock_script.len()
+            + self.data.len();
         capacity as u64
     }
 
-    pub fn as_script(&self) -> packed::Script {
+    pub fn lock_script(&self) -> packed::Script {
+        (&self.lock_script).into()
+    }
+
+    pub fn type_script(&self) -> packed::ScriptOpt {
+        self.type_script
+            .as_ref()
+            .map(|s| packed::Script::from(s))
+            .pack()
+    }
+}
+
+#[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct Script {
+    pub code_hash: H256,
+    pub args:      Bytes,
+    pub hash_type: u8,
+}
+
+impl From<&Script> for packed::Script {
+    fn from(s: &Script) -> Self {
         packed::ScriptBuilder::default()
-            .code_hash(self.lock_code_hash.0.pack())
-            .args(self.lock_args.pack())
-            .hash_type(self.hash_type.into())
+            .code_hash(s.code_hash.0.pack())
+            .args(s.args.pack())
+            .hash_type(s.hash_type.into())
             .build()
+    }
+}
+
+impl Script {
+    pub fn len(&self) -> usize {
+        self.args.len() + 32 + 1
     }
 }
 

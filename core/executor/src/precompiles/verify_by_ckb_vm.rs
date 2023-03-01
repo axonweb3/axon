@@ -40,7 +40,7 @@ impl PrecompileContract for CkbVM {
                 Default::default(),
                 &DataProvider::default(),
                 &InteroperationImpl::dummy_transaction(
-                    SignatureR::new_reality(cell_deps, header_deps, inputs, Default::default()),
+                    SignatureR::new_by_ref(cell_deps, header_deps, inputs, Default::default()),
                     SignatureS::new(witnesses),
                 ),
                 None,

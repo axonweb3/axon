@@ -28,7 +28,7 @@ use core_executor::{is_call_system_script, is_transaction_call};
 use core_network::NetworkContext;
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
 use protocol::types::{
-    AddressMapping, BlockNumber, Hash, PackedTxHashes, SignedTransaction, H160, H256, U256,
+    AddressSource, BlockNumber, Hash, PackedTxHashes, SignedTransaction, H160, H256, U256,
 };
 use protocol::{async_trait, tokio, Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
@@ -457,7 +457,7 @@ pub enum MemPoolError {
     EncodeJson,
 
     #[display(fmt = "Invalid address mapping {:?}", _0)]
-    InvalidAddressMapping(AddressMapping),
+    InvalidAddressMapping(AddressSource),
 
     #[display(fmt = "Invalid sender, expect: {:?}, get: {:?}", expect, actual)]
     InvalidSender { expect: H160, actual: H160 },
