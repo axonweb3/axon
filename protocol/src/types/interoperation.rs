@@ -38,13 +38,13 @@ impl SignatureR {
         cell_deps: Vec<CellDep>,
         header_deps: Vec<H256>,
         out_points: Vec<OutPoint>,
-        address_map: AddressSource,
+        out_point_addr_source: AddressSource,
     ) -> Self {
         SignatureR::ByRef(CKBTxMockByRef {
             cell_deps,
             header_deps,
             out_points,
-            address_map,
+            out_point_addr_source,
         })
     }
 
@@ -53,13 +53,17 @@ impl SignatureR {
             return Err(TypesError::SignatureRIsEmpty.into());
         }
 
-        match data[0] {
-            1u8 => Ok(SignatureR::ByRef(CKBTxMockByRef::decode(&data[1..])?)),
-            2u8 => Ok(SignatureR::ByRefAndOneInput(
-                CKBTxMockByRefAndOneInput::decode(&data[1..])?,
-            )),
-            _ => Err(TypesError::InvalidSignatureRType.into()),
+        let ret = match data[0] {
+            1u8 => SignatureR::ByRef(CKBTxMockByRef::decode(&data[1..])?),
+            2u8 => SignatureR::ByRefAndOneInput(CKBTxMockByRefAndOneInput::decode(&data[1..])?),
+            _ => return Err(TypesError::InvalidSignatureRType.into()),
+        };
+
+        if ret.address_source().type_ > 1 {
+            return Err(TypesError::InvalidAddressSourceType.into());
         }
+
+        Ok(ret)
     }
 
     pub fn inputs_len(&self) -> usize {
@@ -71,8 +75,8 @@ impl SignatureR {
 
     pub fn address_source(&self) -> AddressSource {
         match self {
-            SignatureR::ByRef(i) => i.address_map,
-            SignatureR::ByRefAndOneInput(_) => AddressSource::default(),
+            SignatureR::ByRef(i) => i.out_point_addr_source,
+            SignatureR::ByRefAndOneInput(i) => i.out_point_addr_source,
         }
     }
 
@@ -114,18 +118,18 @@ impl SignatureR {
 
 #[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct CKBTxMockByRef {
-    pub cell_deps:   Vec<CellDep>,
-    pub header_deps: Vec<H256>,
-    pub out_points:  Vec<OutPoint>,
-    pub address_map: AddressSource,
+    pub cell_deps:             Vec<CellDep>,
+    pub header_deps:           Vec<H256>,
+    pub out_points:            Vec<OutPoint>,
+    pub out_point_addr_source: AddressSource,
 }
 
 #[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct CKBTxMockByRefAndOneInput {
-    pub cell_deps:   Vec<CellDep>,
-    pub header_deps: Vec<H256>,
-    pub input_lock:  CellWithData,
-    // pub address_map: AddressSource,
+    pub cell_deps:             Vec<CellDep>,
+    pub header_deps:           Vec<H256>,
+    pub input_lock:            CellWithData,
+    pub out_point_addr_source: AddressSource,
 }
 
 #[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -152,10 +156,17 @@ impl CellWithData {
     }
 
     pub fn type_script(&self) -> packed::ScriptOpt {
-        self.type_script
-            .as_ref()
-            .map(|s| packed::Script::from(s))
-            .pack()
+        self.type_script.as_ref().map(packed::Script::from).pack()
+    }
+
+    pub fn lock_script_hash(&self) -> [u8; 32] {
+        ckb_hash::blake2b_256(self.lock_script().as_slice())
+    }
+
+    pub fn type_script_hash(&self) -> Option<[u8; 32]> {
+        self.type_script()
+            .to_opt()
+            .map(|s| ckb_hash::blake2b_256(s.as_slice()))
     }
 }
 
@@ -177,6 +188,7 @@ impl From<&Script> for packed::Script {
 }
 
 impl Script {
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         self.args.len() + 32 + 1
     }

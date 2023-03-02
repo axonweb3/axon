@@ -13,11 +13,13 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use arc_swap::ArcSwap;
+use ckb_always_success_script::ALWAYS_SUCCESS;
 use ckb_types::packed;
 use ethers::abi::AbiDecode;
 use once_cell::sync::OnceCell;
 
 use common_config_parser::types::ConfigRocksDB;
+use protocol::lazy::ALWAYS_SUCCESS_DEPLOY_TX_HASH;
 use protocol::traits::{ApplyBackend, Backend};
 use protocol::types::{
     Apply, Basic, ExitReason, ExitRevert, ExitSucceed, Hasher, MerkleRoot, SignedTransaction,
@@ -25,7 +27,7 @@ use protocol::types::{
 };
 
 use crate::system_contract::error::{SystemScriptError, SystemScriptResult};
-use crate::system_contract::image_cell::store::{get_cell, get_header};
+use crate::system_contract::image_cell::store::{commit, get_cell, get_header};
 use crate::system_contract::{
     image_cell::trie_db::RocksTrieDB, system_contract_address, SystemContract,
 };
@@ -34,24 +36,33 @@ use crate::MPTTrie;
 static ALLOW_READ: AtomicBool = AtomicBool::new(false);
 static TRIE_DB: OnceCell<Arc<RocksTrieDB>> = OnceCell::new();
 
-const DEFAULE_CACHE_SIZE: usize = 20;
+const DEFAULT_CACHE_SIZE: usize = 20;
 
 lazy_static::lazy_static! {
     static ref CELL_ROOT_KEY: H256 = Hasher::digest("cell_mpt_root");
     static ref CURRENT_CELL_ROOT: ArcSwap<H256> = ArcSwap::from_pointee(H256::default());
 }
 
-pub fn init<P: AsRef<Path>, B: Backend>(path: P, config: ConfigRocksDB, backend: Arc<B>) {
-    let current_cell_root = backend.storage(ImageCellContract::ADDRESS, *CELL_ROOT_KEY);
-
-    CURRENT_CELL_ROOT.store(Arc::new(current_cell_root));
-
+pub fn init<P: AsRef<Path>, B: Backend + ApplyBackend>(
+    path: P,
+    config: ConfigRocksDB,
+    mut backend: B,
+) {
     TRIE_DB.get_or_init(|| {
         Arc::new(
-            RocksTrieDB::new(path, config, DEFAULE_CACHE_SIZE)
+            RocksTrieDB::new(path, config, DEFAULT_CACHE_SIZE)
                 .expect("[image cell] new rocksdb error"),
         )
     });
+
+    let current_cell_root = backend.storage(ImageCellContract::ADDRESS, *CELL_ROOT_KEY);
+    if current_cell_root.is_zero() {
+        let mut mpt = get_mpt().unwrap();
+        exec::save_cells(&mut mpt, vec![always_success_script_deploy_cell()], 0).unwrap();
+        return update_mpt_root(&mut backend, commit(&mut mpt).unwrap());
+    }
+
+    CURRENT_CELL_ROOT.store(Arc::new(current_cell_root));
 }
 
 #[derive(Default)]
@@ -192,5 +203,16 @@ impl ImageCellContract {
 
     pub fn allow_read(&self) -> bool {
         ALLOW_READ.load(Ordering::Relaxed)
+    }
+}
+
+fn always_success_script_deploy_cell() -> image_cell_abi::CellInfo {
+    image_cell_abi::CellInfo {
+        out_point: image_cell_abi::OutPoint {
+            tx_hash: *ALWAYS_SUCCESS_DEPLOY_TX_HASH,
+            index:   0,
+        },
+        output:    Default::default(),
+        data:      ALWAYS_SUCCESS.to_vec().into(),
     }
 }

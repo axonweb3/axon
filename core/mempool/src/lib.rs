@@ -456,8 +456,8 @@ pub enum MemPoolError {
     #[display(fmt = "Encode transaction to JSON failed")]
     EncodeJson,
 
-    #[display(fmt = "Invalid address mapping {:?}", _0)]
-    InvalidAddressMapping(AddressSource),
+    #[display(fmt = "Invalid address source {:?}", _0)]
+    InvalidAddressSource(AddressSource),
 
     #[display(fmt = "Invalid sender, expect: {:?}, get: {:?}", expect, actual)]
     InvalidSender { expect: H160, actual: H160 },

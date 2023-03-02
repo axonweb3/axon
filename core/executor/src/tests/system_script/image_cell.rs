@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use ckb_types::{bytes::Bytes, packed, prelude::*};
 use ethers::abi::AbiEncode;
 
@@ -24,11 +22,7 @@ fn test_write_functions() {
     let mut backend = MemoryBackend::new(&vicinity, BTreeMap::new());
 
     let executor = ImageCellContract::default();
-    init(
-        ROCKSDB_PATH,
-        ConfigRocksDB::default(),
-        Arc::new(backend.clone()),
-    );
+    init(ROCKSDB_PATH, ConfigRocksDB::default(), backend.clone());
 
     test_update_first(&mut backend, &executor);
     test_update_second(&mut backend, &executor);

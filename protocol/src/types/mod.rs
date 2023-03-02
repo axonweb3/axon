@@ -76,6 +76,9 @@ pub enum TypesError {
 
     #[display(fmt = "Invalid signature R type")]
     InvalidSignatureRType,
+
+    #[display(fmt = "Invalid address source type")]
+    InvalidAddressSourceType,
 }
 
 impl Error for TypesError {}

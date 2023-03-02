@@ -8,6 +8,7 @@ version = "0.1.0"
 arc-swap = "1.6"
 az = "1.2"
 bn = { package = "substrate-bn", version = "0.6" }
+ckb-always-success-script = "0.0.1"
 ckb-hash = "0.106"
 ckb-traits = "0.106"
 ckb-types = "0.106"

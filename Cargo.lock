@@ -231,6 +231,7 @@ dependencies = [
  "bincode",
  "bytes",
  "cita_trie",
+ "ckb-always-success-script",
  "ckb-hash",
  "ckb-jsonrpc-types",
  "ckb-sdk",
@@ -819,6 +820,12 @@ dependencies = [
  "parking_lot 0.12.1",
  "rlp",
 ]
+
+[[package]]
+name = "ckb-always-success-script"
+version = "0.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b3b72a38c9920a29990df12002c4d069a147c8782f0c211f8a01b2df8f42bfd"
 
 [[package]]
 name = "ckb-chain-spec"
@@ -1614,6 +1621,7 @@ dependencies = [
  "axon-protocol",
  "az",
  "bytemuck",
+ "ckb-always-success-script",
  "ckb-hash",
  "ckb-jsonrpc-types",
  "ckb-rocksdb",

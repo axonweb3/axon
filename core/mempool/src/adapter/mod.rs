@@ -213,18 +213,26 @@ where
         sender: H160,
         ckb_tx_view: &TransactionView,
         dummy_input: Option<CellWithData>,
-        address_map: AddressSource,
+        address_source: AddressSource,
     ) -> ProtocolResult<()> {
         let input = ckb_tx_view
             .inputs()
-            .get(address_map.index as usize)
-            .ok_or(MemPoolError::InvalidAddressMapping(address_map))?;
+            .get(address_source.index as usize)
+            .ok_or(MemPoolError::InvalidAddressSource(address_source))?;
 
         if is_dummy_out_point(&input.previous_output()) {
             if let Some(cell) = dummy_input {
-                // Todo
-                let lock_hash = ckb_hash::blake2b_256(cell.lock_script().as_bytes());
-                let right_sender: H160 = Hasher::digest(lock_hash).into();
+                if address_source.type_ == 1 && cell.type_script.is_none() {
+                    return Err(MemPoolError::InvalidAddressSource(address_source).into());
+                }
+
+                let script_hash = if address_source.type_ == 0 {
+                    cell.lock_script_hash()
+                } else {
+                    cell.type_script_hash().unwrap()
+                };
+
+                let right_sender: H160 = Hasher::digest(script_hash).into();
                 if right_sender != sender {
                     return Err(MemPoolError::InvalidSender {
                         expect: right_sender,
@@ -236,13 +244,20 @@ where
                 return Ok(());
             }
 
-            return Err(MemPoolError::InvalidAddressMapping(address_map).into());
+            return Err(MemPoolError::InvalidAddressSource(address_source).into());
         }
 
         match DataProvider.cell(&input.previous_output(), true) {
             CellStatus::Live(cell) => {
-                let lock_hash = ckb_hash::blake2b_256(cell.cell_output.lock().as_bytes());
-                let right_sender: H160 = Hasher::digest(lock_hash).into();
+                let script_hash = if address_source.type_ == 0 {
+                    ckb_hash::blake2b_256(cell.cell_output.lock().as_slice())
+                } else if let Some(type_script) = cell.cell_output.type_().to_opt() {
+                    ckb_hash::blake2b_256(type_script.as_slice())
+                } else {
+                    return Err(MemPoolError::InvalidAddressSource(address_source).into());
+                };
+
+                let right_sender: H160 = Hasher::digest(script_hash).into();
                 if right_sender != sender {
                     return Err(MemPoolError::InvalidSender {
                         expect: right_sender,
@@ -251,7 +266,7 @@ where
                     .into());
                 }
             }
-            _ => return Err(MemPoolError::InvalidAddressMapping(address_map).into()),
+            _ => return Err(MemPoolError::InvalidAddressSource(address_source).into()),
         }
 
         Ok(())

@@ -2,7 +2,7 @@ use ckb_traits::{CellDataProvider, HeaderProvider};
 use ckb_types::core::{cell::CellProvider, Cycle, ScriptHashType, TransactionView};
 use ckb_types::{packed, prelude::*};
 
-use crate::lazy::{CELL_VERIFIER_CODE_HASH, DUMMY_INPUT_OUT_POINT};
+use crate::lazy::{ALWAYS_SUCCESS_CODE_HASH, DUMMY_INPUT_OUT_POINT};
 use crate::types::{Bytes, CellDep, CellWithData, SignatureR, SignatureS, VMResp};
 use crate::{traits::Context, ProtocolResult};
 
@@ -72,7 +72,7 @@ pub trait Interoperation: Sync + Send {
                         .type_(
                             Some(
                                 packed::ScriptBuilder::default()
-                                    .code_hash(CELL_VERIFIER_CODE_HASH.0.pack())
+                                    .code_hash(ALWAYS_SUCCESS_CODE_HASH.pack())
                                     .hash_type(ScriptHashType::Data1.into())
                                     .build(),
                             )
@@ -91,7 +91,7 @@ pub trait Interoperation: Sync + Send {
                     .type_(
                         Some(
                             packed::ScriptBuilder::default()
-                                .code_hash(CELL_VERIFIER_CODE_HASH.0.pack())
+                                .code_hash(ALWAYS_SUCCESS_CODE_HASH.pack())
                                 .hash_type(ScriptHashType::Data1.into())
                                 .build(),
                         )
