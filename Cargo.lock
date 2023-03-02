@@ -2721,9 +2721,9 @@ dependencies = [
 
 [[package]]
 name = "ethers-signers"
-version = "1.0.2"
+version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f41ced186867f64773db2e55ffdd92959e094072a1d09a5e5e831d443204f98"
+checksum = "52b8308a63f1c00ecf001a75c9b192499d87324c310c6fd9e772d20bdfbf366b"
 dependencies = [
  "async-trait",
  "coins-bip32",
@@ -2735,6 +2735,7 @@ dependencies = [
  "rand 0.8.5",
  "sha2 0.10.6",
  "thiserror",
+ "tracing",
 ]
 
 [[package]]
