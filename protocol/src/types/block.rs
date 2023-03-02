@@ -22,12 +22,9 @@ pub struct Proposal {
     pub number:                     BlockNumber,
     pub gas_limit:                  U256,
     pub extra_data:                 Bytes,
-    pub mixed_hash:                 Option<Hash>,
     pub base_fee_per_gas:           U256,
     pub proof:                      Proof,
-    pub last_checkpoint_block_hash: Hash,
     pub chain_id:                   u64,
-    pub call_system_script_count:   u32,
     pub tx_hashes:                  Vec<Hash>,
 }
 
@@ -42,12 +39,9 @@ impl From<&Block> for Proposal {
             number:                     b.header.number,
             gas_limit:                  b.header.gas_limit,
             extra_data:                 b.header.extra_data.clone(),
-            mixed_hash:                 b.header.mixed_hash,
             base_fee_per_gas:           b.header.base_fee_per_gas,
             proof:                      b.header.proof.clone(),
-            last_checkpoint_block_hash: b.header.last_checkpoint_block_hash,
             chain_id:                   b.header.chain_id,
-            call_system_script_count:   b.header.call_system_script_count,
             tx_hashes:                  b.tx_hashes.clone(),
         }
     }
@@ -64,12 +58,9 @@ impl From<Header> for Proposal {
             number:                     h.number,
             gas_limit:                  h.gas_limit,
             extra_data:                 h.extra_data,
-            mixed_hash:                 h.mixed_hash,
             base_fee_per_gas:           h.base_fee_per_gas,
             proof:                      h.proof,
-            last_checkpoint_block_hash: h.last_checkpoint_block_hash,
             chain_id:                   h.chain_id,
-            call_system_script_count:   h.call_system_script_count,
             tx_hashes:                  vec![],
         }
     }
@@ -117,12 +108,10 @@ impl Block {
             gas_used:                   exec_resp.gas_used.into(),
             gas_limit:                  proposal.gas_limit,
             extra_data:                 proposal.extra_data,
-            mixed_hash:                 proposal.mixed_hash,
+            mixed_hash:                 None,
             nonce:                      Default::default(),
             base_fee_per_gas:           proposal.base_fee_per_gas,
             proof:                      proposal.proof,
-            last_checkpoint_block_hash: proposal.last_checkpoint_block_hash,
-            call_system_script_count:   proposal.call_system_script_count,
             chain_id:                   proposal.chain_id,
         };
 
@@ -158,8 +147,6 @@ pub struct Header {
     pub nonce:                      H64,
     pub base_fee_per_gas:           U256,
     pub proof:                      Proof,
-    pub last_checkpoint_block_hash: Hash,
-    pub call_system_script_count:   u32,
     pub chain_id:                   u64,
 }
 
@@ -224,8 +211,6 @@ mod tests {
                     nonce:                      Default::default(),
                     base_fee_per_gas:           Default::default(),
                     proof:                      Default::default(),
-                    last_checkpoint_block_hash: Default::default(),
-                    call_system_script_count:   0,
                     chain_id:                   0,
                 },
             },

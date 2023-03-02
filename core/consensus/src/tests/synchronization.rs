@@ -45,8 +45,6 @@ pub fn get_mock_rick_block() -> RichBlock {
                 nonce:                      Default::default(),
                 base_fee_per_gas:           Default::default(),
                 proof:                      Default::default(),
-                last_checkpoint_block_hash: Default::default(),
-                call_system_script_count:   0,
                 chain_id:                   0,
             },
         },

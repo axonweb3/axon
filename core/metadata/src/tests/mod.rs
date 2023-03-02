@@ -137,7 +137,6 @@ fn mock_header(block_number: u64, state: H256) -> Header {
         mixed_hash:                 Default::default(),
         base_fee_per_gas:           U256::one(),
         proof:                      Default::default(),
-        last_checkpoint_block_hash: Default::default(),
         chain_id:                   Default::default(),
         receipts_root:              Default::default(),
         log_bloom:                  Default::default(),
@@ -145,7 +144,6 @@ fn mock_header(block_number: u64, state: H256) -> Header {
         nonce:                      Default::default(),
         gas_used:                   U256::one(),
         state_root:                 state,
-        call_system_script_count:   0,
     }
 }
 
@@ -159,12 +157,9 @@ fn mock_proposal() -> Proposal {
         number:                     Default::default(),
         gas_limit:                  1000000000u64.into(),
         extra_data:                 Default::default(),
-        mixed_hash:                 Default::default(),
         base_fee_per_gas:           U256::one(),
         proof:                      Default::default(),
-        last_checkpoint_block_hash: Default::default(),
         chain_id:                   Default::default(),
-        call_system_script_count:   1,
         tx_hashes:                  vec![],
     }
 }

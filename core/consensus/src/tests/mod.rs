@@ -45,8 +45,6 @@ fn _mock_block_from_status(status: &CurrentStatus) -> Block {
         mixed_hash:                 Default::default(),
         nonce:                      Default::default(),
         base_fee_per_gas:           Default::default(),
-        last_checkpoint_block_hash: Default::default(),
-        call_system_script_count:   0,
     };
 
     Block {

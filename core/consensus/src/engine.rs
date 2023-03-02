@@ -93,12 +93,9 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             number:                     next_number,
             gas_limit:                  MAX_BLOCK_GAS_LIMIT.into(),
             extra_data:                 Default::default(),
-            mixed_hash:                 None,
             base_fee_per_gas:           BASE_FEE_PER_GAS.into(),
             proof:                      status.proof,
-            last_checkpoint_block_hash: status.last_checkpoint_block_hash,
             chain_id:                   self.node_info.chain_id,
-            call_system_script_count:   txs.call_system_script_count,
             tx_hashes:                  txs.hashes,
         };
 
@@ -598,7 +595,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         let is_change_metadata = self.contains_change_metadata(&txs);
         let next_block_number = block_number + 1;
 
-        let (receipts, mut logs) = generate_receipts_and_logs(
+        let (receipts, _) = generate_receipts_and_logs(
             block_number,
             block_hash,
             block.header.state_root,
@@ -606,11 +603,6 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             &resp,
         );
 
-        // Call cross client
-        let _ = logs.split_off(block.header.call_system_script_count as usize);
-        self.adapter
-            .notify_block_logs(ctx.clone(), block_number, block_hash, &logs)
-            .await;
 
         // Submit checkpoint
         if block_number % self.cross_period_interval == 0 {

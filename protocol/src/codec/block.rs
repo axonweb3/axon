@@ -8,7 +8,7 @@ use crate::{codec::error::CodecError, lazy::CHAIN_ID, ProtocolError};
 
 impl Encodable for Proposal {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(10)
+        s.begin_list(8)
             .append(&self.prev_hash)
             .append(&self.proposer)
             .append(&self.transactions_root)
@@ -16,8 +16,6 @@ impl Encodable for Proposal {
             .append(&self.timestamp)
             .append(&self.number)
             .append(&self.proof)
-            .append(&self.last_checkpoint_block_hash)
-            .append(&self.call_system_script_count)
             .append_list(&self.tx_hashes);
     }
 }
@@ -25,7 +23,7 @@ impl Encodable for Proposal {
 impl Decodable for Proposal {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         match r.prototype()? {
-            Prototype::List(10) => Ok(Proposal {
+            Prototype::List(8) => Ok(Proposal {
                 prev_hash:                  r.val_at(0)?,
                 proposer:                   r.val_at(1)?,
                 transactions_root:          r.val_at(2)?,
@@ -34,13 +32,10 @@ impl Decodable for Proposal {
                 number:                     r.val_at(5)?,
                 gas_limit:                  MAX_BLOCK_GAS_LIMIT.into(),
                 extra_data:                 Default::default(),
-                mixed_hash:                 None,
                 base_fee_per_gas:           BASE_FEE_PER_GAS.into(),
                 proof:                      r.val_at(6)?,
-                last_checkpoint_block_hash: r.val_at(7)?,
                 chain_id:                   **CHAIN_ID.load(),
-                call_system_script_count:   r.val_at(8)?,
-                tx_hashes:                  r.list_at(9)?,
+                tx_hashes:                  r.list_at(7)?,
             }),
             _ => Err(DecoderError::RlpInconsistentLengthAndData),
         }

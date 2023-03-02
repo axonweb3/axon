@@ -84,8 +84,6 @@ fn mock_block(height: u64, _block_hash: Hash) -> Block {
         nonce:                      Default::default(),
         base_fee_per_gas:           Default::default(),
         proof:                      Proof::default(),
-        last_checkpoint_block_hash: Default::default(),
-        call_system_script_count:   1,
         chain_id:                   random::<u64>(),
     };
 
