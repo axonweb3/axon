@@ -85,18 +85,18 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         };
 
         let proposal = Proposal {
-            prev_hash:                  status.prev_hash,
-            proposer:                   self.node_info.self_address.0,
-            transactions_root:          txs_root,
-            signed_txs_hash:            digest_signed_transactions(&signed_txs),
-            timestamp:                  time_now(),
-            number:                     next_number,
-            gas_limit:                  MAX_BLOCK_GAS_LIMIT.into(),
-            extra_data:                 Default::default(),
-            base_fee_per_gas:           BASE_FEE_PER_GAS.into(),
-            proof:                      status.proof,
-            chain_id:                   self.node_info.chain_id,
-            tx_hashes:                  txs.hashes,
+            prev_hash:         status.prev_hash,
+            proposer:          self.node_info.self_address.0,
+            transactions_root: txs_root,
+            signed_txs_hash:   digest_signed_transactions(&signed_txs),
+            timestamp:         time_now(),
+            number:            next_number,
+            gas_limit:         MAX_BLOCK_GAS_LIMIT.into(),
+            extra_data:        Default::default(),
+            base_fee_per_gas:  BASE_FEE_PER_GAS.into(),
+            proof:             status.proof,
+            chain_id:          self.node_info.chain_id,
+            tx_hashes:         txs.hashes,
         };
 
         if proposal.number != proposal.proof.number + 1 {
@@ -602,7 +602,6 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             &txs,
             &resp,
         );
-
 
         // Submit checkpoint
         if block_number % self.cross_period_interval == 0 {
