@@ -33,7 +33,7 @@ Openness and mobility are the foundation of social development, so is blockchain
 
 ### Staking on Layer 1 CKB
 
-An Axon-based chain is a Proof-of-Stake (PoS) network. Native AT token holders can stake their tokens to become validators and/or delegate their tokens to other validators to earn rewards. Different from most other sidechains whose staking happens on the layer 2 level, Axon’s staking mechanism takes place on the layer 1 CKB. Validators and other participants stake their native AT tokens on CKB, which uses a Proof-of-Work (PoW) consensus mechanism. This unique staking design helps Axon-based sidechains enjoy the highest degree of decentralization and security from the layer 1 while maintain their high performance and sovereignty as independent layer 2 networks. 
+An Axon-based chain is a Proof-of-Stake (PoS) network and supports native Axon utility tokens (AT tokens), which are Extensible User Defined Tokens (xUDTs) and can be defined and customized to the specific needs of the chain. Holders of native AT tokens can stake their tokens to become validators and/or delegate their tokens to other validators in exchange for rewards. Unlike other sidechains where staking takes place on layer 2, Axon's staking is grounded on layer 1 CKB. Validators and other participants stake their native AT tokens on CKB, which uses a Proof-of-Work (PoW) consensus mechanism. This unique staking design helps Axon-based sidechains enjoy the highest degree of decentralization and security from layer 1 while maintain their high performance and sovereignty as independent layer 2 networks. 
 
 ## Roadmap
 
