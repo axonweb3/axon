@@ -85,21 +85,18 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         };
 
         let proposal = Proposal {
-            prev_hash:                  status.prev_hash,
-            proposer:                   self.node_info.self_address.0,
-            transactions_root:          txs_root,
-            signed_txs_hash:            digest_signed_transactions(&signed_txs),
-            timestamp:                  time_now(),
-            number:                     next_number,
-            gas_limit:                  MAX_BLOCK_GAS_LIMIT.into(),
-            extra_data:                 Default::default(),
-            mixed_hash:                 None,
-            base_fee_per_gas:           BASE_FEE_PER_GAS.into(),
-            proof:                      status.proof,
-            last_checkpoint_block_hash: status.last_checkpoint_block_hash,
-            chain_id:                   self.node_info.chain_id,
-            call_system_script_count:   txs.call_system_script_count,
-            tx_hashes:                  txs.hashes,
+            prev_hash:         status.prev_hash,
+            proposer:          self.node_info.self_address.0,
+            transactions_root: txs_root,
+            signed_txs_hash:   digest_signed_transactions(&signed_txs),
+            timestamp:         time_now(),
+            number:            next_number,
+            gas_limit:         MAX_BLOCK_GAS_LIMIT.into(),
+            extra_data:        Default::default(),
+            base_fee_per_gas:  BASE_FEE_PER_GAS.into(),
+            proof:             status.proof,
+            chain_id:          self.node_info.chain_id,
+            tx_hashes:         txs.hashes,
         };
 
         if proposal.number != proposal.proof.number + 1 {
@@ -598,19 +595,13 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         let is_change_metadata = self.contains_change_metadata(&txs);
         let next_block_number = block_number + 1;
 
-        let (receipts, mut logs) = generate_receipts_and_logs(
+        let (receipts, _) = generate_receipts_and_logs(
             block_number,
             block_hash,
             block.header.state_root,
             &txs,
             &resp,
         );
-
-        // Call cross client
-        let _ = logs.split_off(block.header.call_system_script_count as usize);
-        self.adapter
-            .notify_block_logs(ctx.clone(), block_number, block_hash, &logs)
-            .await;
 
         // Submit checkpoint
         if block_number % self.cross_period_interval == 0 {

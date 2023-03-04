@@ -133,21 +133,18 @@ impl TestHandle {
 
 fn mock_proposal() -> Proposal {
     Proposal {
-        prev_hash:                  Default::default(),
-        proposer:                   Default::default(),
-        transactions_root:          Default::default(),
-        signed_txs_hash:            Default::default(),
-        timestamp:                  Default::default(),
-        number:                     Default::default(),
-        gas_limit:                  1000000000u64.into(),
-        extra_data:                 Default::default(),
-        mixed_hash:                 Default::default(),
-        base_fee_per_gas:           U256::one(),
-        proof:                      Default::default(),
-        last_checkpoint_block_hash: Default::default(),
-        chain_id:                   Default::default(),
-        call_system_script_count:   1,
-        tx_hashes:                  vec![],
+        prev_hash:         Default::default(),
+        proposer:          Default::default(),
+        transactions_root: Default::default(),
+        signed_txs_hash:   Default::default(),
+        timestamp:         Default::default(),
+        number:            Default::default(),
+        gas_limit:         1000000000u64.into(),
+        extra_data:        Default::default(),
+        base_fee_per_gas:  U256::one(),
+        proof:             Default::default(),
+        chain_id:          Default::default(),
+        tx_hashes:         vec![],
     }
 }
 
