@@ -5,7 +5,7 @@ import Config from "../config";
 import createTransactionData from "../src/create_test_data/createTestDataManage";
 
 export const MetaMaskOptions = {
-  metamaskVersion: RECOMMENDED_METAMASK_VERSION,
+  metaMaskVersion: RECOMMENDED_METAMASK_VERSION,
   automation: "puppeteer",
   headless: process.env.HEADLESS ? true : false,
   metaMaskFlask: false,
