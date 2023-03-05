@@ -30,8 +30,8 @@ export default async function setup() {
   global.metamask = metaMask;
 
   const hostPage = await browser.newPage();
-  await hostPage.goto("http://localhost:8080");
   await Config.getIns().initialize();
+  await hostPage.goto(Config.getIns().httpServer);
   const configParams = {
     networkName: Config.getIns().axonRpc.netWorkName,
     rpc: Config.getIns().axonRpc.url,
