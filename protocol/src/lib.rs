@@ -12,6 +12,7 @@ pub mod types;
 
 use std::error::Error;
 
+pub use ckb_hash::blake2b_256 as ckb_blake2b_256;
 pub use derive_more::{Constructor, Display, From};
 pub use {async_trait::async_trait, tokio, trie};
 

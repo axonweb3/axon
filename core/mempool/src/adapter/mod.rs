@@ -15,13 +15,6 @@ use futures::{
 use log::{debug, error};
 use parking_lot::Mutex;
 
-use common_apm_derive::trace_span;
-use common_crypto::{Crypto, Secp256k1Recoverable};
-use core_executor::{
-    is_call_system_script, system_contract::image_cell::DataProvider, AxonExecutor,
-    AxonExecutorAdapter,
-};
-use core_interoperation::{utils::is_dummy_out_point, InteroperationImpl};
 use protocol::traits::{
     Context, Executor, Gossip, Interoperation, MemPoolAdapter, MetadataControl, PeerTrust,
     Priority, Rpc, Storage, TrustFeedback,
@@ -31,9 +24,17 @@ use protocol::types::{
     Hasher, MerkleRoot, SignatureComponents, SignatureR, SignatureS, SignedTransaction, H160, U256,
 };
 use protocol::{
-    async_trait, codec::ProtocolCodec, lazy::CURRENT_STATE_ROOT, tokio, trie, Display,
-    ProtocolError, ProtocolErrorKind, ProtocolResult,
+    async_trait, ckb_blake2b_256, codec::ProtocolCodec, lazy::CURRENT_STATE_ROOT, tokio, trie,
+    Display, ProtocolError, ProtocolErrorKind, ProtocolResult,
 };
+
+use common_apm_derive::trace_span;
+use common_crypto::{Crypto, Secp256k1Recoverable};
+use core_executor::{
+    is_call_system_script, system_contract::image_cell::DataProvider, AxonExecutor,
+    AxonExecutorAdapter,
+};
+use core_interoperation::{utils::is_dummy_out_point, InteroperationImpl};
 
 use crate::adapter::message::{MsgPullTxs, END_GOSSIP_NEW_TXS, RPC_PULL_TXS};
 use crate::MemPoolError;
@@ -250,9 +251,9 @@ where
         match DataProvider.cell(&input.previous_output(), true) {
             CellStatus::Live(cell) => {
                 let script_hash = if address_source.type_ == 0 {
-                    ckb_hash::blake2b_256(cell.cell_output.lock().as_slice())
+                    ckb_blake2b_256(cell.cell_output.lock().as_slice())
                 } else if let Some(type_script) = cell.cell_output.type_().to_opt() {
-                    ckb_hash::blake2b_256(type_script.as_slice())
+                    ckb_blake2b_256(type_script.as_slice())
                 } else {
                     return Err(MemPoolError::InvalidAddressSource(address_source).into());
                 };

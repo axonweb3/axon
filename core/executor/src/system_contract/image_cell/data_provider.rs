@@ -2,6 +2,7 @@ use ckb_traits::{CellDataProvider, HeaderProvider};
 use ckb_types::core::cell::{CellProvider, CellStatus};
 use ckb_types::{core::HeaderView, packed, prelude::*};
 
+use protocol::ckb_blake2b_256;
 use protocol::types::{Bytes, H256};
 
 use crate::system_contract::image_cell::ImageCellContract;
@@ -37,7 +38,7 @@ impl CellDataProvider for DataProvider {
             if data.is_empty() {
                 packed::Byte32::zero()
             } else {
-                ckb_hash::blake2b_256(data).pack()
+                ckb_blake2b_256(data).pack()
             }
         })
     }

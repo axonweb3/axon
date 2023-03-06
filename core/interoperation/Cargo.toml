@@ -8,7 +8,6 @@ edition = "2021"
 [dependencies]
 arc-swap = "1.5"
 ckb-error = "0.106"
-ckb-hash = "0.106"
 ckb-script = "0.106"
 ckb-traits = "0.106"
 ckb-types = "0.106"

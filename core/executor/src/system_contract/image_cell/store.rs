@@ -1,6 +1,7 @@
 use ckb_types::{bytes::Bytes, core::cell::CellMeta, packed, prelude::*};
 use rlp::{RlpDecodable, RlpEncodable};
 
+use protocol::ckb_blake2b_256;
 use protocol::types::{MerkleRoot, H256};
 
 use crate::system_contract::error::{SystemScriptError, SystemScriptResult};
@@ -141,7 +142,7 @@ pub fn get_cell(mpt: &MPTTrie<RocksTrieDB>, key: &CellKey) -> SystemScriptResult
 
 fn cell_data_hash(data: &Bytes) -> packed::Byte32 {
     if !data.is_empty() {
-        return ckb_hash::blake2b_256(data).pack();
+        return ckb_blake2b_256(data).pack();
     }
 
     packed::Byte32::zero()

@@ -5,7 +5,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ckb-hash = "0.106"
 ckb-types = "0.106"
 crossbeam-queue = "0.3"
 dashmap = { version = "5.4", features = ["rayon"] }

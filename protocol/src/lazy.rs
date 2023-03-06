@@ -2,6 +2,7 @@ use arc_swap::ArcSwap;
 use ckb_always_success_script::ALWAYS_SUCCESS;
 use ckb_types::{core::ScriptHashType, packed, prelude::*};
 
+use crate::ckb_blake2b_256;
 use crate::types::{Hasher, Hex, MerkleRoot};
 
 lazy_static::lazy_static! {
@@ -11,7 +12,7 @@ lazy_static::lazy_static! {
     pub static ref ALWAYS_SUCCESS_DEPLOY_TX_HASH: [u8; 32] = Hasher::digest("AlwaysSuccessDeployTx").0;
     pub static ref ALWAYS_SUCCESS_TYPE_SCRIPT: packed::Script
         = packed::ScriptBuilder::default()
-            .code_hash(ckb_hash::blake2b_256(ALWAYS_SUCCESS).pack())
+            .code_hash(ckb_blake2b_256(ALWAYS_SUCCESS).pack())
             .hash_type(ScriptHashType::Data1.into())
             .build();
     pub static ref DUMMY_INPUT_OUT_POINT: packed::OutPoint

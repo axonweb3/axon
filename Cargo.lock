@@ -1587,7 +1587,6 @@ version = "0.1.0"
 dependencies = [
  "arc-swap",
  "axon-protocol",
- "ckb-hash",
  "ckb-jsonrpc-types",
  "ckb-sdk",
  "ckb-types",
@@ -1622,7 +1621,6 @@ dependencies = [
  "az",
  "bytemuck",
  "ckb-always-success-script",
- "ckb-hash",
  "ckb-jsonrpc-types",
  "ckb-rocksdb",
  "ckb-traits",
@@ -1691,7 +1689,6 @@ dependencies = [
  "cardano-message-signing",
  "cardano-serialization-lib",
  "ckb-error",
- "ckb-hash",
  "ckb-jsonrpc-types",
  "ckb-script",
  "ckb-traits",
@@ -1714,7 +1711,6 @@ name = "core-mempool"
 version = "0.1.0"
 dependencies = [
  "axon-protocol",
- "ckb-hash",
  "ckb-types",
  "common-apm",
  "common-apm-derive",
