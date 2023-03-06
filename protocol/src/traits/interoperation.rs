@@ -1,8 +1,8 @@
 use ckb_traits::{CellDataProvider, HeaderProvider};
-use ckb_types::core::{cell::CellProvider, Cycle, ScriptHashType, TransactionView};
+use ckb_types::core::{cell::CellProvider, Cycle, TransactionView};
 use ckb_types::{packed, prelude::*};
 
-use crate::lazy::{ALWAYS_SUCCESS_CODE_HASH, DUMMY_INPUT_OUT_POINT};
+use crate::lazy::{ALWAYS_SUCCESS_TYPE_SCRIPT, DUMMY_INPUT_OUT_POINT};
 use crate::types::{Bytes, CellDep, CellWithData, SignatureR, SignatureS, VMResp};
 use crate::{traits::Context, ProtocolResult};
 
@@ -69,15 +69,7 @@ pub trait Interoperation: Sync + Send {
                 }))
                 .output(
                     packed::CellOutputBuilder::default()
-                        .type_(
-                            Some(
-                                packed::ScriptBuilder::default()
-                                    .code_hash(ALWAYS_SUCCESS_CODE_HASH.pack())
-                                    .hash_type(ScriptHashType::Data1.into())
-                                    .build(),
-                            )
-                            .pack(),
-                        )
+                        .type_(Some(ALWAYS_SUCCESS_TYPE_SCRIPT.clone()).pack())
                         .capacity(OUTPUT_CAPACITY_OF_REALITY_INPUT.pack())
                         .build(),
                 )
@@ -88,15 +80,7 @@ pub trait Interoperation: Sync + Send {
             .input(packed::CellInput::new(DUMMY_INPUT_OUT_POINT.clone(), 0u64))
             .output(
                 packed::CellOutputBuilder::default()
-                    .type_(
-                        Some(
-                            packed::ScriptBuilder::default()
-                                .code_hash(ALWAYS_SUCCESS_CODE_HASH.pack())
-                                .hash_type(ScriptHashType::Data1.into())
-                                .build(),
-                        )
-                        .pack(),
-                    )
+                    .type_(Some(ALWAYS_SUCCESS_TYPE_SCRIPT.clone()).pack())
                     .capacity((r.dummy_input().unwrap().capacity() - 1).pack())
                     .build(),
             )

@@ -232,10 +232,10 @@ where
                     cell.type_script_hash().unwrap()
                 };
 
-                let right_sender: H160 = Hasher::digest(script_hash).into();
-                if right_sender != sender {
+                let expect_sender: H160 = Hasher::digest(script_hash).into();
+                if expect_sender != sender {
                     return Err(MemPoolError::InvalidSender {
-                        expect: right_sender,
+                        expect: expect_sender,
                         actual: sender,
                     }
                     .into());
@@ -257,10 +257,10 @@ where
                     return Err(MemPoolError::InvalidAddressSource(address_source).into());
                 };
 
-                let right_sender: H160 = Hasher::digest(script_hash).into();
-                if right_sender != sender {
+                let expect_sender: H160 = Hasher::digest(script_hash).into();
+                if expect_sender != sender {
                     return Err(MemPoolError::InvalidSender {
-                        expect: right_sender,
+                        expect: expect_sender,
                         actual: sender,
                     }
                     .into());
