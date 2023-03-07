@@ -24,12 +24,10 @@ use protocol::types::{
 };
 use protocol::ProtocolResult;
 
-use crate::system_contract::error::{SystemScriptError, SystemScriptResult};
-use crate::system_contract::image_cell::store::{commit, get_cell};
-use crate::system_contract::{
-    image_cell::trie_db::RocksTrieDB, system_contract_address, SystemContract,
-};
-use crate::MPTTrie;
+use crate::system_contract::error::SystemScriptError;
+use crate::system_contract::image_cell::store::{commit, get_cell, get_header};
+use crate::system_contract::{revert_resp, succeed_resp, system_contract_address, SystemContract};
+use crate::{exec_try, MPTTrie};
 
 static ALLOW_READ: AtomicBool = AtomicBool::new(false);
 static TRIE_DB: OnceCell<Arc<RocksTrieDB>> = OnceCell::new();
