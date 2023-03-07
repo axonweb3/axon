@@ -319,7 +319,7 @@ impl Axon {
             Arc::clone(&storage),
             Proposal::from(current_block.header.clone()).into(),
         )?;
-        image_cell::init(path_state, config.rocksdb.clone(), Arc::new(backend));
+        image_cell::init(path_state, config.rocksdb.clone(), backend);
 
         let metadata_adapter = MetadataAdapterImpl::new(Arc::clone(&storage), Arc::clone(&trie_db));
         let metadata_controller = Arc::new(MetadataController::new(

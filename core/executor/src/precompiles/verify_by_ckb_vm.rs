@@ -3,7 +3,7 @@ use evm::{Context, ExitError, ExitSucceed};
 use rlp::Rlp;
 
 use protocol::traits::Interoperation;
-use protocol::types::{CellDep, OutPoint, Witness, H160, H256};
+use protocol::types::{CellDep, OutPoint, SignatureR, SignatureS, Witness, H160, H256};
 
 use core_interoperation::{cycle_to_gas, gas_to_cycle, InteroperationImpl};
 
@@ -39,7 +39,11 @@ impl PrecompileContract for CkbVM {
             let res = InteroperationImpl::verify_by_ckb_vm(
                 Default::default(),
                 &DataProvider::default(),
-                &InteroperationImpl::dummy_transaction(cell_deps, header_deps, inputs, witnesses),
+                &InteroperationImpl::dummy_transaction(
+                    SignatureR::new_by_ref(cell_deps, header_deps, inputs, Default::default()),
+                    SignatureS::new(witnesses),
+                ),
+                None,
                 gas_to_cycle(gas),
             )
             .map_err(|e| err!(_, e.to_string()))?;

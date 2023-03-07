@@ -1,14 +1,15 @@
 use ckb_types::core::cell::{CellMeta, CellProvider, CellStatus, ResolvedTransaction};
 use ckb_types::core::{DepType, TransactionView};
-use ckb_types::{packed, prelude::Entity};
+use ckb_types::{packed, prelude::*};
 
-use protocol::ProtocolResult;
+use protocol::{ckb_blake2b_256, lazy::DUMMY_INPUT_OUT_POINT, types::CellWithData, ProtocolResult};
 
 use crate::InteroperationError;
 
 pub fn resolve_transaction<CL: CellProvider>(
     cell_loader: &CL,
     tx: &TransactionView,
+    dummy_input: Option<CellWithData>,
 ) -> ProtocolResult<ResolvedTransaction> {
     let resolve_cell = |out_point: &packed::OutPoint| -> ProtocolResult<CellMeta> {
         match cell_loader.cell(out_point, true) {
@@ -23,8 +24,26 @@ pub fn resolve_transaction<CL: CellProvider>(
         Vec::with_capacity(tx.cell_deps().len()),
     );
 
-    for out_point in tx.input_pts_iter() {
-        resolved_inputs.push(resolve_cell(&out_point)?);
+    for outpoint in tx.input_pts_iter() {
+        if is_dummy_out_point(&outpoint) {
+            if let Some(ref cell) = dummy_input {
+                resolved_inputs.push(CellMeta {
+                    cell_output:        packed::CellOutputBuilder::default()
+                        .lock(cell.lock_script())
+                        .capacity(cell.capacity().pack())
+                        .build(),
+                    out_point:          outpoint,
+                    transaction_info:   None,
+                    data_bytes:         cell.data.len() as u64,
+                    mem_cell_data_hash: Some(ckb_blake2b_256(&cell.data).pack()),
+                    mem_cell_data:      Some(cell.data.clone()),
+                });
+            } else {
+                return Err(InteroperationError::InvalidDummyInput.into());
+            }
+        } else {
+            resolved_inputs.push(resolve_cell(&outpoint)?);
+        }
     }
 
     for cell_dep in tx.cell_deps_iter() {
@@ -66,4 +85,8 @@ pub fn parse_dep_group_data(slice: &[u8]) -> Result<packed::OutPointVec, String>
             Err(err) => Err(err.to_string()),
         }
     }
+}
+
+pub fn is_dummy_out_point(out_point: &packed::OutPoint) -> bool {
+    *out_point == *DUMMY_INPUT_OUT_POINT
 }

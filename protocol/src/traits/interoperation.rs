@@ -2,8 +2,11 @@ use ckb_traits::{CellDataProvider, HeaderProvider};
 use ckb_types::core::{cell::CellProvider, Cycle, TransactionView};
 use ckb_types::{packed, prelude::*};
 
-use crate::types::{Bytes, CellDep, OutPoint, VMResp, Witness, H256};
+use crate::lazy::{ALWAYS_SUCCESS_TYPE_SCRIPT, DUMMY_INPUT_OUT_POINT};
+use crate::types::{Bytes, CellDep, CellWithData, SignatureR, SignatureS, VMResp};
 use crate::{traits::Context, ProtocolResult};
+
+const OUTPUT_CAPACITY_OF_REALITY_INPUT: u64 = 100;
 
 pub trait Interoperation: Sync + Send {
     fn call_ckb_vm<DL: CellDataProvider>(
@@ -18,28 +21,20 @@ pub trait Interoperation: Sync + Send {
         ctx: Context,
         data_loader: &DL,
         mocked_tx: &TransactionView,
+        dummy_input: Option<CellWithData>,
         max_cycles: u64,
     ) -> ProtocolResult<Cycle>;
 
     /// The function construct the `TransactionView` payload required by
     /// `verify_by_ckb_vm()`.
-    fn dummy_transaction(
-        cell_deps: Vec<CellDep>,
-        header_deps: Vec<H256>,
-        inputs: Vec<OutPoint>,
-        witnesses: Vec<Witness>,
-    ) -> TransactionView {
-        TransactionView::new_advanced_builder()
-            .inputs(inputs.iter().map(|i| {
-                packed::CellInput::new(
-                    packed::OutPointBuilder::default()
-                        .tx_hash(i.tx_hash.0.pack())
-                        .index(i.index.pack())
-                        .build(),
-                    0u64,
-                )
-            }))
-            .witnesses(witnesses.iter().map(|i| {
+    fn dummy_transaction(r: SignatureR, s: SignatureS) -> TransactionView {
+        let cell_deps = r.cell_deps();
+        let header_deps = r.header_deps();
+
+        let tx_builder = TransactionView::new_advanced_builder()
+            .cell_deps(cell_deps.iter().map(Into::into))
+            .header_deps(header_deps.iter().map(|dep| dep.0.pack()))
+            .witnesses(s.witnesses.iter().map(|i| {
                 packed::WitnessArgsBuilder::default()
                     .input_type(
                         packed::BytesOptBuilder::default()
@@ -59,9 +54,36 @@ pub trait Interoperation: Sync + Send {
                     .build()
                     .as_bytes()
                     .pack()
-            }))
-            .cell_deps(cell_deps.into_iter().map(Into::into))
-            .header_deps(header_deps.iter().map(|dep| dep.0.pack()))
+            }));
+
+        if r.is_only_by_ref() {
+            return tx_builder
+                .inputs(r.out_points().iter().map(|i| {
+                    packed::CellInput::new(
+                        packed::OutPointBuilder::default()
+                            .tx_hash(i.tx_hash.0.pack())
+                            .index(i.index.pack())
+                            .build(),
+                        0u64,
+                    )
+                }))
+                .output(
+                    packed::CellOutputBuilder::default()
+                        .type_(Some(ALWAYS_SUCCESS_TYPE_SCRIPT.clone()).pack())
+                        .capacity(OUTPUT_CAPACITY_OF_REALITY_INPUT.pack())
+                        .build(),
+                )
+                .build();
+        }
+
+        tx_builder
+            .input(packed::CellInput::new(DUMMY_INPUT_OUT_POINT.clone(), 0u64))
+            .output(
+                packed::CellOutputBuilder::default()
+                    .type_(Some(ALWAYS_SUCCESS_TYPE_SCRIPT.clone()).pack())
+                    .capacity((r.dummy_input().unwrap().capacity() - 1).pack())
+                    .build(),
+            )
             .build()
     }
 }

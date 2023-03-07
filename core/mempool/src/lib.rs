@@ -27,7 +27,9 @@ use common_apm::Instant;
 use core_executor::{is_call_system_script, is_transaction_call};
 use core_network::NetworkContext;
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
-use protocol::types::{BlockNumber, Hash, PackedTxHashes, SignedTransaction, H160, H256, U256};
+use protocol::types::{
+    AddressSource, BlockNumber, Hash, PackedTxHashes, SignedTransaction, H160, H256, U256,
+};
 use protocol::{async_trait, tokio, Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 use crate::context::TxContext;
@@ -453,6 +455,12 @@ pub enum MemPoolError {
 
     #[display(fmt = "Encode transaction to JSON failed")]
     EncodeJson,
+
+    #[display(fmt = "Invalid address source {:?}", _0)]
+    InvalidAddressSource(AddressSource),
+
+    #[display(fmt = "Invalid sender, expect: {:?}, get: {:?}", expect, actual)]
+    InvalidSender { expect: H160, actual: H160 },
 }
 
 impl Error for MemPoolError {}

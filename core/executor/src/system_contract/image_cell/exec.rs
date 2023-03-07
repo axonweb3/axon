@@ -35,7 +35,7 @@ pub fn rollback(
     commit(mpt)
 }
 
-fn save_cells(
+pub(crate) fn save_cells(
     mpt: &mut MPTTrie<RocksTrieDB>,
     outputs: Vec<image_cell_abi::CellInfo>,
     created_number: u64,
