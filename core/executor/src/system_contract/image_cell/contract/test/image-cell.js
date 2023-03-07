@@ -14,21 +14,6 @@ describe("ImageCell", function () {
     });
 
     it("should test args of update()", async () => {
-        let header = {
-            version: 0x0,
-            compactTarget: 0x1a9c7b1a,
-            timestamp: 0x16e62df76ed,
-            number: 0x129d3,
-            epoch: 0x7080291000049,
-            parentHash: "0x815ecf2140169b9d283332c7550ce8b6405a120d5c21a7aa99d8a75eb9e77ead",
-            transactionsRoot: "0x66ab0046436f97aefefe0549772bf36d96502d14ad736f7f4b1be8274420ca0f",
-            proposalsHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
-            unclesHash: "0x0000000000000000000000000000000000000000000000000000000000000000",
-            dao: "0x7088b3ee3e738900a9c257048aa129002cd43cd745100e000066ac8bd8850d00",
-            nonce: 0x78b105de64fc38a200000004139b0200n,
-            blockHash: "0x87764caf4a0e99302f1382421da1fe2f18382a49eac2d611220056b0854868e3"
-        };
-
         let inputs = [{
             txHash: "0xf8de3bb47d055cdf460d93a2a6e1b05f7432f9777c8c474abf4eec1d4aee5d37",
             index: 0x0,
@@ -55,13 +40,10 @@ describe("ImageCell", function () {
             data: "0x40420f00000000000000000000000000"
         }];
 
-        await imageCell.update(header, inputs, outputs);
+        await imageCell.update(0x129d3, inputs, outputs);
     });
 
     it("should test args of rollback()", async () => {
-        let blockHash = "0x87764caf4a0e99302f1382421da1fe2f18382a49eac2d611220056b0854868e3";
-        let blockNumber = 0x129d3;
-
         let inputs = [{
             txHash: "0xf8de3bb47d055cdf460d93a2a6e1b05f7432f9777c8c474abf4eec1d4aee5d37",
             index: 0x0,
@@ -72,6 +54,6 @@ describe("ImageCell", function () {
             index: 0x0,
         }];
 
-        await imageCell.rollback(blockHash, blockNumber, inputs, outputs);
+        await imageCell.rollback(inputs, outputs);
     });
 });
