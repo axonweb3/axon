@@ -81,37 +81,6 @@ pub fn commit(mpt: &mut MPTTrie<RocksTrieDB>) -> SystemScriptResult<MerkleRoot> 
         .map_err(|e| SystemScriptError::CommitError(e.to_string()))
 }
 
-pub fn insert_header(
-    mpt: &mut MPTTrie<RocksTrieDB>,
-    key: &H256,
-    header: &packed::Header,
-) -> SystemScriptResult<()> {
-    mpt.insert(&key.0, &header.as_bytes())
-        .map_err(|e| SystemScriptError::InsertHeader(e.to_string()))
-}
-
-pub fn remove_header(mpt: &mut MPTTrie<RocksTrieDB>, key: &H256) -> SystemScriptResult<()> {
-    mpt.remove(&key.0)
-        .map_err(|e| SystemScriptError::RemoveHeader(e.to_string()))
-}
-
-pub fn get_header(
-    mpt: &MPTTrie<RocksTrieDB>,
-    key: &H256,
-) -> SystemScriptResult<Option<packed::Header>> {
-    let header = match mpt.get(&key.0) {
-        Ok(n) => match n {
-            Some(n) => n,
-            None => return Ok(None),
-        },
-        Err(e) => return Err(SystemScriptError::GetHeader(e.to_string())),
-    };
-
-    Ok(Some(
-        packed::Header::from_slice(&header).map_err(SystemScriptError::MoleculeVerification)?,
-    ))
-}
-
 pub fn insert_cell(
     mpt: &mut MPTTrie<RocksTrieDB>,
     key: &CellKey,
