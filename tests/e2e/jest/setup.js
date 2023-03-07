@@ -1,4 +1,3 @@
-import puppeteer from "puppeteer";
 import { bootstrap } from "@chainsafe/dappeteer";
 import { RECOMMENDED_METAMASK_VERSION } from "@chainsafe/dappeteer/dist/index";
 
@@ -6,17 +5,16 @@ import Config from "../config";
 import createTransactionData from "../src/create_test_data/createTestDataManage";
 
 export const MetaMaskOptions = {
-  // empty wallet
-  seed: "bubble young armed shed unusual acid pilot chase caught crop defense only",
-  password: "12345678",
-  metamaskVersion: RECOMMENDED_METAMASK_VERSION,
+  metaMaskVersion: RECOMMENDED_METAMASK_VERSION,
+  automation: "puppeteer",
+  headless: process.env.HEADLESS ? true : false,
+  metaMaskFlask: false,
   args: [
-    process.env.HEADLESS ? "--headless=new" : "",
     process.env.WSL ? "-no-sandbox" : "",
   ]
 };
 export default async function setup() {
-  const [metaMask, ,browser] = await bootstrap(puppeteer, MetaMaskOptions);
+  const { metaMask, browser } = await bootstrap(MetaMaskOptions);
   try {
     await createTransactionData.resetTestTmpFiles();
     await createTransactionData.createTransactionData(); // create test data
@@ -31,14 +29,36 @@ export default async function setup() {
   global.browser = browser;
   global.metamask = metaMask;
 
-  // await Config.getIns().initialize();
-  await metamask.addNetwork({
+  const hostPage = await browser.newPage();
+  await Config.getIns().initialize();
+  await hostPage.goto(Config.getIns().httpServer);
+  const configParams = {
     networkName: Config.getIns().axonRpc.netWorkName,
     rpc: Config.getIns().axonRpc.url,
-    chainId: Config.getIns().axonRpc.chainId,
+    chainId: "0x" + Config.getIns().axonRpc.chainId.toString(16),
     symbol: "AXON"
-  });
-  const page = await browser.newPage();
-  await page.bringToFront();
-  global.page = page;
+  }
+  // add custom network to a MetaMask
+  await hostPage.evaluate((cfparams) => {
+    window.ethereum.request({
+      method: "wallet_addEthereumChain",
+      params: [
+        {
+          chainId: cfparams.chainId,
+          chainName: cfparams.networkName,
+          nativeCurrency: {
+            name: "Axon",
+            symbol: "Axon", // 2-6 characters long
+            decimals: 18,
+          },
+          rpcUrls: [cfparams.rpc],
+        },
+      ],
+    });
+  }, configParams);
+  await metaMask.acceptAddNetwork(false);
+  await metaMask.switchNetwork("Axon");
+  
+  await hostPage.bringToFront();
+  global.page = hostPage.page;
 }
