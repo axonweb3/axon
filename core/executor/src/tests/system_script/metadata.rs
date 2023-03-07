@@ -87,7 +87,7 @@ fn prepare_tx_1(addr: &H160) -> SignedTransaction {
         metadata: prepare_metadata(),
     };
 
-    return gen_tx(*addr, MetadataContract::ADDRESS, 1000, data.encode());
+    gen_tx(*addr, MetadataContract::ADDRESS, 1000, data.encode())
 }
 
 fn prepare_tx_2(addr: &H160) -> SignedTransaction {
@@ -97,7 +97,7 @@ fn prepare_tx_2(addr: &H160) -> SignedTransaction {
     data.metadata.version.start = 101;
     data.metadata.version.end = 200;
 
-    return gen_tx(*addr, MetadataContract::ADDRESS, 1000, data.encode());
+    gen_tx(*addr, MetadataContract::ADDRESS, 1000, data.encode())
 }
 
 fn prepare_tx_3(add: &H160) -> SignedTransaction {
@@ -108,7 +108,7 @@ fn prepare_tx_3(add: &H160) -> SignedTransaction {
     data.metadata.version.start = 1;
     data.metadata.version.end = 100;
 
-    return gen_tx(*add, MetadataContract::ADDRESS, 1000, data.encode());
+    gen_tx(*add, MetadataContract::ADDRESS, 1000, data.encode())
 }
 
 fn prepare_tx_4(addr: &H160) -> SignedTransaction {
@@ -119,7 +119,7 @@ fn prepare_tx_4(addr: &H160) -> SignedTransaction {
     data.metadata.version.start = 101;
     data.metadata.version.end = 200;
 
-    return gen_tx(*addr, MetadataContract::ADDRESS, 1000, data.encode());
+    gen_tx(*addr, MetadataContract::ADDRESS, 1000, data.encode())
 }
 
 fn prepare_tx_5(addr: &H160) -> SignedTransaction {
@@ -130,7 +130,7 @@ fn prepare_tx_5(addr: &H160) -> SignedTransaction {
     data.metadata.version.start = 201;
     data.metadata.version.end = 300;
 
-    return gen_tx(*addr, MetadataContract::ADDRESS, 1000, data.encode());
+    gen_tx(*addr, MetadataContract::ADDRESS, 1000, data.encode())
 }
 
 fn prepare_metadata() -> Metadata {

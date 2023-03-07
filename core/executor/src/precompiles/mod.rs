@@ -93,11 +93,7 @@ const fn axon_precompile_address(addr: u8) -> H160 {
 
 pub fn build_precompile_set() -> BTreeMap<H160, PrecompileFn> {
     precompiles!(
-<<<<<<< HEAD
         EcRecover, Sha256, Ripemd160, Identity, ModExp, EcAdd, EcMul, EcPairing, Blake2F, GetCell
-=======
-        EcRecover, Sha256, Ripemd160, Identity, ModExp, EcAdd, EcMul, EcPairing, Blake2F, Metadata
->>>>>>> 7e3dbe4 (feat: add get metadata precompile)
     )
 }
 

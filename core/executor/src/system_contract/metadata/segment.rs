@@ -1,5 +1,3 @@
-use std::ops::Sub;
-
 use protocol::ProtocolResult;
 
 use crate::system_contract::{error::SystemScriptError, metadata::Epoch};
@@ -11,6 +9,7 @@ pub struct EpochSegment {
 
 impl EpochSegment {
     /// The genesis does not contain in any epoch.
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         EpochSegment { seg: vec![0] }
     }
