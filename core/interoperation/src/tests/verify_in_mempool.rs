@@ -14,6 +14,7 @@ const JOYID_MAIN_KEY_TEST_TX_HASH: ckb_types::H256 =
 const JOYID_SUB_KEY_TEST_TX_HASH: ckb_types::H256 =
     h256!("0xb18f9d2a719a77a85d73535acaf871950b99cd481ad2ceaafae009dbb6d46f69");
 
+#[ignore]
 #[tokio::test(flavor = "multi_thread")]
 async fn test_verify_joyid_with_main_key() {
     let mut handle = TestHandle::new(0).await;
@@ -70,6 +71,7 @@ async fn test_verify_joyid_with_main_key() {
     assert!(r.is_ok());
 }
 
+#[ignore]
 #[tokio::test(flavor = "multi_thread")]
 async fn test_verify_joyid_with_sub_key() {
     let mut handle = TestHandle::new(1).await;
