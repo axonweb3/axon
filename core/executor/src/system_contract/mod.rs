@@ -2,6 +2,7 @@ mod error;
 pub mod image_cell;
 pub mod metadata;
 mod native_token;
+mod utils;
 
 use ckb_traits::{CellDataProvider, HeaderProvider};
 use ckb_types::core::cell::{CellProvider, CellStatus};
@@ -13,7 +14,7 @@ pub use crate::system_contract::native_token::NativeTokenContract;
 
 use protocol::ckb_blake2b_256;
 use protocol::traits::{ApplyBackend, Backend};
-use protocol::types::{ExitReason, ExitRevert, ExitSucceed, SignedTransaction, TxResp, H160, U256};
+use protocol::types::{Bytes, SignedTransaction, TxResp, H160};
 
 #[macro_export]
 macro_rules! exec_try {
@@ -22,7 +23,7 @@ macro_rules! exec_try {
             Ok(r) => r,
             Err(e) => {
                 log::error!("{:?} {:?}", $log_msg, e);
-                return $crate::system_contract::revert_resp($gas_limit);
+                return $crate::system_contract::utils::revert_resp($gas_limit);
             }
         }
     };

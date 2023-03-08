@@ -1,6 +1,6 @@
 use ckb_types::{packed, prelude::*};
 
-use protocol::types::{MerkleRoot, H256};
+use protocol::types::MerkleRoot;
 use protocol::ProtocolResult;
 
 use crate::system_contract::image_cell::store::{
@@ -13,7 +13,7 @@ pub fn update(
     mpt: &mut MPTTrie<RocksTrieDB>,
     data: image_cell_abi::UpdateCall,
 ) -> ProtocolResult<MerkleRoot> {
-    save_cells(mpt, data.outputs, data.header.number)?;
+    save_cells(mpt, data.outputs, data.block_number)?;
 
     mark_cells_consumed(mpt, data.inputs, data.block_number)?;
 
@@ -87,7 +87,7 @@ fn mark_cells_consumed(
         let key = CellKey::new(input.tx_hash, input.index);
 
         if let Some(ref mut cell) = get_cell(mpt, &key)? {
-            cell.consumed_number = Some(consumed_number);
+            cell.consumed_number = Some(new_block_number);
             insert_cell(mpt, &key, cell)?;
         }
     }

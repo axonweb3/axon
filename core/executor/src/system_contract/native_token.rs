@@ -1,9 +1,7 @@
-use protocol::codec::ProtocolCodec;
 use protocol::traits::{ApplyBackend, Backend};
-use protocol::types::{
-    Apply, Basic, ExitReason, ExitRevert, ExitSucceed, SignedTransaction, TxResp, H160, U256,
-};
+use protocol::types::{Apply, Basic, SignedTransaction, TxResp, H160, U256};
 
+use crate::system_contract::utils::{revert_resp, succeed_resp};
 use crate::system_contract::{system_contract_address, SystemContract};
 
 #[derive(Default)]
@@ -16,9 +14,10 @@ impl SystemContract for NativeTokenContract {
         let tx = &tx.transaction.unsigned;
         let tx_data = tx.data();
         let tx_value = *tx.value();
+        let gas_limit = *tx.gas_limit();
 
         if tx_data.len() < 21 || tx_data[0] > 1 {
-            return revert_resp(*tx.gas_limit());
+            return revert_resp(gas_limit);
         }
 
         let direction = tx_data[0] == 0u8;
@@ -29,7 +28,7 @@ impl SystemContract for NativeTokenContract {
             account.balance += tx_value;
         } else {
             if account.balance < tx_value {
-                return revert_resp(*tx.gas_limit());
+                return revert_resp(gas_limit);
             }
 
             account.balance -= tx_value;
@@ -50,28 +49,6 @@ impl SystemContract for NativeTokenContract {
             false,
         );
 
-        TxResp {
-            exit_reason:  ExitReason::Succeed(ExitSucceed::Returned),
-            ret:          account.balance.encode().unwrap().to_vec(),
-            gas_used:     0u64,
-            remain_gas:   tx.gas_limit().as_u64(),
-            fee_cost:     U256::zero(),
-            logs:         vec![],
-            code_address: None,
-            removed:      false,
-        }
-    }
-}
-
-fn revert_resp(gas_limit: U256) -> TxResp {
-    TxResp {
-        exit_reason:  ExitReason::Revert(ExitRevert::Reverted),
-        ret:          vec![],
-        gas_used:     1u64,
-        remain_gas:   (gas_limit - 1).as_u64(),
-        fee_cost:     U256::one(),
-        logs:         vec![],
-        code_address: None,
-        removed:      false,
+        succeed_resp(gas_limit)
     }
 }

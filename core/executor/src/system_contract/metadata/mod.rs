@@ -24,9 +24,8 @@ use protocol::types::{
 };
 
 use crate::exec_try;
-use crate::system_contract::{
-    image_cell::RocksTrieDB, revert_resp, succeed_resp, system_contract_address, SystemContract,
-};
+use crate::system_contract::utils::{revert_resp, succeed_resp};
+use crate::system_contract::{image_cell::RocksTrieDB, system_contract_address, SystemContract};
 
 type Epoch = u64;
 
