@@ -1,10 +1,10 @@
 use ckb_types::{packed, prelude::*};
 
-use protocol::types::{MerkleRoot, H256};
+use protocol::types::MerkleRoot;
 
 use crate::system_contract::error::SystemScriptResult;
 use crate::system_contract::image_cell::store::{
-    commit, get_cell, insert_cell, insert_header, remove_cell, remove_header as remove_h, CellInfo,
+    commit, get_cell, insert_cell, remove_cell, CellInfo,
 };
 use crate::system_contract::image_cell::{abi::image_cell_abi, trie_db::RocksTrieDB};
 use crate::system_contract::image_cell::{CellKey, MPTTrie};
@@ -13,11 +13,9 @@ pub fn update(
     mpt: &mut MPTTrie<RocksTrieDB>,
     data: image_cell_abi::UpdateCall,
 ) -> SystemScriptResult<MerkleRoot> {
-    save_cells(mpt, data.outputs, data.header.number)?;
+    save_cells(mpt, data.outputs, data.block_number)?;
 
-    mark_cells_consumed(mpt, data.inputs, data.header.number)?;
-
-    save_header(mpt, &data.header)?;
+    mark_cells_consumed(mpt, data.inputs, data.block_number)?;
 
     commit(mpt)
 }
@@ -29,8 +27,6 @@ pub fn rollback(
     remove_cells(mpt, data.outputs)?;
 
     mark_cells_not_consumed(mpt, data.inputs)?;
-
-    remove_header(mpt, &data.block_hash)?;
 
     commit(mpt)
 }
@@ -85,42 +81,17 @@ pub(crate) fn save_cells(
 fn mark_cells_consumed(
     mpt: &mut MPTTrie<RocksTrieDB>,
     inputs: Vec<image_cell_abi::OutPoint>,
-    new_block_number: u64,
+    consumed_number: u64,
 ) -> SystemScriptResult<()> {
     for input in inputs {
         let key = CellKey::new(input.tx_hash, input.index);
 
         if let Some(ref mut cell) = get_cell(mpt, &key)? {
-            cell.consumed_number = Some(new_block_number);
+            cell.consumed_number = Some(consumed_number);
             insert_cell(mpt, &key, cell)?;
         }
     }
     Ok(())
-}
-
-fn save_header(
-    mpt: &mut MPTTrie<RocksTrieDB>,
-    header: &image_cell_abi::Header,
-) -> SystemScriptResult<()> {
-    let raw = packed::RawHeader::new_builder()
-        .compact_target(header.compact_target.pack())
-        .dao(header.dao.pack())
-        .epoch(header.epoch.pack())
-        .extra_hash(header.block_hash.pack())
-        .number(header.number.pack())
-        .parent_hash(header.parent_hash.pack())
-        .proposals_hash(header.proposals_hash.pack())
-        .timestamp(header.timestamp.pack())
-        .transactions_root(header.transactions_root.pack())
-        .version(header.version.pack())
-        .build();
-
-    let packed_header = packed::Header::new_builder()
-        .raw(raw)
-        .nonce(header.nonce.pack())
-        .build();
-
-    insert_header(mpt, &H256(header.block_hash), &packed_header)
 }
 
 fn remove_cells(
@@ -146,8 +117,4 @@ fn mark_cells_not_consumed(
         }
     }
     Ok(())
-}
-
-fn remove_header(mpt: &mut MPTTrie<RocksTrieDB>, block_hash: &[u8; 32]) -> SystemScriptResult<()> {
-    remove_h(mpt, &H256(*block_hash))
 }

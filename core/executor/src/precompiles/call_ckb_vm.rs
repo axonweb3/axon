@@ -8,7 +8,7 @@ use protocol::types::{CellDep, H160, H256};
 use core_interoperation::{cycle_to_gas, gas_to_cycle, InteroperationImpl};
 
 use crate::precompiles::{precompile_address, PrecompileContract};
-use crate::{err, system_contract::image_cell::DataProvider};
+use crate::{err, system_contract::DataProvider};
 
 macro_rules! try_rlp {
     ($rlp_: expr, $func: ident, $pos: expr) => {{

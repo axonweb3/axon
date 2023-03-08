@@ -31,8 +31,7 @@ use protocol::{
 use common_apm_derive::trace_span;
 use common_crypto::{Crypto, Secp256k1Recoverable};
 use core_executor::{
-    is_call_system_script, system_contract::image_cell::DataProvider, AxonExecutor,
-    AxonExecutorAdapter,
+    is_call_system_script, system_contract::DataProvider, AxonExecutor, AxonExecutorAdapter,
 };
 use core_interoperation::{utils::is_dummy_out_point, InteroperationImpl};
 

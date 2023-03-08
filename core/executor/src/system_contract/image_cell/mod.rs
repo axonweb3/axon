@@ -1,11 +1,9 @@
 mod abi;
-mod data_provider;
 mod exec;
 mod store;
 mod trie_db;
 
 pub use abi::image_cell_abi;
-pub use data_provider::DataProvider;
 pub use store::{CellInfo, CellKey};
 
 use std::path::Path;
@@ -14,7 +12,6 @@ use std::sync::Arc;
 
 use arc_swap::ArcSwap;
 use ckb_always_success_script::ALWAYS_SUCCESS;
-use ckb_types::packed;
 use ethers::abi::AbiDecode;
 use once_cell::sync::OnceCell;
 
@@ -27,7 +24,7 @@ use protocol::types::{
 };
 
 use crate::system_contract::error::{SystemScriptError, SystemScriptResult};
-use crate::system_contract::image_cell::store::{commit, get_cell, get_header};
+use crate::system_contract::image_cell::store::{commit, get_cell};
 use crate::system_contract::{
     image_cell::trie_db::RocksTrieDB, system_contract_address, SystemContract,
 };
@@ -189,11 +186,6 @@ fn revert_resp(gas_limit: U256) -> TxResp {
 impl ImageCellContract {
     pub fn get_root(&self) -> H256 {
         **CURRENT_CELL_ROOT.load()
-    }
-
-    pub fn get_header(&self, key: &H256) -> SystemScriptResult<Option<packed::Header>> {
-        let mpt = get_mpt()?;
-        get_header(&mpt, key)
     }
 
     pub fn get_cell(&self, key: &CellKey) -> SystemScriptResult<Option<CellInfo>> {

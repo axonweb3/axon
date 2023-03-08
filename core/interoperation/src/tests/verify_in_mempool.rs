@@ -1,12 +1,13 @@
-use ckb_types::core::{DepType, HeaderView, TransactionView};
+use ckb_types::core::{DepType, TransactionView};
 use ckb_types::{h256, packed, prelude::*};
 use ethers_core::abi::AbiEncode;
 
-use core_executor::system_contract::image_cell::{image_cell_abi, DataProvider};
+use core_executor::system_contract::image_cell::image_cell_abi;
+use core_executor::system_contract::DataProvider;
 use protocol::types::{CellDep, OutPoint, SignatureR, SignatureS, Witness, H256};
 use protocol::{codec::hex_decode, tokio, traits::CkbClient, traits::Interoperation};
 
-use crate::tests::{init_rpc_client, mock_signed_tx, TestHandle, RPC};
+use crate::tests::{mock_signed_tx, TestHandle, RPC};
 use crate::{utils::parse_dep_group_data, InteroperationImpl};
 
 const JOYID_MAIN_KEY_TEST_TX_HASH: ckb_types::H256 =
@@ -148,9 +149,9 @@ async fn test_verify_joyid_with_sub_key() {
 
 async fn build_image_cell_payload<T: Into<ckb_types::H256>>(tx_hash: T) -> Vec<u8> {
     image_cell_abi::UpdateCall {
-        header:  mock_header().await,
-        inputs:  vec![],
-        outputs: get_tx_cells(tx_hash).await,
+        block_number: 0,
+        inputs:       vec![],
+        outputs:      get_tx_cells(tx_hash).await,
     }
     .encode()
 }
@@ -255,30 +256,5 @@ fn build_witness(raw: &str) -> Witness {
         input_type:  witness.input_type().to_opt().map(|r| r.unpack()),
         output_type: witness.output_type().to_opt().map(|r| r.unpack()),
         lock:        witness.lock().to_opt().map(|r| r.unpack()),
-    }
-}
-
-async fn mock_header() -> image_cell_abi::Header {
-    let rpc = init_rpc_client();
-    let header: HeaderView = rpc
-        .get_block_by_number(Default::default(), 7990521u64.into())
-        .await
-        .unwrap()
-        .header
-        .into();
-
-    image_cell_abi::Header {
-        version:           header.version(),
-        compact_target:    header.compact_target(),
-        timestamp:         header.timestamp(),
-        number:            header.number(),
-        epoch:             header.epoch().full_value(),
-        parent_hash:       header.parent_hash().unpack().0,
-        transactions_root: header.transactions_root().unpack().0,
-        proposals_hash:    header.proposals_hash().unpack().0,
-        uncles_hash:       [0u8; 32],
-        dao:               header.dao().unpack().0,
-        nonce:             header.nonce(),
-        block_hash:        header.hash().unpack().0,
     }
 }
