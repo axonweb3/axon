@@ -24,7 +24,7 @@ fn test_issue_token() {
 
     let r = executor.exec_(&mut backend, &tx);
     assert!(r.exit_reason.is_succeed());
-    assert_eq!(r.ret, rlp::encode(&U256::from(1000)).to_vec());
+    assert!(r.ret.is_empty());
 
     let account = backend.state().get(&addr).unwrap();
     assert_eq!(account.balance, U256::from(1000u64));
@@ -49,7 +49,7 @@ fn test_burn_token() {
 
     let r = executor.exec_(&mut backend, &tx);
     assert!(r.exit_reason.is_succeed());
-    assert_eq!(r.ret, rlp::encode(&U256::from(1000)).to_vec());
+    assert!(r.ret.is_empty());
 
     let account = backend.state().get(&addr).unwrap();
     assert_eq!(account.balance, U256::from(1000u64));
