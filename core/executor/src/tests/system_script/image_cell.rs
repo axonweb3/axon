@@ -1,14 +1,17 @@
+use std::collections::BTreeMap;
+use std::str::FromStr;
+
 use ckb_types::{bytes::Bytes, packed, prelude::*};
 use ethers::abi::AbiEncode;
 
 use common_config_parser::types::ConfigRocksDB;
-use protocol::types::{Hasher, TxResp};
+use protocol::types::{Hasher, MemoryBackend, TxResp, H160, H256};
 
-use super::*;
 use crate::system_contract::image_cell::{
     image_cell_abi, init, CellInfo, CellKey, ImageCellContract,
 };
 use crate::system_contract::SystemContract;
+use crate::tests::{gen_tx, gen_vicinity};
 
 static ROCKSDB_PATH: &str = "./free-space/image-cell";
 

@@ -1,8 +1,8 @@
 use ckb_types::{packed, prelude::*};
 
 use protocol::types::MerkleRoot;
+use protocol::ProtocolResult;
 
-use crate::system_contract::error::SystemScriptResult;
 use crate::system_contract::image_cell::store::{
     commit, get_cell, insert_cell, remove_cell, CellInfo,
 };
@@ -12,7 +12,7 @@ use crate::system_contract::image_cell::{CellKey, MPTTrie};
 pub fn update(
     mpt: &mut MPTTrie<RocksTrieDB>,
     data: image_cell_abi::UpdateCall,
-) -> SystemScriptResult<MerkleRoot> {
+) -> ProtocolResult<MerkleRoot> {
     save_cells(mpt, data.outputs, data.block_number)?;
 
     mark_cells_consumed(mpt, data.inputs, data.block_number)?;
@@ -23,7 +23,7 @@ pub fn update(
 pub fn rollback(
     mpt: &mut MPTTrie<RocksTrieDB>,
     data: image_cell_abi::RollbackCall,
-) -> SystemScriptResult<MerkleRoot> {
+) -> ProtocolResult<MerkleRoot> {
     remove_cells(mpt, data.outputs)?;
 
     mark_cells_not_consumed(mpt, data.inputs)?;
@@ -35,7 +35,7 @@ pub(crate) fn save_cells(
     mpt: &mut MPTTrie<RocksTrieDB>,
     outputs: Vec<image_cell_abi::CellInfo>,
     created_number: u64,
-) -> SystemScriptResult<()> {
+) -> ProtocolResult<()> {
     for cell in outputs {
         let lock = cell.output.lock;
         let lock = packed::Script::new_builder()
@@ -81,13 +81,13 @@ pub(crate) fn save_cells(
 fn mark_cells_consumed(
     mpt: &mut MPTTrie<RocksTrieDB>,
     inputs: Vec<image_cell_abi::OutPoint>,
-    consumed_number: u64,
-) -> SystemScriptResult<()> {
+    new_block_number: u64,
+) -> ProtocolResult<()> {
     for input in inputs {
         let key = CellKey::new(input.tx_hash, input.index);
 
         if let Some(ref mut cell) = get_cell(mpt, &key)? {
-            cell.consumed_number = Some(consumed_number);
+            cell.consumed_number = Some(new_block_number);
             insert_cell(mpt, &key, cell)?;
         }
     }
@@ -97,7 +97,7 @@ fn mark_cells_consumed(
 fn remove_cells(
     mpt: &mut MPTTrie<RocksTrieDB>,
     outputs: Vec<image_cell_abi::OutPoint>,
-) -> SystemScriptResult<()> {
+) -> ProtocolResult<()> {
     for output in outputs {
         let key = CellKey::new(output.tx_hash, output.index);
         remove_cell(mpt, &key)?;
@@ -108,7 +108,7 @@ fn remove_cells(
 fn mark_cells_not_consumed(
     mpt: &mut MPTTrie<RocksTrieDB>,
     inputs: Vec<image_cell_abi::OutPoint>,
-) -> SystemScriptResult<()> {
+) -> ProtocolResult<()> {
     for input in inputs {
         let key = CellKey::new(input.tx_hash, input.index);
         if let Some(ref mut cell) = get_cell(mpt, &key)? {

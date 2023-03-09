@@ -7,13 +7,13 @@ use evm::{Context, ExitError, ExitSucceed};
 use protocol::types::{H160, U256};
 
 use crate::err;
-use crate::precompiles::{precompile_address, PrecompileContract};
+use crate::precompiles::{eip_precompile_address, PrecompileContract};
 
 #[derive(Default)]
 pub struct EcPairing;
 
 impl PrecompileContract for EcPairing {
-    const ADDRESS: H160 = precompile_address(0x08);
+    const ADDRESS: H160 = eip_precompile_address(0x08);
     const MIN_GAS: u64 = 45_000;
 
     fn exec_fn(

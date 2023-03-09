@@ -1,17 +1,33 @@
 mod error;
 pub mod image_cell;
+pub mod metadata;
 mod native_token;
+mod utils;
 
 use ckb_traits::{CellDataProvider, HeaderProvider};
 use ckb_types::core::cell::{CellProvider, CellStatus};
 use ckb_types::{core::HeaderView, packed, prelude::*};
 
 pub use crate::system_contract::image_cell::ImageCellContract;
+pub use crate::system_contract::metadata::MetadataContract;
 pub use crate::system_contract::native_token::NativeTokenContract;
 
 use protocol::ckb_blake2b_256;
 use protocol::traits::{ApplyBackend, Backend};
 use protocol::types::{Bytes, SignedTransaction, TxResp, H160};
+
+#[macro_export]
+macro_rules! exec_try {
+    ($func: expr, $gas_limit: expr, $log_msg: literal) => {
+        match $func {
+            Ok(r) => r,
+            Err(e) => {
+                log::error!("{:?} {:?}", $log_msg, e);
+                return $crate::system_contract::utils::revert_resp($gas_limit);
+            }
+        }
+    };
+}
 
 pub const fn system_contract_address(addr: u8) -> H160 {
     H160([
@@ -33,6 +49,8 @@ pub fn system_contract_dispatch<B: Backend + ApplyBackend>(
     if let Some(addr) = tx.get_to() {
         if addr == NativeTokenContract::ADDRESS {
             return Some(NativeTokenContract::default().exec_(backend, tx));
+        } else if addr == MetadataContract::ADDRESS {
+            return Some(MetadataContract::default().exec_(backend, tx));
         } else if addr == ImageCellContract::ADDRESS {
             return Some(ImageCellContract::default().exec_(backend, tx));
         }

@@ -7,7 +7,7 @@ use protocol::types::{CellDep, H160, H256};
 
 use core_interoperation::{cycle_to_gas, gas_to_cycle, InteroperationImpl};
 
-use crate::precompiles::{precompile_address, PrecompileContract};
+use crate::precompiles::{axon_precompile_address, PrecompileContract};
 use crate::{err, system_contract::DataProvider};
 
 macro_rules! try_rlp {
@@ -20,7 +20,7 @@ macro_rules! try_rlp {
 pub struct CkbVM;
 
 impl PrecompileContract for CkbVM {
-    const ADDRESS: H160 = precompile_address(0xf2);
+    const ADDRESS: H160 = axon_precompile_address(0x02);
     const MIN_GAS: u64 = 500;
 
     fn exec_fn(

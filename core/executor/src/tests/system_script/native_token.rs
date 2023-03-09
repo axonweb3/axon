@@ -1,5 +1,11 @@
-use super::*;
-use crate::system_contract::{NativeTokenContract, SystemContract};
+use std::{collections::BTreeMap, str::FromStr};
+
+use protocol::types::{MemoryAccount, MemoryBackend, H160, U256};
+
+use crate::{
+    system_contract::{NativeTokenContract, SystemContract},
+    tests::{gen_tx, gen_vicinity},
+};
 
 fn mock_data(direction: u8, address: H160) -> Vec<u8> {
     let mut ret = vec![direction];
@@ -18,7 +24,7 @@ fn test_issue_token() {
 
     let r = executor.exec_(&mut backend, &tx);
     assert!(r.exit_reason.is_succeed());
-    assert_eq!(r.ret, rlp::encode(&U256::from(1000)).to_vec());
+    assert!(r.ret.is_empty());
 
     let account = backend.state().get(&addr).unwrap();
     assert_eq!(account.balance, U256::from(1000u64));
@@ -43,7 +49,7 @@ fn test_burn_token() {
 
     let r = executor.exec_(&mut backend, &tx);
     assert!(r.exit_reason.is_succeed());
-    assert_eq!(r.ret, rlp::encode(&U256::from(1000)).to_vec());
+    assert!(r.ret.is_empty());
 
     let account = backend.state().get(&addr).unwrap();
     assert_eq!(account.balance, U256::from(1000u64));

@@ -6,9 +6,9 @@ use rocksdb::ops::{Delete, Get, Open, Put};
 use rocksdb::{FullOptions, Options, DB};
 
 use common_config_parser::types::ConfigRocksDB;
-use protocol::trie;
+use protocol::{trie, ProtocolError, ProtocolResult};
 
-use crate::system_contract::error::{SystemScriptError, SystemScriptResult};
+use crate::system_contract::error::SystemScriptError;
 
 // 49999 is the largest prime number within 50000.
 const RAND_SEED: u64 = 49999;
@@ -24,7 +24,7 @@ impl RocksTrieDB {
         path: P,
         config: ConfigRocksDB,
         cache_size: usize,
-    ) -> SystemScriptResult<Self> {
+    ) -> ProtocolResult<Self> {
         if !path.as_ref().is_dir() {
             fs::create_dir_all(&path).map_err(SystemScriptError::CreateDB)?;
         }
@@ -40,7 +40,7 @@ impl RocksTrieDB {
         })
     }
 
-    fn inner_get(&self, key: &[u8]) -> SystemScriptResult<Option<Vec<u8>>> {
+    fn inner_get(&self, key: &[u8]) -> ProtocolResult<Option<Vec<u8>>> {
         use trie::DB;
 
         let res = { self.cache.lock().get(key).cloned() };
@@ -77,7 +77,7 @@ impl RocksTrieDB {
 }
 
 impl trie::DB for RocksTrieDB {
-    type Error = SystemScriptError;
+    type Error = ProtocolError;
 
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, Self::Error> {
         self.inner_get(key)
@@ -146,7 +146,7 @@ impl trie::DB for RocksTrieDB {
     }
 }
 
-fn rocksdb_opts(config: ConfigRocksDB) -> SystemScriptResult<Options> {
+fn rocksdb_opts(config: ConfigRocksDB) -> ProtocolResult<Options> {
     let mut opts = if let Some(ref file) = config.options_file {
         let cache_size = match config.cache_size {
             0 => None,
