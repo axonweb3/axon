@@ -1,20 +1,24 @@
 mod error;
+
+pub mod ckb_light_client;
 pub mod image_cell;
 pub mod metadata;
 mod native_token;
+mod trie_db;
 mod utils;
 
 use ckb_traits::{CellDataProvider, HeaderProvider};
 use ckb_types::core::cell::{CellProvider, CellStatus};
 use ckb_types::{core::HeaderView, packed, prelude::*};
 
+pub use crate::system_contract::ckb_light_client::CkbLightClientContract;
 pub use crate::system_contract::image_cell::ImageCellContract;
 pub use crate::system_contract::metadata::MetadataContract;
 pub use crate::system_contract::native_token::NativeTokenContract;
 
 use protocol::ckb_blake2b_256;
 use protocol::traits::{ApplyBackend, Backend};
-use protocol::types::{Bytes, SignedTransaction, TxResp, H160};
+use protocol::types::{Bytes, SignedTransaction, TxResp, H160, H256};
 
 #[macro_export]
 macro_rules! exec_try {
@@ -51,6 +55,8 @@ pub fn system_contract_dispatch<B: Backend + ApplyBackend>(
             return Some(NativeTokenContract::default().exec_(backend, tx));
         } else if addr == MetadataContract::ADDRESS {
             return Some(MetadataContract::default().exec_(backend, tx));
+        } else if addr == CkbLightClientContract::ADDRESS {
+            return Some(CkbLightClientContract::default().exec_(backend, tx));
         } else if addr == ImageCellContract::ADDRESS {
             return Some(ImageCellContract::default().exec_(backend, tx));
         }
@@ -96,9 +102,13 @@ impl CellDataProvider for DataProvider {
     }
 }
 
-// todo: get header from CkbLightClient contract
 impl HeaderProvider for DataProvider {
-    fn get_header(&self, _hash: &packed::Byte32) -> Option<HeaderView> {
-        None
+    fn get_header(&self, hash: &packed::Byte32) -> Option<HeaderView> {
+        let tmp: ckb_types::H256 = hash.unpack();
+        CkbLightClientContract::default()
+            .get_header(&H256(tmp.0))
+            .ok()
+            .flatten()
+            .map(|h| h.into_view())
     }
 }

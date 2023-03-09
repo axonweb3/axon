@@ -1,72 +1,35 @@
 mod abi;
-mod exec;
+pub mod exec;
 mod store;
-mod trie_db;
+pub mod utils;
 
 pub use abi::image_cell_abi;
 pub use store::{CellInfo, CellKey};
-pub(crate) use trie_db::RocksTrieDB;
 
-use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
 
-use arc_swap::ArcSwap;
-use ckb_always_success_script::ALWAYS_SUCCESS;
 use ethers::abi::AbiDecode;
-use once_cell::sync::OnceCell;
 
-use common_config_parser::types::ConfigRocksDB;
-use protocol::lazy::ALWAYS_SUCCESS_DEPLOY_TX_HASH;
 use protocol::traits::{ApplyBackend, Backend};
-use protocol::types::{
-    Apply, Basic, Hasher, MerkleRoot, SignedTransaction, TxResp, H160, H256, U256,
-};
+use protocol::types::{MerkleRoot, SignedTransaction, TxResp, H160, H256};
 use protocol::ProtocolResult;
 
-use crate::system_contract::error::SystemScriptError;
-use crate::system_contract::image_cell::store::{commit, get_cell};
-use crate::system_contract::utils::{revert_resp, succeed_resp};
+use crate::system_contract::image_cell::store::get_cell;
+use crate::system_contract::utils::succeed_resp;
 use crate::system_contract::{system_contract_address, SystemContract};
 use crate::{exec_try, MPTTrie};
 
+pub use super::ckb_light_client::utils::init;
+use super::ckb_light_client::utils::{get_mpt, update_mpt_root};
+use super::ckb_light_client::CURRENT_CELL_ROOT;
+
 static ALLOW_READ: AtomicBool = AtomicBool::new(false);
-static TRIE_DB: OnceCell<Arc<RocksTrieDB>> = OnceCell::new();
-
-const DEFAULT_CACHE_SIZE: usize = 20;
-
-lazy_static::lazy_static! {
-    static ref CELL_ROOT_KEY: H256 = Hasher::digest("cell_mpt_root");
-    static ref CURRENT_CELL_ROOT: ArcSwap<H256> = ArcSwap::from_pointee(H256::default());
-}
-
-pub fn init<P: AsRef<Path>, B: Backend + ApplyBackend>(
-    path: P,
-    config: ConfigRocksDB,
-    mut backend: B,
-) {
-    TRIE_DB.get_or_init(|| {
-        Arc::new(
-            RocksTrieDB::new(path, config, DEFAULT_CACHE_SIZE)
-                .expect("[image cell] new rocksdb error"),
-        )
-    });
-
-    let current_cell_root = backend.storage(ImageCellContract::ADDRESS, *CELL_ROOT_KEY);
-    if current_cell_root.is_zero() {
-        let mut mpt = get_mpt().unwrap();
-        exec::save_cells(&mut mpt, vec![always_success_script_deploy_cell()], 0).unwrap();
-        return update_mpt_root(&mut backend, commit(&mut mpt).unwrap());
-    }
-
-    CURRENT_CELL_ROOT.store(Arc::new(current_cell_root));
-}
 
 #[derive(Default)]
 pub struct ImageCellContract;
 
 impl SystemContract for ImageCellContract {
-    const ADDRESS: H160 = system_contract_address(0x2);
+    const ADDRESS: H160 = system_contract_address(0x3);
 
     fn exec_<B: Backend + ApplyBackend>(&self, backend: &mut B, tx: &SignedTransaction) -> TxResp {
         let tx = &tx.transaction.unsigned;
@@ -86,7 +49,7 @@ impl SystemContract for ImageCellContract {
                     "[image cell] update error:"
                 );
 
-                update_mpt_root(backend, root);
+                update_mpt_root(backend, root, ImageCellContract::ADDRESS);
             }
             Ok(image_cell_abi::ImageCellCalls::Rollback(data)) => {
                 let mut mpt = exec_try!(get_mpt(), gas_limit, "[image cell] get mpt error:");
@@ -97,53 +60,13 @@ impl SystemContract for ImageCellContract {
                     "[image cell] rollback error:"
                 );
 
-                update_mpt_root(backend, root);
+                update_mpt_root(backend, root, ImageCellContract::ADDRESS);
             }
-            Err(e) => {
-                log::error!("[image cell] invalid tx data: {:?}", e);
-                return revert_resp(gas_limit);
-            }
+            _ => unreachable!(),
         }
 
         succeed_resp(gas_limit)
     }
-}
-
-fn get_mpt() -> ProtocolResult<MPTTrie<RocksTrieDB>> {
-    let trie_db = match TRIE_DB.get() {
-        Some(db) => db,
-        None => return Err(SystemScriptError::TrieDbNotInit.into()),
-    };
-
-    let root = **CURRENT_CELL_ROOT.load();
-
-    if root == H256::default() {
-        Ok(MPTTrie::new(Arc::clone(trie_db)))
-    } else {
-        match MPTTrie::from_root(root, Arc::clone(trie_db)) {
-            Ok(m) => Ok(m),
-            Err(e) => Err(SystemScriptError::RestoreMpt(e.to_string()).into()),
-        }
-    }
-}
-
-fn update_mpt_root<B: Backend + ApplyBackend>(backend: &mut B, root: H256) {
-    let account = backend.basic(ImageCellContract::ADDRESS);
-    CURRENT_CELL_ROOT.swap(Arc::new(root));
-    backend.apply(
-        vec![Apply::Modify {
-            address:       ImageCellContract::ADDRESS,
-            basic:         Basic {
-                balance: account.balance,
-                nonce:   account.nonce + U256::one(),
-            },
-            code:          None,
-            storage:       vec![(*CELL_ROOT_KEY, root)],
-            reset_storage: false,
-        }],
-        vec![],
-        false,
-    );
 }
 
 impl ImageCellContract {
@@ -158,16 +81,5 @@ impl ImageCellContract {
 
     pub fn allow_read(&self) -> bool {
         ALLOW_READ.load(Ordering::Relaxed)
-    }
-}
-
-fn always_success_script_deploy_cell() -> image_cell_abi::CellInfo {
-    image_cell_abi::CellInfo {
-        out_point: image_cell_abi::OutPoint {
-            tx_hash: *ALWAYS_SUCCESS_DEPLOY_TX_HASH,
-            index:   0,
-        },
-        output:    Default::default(),
-        data:      ALWAYS_SUCCESS.to_vec().into(),
     }
 }

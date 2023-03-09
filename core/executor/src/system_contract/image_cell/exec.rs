@@ -3,11 +3,12 @@ use ckb_types::{packed, prelude::*};
 use protocol::types::MerkleRoot;
 use protocol::ProtocolResult;
 
+use crate::system_contract::image_cell::abi::image_cell_abi;
 use crate::system_contract::image_cell::store::{
     commit, get_cell, insert_cell, remove_cell, CellInfo,
 };
-use crate::system_contract::image_cell::{abi::image_cell_abi, trie_db::RocksTrieDB};
 use crate::system_contract::image_cell::{CellKey, MPTTrie};
+use crate::system_contract::trie_db::RocksTrieDB;
 
 pub fn update(
     mpt: &mut MPTTrie<RocksTrieDB>,

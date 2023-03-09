@@ -6,8 +6,8 @@ use protocol::types::{MerkleRoot, H256};
 use protocol::ProtocolResult;
 
 use crate::system_contract::error::SystemScriptError;
-use crate::system_contract::image_cell::trie_db::RocksTrieDB;
 use crate::system_contract::image_cell::MPTTrie;
+use crate::system_contract::trie_db::RocksTrieDB;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CellKey {

@@ -5,6 +5,7 @@ mod ec_mul;
 mod ec_pairing;
 mod ecrecover;
 mod get_cell;
+mod get_header;
 mod identity;
 mod metadata;
 mod modexp;
