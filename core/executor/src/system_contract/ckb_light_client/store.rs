@@ -1,15 +1,15 @@
 use std::sync::Arc;
 
+use crate::MPTTrie;
 use ckb_types::packed;
 use ckb_types::prelude::{Builder, Entity, Pack};
-use protocol::types::{MerkleRoot, H256};
+use protocol::types::H256;
 use protocol::ProtocolResult;
 
-use crate::system_contract::error::SystemScriptError;
-use crate::system_contract::trie_db::RocksTrieDB;
-use crate::MPTTrie;
-
-use crate::system_contract::ckb_light_client::{ckb_light_client_abi, CURRENT_CELL_ROOT, TRIE_DB};
+use crate::system_contract::{
+    ckb_light_client::ckb_light_client_abi, error::SystemScriptError, trie_db::RocksTrieDB,
+    CURRENT_HEADER_CELL_ROOT, HEADER_CELL_DB,
+};
 
 pub struct CkbLightClientStore {
     pub trie: MPTTrie<RocksTrieDB>,
@@ -17,17 +17,15 @@ pub struct CkbLightClientStore {
 
 impl CkbLightClientStore {
     pub fn new() -> ProtocolResult<Self> {
-        let trie_db = match TRIE_DB.get() {
+        let trie_db = match HEADER_CELL_DB.get() {
             Some(db) => db,
             None => return Err(SystemScriptError::TrieDbNotInit.into()),
         };
 
-        let root = **CURRENT_CELL_ROOT.load();
+        let root = **CURRENT_HEADER_CELL_ROOT.load();
 
         let trie = if root == H256::default() {
-            let mut m = MPTTrie::new(Arc::clone(trie_db));
-
-            m
+            MPTTrie::new(Arc::clone(trie_db))
         } else {
             match MPTTrie::from_root(root, Arc::clone(trie_db)) {
                 Ok(m) => m,
@@ -38,13 +36,13 @@ impl CkbLightClientStore {
         Ok(CkbLightClientStore { trie })
     }
 
-    pub fn update(&self, data: ckb_light_client_abi::UpdateCall) -> ProtocolResult<MerkleRoot> {
+    pub fn update(&mut self, data: ckb_light_client_abi::UpdateCall) -> ProtocolResult<()> {
         self.save_header(&data.header)?;
 
         self.commit()
     }
 
-    pub fn rollback(&self, data: ckb_light_client_abi::RollbackCall) -> ProtocolResult<MerkleRoot> {
+    pub fn rollback(&mut self, data: ckb_light_client_abi::RollbackCall) -> ProtocolResult<()> {
         self.remove_header(&H256(data.block_hash))?;
 
         self.commit()
@@ -64,7 +62,7 @@ impl CkbLightClientStore {
         ))
     }
 
-    fn save_header(&self, header: &ckb_light_client_abi::Header) -> ProtocolResult<()> {
+    fn save_header(&mut self, header: &ckb_light_client_abi::Header) -> ProtocolResult<()> {
         let raw = packed::RawHeader::new_builder()
             .compact_target(header.compact_target.pack())
             .dao(header.dao.pack())
@@ -88,15 +86,19 @@ impl CkbLightClientStore {
             .map_err(|e| SystemScriptError::InsertHeader(e.to_string()).into())
     }
 
-    fn remove_header(&self, key: &H256) -> ProtocolResult<()> {
+    fn remove_header(&mut self, key: &H256) -> ProtocolResult<()> {
         self.trie
             .remove(&key.0)
             .map_err(|e| SystemScriptError::RemoveHeader(e.to_string()).into())
     }
 
-    pub fn commit(&self) -> ProtocolResult<MerkleRoot> {
-        self.trie
-            .commit()
-            .map_err(|e| SystemScriptError::CommitError(e.to_string()).into())
+    pub fn commit(&mut self) -> ProtocolResult<()> {
+        match self.trie.commit() {
+            Ok(new_root) => {
+                CURRENT_HEADER_CELL_ROOT.swap(Arc::new(new_root));
+                Ok(())
+            }
+            Err(e) => Err(SystemScriptError::CommitError(e.to_string()).into()),
+        }
     }
 }

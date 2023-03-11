@@ -1,14 +1,7 @@
-use ckb_types::{
-    packed::{self, Header},
-    prelude::*,
-};
-use ethers::{
-    abi::{encode, Token},
-    types::U256,
-};
 use evm::executor::stack::{PrecompileFailure, PrecompileOutput};
 use evm::{Context, ExitError, ExitSucceed};
 
+use ckb_types::prelude::Entity;
 use protocol::types::{H160, H256};
 
 use crate::{
@@ -43,10 +36,11 @@ impl PrecompileContract for GetHeader {
             .get_header_by_block_hash(&block_hash)
             .map_err(|_| err!(_, "get header"))?;
 
+        // todo: need refactoring on encode/decode
         Ok((
             PrecompileOutput {
                 exit_status: ExitSucceed::Returned,
-                output: rlp::encode(&header).to_vec(),
+                output:      header.map(|h| h.as_bytes().to_vec()).unwrap_or_default(),
             },
             gas,
         ))

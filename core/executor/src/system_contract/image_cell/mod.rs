@@ -1,27 +1,23 @@
 mod abi;
-pub mod exec;
+mod handle;
 mod store;
+
 pub mod utils;
 
 pub use abi::image_cell_abi;
 pub use store::{CellInfo, CellKey};
 
+use ethers::abi::AbiDecode;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use ethers::abi::AbiDecode;
-
 use protocol::traits::{ApplyBackend, Backend};
-use protocol::types::{MerkleRoot, SignedTransaction, TxResp, H160, H256};
+use protocol::types::{SignedTransaction, TxResp, H160, H256};
 use protocol::ProtocolResult;
 
-use crate::system_contract::image_cell::store::get_cell;
-use crate::system_contract::utils::succeed_resp;
-use crate::system_contract::{system_contract_address, SystemContract};
+use crate::system_contract::image_cell::store::ImageCellStore;
+use crate::system_contract::utils::{succeed_resp, update_mpt_root};
+use crate::system_contract::{system_contract_address, SystemContract, CURRENT_HEADER_CELL_ROOT};
 use crate::{exec_try, MPTTrie};
-
-pub use super::ckb_light_client::utils::init;
-use super::ckb_light_client::utils::{get_mpt, update_mpt_root};
-use super::ckb_light_client::CURRENT_CELL_ROOT;
 
 static ALLOW_READ: AtomicBool = AtomicBool::new(false);
 
@@ -36,34 +32,30 @@ impl SystemContract for ImageCellContract {
         let tx_data = tx.data();
         let gas_limit = *tx.gas_limit();
 
+        let mut store = exec_try!(
+            ImageCellStore::new(),
+            gas_limit,
+            "[image cell] init image cell mpt"
+        );
+
         match image_cell_abi::ImageCellCalls::decode(tx_data) {
             Ok(image_cell_abi::ImageCellCalls::SetState(data)) => {
                 ALLOW_READ.store(data.allow_read, Ordering::Relaxed);
             }
             Ok(image_cell_abi::ImageCellCalls::Update(data)) => {
-                let mut mpt = exec_try!(get_mpt(), gas_limit, "[image cell] get mpt error:");
-
-                let root: MerkleRoot = exec_try!(
-                    exec::update(&mut mpt, data),
-                    gas_limit,
-                    "[image cell] update error:"
-                );
-
-                update_mpt_root(backend, root, ImageCellContract::ADDRESS);
+                exec_try!(store.update(data), gas_limit, "[image cell] update error:");
             }
             Ok(image_cell_abi::ImageCellCalls::Rollback(data)) => {
-                let mut mpt = exec_try!(get_mpt(), gas_limit, "[image cell] get mpt error:");
-
-                let root: MerkleRoot = exec_try!(
-                    exec::rollback(&mut mpt, data),
+                exec_try!(
+                    store.rollback(data),
                     gas_limit,
                     "[image cell] rollback error:"
                 );
-
-                update_mpt_root(backend, root, ImageCellContract::ADDRESS);
             }
             _ => unreachable!(),
         }
+
+        update_mpt_root(backend, ImageCellContract::ADDRESS);
 
         succeed_resp(gas_limit)
     }
@@ -71,15 +63,22 @@ impl SystemContract for ImageCellContract {
 
 impl ImageCellContract {
     pub fn get_root(&self) -> H256 {
-        **CURRENT_CELL_ROOT.load()
+        **CURRENT_HEADER_CELL_ROOT.load()
     }
 
     pub fn get_cell(&self, key: &CellKey) -> ProtocolResult<Option<CellInfo>> {
-        let mpt = get_mpt()?;
-        get_cell(&mpt, key)
+        ImageCellStore::new()?.get_cell(key)
     }
 
     pub fn allow_read(&self) -> bool {
         ALLOW_READ.load(Ordering::Relaxed)
+    }
+
+    pub fn save_cells(
+        &self,
+        cells: Vec<image_cell_abi::CellInfo>,
+        created_number: u64,
+    ) -> ProtocolResult<()> {
+        ImageCellStore::new()?.save_cells(cells, created_number)
     }
 }

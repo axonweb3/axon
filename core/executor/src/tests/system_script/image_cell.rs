@@ -5,19 +5,13 @@ use ckb_types::{bytes::Bytes, packed, prelude::*};
 use ethers::abi::AbiEncode;
 
 use common_config_parser::types::ConfigRocksDB;
-use protocol::types::{Hasher, MemoryBackend, TxResp, H160, H256};
+use protocol::types::{MemoryBackend, TxResp, H160};
 
-use crate::system_contract::image_cell::{
-    image_cell_abi, init, CellInfo, CellKey, ImageCellContract,
-};
-use crate::system_contract::SystemContract;
+use crate::system_contract::image_cell::{image_cell_abi, CellInfo, CellKey, ImageCellContract};
+use crate::system_contract::{init, SystemContract, HEADER_CELL_ROOT_KEY};
 use crate::tests::{gen_tx, gen_vicinity};
 
-static ROCKSDB_PATH: &str = "./free-space/image-cell";
-
-lazy_static::lazy_static! {
-    static ref CELL_ROOT_KEY: H256 = Hasher::digest("cell_mpt_root");
-}
+static ROCKSDB_PATH: &str = "./free-space/system-contract";
 
 #[test]
 fn test_write_functions() {
@@ -132,7 +126,7 @@ fn check_root(backend: &MemoryBackend, executor: &ImageCellContract) {
     let account = backend.state().get(&ImageCellContract::ADDRESS).unwrap();
     assert_eq!(
         &executor.get_root(),
-        account.storage.get(&CELL_ROOT_KEY).unwrap(),
+        account.storage.get(&HEADER_CELL_ROOT_KEY).unwrap(),
     );
 }
 

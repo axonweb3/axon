@@ -5,9 +5,10 @@ use protocol::{codec::ProtocolCodec, ProtocolResult};
 
 use crate::system_contract::error::SystemScriptError;
 use crate::system_contract::metadata::{
-    segment::EpochSegment, CURRENT_METADATA_ROOT, EPOCH_SEGMENT_KEY, METADATA_DB,
+    segment::EpochSegment, CURRENT_METADATA_ROOT, EPOCH_SEGMENT_KEY,
 };
 use crate::system_contract::trie_db::RocksTrieDB;
+use crate::system_contract::METADATA_DB;
 use crate::MPTTrie;
 
 pub struct MetadataStore {

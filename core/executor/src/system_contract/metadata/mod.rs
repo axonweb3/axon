@@ -8,52 +8,27 @@ pub use handle::MetadataHandle;
 pub use store::MetadataStore;
 
 use std::num::NonZeroUsize;
-use std::path::Path;
-use std::sync::Arc;
 
-use arc_swap::ArcSwap;
 use ethers::abi::AbiDecode;
 use lru::LruCache;
-use once_cell::sync::OnceCell;
 use parking_lot::RwLock;
 
-use common_config_parser::types::ConfigRocksDB;
 use protocol::traits::{ApplyBackend, Backend};
-use protocol::types::{
-    Apply, Basic, Hasher, Metadata, SignedTransaction, TxResp, H160, H256, U256,
-};
+use protocol::types::{Hasher, Metadata, SignedTransaction, TxResp, H160, H256};
 
 use crate::exec_try;
 use crate::system_contract::utils::{revert_resp, succeed_resp};
-use crate::system_contract::{system_contract_address, SystemContract};
-
-use super::trie_db::RocksTrieDB;
+use crate::system_contract::{
+    system_contract_address, update_mpt_root, SystemContract, CURRENT_METADATA_ROOT,
+};
 
 type Epoch = u64;
 
 const METADATA_CACHE_SIZE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(10) };
-const METADATA_DB_CACHE_SIZE: usize = 20;
-
-static METADATA_DB: OnceCell<Arc<RocksTrieDB>> = OnceCell::new();
 
 lazy_static::lazy_static! {
-    static ref METADATA_ROOT_KEY: H256 = Hasher::digest("metadata_root");
     static ref EPOCH_SEGMENT_KEY: H256 = Hasher::digest("epoch_segment");
-    static ref CURRENT_METADATA_ROOT: ArcSwap<H256> = ArcSwap::from_pointee(H256::default());
     static ref METADATA_CACHE: RwLock<LruCache<Epoch, Metadata>> =  RwLock::new(LruCache::new(METADATA_CACHE_SIZE));
-}
-
-pub fn init<P: AsRef<Path>, B: Backend>(path: P, config: ConfigRocksDB, backend: Arc<B>) {
-    let current_cell_root = backend.storage(MetadataContract::ADDRESS, *METADATA_ROOT_KEY);
-
-    CURRENT_METADATA_ROOT.store(Arc::new(current_cell_root));
-
-    METADATA_DB.get_or_init(|| {
-        Arc::new(
-            RocksTrieDB::new(path, config, METADATA_DB_CACHE_SIZE)
-                .expect("[metadata] new rocksdb error"),
-        )
-    });
 }
 
 #[derive(Default)]
@@ -104,26 +79,8 @@ impl SystemContract for MetadataContract {
             _ => unreachable!(),
         }
 
-        update_mpt_root(backend);
+        update_mpt_root(backend, MetadataContract::ADDRESS);
 
         succeed_resp(gas_limit)
     }
-}
-
-fn update_mpt_root<B: Backend + ApplyBackend>(backend: &mut B) {
-    let account = backend.basic(MetadataContract::ADDRESS);
-    backend.apply(
-        vec![Apply::Modify {
-            address:       MetadataContract::ADDRESS,
-            basic:         Basic {
-                balance: account.balance,
-                nonce:   account.nonce + U256::one(),
-            },
-            code:          None,
-            storage:       vec![(*METADATA_ROOT_KEY, **CURRENT_METADATA_ROOT.load())],
-            reset_storage: false,
-        }],
-        vec![],
-        false,
-    );
 }
