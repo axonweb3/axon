@@ -57,7 +57,9 @@ impl SystemContract for CkbLightClientContract {
             }
             _ => unreachable!(),
         }
+
         update_mpt_root(backend, CkbLightClientContract::ADDRESS);
+
         succeed_resp(gas_limit)
     }
 }
