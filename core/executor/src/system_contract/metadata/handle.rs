@@ -3,6 +3,8 @@ use protocol::ProtocolResult;
 
 use crate::system_contract::metadata::MetadataStore;
 
+/// The MetadataHandle is used to expose apis that can be accessed from outside
+/// of the system contract.
 #[derive(Default)]
 pub struct MetadataHandle;
 

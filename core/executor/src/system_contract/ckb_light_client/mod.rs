@@ -1,17 +1,15 @@
 mod abi;
-mod handle;
 mod store;
 
 pub use abi::ckb_light_client_abi;
-pub use handle::CkbLightClientHandle;
 
 use ckb_types::packed;
 use ethers::abi::AbiDecode;
+use protocol::ProtocolResult;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use protocol::traits::{ApplyBackend, Backend};
 use protocol::types::{SignedTransaction, TxResp, H160, H256};
-use protocol::ProtocolResult;
 
 use crate::exec_try;
 use crate::system_contract::ckb_light_client::store::CkbLightClientStore;
@@ -37,25 +35,30 @@ impl SystemContract for CkbLightClientContract {
             "[ckb light client] init ckb light client mpt"
         );
 
-        match ckb_light_client_abi::CkbLightClientCalls::decode(tx_data) {
-            Ok(ckb_light_client_abi::CkbLightClientCalls::SetState(data)) => {
+        let call_abi = exec_try!(
+            ckb_light_client_abi::CkbLightClientCalls::decode(tx_data),
+            gas_limit,
+            "[ckb light client] invalid tx data"
+        );
+
+        match call_abi {
+            ckb_light_client_abi::CkbLightClientCalls::SetState(data) => {
                 ALLOW_READ.store(data.allow_read, Ordering::Relaxed);
             }
-            Ok(ckb_light_client_abi::CkbLightClientCalls::Update(data)) => {
+            ckb_light_client_abi::CkbLightClientCalls::Update(data) => {
                 exec_try!(
                     store.update(data),
                     gas_limit,
                     "[ckb light client] update error:"
                 );
             }
-            Ok(ckb_light_client_abi::CkbLightClientCalls::Rollback(data)) => {
+            ckb_light_client_abi::CkbLightClientCalls::Rollback(data) => {
                 exec_try!(
                     store.rollback(data),
                     gas_limit,
                     "[ckb light client] update error:"
                 );
             }
-            _ => unreachable!(),
         }
 
         update_mpt_root(backend, CkbLightClientContract::ADDRESS);
@@ -69,8 +72,12 @@ impl CkbLightClientContract {
         **CURRENT_HEADER_CELL_ROOT.load()
     }
 
-    pub fn get_header(&self, block_hash: &H256) -> ProtocolResult<Option<packed::Header>> {
-        CkbLightClientStore::new()?.get_header(block_hash)
+    pub fn get_header_by_block_hash(
+        &self,
+        block_hash: &H256,
+    ) -> ProtocolResult<Option<packed::Header>> {
+        let store = CkbLightClientStore::new()?;
+        store.get_header(&block_hash.0)
     }
 
     pub fn allow_read(&self) -> bool {

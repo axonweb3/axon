@@ -76,7 +76,11 @@ impl SystemContract for MetadataContract {
                     "[metadata] append metadata"
                 );
             }
-            _ => unreachable!(),
+            // TODO: Metadata doesn't accept all abi calls so far.
+            _ => {
+                log::error!("[metadata] invalid tx data");
+                return revert_resp(gas_limit);
+            }
         }
 
         update_mpt_root(backend, MetadataContract::ADDRESS);

@@ -4,17 +4,17 @@ use evm::{Context, ExitError, ExitSucceed};
 use ckb_types::prelude::Entity;
 use protocol::types::{H160, H256};
 
+use crate::system_contract::CkbLightClientContract;
 use crate::{
     err,
     precompiles::{axon_precompile_address, PrecompileContract},
-    system_contract::ckb_light_client::CkbLightClientHandle,
 };
 
 #[derive(Default, Clone)]
 pub struct GetHeader;
 
 impl PrecompileContract for GetHeader {
-    const ADDRESS: H160 = axon_precompile_address(0x01);
+    const ADDRESS: H160 = axon_precompile_address(0x02);
     const MIN_GAS: u64 = 15;
 
     fn exec_fn(
@@ -32,7 +32,7 @@ impl PrecompileContract for GetHeader {
 
         let block_hash = H256::from_slice(input);
 
-        let header = CkbLightClientHandle::default()
+        let header = CkbLightClientContract::default()
             .get_header_by_block_hash(&block_hash)
             .map_err(|_| err!(_, "get header"))?;
 

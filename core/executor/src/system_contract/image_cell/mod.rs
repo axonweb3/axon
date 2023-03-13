@@ -1,5 +1,4 @@
 mod abi;
-mod handle;
 mod store;
 
 pub mod utils;
@@ -38,21 +37,26 @@ impl SystemContract for ImageCellContract {
             "[image cell] init image cell mpt"
         );
 
-        match image_cell_abi::ImageCellCalls::decode(tx_data) {
-            Ok(image_cell_abi::ImageCellCalls::SetState(data)) => {
+        let call_abi = exec_try!(
+            image_cell_abi::ImageCellCalls::decode(tx_data),
+            gas_limit,
+            "[image cell] invalid tx data"
+        );
+
+        match call_abi {
+            image_cell_abi::ImageCellCalls::SetState(data) => {
                 ALLOW_READ.store(data.allow_read, Ordering::Relaxed);
             }
-            Ok(image_cell_abi::ImageCellCalls::Update(data)) => {
+            image_cell_abi::ImageCellCalls::Update(data) => {
                 exec_try!(store.update(data), gas_limit, "[image cell] update error:");
             }
-            Ok(image_cell_abi::ImageCellCalls::Rollback(data)) => {
+            image_cell_abi::ImageCellCalls::Rollback(data) => {
                 exec_try!(
                     store.rollback(data),
                     gas_limit,
                     "[image cell] rollback error:"
                 );
             }
-            _ => unreachable!(),
         }
 
         update_mpt_root(backend, ImageCellContract::ADDRESS);

@@ -16,7 +16,7 @@ pub mod ckb_light_client {
     use ethers::providers::Middleware;
     #[doc = "CkbLightClient was auto-generated with ethers-rs Abigen. More information at: https://github.com/gakonst/ethers-rs"]
     use std::sync::Arc;
-    # [rustfmt :: skip] const __ABI : & str = "[\n    {\n        \"inputs\": [\n            {\n                \"internalType\": \"bytes32\",\n                \"name\": \"blockHash\",\n                \"type\": \"bytes32\"\n            },\n            {\n                \"internalType\": \"uint64\",\n                \"name\": \"blockNumber\",\n                \"type\": \"uint64\"\n            }\n        ],\n        \"name\": \"rollback\",\n        \"outputs\": [],\n        \"stateMutability\": \"view\",\n        \"type\": \"function\"\n    },\n    {\n        \"inputs\": [\n            {\n                \"internalType\": \"bool\",\n                \"name\": \"allowRead\",\n                \"type\": \"bool\"\n            }\n        ],\n        \"name\": \"setState\",\n        \"outputs\": [],\n        \"stateMutability\": \"view\",\n        \"type\": \"function\"\n    },\n    {\n        \"inputs\": [\n            {\n                \"components\": [\n                    {\n                        \"internalType\": \"uint32\",\n                        \"name\": \"version\",\n                        \"type\": \"uint32\"\n                    },\n                    {\n                        \"internalType\": \"uint32\",\n                        \"name\": \"compactTarget\",\n                        \"type\": \"uint32\"\n                    },\n                    {\n                        \"internalType\": \"uint64\",\n                        \"name\": \"timestamp\",\n                        \"type\": \"uint64\"\n                    },\n                    {\n                        \"internalType\": \"uint64\",\n                        \"name\": \"number\",\n                        \"type\": \"uint64\"\n                    },\n                    {\n                        \"internalType\": \"uint64\",\n                        \"name\": \"epoch\",\n                        \"type\": \"uint64\"\n                    },\n                    {\n                        \"internalType\": \"bytes32\",\n                        \"name\": \"parentHash\",\n                        \"type\": \"bytes32\"\n                    },\n                    {\n                        \"internalType\": \"bytes32\",\n                        \"name\": \"transactionsRoot\",\n                        \"type\": \"bytes32\"\n                    },\n                    {\n                        \"internalType\": \"bytes32\",\n                        \"name\": \"proposalsHash\",\n                        \"type\": \"bytes32\"\n                    },\n                    {\n                        \"internalType\": \"bytes32\",\n                        \"name\": \"unclesHash\",\n                        \"type\": \"bytes32\"\n                    },\n                    {\n                        \"internalType\": \"bytes32\",\n                        \"name\": \"dao\",\n                        \"type\": \"bytes32\"\n                    },\n                    {\n                        \"internalType\": \"uint128\",\n                        \"name\": \"nonce\",\n                        \"type\": \"uint128\"\n                    },\n                    {\n                        \"internalType\": \"bytes32\",\n                        \"name\": \"blockHash\",\n                        \"type\": \"bytes32\"\n                    }\n                ],\n                \"internalType\": \"struct CkbLightClient.Header\",\n                \"name\": \"header\",\n                \"type\": \"tuple\"\n            }\n        ],\n        \"name\": \"update\",\n        \"outputs\": [],\n        \"stateMutability\": \"view\",\n        \"type\": \"function\"\n    }\n]\n" ;
+    # [rustfmt :: skip] const __ABI : & str = "[\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"bytes32[]\",\n        \"name\": \"blockHashs\",\n        \"type\": \"bytes32[]\"\n      }\n    ],\n    \"name\": \"rollback\",\n    \"outputs\": [],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"internalType\": \"bool\",\n        \"name\": \"allowRead\",\n        \"type\": \"bool\"\n      }\n    ],\n    \"name\": \"setState\",\n    \"outputs\": [],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"components\": [\n          {\n            \"internalType\": \"uint32\",\n            \"name\": \"version\",\n            \"type\": \"uint32\"\n          },\n          {\n            \"internalType\": \"uint32\",\n            \"name\": \"compactTarget\",\n            \"type\": \"uint32\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"timestamp\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"number\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"epoch\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"parentHash\",\n            \"type\": \"bytes32\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"transactionsRoot\",\n            \"type\": \"bytes32\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"proposalsHash\",\n            \"type\": \"bytes32\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"unclesHash\",\n            \"type\": \"bytes32\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"dao\",\n            \"type\": \"bytes32\"\n          },\n          {\n            \"internalType\": \"uint128\",\n            \"name\": \"nonce\",\n            \"type\": \"uint128\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"blockHash\",\n            \"type\": \"bytes32\"\n          }\n        ],\n        \"internalType\": \"struct CkbType.Header[]\",\n        \"name\": \"headers\",\n        \"type\": \"tuple[]\"\n      }\n    ],\n    \"name\": \"update\",\n    \"outputs\": [],\n    \"stateMutability\": \"view\",\n    \"type\": \"function\"\n  }\n]" ;
     #[doc = r" The parsed JSON-ABI of the contract."]
     pub static CKBLIGHTCLIENT_ABI: ethers::contract::Lazy<ethers::core::abi::Abi> =
         ethers::contract::Lazy::new(|| {
@@ -54,14 +54,13 @@ pub mod ckb_light_client {
                 .into()
         }
 
-        #[doc = "Calls the contract's `rollback` (0x5805c8c4) function"]
+        #[doc = "Calls the contract's `rollback` (0xd32a2285) function"]
         pub fn rollback(
             &self,
-            block_hash: [u8; 32],
-            block_number: u64,
+            block_hashs: ::std::vec::Vec<[u8; 32]>,
         ) -> ethers::contract::builders::ContractCall<M, ()> {
             self.0
-                .method_hash([88, 5, 200, 196], (block_hash, block_number))
+                .method_hash([211, 42, 34, 133], block_hashs)
                 .expect("method not found (this should never happen)")
         }
 
@@ -75,10 +74,13 @@ pub mod ckb_light_client {
                 .expect("method not found (this should never happen)")
         }
 
-        #[doc = "Calls the contract's `update` (0xaf434772) function"]
-        pub fn update(&self, header: Header) -> ethers::contract::builders::ContractCall<M, ()> {
+        #[doc = "Calls the contract's `update` (0x2b196cf3) function"]
+        pub fn update(
+            &self,
+            headers: ::std::vec::Vec<Header>,
+        ) -> ethers::contract::builders::ContractCall<M, ()> {
             self.0
-                .method_hash([175, 67, 71, 114], (header,))
+                .method_hash([43, 25, 108, 243], headers)
                 .expect("method not found (this should never happen)")
         }
     }
@@ -87,7 +89,7 @@ pub mod ckb_light_client {
             Self(contract)
         }
     }
-    #[doc = "Container type for all input parameters for the `rollback` function with signature `rollback(bytes32,uint64)` and selector `[88, 5, 200, 196]`"]
+    #[doc = "Container type for all input parameters for the `rollback` function with signature `rollback(bytes32[])` and selector `[211, 42, 34, 133]`"]
     #[derive(
         Clone,
         Debug,
@@ -97,10 +99,9 @@ pub mod ckb_light_client {
         ethers::contract::EthDisplay,
         Default,
     )]
-    #[ethcall(name = "rollback", abi = "rollback(bytes32,uint64)")]
+    #[ethcall(name = "rollback", abi = "rollback(bytes32[])")]
     pub struct RollbackCall {
-        pub block_hash:   [u8; 32],
-        pub block_number: u64,
+        pub block_hashs: ::std::vec::Vec<[u8; 32]>,
     }
     #[doc = "Container type for all input parameters for the `setState` function with signature `setState(bool)` and selector `[172, 159, 2, 34]`"]
     #[derive(
@@ -116,7 +117,7 @@ pub mod ckb_light_client {
     pub struct SetStateCall {
         pub allow_read: bool,
     }
-    #[doc = "Container type for all input parameters for the `update` function with signature `update((uint32,uint32,uint64,uint64,uint64,bytes32,bytes32,bytes32,bytes32,bytes32,uint128,bytes32))` and selector `[175, 67, 71, 114]`"]
+    #[doc = "Container type for all input parameters for the `update` function with signature `update((uint32,uint32,uint64,uint64,uint64,bytes32,bytes32,bytes32,bytes32,bytes32,uint128,bytes32)[])` and selector `[43, 25, 108, 243]`"]
     #[derive(
         Clone,
         Debug,
@@ -128,12 +129,12 @@ pub mod ckb_light_client {
     )]
     #[ethcall(
         name = "update",
-        abi = "update((uint32,uint32,uint64,uint64,uint64,bytes32,bytes32,bytes32,bytes32,bytes32,uint128,bytes32))"
+        abi = "update((uint32,uint32,uint64,uint64,uint64,bytes32,bytes32,bytes32,bytes32,bytes32,uint128,bytes32)[])"
     )]
     pub struct UpdateCall {
-        pub header: Header,
+        pub headers: ::std::vec::Vec<Header>,
     }
-    #[derive(Debug, Clone, PartialEq, Eq, ethers :: contract :: EthAbiType)]
+    #[derive(Debug, Clone, PartialEq, Eq, ethers::contract::EthAbiType)]
     pub enum CkbLightClientCalls {
         Rollback(RollbackCall),
         SetState(SetStateCall),

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::MPTTrie;
 use ckb_types::packed;
-use ckb_types::prelude::{Builder, Entity, Pack};
+use ckb_types::prelude::Entity;
 use protocol::types::H256;
 use protocol::ProtocolResult;
 
@@ -37,19 +37,23 @@ impl CkbLightClientStore {
     }
 
     pub fn update(&mut self, data: ckb_light_client_abi::UpdateCall) -> ProtocolResult<()> {
-        self.save_header(&data.header)?;
+        for header in data.headers {
+            self.save_header(&header)?;
+        }
 
         self.commit()
     }
 
     pub fn rollback(&mut self, data: ckb_light_client_abi::RollbackCall) -> ProtocolResult<()> {
-        self.remove_header(&H256(data.block_hash))?;
+        for block_hash in data.block_hashs {
+            self.remove_header(&block_hash)?;
+        }
 
         self.commit()
     }
 
-    pub fn get_header(&self, block_hash: &H256) -> ProtocolResult<Option<packed::Header>> {
-        let header = match self.trie.get(&block_hash.0) {
+    pub fn get_header(&self, block_hash: &[u8]) -> ProtocolResult<Option<packed::Header>> {
+        let header = match self.trie.get(block_hash) {
             Ok(n) => match n {
                 Some(n) => n,
                 None => return Ok(None),
@@ -63,32 +67,16 @@ impl CkbLightClientStore {
     }
 
     fn save_header(&mut self, header: &ckb_light_client_abi::Header) -> ProtocolResult<()> {
-        let raw = packed::RawHeader::new_builder()
-            .compact_target(header.compact_target.pack())
-            .dao(header.dao.pack())
-            .epoch(header.epoch.pack())
-            .extra_hash(header.block_hash.pack())
-            .number(header.number.pack())
-            .parent_hash(header.parent_hash.pack())
-            .proposals_hash(header.proposals_hash.pack())
-            .timestamp(header.timestamp.pack())
-            .transactions_root(header.transactions_root.pack())
-            .version(header.version.pack())
-            .build();
-
-        let packed_header = packed::Header::new_builder()
-            .raw(raw)
-            .nonce(header.nonce.pack())
-            .build();
+        let packed_header = packed::Header::from(header.clone());
 
         self.trie
             .insert(&H256(header.block_hash).0, &packed_header.as_bytes())
             .map_err(|e| SystemScriptError::InsertHeader(e.to_string()).into())
     }
 
-    fn remove_header(&mut self, key: &H256) -> ProtocolResult<()> {
+    fn remove_header(&mut self, block_hash: &[u8]) -> ProtocolResult<()> {
         self.trie
-            .remove(&key.0)
+            .remove(block_hash)
             .map_err(|e| SystemScriptError::RemoveHeader(e.to_string()).into())
     }
 

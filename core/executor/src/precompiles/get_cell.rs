@@ -16,7 +16,7 @@ use crate::{err, system_contract::image_cell::ImageCellContract};
 pub struct GetCell;
 
 impl PrecompileContract for GetCell {
-    const ADDRESS: H160 = axon_precompile_address(0xf0);
+    const ADDRESS: H160 = axon_precompile_address(0x03);
     const MIN_GAS: u64 = 15;
 
     fn exec_fn(

@@ -5,10 +5,10 @@ use ckb_types::{bytes::Bytes, packed, prelude::*};
 use ethers::abi::AbiEncode;
 
 use common_config_parser::types::ConfigRocksDB;
-use protocol::types::{MemoryBackend, TxResp, H160};
+use protocol::types::{Backend, MemoryBackend, TxResp, H160, U256};
 
 use crate::system_contract::image_cell::{image_cell_abi, CellInfo, CellKey, ImageCellContract};
-use crate::system_contract::{init, SystemContract, HEADER_CELL_ROOT_KEY};
+use crate::system_contract::{init, CkbLightClientContract, SystemContract, HEADER_CELL_ROOT_KEY};
 use crate::tests::{gen_tx, gen_vicinity};
 
 static ROCKSDB_PATH: &str = "./free-space/system-contract";
@@ -41,6 +41,7 @@ fn test_update_first(backend: &mut MemoryBackend, executor: &ImageCellContract) 
     assert!(r.exit_reason.is_succeed());
 
     check_root(backend, executor);
+    check_nounce(backend, U256::one());
 
     let cell_key = CellKey::new([7u8; 32], 0x0);
     let get_cell = executor.get_cell(&cell_key).unwrap().unwrap();
@@ -61,6 +62,7 @@ fn test_update_second(backend: &mut MemoryBackend, executor: &ImageCellContract)
     assert!(r.exit_reason.is_succeed());
 
     check_root(backend, executor);
+    check_nounce(backend, U256::from(2));
 
     let cell_key = CellKey::new([7u8; 32], 0x0);
     let get_cell = executor.get_cell(&cell_key).unwrap().unwrap();
@@ -198,4 +200,12 @@ fn prepare_outputs() -> Vec<image_cell_abi::CellInfo> {
         data:      ethers::core::types::Bytes::from_str("0x40420f00000000000000000000000000")
             .unwrap(),
     }]
+}
+
+fn check_nounce(backend: &mut MemoryBackend, nounce: U256) {
+    let ic_account = backend.basic(ImageCellContract::ADDRESS);
+    let ckb_account = backend.basic(CkbLightClientContract::ADDRESS);
+
+    assert_eq!(ic_account.nonce, nounce);
+    assert_eq!(ckb_account.nonce, U256::zero());
 }

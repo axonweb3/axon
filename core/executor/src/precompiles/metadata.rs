@@ -17,7 +17,7 @@ const INPUT_LEN: usize = 1 + 8;
 pub struct Metadata;
 
 impl PrecompileContract for Metadata {
-    const ADDRESS: H160 = axon_precompile_address(0x00);
+    const ADDRESS: H160 = axon_precompile_address(0x01);
     const MIN_GAS: u64 = 500;
 
     fn exec_fn(

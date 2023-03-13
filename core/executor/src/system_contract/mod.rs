@@ -7,6 +7,11 @@ pub mod ckb_light_client;
 pub mod image_cell;
 pub mod metadata;
 
+pub use crate::system_contract::ckb_light_client::CkbLightClientContract;
+pub use crate::system_contract::image_cell::ImageCellContract;
+pub use crate::system_contract::metadata::MetadataContract;
+pub use crate::system_contract::native_token::NativeTokenContract;
+
 use std::path::Path;
 use std::sync::Arc;
 
@@ -19,18 +24,13 @@ use ckb_types::core::cell::{CellProvider, CellStatus};
 use ckb_types::core::HeaderView;
 use ckb_types::{packed, prelude::*};
 
-use crate::system_contract::image_cell::utils::always_success_script_deploy_cell;
-use crate::system_contract::trie_db::RocksTrieDB;
-use crate::system_contract::utils::update_mpt_root;
-
 use protocol::ckb_blake2b_256;
 use protocol::traits::{ApplyBackend, Backend};
 use protocol::types::{Bytes, Hasher, SignedTransaction, TxResp, H160, H256};
 
-pub use crate::system_contract::ckb_light_client::CkbLightClientContract;
-pub use crate::system_contract::image_cell::ImageCellContract;
-pub use crate::system_contract::metadata::MetadataContract;
-pub use crate::system_contract::native_token::NativeTokenContract;
+use crate::system_contract::image_cell::utils::always_success_script_deploy_cell;
+use crate::system_contract::trie_db::RocksTrieDB;
+use crate::system_contract::utils::update_mpt_root;
 
 #[macro_export]
 macro_rules! exec_try {
@@ -52,9 +52,8 @@ pub const fn system_contract_address(addr: u8) -> H160 {
     ])
 }
 
-/// system contract init section
-/// need to initialize two databases, one for Metadata and one for
-/// CkbLightClient&ImageCell
+/// System contract init section. It needs to initialize two databases, one for
+/// Metadata and one for CkbLightClient&ImageCell
 static HEADER_CELL_DB: OnceCell<Arc<RocksTrieDB>> = OnceCell::new();
 static METADATA_DB: OnceCell<Arc<RocksTrieDB>> = OnceCell::new();
 
@@ -73,7 +72,7 @@ pub fn init<P: AsRef<Path>, B: Backend + ApplyBackend>(
     config: ConfigRocksDB,
     mut backend: B,
 ) {
-    // init metadata db
+    // Init metadata db
     let current_metadata_root = backend.storage(MetadataContract::ADDRESS, *METADATA_ROOT_KEY);
     CURRENT_METADATA_ROOT.store(Arc::new(current_metadata_root));
 
@@ -85,7 +84,7 @@ pub fn init<P: AsRef<Path>, B: Backend + ApplyBackend>(
         )
     });
 
-    // init header cell db
+    // Init header cell db
     let header_cell_db_path = path.as_ref().join("header_cell");
     HEADER_CELL_DB.get_or_init(|| {
         Arc::new(
@@ -175,9 +174,9 @@ impl CellDataProvider for DataProvider {
 
 impl HeaderProvider for DataProvider {
     fn get_header(&self, hash: &packed::Byte32) -> Option<HeaderView> {
-        let tmp: ckb_types::H256 = hash.unpack();
+        let block_hash = hash.unpack();
         CkbLightClientContract::default()
-            .get_header(&H256(tmp.0))
+            .get_header_by_block_hash(&H256(block_hash.0))
             .ok()
             .flatten()
             .map(|h| h.into_view())
