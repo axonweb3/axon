@@ -44,17 +44,19 @@ impl ImageCellStore {
     }
 
     pub fn update(&mut self, data: image_cell_abi::UpdateCall) -> ProtocolResult<()> {
-        self.save_cells(data.outputs, data.block_number)?;
-
-        self.mark_cells_consumed(data.inputs, data.block_number)?;
+        for block in data.blocks {
+            self.save_cells(block.tx_outputs, block.block_number)?;
+            self.mark_cells_consumed(block.tx_inputs, block.block_number)?;
+        }
 
         self.commit()
     }
 
     pub fn rollback(&mut self, data: image_cell_abi::RollbackCall) -> ProtocolResult<()> {
-        self.remove_cells(data.outputs)?;
-
-        self.mark_cells_not_consumed(data.inputs)?;
+        for block in data.blocks {
+            self.remove_cells(block.tx_outputs)?;
+            self.mark_cells_not_consumed(block.tx_inputs)?;
+        }
 
         self.commit()
     }

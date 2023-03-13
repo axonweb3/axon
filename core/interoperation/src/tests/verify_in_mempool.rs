@@ -149,9 +149,11 @@ async fn test_verify_joyid_with_sub_key() {
 
 async fn build_image_cell_payload<T: Into<ckb_types::H256>>(tx_hash: T) -> Vec<u8> {
     image_cell_abi::UpdateCall {
-        block_number: 0,
-        inputs:       vec![],
-        outputs:      get_tx_cells(tx_hash).await,
+        blocks: vec![image_cell_abi::BlockUpdate {
+            block_number: 0,
+            tx_inputs:    vec![],
+            tx_outputs:   get_tx_cells(tx_hash).await,
+        }],
     }
     .encode()
 }
