@@ -9,7 +9,7 @@ arc-swap = "1.6"
 futures = "0.3"
 lazy_static = "1.4"
 log = "0.4"
-lru = "0.9"
+lru = "0.10.0"
 parking_lot = "0.12"
 rocksdb = { version = "0.19", package = "ckb-rocksdb" }
 

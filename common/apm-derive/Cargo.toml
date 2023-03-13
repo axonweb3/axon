@@ -17,7 +17,7 @@ syn = { version = "1.0", features = ["full"] }
 [dev-dependencies]
 async-trait = "0.1"
 common-apm = { path = "../apm" }
-jsonrpsee = { version = "0.15", features = ["macros"] }
+jsonrpsee = { version = "0.16", features = ["macros"] }
 log = "0.4"
 
 protocol = { path = "../../protocol", package = "axon-protocol" }
