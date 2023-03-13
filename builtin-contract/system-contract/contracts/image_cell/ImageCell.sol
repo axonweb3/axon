@@ -2,7 +2,7 @@
 
 pragma solidity >=0.8.0;
 
-import "./libraries/CkbType.sol";
+import "../libraries/CkbType.sol";
 
 contract ImageCell {
     using CkbType for CkbType.CellInfo;
