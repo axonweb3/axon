@@ -6,8 +6,7 @@ mod ws_subscription;
 
 use std::sync::Arc;
 
-use jsonrpsee::http_server::{HttpServerBuilder, HttpServerHandle};
-use jsonrpsee::ws_server::{WsServerBuilder, WsServerHandle};
+use jsonrpsee::server::{ServerBuilder, ServerHandle};
 use jsonrpsee::{core::Error, proc_macros::rpc};
 
 use common_config_parser::types::Config;
@@ -214,7 +213,7 @@ pub trait AxonCrossChainRpc {
 pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
     config: Config,
     adapter: Arc<Adapter>,
-) -> ProtocolResult<(Option<HttpServerHandle>, Option<WsServerHandle>)> {
+) -> ProtocolResult<(Option<ServerHandle>, Option<ServerHandle>)> {
     let mut ret = (None, None);
 
     let mut rpc = r#impl::Web3RpcImpl::new(Arc::clone(&adapter), config.rpc.gas_cap).into_rpc();
@@ -228,7 +227,7 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
     rpc.merge(filter).unwrap();
 
     if let Some(addr) = config.rpc.http_listening_address {
-        let server = HttpServerBuilder::new()
+        let server = ServerBuilder::new()
             .max_request_body_size(config.rpc.max_payload_size as u32)
             .max_response_body_size(config.rpc.max_payload_size as u32)
             .build(addr)
@@ -243,10 +242,10 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
     }
 
     if let Some(addr) = config.rpc.ws_listening_address {
-        let server = WsServerBuilder::new()
+        let server = ServerBuilder::new()
             .max_request_body_size(config.rpc.max_payload_size as u32)
             .max_request_body_size(config.rpc.max_payload_size as u32)
-            .max_connections(config.rpc.maxconn as u64)
+            .max_connections((config.rpc.maxconn as u64).try_into().unwrap())
             .set_id_provider(HexIdProvider::default())
             .build(addr)
             .await

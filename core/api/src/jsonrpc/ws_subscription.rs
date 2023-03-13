@@ -9,8 +9,8 @@ use std::{
 
 use jsonrpsee::{
     core::Error,
+    server::{IdProvider, RpcModule, SubscriptionSink},
     types::{error::CallError, params::Params, SubscriptionId},
-    ws_server::{IdProvider, RpcModule, SubscriptionSink},
 };
 use serde::{Deserialize, Serialize};
 
