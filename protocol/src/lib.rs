@@ -1,7 +1,7 @@
 #![allow(
     clippy::uninlined_format_args,
     clippy::mutable_key_type,
-    clippy::derive_hash_xor_eq,
+    clippy::derived_hash_with_manual_eq,
     dead_code
 )]
 

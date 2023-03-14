@@ -336,18 +336,13 @@ pub struct Web3CallRequest {
     pub max_priority_fee_per_gas: Option<U256>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Default, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum BlockId {
     Num(u64),
+    #[default]
     Latest,
     Earliest,
     Pending,
-}
-
-impl Default for BlockId {
-    fn default() -> Self {
-        BlockId::Latest
-    }
 }
 
 impl From<BlockId> for Option<u64> {
@@ -518,17 +513,12 @@ pub struct Web3Filter {
     pub topics:     Option<Vec<MultiNestType<Hash>>>,
 }
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(Default, PartialEq, Eq, Debug, Clone)]
 pub enum MultiNestType<T> {
     Single(T),
     Multi(Vec<Option<T>>),
+    #[default]
     Null,
-}
-
-impl<T> Default for MultiNestType<T> {
-    fn default() -> Self {
-        MultiNestType::Null
-    }
 }
 
 impl<T> From<MultiNestType<T>> for Option<Vec<Option<T>>> {
@@ -578,17 +568,12 @@ where
     }
 }
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub enum MultiType<T> {
     Single(T),
     Multi(Vec<T>),
+    #[default]
     Null,
-}
-
-impl<T> Default for MultiType<T> {
-    fn default() -> Self {
-        MultiType::Null
-    }
 }
 
 impl<T> From<MultiType<T>> for Option<Vec<T>> {

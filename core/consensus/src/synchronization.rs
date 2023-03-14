@@ -521,20 +521,15 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub enum SyncStatus {
+    #[default]
     False,
     Syncing {
         start:   U256,
         current: U256,
         highest: U256,
     },
-}
-
-impl Default for SyncStatus {
-    fn default() -> Self {
-        SyncStatus::False
-    }
 }
 
 impl SyncStatus {
