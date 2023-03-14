@@ -257,6 +257,7 @@ impl From<&CellDep> for packed::CellDep {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand::random;
 
     fn random_out_point() -> OutPoint {
         OutPoint {
@@ -282,8 +283,16 @@ mod tests {
         }
     }
 
+    fn random_witness() -> Witness {
+        Witness {
+            input_type:  random::<bool>().then(|| H256::random().0.to_vec().into()),
+            output_type: random::<bool>().then(|| H256::random().0.to_vec().into()),
+            lock:        random::<bool>().then(|| H256::random().0.to_vec().into()),
+        }
+    }
+
     #[test]
-    fn test_interoperation_signature_decode() {
+    fn test_signature_r_decode() {
         let mock_by_ref = CKBTxMockByRef {
             cell_deps:             vec![random_cell_dep()],
             header_deps:           vec![H256::random()],
@@ -355,5 +364,15 @@ mod tests {
         let mut raw = vec![1];
         raw.extend_from_slice(&rlp::encode(&mock_by_ref));
         assert!(SignatureR::decode(&raw).is_err());
+    }
+
+    #[test]
+    fn test_signature_s_decode() {
+        let signature_s = SignatureS {
+            witnesses: (0..25).map(|_| random_witness()).collect(),
+        };
+
+        let raw = rlp::encode(&signature_s);
+        assert_eq!(rlp::decode::<SignatureS>(&raw).unwrap(), signature_s);
     }
 }
