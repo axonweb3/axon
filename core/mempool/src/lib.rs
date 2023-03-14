@@ -459,6 +459,9 @@ pub enum MemPoolError {
     #[display(fmt = "Invalid address source {:?}", _0)]
     InvalidAddressSource(AddressSource),
 
+    #[display(fmt = "Invalid dummy input")]
+    InvalidDummyInput,
+
     #[display(fmt = "Invalid sender, expect: {:?}, get: {:?}", expect, actual)]
     InvalidSender { expect: H160, actual: H160 },
 }

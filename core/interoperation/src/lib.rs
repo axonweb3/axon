@@ -82,12 +82,12 @@ impl Interoperation for InteroperationImpl {
         dummy_input: Option<CellWithData>,
         max_cycles: u64,
     ) -> ProtocolResult<Cycle> {
-        TransactionScriptsVerifier::new(
-            &resolve_transaction(data_loader, mocked_tx, dummy_input)?,
-            data_loader,
-        )
-        .verify(max_cycles)
-        .map_err(|e| InteroperationError::Ckb(e).into())
+        let rtx = resolve_transaction(data_loader, mocked_tx, dummy_input)?;
+        log::debug!("[mempool]: Verify by ckb vm tx {:?}", rtx);
+
+        TransactionScriptsVerifier::new(&rtx, data_loader)
+            .verify(max_cycles)
+            .map_err(|e| InteroperationError::Ckb(e).into())
     }
 }
 

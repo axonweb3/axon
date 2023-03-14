@@ -220,7 +220,11 @@ where
             .get(address_source.index as usize)
             .ok_or(MemPoolError::InvalidAddressSource(address_source))?;
 
+        log::debug!("[mempool]: verify interoperation tx sender \ntx view \n{:?}\ndummy input\n {:?}\naddress source\n{:?}\n", ckb_tx_view, dummy_input, address_source);
+
         if is_dummy_out_point(&input.previous_output()) {
+            log::debug!("[mempool]: verify interoperation tx dummy input mode.");
+
             if let Some(cell) = dummy_input {
                 if address_source.type_ == 1 && cell.type_script.is_none() {
                     return Err(MemPoolError::InvalidAddressSource(address_source).into());
@@ -244,9 +248,10 @@ where
                 return Ok(());
             }
 
-            return Err(MemPoolError::InvalidAddressSource(address_source).into());
+            return Err(MemPoolError::InvalidDummyInput.into());
         }
 
+        log::debug!("[mempool]: verify interoperation tx reality input mode.");
         match DataProvider.cell(&input.previous_output(), true) {
             CellStatus::Live(cell) => {
                 let script_hash = if address_source.type_ == 0 {
@@ -265,11 +270,11 @@ where
                     }
                     .into());
                 }
-            }
-            _ => return Err(MemPoolError::InvalidAddressSource(address_source).into()),
-        }
 
-        Ok(())
+                Ok(())
+            }
+            _ => Err(MemPoolError::InvalidAddressSource(address_source).into()),
+        }
     }
 
     fn verify_chain_id(&self, ctx: Context, stx: &SignedTransaction) -> ProtocolResult<()> {
