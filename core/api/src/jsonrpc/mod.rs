@@ -228,8 +228,9 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
 
     if let Some(addr) = config.rpc.http_listening_address {
         let server = ServerBuilder::new()
-            .max_request_body_size(config.rpc.max_payload_size as u32)
-            .max_response_body_size(config.rpc.max_payload_size as u32)
+            .max_request_body_size(config.rpc.max_payload_size)
+            .max_response_body_size(config.rpc.max_payload_size)
+            .max_connections(config.rpc.maxconn)
             .build(addr)
             .await
             .map_err(|e| APIError::HttpServer(e.to_string()))?;
@@ -243,9 +244,9 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
 
     if let Some(addr) = config.rpc.ws_listening_address {
         let server = ServerBuilder::new()
-            .max_request_body_size(config.rpc.max_payload_size as u32)
-            .max_request_body_size(config.rpc.max_payload_size as u32)
-            .max_connections((config.rpc.maxconn as u64).try_into().unwrap())
+            .max_request_body_size(config.rpc.max_payload_size)
+            .max_request_body_size(config.rpc.max_payload_size)
+            .max_connections(config.rpc.maxconn)
             .set_id_provider(HexIdProvider::default())
             .build(addr)
             .await

@@ -17,10 +17,8 @@ pub const DEFAULT_CACHE_SIZE: usize = 100;
 pub struct ConfigApi {
     pub http_listening_address: Option<SocketAddr>,
     pub ws_listening_address:   Option<SocketAddr>,
-    #[serde(default)]
-    pub maxconn:                usize,
-    #[serde(default)]
-    pub max_payload_size:       usize,
+    pub maxconn:                u32,
+    pub max_payload_size:       u32,
     pub enable_dump_profile:    Option<bool>,
     #[serde(default)]
     pub client_version:         String,
