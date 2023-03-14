@@ -38,7 +38,7 @@ thiserror = "1.0"
 
 [dev-dependencies]
 bytemuck = "1.13"
-ckb-jsonrpc-types = "0.106"
+ckb-jsonrpc-types = "0.108"
 ckb-types = "0.106"
 common-crypto = { path = "../../common/crypto" }
 core-cross-client = { path = "../cross-client" }
