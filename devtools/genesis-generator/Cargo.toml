@@ -14,7 +14,7 @@ core-executor = { path = "../../core/executor" }
 core-metadata = { path = "../../core/metadata" }
 ethers-contract = { version = "1.0", features = ["abigen"] }
 ethers-core = "1.0"
-ethers-providers = "1.0"
+ethers-providers = "2.0"
 ophelia = "0.3"
 protocol = { path = "../../protocol", package = "axon-protocol" }
 rand = "0.7"
