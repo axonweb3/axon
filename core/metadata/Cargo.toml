@@ -7,7 +7,7 @@ edition = "2021"
 [dependencies]
 arc-swap = "1.6"
 common-apm = { path = "../../common/apm" }
-ethers-contract = { version = "1.0", features = ["abigen"] }
+ethers-contract = { version = "2.0", features = ["abigen"] }
 ethers-core = "1.0"
 ethers-providers = "1.0"
 lazy_static = "1.4"
