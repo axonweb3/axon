@@ -255,7 +255,7 @@ fn cell_data_hash(data: &Bytes) -> packed::Byte32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::random;
+    use protocol::rand::random;
 
     #[test]
     fn test_key_codec() {

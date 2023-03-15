@@ -1,5 +1,5 @@
 mod addr;
-mod protocol;
+mod proto;
 mod state;
 
 use std::{
@@ -10,7 +10,6 @@ use std::{
 
 use log::{debug, trace, warn};
 use prost::Message;
-use rand::seq::SliceRandom;
 use tentacle::{
     async_trait, bytes,
     context::{ProtocolContext, ProtocolContextMutRef},
@@ -20,15 +19,17 @@ use tentacle::{
     SessionId,
 };
 
+use protocol::rand::{self, seq::SliceRandom};
+
 use crate::peer_manager::PeerManager;
 
 pub use self::{
     addr::{AddrKnown, AddressManager, MisbehaveResult, Misbehavior},
-    protocol::{DiscoveryMessage, Node, Nodes},
+    proto::{DiscoveryMessage, Node, Nodes},
     state::SessionState,
 };
 use self::{
-    protocol::{GetNodes, Payload},
+    proto::{GetNodes, Payload},
     state::RemoteAddress,
 };
 

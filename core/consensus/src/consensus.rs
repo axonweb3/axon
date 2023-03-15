@@ -1,12 +1,11 @@
 use std::sync::Arc;
 
-use creep::Context;
 use overlord::types::{
     AggregatedVote, Node, OverlordMsg, SignedChoke, SignedProposal, SignedVote, Status,
 };
 use overlord::{DurationConfig, Overlord, OverlordHandler};
 
-use protocol::traits::{Consensus, ConsensusAdapter, NodeInfo};
+use protocol::traits::{Consensus, ConsensusAdapter, Context, NodeInfo};
 use protocol::types::{Proposal, Validator, H160};
 use protocol::{
     async_trait, codec::ProtocolCodec, tokio::sync::Mutex as AsyncMutex, ProtocolResult,

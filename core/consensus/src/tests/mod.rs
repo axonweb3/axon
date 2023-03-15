@@ -5,13 +5,11 @@ pub mod synchronization;
 
 use std::{collections::HashMap, str::FromStr};
 
-use rand::random;
-
-use creep::Context;
+use protocol::rand::random;
 use protocol::{
     async_trait,
     codec::hex_decode,
-    traits::{CommonConsensusAdapter, SynchronizationAdapter},
+    traits::{CommonConsensusAdapter, Context, SynchronizationAdapter},
     types::{
         Address, Block, BlockNumber, Bytes, Eip1559Transaction, ExecResp, Hash, Hasher, Header,
         Hex, MerkleRoot, Metadata, Proof, Proposal, Public, Receipt, SignatureComponents,

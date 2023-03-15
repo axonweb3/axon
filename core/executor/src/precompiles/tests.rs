@@ -1,8 +1,7 @@
 use evm::Context;
-use rand::random;
 use sha2::Digest;
 
-use protocol::{codec::hex_decode, types::U256};
+use protocol::{codec::hex_decode, rand::random, types::U256};
 
 use crate::precompiles::{
     Blake2F, EcAdd, EcMul, EcPairing, EcRecover, Identity, ModExp, PrecompileContract, Ripemd160,

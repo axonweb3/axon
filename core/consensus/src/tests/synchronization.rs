@@ -1,16 +1,16 @@
 use std::sync::Arc;
 
+use protocol::{
+    tokio::{self, sync::Mutex as AsyncMutex},
+    traits::{Context, Synchronization},
+    types::{Block, Header},
+};
+
 use crate::{
     status::{CurrentStatus, StatusAgent},
     synchronization::{OverlordSynchronization, RichBlock},
     tests::MockSyncAdapter,
     util::time_now,
-};
-use creep::Context;
-use protocol::{
-    tokio::{self, sync::Mutex as AsyncMutex},
-    traits::Synchronization,
-    types::{Block, Header},
 };
 
 pub fn get_mock_synchronization() -> OverlordSynchronization<MockSyncAdapter> {

@@ -1,6 +1,5 @@
 use std::{collections::HashSet, sync::Arc, time::Duration};
 
-use rand::prelude::IteratorRandom;
 use tentacle::{
     builder::ServiceBuilder,
     context::ServiceContext,
@@ -16,6 +15,7 @@ use tentacle::{
     yamux::Config as YamuxConfig,
 };
 
+use protocol::rand::{self, prelude::IteratorRandom};
 use protocol::tokio::time::{Instant, MissedTickBehavior};
 use protocol::{
     async_trait, tokio,

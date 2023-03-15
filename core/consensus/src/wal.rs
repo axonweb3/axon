@@ -1,13 +1,9 @@
-use std::fs;
 use std::io::{ErrorKind, Read, Write};
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
-use std::time::SystemTime;
-
-use creep::Context;
+use std::{fs, str::FromStr, time::SystemTime};
 
 use common_apm_derive::trace_span;
-use protocol::traits::MessageCodec;
+use protocol::traits::{Context, MessageCodec};
 use protocol::types::{BatchSignedTxs, BufMut, Bytes, BytesMut, Hash, Hasher, SignedTransaction};
 use protocol::ProtocolResult;
 
@@ -322,9 +318,8 @@ mod tests {
     use common_crypto::{
         Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey, Signature,
     };
-    use rand::random;
-    use rand::rngs::OsRng;
 
+    use protocol::rand::{random, rngs::OsRng};
     use protocol::types::{
         Bytes, Eip1559Transaction, Hash, SignatureComponents, SignedTransaction, TransactionAction,
         UnsignedTransaction, UnverifiedTransaction,

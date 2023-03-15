@@ -46,14 +46,14 @@ fn criterion_convert(c: &mut Criterion) {
 
 fn criterion_rand(c: &mut Criterion) {
     const RAND_SEED: u64 = 49999;
-    use rand::rngs::SmallRng;
-    use rand::{Rng, SeedableRng};
+    use protocol::rand::rngs::SmallRng;
+    use protocol::rand::{Rng, SeedableRng};
     // MacOS M1 Pro 16G: 15.80µs
     c.bench_function("gen rand", |b| {
         b.iter(|| {
             let mut rng = SmallRng::seed_from_u64(RAND_SEED);
             for _ in 0..10000 {
-                rng.gen_range(10..1000000);
+                rng.gen_range(10, 1000000);
             }
         })
     });

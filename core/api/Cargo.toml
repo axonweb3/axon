@@ -22,5 +22,4 @@ core-executor = { path = "../../core/executor" }
 protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [dev-dependencies]
-fastrand = "1.8"
 json = "0.12"

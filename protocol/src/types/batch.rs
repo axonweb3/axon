@@ -39,11 +39,11 @@ mod tests {
     use super::*;
 
     use rand::{random, rngs::OsRng};
+    use rlp::Encodable;
 
     use common_crypto::{
         Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey, Signature,
     };
-    use rlp::Encodable;
 
     use crate::codec::ProtocolCodec;
     use crate::types::{

@@ -3,6 +3,8 @@ use std::collections::hash_map::RandomState;
 use bloom_filters::{BloomFilter, DefaultBuildHashKernels, StableBloomFilter};
 use tentacle::{context::ProtocolContextMutRef, multiaddr::Multiaddr, SessionId};
 
+use protocol::rand;
+
 pub(crate) const DEFAULT_BUCKETS_NUM: usize = 5000;
 
 pub enum Misbehavior {

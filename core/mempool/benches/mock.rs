@@ -3,14 +3,13 @@
 use std::sync::Arc;
 
 use dashmap::DashMap;
-use rand::random;
-use rand::rngs::OsRng;
 
 use common_crypto::{
     Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey,
     Secp256k1RecoverablePublicKey, Signature, ToPublicKey, UncompressedPublicKey,
 };
-use core_executor::system_contract::system_contract_address;
+
+use protocol::rand::{random, rngs::OsRng};
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
 use protocol::types::{
     public_to_address, recover_intact_pub_key, Bytes, Eip1559Transaction, Hash, PackedTxHashes,
@@ -19,6 +18,7 @@ use protocol::types::{
 };
 use protocol::{async_trait, tokio, ProtocolResult};
 
+use core_executor::system_contract::system_contract_address;
 use core_mempool::{AdapterError, MemPoolError, MemPoolImpl};
 
 pub const CYCLE_LIMIT: u64 = 1_000_000;

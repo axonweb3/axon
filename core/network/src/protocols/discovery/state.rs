@@ -13,7 +13,7 @@ use protocol::types::BytesMut;
 
 use crate::protocols::discovery::{
     addr::AddrKnown,
-    protocol::{DiscoveryMessage, Node},
+    proto::{DiscoveryMessage, Node},
     AddressManager, MAX_ADDR_TO_SEND,
 };
 

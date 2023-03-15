@@ -77,12 +77,10 @@ impl From<MPTTrieError> for ProtocolError {
 mod tests {
     use super::*;
     use crate::adapter::RocksTrieDB;
-    use getrandom::getrandom;
+    use protocol::rand::random;
 
     fn rand_bytes(len: usize) -> Vec<u8> {
-        let mut ret = (0..len).map(|_| 0u8).collect::<Vec<_>>();
-        getrandom(&mut ret).unwrap();
-        ret
+        (0..len).map(|_| random()).collect()
     }
 
     #[test]

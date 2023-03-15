@@ -1,14 +1,16 @@
-use super::types::AddrInfo;
-use rand::Rng;
 use std::{
     collections::{HashMap, HashSet},
     net::SocketAddr,
 };
+
 use tentacle::{
     multiaddr::Multiaddr,
     secio::PeerId,
     utils::{extract_peer_id, multiaddr_to_socketaddr},
 };
+
+use crate::peer_manager::peer_store::types::AddrInfo;
+use protocol::rand::{self, Rng};
 
 #[derive(Default)]
 pub struct Manager {

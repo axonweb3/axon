@@ -1,13 +1,13 @@
 use std::{collections::HashMap, fs, io, path::Path, sync::Arc};
 
 use parking_lot::RwLock;
-use rand::{rngs::SmallRng, Rng, SeedableRng};
 use rocksdb::ops::{Get, Open, Put, WriteOps};
 use rocksdb::{FullOptions, Options, WriteBatch, DB};
 
 use common_apm::metrics::storage::{on_storage_get_state, on_storage_put_state};
 use common_apm::Instant;
 use common_config_parser::types::ConfigRocksDB;
+use protocol::rand::{rngs::SmallRng, Rng, SeedableRng};
 use protocol::{trie, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 // 49999 is the largest prime number within 50000.
@@ -197,7 +197,7 @@ fn rand_remove_list<T: Clone>(keys: Vec<&T>, num: usize) -> impl Iterator<Item =
     let mut ret = Vec::with_capacity(num);
 
     for _ in 0..num {
-        let tmp = rng.gen_range(0..len);
+        let tmp = rng.gen_range(0, len);
         let idx = idx_list.remove(tmp);
         ret.push(keys[idx].clone());
         len -= 1;
@@ -239,15 +239,13 @@ fn to_store_err(e: rocksdb::Error) -> RocksTrieDBError {
 
 #[cfg(test)]
 mod tests {
-    use getrandom::getrandom;
+    use protocol::rand::random;
     use trie::DB;
 
     use super::*;
 
     fn rand_bytes(len: usize) -> Vec<u8> {
-        let mut ret = (0..len).map(|_| 0u8).collect::<Vec<_>>();
-        getrandom(&mut ret).unwrap();
-        ret
+        (0..len).map(|_| random()).collect()
     }
 
     #[test]
