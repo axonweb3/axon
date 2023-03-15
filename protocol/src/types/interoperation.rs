@@ -27,7 +27,7 @@ pub struct AddressSource {
     pub index: u32,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SignatureR {
     ByRef(CKBTxMockByRef),
     ByRefAndOneInput(CKBTxMockByRefAndOneInput),
@@ -103,7 +103,7 @@ impl SignatureR {
 
     pub fn dummy_input(&self) -> Option<CellWithData> {
         match self {
-            SignatureR::ByRefAndOneInput(i) => Some(i.input_lock.clone()),
+            SignatureR::ByRefAndOneInput(i) => Some(i.input_cell_with_data.clone()),
             SignatureR::ByRef(_) => None,
         }
     }
@@ -128,7 +128,7 @@ pub struct CKBTxMockByRef {
 pub struct CKBTxMockByRefAndOneInput {
     pub cell_deps:             Vec<CellDep>,
     pub header_deps:           Vec<H256>,
-    pub input_lock:            CellWithData,
+    pub input_cell_with_data:  CellWithData,
     pub out_point_addr_source: AddressSource,
 }
 
@@ -251,5 +251,128 @@ impl From<&CellDep> for packed::CellDep {
             )
             .dep_type(packed::Byte::new(dep.dep_type))
             .build()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand::random;
+
+    fn random_out_point() -> OutPoint {
+        OutPoint {
+            tx_hash: H256::random(),
+            index:   0,
+        }
+    }
+
+    fn random_cell_dep() -> CellDep {
+        let out_point = random_out_point();
+        CellDep {
+            tx_hash:  out_point.tx_hash,
+            index:    out_point.index,
+            dep_type: 0,
+        }
+    }
+
+    fn random_script() -> Script {
+        Script {
+            code_hash: H256::random(),
+            args:      H256::random().0.to_vec().into(),
+            hash_type: 0,
+        }
+    }
+
+    fn random_witness() -> Witness {
+        Witness {
+            input_type:  random::<bool>().then(|| H256::random().0.to_vec().into()),
+            output_type: random::<bool>().then(|| H256::random().0.to_vec().into()),
+            lock:        random::<bool>().then(|| H256::random().0.to_vec().into()),
+        }
+    }
+
+    #[test]
+    fn test_signature_r_decode() {
+        let mock_by_ref = CKBTxMockByRef {
+            cell_deps:             vec![random_cell_dep()],
+            header_deps:           vec![H256::random()],
+            out_points:            vec![random_out_point()],
+            out_point_addr_source: AddressSource { type_: 0, index: 0 },
+        };
+
+        let mock_by_one_input_with_type_script = CKBTxMockByRefAndOneInput {
+            cell_deps:             vec![random_cell_dep()],
+            header_deps:           vec![H256::random()],
+            input_cell_with_data:  CellWithData {
+                type_script: Some(random_script()),
+                lock_script: (random_script()),
+                data:        H256::random().0.to_vec().into(),
+            },
+            out_point_addr_source: AddressSource { type_: 1, index: 0 },
+        };
+
+        let mock_by_one_input_without_type_script = CKBTxMockByRefAndOneInput {
+            cell_deps:             vec![random_cell_dep()],
+            header_deps:           vec![H256::random()],
+            input_cell_with_data:  CellWithData {
+                type_script: None,
+                lock_script: (random_script()),
+                data:        H256::random().0.to_vec().into(),
+            },
+            out_point_addr_source: AddressSource { type_: 0, index: 0 },
+        };
+
+        let mut raw = vec![1];
+        raw.extend_from_slice(&rlp::encode(&mock_by_ref));
+        assert_eq!(
+            SignatureR::ByRef(mock_by_ref.clone()),
+            SignatureR::decode(&raw).unwrap()
+        );
+
+        let mut raw = vec![2];
+        raw.extend_from_slice(&rlp::encode(&mock_by_ref));
+        assert!(SignatureR::decode(&raw).is_err());
+
+        let mut raw = vec![2];
+        raw.extend_from_slice(&rlp::encode(&mock_by_one_input_with_type_script));
+        assert_eq!(
+            SignatureR::ByRefAndOneInput(mock_by_one_input_with_type_script),
+            SignatureR::decode(&raw).unwrap()
+        );
+
+        let mut raw = vec![2];
+        raw.extend_from_slice(&rlp::encode(&mock_by_one_input_without_type_script));
+        assert_eq!(
+            SignatureR::ByRefAndOneInput(mock_by_one_input_without_type_script.clone()),
+            SignatureR::decode(&raw).unwrap()
+        );
+
+        let mut raw = vec![1];
+        raw.extend_from_slice(&rlp::encode(&mock_by_one_input_without_type_script));
+        assert!(SignatureR::decode(&raw).is_err());
+    }
+
+    #[test]
+    fn test_address_source_decode() {
+        let mock_by_ref = CKBTxMockByRef {
+            cell_deps:             vec![random_cell_dep()],
+            header_deps:           vec![H256::random()],
+            out_points:            vec![random_out_point()],
+            out_point_addr_source: AddressSource { type_: 2, index: 0 },
+        };
+
+        let mut raw = vec![1];
+        raw.extend_from_slice(&rlp::encode(&mock_by_ref));
+        assert!(SignatureR::decode(&raw).is_err());
+    }
+
+    #[test]
+    fn test_signature_s_decode() {
+        let signature_s = SignatureS {
+            witnesses: (0..25).map(|_| random_witness()).collect(),
+        };
+
+        let raw = rlp::encode(&signature_s);
+        assert_eq!(rlp::decode::<SignatureS>(&raw).unwrap(), signature_s);
     }
 }
