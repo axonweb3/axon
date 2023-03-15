@@ -24,6 +24,7 @@ jobs:
           # to override config-conventional rules, specify a relative path to your rules module, actions/checkout is required for this setting!
           # commitlintRulesPath: "./commitlint.rules.js" # default: undefined
           close: false
+          issue: false
           message: 'The title of this PR does not conform the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/). Please fix it, thx.'
 
           # if the PR contains a single commit, fail if the commit message and the PR title do not match
