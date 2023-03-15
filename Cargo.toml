@@ -38,8 +38,9 @@ members = [
     "core/rpc-client",
     "core/run",
     "core/storage",
-
     "core/tx-assembler",
+
+    "devtools/abi-generator",
     "devtools/genesis-generator",
     "devtools/keypair",
 
