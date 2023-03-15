@@ -36,10 +36,6 @@ use core_consensus::{
     util::OverlordCrypto, ConsensusWal, DurationConfig, Node, OverlordConsensus,
     OverlordConsensusAdapter, OverlordSynchronization, SignedTxsWAL,
 };
-use core_cross_client::{
-    CrossChainDBImpl, CrossChainImpl, CrossChainMessageHandler, DefaultCrossChainAdapter,
-    END_GOSSIP_BUILD_CKB_TX, END_GOSSIP_CKB_TX_SIGNATURE,
-};
 use core_executor::{system_contract, AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB};
 use core_interoperation::InteroperationImpl;
 use core_mempool::{
@@ -50,9 +46,8 @@ use core_metadata::{MetadataAdapterImpl, MetadataController};
 use core_network::{
     observe_listen_port_occupancy, NetworkConfig, NetworkService, PeerId, PeerIdExt,
 };
-use core_rpc_client::RpcClient;
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
-use core_tx_assembler::{IndexerAdapter, TxAssemblerImpl};
+
 use protocol::lazy::{CHAIN_ID, CURRENT_STATE_ROOT};
 #[cfg(unix)]
 use protocol::tokio::signal::unix as os_impl;
@@ -61,7 +56,7 @@ use protocol::traits::{
     CommonStorage, Context, Executor, MemPool, MetadataControl, Network, NodeInfo, Storage,
 };
 use protocol::types::{
-    Account, Address, MerkleRoot, Proposal, RichBlock, Validator, H256, NIL_DATA, RLP_NULL,
+    Account, Address, MerkleRoot, Proposal, RichBlock, Validator, NIL_DATA, RLP_NULL,
 };
 use protocol::{
     codec::{hex_decode, ProtocolCodec},
@@ -328,12 +323,6 @@ impl Axon {
 
         let metadata = metadata_controller.get_metadata(Context::new(), &current_block.header)?;
 
-        let ckb_client = Arc::new(RpcClient::new(
-            &self.config.cross_client.ckb_uri,
-            &self.config.cross_client.mercury_uri,
-            &self.config.cross_client.indexer_uri.clone(),
-        ));
-
         // Init mempool
         let mempool_adapter =
             DefaultMemPoolAdapter::<Secp256k1, _, _, _, _, InteroperationImpl>::new(
@@ -435,52 +424,6 @@ impl Axon {
             metadata.max_tx_size,
         );
 
-        // start ckb tx assembler
-        let indexer_adapter = IndexerAdapter::new(Arc::clone(&ckb_client));
-        let ckb_tx_assembler = Arc::new(TxAssemblerImpl::new(Arc::new(indexer_adapter)));
-        let metadata_type_id = H256::from_slice(
-            &hex_decode("490d951fe6d4d34d0c4f238b50b8b1d524ddf737275b1a1f1e3216f0af5c522e")
-                .unwrap(),
-        );
-        let _ = ckb_tx_assembler
-            .update_metadata(
-                metadata_type_id,
-                Default::default(),
-                current_header.chain_id as u16,
-                self.config.cross_client.enable,
-            )
-            .await?;
-
-        // start cross chain client
-        let path_crosschain = self.config.data_path_for_crosschain();
-        let crosschain_db = CrossChainDBImpl::new(path_crosschain, config.rocksdb.clone())?;
-
-        let crosschain_adapter = DefaultCrossChainAdapter::new(
-            Arc::clone(&mempool),
-            Arc::clone(&metadata_controller),
-            Arc::clone(&storage),
-            Arc::clone(&ckb_tx_assembler),
-            Arc::clone(&trie_db),
-            Arc::new(crosschain_db),
-            Arc::clone(&ckb_client),
-        )
-        .await;
-
-        let (crosschain_process, cross_handle, crosschain_net_handle) = CrossChainImpl::new(
-            &hex_privkey,
-            config.cross_client.clone(),
-            Arc::clone(&ckb_client),
-            Arc::new(crosschain_adapter),
-            config.crosschain_contract_address,
-            config.wckb_contract_address,
-        )
-        .await;
-
-        // start cross chain client
-        if self.config.cross_client.enable {
-            tokio::spawn(crosschain_process.run());
-        }
-
         let consensus_interval = metadata.interval;
         let status_agent = StatusAgent::new(current_consensus_status);
 
@@ -501,12 +444,11 @@ impl Axon {
             String::new(),
         ));
 
-        let consensus_adapter = OverlordConsensusAdapter::<_, _, _, _, _, _>::new(
+        let consensus_adapter = OverlordConsensusAdapter::<_, _, _, _, _>::new(
             Arc::new(network_service.handle()),
             Arc::clone(&mempool),
             Arc::clone(&storage),
             Arc::clone(&trie_db),
-            Arc::new(cross_handle),
             Arc::clone(&metadata_controller),
             Arc::clone(&crypto),
         )?;
@@ -524,7 +466,6 @@ impl Axon {
             Arc::clone(&consensus_adapter),
             Arc::clone(&lock),
             Arc::clone(&consensus_wal),
-            self.config.cross_client.checkpoint_interval,
         ));
 
         consensus_adapter.set_overlord_handler(overlord_consensus.get_overlord_handler());
@@ -545,16 +486,6 @@ impl Axon {
         network_service
             .handle()
             .tag_consensus(Context::new(), peer_ids)?;
-
-        network_service.register_endpoint_handler(
-            END_GOSSIP_CKB_TX_SIGNATURE,
-            CrossChainMessageHandler::new(crosschain_net_handle.clone()),
-        )?;
-
-        network_service.register_endpoint_handler(
-            END_GOSSIP_BUILD_CKB_TX,
-            CrossChainMessageHandler::new(crosschain_net_handle),
-        )?;
 
         // register consensus
         network_service.register_endpoint_handler(

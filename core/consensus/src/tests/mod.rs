@@ -14,7 +14,7 @@ use protocol::{
     traits::{CommonConsensusAdapter, SynchronizationAdapter},
     types::{
         Address, Block, BlockNumber, Bytes, Eip1559Transaction, ExecResp, Hash, Hasher, Header,
-        Hex, Log, MerkleRoot, Metadata, Proof, Proposal, Public, Receipt, SignatureComponents,
+        Hex, MerkleRoot, Metadata, Proof, Proposal, Public, Receipt, SignatureComponents,
         SignedTransaction, TransactionAction, UnsignedTransaction, UnverifiedTransaction,
         Validator, H160, H256, U256,
     },
@@ -320,17 +320,6 @@ impl CommonConsensusAdapter for MockSyncAdapter {
     async fn verify_block_header(&self, ctx: Context, block: &Proposal) -> ProtocolResult<()> {
         Ok(())
     }
-
-    async fn notify_block_logs(
-        &self,
-        ctx: Context,
-        block_number: u64,
-        block_hash: Hash,
-        logs: &[Vec<Log>],
-    ) {
-    }
-
-    async fn notify_checkpoint(&self, ctx: Context, block: Block, proof: Proof) {}
 
     fn verify_proof_signature(
         &self,

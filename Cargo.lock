@@ -1592,37 +1592,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "core-cross-client"
-version = "0.1.0"
-dependencies = [
- "arc-swap",
- "axon-protocol",
- "ckb-jsonrpc-types",
- "ckb-sdk",
- "ckb-types",
- "common-config-parser",
- "common-crypto",
- "core-executor",
- "ethabi 17.2.0",
- "ethabi-contract",
- "ethabi-derive",
- "ethers-contract 1.0.2",
- "ethers-core 1.0.2",
- "ethers-providers 1.0.2",
- "futures",
- "jsonrpc-core",
- "lazy_static",
- "log",
- "molecule",
- "rand 0.7.3",
- "rlp",
- "serde",
- "serde_json",
- "sled",
- "tokio-util 0.7.7",
-]
-
-[[package]]
 name = "core-executor"
 version = "0.1.0"
 dependencies = [
@@ -1639,7 +1608,6 @@ dependencies = [
  "common-config-parser",
  "common-crypto",
  "common-merkle",
- "core-cross-client",
  "core-interoperation",
  "core-rpc-client",
  "core-storage",
@@ -1812,7 +1780,6 @@ dependencies = [
  "common-memory-tracker",
  "core-api",
  "core-consensus",
- "core-cross-client",
  "core-executor",
  "core-interoperation",
  "core-mempool",
@@ -1820,7 +1787,6 @@ dependencies = [
  "core-network",
  "core-rpc-client",
  "core-storage",
- "core-tx-assembler",
  "ethers-signers",
  "futures",
  "log",
@@ -1852,25 +1818,6 @@ dependencies = [
  "num-traits",
  "parking_lot 0.12.1",
  "rand 0.7.3",
-]
-
-[[package]]
-name = "core-tx-assembler"
-version = "0.1.0"
-dependencies = [
- "arc-swap",
- "axon-protocol",
- "ckb-jsonrpc-types",
- "ckb-sdk",
- "ckb-types",
- "common-crypto",
- "core-rpc-client",
- "lazy_static",
- "log",
- "molecule",
- "rand 0.7.3",
- "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -2418,23 +2365,6 @@ dependencies = [
 name = "ethabi"
 version = "17.0.0"
 source = "git+https://github.com/rust-ethereum/ethabi.git?rev=7edf185#7edf185125a9560d43bba0f84432a7cc874a5218"
-dependencies = [
- "ethereum-types 0.13.1",
- "hex",
- "once_cell",
- "regex",
- "serde",
- "serde_json",
- "sha3",
- "thiserror",
- "uint",
-]
-
-[[package]]
-name = "ethabi"
-version = "17.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e4966fba78396ff92db3b817ee71143eccd98acf0f876b8d600e585a670c5d1b"
 dependencies = [
  "ethereum-types 0.13.1",
  "hex",
@@ -3096,16 +3026,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a9c384f161156f5260c24a097c56119f9be8c798586aecc13afbcbe7b7e26bf8"
 dependencies = [
  "percent-encoding",
-]
-
-[[package]]
-name = "fs2"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9564fc758e15025b46aa6643b1b77d047d1a56a1aea6e01002ac0c7026876213"
-dependencies = [
- "libc",
- "winapi",
 ]
 
 [[package]]
@@ -6050,22 +5970,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6528351c9bc8ab22353f9d776db39a20288e8d6c37ef8cfe3317cf875eecfc2d"
 dependencies = [
  "autocfg",
-]
-
-[[package]]
-name = "sled"
-version = "0.34.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f96b4737c2ce5987354855aed3797279def4ebf734436c6aa4552cf8e169935"
-dependencies = [
- "crc32fast",
- "crossbeam-epoch",
- "crossbeam-utils",
- "fs2",
- "fxhash",
- "libc",
- "log",
- "parking_lot 0.11.2",
 ]
 
 [[package]]

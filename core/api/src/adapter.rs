@@ -3,9 +3,8 @@ use std::sync::Arc;
 use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie};
 use protocol::traits::{APIAdapter, Context, Executor, ExecutorAdapter, MemPool, Network, Storage};
 use protocol::types::{
-    Account, BigEndianHash, Block, BlockNumber, Bytes, ExecutorContext, Hash, HashWithDirection,
-    Header, Proposal, Receipt, SignedTransaction, TxResp, H160, MAX_BLOCK_GAS_LIMIT, NIL_DATA,
-    RLP_NULL, U256,
+    Account, BigEndianHash, Block, BlockNumber, Bytes, ExecutorContext, Hash, Header, Proposal,
+    Receipt, SignedTransaction, TxResp, H160, MAX_BLOCK_GAS_LIMIT, NIL_DATA, RLP_NULL, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, trie, ProtocolResult};
 
@@ -194,14 +193,6 @@ where
 
     async fn get_code_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>> {
         self.storage.get_code_by_hash(ctx, hash).await
-    }
-
-    async fn get_crosschain_record_by_hash(
-        &self,
-        ctx: Context,
-        hash: &Hash,
-    ) -> ProtocolResult<Option<HashWithDirection>> {
-        self.storage.get_crosschain_record(ctx, hash).await
     }
 
     async fn peer_count(&self, ctx: Context) -> ProtocolResult<U256> {

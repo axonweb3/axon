@@ -24,7 +24,6 @@ common-logger = { path = "../../common/logger" }
 common-memory-tracker = { path = "../../common/memory-tracker", optional = true }
 core-api = { path = "../../core/api" }
 core-consensus = { path = "../../core/consensus" }
-core-cross-client = { path = "../../core/cross-client" }
 core-executor = { path = "../../core/executor" }
 core-interoperation = { path = "../../core/interoperation" }
 core-mempool = { path = "../../core/mempool" }
@@ -32,7 +31,6 @@ core-metadata = { path = "../../core/metadata" }
 core-network = { path = "../../core/network" }
 core-rpc-client = { path = "../../core/rpc-client" }
 core-storage = { path = "../../core/storage" }
-core-tx-assembler = { path = "../../core/tx-assembler" }
 protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [target.'cfg(all(not(target_env = "msvc"), not(target_os="macos")))'.dependencies]

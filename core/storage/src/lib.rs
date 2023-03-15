@@ -19,12 +19,12 @@ use common_apm::Instant;
 use common_apm_derive::trace_span;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{
-    CkbCrossChainStorage, CommonStorage, Context, Storage, StorageAdapter, StorageBatchModify,
-    StorageCategory, StorageSchema,
+    CommonStorage, Context, Storage, StorageAdapter, StorageBatchModify, StorageCategory,
+    StorageSchema,
 };
 use protocol::types::{
-    Block, BlockNumber, Bytes, DBBytes, Direction, Hash, HashWithDirection, Hasher, Header, Proof,
-    Receipt, RequestTxHashes, SignedTransaction, H256,
+    Block, BlockNumber, Bytes, DBBytes, Hash, Hasher, Header, Proof, Receipt, SignedTransaction,
+    H256,
 };
 use protocol::{
     async_trait, tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
@@ -33,10 +33,9 @@ use protocol::{
 use crate::cache::StorageCache;
 use crate::hash_key::{BlockKey, CommonHashKey, CommonPrefix};
 use crate::schema::{
-    BlockHashNumberSchema, BlockHeaderSchema, BlockSchema, CkbCrossChainSchema,
-    EvmCodeAddressSchema, EvmCodeSchema, LatestBlockSchema, LatestProofSchema,
-    MonitorCkbNumberSchema, ReceiptBytesSchema, ReceiptSchema, TransactionBytesSchema,
-    TransactionSchema, TxHashNumberSchema,
+    BlockHashNumberSchema, BlockHeaderSchema, BlockSchema, EvmCodeAddressSchema, EvmCodeSchema,
+    LatestBlockSchema, LatestProofSchema, ReceiptBytesSchema, ReceiptSchema,
+    TransactionBytesSchema, TransactionSchema, TxHashNumberSchema,
 };
 
 const BATCH_VALUE_DECODE_NUMBER: usize = 1000;
@@ -549,54 +548,6 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
             let proof = ensure_get!(self, *LATEST_PROOF_KEY, LatestProofSchema);
             Ok(proof)
         }
-    }
-}
-
-#[async_trait]
-impl<Adapter: StorageAdapter> CkbCrossChainStorage for ImplStorage<Adapter> {
-    async fn insert_crosschain_records(
-        &self,
-        _ctx: Context,
-        reqs: RequestTxHashes,
-        relay_tx_hash: Hash,
-        dir: Direction,
-    ) -> ProtocolResult<()> {
-        let (keys, vals) = reqs
-            .tx_hashes
-            .iter()
-            .map(|hash| {
-                (
-                    *hash,
-                    StorageBatchModify::Insert(HashWithDirection {
-                        tx_hash:   relay_tx_hash,
-                        direction: dir,
-                    }),
-                )
-            })
-            .unzip();
-
-        self.adapter.batch_modify::<CkbCrossChainSchema>(keys, vals)
-    }
-
-    async fn get_crosschain_record(
-        &self,
-        _ctx: Context,
-        hash: &Hash,
-    ) -> ProtocolResult<Option<HashWithDirection>> {
-        self.adapter.get::<CkbCrossChainSchema>(*hash)
-    }
-
-    async fn update_monitor_ckb_number(&self, _ctx: Context, number: u64) -> ProtocolResult<()> {
-        self.adapter
-            .insert::<MonitorCkbNumberSchema>(*MONITOR_CKB_NUMBER_KEY, number)
-    }
-
-    async fn get_monitor_ckb_number(&self, _ctx: Context) -> ProtocolResult<u64> {
-        let ret = self
-            .adapter
-            .get::<MonitorCkbNumberSchema>(*MONITOR_CKB_NUMBER_KEY)?
-            .ok_or_else(|| StorageError::GetNone("monitor_ckb_number".to_string()))?;
-        Ok(ret)
     }
 }
 

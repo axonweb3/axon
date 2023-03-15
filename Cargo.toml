@@ -30,7 +30,6 @@ members = [
     "core/api",
     "core/cli",
     "core/consensus",
-    "core/cross-client",
     "core/executor",
     "core/mempool",
     "core/metadata",
@@ -38,7 +37,6 @@ members = [
     "core/rpc-client",
     "core/run",
     "core/storage",
-    "core/tx-assembler",
 
     "devtools/abi-generator",
     "devtools/genesis-generator",

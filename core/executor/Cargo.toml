@@ -41,7 +41,6 @@ bytemuck = "1.13"
 ckb-jsonrpc-types = "0.106"
 ckb-types = "0.106"
 common-crypto = { path = "../../common/crypto" }
-core-cross-client = { path = "../cross-client" }
 core-rpc-client = { path = "../rpc-client" }
 core-storage = { path = "../storage" }
 criterion = "0.4"

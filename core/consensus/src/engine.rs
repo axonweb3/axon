@@ -51,7 +51,6 @@ pub struct ConsensusEngine<Adapter> {
     crypto:  Arc<OverlordCrypto>,
     lock:    Arc<AsyncMutex<()>>,
 
-    cross_period_interval:        u64,
     last_commit_time:             RwLock<u64>,
     consensus_wal:                Arc<ConsensusWal>,
     last_check_block_fail_reason: RwLock<String>,
@@ -456,7 +455,6 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         crypto: Arc<OverlordCrypto>,
         lock: Arc<AsyncMutex<()>>,
         consensus_wal: Arc<ConsensusWal>,
-        cross_period_interval: u64,
     ) -> Self {
         Self {
             status,
@@ -467,7 +465,6 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             adapter,
             crypto,
             lock,
-            cross_period_interval,
             last_commit_time: RwLock::new(time_now()),
             consensus_wal,
             last_check_block_fail_reason: RwLock::new(String::new()),
@@ -598,26 +595,13 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         let is_change_metadata = self.contains_change_metadata(&txs);
         let next_block_number = block_number + 1;
 
-        let (receipts, mut logs) = generate_receipts_and_logs(
+        let (receipts, _logs) = generate_receipts_and_logs(
             block_number,
             block_hash,
             block.header.state_root,
             &txs,
             &resp,
         );
-
-        // Call cross client
-        let _ = logs.split_off(block.header.call_system_script_count as usize);
-        self.adapter
-            .notify_block_logs(ctx.clone(), block_number, block_hash, &logs)
-            .await;
-
-        // Submit checkpoint
-        if block_number % self.cross_period_interval == 0 {
-            self.adapter
-                .notify_checkpoint(ctx.clone(), block.clone(), proof.clone())
-                .await;
-        }
 
         // Save signed transactions
         self.adapter

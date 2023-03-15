@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::types::{
-    Address, Block, BlockNumber, Bytes, ExecResp, Hash, Header, Hex, Log, MerkleRoot, Metadata,
+    Address, Block, BlockNumber, Bytes, ExecResp, Hash, Header, Hex, MerkleRoot, Metadata,
     PackedTxHashes, Proof, Proposal, Receipt, SignedTransaction, Validator, U256,
 };
 use crate::{async_trait, traits::Context, ProtocolResult};
@@ -149,16 +149,6 @@ pub trait CommonConsensusAdapter: Send + Sync {
     async fn verify_proof(&self, ctx: Context, block: Block, proof: Proof) -> ProtocolResult<()>;
 
     async fn verify_block_header(&self, ctx: Context, block: &Proposal) -> ProtocolResult<()>;
-
-    async fn notify_block_logs(
-        &self,
-        ctx: Context,
-        block_number: u64,
-        block_hash: Hash,
-        logs: &[Vec<Log>],
-    );
-
-    async fn notify_checkpoint(&self, ctx: Context, block: Block, proof: Proof);
 
     fn verify_proof_signature(
         &self,

@@ -10,13 +10,12 @@ use common_apm_derive::trace_span;
 use core_executor::{AxonExecutor, AxonExecutorAdapter};
 use core_network::{PeerId, PeerIdExt};
 use protocol::traits::{
-    CommonConsensusAdapter, ConsensusAdapter, Context, CrossChain, Executor, Gossip, MemPool,
-    MessageTarget, MetadataControl, Network, PeerTrust, Priority, Rpc, Storage,
-    SynchronizationAdapter,
+    CommonConsensusAdapter, ConsensusAdapter, Context, Executor, Gossip, MemPool, MessageTarget,
+    MetadataControl, Network, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
 };
 use protocol::types::{
-    BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Header, Hex, Log, MerkleRoot,
-    Metadata, PackedTxHashes, Proof, Proposal, Receipt, SignedTransaction, Validator, U256,
+    BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Header, Hex, MerkleRoot, Metadata,
+    PackedTxHashes, Proof, Proposal, Receipt, SignedTransaction, Validator, U256,
 };
 use protocol::{async_trait, tokio::task, trie, ProtocolResult};
 
@@ -34,7 +33,6 @@ pub struct OverlordConsensusAdapter<
     M: MemPool,
     N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage,
-    CS: CrossChain,
     MT: MetadataControl,
     DB: trie::DB,
 > {
@@ -43,19 +41,17 @@ pub struct OverlordConsensusAdapter<
 
     storage:          Arc<S>,
     trie_db:          Arc<DB>,
-    cross_client:     Arc<CS>,
     metadata:         Arc<MT>,
     overlord_handler: RwLock<Option<OverlordHandler<Proposal>>>,
     crypto:           Arc<OverlordCrypto>,
 }
 
 #[async_trait]
-impl<M, N, S, CS, MT, DB> ConsensusAdapter for OverlordConsensusAdapter<M, N, S, CS, MT, DB>
+impl<M, N, S, MT, DB> ConsensusAdapter for OverlordConsensusAdapter<M, N, S, MT, DB>
 where
     M: MemPool + 'static,
     N: Network + Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
-    CS: CrossChain + 'static,
     MT: MetadataControl + 'static,
     DB: trie::DB + 'static,
 {
@@ -129,12 +125,11 @@ where
 }
 
 #[async_trait]
-impl<M, N, S, CS, MT, DB> SynchronizationAdapter for OverlordConsensusAdapter<M, N, S, CS, MT, DB>
+impl<M, N, S, MT, DB> SynchronizationAdapter for OverlordConsensusAdapter<M, N, S, MT, DB>
 where
     M: MemPool + 'static,
     N: Network + Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
-    CS: CrossChain + 'static,
     MT: MetadataControl + 'static,
     DB: trie::DB + 'static,
 {
@@ -232,12 +227,11 @@ where
 }
 
 #[async_trait]
-impl<M, N, S, CS, MT, DB> CommonConsensusAdapter for OverlordConsensusAdapter<M, N, S, CS, MT, DB>
+impl<M, N, S, MT, DB> CommonConsensusAdapter for OverlordConsensusAdapter<M, N, S, MT, DB>
 where
     M: MemPool + 'static,
     N: Network + Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
-    CS: CrossChain + 'static,
     MT: MetadataControl + 'static,
     DB: trie::DB + 'static,
 {
@@ -542,22 +536,6 @@ where
         Ok(())
     }
 
-    async fn notify_block_logs(
-        &self,
-        ctx: Context,
-        block_number: u64,
-        block_hash: Hash,
-        logs: &[Vec<Log>],
-    ) {
-        self.cross_client
-            .set_evm_log(ctx, block_number, block_hash, logs)
-            .await
-    }
-
-    async fn notify_checkpoint(&self, ctx: Context, block: Block, proof: Proof) {
-        self.cross_client.set_checkpoint(ctx, block, proof).await
-    }
-
     #[trace_span(kind = "consensus.adapter")]
     fn verify_proof_signature(
         &self,
@@ -628,12 +606,11 @@ where
     }
 }
 
-impl<M, N, S, CS, MT, DB> OverlordConsensusAdapter<M, N, S, CS, MT, DB>
+impl<M, N, S, MT, DB> OverlordConsensusAdapter<M, N, S, MT, DB>
 where
     M: MemPool + 'static,
     N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
-    CS: CrossChain + 'static,
     MT: MetadataControl + 'static,
     DB: trie::DB + 'static,
 {
@@ -642,7 +619,6 @@ where
         mempool: Arc<M>,
         storage: Arc<S>,
         trie_db: Arc<DB>,
-        cross_client: Arc<CS>,
         metadata: Arc<MT>,
         crypto: Arc<OverlordCrypto>,
     ) -> ProtocolResult<Self> {
@@ -652,7 +628,6 @@ where
             storage,
             metadata,
             trie_db,
-            cross_client,
             overlord_handler: RwLock::new(None),
             crypto,
         })

@@ -4,7 +4,6 @@ pub use batch::*;
 pub use block::*;
 pub use bytes::{Buf, BufMut, Bytes, BytesMut};
 pub use ckb_client::*;
-pub use crosschain::*;
 pub use evm::{backend::*, ExitError, ExitRevert, ExitSucceed};
 pub use executor::{
     AccessList, AccessListItem, Account, Config, ExecResp, ExecutorContext, ExitReason, TxResp,
@@ -17,7 +16,6 @@ pub use transaction::*;
 pub mod batch;
 pub mod block;
 pub mod ckb_client;
-pub mod crosschain;
 pub mod executor;
 pub mod interoperation;
 pub mod primitive;

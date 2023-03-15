@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 
 mod create2;
-mod crosschain;
 mod uniswap2;
 
 use std::sync::Arc;
