@@ -18,7 +18,6 @@ version = "0.1.0"
 dependencies = [
  "clap 4.1.8",
  "ethers",
- "serde_json",
 ]
 
 [[package]]
