@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use clap::Parser;
-use ethers_contract::Abigen;
+use ethers::contract::Abigen;
 
 #[derive(Clone, Debug, Parser)]
 struct Args {

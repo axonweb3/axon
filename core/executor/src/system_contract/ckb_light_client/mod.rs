@@ -36,23 +36,23 @@ impl SystemContract for CkbLightClientContract {
         );
 
         let call_abi = exec_try!(
-            ckb_light_client_abi::CkbLightClientCalls::decode(tx_data),
+            ckb_light_client_abi::CkbLightClientContractCalls::decode(tx_data),
             gas_limit,
             "[ckb light client] invalid tx data"
         );
 
         match call_abi {
-            ckb_light_client_abi::CkbLightClientCalls::SetState(data) => {
+            ckb_light_client_abi::CkbLightClientContractCalls::SetState(data) => {
                 ALLOW_READ.store(data.allow_read, Ordering::Relaxed);
             }
-            ckb_light_client_abi::CkbLightClientCalls::Update(data) => {
+            ckb_light_client_abi::CkbLightClientContractCalls::Update(data) => {
                 exec_try!(
                     store.update(data),
                     gas_limit,
                     "[ckb light client] update error:"
                 );
             }
-            ckb_light_client_abi::CkbLightClientCalls::Rollback(data) => {
+            ckb_light_client_abi::CkbLightClientContractCalls::Rollback(data) => {
                 exec_try!(
                     store.rollback(data),
                     gas_limit,

@@ -45,7 +45,7 @@ impl CkbLightClientStore {
     }
 
     pub fn rollback(&mut self, data: ckb_light_client_abi::RollbackCall) -> ProtocolResult<()> {
-        for block_hash in data.block_hashs {
+        for block_hash in data.block_hashes {
             self.remove_header(&block_hash)?;
         }
 

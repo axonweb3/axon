@@ -16,7 +16,7 @@ common-config-parser = { path = "../../common/config-parser" }
 common-crypto = { path = "../../common/crypto" }
 common-merkle = { path = "../../common/merkle" }
 core-interoperation = { path = "../interoperation" }
-ethers = "1.0"
+ethers = "2.0"
 evm = { version = "0.37", features = ["tracing"] }
 futures = "0.3"
 hasher = "0.1"
@@ -48,8 +48,6 @@ criterion = "0.4"
 ethabi = "18.0"
 ethabi-contract = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
 ethabi-derive = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
-ethers-contract = "1.0"
-ethers-core = "1.0"
 getrandom = "0.2"
 hashbrown = "0.13"
 rand7 = { package = "rand", version = "0.7" }

@@ -100,7 +100,7 @@ fn test_update_second(backend: &mut MemoryBackend, executor: &CkbLightClientCont
 
 fn test_roll_back_first(backend: &mut MemoryBackend, executor: &CkbLightClientContract) {
     let data = ckb_light_client_abi::RollbackCall {
-        block_hashs: vec![prepare_header_2().block_hash],
+        block_hashes: vec![prepare_header_2().block_hash],
     };
 
     let r = exec(backend, executor, data.encode());
@@ -120,7 +120,7 @@ fn test_roll_back_first(backend: &mut MemoryBackend, executor: &CkbLightClientCo
 
 fn test_roll_back_second(backend: &mut MemoryBackend, executor: &CkbLightClientContract) {
     let data = ckb_light_client_abi::RollbackCall {
-        block_hashs: vec![prepare_header_1().block_hash],
+        block_hashes: vec![prepare_header_1().block_hash],
     };
 
     let r = exec(backend, executor, data.encode());
