@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, str::FromStr, sync::Arc};
+use std::{collections::BTreeMap, str::FromStr};
 
 use common_config_parser::types::ConfigRocksDB;
 use ethers::abi::AbiEncode;
@@ -6,8 +6,8 @@ use protocol::types::{MemoryBackend, SignedTransaction, H160, U256};
 
 use crate::{
     system_contract::{
+        init,
         metadata::{
-            init,
             metadata_abi::{self, Metadata, MetadataVersion, ValidatorExtend},
             MetadataContract,
         },
@@ -16,7 +16,7 @@ use crate::{
     tests::{gen_tx, gen_vicinity},
 };
 
-static ROCKSDB_PATH: &str = "./free-space/meta-data";
+static ROCKSDB_PATH: &str = "./free-space/system-contract";
 
 #[test]
 fn test_write_functions() {
@@ -25,11 +25,7 @@ fn test_write_functions() {
 
     let executor = MetadataContract::default();
 
-    init(
-        ROCKSDB_PATH,
-        ConfigRocksDB::default(),
-        Arc::new(backend.clone()),
-    );
+    init(ROCKSDB_PATH, ConfigRocksDB::default(), backend.clone());
 
     test_init(&mut backend, &executor);
 

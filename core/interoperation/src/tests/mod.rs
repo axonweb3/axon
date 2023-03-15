@@ -57,7 +57,7 @@ impl TestHandle {
         )
         .unwrap();
 
-        core_executor::system_contract::image_cell::init(
+        core_executor::system_contract::init(
             path + &salt.to_string() + "/sc",
             Default::default(),
             backend,

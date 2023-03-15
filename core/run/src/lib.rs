@@ -40,9 +40,7 @@ use core_cross_client::{
     CrossChainDBImpl, CrossChainImpl, CrossChainMessageHandler, DefaultCrossChainAdapter,
     END_GOSSIP_BUILD_CKB_TX, END_GOSSIP_CKB_TX_SIGNATURE,
 };
-use core_executor::{
-    system_contract::image_cell, AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB,
-};
+use core_executor::{system_contract, AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB};
 use core_interoperation::InteroperationImpl;
 use core_mempool::{
     DefaultMemPoolAdapter, MemPoolImpl, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
@@ -311,15 +309,15 @@ impl Axon {
             current_block.header.number + 1
         );
 
-        // Init image_cell
-        let path_state = config.data_path_for_image_cell();
+        // Init system contract
+        let path_state = config.data_path_for_system_contract();
         let backend = AxonExecutorAdapter::from_root(
             current_block.header.state_root,
             Arc::clone(&trie_db),
             Arc::clone(&storage),
             Proposal::from(current_block.header.clone()).into(),
         )?;
-        image_cell::init(path_state, config.rocksdb.clone(), backend);
+        system_contract::init(path_state, config.rocksdb.clone(), backend);
 
         let metadata_adapter = MetadataAdapterImpl::new(Arc::clone(&storage), Arc::clone(&trie_db));
         let metadata_controller = Arc::new(MetadataController::new(

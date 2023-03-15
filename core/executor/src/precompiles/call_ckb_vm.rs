@@ -20,7 +20,7 @@ macro_rules! try_rlp {
 pub struct CkbVM;
 
 impl PrecompileContract for CkbVM {
-    const ADDRESS: H160 = axon_precompile_address(0x02);
+    const ADDRESS: H160 = axon_precompile_address(0x04);
     const MIN_GAS: u64 = 500;
 
     fn exec_fn(
