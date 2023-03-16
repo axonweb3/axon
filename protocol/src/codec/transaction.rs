@@ -4,7 +4,6 @@ use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 
 use common_crypto::secp256k1_recover;
 
-use crate::lazy::CHAIN_ID;
 use crate::types::{
     public_to_address, AccessList, AccessListItem, Bytes, BytesMut, Eip1559Transaction,
     Eip2930Transaction, Hasher, LegacyTransaction, Public, SignatureComponents, SignedTransaction,
@@ -121,7 +120,8 @@ impl LegacyTransaction {
         };
 
         let v: u64 = r.val_at(6)?;
-        let id = SignatureComponents::extract_chain_id(v).unwrap_or_else(|| **CHAIN_ID.load());
+        let id = SignatureComponents::extract_chain_id(v)
+            .ok_or(DecoderError::Custom("Missing chain id"))?;
 
         Ok(UnverifiedTransaction {
             unsigned:  UnsignedTransaction::Legacy(tx),
