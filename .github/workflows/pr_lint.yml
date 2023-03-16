@@ -21,13 +21,7 @@ jobs:
         with:
           regexp: "(feat|perf|refactor|fix|chore|docs|style|ci):" # Regex the title should match.
           helpMessage: "The title of this PR does not conform the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/). Please fix it, thx. Example: 'feat: example of title'"
-      - name: Check Commit Type
-        uses: gsactions/commit-message-checker@v2
-        with:
-          pattern: '(feat|perf|refactor|fix|chore|docs|style|ci):'
-          error: 'Your first line has to contain a commit type like "[BUGFIX]".'
           
-
   Label:
     runs-on: ubuntu-latest
     steps:
