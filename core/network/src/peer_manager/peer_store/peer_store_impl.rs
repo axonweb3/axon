@@ -1,3 +1,14 @@
+use std::collections::{hash_map::Entry, HashMap, HashSet};
+
+use ipnetwork::IpNetwork;
+use tentacle::{
+    secio::PeerId,
+    service::SessionType,
+    utils::{extract_peer_id, multiaddr_to_socketaddr},
+};
+
+use protocol::rand::{self, prelude::IteratorRandom};
+
 use crate::{
     error::ErrorKind,
     peer_manager::peer_store::{
@@ -7,14 +18,6 @@ use crate::{
         Group, Multiaddr, PeerScoreConfig, ReportResult, Status, ADDR_COUNT_LIMIT, ADDR_TIMEOUT_MS,
         ADDR_TRY_TIMEOUT_MS, DIAL_INTERVAL,
     },
-};
-use ipnetwork::IpNetwork;
-use rand::prelude::IteratorRandom;
-use std::collections::{hash_map::Entry, HashMap, HashSet};
-use tentacle::{
-    secio::PeerId,
-    service::SessionType,
-    utils::{extract_peer_id, multiaddr_to_socketaddr},
 };
 
 /// Peer store

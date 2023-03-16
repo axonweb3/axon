@@ -1,7 +1,4 @@
-use crate::types::{
-    Block, Bytes, Direction, Hash, HashWithDirection, Header, Proof, Receipt, RequestTxHashes,
-    SignedTransaction, H256,
-};
+use crate::types::{Block, Bytes, Hash, Header, Proof, Receipt, SignedTransaction, H256};
 use crate::{async_trait, codec::ProtocolCodec, traits::Context, Display, ProtocolResult};
 
 #[derive(Debug, Copy, Clone, Display)]
@@ -53,7 +50,7 @@ pub trait CommonStorage: Send + Sync {
 }
 
 #[async_trait]
-pub trait Storage: CommonStorage + CkbCrossChainStorage {
+pub trait Storage: CommonStorage {
     async fn insert_transactions(
         &self,
         ctx: Context,
@@ -119,27 +116,6 @@ pub trait Storage: CommonStorage + CkbCrossChainStorage {
     async fn update_latest_proof(&self, ctx: Context, proof: Proof) -> ProtocolResult<()>;
 
     async fn get_latest_proof(&self, ctx: Context) -> ProtocolResult<Proof>;
-}
-
-#[async_trait]
-pub trait CkbCrossChainStorage: Send + Sync {
-    async fn insert_crosschain_records(
-        &self,
-        ctx: Context,
-        reqs: RequestTxHashes,
-        block_hash: Hash,
-        direction: Direction,
-    ) -> ProtocolResult<()>;
-
-    async fn get_crosschain_record(
-        &self,
-        ctx: Context,
-        hash: &Hash,
-    ) -> ProtocolResult<Option<HashWithDirection>>;
-
-    async fn update_monitor_ckb_number(&self, ctx: Context, number: u64) -> ProtocolResult<()>;
-
-    async fn get_monitor_ckb_number(&self, ctx: Context) -> ProtocolResult<u64>;
 }
 
 #[async_trait]

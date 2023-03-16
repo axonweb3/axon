@@ -755,6 +755,7 @@ pub struct RawLoggerFilter {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use protocol::rand::random;
 
     #[test]
     fn test_sync_status_json() {
@@ -763,9 +764,9 @@ mod tests {
         assert!(json.is_boolean());
 
         let status = Web3SyncStatus::Doing(SyncStatus {
-            starting_block: fastrand::u64(..).into(),
-            current_block:  fastrand::u64(..).into(),
-            highest_block:  fastrand::u64(..).into(),
+            starting_block: random::<u64>().into(),
+            current_block:  random::<u64>().into(),
+            highest_block:  random::<u64>().into(),
             known_states:   U256::default(),
             pulled_states:  U256::default(),
         });

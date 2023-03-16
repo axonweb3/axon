@@ -5,16 +5,14 @@ pub mod synchronization;
 
 use std::{collections::HashMap, str::FromStr};
 
-use rand::random;
-
-use creep::Context;
+use protocol::rand::random;
 use protocol::{
     async_trait,
     codec::hex_decode,
-    traits::{CommonConsensusAdapter, SynchronizationAdapter},
+    traits::{CommonConsensusAdapter, Context, SynchronizationAdapter},
     types::{
         Address, Block, BlockNumber, Bytes, Eip1559Transaction, ExecResp, Hash, Hasher, Header,
-        Hex, Log, MerkleRoot, Metadata, Proof, Proposal, Public, Receipt, SignatureComponents,
+        Hex, MerkleRoot, Metadata, Proof, Proposal, Public, Receipt, SignatureComponents,
         SignedTransaction, TransactionAction, UnsignedTransaction, UnverifiedTransaction,
         Validator, H160, H256, U256,
     },
@@ -320,17 +318,6 @@ impl CommonConsensusAdapter for MockSyncAdapter {
     async fn verify_block_header(&self, ctx: Context, block: &Proposal) -> ProtocolResult<()> {
         Ok(())
     }
-
-    async fn notify_block_logs(
-        &self,
-        ctx: Context,
-        block_number: u64,
-        block_hash: Hash,
-        logs: &[Vec<Log>],
-    ) {
-    }
-
-    async fn notify_checkpoint(&self, ctx: Context, block: Block, proof: Proof) {}
 
     fn verify_proof_signature(
         &self,

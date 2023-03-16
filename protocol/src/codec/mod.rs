@@ -1,5 +1,4 @@
 pub mod block;
-pub mod crosschain;
 pub mod error;
 pub mod executor;
 pub mod receipt;
@@ -87,20 +86,18 @@ pub fn hex_decode(src: &str) -> ProtocolResult<Vec<u8>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use getrandom::getrandom;
+    use rand::random;
 
     impl Hex {
         fn random() -> Self {
-            let mut data = [0u8; 128];
-            getrandom(&mut data).unwrap();
+            let data = (0..128).map(|_| random()).collect::<Vec<u8>>();
             Self::from_string(hex_encode(data)).unwrap()
         }
     }
 
     #[test]
     fn test_hex_codec() {
-        let mut data = [0u8; 128];
-        getrandom(&mut data).unwrap();
+        let data = (0..128).map(|_| random()).collect::<Vec<u8>>();
         let data = data.to_vec();
 
         assert_eq!(hex_encode(&data), hex::encode(data.clone()));

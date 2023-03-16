@@ -1,12 +1,11 @@
 use std::sync::Arc;
 
-use creep::Context;
 use overlord::types::{
     AggregatedVote, Node, OverlordMsg, SignedChoke, SignedProposal, SignedVote, Status,
 };
 use overlord::{DurationConfig, Overlord, OverlordHandler};
 
-use protocol::traits::{Consensus, ConsensusAdapter, NodeInfo};
+use protocol::traits::{Consensus, ConsensusAdapter, Context, NodeInfo};
 use protocol::types::{Proposal, Validator, H160};
 use protocol::{
     async_trait, codec::ProtocolCodec, tokio::sync::Mutex as AsyncMutex, ProtocolResult,
@@ -110,7 +109,6 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
         adapter: Arc<Adapter>,
         lock: Arc<AsyncMutex<()>>,
         consensus_wal: Arc<ConsensusWal>,
-        cross_period_interval: u64,
     ) -> Self {
         let engine = Arc::new(ConsensusEngine::new(
             status,
@@ -121,7 +119,6 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
             Arc::clone(&crypto),
             lock,
             consensus_wal,
-            cross_period_interval,
         ));
         let status = engine.status();
         let metadata = adapter.get_metadata_unchecked(Context::new(), status.last_number + 1);

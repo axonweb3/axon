@@ -1,13 +1,14 @@
 use std::sync::Arc;
 
-use common_apm::tracing::AxonTracer;
-use rand::Rng;
 use tentacle::secio::PeerId;
 use tentacle::{
     service::{ServiceAsyncControl, TargetProtocol, TargetSession},
     SessionId,
 };
 
+use common_apm::tracing::AxonTracer;
+
+use protocol::rand::{self, Rng};
 use protocol::traits::{Context, Gossip, MessageCodec, Priority};
 use protocol::{async_trait, tokio, types::Bytes, ProtocolResult};
 

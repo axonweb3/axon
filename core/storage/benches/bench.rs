@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use rand::{random, rngs::OsRng};
 
 use common_crypto::{
     Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey, Signature,
 };
 use core_storage::ImplStorage;
+use protocol::rand::{random, rngs::OsRng};
 use protocol::traits::{Context, Storage};
 use protocol::types::{
     Bytes, Eip1559Transaction, ExitReason, ExitSucceed, Hash, Hasher, Receipt, SignatureComponents,

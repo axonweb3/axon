@@ -19,4 +19,3 @@ protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [dev-dependencies]
 core-storage = { path = "../../core/storage" }
-rand = "0.7"

@@ -1,14 +1,12 @@
 #![allow(dead_code)]
 
 mod create2;
-mod crosschain;
 mod uniswap2;
 
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use evm::tracing::{Event, EventListener};
-use getrandom::getrandom;
 
 use common_config_parser::parse_file;
 use common_crypto::{PrivateKey, Secp256k1RecoverablePrivateKey, Signature};
@@ -102,12 +100,12 @@ impl EvmDebugger {
     fn backend(&self, number: u64) -> AxonExecutorAdapter<ImplStorage<RocksAdapter>, RocksTrieDB> {
         let exec_ctx = ExecutorContext {
             block_number:           number.into(),
-            block_hash:             rand_hash(),
-            block_coinbase:         rand_hash().into(),
+            block_hash:             H256::random(),
+            block_coinbase:         H160::random(),
             block_timestamp:        time_now().into(),
             chain_id:               5u64.into(),
             difficulty:             U256::one(),
-            origin:                 rand_hash().into(),
+            origin:                 H160::random(),
             gas_price:              1u64.into(),
             block_gas_limit:        4294967295000u64.into(),
             block_base_fee_per_gas: 1337u64.into(),
@@ -178,12 +176,6 @@ pub fn mock_signed_tx(tx: Eip1559Transaction, sender: H160) -> SignedTransaction
 
 pub fn clear_data(db_path: &str) {
     std::fs::remove_dir_all(db_path).unwrap()
-}
-
-fn rand_hash() -> Hash {
-    let mut data = [0u8; 128];
-    getrandom(&mut data).unwrap();
-    Hasher::digest(data)
 }
 
 fn time_now() -> u64 {

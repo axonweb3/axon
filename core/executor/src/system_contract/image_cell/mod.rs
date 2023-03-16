@@ -38,19 +38,19 @@ impl SystemContract for ImageCellContract {
         );
 
         let call_abi = exec_try!(
-            image_cell_abi::ImageCellCalls::decode(tx_data),
+            image_cell_abi::ImageCellContractCalls::decode(tx_data),
             gas_limit,
             "[image cell] invalid tx data"
         );
 
         match call_abi {
-            image_cell_abi::ImageCellCalls::SetState(data) => {
+            image_cell_abi::ImageCellContractCalls::SetState(data) => {
                 ALLOW_READ.store(data.allow_read, Ordering::Relaxed);
             }
-            image_cell_abi::ImageCellCalls::Update(data) => {
+            image_cell_abi::ImageCellContractCalls::Update(data) => {
                 exec_try!(store.update(data), gas_limit, "[image cell] update error:");
             }
-            image_cell_abi::ImageCellCalls::Rollback(data) => {
+            image_cell_abi::ImageCellContractCalls::Rollback(data) => {
                 exec_try!(
                     store.rollback(data),
                     gas_limit,

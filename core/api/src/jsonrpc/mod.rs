@@ -1,4 +1,3 @@
-mod crosschain_types;
 mod error;
 mod r#impl;
 mod web3_types;
@@ -19,7 +18,7 @@ use crate::jsonrpc::web3_types::{
     Web3Filter, Web3Log, Web3Receipt, Web3SyncStatus, Web3Transaction,
 };
 use crate::jsonrpc::ws_subscription::{ws_subscription_module, HexIdProvider};
-use crate::{jsonrpc::crosschain_types::CrossChainTransaction, APIError};
+use crate::APIError;
 
 type RpcResult<T> = Result<T, Error>;
 
@@ -201,15 +200,6 @@ pub trait AxonNodeRpc {
     fn pprof(&self, enable: bool) -> RpcResult<bool>;
 }
 
-#[rpc(server)]
-pub trait AxonCrossChainRpc {
-    #[method(name = "getCrosschainResult")]
-    async fn get_crosschain_result(
-        &self,
-        tx_hash: H256,
-    ) -> RpcResult<Option<CrossChainTransaction>>;
-}
-
 pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
     config: Config,
     adapter: Arc<Adapter>,
@@ -219,11 +209,9 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
     let mut rpc = r#impl::Web3RpcImpl::new(Arc::clone(&adapter), config.rpc.gas_cap).into_rpc();
     let node_rpc =
         r#impl::NodeRpcImpl::new(&config.rpc.client_version, config.data_path).into_rpc();
-    let crosschain_rpc = r#impl::CrossChainRpcImpl::new(Arc::clone(&adapter)).into_rpc();
     let filter = r#impl::filter_module(Arc::clone(&adapter)).into_rpc();
 
     rpc.merge(node_rpc).unwrap();
-    rpc.merge(crosschain_rpc).unwrap();
     rpc.merge(filter).unwrap();
 
     if let Some(addr) = config.rpc.http_listening_address {

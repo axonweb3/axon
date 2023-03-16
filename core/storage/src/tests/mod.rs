@@ -1,11 +1,10 @@
 mod adapter;
 mod storage;
 
-use rand::{random, rngs::OsRng};
-
 use common_crypto::{
     Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey, Signature,
 };
+use protocol::rand::{random, rngs::OsRng};
 use protocol::types::{
     Block, Eip1559Transaction, ExitReason, ExitSucceed, Hash, Hasher, Header, Proof, Receipt,
     SignatureComponents, SignedTransaction, TransactionAction, UnverifiedTransaction,

@@ -22,7 +22,6 @@ protocol = { path = "../../protocol", package = "axon-protocol" }
 common-crypto = { path = "../../common/crypto" }
 criterion = "0.4"
 num-traits = "0.2"
-rand = "0.7"
 
 [[bench]]
 harness = false

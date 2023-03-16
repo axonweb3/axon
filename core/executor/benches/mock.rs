@@ -133,8 +133,9 @@ impl From<Secp256k1RecoverablePrivateKey> for KeyPair {
 }
 
 fn gen_key_pairs(n: usize) -> Vec<KeyPair> {
+    use protocol::rand::rngs::OsRng;
+
     let mut result = Vec::with_capacity(n);
-    use rand7::rngs::OsRng;
     for _ in 0..n {
         let private_key = Secp256k1RecoverablePrivateKey::generate(&mut OsRng);
         result.push(KeyPair::from(private_key));

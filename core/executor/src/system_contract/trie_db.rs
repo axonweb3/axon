@@ -1,11 +1,11 @@
 use std::{collections::HashMap, fs, path::Path, sync::Arc};
 
 use parking_lot::Mutex;
-use rand::{rngs::SmallRng, Rng, SeedableRng};
 use rocksdb::ops::{Delete, Get, Open, Put};
 use rocksdb::{FullOptions, Options, DB};
 
 use common_config_parser::types::ConfigRocksDB;
+use protocol::rand::{rngs::SmallRng, Rng, SeedableRng};
 use protocol::{trie, ProtocolError, ProtocolResult};
 
 use crate::system_contract::error::SystemScriptError;
@@ -174,7 +174,7 @@ fn rand_remove_list<T: Clone>(keys: Vec<&T>, num: usize) -> impl Iterator<Item =
     let mut ret = Vec::with_capacity(num);
 
     for _ in 0..num {
-        let tmp = rng.gen_range(0..len);
+        let tmp = rng.gen_range(0, len);
         let idx = idx_list.remove(tmp);
         ret.push(keys[idx].clone());
         len -= 1;
@@ -185,15 +185,12 @@ fn rand_remove_list<T: Clone>(keys: Vec<&T>, num: usize) -> impl Iterator<Item =
 
 #[cfg(test)]
 mod tests {
-    use getrandom::getrandom;
+    use super::*;
+    use protocol::rand::random;
     use trie::DB;
 
-    use super::*;
-
     fn rand_bytes(len: usize) -> Vec<u8> {
-        let mut ret = (0..len).map(|_| 0u8).collect::<Vec<_>>();
-        getrandom(&mut ret).unwrap();
-        ret
+        (0..len).map(|_| random()).collect()
     }
 
     #[test]

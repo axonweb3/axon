@@ -1,11 +1,10 @@
 use criterion::{criterion_group, criterion_main, Criterion};
-use rand::random;
-use rand::rngs::OsRng;
 
 use common_crypto::{
     Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey, Signature,
 };
 use core_consensus::SignedTxsWAL;
+use protocol::rand::{random, rngs::OsRng};
 use protocol::types::{
     Bytes, Eip1559Transaction, Hash, Hasher, SignatureComponents, SignedTransaction,
     TransactionAction, UnsignedTransaction, UnverifiedTransaction,
