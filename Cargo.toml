@@ -16,8 +16,6 @@ protocol = { path = "./protocol", package = "axon-protocol" }
 
 [workspace]
 members = [
-    "byzantine",
-
     "common/apm",
     "common/apm-derive",
     "common/channel",
