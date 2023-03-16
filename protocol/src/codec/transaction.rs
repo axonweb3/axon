@@ -43,7 +43,7 @@ impl SignatureComponents {
         let signature_r_and_s_size =
             rlp.at(signature_r_offset)?.size() + rlp.at(signature_s_offset)?.size();
 
-        let eth_tx_flag = signature_r_and_s_size == 63 || signature_r_and_s_size == 64;
+        let eth_tx_flag = signature_r_and_s_size <= 64;
         let (r, s) = match eth_tx_flag {
             true => {
                 let tmp_r: U256 = rlp.val_at(signature_r_offset)?;
