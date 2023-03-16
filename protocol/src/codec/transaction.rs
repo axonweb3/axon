@@ -39,11 +39,16 @@ impl SignatureComponents {
             rlp.val_at(offset)?
         };
 
-        let eth_tx_flag = v <= 1;
+        let signature_r_offset = offset + 1;
+        let signature_s_offset = offset + 2;
+        let signature_r_and_s_size =
+            rlp.at(signature_r_offset)?.size() + rlp.at(signature_s_offset)?.size();
+
+        let eth_tx_flag = signature_r_and_s_size == 63 || signature_r_and_s_size == 64;
         let (r, s) = match eth_tx_flag {
             true => {
-                let tmp_r: U256 = rlp.val_at(offset + 1)?;
-                let tmp_s: U256 = rlp.val_at(offset + 2)?;
+                let tmp_r: U256 = rlp.val_at(signature_r_offset)?;
+                let tmp_s: U256 = rlp.val_at(signature_s_offset)?;
                 (
                     Bytes::from(
                         <H256 as BigEndianHash>::from_uint(&tmp_r)
@@ -57,19 +62,10 @@ impl SignatureComponents {
                     ),
                 )
             }
-            false => {
-                let tmp_r: Bytes = rlp.val_at(offset + 1)?;
-                let tmp_s: Bytes = rlp.val_at(offset + 2)?;
-
-                if tmp_r.len() != 32 {
-                    return Err(DecoderError::Custom("invalid r in signature"));
-                }
-                if tmp_s.len() != 32 {
-                    return Err(DecoderError::Custom("invalid s in signature"));
-                }
-
-                (tmp_r, tmp_s)
-            }
+            false => (
+                rlp.val_at(signature_r_offset)?,
+                rlp.val_at(signature_s_offset)?,
+            ),
         };
 
         Ok(SignatureComponents {
@@ -390,7 +386,7 @@ mod tests {
         }
     }
 
-    fn mock_unverfied_tx() -> UnverifiedTransaction {
+    fn mock_unverified_tx() -> UnverifiedTransaction {
         UnverifiedTransaction {
             unsigned:  UnsignedTransaction::Eip1559(mock_eip1559_transaction()),
             chain_id:  random::<u64>(),
@@ -402,7 +398,7 @@ mod tests {
 
     fn mock_signed_tx() -> SignedTransaction {
         SignedTransaction {
-            transaction: mock_unverfied_tx(),
+            transaction: mock_unverified_tx(),
             sender:      H160::default(),
             public:      None,
         }
@@ -508,5 +504,27 @@ mod tests {
         test_vector("f867078504a817c807830290409435353535353535353535353535353535353535358201578025a052f1a9b320cab38e5da8a8f97989383aab0a49165fc91c737310e4f7e9821021a052f1a9b320cab38e5da8a8f97989383aab0a49165fc91c737310e4f7e9821021", "d37922162ab7cea97c97a87551ed02c9a38b7332");
         test_vector("f867088504a817c8088302e2489435353535353535353535353535353535353535358202008025a064b1702d9298fee62dfeccc57d322a463ad55ca201256d01f62b45b2e1c21c12a064b1702d9298fee62dfeccc57d322a463ad55ca201256d01f62b45b2e1c21c10", "9bddad43f934d313c2b79ca28a432dd2b7281029");
         test_vector("f867098504a817c809830334509435353535353535353535353535353535353535358202d98025a052f8f61201b2b11a78d6e866abc9c3db2ae8631fa656bfe5cb53668255367afba052f8f61201b2b11a78d6e866abc9c3db2ae8631fa656bfe5cb53668255367afb", "3c24d7329e92f84f08556ceb6df1cdb0104ca49f");
+    }
+
+    #[test]
+    fn test_interoperation_tx_codec() {
+        let raw_tx = hex::decode("f901ed80808094cb9112d826471e7deb7bc895b1771e5d676a14af880de0b6b3a7640000802db86302f860e3a0f35178c7a1a5a4e5b164157aa549a493cebc9a3079b6a9ede7ae5207adb3f4d48001c0f839a0d23761b364210735c19c60561d213fb3beae2fd6172743719eff6920e020baac9600016091d93dbab12f16640fb3a0a8f1e77e03fbc51c02b90162f9015ff9015cb90157014599a5795423d54ab8e1f44f5c6ef5be9b1829beddb787bc732e4469d25f8c93e94afa393617f905bf1765c35dc38501a862b4b2f794a88b4f9010da02411a852d147a369b9ba6de71bf065f4831cc1ff9c4887c2dcfa669d6e4b9d24f0937c154974fd8399405052fdc8a6605a86040d670d47db1a092916aa5679b2e8604b449960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97630162f9fb777b2274797065223a22776562617574686e2e676574222c226368616c6c656e6765223a22593255355a544d324d545135595445775a5745345a6a64684e6a4a694e47526c4d574d7a4d5755784f44686c4e6a597a4d5745784d6d46685a44566d597a426a596d4e6d4f4746694d6a45774f4751334d6a646d4f51222c226f726967696e223a22687474703a2f2f6c6f63616c686f73743a38303030222c2263726f73734f726967696e223a66616c73657dc0c0").unwrap();
+        let rlp = Rlp::new(&raw_tx);
+        let utx = UnverifiedTransaction::decode(&rlp).unwrap().calc_hash();
+        let sig = utx.signature.unwrap();
+
+        assert_eq!(
+            utx.unsigned.to().unwrap(),
+            H160::from_slice(&hex_decode("Cb9112D826471E7DEB7Bc895b1771e5d676a14AF").unwrap())
+        );
+        assert!(utx.unsigned.data().is_empty());
+        assert!(utx.unsigned.nonce().is_zero());
+        assert!(utx.unsigned.gas_limit().is_zero());
+        assert!(utx.unsigned.gas_price().is_zero());
+        assert!(utx.unsigned.max_priority_fee_per_gas().is_zero());
+        assert!(utx.chain_id == 5);
+        // assert!(sig.standard_v == 27);
+        assert_eq!(sig.r, hex_decode("02f860e3a0f35178c7a1a5a4e5b164157aa549a493cebc9a3079b6a9ede7ae5207adb3f4d48001c0f839a0d23761b364210735c19c60561d213fb3beae2fd6172743719eff6920e020baac9600016091d93dbab12f16640fb3a0a8f1e77e03fbc51c02").unwrap());
+        assert_eq!(sig.s, hex_decode("0xf9015ff9015cb90157014599a5795423d54ab8e1f44f5c6ef5be9b1829beddb787bc732e4469d25f8c93e94afa393617f905bf1765c35dc38501a862b4b2f794a88b4f9010da02411a852d147a369b9ba6de71bf065f4831cc1ff9c4887c2dcfa669d6e4b9d24f0937c154974fd8399405052fdc8a6605a86040d670d47db1a092916aa5679b2e8604b449960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97630162f9fb777b2274797065223a22776562617574686e2e676574222c226368616c6c656e6765223a22593255355a544d324d545135595445775a5745345a6a64684e6a4a694e47526c4d574d7a4d5755784f44686c4e6a597a4d5745784d6d46685a44566d597a426a596d4e6d4f4746694d6a45774f4751334d6a646d4f51222c226f726967696e223a22687474703a2f2f6c6f63616c686f73743a38303030222c2263726f73734f726967696e223a66616c73657dc0c0").unwrap());
     }
 }
