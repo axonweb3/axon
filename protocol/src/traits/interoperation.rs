@@ -1,12 +1,13 @@
 use ckb_traits::{CellDataProvider, HeaderProvider};
-use ckb_types::core::{cell::CellProvider, Cycle, TransactionView};
+use ckb_types::core::{cell::CellProvider, Capacity, Cycle, TransactionView};
 use ckb_types::{packed, prelude::*};
 
 use crate::lazy::{ALWAYS_SUCCESS_TYPE_SCRIPT, DUMMY_INPUT_OUT_POINT};
 use crate::types::{Bytes, CellDep, CellWithData, SignatureR, SignatureS, VMResp};
 use crate::{traits::Context, ProtocolResult};
 
-const OUTPUT_CAPACITY_OF_REALITY_INPUT: u64 = 100;
+const BYTE_SHANNONS: u64 = 100_000_000;
+const OUTPUT_CAPACITY_OF_REALITY_INPUT: Capacity = Capacity::shannons(100 * BYTE_SHANNONS);
 
 pub trait Interoperation: Sync + Send {
     fn call_ckb_vm<DL: CellDataProvider>(
@@ -81,7 +82,7 @@ pub trait Interoperation: Sync + Send {
             .output(
                 packed::CellOutputBuilder::default()
                     .type_(Some(ALWAYS_SUCCESS_TYPE_SCRIPT.clone()).pack())
-                    .capacity((r.dummy_input().unwrap().capacity() - 1).pack())
+                    .capacity((r.dummy_input().unwrap().capacity() - BYTE_SHANNONS).pack())
                     .build(),
             )
             .build()
