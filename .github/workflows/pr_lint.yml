@@ -17,18 +17,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: Namchee/conventional-pr@v0.12.1
-        # env:
-        #   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: Slashgear/action-check-pr-title@v4.3.0
         with:
-          # to override config-conventional rules, specify a relative path to your rules module, actions/checkout is required for this setting!
-          # commitlintRulesPath: "./commitlint.rules.js" # default: undefined
-          close: false
-          issue: false
-          message: 'The title of this PR does not conform the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/). Please fix it, thx.'
-
-          # if the PR contains a single commit, fail if the commit message and the PR title do not match
-          access_token: ${{ secrets.GITHUB_TOKEN }}
+          regexp: "(feat|perf|refactor|fix|chore|docs|style|ci):" # Regex the title should match.
+          helpMessage: "The title of this PR does not conform the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/). Please fix it, thx. Example: 'feat: example of title'"
+      - name: Check Commit Type
+        uses: gsactions/commit-message-checker@v2
+        with:
+          pattern: '(feat|perf|refactor|fix|chore|docs|style|ci):'
+          error: 'Your first line has to contain a commit type like "[BUGFIX]".'
+          
 
   Label:
     runs-on: ubuntu-latest
