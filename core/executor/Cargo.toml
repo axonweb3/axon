@@ -9,8 +9,8 @@ arc-swap = "1.6"
 az = "1.2"
 bn = { package = "substrate-bn", version = "0.6" }
 ckb-always-success-script = "0.0.1"
-ckb-traits = "0.106"
-ckb-types = "0.106"
+ckb-traits = "0.108"
+ckb-types = "0.108"
 common-apm = { path = "../../common/apm" }
 common-config-parser = { path = "../../common/config-parser" }
 common-crypto = { path = "../../common/crypto" }
@@ -37,8 +37,8 @@ thiserror = "1.0"
 
 [dev-dependencies]
 bytemuck = "1.13"
-ckb-jsonrpc-types = "0.106"
-ckb-types = "0.106"
+ckb-jsonrpc-types = "0.108"
+ckb-types = "0.108"
 common-crypto = { path = "../../common/crypto" }
 core-rpc-client = { path = "../rpc-client" }
 core-storage = { path = "../storage" }
