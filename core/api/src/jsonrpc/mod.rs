@@ -216,6 +216,7 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
 
     if let Some(addr) = config.rpc.http_listening_address {
         let server = ServerBuilder::new()
+            .http_only()
             .max_request_body_size(config.rpc.max_payload_size)
             .max_response_body_size(config.rpc.max_payload_size)
             .max_connections(config.rpc.maxconn)
@@ -232,6 +233,7 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
 
     if let Some(addr) = config.rpc.ws_listening_address {
         let server = ServerBuilder::new()
+            .ws_only()
             .max_request_body_size(config.rpc.max_payload_size)
             .max_request_body_size(config.rpc.max_payload_size)
             .max_connections(config.rpc.maxconn)
