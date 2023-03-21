@@ -33,15 +33,16 @@ impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
         }
     }
 
-    async fn get_block_number_by_id(&self, block_id: Option<BlockId>) -> Result<Option<BlockNumber>, Error> {
+    async fn get_block_number_by_id(
+        &self,
+        block_id: Option<BlockId>,
+    ) -> Result<Option<BlockNumber>, Error> {
         match block_id {
-            Some(BlockId::Hash(ref hash)) => {
-                Ok(self
-                    .adapter
-                    .get_block_number_by_hash(Context::new(), *hash)
-                    .await
-                    .map_err(|e| Error::Custom(e.to_string()))?)
-            },
+            Some(BlockId::Hash(ref hash)) => Ok(self
+                .adapter
+                .get_block_number_by_hash(Context::new(), *hash)
+                .await
+                .map_err(|e| Error::Custom(e.to_string()))?),
             _ => Ok(block_id.unwrap_or_default().into()),
         }
     }

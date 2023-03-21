@@ -435,7 +435,7 @@ impl<'a> Visitor<'a> for BlockIdVisitor {
         }
 
         if let Some(hash) = block_hash {
-            return Ok(BlockId::Hash(hash))
+            return Ok(BlockId::Hash(hash));
         }
 
         Err(Error::custom("Invalid input"))
