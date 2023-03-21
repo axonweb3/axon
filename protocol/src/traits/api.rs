@@ -26,6 +26,18 @@ pub trait APIAdapter: Send + Sync {
         height: Option<u64>,
     ) -> ProtocolResult<Option<Header>>;
 
+    async fn get_block_header_by_hash(
+        &self,
+        ctx: Context,
+        hash: Hash,
+    ) -> ProtocolResult<Option<Header>>;
+
+    async fn get_block_number_by_hash(
+        &self,
+        ctx: Context,
+        hash: Hash,
+    ) -> ProtocolResult<Option<BlockNumber>>;
+
     async fn get_receipt_by_tx_hash(
         &self,
         ctx: Context,

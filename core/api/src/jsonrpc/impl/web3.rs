@@ -234,9 +234,9 @@ impl<Adapter: APIAdapter + 'static> AxonWeb3RpcServer for Web3RpcImpl<Adapter> {
     async fn get_transaction_count(
         &self,
         address: H160,
-        number: Option<BlockId>,
+        block_id: Option<BlockId>,
     ) -> RpcResult<U256> {
-        match number.unwrap_or_default() {
+        match block_id.unwrap_or_default() {
             BlockId::Pending => {
                 let pending_tx_count = self
                     .adapter
@@ -248,6 +248,19 @@ impl<Adapter: APIAdapter + 'static> AxonWeb3RpcServer for Web3RpcImpl<Adapter> {
                     .get_account(Context::new(), address, BlockId::Pending.into())
                     .await
                     .map(|account| account.nonce + pending_tx_count)
+                    .unwrap_or_default())
+            }
+            BlockId::Hash(ref hash) => {
+                let number = self
+                    .adapter
+                    .get_block_number_by_hash(Context::new(), *hash)
+                    .await
+                    .map_err(|e| Error::Custom(e.to_string()))?;
+                Ok(self
+                    .adapter
+                    .get_account(Context::new(), address, number)
+                    .await
+                    .map(|account| account.nonce)
                     .unwrap_or_default())
             }
             b => Ok(self
@@ -270,16 +283,27 @@ impl<Adapter: APIAdapter + 'static> AxonWeb3RpcServer for Web3RpcImpl<Adapter> {
     }
 
     #[metrics_rpc("eth_getBalance")]
-    async fn get_balance(&self, address: H160, number: Option<BlockId>) -> RpcResult<U256> {
+    async fn get_balance(&self, address: H160, block_id: Option<BlockId>) -> RpcResult<U256> {
+        let number = match block_id {
+            Some(BlockId::Hash(ref hash)) => {
+                self
+                    .adapter
+                    .get_block_number_by_hash(Context::new(), *hash)
+                    .await
+                    .map_err(|e| Error::Custom(e.to_string()))?
+            },
+            _ => block_id.unwrap_or_default().into(),
+        };
+
         Ok(self
             .adapter
-            .get_account(Context::new(), address, number.unwrap_or_default().into())
+            .get_account(Context::new(), address, number)
             .await
             .map_or(U256::zero(), |account| account.balance))
     }
 
     #[metrics_rpc("eth_call")]
-    async fn call(&self, req: Web3CallRequest, number: Option<BlockId>) -> RpcResult<Hex> {
+    async fn call(&self, req: Web3CallRequest, block_id: Option<BlockId>) -> RpcResult<Hex> {
         if req.gas_price.unwrap_or_default() > U256::from(u64::MAX) {
             return Err(Error::Custom("The gas price is too large".to_string()));
         }
@@ -288,13 +312,24 @@ impl<Adapter: APIAdapter + 'static> AxonWeb3RpcServer for Web3RpcImpl<Adapter> {
             return Err(Error::Custom("The gas limit is too large".to_string()));
         }
 
+        let number = match block_id {
+          Some(BlockId::Hash(ref hash)) => {
+              self
+                  .adapter
+                  .get_block_number_by_hash(Context::new(), *hash)
+                  .await
+                  .map_err(|e| Error::Custom(e.to_string()))?
+          },
+          _ => block_id.unwrap_or_default().into(),
+        };
+
         let data_bytes = req
             .data
             .as_ref()
             .map(|hex| hex.as_bytes())
             .unwrap_or_default();
         let resp = self
-            .call_evm(req, data_bytes, number.unwrap_or_default().into())
+            .call_evm(req, data_bytes, number)
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
@@ -342,10 +377,21 @@ impl<Adapter: APIAdapter + 'static> AxonWeb3RpcServer for Web3RpcImpl<Adapter> {
     }
 
     #[metrics_rpc("eth_getCode")]
-    async fn get_code(&self, address: H160, number: Option<BlockId>) -> RpcResult<Hex> {
+    async fn get_code(&self, address: H160, block_id: Option<BlockId>) -> RpcResult<Hex> {
+        let number = match block_id {
+          Some(BlockId::Hash(ref hash)) => {
+              self
+                  .adapter
+                  .get_block_number_by_hash(Context::new(), *hash)
+                  .await
+                  .map_err(|e| Error::Custom(e.to_string()))?
+          },
+          _ => block_id.unwrap_or_default().into(),
+        };
+
         let account = self
             .adapter
-            .get_account(Context::new(), address, number.unwrap_or_default().into())
+            .get_account(Context::new(), address, number)
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
@@ -702,11 +748,22 @@ impl<Adapter: APIAdapter + 'static> AxonWeb3RpcServer for Web3RpcImpl<Adapter> {
         &self,
         address: H160,
         position: U256,
-        number: Option<BlockId>,
+        block_id: Option<BlockId>,
     ) -> RpcResult<Hex> {
+        let number = match block_id {
+          Some(BlockId::Hash(ref hash)) => {
+              self
+                  .adapter
+                  .get_block_number_by_hash(Context::new(), *hash)
+                  .await
+                  .map_err(|e| Error::Custom(e.to_string()))?
+          },
+          _ => block_id.unwrap_or_default().into(),
+        };
+
         let block = self
             .adapter
-            .get_block_by_number(Context::new(), number.unwrap_or_default().into())
+            .get_block_by_number(Context::new(), number)
             .await
             .map_err(|e| Error::Custom(e.to_string()))?
             .ok_or_else(|| Error::Custom("Can't find this block".to_string()))?;

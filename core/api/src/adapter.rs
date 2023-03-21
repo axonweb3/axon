@@ -100,6 +100,22 @@ where
         }
     }
 
+    async fn get_block_header_by_hash(
+        &self,
+        ctx: Context,
+        hash: Hash,
+    ) -> ProtocolResult<Option<Header>> {
+        self.storage.get_block_header_by_hash(ctx, &hash).await
+    }
+
+    async fn get_block_number_by_hash(
+        &self,
+        ctx: Context,
+        hash: Hash,
+    ) -> ProtocolResult<Option<BlockNumber>> {
+        self.storage.get_block_number_by_hash(ctx, &hash).await
+    }
+
     async fn get_receipt_by_tx_hash(
         &self,
         ctx: Context,

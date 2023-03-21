@@ -339,6 +339,7 @@ pub struct Web3CallRequest {
 #[derive(Default, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum BlockId {
     Num(u64),
+    Hash(H256),
     #[default]
     Latest,
     Earliest,
@@ -371,6 +372,7 @@ impl Serialize for BlockId {
     {
         match *self {
             BlockId::Num(ref x) => serializer.serialize_str(&format!("0x{:x}", x)),
+            BlockId::Hash(ref hash) => serializer.serialize_str(&format!("{:x}", hash)),
             BlockId::Latest => serializer.serialize_str("latest"),
             BlockId::Earliest => serializer.serialize_str("earliest"),
             BlockId::Pending => serializer.serialize_str("pending"),
@@ -393,6 +395,7 @@ impl<'a> Visitor<'a> for BlockIdVisitor {
         V: MapAccess<'a>,
     {
         let mut block_number = None;
+        let mut block_hash = None;
 
         loop {
             let key_str: Option<String> = visitor.next_key()?;
@@ -414,6 +417,13 @@ impl<'a> Visitor<'a> for BlockIdVisitor {
                             ));
                         }
                     }
+                    "blockHash" => {
+                        let value: String = visitor.next_value()?;
+                        if value.len() != 32 {
+                            return Err(Error::custom(format!("Invalid block hash: {}", value)));
+                        }
+                        block_hash = Some(H256::from_slice(value.as_bytes()))
+                    }
                     key => return Err(Error::custom(format!("Unknown key: {}", key))),
                 },
                 None => break,
@@ -422,6 +432,10 @@ impl<'a> Visitor<'a> for BlockIdVisitor {
 
         if let Some(number) = block_number {
             return Ok(BlockId::Num(number));
+        }
+
+        if let Some(hash) = block_hash {
+            return Ok(BlockId::Hash(hash))
         }
 
         Err(Error::custom("Invalid input"))
