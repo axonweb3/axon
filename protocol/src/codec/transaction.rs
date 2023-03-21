@@ -7,7 +7,7 @@ use common_crypto::secp256k1_recover;
 use crate::types::{
     public_to_address, AccessList, AccessListItem, Bytes, BytesMut, Eip1559Transaction,
     Eip2930Transaction, Hasher, LegacyTransaction, Public, SignatureComponents, SignedTransaction,
-    UnsignedTransaction, UnverifiedTransaction, H256, U256,
+    UnsignedTransaction, UnverifiedTransaction, H256, H512, U256,
 };
 
 fn truncate_slice<T>(s: &[T], n: usize) -> &[T] {
@@ -97,9 +97,14 @@ impl LegacyTransaction {
             .append(&self.data);
 
         if let Some(sig) = signature {
-            rlp.append(&sig.add_chain_replay_protection(chain_id))
-                .append(&U256::from(truncate_slice(&sig.r, 32)))
-                .append(&U256::from(truncate_slice(&sig.s, 32)));
+            rlp.append(&sig.add_chain_replay_protection(chain_id));
+
+            if sig.is_eth_sig() {
+                rlp.append(&U256::from(truncate_slice(&sig.r, 32)))
+                    .append(&U256::from(truncate_slice(&sig.s, 32)));
+            } else {
+                rlp.append(&sig.r).append(&sig.s);
+            }
         } else if let Some(id) = chain_id {
             rlp.append(&id).append(&0u8).append(&0u8);
         }
@@ -327,18 +332,20 @@ impl Encodable for SignedTransaction {
 impl Decodable for SignedTransaction {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         let utx = UnverifiedTransaction::decode(&Rlp::new(r.data()?))?;
-        let public = Public::from_slice(
-            &secp256k1_recover(
-                utx.signature_hash(true).as_bytes(),
-                utx.signature
-                    .as_ref()
-                    .ok_or(DecoderError::Custom("missing signature"))?
-                    .as_bytes()
-                    .as_ref(),
+        let sig = utx
+            .signature
+            .as_ref()
+            .ok_or(DecoderError::Custom("missing signature"))?;
+
+        let public = if sig.is_eth_sig() {
+            Public::from_slice(
+                &secp256k1_recover(utx.signature_hash(true).as_bytes(), sig.as_bytes().as_ref())
+                    .map_err(|_| DecoderError::Custom("recover signature"))?
+                    .serialize_uncompressed()[1..65],
             )
-            .map_err(|_| DecoderError::Custom("recover signature"))?
-            .serialize_uncompressed()[1..65],
-        );
+        } else {
+            H512::default()
+        };
 
         Ok(SignedTransaction {
             transaction: utx,
@@ -421,6 +428,7 @@ mod tests {
             H160::from_slice(&hex_decode("0f65fe9276bc9a24ae7083ae28e2660ef72df99e").unwrap())
         );
         assert_eq!(tx.chain_id, 0);
+        assert!(tx.signature.unwrap().is_eth_sig());
     }
 
     #[test]
@@ -467,6 +475,7 @@ mod tests {
 
         let sig = utx.signature.unwrap();
         assert_ne!(sig.s, sig.r);
+        assert!(sig.is_eth_sig());
     }
 
     #[test]
@@ -485,11 +494,12 @@ mod tests {
         let test_vector = |tx_data: &str, address: &'static str| {
             let utx =
                 UnverifiedTransaction::decode(&Rlp::new(&hex_decode(tx_data).unwrap())).unwrap();
-            let signed = SignedTransaction::try_from(utx).unwrap();
+            let signed = SignedTransaction::try_from(utx.clone()).unwrap();
             assert_eq!(
                 signed.sender,
                 H160::from_slice(&hex_decode(address).unwrap())
             );
+            assert!(utx.signature.unwrap().is_eth_sig());
         };
 
         test_vector("f864808504a817c800825208943535353535353535353535353535353535353535808025a0044852b2a670ade5407e78fb2863c51de9fcb96542a07186fe3aeda6bb8a116da0044852b2a670ade5407e78fb2863c51de9fcb96542a07186fe3aeda6bb8a116d", "f0f6f18bca1b28cd68e4357452947e021241e9ce");
@@ -524,5 +534,13 @@ mod tests {
         assert_eq!(sig.standard_v, 0);
         assert_eq!(sig.r, hex_decode("02f860e3a0f35178c7a1a5a4e5b164157aa549a493cebc9a3079b6a9ede7ae5207adb3f4d48001c0f839a0d23761b364210735c19c60561d213fb3beae2fd6172743719eff6920e020baac9600016091d93dbab12f16640fb3a0a8f1e77e03fbc51c02").unwrap());
         assert_eq!(sig.s, hex_decode("0xf9015ff9015cb90157014599a5795423d54ab8e1f44f5c6ef5be9b1829beddb787bc732e4469d25f8c93e94afa393617f905bf1765c35dc38501a862b4b2f794a88b4f9010da02411a852d147a369b9ba6de71bf065f4831cc1ff9c4887c2dcfa669d6e4b9d24f0937c154974fd8399405052fdc8a6605a86040d670d47db1a092916aa5679b2e8604b449960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97630162f9fb777b2274797065223a22776562617574686e2e676574222c226368616c6c656e6765223a22593255355a544d324d545135595445775a5745345a6a64684e6a4a694e47526c4d574d7a4d5755784f44686c4e6a597a4d5745784d6d46685a44566d597a426a596d4e6d4f4746694d6a45774f4751334d6a646d4f51222c226f726967696e223a22687474703a2f2f6c6f63616c686f73743a38303030222c2263726f73734f726967696e223a66616c73657dc0c0").unwrap());
+    }
+
+    #[test]
+    fn test_secp256r1_sig_decode() {
+        let raw = hex_decode("f901f5808408653b0282520894cb9112d826471e7deb7bc895b1771e5d676a14af880de0b6b3a764000080820fefb86302f860e3a0f35178c7a1a5a4e5b164157aa549a493cebc9a3079b6a9ede7ae5207adb3f4d48001c0f839a0d23761b364210735c19c60561d213fb3beae2fd6172743719eff6920e020baac9600016091d93dbab12f16640fb3a0a8f1e77e03fbc51c02b90162f9015ff9015cb90157014599a5795423d54ab8e1f44f5c6ef5be9b1829beddb787bc732e4469d25f8c93e94afa393617f905bf1765c35dc38501a862b4b2f794a88b4f9010da02411a85754d08b9c62ce935f505b478662953815be16f40f19bcb55236713180a697ceac060a7b05bb55c6dcd249813b5bd9f1f295a038c9d5980b201b3e538bfa30ddd49960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97630162f9fb777b2274797065223a22776562617574686e2e676574222c226368616c6c656e6765223a22596a4e6d597a41355a6a63775a574d794e324e6d5a54417959544d784d4451794d4445354d47557a4f545a6b596a4a6d5a6a6b78596a49775a444e6d4e3255314f4755354d7a49354e6a52684e445a695a54566c5a67222c226f726967696e223a22687474703a2f2f6c6f63616c686f73743a38303030222c2263726f73734f726967696e223a66616c73657dc0c0").unwrap();
+        let utx = UnverifiedTransaction::decode(&Rlp::new(&raw)).unwrap();
+        assert!(utx.check_hash().is_ok());
+        assert_eq!(utx.signature.unwrap().is_eth_sig(), false);
     }
 }

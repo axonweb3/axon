@@ -474,7 +474,7 @@ where
 
         // Verify signature
         let signature = stx.transaction.signature.clone().unwrap();
-        if signature.len() == SignatureComponents::ETHEREUM_TX_LEN {
+        if signature.is_eth_sig() {
             // use original Secp256k1 library to verify
             Secp256k1Recoverable::verify_signature(
                 stx.transaction.signature_hash(true).as_bytes(),
