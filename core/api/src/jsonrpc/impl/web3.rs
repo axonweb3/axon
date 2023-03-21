@@ -33,6 +33,19 @@ impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
         }
     }
 
+    async fn get_block_number_by_id(&self, block_id: Option<BlockId>) -> Result<Option<BlockNumber>, Error> {
+        match block_id {
+            Some(BlockId::Hash(ref hash)) => {
+                Ok(self
+                    .adapter
+                    .get_block_number_by_hash(Context::new(), *hash)
+                    .await
+                    .map_err(|e| Error::Custom(e.to_string()))?)
+            },
+            _ => Ok(block_id.unwrap_or_default().into()),
+        }
+    }
+
     async fn call_evm(
         &self,
         req: Web3CallRequest,
@@ -284,16 +297,7 @@ impl<Adapter: APIAdapter + 'static> AxonWeb3RpcServer for Web3RpcImpl<Adapter> {
 
     #[metrics_rpc("eth_getBalance")]
     async fn get_balance(&self, address: H160, block_id: Option<BlockId>) -> RpcResult<U256> {
-        let number = match block_id {
-            Some(BlockId::Hash(ref hash)) => {
-                self
-                    .adapter
-                    .get_block_number_by_hash(Context::new(), *hash)
-                    .await
-                    .map_err(|e| Error::Custom(e.to_string()))?
-            },
-            _ => block_id.unwrap_or_default().into(),
-        };
+        let number = self.get_block_number_by_id(block_id).await?;
 
         Ok(self
             .adapter
@@ -312,16 +316,7 @@ impl<Adapter: APIAdapter + 'static> AxonWeb3RpcServer for Web3RpcImpl<Adapter> {
             return Err(Error::Custom("The gas limit is too large".to_string()));
         }
 
-        let number = match block_id {
-          Some(BlockId::Hash(ref hash)) => {
-              self
-                  .adapter
-                  .get_block_number_by_hash(Context::new(), *hash)
-                  .await
-                  .map_err(|e| Error::Custom(e.to_string()))?
-          },
-          _ => block_id.unwrap_or_default().into(),
-        };
+        let number = self.get_block_number_by_id(block_id).await?;
 
         let data_bytes = req
             .data
@@ -378,16 +373,7 @@ impl<Adapter: APIAdapter + 'static> AxonWeb3RpcServer for Web3RpcImpl<Adapter> {
 
     #[metrics_rpc("eth_getCode")]
     async fn get_code(&self, address: H160, block_id: Option<BlockId>) -> RpcResult<Hex> {
-        let number = match block_id {
-          Some(BlockId::Hash(ref hash)) => {
-              self
-                  .adapter
-                  .get_block_number_by_hash(Context::new(), *hash)
-                  .await
-                  .map_err(|e| Error::Custom(e.to_string()))?
-          },
-          _ => block_id.unwrap_or_default().into(),
-        };
+        let number = self.get_block_number_by_id(block_id).await?;
 
         let account = self
             .adapter
@@ -750,16 +736,7 @@ impl<Adapter: APIAdapter + 'static> AxonWeb3RpcServer for Web3RpcImpl<Adapter> {
         position: U256,
         block_id: Option<BlockId>,
     ) -> RpcResult<Hex> {
-        let number = match block_id {
-          Some(BlockId::Hash(ref hash)) => {
-              self
-                  .adapter
-                  .get_block_number_by_hash(Context::new(), *hash)
-                  .await
-                  .map_err(|e| Error::Custom(e.to_string()))?
-          },
-          _ => block_id.unwrap_or_default().into(),
-        };
+        let number = self.get_block_number_by_id(block_id).await?;
 
         let block = self
             .adapter
