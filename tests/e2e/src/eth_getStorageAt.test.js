@@ -151,4 +151,40 @@ describe("eth_getStorageAt", () => {
     await param3.type(`0x${testDataInfo.blockNumber.toString(16)}`);
     await goto.check(page, "0x0000000000000000000000000000000000000000000000000000000000000012");
   });
+
+  /**
+  * param1: real address
+  * param2: 0x0
+  * param3: real block number
+  */
+  it("eth_getStorageAt_10", async () => {
+    const testType = await page.$(goto.pageIds.testTypeId);
+    const param1 = await page.$(goto.pageIds.param1Id);
+    const param2 = await page.$(goto.pageIds.param2Id);
+    const param3 = await page.$(goto.pageIds.param3Id);
+    await testType.type("1"); // 0: none params 1: common params to request 2: more params
+    await param1.type(testDataInfo.contractAddress);
+    await param2.type("0x02");
+    await param3.type(`{ "blockNumber": "0x${testDataInfo.blockNumber.toString(16)}" }`);
+    // await goto.check(page, "0x0422ca8b0a00a425000000");
+    await goto.check(page, "0x");
+  });
+
+  /**
+  * param1: real address
+  * param2: 0x0
+  * param3: real block hash
+  */
+  it("eth_getStorageAt_11", async () => {
+    const testType = await page.$(goto.pageIds.testTypeId);
+    const param1 = await page.$(goto.pageIds.param1Id);
+    const param2 = await page.$(goto.pageIds.param2Id);
+    const param3 = await page.$(goto.pageIds.param3Id);
+    await testType.type("1"); // 0: none params 1: common params to request 2: more params
+    await param1.type(testDataInfo.contractAddress);
+    await param2.type("0x02");
+    await param3.type(`{ "blockHash": "${testDataInfo.blockHash}" }`);
+    // await goto.check(page, "0x0422ca8b0a00a425000000");
+    await goto.check(page, "0x");
+  });
 });
