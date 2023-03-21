@@ -20,6 +20,13 @@ impl MetadataHandle {
         MetadataStore::new()?.get_metadata(epoch)
     }
 
+    pub fn is_last_block_in_current_epoch(&self, block_number: u64) -> ProtocolResult<bool> {
+        let store = MetadataStore::new()?;
+        let segment = store.get_epoch_segment()?;
+        let is_last_block = segment.is_last_block_in_epoch(block_number);
+        Ok(is_last_block)
+    }
+
     pub fn is_validator(&self, block_number: u64, address: H160) -> ProtocolResult<bool> {
         let metadata = self.get_metadata_by_block_number(block_number)?;
         Ok(metadata.verifier_list.iter().any(|v| v.address == address))

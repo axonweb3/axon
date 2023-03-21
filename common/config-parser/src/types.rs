@@ -249,7 +249,6 @@ pub struct Config {
     pub prometheus:                  Option<ConfigPrometheus>,
     pub cross_client:                ConfigCrossChain,
     pub epoch_len:                   u64,
-    pub metadata_contract_address:   H160,
     pub crosschain_contract_address: H160,
     pub wckb_contract_address:       H160,
     pub ibc:                         Option<ConfigIbc>,

@@ -1,5 +1,3 @@
-use super::TxContext;
-
 pub mod message;
 
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
@@ -7,6 +5,7 @@ use std::{collections::HashMap, error::Error, marker::PhantomData, sync::Arc, ti
 
 use ckb_types::core::cell::{CellProvider, CellStatus};
 use ckb_types::{core::TransactionView, prelude::*};
+use core_executor::system_contract::metadata::MetadataHandle;
 use dashmap::DashMap;
 use futures::{
     channel::mpsc::{unbounded, TrySendError, UnboundedReceiver, UnboundedSender},
@@ -16,8 +15,8 @@ use log::{debug, error};
 use parking_lot::Mutex;
 
 use protocol::traits::{
-    Context, Executor, Gossip, Interoperation, MemPoolAdapter, MetadataControl, PeerTrust,
-    Priority, Rpc, Storage, TrustFeedback,
+    Context, Executor, Gossip, Interoperation, MemPoolAdapter, PeerTrust, Priority, Rpc, Storage,
+    TrustFeedback,
 };
 use protocol::types::{
     recover_intact_pub_key, AddressSource, BatchSignedTxs, CellDepWithPubKey, CellWithData, Hash,
@@ -36,6 +35,7 @@ use core_executor::{
 use core_interoperation::{utils::is_dummy_out_point, InteroperationImpl};
 
 use crate::adapter::message::{MsgPullTxs, END_GOSSIP_NEW_TXS, RPC_PULL_TXS};
+use crate::context::TxContext;
 use crate::MemPoolError;
 
 const MAX_VERIFY_CKB_VM_CYCLES: u64 = 50_000_000;
@@ -118,11 +118,11 @@ impl IntervalTxsBroadcaster {
     }
 }
 
-pub struct DefaultMemPoolAdapter<C, N, S, DB, M, I> {
+pub struct DefaultMemPoolAdapter<C, N, S, DB, I> {
     network:  N,
     storage:  Arc<S>,
     trie_db:  Arc<DB>,
-    metadata: Arc<M>,
+    metadata: Arc<MetadataHandle>,
 
     addr_nonce:  DashMap<H160, (U256, U256)>,
     gas_limit:   AtomicU64,
@@ -136,20 +136,19 @@ pub struct DefaultMemPoolAdapter<C, N, S, DB, M, I> {
     pin_i: PhantomData<I>,
 }
 
-impl<C, N, S, DB, M, I> DefaultMemPoolAdapter<C, N, S, DB, M, I>
+impl<C, N, S, DB, I> DefaultMemPoolAdapter<C, N, S, DB, I>
 where
     C: Crypto,
     N: Rpc + PeerTrust + Gossip + Clone + Unpin + 'static,
     S: Storage,
     DB: trie::DB + 'static,
-    M: MetadataControl + 'static,
     I: Interoperation + 'static,
 {
     pub fn new(
         network: N,
         storage: Arc<S>,
         trie_db: Arc<DB>,
-        metadata: Arc<M>,
+        metadata: Arc<MetadataHandle>,
         chain_id: u64,
         gas_limit: u64,
         max_tx_size: usize,
@@ -193,11 +192,8 @@ where
     ) -> ProtocolResult<U256> {
         let addr = &stx.sender;
         let block = self.storage.get_latest_block(ctx.clone()).await?;
-        let metadata = self
-            .metadata
-            .get_metadata_unchecked(ctx, block.header.number + 1);
 
-        if metadata.verifier_list.iter().any(|ve| &ve.address == addr) {
+        if self.metadata.is_validator(block.header.number + 1, *addr)? {
             return Ok(U256::zero());
         }
 
@@ -353,13 +349,12 @@ where
 }
 
 #[async_trait]
-impl<C, N, S, DB, M, I> MemPoolAdapter for DefaultMemPoolAdapter<C, N, S, DB, M, I>
+impl<C, N, S, DB, I> MemPoolAdapter for DefaultMemPoolAdapter<C, N, S, DB, I>
 where
     C: Crypto + Send + Sync + 'static,
     N: Rpc + PeerTrust + Gossip + Clone + Unpin + 'static,
     S: Storage + 'static,
     DB: trie::DB + 'static,
-    M: MetadataControl + 'static,
     I: Interoperation + 'static,
 {
     #[trace_span(kind = "mempool.adapter", logs = "{txs_len: tx_hashes.len()}")]
