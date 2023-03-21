@@ -78,7 +78,7 @@ fn build_axon_txs(
     }
     .calc_hash();
 
-    utx.try_into().unwrap()
+    SignedTransaction::from_unverified(utx, None).unwrap()
 }
 
 // get metadata key from config.toml

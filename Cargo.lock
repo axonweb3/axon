@@ -1508,15 +1508,18 @@ version = "0.1.0"
 dependencies = [
  "axon-protocol",
  "beef",
+ "ckb-types",
  "common-apm",
  "common-config-parser",
  "core-consensus",
  "core-executor",
+ "core-interoperation",
  "json",
  "jsonrpsee",
  "log",
  "parking_lot 0.12.1",
  "pprof",
+ "rlp",
  "serde",
  "serde_json",
 ]

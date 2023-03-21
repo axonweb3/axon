@@ -7,7 +7,7 @@ use common_crypto::secp256k1_recover;
 use crate::types::{
     public_to_address, AccessList, AccessListItem, Bytes, BytesMut, Eip1559Transaction,
     Eip2930Transaction, Hasher, LegacyTransaction, Public, SignatureComponents, SignedTransaction,
-    UnsignedTransaction, UnverifiedTransaction, H256, H512, U256,
+    UnsignedTransaction, UnverifiedTransaction, H256, U256,
 };
 
 fn truncate_slice<T>(s: &[T], n: usize) -> &[T] {
@@ -344,7 +344,7 @@ impl Decodable for SignedTransaction {
                     .serialize_uncompressed()[1..65],
             )
         } else {
-            H512::default()
+            Public::zero()
         };
 
         Ok(SignedTransaction {
@@ -435,7 +435,7 @@ mod tests {
     fn test_signed_tx_codec() {
         let raw = hex_decode("02f8670582010582012c82012c825208945cf83df52a32165a7f392168ac009b168c9e89150180c001a0a68aeb0db4d84cf16da5a6918becefd254654854cfc23f0112ef78154ce84db89f4b0af1cbf12f5bfaec81c3d4d495717d720b574a05092f6b436c2ab255cd35").unwrap();
         let utx = UnverifiedTransaction::decode(&Rlp::new(&raw)).unwrap();
-        let origin: SignedTransaction = utx.try_into().unwrap();
+        let origin = SignedTransaction::from_unverified(utx, None).unwrap();
         let encode = origin.rlp_bytes().freeze().to_vec();
         let decode: SignedTransaction = rlp::decode(&encode).unwrap();
         assert_eq!(origin, decode);
@@ -494,7 +494,7 @@ mod tests {
         let test_vector = |tx_data: &str, address: &'static str| {
             let utx =
                 UnverifiedTransaction::decode(&Rlp::new(&hex_decode(tx_data).unwrap())).unwrap();
-            let signed = SignedTransaction::try_from(utx.clone()).unwrap();
+            let signed = SignedTransaction::from_unverified(utx.clone(), None).unwrap();
             assert_eq!(
                 signed.sender,
                 H160::from_slice(&hex_decode(address).unwrap())
@@ -541,6 +541,6 @@ mod tests {
         let raw = hex_decode("f901f5808408653b0282520894cb9112d826471e7deb7bc895b1771e5d676a14af880de0b6b3a764000080820fefb86302f860e3a0f35178c7a1a5a4e5b164157aa549a493cebc9a3079b6a9ede7ae5207adb3f4d48001c0f839a0d23761b364210735c19c60561d213fb3beae2fd6172743719eff6920e020baac9600016091d93dbab12f16640fb3a0a8f1e77e03fbc51c02b90162f9015ff9015cb90157014599a5795423d54ab8e1f44f5c6ef5be9b1829beddb787bc732e4469d25f8c93e94afa393617f905bf1765c35dc38501a862b4b2f794a88b4f9010da02411a85754d08b9c62ce935f505b478662953815be16f40f19bcb55236713180a697ceac060a7b05bb55c6dcd249813b5bd9f1f295a038c9d5980b201b3e538bfa30ddd49960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97630162f9fb777b2274797065223a22776562617574686e2e676574222c226368616c6c656e6765223a22596a4e6d597a41355a6a63775a574d794e324e6d5a54417959544d784d4451794d4445354d47557a4f545a6b596a4a6d5a6a6b78596a49775a444e6d4e3255314f4755354d7a49354e6a52684e445a695a54566c5a67222c226f726967696e223a22687474703a2f2f6c6f63616c686f73743a38303030222c2263726f73734f726967696e223a66616c73657dc0c0").unwrap();
         let utx = UnverifiedTransaction::decode(&Rlp::new(&raw)).unwrap();
         assert!(utx.check_hash().is_ok());
-        assert_eq!(utx.signature.unwrap().is_eth_sig(), false);
+        assert!(!utx.signature.unwrap().is_eth_sig());
     }
 }

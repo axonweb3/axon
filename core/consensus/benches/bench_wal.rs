@@ -53,7 +53,7 @@ fn mock_sign_tx() -> SignedTransaction {
         .to_bytes();
     utx.signature = Some(signature.into());
 
-    utx.try_into().unwrap()
+    SignedTransaction::from_unverified(utx, None).unwrap()
 }
 
 fn criterion_save_wal(c: &mut Criterion) {
