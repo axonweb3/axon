@@ -363,8 +363,11 @@ mod tests {
 
     use common_crypto::secp256k1_recover;
 
-    use crate::codec::hex_decode;
-    use crate::types::{Bytes, Public, TransactionAction, H160, H256, U256};
+    use crate::codec::{hex_decode, hex_encode};
+    use crate::types::{
+        AddressSource, Bytes, CKBTxMockByRefAndOneInput, CellDep, CellWithData, Public, Script,
+        SignatureR, SignatureS, TransactionAction, Witness, H160, H256, U256,
+    };
 
     fn rand_bytes(len: usize) -> Bytes {
         Bytes::from((0..len).map(|_| random::<u8>()).collect::<Vec<_>>())
@@ -538,9 +541,102 @@ mod tests {
 
     #[test]
     fn test_secp256r1_sig_decode() {
-        let raw = hex_decode("f901f5808408653b0282520894cb9112d826471e7deb7bc895b1771e5d676a14af880de0b6b3a764000080820fefb86302f860e3a0f35178c7a1a5a4e5b164157aa549a493cebc9a3079b6a9ede7ae5207adb3f4d48001c0f839a0d23761b364210735c19c60561d213fb3beae2fd6172743719eff6920e020baac9600016091d93dbab12f16640fb3a0a8f1e77e03fbc51c02b90162f9015ff9015cb90157014599a5795423d54ab8e1f44f5c6ef5be9b1829beddb787bc732e4469d25f8c93e94afa393617f905bf1765c35dc38501a862b4b2f794a88b4f9010da02411a85754d08b9c62ce935f505b478662953815be16f40f19bcb55236713180a697ceac060a7b05bb55c6dcd249813b5bd9f1f295a038c9d5980b201b3e538bfa30ddd49960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97630162f9fb777b2274797065223a22776562617574686e2e676574222c226368616c6c656e6765223a22596a4e6d597a41355a6a63775a574d794e324e6d5a54417959544d784d4451794d4445354d47557a4f545a6b596a4a6d5a6a6b78596a49775a444e6d4e3255314f4755354d7a49354e6a52684e445a695a54566c5a67222c226f726967696e223a22687474703a2f2f6c6f63616c686f73743a38303030222c2263726f73734f726967696e223a66616c73657dc0c0").unwrap();
+        let raw = hex_decode("f90203808408653b0282520894cb9112d826471e7deb7bc895b1771e5d676a14af880de0b6b3a764000080820fefb86b02f868e4e3a0f35178c7a1a5a4e5b164157aa549a493cebc9a3079b6a9ede7ae5207adb3f4d48001c0f83dc0f839a0d23761b364210735c19c60561d213fb3beae2fd6172743719eff6920e020baac9600016091d93dbab12f16640fb3a0a8f1e77e03fbc51c01c0c28080b90168f90165f90162f9015ff9015cb90157014599a5795423d54ab8e1f44f5c6ef5be9b1829beddb787bc732e4469d25f8c93e94afa393617f905bf1765c35dc38501a862b4b2f794a88b4f9010da02411a85754d08b9c62ce935f505b478662953815be16f40f19bcb55236713180a697ceac060a7b05bb55c6dcd249813b5bd9f1f295a038c9d5980b201b3e538bfa30ddd49960de5880e8c687434170f6476605b8fe4aeb9a28632c7995cf3ba831d97630162f9fb777b2274797065223a22776562617574686e2e676574222c226368616c6c656e6765223a22596a4e6d597a41355a6a63775a574d794e324e6d5a54417959544d784d4451794d4445354d47557a4f545a6b596a4a6d5a6a6b78596a49775a444e6d4e3255314f4755354d7a49354e6a52684e445a695a54566c5a67222c226f726967696e223a22687474703a2f2f6c6f63616c686f73743a38303030222c2263726f73734f726967696e223a66616c73657dc0c0").unwrap();
         let utx = UnverifiedTransaction::decode(&Rlp::new(&raw)).unwrap();
         assert!(utx.check_hash().is_ok());
-        assert!(!utx.signature.unwrap().is_eth_sig());
+        assert!(!utx.signature.as_ref().unwrap().is_eth_sig());
+
+        // let sig = utx.signature.clone().unwrap();
+
+        // println!("{:?}", hex_encode(&sig.s));
+
+        // let r = SignatureR::decode(&sig.r).unwrap();
+        // let s = SignatureS::decode(&Rlp::new(&sig.s)).unwrap();
+
+        // println!("{:?}\n{:?}", r, s);
+
+        // let sender =
+        // Address::from_hex("0x9447A236092F194ac774E9aAa5294c87E3AD50fd").
+        // unwrap(); let _stx = SignedTransaction::from_unverified(utx,
+        // Some(sender.0)).unwrap();
+    }
+
+    #[test]
+    fn test_signature_r_codec() {
+        let cell_dep = CellDep {
+            tx_hash:  H256::from_slice(&[
+                243, 81, 120, 199, 161, 165, 164, 229, 177, 100, 21, 122, 165, 73, 164, 147, 206,
+                188, 154, 48, 121, 182, 169, 237, 231, 174, 82, 7, 173, 179, 244, 212,
+            ]),
+            index:    0,
+            dep_type: 1,
+        };
+        let cell_with_data = CellWithData {
+            type_script: None,
+            lock_script: Script {
+                code_hash: H256::from_slice(&[
+                    210, 55, 97, 179, 100, 33, 7, 53, 193, 156, 96, 86, 29, 33, 63, 179, 190, 174,
+                    47, 214, 23, 39, 67, 113, 158, 255, 105, 32, 224, 32, 186, 172,
+                ]),
+                args:      vec![
+                    0, 1, 96, 145, 217, 61, 186, 177, 47, 22, 100, 15, 179, 160, 168, 241, 231,
+                    126, 3, 251, 197, 28,
+                ]
+                .into(),
+                hash_type: 1,
+            },
+            data:        Bytes::new(),
+        };
+        let address_source = AddressSource { index: 0, type_: 0 };
+
+        let sig_r = SignatureR::ByRefAndOneInput(CKBTxMockByRefAndOneInput {
+            cell_deps:             vec![cell_dep],
+            header_deps:           vec![],
+            input_cell_with_data:  cell_with_data,
+            out_point_addr_source: address_source,
+        });
+
+        println!("{:?}", hex_encode(&sig_r.encode()));
+
+        assert_eq!(SignatureR::decode(&sig_r.encode()).unwrap(), sig_r);
+    }
+
+    #[test]
+    fn test_signature_s_codec() {
+        let witness = Witness {
+            input_type:  Some(
+                vec![
+                    1, 69, 153, 165, 121, 84, 35, 213, 74, 184, 225, 244, 79, 92, 110, 245, 190,
+                    155, 24, 41, 190, 221, 183, 135, 188, 115, 46, 68, 105, 210, 95, 140, 147, 233,
+                    74, 250, 57, 54, 23, 249, 5, 191, 23, 101, 195, 93, 195, 133, 1, 168, 98, 180,
+                    178, 247, 148, 168, 139, 79, 144, 16, 218, 2, 65, 26, 133, 117, 77, 8, 185,
+                    198, 44, 233, 53, 245, 5, 180, 120, 102, 41, 83, 129, 91, 225, 111, 64, 241,
+                    155, 203, 85, 35, 103, 19, 24, 10, 105, 124, 234, 192, 96, 167, 176, 91, 181,
+                    92, 109, 205, 36, 152, 19, 181, 189, 159, 31, 41, 90, 3, 140, 157, 89, 128,
+                    178, 1, 179, 229, 56, 191, 163, 13, 221, 73, 150, 13, 229, 136, 14, 140, 104,
+                    116, 52, 23, 15, 100, 118, 96, 91, 143, 228, 174, 185, 162, 134, 50, 199, 153,
+                    92, 243, 186, 131, 29, 151, 99, 1, 98, 249, 251, 119, 123, 34, 116, 121, 112,
+                    101, 34, 58, 34, 119, 101, 98, 97, 117, 116, 104, 110, 46, 103, 101, 116, 34,
+                    44, 34, 99, 104, 97, 108, 108, 101, 110, 103, 101, 34, 58, 34, 89, 106, 78,
+                    109, 89, 122, 65, 53, 90, 106, 99, 119, 90, 87, 77, 121, 78, 50, 78, 109, 90,
+                    84, 65, 121, 89, 84, 77, 120, 77, 68, 81, 121, 77, 68, 69, 53, 77, 71, 85, 122,
+                    79, 84, 90, 107, 89, 106, 74, 109, 90, 106, 107, 120, 89, 106, 73, 119, 90, 68,
+                    78, 109, 78, 50, 85, 49, 79, 71, 85, 53, 77, 122, 73, 53, 78, 106, 82, 104, 78,
+                    68, 90, 105, 90, 84, 86, 108, 90, 103, 34, 44, 34, 111, 114, 105, 103, 105,
+                    110, 34, 58, 34, 104, 116, 116, 112, 58, 47, 47, 108, 111, 99, 97, 108, 104,
+                    111, 115, 116, 58, 56, 48, 48, 48, 34, 44, 34, 99, 114, 111, 115, 115, 79, 114,
+                    105, 103, 105, 110, 34, 58, 102, 97, 108, 115, 101, 125,
+                ]
+                .into(),
+            ),
+            output_type: None,
+            lock:        None,
+        };
+        let s = SignatureS {
+            witnesses: vec![witness],
+        };
+
+        println!("{:?}", hex_encode(&s.rlp_bytes()));
+        assert_eq!(SignatureS::decode(&Rlp::new(&s.rlp_bytes())).unwrap(), s);
     }
 }

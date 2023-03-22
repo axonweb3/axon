@@ -6,7 +6,7 @@ use crate::lazy::{ALWAYS_SUCCESS_TYPE_SCRIPT, DUMMY_INPUT_OUT_POINT};
 use crate::types::{Bytes, CellDep, CellWithData, SignatureR, SignatureS, VMResp};
 use crate::{traits::Context, ProtocolResult};
 
-const BYTE_SHANNONS: u64 = 100_000_000;
+pub const BYTE_SHANNONS: u64 = 100_000_000;
 const OUTPUT_CAPACITY_OF_REALITY_INPUT: Capacity = Capacity::shannons(100 * BYTE_SHANNONS);
 
 pub trait Interoperation: Sync + Send {

@@ -4,7 +4,7 @@ use ethereum_types::H256;
 use rlp_derive::{RlpDecodable, RlpEncodable};
 use serde::{Deserialize, Serialize};
 
-use crate::{codec::ProtocolCodec, types::TypesError, ProtocolResult};
+use crate::{codec::ProtocolCodec, traits::BYTE_SHANNONS, types::TypesError, ProtocolResult};
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct VMResp {
@@ -114,6 +114,23 @@ impl SignatureR {
             SignatureR::ByRefAndOneInput(_) => false,
         }
     }
+
+    #[cfg(test)]
+    pub(crate) fn encode(&self) -> Bytes {
+        match self {
+            SignatureR::ByRef(r) => {
+                let mut ret = vec![1];
+                ret.extend_from_slice(&rlp::encode(r));
+                ret
+            }
+            SignatureR::ByRefAndOneInput(r) => {
+                let mut ret = vec![2];
+                ret.extend_from_slice(&rlp::encode(r));
+                ret
+            }
+        }
+        .into()
+    }
 }
 
 #[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -148,7 +165,7 @@ impl CellWithData {
             .unwrap_or_default()
             + self.lock_script.len()
             + self.data.len();
-        capacity as u64
+        (capacity as u64) * BYTE_SHANNONS
     }
 
     pub fn lock_script(&self) -> packed::Script {
