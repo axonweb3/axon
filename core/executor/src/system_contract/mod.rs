@@ -24,12 +24,34 @@ use ckb_types::core::cell::{CellProvider, CellStatus};
 use ckb_types::core::HeaderView;
 use ckb_types::{packed, prelude::*};
 
+use protocol::ckb_blake2b_256;
+use protocol::traits::{ApplyBackend, Backend, ExecutorAdapter};
 use protocol::types::{Bytes, Hasher, SignedTransaction, TxResp, H160, H256};
-use protocol::{ckb_blake2b_256, traits::ExecutorAdapter};
 
 use crate::system_contract::image_cell::utils::always_success_script_deploy_cell;
 use crate::system_contract::trie_db::RocksTrieDB;
 use crate::system_contract::utils::generate_mpt_root_changes;
+
+pub const fn system_contract_address(addr: u8) -> H160 {
+    H160([
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff, 0xff, addr,
+    ])
+}
+const HEADER_CELL_DB_CACHE_SIZE: usize = 20;
+const METADATA_DB_CACHE_SIZE: usize = 20;
+
+/// System contract init section. It needs to initialize two databases, one for
+/// Metadata and one for CkbLightClient&ImageCell
+static HEADER_CELL_DB: OnceCell<Arc<RocksTrieDB>> = OnceCell::new();
+static METADATA_DB: OnceCell<Arc<RocksTrieDB>> = OnceCell::new();
+
+lazy_static::lazy_static! {
+    pub static ref HEADER_CELL_ROOT_KEY: H256 = Hasher::digest("header_cell_mpt_root");
+    static ref CURRENT_HEADER_CELL_ROOT: ArcSwap<H256> = ArcSwap::from_pointee(H256::default());
+    static ref METADATA_ROOT_KEY: H256 = Hasher::digest("metadata_root");
+    static ref CURRENT_METADATA_ROOT: ArcSwap<H256> = ArcSwap::from_pointee(H256::default());
+}
 
 #[macro_export]
 macro_rules! exec_try {
@@ -44,26 +66,14 @@ macro_rules! exec_try {
     };
 }
 
-pub const fn system_contract_address(addr: u8) -> H160 {
-    H160([
-        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-        0xff, 0xff, 0xff, 0xff, addr,
-    ])
-}
+pub trait SystemContract {
+    const ADDRESS: H160;
 
-/// System contract init section. It needs to initialize two databases, one for
-/// Metadata and one for CkbLightClient&ImageCell
-static HEADER_CELL_DB: OnceCell<Arc<RocksTrieDB>> = OnceCell::new();
-static METADATA_DB: OnceCell<Arc<RocksTrieDB>> = OnceCell::new();
+    fn exec_<B: Backend + ApplyBackend>(&self, backend: &mut B, tx: &SignedTransaction) -> TxResp;
 
-const HEADER_CELL_DB_CACHE_SIZE: usize = 20;
-const METADATA_DB_CACHE_SIZE: usize = 20;
+    fn before_block_hook<B: Backend + ApplyBackend>(&self, _b: &mut B, _tx: &SignedTransaction) {}
 
-lazy_static::lazy_static! {
-    pub static ref HEADER_CELL_ROOT_KEY: H256 = Hasher::digest("header_cell_mpt_root");
-    static ref CURRENT_HEADER_CELL_ROOT: ArcSwap<H256> = ArcSwap::from_pointee(H256::default());
-    static ref METADATA_ROOT_KEY: H256 = Hasher::digest("metadata_root");
-    static ref CURRENT_METADATA_ROOT: ArcSwap<H256> = ArcSwap::from_pointee(H256::default());
+    fn after_block_hook<B: Backend + ApplyBackend>(&self, _b: &mut B, _tx: &SignedTransaction) {}
 }
 
 pub fn init<P: AsRef<Path>, Adapter: ExecutorAdapter>(
@@ -108,16 +118,6 @@ pub fn init<P: AsRef<Path>, Adapter: ExecutorAdapter>(
     }
 
     CURRENT_HEADER_CELL_ROOT.store(Arc::new(current_cell_root));
-}
-
-pub trait SystemContract {
-    const ADDRESS: H160;
-
-    fn exec_<Adapter: ExecutorAdapter>(
-        &self,
-        adapter: &mut Adapter,
-        tx: &SignedTransaction,
-    ) -> TxResp;
 }
 
 pub fn system_contract_dispatch<Adapter: ExecutorAdapter>(
