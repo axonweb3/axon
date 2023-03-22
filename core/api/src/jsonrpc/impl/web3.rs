@@ -352,7 +352,7 @@ impl<Adapter: APIAdapter + 'static> AxonWeb3RpcServer for Web3RpcImpl<Adapter> {
         }
 
         let num = match number {
-            Some(BlockId::Num(n)) => Some(n),
+            Some(BlockId::Num(n)) => Some(n.as_u64()),
             _ => None,
         };
         let data_bytes = req
@@ -580,7 +580,7 @@ impl<Adapter: APIAdapter + 'static> AxonWeb3RpcServer for Web3RpcImpl<Adapter> {
                 let (start, end) = {
                     let convert = |id: BlockId| -> BlockNumber {
                         match id {
-                            BlockId::Num(n) => n,
+                            BlockId::Num(n) => n.as_u64(),
                             BlockId::Earliest => 0,
                             _ => latest_number,
                         }

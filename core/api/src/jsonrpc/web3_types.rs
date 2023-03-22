@@ -338,7 +338,7 @@ pub struct Web3CallRequest {
 
 #[derive(Default, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum BlockId {
-    Num(u64),
+    Num(U64),
     Hash(H256),
     #[default]
     Latest,
@@ -349,7 +349,7 @@ pub enum BlockId {
 impl From<BlockId> for Option<u64> {
     fn from(id: BlockId) -> Self {
         match id {
-            BlockId::Num(num) => Some(num),
+            BlockId::Num(num) => Some(num.as_u64()),
             BlockId::Earliest => Some(0),
             _ => None,
         }
@@ -371,7 +371,7 @@ impl Serialize for BlockId {
         S: Serializer,
     {
         match *self {
-            BlockId::Num(ref x) => serializer.serialize_str(&format!("0x{:x}", x)),
+            BlockId::Num(ref x) => serializer.serialize_str(&format!("{:x}", x)),
             BlockId::Hash(ref hash) => serializer.serialize_str(&format!("{:x}", hash)),
             BlockId::Latest => serializer.serialize_str("latest"),
             BlockId::Earliest => serializer.serialize_str("earliest"),
@@ -409,7 +409,7 @@ impl<'a> Visitor<'a> for BlockIdVisitor {
                                 Error::custom(format!("Invalid block number: {}", e))
                             })?;
 
-                            block_number = Some(number);
+                            block_number = Some(U64::from(number));
                             break;
                         } else {
                             return Err(Error::custom(
@@ -450,7 +450,7 @@ impl<'a> Visitor<'a> for BlockIdVisitor {
             "earliest" => Ok(BlockId::Earliest),
             "pending" => Ok(BlockId::Pending),
             _ if value.starts_with("0x") => u64::from_str_radix(&value[2..], 16)
-                .map(BlockId::Num)
+                .map(|n| BlockId::Num(U64::from(n)))
                 .map_err(|e| Error::custom(format!("Invalid block number: {}", e))),
             _ => Err(Error::custom(
                 "Invalid block number: missing 0x prefix".to_string(),

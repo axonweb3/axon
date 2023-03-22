@@ -9,7 +9,7 @@ use protocol::async_trait;
 use protocol::tokio::sync::mpsc::{channel, Receiver, Sender};
 use protocol::tokio::{self, select, sync::oneshot, time::interval};
 use protocol::traits::{APIAdapter, Context};
-use protocol::types::{BlockNumber, Hash, Receipt, H160, H256, U256};
+use protocol::types::{BlockNumber, Hash, Receipt, H160, H256, U256, U64};
 
 use crate::jsonrpc::web3_types::{BlockId, FilterChanges, RawLoggerFilter, Web3Log};
 use crate::jsonrpc::{r#impl::from_receipt_to_web3_log, RpcResult, Web3FilterServer};
@@ -63,7 +63,7 @@ impl Web3FilterServer for AxonWeb3RpcFilter {
             ));
         }
         match filter.to_block {
-            Some(BlockId::Earliest) | Some(BlockId::Num(0)) => {
+            Some(BlockId::Earliest) | Some(BlockId::Num(U64([0]))) => {
                 return Err(Error::Custom("Invalid to_block".to_string()))
             }
             _ => (),
@@ -198,11 +198,11 @@ where
 
                 match from {
                     BlockId::Num(n) => {
-                        if n < &header.number {
-                            filter.from_block = Some(BlockId::Num(header.number + 1));
+                        if &n.as_u64() < &header.number {
+                            filter.from_block = Some(BlockId::Num(U64::from(header.number + 1)));
                         }
                     }
-                    _ => filter.from_block = Some(BlockId::Num(header.number + 1)),
+                    _ => filter.from_block = Some(BlockId::Num(U64::from(header.number + 1))),
                 }
 
                 self.logs_hub
@@ -301,7 +301,7 @@ where
         let (start, end) = {
             let convert = |id: &BlockId| -> BlockNumber {
                 match id {
-                    BlockId::Num(n) => *n,
+                    BlockId::Num(n) => n.as_u64(),
                     BlockId::Earliest => 0,
                     _ => latest_number,
                 }
@@ -376,7 +376,7 @@ where
         }
 
         if let Some(BlockId::Num(ref mut n)) = filter.from_block {
-            *n = end + 1
+            *n = U64::from(end + 1)
         }
         *time = Instant::now();
         Ok(all_logs)
