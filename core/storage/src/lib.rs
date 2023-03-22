@@ -285,18 +285,6 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         Ok(None)
     }
 
-    async fn get_block_header_by_hash(
-        &self,
-        ctx: Context,
-        block_hash: &Hash,
-    ) -> ProtocolResult<Option<Header>> {
-        if let Some(num) = self.get_block_number_by_hash(block_hash).await? {
-            return self.get_block_header(ctx, num).await;
-        }
-
-        Ok(None)
-    }
-
     async fn get_block_number_by_hash(
         &self,
         _: Context,

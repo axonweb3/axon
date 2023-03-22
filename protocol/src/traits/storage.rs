@@ -64,12 +64,6 @@ pub trait Storage: CommonStorage {
         block_hash: &Hash,
     ) -> ProtocolResult<Option<Block>>;
 
-    async fn get_block_header_by_hash(
-        &self,
-        ctx: Context,
-        hash: &Hash,
-    ) -> ProtocolResult<Option<Header>>;
-
     async fn get_block_number_by_hash(
         &self,
         ctx: Context,
