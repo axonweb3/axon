@@ -285,6 +285,14 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         Ok(None)
     }
 
+    async fn get_block_number_by_hash(
+        &self,
+        _: Context,
+        block_hash: &Hash,
+    ) -> ProtocolResult<Option<u64>> {
+        self.get_block_number_by_hash(block_hash).await
+    }
+
     #[trace_span(kind = "storage")]
     async fn get_transactions(
         &self,
