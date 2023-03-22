@@ -11,7 +11,7 @@ use crate::system_contract::image_cell::{image_cell_abi, CellInfo, CellKey, Imag
 use crate::system_contract::{init, CkbLightClientContract, SystemContract, HEADER_CELL_ROOT_KEY};
 use crate::tests::{gen_tx, gen_vicinity};
 
-static ROCKSDB_PATH: &str = "./free-space/system-contract";
+static ROCKSDB_PATH: &str = "./free-space/system-contract/image-cell";
 
 #[test]
 fn test_write_functions() {
