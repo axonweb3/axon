@@ -11,7 +11,7 @@ use crate::system_contract::ckb_light_client::{ckb_light_client_abi, CkbLightCli
 use crate::system_contract::{init, ImageCellContract, SystemContract, HEADER_CELL_ROOT_KEY};
 use crate::tests::{gen_tx, gen_vicinity};
 
-static ROCKSDB_PATH: &str = "./free-space/system-contract";
+static ROCKSDB_PATH: &str = "./free-space/system-contract/ckb-light-client";
 
 #[test]
 fn test_write_functions() {
