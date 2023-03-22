@@ -198,7 +198,7 @@ where
 
                 match from {
                     BlockId::Num(n) => {
-                        if &n.as_u64() < &header.number {
+                        if n.as_u64() < header.number {
                             filter.from_block = Some(BlockId::Num(U64::from(header.number + 1)));
                         }
                     }
