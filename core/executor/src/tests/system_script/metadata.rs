@@ -16,7 +16,7 @@ use crate::{
     tests::{gen_tx, gen_vicinity},
 };
 
-static ROCKSDB_PATH: &str = "./free-space/system-contract";
+static ROCKSDB_PATH: &str = "./free-space/system-contract/metadata";
 
 #[test]
 fn test_write_functions() {
