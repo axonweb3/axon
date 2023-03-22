@@ -10,8 +10,7 @@ use evm::backend::{Apply, Basic};
 
 use protocol::traits::{ApplyBackend, Backend, Context, ExecutorAdapter, Storage};
 use protocol::types::{
-    Account, Bytes, ExecutorContext, Hasher, Log, MerkleRoot, Proposal, H160, H256, NIL_DATA,
-    RLP_NULL, U256,
+    Account, Bytes, ExecutorContext, Hasher, Log, MerkleRoot, H160, H256, NIL_DATA, RLP_NULL, U256,
 };
 use protocol::{codec::ProtocolCodec, trie, ProtocolResult};
 
@@ -114,9 +113,9 @@ where
         }
 
         let number = number.as_u64();
-        let res = blocking_async!(self, storage, get_block, Context::new(), number);
-
-        res.map(|b| Proposal::from(&b).hash()).unwrap_or_default()
+        blocking_async!(self, storage, get_block, Context::new(), number)
+            .map(|b| b.hash())
+            .unwrap_or_default()
     }
 
     fn block_coinbase(&self) -> H160 {

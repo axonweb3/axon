@@ -8,7 +8,7 @@ use common_merkle::TrieMerkle;
 use core_executor::{code_address, MPTTrie};
 use protocol::traits::{Context, Storage};
 use protocol::types::{
-    Account, Address, Bytes, ExecResp, ExecutorContext, Hasher, Proposal, SignedTransaction,
+    Account, Address, Bytes, ExecResp, ExecutorContext, Hasher, SignedTransaction,
     TransactionAction, TxResp, H160, H256, NIL_DATA, RLP_NULL, U256,
 };
 use protocol::{codec::ProtocolCodec, trie, ProtocolError};
@@ -106,7 +106,7 @@ where
 
         let number = number.as_u64();
         let res = blocking_async!(self, storage, get_block, Context::new(), number)
-            .map(|b| Proposal::from(&b).hash())
+            .map(|b| b.hash())
             .unwrap_or_default();
 
         Ok(res)
