@@ -213,7 +213,10 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         consenting_rich_block: &RichBlock,
     ) -> ProtocolResult<Proof> {
         let consenting_number = consenting_rich_block.block.header.number;
-        let proposal: Proposal = (&consenting_rich_block.block).into();
+        let proposal = Proposal::new_with_state_root(
+            &consenting_rich_block.block.header,
+            self.status.inner().last_state_root,
+        );
 
         let consenting_proof: Proof = self
             .adapter
@@ -313,7 +316,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             .exec(
                 ctx.clone(),
                 status_agent.inner().last_state_root,
-                &block.into(),
+                &Proposal::new_with_state_root(&block.header, self.status.inner().last_state_root),
                 &rich_block.txs,
             )
             .await?;
@@ -346,13 +349,12 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             .adapter
             .get_metadata_by_block_number(block.header.number)?;
         let new_status = CurrentStatus {
-            prev_hash:                  block.hash(),
-            last_number:                block.header.number,
-            last_state_root:            resp.state_root,
-            tx_num_limit:               metadata.tx_num_limit,
-            max_tx_size:                metadata.max_tx_size.into(),
-            proof:                      proof.clone(),
-            last_checkpoint_block_hash: metadata.last_checkpoint_block_hash,
+            prev_hash:       block.hash(),
+            last_number:     block.header.number,
+            last_state_root: resp.state_root,
+            tx_num_limit:    metadata.tx_num_limit,
+            max_tx_size:     metadata.max_tx_size.into(),
+            proof:           proof.clone(),
         };
 
         self.save_chain_data(

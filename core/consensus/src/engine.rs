@@ -82,21 +82,21 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         };
 
         let proposal = Proposal {
-            prev_hash:                  status.prev_hash,
-            proposer:                   self.node_info.self_address.0,
-            transactions_root:          txs_root,
-            signed_txs_hash:            digest_signed_transactions(&signed_txs),
-            timestamp:                  time_now(),
-            number:                     next_number,
-            gas_limit:                  MAX_BLOCK_GAS_LIMIT.into(),
-            extra_data:                 Default::default(),
-            mixed_hash:                 None,
-            base_fee_per_gas:           BASE_FEE_PER_GAS.into(),
-            proof:                      status.proof,
-            last_checkpoint_block_hash: status.last_checkpoint_block_hash,
-            chain_id:                   self.node_info.chain_id,
-            call_system_script_count:   txs.call_system_script_count,
-            tx_hashes:                  txs.hashes,
+            prev_hash:                status.prev_hash,
+            proposer:                 self.node_info.self_address.0,
+            prev_state_root:          self.status.inner().last_state_root,
+            transactions_root:        txs_root,
+            signed_txs_hash:          digest_signed_transactions(&signed_txs),
+            timestamp:                time_now(),
+            number:                   next_number,
+            gas_limit:                MAX_BLOCK_GAS_LIMIT.into(),
+            extra_data:               Default::default(),
+            mixed_hash:               None,
+            base_fee_per_gas:         BASE_FEE_PER_GAS.into(),
+            proof:                    status.proof,
+            chain_id:                 self.node_info.chain_id,
+            call_system_script_count: txs.call_system_script_count,
+            tx_hashes:                txs.hashes,
         };
 
         if proposal.number != proposal.proof.number + 1 {
@@ -617,13 +617,12 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
 
         let last_status = self.status.inner();
         let new_status = CurrentStatus {
-            prev_hash:                  block_hash,
-            last_number:                block_number,
-            last_state_root:            resp.state_root,
-            max_tx_size:                last_status.max_tx_size,
-            tx_num_limit:               last_status.tx_num_limit,
-            proof:                      proof.clone(),
-            last_checkpoint_block_hash: last_status.last_checkpoint_block_hash,
+            prev_hash:       block_hash,
+            last_number:     block_number,
+            last_state_root: resp.state_root,
+            max_tx_size:     last_status.max_tx_size,
+            tx_num_limit:    last_status.tx_num_limit,
+            proof:           proof.clone(),
         };
 
         CURRENT_STATE_ROOT.swap(Arc::new(resp.state_root));

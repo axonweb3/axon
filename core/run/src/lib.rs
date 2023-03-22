@@ -183,8 +183,8 @@ impl Axon {
         let mut backend = AxonExecutorAdapter::from_root(
             mpt.commit()?,
             trie_db,
-            Arc::clone(storage),
-            proposal.into(),
+            Arc::clone(&storage),
+            Proposal::new_without_state_root(&self.genesis.block.header).into(),
         )?;
 
         let path_metadata = self.config.data_path_for_system_contract();
@@ -545,7 +545,6 @@ impl Axon {
             last_number:                header.number,
             max_tx_size:                metadata.max_tx_size.into(),
             tx_num_limit:               metadata.tx_num_limit,
-            last_checkpoint_block_hash: metadata.last_checkpoint_block_hash,
             proof:                      latest_proof,
             last_state_root:            if header.number == 0 {
                 self.state_root

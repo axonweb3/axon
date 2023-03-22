@@ -32,51 +32,49 @@ pub struct Proposal {
     pub tx_hashes:                Vec<Hash>,
 }
 
-// impl From<&Block> for Proposal {
-//     fn from(b: &Block) -> Self {
-//         Proposal {
-//             prev_hash:                b.header.prev_hash,
-//             proposer:                 b.header.proposer,
-//             transactions_root:        b.header.transactions_root,
-//             signed_txs_hash:          b.header.signed_txs_hash,
-//             timestamp:                b.header.timestamp,
-//             number:                   b.header.number,
-//             gas_limit:                b.header.gas_limit,
-//             extra_data:               b.header.extra_data.clone(),
-//             mixed_hash:               b.header.mixed_hash,
-//             base_fee_per_gas:         b.header.base_fee_per_gas,
-//             proof:                    b.header.proof.clone(),
-//             chain_id:                 b.header.chain_id,
-//             call_system_script_count: b.header.call_system_script_count,
-//             tx_hashes:                b.tx_hashes.clone(),
-//         }
-//     }
-// }
-
-// impl From<Header> for Proposal {
-//     fn from(h: Header) -> Self {
-//         Proposal {
-//             prev_hash:                h.prev_hash,
-//             proposer:                 h.proposer,
-//             transactions_root:        h.transactions_root,
-//             signed_txs_hash:          h.signed_txs_hash,
-//             timestamp:                h.timestamp,
-//             number:                   h.number,
-//             gas_limit:                h.gas_limit,
-//             extra_data:               h.extra_data,
-//             mixed_hash:               h.mixed_hash,
-//             base_fee_per_gas:         h.base_fee_per_gas,
-//             proof:                    h.proof,
-//             chain_id:                 h.chain_id,
-//             call_system_script_count: h.call_system_script_count,
-//             tx_hashes:                vec![],
-//         }
-//     }
-// }
-
 impl Proposal {
     pub fn hash(&self) -> Hash {
         Hasher::digest(self.encode().unwrap())
+    }
+
+    pub fn new_with_state_root(h: &Header, state_root: MerkleRoot) -> Self {
+        Proposal {
+            prev_hash:                h.prev_hash,
+            proposer:                 h.proposer,
+            prev_state_root:          state_root,
+            transactions_root:        h.transactions_root,
+            signed_txs_hash:          h.signed_txs_hash,
+            timestamp:                h.timestamp,
+            number:                   h.number,
+            gas_limit:                h.gas_limit,
+            extra_data:               h.extra_data.clone(),
+            mixed_hash:               h.mixed_hash,
+            base_fee_per_gas:         h.base_fee_per_gas,
+            proof:                    h.proof.clone(),
+            chain_id:                 h.chain_id,
+            call_system_script_count: h.call_system_script_count,
+            tx_hashes:                vec![],
+        }
+    }
+
+    pub fn new_without_state_root(h: &Header) -> Self {
+        Proposal {
+            prev_hash:                h.prev_hash,
+            proposer:                 h.proposer,
+            prev_state_root:          Default::default(),
+            transactions_root:        h.transactions_root,
+            signed_txs_hash:          h.signed_txs_hash,
+            timestamp:                h.timestamp,
+            number:                   h.number,
+            gas_limit:                h.gas_limit,
+            extra_data:               h.extra_data.clone(),
+            mixed_hash:               h.mixed_hash,
+            base_fee_per_gas:         h.base_fee_per_gas,
+            proof:                    h.proof.clone(),
+            chain_id:                 h.chain_id,
+            call_system_script_count: h.call_system_script_count,
+            tx_hashes:                vec![],
+        }
     }
 }
 
