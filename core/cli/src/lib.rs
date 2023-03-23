@@ -38,6 +38,7 @@ impl AxonCli {
 
     pub fn start(&self) {
         let config_path = self.matches.get_one::<String>("config_path").unwrap();
+        println!("config_path: {}", config_path);
         let path = Path::new(&config_path).parent().unwrap();
         let mut config: Config = parse_file(config_path, false).unwrap();
 

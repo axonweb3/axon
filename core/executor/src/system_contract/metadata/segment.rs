@@ -4,7 +4,7 @@ use crate::system_contract::{error::SystemScriptError, metadata::Epoch};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EpochSegment {
-    seg: Vec<u64>,
+    pub seg: Vec<u64>,
 }
 
 impl EpochSegment {

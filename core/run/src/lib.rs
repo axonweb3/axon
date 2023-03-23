@@ -37,7 +37,7 @@ use core_consensus::{
     OverlordConsensusAdapter, OverlordSynchronization, SignedTxsWAL,
 };
 use core_executor::{
-    system_contract::{self, metadata::MetadataHandle},
+    system_contract::{self, metadata::{MetadataHandle, MetadataStore}},
     AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB,
 };
 use core_interoperation::InteroperationImpl;
@@ -371,7 +371,12 @@ impl Axon {
 
         network_service.register_rpc_response(RPC_RESP_PULL_TXS_SYNC)?;
 
+        println!("Before metadata handle");
+        let metadata_store = MetadataStore::new()?;
+        println!("After metadata store {:}", metadata_store.get_epoch_segment()?.seg[1]);
         let metadata = metadata_handle.get_metadata_by_block_number(current_block.header.number)?;
+
+        println!("After metadata handle");
 
         // Init Consensus
         let validators: Vec<Validator> = metadata
