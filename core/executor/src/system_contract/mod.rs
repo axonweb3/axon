@@ -24,9 +24,8 @@ use ckb_types::core::cell::{CellProvider, CellStatus};
 use ckb_types::core::HeaderView;
 use ckb_types::{packed, prelude::*};
 
-use protocol::ckb_blake2b_256;
-use protocol::traits::{ApplyBackend, Backend, ExecutorAdapter};
 use protocol::types::{Bytes, Hasher, SignedTransaction, TxResp, H160, H256};
+use protocol::{ckb_blake2b_256, traits::ExecutorAdapter};
 
 use crate::system_contract::image_cell::utils::always_success_script_deploy_cell;
 use crate::system_contract::trie_db::RocksTrieDB;
@@ -69,11 +68,15 @@ macro_rules! exec_try {
 pub trait SystemContract {
     const ADDRESS: H160;
 
-    fn exec_<B: Backend + ApplyBackend>(&self, backend: &mut B, tx: &SignedTransaction) -> TxResp;
+    fn exec_<Adapter: ExecutorAdapter>(
+        &self,
+        adapter: &mut Adapter,
+        tx: &SignedTransaction,
+    ) -> TxResp;
 
-    fn before_block_hook<B: Backend + ApplyBackend>(&self, _b: &mut B, _tx: &SignedTransaction) {}
+    fn before_block_hook<Adapter: ExecutorAdapter>(&self, _adapter: &mut Adapter) {}
 
-    fn after_block_hook<B: Backend + ApplyBackend>(&self, _b: &mut B, _tx: &SignedTransaction) {}
+    fn after_block_hook<Adapter: ExecutorAdapter>(&self, _adapter: &mut Adapter) {}
 }
 
 pub fn init<P: AsRef<Path>, Adapter: ExecutorAdapter>(
@@ -120,12 +123,27 @@ pub fn init<P: AsRef<Path>, Adapter: ExecutorAdapter>(
     CURRENT_HEADER_CELL_ROOT.store(Arc::new(current_cell_root));
 }
 
+pub fn before_block_hook<Adapter: ExecutorAdapter>(adapter: &mut Adapter) {
+    NativeTokenContract::default().before_block_hook(adapter);
+    MetadataContract::default().before_block_hook(adapter);
+    CkbLightClientContract::default().before_block_hook(adapter);
+    ImageCellContract::default().before_block_hook(adapter);
+}
+
+pub fn after_block_hook<Adapter: ExecutorAdapter>(adapter: &mut Adapter) {
+    NativeTokenContract::default().after_block_hook(adapter);
+    MetadataContract::default().after_block_hook(adapter);
+    CkbLightClientContract::default().after_block_hook(adapter);
+    ImageCellContract::default().after_block_hook(adapter);
+}
+
 pub fn system_contract_dispatch<Adapter: ExecutorAdapter>(
     adapter: &mut Adapter,
     tx: &SignedTransaction,
 ) -> Option<TxResp> {
     if let Some(addr) = tx.get_to() {
-        log::info!("execute addr {:}", addr);
+        log::debug!("execute addr {:}", addr);
+
         if addr == NativeTokenContract::ADDRESS {
             return Some(NativeTokenContract::default().exec_(adapter, tx));
         } else if addr == MetadataContract::ADDRESS {
@@ -136,7 +154,6 @@ pub fn system_contract_dispatch<Adapter: ExecutorAdapter>(
             return Some(ImageCellContract::default().exec_(adapter, tx));
         }
     }
-
     None
 }
 

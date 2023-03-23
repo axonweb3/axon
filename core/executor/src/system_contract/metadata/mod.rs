@@ -89,4 +89,8 @@ impl SystemContract for MetadataContract {
 
         succeed_resp(gas_limit)
     }
+
+    fn after_block_hook<Adapter: ExecutorAdapter>(&self, adapter: &mut Adapter) {
+        let _origin = adapter.origin();
+    }
 }
