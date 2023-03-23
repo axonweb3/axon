@@ -11,6 +11,8 @@ impl SystemContract for NativeTokenContract {
     const ADDRESS: H160 = system_contract_address(0x0);
 
     fn exec_<B: Backend + ApplyBackend>(&self, backend: &mut B, tx: &SignedTransaction) -> TxResp {
+        println!("start executing native token contract");
+        log::info!("start executing native token contract");
         let tx = &tx.transaction.unsigned;
         let tx_data = tx.data();
         let tx_value = *tx.value();
