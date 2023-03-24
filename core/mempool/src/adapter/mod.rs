@@ -278,7 +278,7 @@ where
     }
 
     fn verify_chain_id(&self, ctx: Context, stx: &SignedTransaction) -> ProtocolResult<()> {
-        if self.chain_id != stx.transaction.chain_id {
+        if stx.transaction.chain_id.is_some() && Some(self.chain_id) != stx.transaction.chain_id {
             if ctx.is_network_origin_txs() {
                 self.network.report(
                     ctx,

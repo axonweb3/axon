@@ -279,7 +279,7 @@ pub fn mock_signed_tx(
     let mut tx = UnverifiedTransaction {
         unsigned:  UnsignedTransaction::Eip1559(raw),
         signature: None,
-        chain_id:  random::<u64>(),
+        chain_id:  Some(random::<u64>()),
         hash:      Default::default(),
     };
 
@@ -313,7 +313,7 @@ fn mock_system_script_signed_tx(
     let mut tx = UnverifiedTransaction {
         unsigned:  UnsignedTransaction::Eip1559(raw),
         signature: None,
-        chain_id:  random::<u64>(),
+        chain_id:  Some(random::<u64>()),
         hash:      Default::default(),
     };
 

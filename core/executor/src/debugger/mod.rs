@@ -142,7 +142,7 @@ pub fn mock_efficient_signed_tx(tx: Eip1559Transaction, private_key: &str) -> Si
 
     let tx = UnsignedTransaction::Eip1559(tx);
     let signature = priv_key.sign_message(
-        &Hasher::digest(tx.encode(5u64, None))
+        &Hasher::digest(tx.encode(Some(5u64), None))
             .as_bytes()
             .try_into()
             .unwrap(),
@@ -151,7 +151,7 @@ pub fn mock_efficient_signed_tx(tx: Eip1559Transaction, private_key: &str) -> Si
     let utx = UnverifiedTransaction {
         unsigned:  tx,
         hash:      Hash::default(),
-        chain_id:  5u64,
+        chain_id:  Some(5u64),
         signature: Some(signature.to_bytes().into()),
     }
     .calc_hash();
@@ -163,7 +163,7 @@ pub fn mock_signed_tx(tx: Eip1559Transaction, sender: H160) -> SignedTransaction
     let utx = UnverifiedTransaction {
         unsigned:  UnsignedTransaction::Eip1559(tx),
         hash:      Hash::default(),
-        chain_id:  5u64,
+        chain_id:  Some(5u64),
         signature: None,
     };
 

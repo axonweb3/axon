@@ -40,7 +40,7 @@ const createTestDataMange = {
       }
     }
   },
-  async sendTransaction(account, data) {
+  async sendTransaction(data) {
     const nonce = await web3.eth.getTransactionCount(accountFrom.address);
     const tx = {
       type: 2,
@@ -58,7 +58,7 @@ const createTestDataMange = {
     const contract = new web3.eth.Contract(erc20.abi);
     const txOptions = { data: erc20.bytecode, arguments: ["TT", "TTT"] };
     const data = contract.deploy(txOptions).encodeABI();
-    const receipt = await this.sendTransaction(accountFrom.address, data);
+    const receipt = await this.sendTransaction(data);
     transactionInfo.contractAddress = receipt.contractAddress;
     transactionInfo.transactionHash = receipt.transactionHash;
     transactionInfo.blockHash = receipt.blockHash;
@@ -75,7 +75,7 @@ const createTestDataMange = {
   async writeFilterIds(filterIdIndex, id) {
     const filePath = `${basePath}/filterIds.json`;
     try {
-      const jsonData = await fs.readFileSync(filePath, "binary").toString();
+      const jsonData = fs.readFileSync(filePath, "binary").toString();
       const data = JSON.parse(jsonData);
       filterIds.filter_id_1 = data.filter_id_1;
       filterIds.filter_id_2 = data.filter_id_2;
@@ -119,17 +119,40 @@ const createTestDataMange = {
     const toAddress = Config.getIns().acount2;
     const nonce = (await web3.eth.getTransactionCount(accountFrom.address)) + 1;
     const txObject = {
-      nonce: nonce.toString(),
+      nonce: web3.utils.toHex(nonce),
       gasPrice: web3.utils.toHex(web3.utils.toWei("10", "gwei")),
       gasLimit: web3.utils.toHex(21000),
       to: toAddress,
       value: web3.utils.toHex(web3.utils.toWei("1", "ether")),
     };
     // eslint-disable-next-line global-require
-    const EthereumTx = require("ethereumjs-tx").Transaction;
-    const tx = new EthereumTx(txObject.toString("hex"));
-    tx.sign(Config.getIns().hexPrivateKey);
-    const serializedTx = tx.serialize();
+    const  { Common }  = require('@ethereumjs/common');
+    const {Transaction} = require('@ethereumjs/tx');
+    const common = Common.custom({ chainId: web3.utils.toHex(Config.getIns().axonRpc.chainId)});
+    const tx = Transaction.fromTxData(txObject, {common});
+    const privateKey = Buffer.from(Config.getIns().hexPrivateKey.substring(2), 'hex');
+    const signedTx = tx.sign(privateKey);
+    const serializedTx = signedTx.serialize();
+    return serializedTx.toString("hex");
+  },
+  async sendPreEip155RawTestTx() {
+    const toAddress = Config.getIns().acount2;
+    const nonce = (await web3.eth.getTransactionCount(accountFrom.address)) + 1;
+    const txObject = {
+      nonce: web3.utils.toHex(nonce),
+      gasPrice: web3.utils.toHex(web3.utils.toWei("10", "gwei")),
+      gasLimit: web3.utils.toHex(21000),
+      to: toAddress,
+      value: web3.utils.toHex(web3.utils.toWei("1", "ether")),
+    };
+    // eslint-disable-next-line global-require
+    const  { Chain, Common, Hardfork }  = require('@ethereumjs/common');
+    const {Transaction} = require('@ethereumjs/tx');
+    const common = new Common({chain: Chain.Mainnet, hardfork: Hardfork.TangerineWhistle});
+    const tx = Transaction.fromTxData(txObject,{common});
+    const privateKey = Buffer.from(Config.getIns().hexPrivateKey.substring(2), 'hex');
+    const signedTx = tx.sign(privateKey);
+    const serializedTx = signedTx.serialize();
     return serializedTx.toString("hex");
   },
 };
