@@ -11,6 +11,12 @@ pub struct MetadataHandle;
 impl MetadataHandle {
     pub fn get_metadata_by_block_number(&self, block_number: u64) -> ProtocolResult<Metadata> {
         let store = MetadataStore::new()?;
+
+        // Should retrieve the first metadata for the genesis block
+        if block_number == 0 {
+            return store.get_metadata(0);
+        }
+
         let segment = store.get_epoch_segment()?;
         let epoch = segment.get_epoch_number(block_number)?;
         store.get_metadata(epoch)

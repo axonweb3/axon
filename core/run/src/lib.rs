@@ -37,7 +37,7 @@ use core_consensus::{
     OverlordConsensusAdapter, OverlordSynchronization, SignedTxsWAL,
 };
 use core_executor::{
-    system_contract::{self, metadata::{MetadataHandle, MetadataStore}},
+    system_contract::{self, metadata::MetadataHandle},
     AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB,
 };
 use core_interoperation::InteroperationImpl;
@@ -50,7 +50,6 @@ use core_network::{
 };
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 
-use protocol::lazy::{CHAIN_ID, CURRENT_STATE_ROOT};
 #[cfg(unix)]
 use protocol::tokio::signal::unix as os_impl;
 use protocol::tokio::{runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep};
@@ -61,6 +60,10 @@ use protocol::types::{
 use protocol::{
     codec::{hex_decode, ProtocolCodec},
     types::H160,
+};
+use protocol::{
+    lazy::{CHAIN_ID, CURRENT_STATE_ROOT},
+    types::H256,
 };
 use protocol::{tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
@@ -175,6 +178,10 @@ impl Axon {
             Arc::clone(&storage),
             proposal.into(),
         )?;
+
+        let path_metadata = self.config.data_path_for_system_contract();
+        system_contract::init(path_metadata, self.config.rocksdb.clone(), &mut backend);
+
         let resp = executor.exec(&mut backend, &self.genesis.txs, &[]);
 
         self.state_root = resp.state_root;
@@ -305,14 +312,16 @@ impl Axon {
         );
 
         // Init system contract
-        let path_state = config.data_path_for_system_contract();
-        let backend = AxonExecutorAdapter::from_root(
-            current_block.header.state_root,
-            Arc::clone(&trie_db),
-            Arc::clone(&storage),
-            Proposal::from(current_block.header.clone()).into(),
-        )?;
-        system_contract::init(path_state, config.rocksdb.clone(), backend);
+        if current_block.header.state_root != H256::default() {
+            let path_state = config.data_path_for_system_contract();
+            let mut backend = AxonExecutorAdapter::from_root(
+                current_block.header.state_root,
+                Arc::clone(&trie_db),
+                Arc::clone(&storage),
+                Proposal::from(current_block.header.clone()).into(),
+            )?;
+            system_contract::init(path_state, config.rocksdb.clone(), &mut backend);
+        }
 
         let metadata_handle = Arc::new(MetadataHandle::default());
 
@@ -371,12 +380,7 @@ impl Axon {
 
         network_service.register_rpc_response(RPC_RESP_PULL_TXS_SYNC)?;
 
-        println!("Before metadata handle");
-        let metadata_store = MetadataStore::new()?;
-        println!("After metadata store {:}", metadata_store.get_epoch_segment()?.seg[1]);
         let metadata = metadata_handle.get_metadata_by_block_number(current_block.header.number)?;
-
-        println!("After metadata handle");
 
         // Init Consensus
         let validators: Vec<Validator> = metadata

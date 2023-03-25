@@ -19,7 +19,7 @@ fn test_write_functions() {
     let mut backend = MemoryBackend::new(&vicinity, BTreeMap::new());
 
     let executor = ImageCellContract::default();
-    init(ROCKSDB_PATH, ConfigRocksDB::default(), backend.clone());
+    init(ROCKSDB_PATH, ConfigRocksDB::default(), &mut backend);
 
     test_update_first(&mut backend, &executor);
     test_update_second(&mut backend, &executor);

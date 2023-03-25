@@ -50,11 +50,12 @@ Axon provides the compiled binary on the [release page](`https://github.com/axon
 ```bash
 # Clone from GitHub
 git clone https://github.com/axonweb3/axon.git && cd axon
-# Run release binary
+# Run release binary for single node
 cargo run --release -- -c devtools/chain/config.toml -g devtools/chain/genesis_single_node.json
+
 ```
 
-Read the [docs](https://docs.axonweb3.io/) and follow the [tutorials](https://docs.axonweb3.io/getting-started/for-dapp-devs/zero_to_axon_with_axon_cli).
+For multiple nodes, first create toml files for each node and run different nodes in separate terminals or dockers. The metadata in the Genesis transactions should be updated to include all nodes' credentials. Read the [docs](https://docs.axonweb3.io/) and follow the [tutorials](https://docs.axonweb3.io/getting-started/for-dapp-devs/zero_to_axon_with_axon_cli).
 
 ## Toolchains
 
