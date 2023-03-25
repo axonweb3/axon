@@ -393,6 +393,8 @@ impl Axon {
             })
             .collect();
 
+        println!("validators are {:}", validators.len());
+
         let node_info = NodeInfo {
             chain_id:     self.genesis.block.header.chain_id,
             self_address: my_address.clone(),
