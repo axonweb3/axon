@@ -9,9 +9,7 @@ use tentacle::{
     secio::{PeerId, SecioKeyPair},
 };
 
-use protocol::{codec::hex_decode, ProtocolResult};
-
-use crate::error::NetworkError;
+use protocol::codec::hex_decode;
 
 // TODO: 0.0.0.0 expose? 127.0.0.1 doesn't work because of tentacle-discovery.
 // Default listen address: 0.0.0.0:2337
@@ -137,16 +135,22 @@ impl NetworkConfig {
         self
     }
 
-    pub fn max_connections(mut self, max: Option<usize>) -> ProtocolResult<Self> {
-        if let Some(max) = max {
+    pub fn max_connections(mut self, max: Option<usize>) -> Self {
+        if let Some(mut max) = max {
             if max <= self.inbound_conn_limit {
-                return Err(NetworkError::InboundLimitEqualOrSmallerThanMaxConn.into());
+                log::warn!(
+                    "max_connections({}) <= inbound_conn_limit({}), \
+                     set max_connections = inbound_conn_limit + 1",
+                    max,
+                    self.inbound_conn_limit
+                );
+                max = self.inbound_conn_limit + 1;
             }
 
             self.max_connections = max;
         }
 
-        Ok(self)
+        self
     }
 
     pub fn max_frame_length(mut self, max: Option<usize>) -> Self {
@@ -178,16 +182,14 @@ impl NetworkConfig {
         self
     }
 
-    pub fn secio_keypair(mut self, sk_hex: &str) -> ProtocolResult<Self> {
-        let maybe_skp = hex_decode(sk_hex).map(SecioKeyPair::secp256k1_raw_key);
+    pub fn secio_keypair(mut self, sk_hex: &str) -> Self {
+        let skp = hex_decode(sk_hex)
+            .map(SecioKeyPair::secp256k1_raw_key)
+            .unwrap()
+            .unwrap();
+        self.secio_keypair = skp;
 
-        if let Ok(Ok(skp)) = maybe_skp {
-            self.secio_keypair = skp;
-
-            Ok(self)
-        } else {
-            Err(NetworkError::InvalidPrivateKey.into())
-        }
+        self
     }
 
     pub fn ping_interval(mut self, interval: Option<u64>) -> Self {

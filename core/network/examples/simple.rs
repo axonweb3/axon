@@ -81,8 +81,7 @@ async fn main() {
 
         let bt_conf = NetworkConfig::new()
             .listen_addr("/ip4/127.0.0.1/tcp/1337".parse().unwrap())
-            .secio_keypair(&bt_seckey)
-            .expect("set keypair");
+            .secio_keypair(&bt_seckey);
         let mut bootstrap = NetworkService::new(bt_conf);
         let handle = bootstrap.handle();
 
