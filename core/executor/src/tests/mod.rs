@@ -9,11 +9,11 @@ use evm::Config;
 use protocol::types::{
     Bytes, Eip1559Transaction, ExitReason, ExitSucceed, Public, SignatureComponents,
     SignedTransaction, TransactionAction, UnsignedTransaction, UnverifiedTransaction, H160, H256,
-    MAX_BLOCK_GAS_LIMIT, U256,
+    U256,
 };
 use protocol::{codec::hex_decode, traits::Executor};
 
-use crate::{precompiles::build_precompile_set, vm::EvmExecutor, AxonExecutor};
+use crate::{precompiles::build_precompile_set, AxonExecutor as EvmExecutor, AxonExecutor};
 
 fn gen_vicinity() -> MemoryVicinity {
     MemoryVicinity {
@@ -80,7 +80,6 @@ fn test_ackermann31() {
 
     let vicinity = gen_vicinity();
     let mut backend = MemoryBackend::new(&vicinity, state);
-    let executor = EvmExecutor::default();
     let tx = gen_tx(
         H160::from_str("0xf000000000000000000000000000000000000000").unwrap(),
         H160::from_str("0x1000000000000000000000000000000000000000").unwrap(),
@@ -89,7 +88,7 @@ fn test_ackermann31() {
     );
     let config = Config::london();
     let precompiles = build_precompile_set();
-    let r = executor.inner_exec(&mut backend, &config, MAX_BLOCK_GAS_LIMIT, &precompiles, tx);
+    let r = EvmExecutor::evm_exec(&mut backend, &config, &precompiles, &tx);
 
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Returned));
     assert_eq!(r.ret, vec![
@@ -114,7 +113,6 @@ fn test_simplestorage() {
     let vicinity = gen_vicinity();
     let mut backend = MemoryBackend::new(&vicinity, state);
 
-    let executor = EvmExecutor::default();
     let config = Config::london();
     let precompiles = build_precompile_set();
 
@@ -143,7 +141,7 @@ fn test_simplestorage() {
     tx.transaction
         .unsigned
         .set_action(TransactionAction::Create);
-    let r = executor.inner_exec(&mut backend, &config, MAX_BLOCK_GAS_LIMIT, &precompiles, tx);
+    let r = EvmExecutor::evm_exec(&mut backend, &config, &precompiles, &tx);
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Returned));
     assert!(r.ret.is_empty());
     assert_eq!(r.remain_gas, 29898759);
@@ -160,7 +158,7 @@ fn test_simplestorage() {
         hex_decode("60fe47b1000000000000000000000000000000000000000000000000000000000000002a")
             .unwrap(),
     );
-    let r = executor.inner_exec(&mut backend, &config, MAX_BLOCK_GAS_LIMIT, &precompiles, tx);
+    let r = EvmExecutor::evm_exec(&mut backend, &config, &precompiles, &tx);
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Stopped));
     assert!(r.ret.is_empty());
     assert_eq!(r.remain_gas, 29956491);
@@ -172,7 +170,7 @@ fn test_simplestorage() {
         0,
         hex_decode("6d4ce63c").unwrap(),
     );
-    let r = executor.inner_exec(&mut backend, &config, MAX_BLOCK_GAS_LIMIT, &precompiles, tx);
+    let r = EvmExecutor::evm_exec(&mut backend, &config, &precompiles, &tx);
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Returned));
     // assert_eq!(r.ret, vec![
     //     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

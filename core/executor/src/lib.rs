@@ -8,7 +8,6 @@ pub mod system_contract;
 #[cfg(test)]
 mod tests;
 mod utils;
-mod vm;
 
 pub use crate::adapter::{AxonExecutorAdapter, MPTTrie, RocksTrieDB};
 pub use crate::utils::{
