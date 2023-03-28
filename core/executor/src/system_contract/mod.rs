@@ -24,9 +24,8 @@ use ckb_types::core::cell::{CellProvider, CellStatus};
 use ckb_types::core::HeaderView;
 use ckb_types::{packed, prelude::*};
 
-use protocol::ckb_blake2b_256;
-use protocol::traits::{ApplyBackend, Backend};
 use protocol::types::{Bytes, Hasher, SignedTransaction, TxResp, H160, H256};
+use protocol::{ckb_blake2b_256, traits::ExecutorAdapter};
 
 use crate::system_contract::image_cell::utils::always_success_script_deploy_cell;
 use crate::system_contract::trie_db::RocksTrieDB;
@@ -67,13 +66,13 @@ lazy_static::lazy_static! {
     static ref CURRENT_METADATA_ROOT: ArcSwap<H256> = ArcSwap::from_pointee(H256::default());
 }
 
-pub fn init<P: AsRef<Path>, B: Backend + ApplyBackend>(
+pub fn init<P: AsRef<Path>, Adapter: ExecutorAdapter>(
     path: P,
     config: ConfigRocksDB,
-    mut backend: B,
+    mut adapter: Adapter,
 ) {
     // Init metadata db
-    let current_metadata_root = backend.storage(MetadataContract::ADDRESS, *METADATA_ROOT_KEY);
+    let current_metadata_root = adapter.storage(MetadataContract::ADDRESS, *METADATA_ROOT_KEY);
     CURRENT_METADATA_ROOT.store(Arc::new(current_metadata_root));
 
     let metadata_db_path = path.as_ref().join("metadata");
@@ -97,14 +96,14 @@ pub fn init<P: AsRef<Path>, B: Backend + ApplyBackend>(
         )
     });
 
-    let current_cell_root = backend.storage(CkbLightClientContract::ADDRESS, *HEADER_CELL_ROOT_KEY);
+    let current_cell_root = adapter.storage(CkbLightClientContract::ADDRESS, *HEADER_CELL_ROOT_KEY);
 
     if current_cell_root.is_zero() {
         // todo need refactoring
         ImageCellContract::default()
             .save_cells(vec![always_success_script_deploy_cell()], 0)
             .unwrap();
-        return update_mpt_root(&mut backend, CkbLightClientContract::ADDRESS);
+        return update_mpt_root(&mut adapter, CkbLightClientContract::ADDRESS);
     }
 
     CURRENT_HEADER_CELL_ROOT.store(Arc::new(current_cell_root));
@@ -113,22 +112,26 @@ pub fn init<P: AsRef<Path>, B: Backend + ApplyBackend>(
 pub trait SystemContract {
     const ADDRESS: H160;
 
-    fn exec_<B: Backend + ApplyBackend>(&self, backend: &mut B, tx: &SignedTransaction) -> TxResp;
+    fn exec_<Adapter: ExecutorAdapter>(
+        &self,
+        adapter: &mut Adapter,
+        tx: &SignedTransaction,
+    ) -> TxResp;
 }
 
-pub fn system_contract_dispatch<B: Backend + ApplyBackend>(
-    backend: &mut B,
+pub fn system_contract_dispatch<Adapter: ExecutorAdapter>(
+    adapter: &mut Adapter,
     tx: &SignedTransaction,
 ) -> Option<TxResp> {
     if let Some(addr) = tx.get_to() {
         if addr == NativeTokenContract::ADDRESS {
-            return Some(NativeTokenContract::default().exec_(backend, tx));
+            return Some(NativeTokenContract::default().exec_(adapter, tx));
         } else if addr == MetadataContract::ADDRESS {
-            return Some(MetadataContract::default().exec_(backend, tx));
+            return Some(MetadataContract::default().exec_(adapter, tx));
         } else if addr == CkbLightClientContract::ADDRESS {
-            return Some(CkbLightClientContract::default().exec_(backend, tx));
+            return Some(CkbLightClientContract::default().exec_(adapter, tx));
         } else if addr == ImageCellContract::ADDRESS {
-            return Some(ImageCellContract::default().exec_(backend, tx));
+            return Some(ImageCellContract::default().exec_(adapter, tx));
         }
     }
 

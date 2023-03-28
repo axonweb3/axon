@@ -24,7 +24,7 @@ use evm::CreateScheme;
 
 use common_merkle::TrieMerkle;
 use protocol::codec::ProtocolCodec;
-use protocol::traits::{ApplyBackend, Backend, Executor, ExecutorAdapter as Adapter};
+use protocol::traits::{Backend, Executor, ExecutorAdapter};
 use protocol::types::{
     data_gas_cost, Account, Config, ExecResp, Hasher, SignedTransaction, TransactionAction, TxResp,
     ValidatorExtend, GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160, NIL_DATA, RLP_NULL, U256,
@@ -114,14 +114,14 @@ impl Executor for AxonExecutor {
     }
 
     // Function execute returns exit_reason, ret_data and remain_gas.
-    fn exec<B: Backend + ApplyBackend + Adapter>(
+    fn exec<Adapter: ExecutorAdapter>(
         &self,
-        backend: &mut B,
+        adapter: &mut Adapter,
         txs: &[SignedTransaction],
         validators: &[ValidatorExtend],
     ) -> ExecResp {
         let txs_len = txs.len();
-        let block_number = backend.block_number();
+        let block_number = adapter.block_number();
         let mut res = Vec::with_capacity(txs_len);
         let mut hashes = Vec::with_capacity(txs_len);
         let (mut gas, mut fee) = (0u64, U256::zero());
@@ -129,15 +129,15 @@ impl Executor for AxonExecutor {
         let config = Config::london();
 
         for tx in txs.iter() {
-            backend.set_gas_price(tx.transaction.unsigned.gas_price());
-            backend.set_origin(tx.sender);
+            adapter.set_gas_price(tx.transaction.unsigned.gas_price());
+            adapter.set_origin(tx.sender);
 
             // Execute a transaction, if system contract dispatch return None, means the
             // transaction called EVM
-            let mut r = system_contract_dispatch(backend, tx)
-                .unwrap_or_else(|| Self::evm_exec(backend, &config, &precompiles, tx));
+            let mut r = system_contract_dispatch(adapter, tx)
+                .unwrap_or_else(|| Self::evm_exec(adapter, &config, &precompiles, tx));
 
-            r.logs = backend.get_logs();
+            r.logs = adapter.get_logs();
             gas += r.gas_used;
             fee = fee.checked_add(r.fee_cost).unwrap_or(U256::max_value());
 
@@ -150,19 +150,19 @@ impl Executor for AxonExecutor {
             let alloc =
                 (*FEE_ALLOCATOR)
                     .load()
-                    .allocate(block_number, fee, backend.origin(), validators);
+                    .allocate(block_number, fee, adapter.origin(), validators);
 
             for i in alloc.iter() {
                 if !i.amount.is_zero() {
-                    let mut account = backend.get_account(&i.address);
+                    let mut account = adapter.get_account(&i.address);
                     account.balance += i.amount;
-                    backend.save_account(&i.address, &account);
+                    adapter.save_account(&i.address, &account);
                 }
             }
         }
 
         // commit changes by all txs included in this block only once
-        let new_state_root = backend.commit();
+        let new_state_root = adapter.commit();
 
         ExecResp {
             state_root:   new_state_root,
@@ -174,7 +174,7 @@ impl Executor for AxonExecutor {
         }
     }
 
-    fn get_account<B: Backend + Adapter>(&self, backend: &B, address: &H160) -> Account {
+    fn get_account<Adapter: ExecutorAdapter>(&self, backend: &Adapter, address: &H160) -> Account {
         match backend.get(address.as_bytes()) {
             Some(bytes) => Account::decode(bytes).unwrap(),
             None => Account {
@@ -188,27 +188,27 @@ impl Executor for AxonExecutor {
 }
 
 impl AxonExecutor {
-    pub fn evm_exec<B: Backend + ApplyBackend + Adapter>(
-        backend: &mut B,
+    pub fn evm_exec<Adapter: ExecutorAdapter>(
+        adapter: &mut Adapter,
         config: &Config,
         precompiles: &BTreeMap<H160, PrecompileFn>,
         tx: &SignedTransaction,
     ) -> TxResp {
         // Deduct pre-pay gas
         let sender = tx.sender;
-        let tx_gas_price = backend.gas_price();
+        let tx_gas_price = adapter.gas_price();
         let gas_limit = tx.transaction.unsigned.gas_limit();
         let prepay_gas = tx_gas_price * gas_limit;
 
-        let mut account = backend.get_account(&sender);
+        let mut account = adapter.get_account(&sender);
         account.balance = account.balance.saturating_sub(prepay_gas);
-        backend.save_account(&sender, &account);
+        adapter.save_account(&sender, &account);
 
-        let old_nonce = backend.basic(tx.sender).nonce;
+        let old_nonce = adapter.basic(tx.sender).nonce;
 
         let metadata = StackSubstateMetadata::new(gas_limit.as_u64(), config);
         let mut executor = StackExecutor::new_with_precompiles(
-            MemoryStackState::new(metadata, backend),
+            MemoryStackState::new(metadata, adapter),
             config,
             precompiles,
         );
@@ -252,10 +252,10 @@ impl AxonExecutor {
 
         if exit.is_succeed() {
             let (values, logs) = executor.into_state().deconstruct();
-            backend.apply(values, logs, true);
+            adapter.apply(values, logs, true);
         }
 
-        let mut account = backend.get_account(&tx.sender);
+        let mut account = adapter.get_account(&tx.sender);
         account.nonce = old_nonce + U256::one();
 
         // Add remain gas
@@ -269,7 +269,7 @@ impl AxonExecutor {
                 .unwrap_or_else(U256::max_value);
         }
 
-        backend.save_account(&tx.sender, &account);
+        adapter.save_account(&tx.sender, &account);
 
         TxResp {
             exit_reason:  exit,

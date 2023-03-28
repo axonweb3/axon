@@ -8,7 +8,7 @@ use ethers::abi::AbiDecode;
 use protocol::ProtocolResult;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use protocol::traits::{ApplyBackend, Backend};
+use protocol::traits::ExecutorAdapter;
 use protocol::types::{SignedTransaction, TxResp, H160, H256};
 
 use crate::exec_try;
@@ -24,7 +24,11 @@ pub struct CkbLightClientContract;
 impl SystemContract for CkbLightClientContract {
     const ADDRESS: H160 = system_contract_address(0x2);
 
-    fn exec_<B: Backend + ApplyBackend>(&self, backend: &mut B, tx: &SignedTransaction) -> TxResp {
+    fn exec_<Adapter: ExecutorAdapter>(
+        &self,
+        adapter: &mut Adapter,
+        tx: &SignedTransaction,
+    ) -> TxResp {
         let tx = &tx.transaction.unsigned;
         let tx_data = tx.data();
         let gas_limit = *tx.gas_limit();
@@ -61,7 +65,7 @@ impl SystemContract for CkbLightClientContract {
             }
         }
 
-        update_mpt_root(backend, CkbLightClientContract::ADDRESS);
+        update_mpt_root(adapter, CkbLightClientContract::ADDRESS);
 
         succeed_resp(gas_limit)
     }
