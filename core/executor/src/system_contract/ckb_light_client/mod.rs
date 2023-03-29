@@ -13,7 +13,7 @@ use protocol::types::{SignedTransaction, TxResp, H160, H256};
 
 use crate::exec_try;
 use crate::system_contract::ckb_light_client::store::CkbLightClientStore;
-use crate::system_contract::utils::{succeed_resp, update_mpt_root};
+use crate::system_contract::utils::{succeed_resp, update_states};
 use crate::system_contract::{system_contract_address, SystemContract, CURRENT_HEADER_CELL_ROOT};
 
 static ALLOW_READ: AtomicBool = AtomicBool::new(false);
@@ -24,11 +24,16 @@ pub struct CkbLightClientContract;
 impl SystemContract for CkbLightClientContract {
     const ADDRESS: H160 = system_contract_address(0x2);
 
+<<<<<<< HEAD
     fn exec_<Adapter: ExecutorAdapter>(
         &self,
         adapter: &mut Adapter,
         tx: &SignedTransaction,
     ) -> TxResp {
+=======
+    fn exec_<B: Backend + ApplyBackend>(&self, backend: &mut B, tx: &SignedTransaction) -> TxResp {
+        let sender = tx.sender;
+>>>>>>> e895d3f (fix: update nonce and storage root in system contract)
         let tx = &tx.transaction.unsigned;
         let tx_data = tx.data();
         let gas_limit = *tx.gas_limit();
@@ -65,7 +70,7 @@ impl SystemContract for CkbLightClientContract {
             }
         }
 
-        update_mpt_root(adapter, CkbLightClientContract::ADDRESS);
+        update_states(backend, sender, Self::ADDRESS);
 
         succeed_resp(gas_limit)
     }

@@ -29,7 +29,7 @@ use protocol::{ckb_blake2b_256, traits::ExecutorAdapter};
 
 use crate::system_contract::image_cell::utils::always_success_script_deploy_cell;
 use crate::system_contract::trie_db::RocksTrieDB;
-use crate::system_contract::utils::update_mpt_root;
+use crate::system_contract::utils::generate_mpt_root_changes;
 
 #[macro_export]
 macro_rules! exec_try {
@@ -103,7 +103,8 @@ pub fn init<P: AsRef<Path>, Adapter: ExecutorAdapter>(
         ImageCellContract::default()
             .save_cells(vec![always_success_script_deploy_cell()], 0)
             .unwrap();
-        return update_mpt_root(adapter, ImageCellContract::ADDRESS);
+        let changes = generate_mpt_root_changes(&mut backend, ImageCellContract::ADDRESS);
+        return backend.apply(changes, vec![], false);
     }
 
     CURRENT_HEADER_CELL_ROOT.store(Arc::new(current_cell_root));
