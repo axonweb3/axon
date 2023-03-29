@@ -9,7 +9,7 @@ pub use store::{CellInfo, CellKey};
 use ethers::abi::AbiDecode;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use protocol::traits::{ApplyBackend, Backend};
+use protocol::traits::ExecutorAdapter;
 use protocol::types::{SignedTransaction, TxResp, H160, H256};
 use protocol::ProtocolResult;
 
@@ -26,7 +26,11 @@ pub struct ImageCellContract;
 impl SystemContract for ImageCellContract {
     const ADDRESS: H160 = system_contract_address(0x3);
 
-    fn exec_<B: Backend + ApplyBackend>(&self, backend: &mut B, tx: &SignedTransaction) -> TxResp {
+    fn exec_<Adapter: ExecutorAdapter>(
+        &self,
+        adapter: &mut Adapter,
+        tx: &SignedTransaction,
+    ) -> TxResp {
         let tx = &tx.transaction.unsigned;
         let tx_data = tx.data();
         let gas_limit = *tx.gas_limit();
@@ -59,7 +63,7 @@ impl SystemContract for ImageCellContract {
             }
         }
 
-        update_mpt_root(backend, ImageCellContract::ADDRESS);
+        update_mpt_root(adapter, ImageCellContract::ADDRESS);
 
         succeed_resp(gas_limit)
     }

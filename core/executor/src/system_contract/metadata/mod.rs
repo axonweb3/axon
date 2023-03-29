@@ -13,7 +13,7 @@ use ethers::abi::AbiDecode;
 use lru::LruCache;
 use parking_lot::RwLock;
 
-use protocol::traits::{ApplyBackend, Backend};
+use protocol::traits::ExecutorAdapter;
 use protocol::types::{Hasher, Metadata, SignedTransaction, TxResp, H160, H256};
 
 use crate::exec_try;
@@ -37,12 +37,16 @@ pub struct MetadataContract;
 impl SystemContract for MetadataContract {
     const ADDRESS: H160 = system_contract_address(0x1);
 
-    fn exec_<B: Backend + ApplyBackend>(&self, backend: &mut B, tx: &SignedTransaction) -> TxResp {
+    fn exec_<Adapter: ExecutorAdapter>(
+        &self,
+        adapter: &mut Adapter,
+        tx: &SignedTransaction,
+    ) -> TxResp {
         let sender = tx.sender;
         let tx = &tx.transaction.unsigned;
         let tx_data = tx.data();
         let gas_limit = *tx.gas_limit();
-        let block_number = backend.block_number().as_u64();
+        let block_number = adapter.block_number().as_u64();
 
         let mut store = exec_try!(
             MetadataStore::new(),
@@ -83,7 +87,7 @@ impl SystemContract for MetadataContract {
             }
         }
 
-        update_mpt_root(backend, MetadataContract::ADDRESS);
+        update_mpt_root(adapter, MetadataContract::ADDRESS);
 
         succeed_resp(gas_limit)
     }
