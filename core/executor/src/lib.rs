@@ -200,10 +200,10 @@ impl AxonExecutor {
         let prepay_gas = tx_gas_price * gas_limit;
 
         let mut account = adapter.get_account(&sender);
+        let old_nonce = account.nonce;
+
         account.balance = account.balance.saturating_sub(prepay_gas);
         adapter.save_account(&sender, &account);
-
-        let old_nonce = adapter.basic(tx.sender).nonce;
 
         let metadata = StackSubstateMetadata::new(gas_limit.as_u64(), config);
         let mut executor = StackExecutor::new_with_precompiles(
