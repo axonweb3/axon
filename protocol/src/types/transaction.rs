@@ -385,7 +385,7 @@ impl SignatureComponents {
     }
 
     pub fn add_chain_replay_protection(&self, chain_id: Option<u64>) -> u64 {
-        chain_id.map(|i| i * 2 + 35).unwrap_or(27)
+        (self.standard_v as u64) + chain_id.map(|i| i * 2 + 35).unwrap_or(27)
     }
 
     pub fn extract_standard_v(v: u64) -> Option<u8> {

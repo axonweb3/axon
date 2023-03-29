@@ -417,6 +417,7 @@ mod tests {
         let bytes = hex_decode("f85f800182520894095e7baea6a6c7c4c2dfeb977efac326af552d870a8023a048b55bfa915ac795c431978d8a6a992b628d557da5ff759b307d495a36649353a0efffd310ac743f371de3b9f7f9cb56c0b28ad43601b4ab949f53faa07bd2c804").unwrap();
         let tx = UnverifiedTransaction::decode(&Rlp::new(&bytes)).unwrap();
 
+        assert!(tx.check_hash().is_ok());
         assert!(tx.unsigned.data().is_empty());
         assert_eq!(*tx.unsigned.gas_limit(), U256::from(0x5208u64));
         assert_eq!(tx.unsigned.gas_price(), U256::from(0x01u64));
@@ -448,8 +449,12 @@ mod tests {
     fn test_decode_unsigned_tx() {
         let raw = hex_decode("02f9016e2a80830f4240830f4240825208948d97689c9818892b700e27f316cc3e41e17fbeb9872386f26fc10000b8fe608060405234801561001057600080fd5b5060df8061001f6000396000f3006080604052600436106049576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b114604e5780636d4ce63c146078575b600080fd5b348015605957600080fd5b5060766004803603810190808035906020019092919050505060a0565b005b348015608357600080fd5b50608a60aa565b6040518082815260200191505060405180910390f35b8060008190555050565b600080549050905600a165627a7a7230582099c66a25d59f0aa78f7ebc40748fa1d1fbc335d8d780f284841b30e0365acd960029c001a055ea090c41cb5c76a7065a04fc6355d7804809baccc8f86717ac4da1694621fba03310f10f3488b558f65a94fc164036aa69d88ab35f42dcf5d77b6f04c5cf8e72").unwrap();
         let rlp = Rlp::new(&raw);
-        let res = UnverifiedTransaction::decode(&rlp);
-        assert!(res.is_ok());
+        let res = UnverifiedTransaction::decode(&rlp).unwrap();
+        assert!(res.check_hash().is_ok());
+
+        let raw = hex_decode("f86308018252089423c812dcf2b48cd5dcc7d354b1892fec7047f9348203e880820ff0a0753e6fee49a95f6a9ab6411c4d924e8c4260ef16857a26b867b1995d2bcab401a02bfcca1c0cb2b456c4d7de081fac0e1730bae46d45adda3d77bb2bbbe54a4f29").unwrap();
+        let res = UnverifiedTransaction::decode(&Rlp::new(&raw)).unwrap();
+        assert!(res.check_hash().is_ok());
     }
 
     #[test]
@@ -461,12 +466,15 @@ mod tests {
         let recover = UnverifiedTransaction::decode(&Rlp::new(&encode)).unwrap();
 
         assert_eq!(utx, recover);
+        assert!(recover.check_hash().is_ok());
     }
 
     #[test]
     fn test_decode_unverified_tx() {
         let raw = hex_decode("02f8670582010582012c82012c825208945cf83df52a32165a7f392168ac009b168c9e89150180c001a0a68aeb0db4d84cf16da5a6918becefd254654854cfc23f0112ef78154ce84db89f4b0af1cbf12f5bfaec81c3d4d495717d720b574a05092f6b436c2ab255cd35").unwrap();
         let utx = UnverifiedTransaction::decode(&Rlp::new(&raw)).unwrap();
+        assert!(utx.check_hash().is_ok());
+
         let _public = Public::from_slice(
             &secp256k1_recover(
                 utx.hash.as_bytes(),
@@ -502,6 +510,8 @@ mod tests {
                 signed.sender,
                 H160::from_slice(&hex_decode(address).unwrap())
             );
+            assert!(utx.check_hash().is_ok());
+            assert!(utx.check_hash().is_ok());
             assert!(utx.signature.unwrap().is_eth_sig());
         };
 
