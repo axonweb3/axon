@@ -72,6 +72,24 @@ impl PrecompileContract for ModExp {
     }
 }
 
+fn get_data(data: &[u8], mut start: usize, size: usize) -> Integer {
+    let len = data.len();
+
+    if start > len {
+        start = len;
+    }
+
+    let mut end = start + size;
+    if end > len {
+        end = len;
+    }
+
+    let mut padded = data[start..end].to_vec();
+    padded.extend([0].repeat(size - (end - start)));
+
+    Integer::from_digits(&padded, Order::MsfBe)
+}
+
 struct LargeNumber {
     b_size:   usize,
     e_size:   usize,
@@ -83,32 +101,23 @@ struct LargeNumber {
 
 impl LargeNumber {
     fn parse(input: &[u8]) -> Result<Self, PrecompileFailure> {
-        let input_len = input.len();
-        if input_len < 96 {
-            return err!("Input length must be at least 96");
+        let base_size = get_data(input, 0, 32).unwrapped_as::<usize>();
+        let exponent_size = get_data(input, 32, 32).unwrapped_as::<usize>();
+        let modulo_size = get_data(input, 64, 32).unwrapped_as::<usize>();
+
+        let data = if input.len() > 96 {
+            &input[96..]
+        } else {
+            &input[..0]
         };
-
-        let base_size = Integer::from_digits(&input[0..32], Order::MsfBe).unwrapped_as::<usize>();
-        let exponent_size =
-            Integer::from_digits(&input[32..64], Order::MsfBe).unwrapped_as::<usize>();
-        let modulo_size =
-            Integer::from_digits(&input[64..96], Order::MsfBe).unwrapped_as::<usize>();
-
-        let total_len = base_size + exponent_size + modulo_size + 96;
-        if input_len < total_len {
-            return err!("Insufficient input len");
-        }
-
-        let e_start = 96 + base_size;
-        let m_start = e_start + exponent_size;
 
         Ok(LargeNumber {
             b_size:   base_size,
             e_size:   exponent_size,
             m_size:   modulo_size,
-            base:     Integer::from_digits(&input[96..e_start], Order::MsfBe),
-            exponent: Integer::from_digits(&input[e_start..m_start], Order::MsfBe),
-            modulo:   Integer::from_digits(&input[m_start..], Order::MsfBe),
+            base:     get_data(data, 0, base_size),
+            exponent: get_data(data, base_size, exponent_size),
+            modulo:   get_data(data, base_size + exponent_size, modulo_size),
         })
     }
 
