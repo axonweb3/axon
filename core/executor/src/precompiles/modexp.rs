@@ -1,6 +1,6 @@
 use std::ops::BitAnd;
 
-use az::UnwrappedAs;
+use az::SaturatingAs;
 use evm::executor::stack::{PrecompileFailure, PrecompileOutput};
 use evm::{Context, ExitError, ExitSucceed};
 use rug::ops::Pow;
@@ -64,30 +64,47 @@ impl PrecompileContract for ModExp {
     }
 
     fn gas_cost(input: &[u8]) -> u64 {
-        let large_number = LargeNumber::parse(input).unwrap();
-        let dynamic_gas =
-            large_number.multiplication_complexity() * large_number.iterator_count() / 3u64;
+        match LargeNumber::parse(input) {
+            Ok(large_number) => {
+                let dynamic_gas =
+                    large_number.multiplication_complexity() * large_number.iterator_count() / 3u64;
 
-        dynamic_gas.max(Integer::from(Self::MIN_GAS)).unwrapped_as()
+                dynamic_gas
+                    .max(Integer::from(Self::MIN_GAS))
+                    .saturating_as()
+            }
+            Err(_) => u64::MAX,
+        }
     }
 }
 
-fn get_data(data: &[u8], mut start: usize, size: usize) -> Integer {
+fn get_data(data: &[u8], mut start: usize, size: usize) -> Result<Integer, PrecompileFailure> {
     let len = data.len();
 
     if start > len {
         start = len;
     }
 
-    let mut end = start + size;
+    let mut end = start.wrapping_add(size);
     if end > len {
         end = len;
     }
 
-    let mut padded = data[start..end].to_vec();
-    padded.extend([0].repeat(size - (end - start)));
+    let mut padded = if start < end {
+        data[start..end].to_vec()
+    } else {
+        Vec::new()
+    };
 
-    Integer::from_digits(&padded, Order::MsfBe)
+    padded
+        .try_reserve_exact(size)
+        .map_err(|_| PrecompileFailure::Error {
+            exit_status: ExitError::StackOverflow,
+        })?;
+
+    padded.extend(std::iter::repeat(0).take(size - (end - start)));
+
+    Ok(Integer::from_digits(&padded, Order::MsfBe))
 }
 
 struct LargeNumber {
@@ -101,23 +118,22 @@ struct LargeNumber {
 
 impl LargeNumber {
     fn parse(input: &[u8]) -> Result<Self, PrecompileFailure> {
-        let base_size = get_data(input, 0, 32).unwrapped_as::<usize>();
-        let exponent_size = get_data(input, 32, 32).unwrapped_as::<usize>();
-        let modulo_size = get_data(input, 64, 32).unwrapped_as::<usize>();
-
+        let base_size = get_data(input, 0, 32)?.saturating_as::<usize>();
+        let exponent_size = get_data(input, 32, 32)?.saturating_as::<usize>();
+        let modulo_size = get_data(input, 64, 32)?.saturating_as::<usize>();
         let data = if input.len() > 96 {
             &input[96..]
         } else {
-            &input[..0]
+            &input[0..0]
         };
 
         Ok(LargeNumber {
             b_size:   base_size,
             e_size:   exponent_size,
             m_size:   modulo_size,
-            base:     get_data(data, 0, base_size),
-            exponent: get_data(data, base_size, exponent_size),
-            modulo:   get_data(data, base_size + exponent_size, modulo_size),
+            base:     get_data(data, 0, base_size)?,
+            exponent: get_data(data, base_size, exponent_size)?,
+            modulo:   get_data(data, base_size.wrapping_add(exponent_size), modulo_size)?,
         })
     }
 
@@ -148,7 +164,7 @@ impl LargeNumber {
         // https://github.com/ethereum/go-ethereum/blob/a03490c6b2ff0e1d9a1274afdbe087a695d533eb/core/vm/contracts.go#L385
         if self.modulo == Integer::ZERO {
             return Ok(Integer::ZERO);
-        } else if Integer::from(self.base.abs_ref()) == Integer::from(1) {
+        } else if Integer::from(self.base.abs_ref()) == 1 {
             return Ok(self.base % self.modulo);
         }
 
