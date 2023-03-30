@@ -82,17 +82,17 @@ struct LargeNumber {
 }
 
 impl LargeNumber {
-    const MAX_NUM_SIZE: usize = 1024;
-
     fn parse(input: &[u8]) -> Result<Self, PrecompileFailure> {
         let input_len = input.len();
         if input_len < 96 {
             return err!("Input length must be at least 96");
         };
 
-        let base_size = Self::parse_big_uint(&input[0..32], true)?.unwrapped_as::<usize>();
-        let exponent_size = Self::parse_big_uint(&input[32..64], true)?.unwrapped_as::<usize>();
-        let modulo_size = Self::parse_big_uint(&input[64..96], true)?.unwrapped_as::<usize>();
+        let base_size = Integer::from_digits(&input[0..32], Order::MsfBe).unwrapped_as::<usize>();
+        let exponent_size =
+            Integer::from_digits(&input[32..64], Order::MsfBe).unwrapped_as::<usize>();
+        let modulo_size =
+            Integer::from_digits(&input[64..96], Order::MsfBe).unwrapped_as::<usize>();
 
         let total_len = base_size + exponent_size + modulo_size + 96;
         if input_len < total_len {
@@ -106,9 +106,9 @@ impl LargeNumber {
             b_size:   base_size,
             e_size:   exponent_size,
             m_size:   modulo_size,
-            base:     Self::parse_big_uint(&input[96..e_start], false)?,
-            exponent: Self::parse_big_uint(&input[e_start..m_start], false)?,
-            modulo:   Self::parse_big_uint(&input[m_start..], false)?,
+            base:     Integer::from_digits(&input[96..e_start], Order::MsfBe),
+            exponent: Integer::from_digits(&input[e_start..m_start], Order::MsfBe),
+            modulo:   Integer::from_digits(&input[m_start..], Order::MsfBe),
         })
     }
 
@@ -136,19 +136,15 @@ impl LargeNumber {
             return Ok(Integer::ZERO);
         }
 
+        // https://github.com/ethereum/go-ethereum/blob/a03490c6b2ff0e1d9a1274afdbe087a695d533eb/core/vm/contracts.go#L385
+        if self.modulo == Integer::ZERO {
+            return Ok(Integer::ZERO);
+        } else if Integer::from(self.base.abs_ref()) == Integer::from(1) {
+            return Ok(self.base % self.modulo);
+        }
+
         self.base
             .pow_mod(&self.exponent, &self.modulo)
             .map_err(|_| err!(_, "Overflow"))
-    }
-
-    fn parse_big_uint(input: &[u8], is_parse_size: bool) -> Result<Integer, PrecompileFailure> {
-        let max_size_big = Integer::from(Self::MAX_NUM_SIZE);
-        let res = Integer::from_digits(input, Order::MsfBe);
-
-        if is_parse_size && res > max_size_big {
-            return err!("The big size must be at most 1024");
-        }
-
-        Ok(res)
     }
 }
