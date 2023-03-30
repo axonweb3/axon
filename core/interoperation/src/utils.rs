@@ -2,7 +2,7 @@ use ckb_types::core::cell::{CellMeta, CellProvider, CellStatus, ResolvedTransact
 use ckb_types::core::{DepType, TransactionView};
 use ckb_types::{packed, prelude::*};
 
-use protocol::{ckb_blake2b_256, lazy::DUMMY_INPUT_OUT_POINT, types::CellWithData, ProtocolResult};
+use protocol::{lazy::DUMMY_INPUT_OUT_POINT, types::CellWithData, ProtocolResult};
 
 use crate::InteroperationError;
 
@@ -27,17 +27,7 @@ pub fn resolve_transaction<CL: CellProvider>(
     for outpoint in tx.input_pts_iter() {
         if is_dummy_out_point(&outpoint) {
             if let Some(ref cell) = dummy_input {
-                resolved_inputs.push(CellMeta {
-                    cell_output:        packed::CellOutputBuilder::default()
-                        .lock(cell.lock_script())
-                        .capacity(cell.capacity().pack())
-                        .build(),
-                    out_point:          outpoint,
-                    transaction_info:   None,
-                    data_bytes:         cell.data.len() as u64,
-                    mem_cell_data_hash: Some(ckb_blake2b_256(&cell.data).pack()),
-                    mem_cell_data:      Some(cell.data.clone()),
-                });
+                resolved_inputs.push(cell.into());
             } else {
                 return Err(InteroperationError::InvalidDummyInput.into());
             }

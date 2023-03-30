@@ -275,6 +275,65 @@ where
 
         Ok(())
     }
+
+    fn verify_signature(&self, stx: &SignedTransaction) -> ProtocolResult<()> {
+        let signature = stx.transaction.signature.clone().unwrap();
+        if signature.is_eth_sig() {
+            // Verify secp256k1 signature
+            Secp256k1Recoverable::verify_signature(
+                stx.transaction.signature_hash(true).as_bytes(),
+                signature.as_bytes().as_ref(),
+                recover_intact_pub_key(&stx.public.unwrap()).as_bytes(),
+            )
+            .map_err(|err| AdapterError::VerifySignature(err.to_string()))?;
+
+            return Ok(());
+        }
+
+        // Verify interoperation signature
+        match signature.r[0] {
+            0u8 => {
+                // Call CKB-VM mode
+                let r = rlp::decode::<CellDepWithPubKey>(&signature.r[1..])
+                    .map_err(AdapterError::Rlp)?;
+
+                InteroperationImpl::call_ckb_vm(
+                    Default::default(),
+                    &DataProvider::default(),
+                    r.cell_dep,
+                    &[r.pub_key, signature.s],
+                    u64::MAX,
+                )
+                .map_err(|e| AdapterError::VerifySignature(e.to_string()))?;
+            }
+            _ => {
+                // Verify by mock transaction mode
+                let r = SignatureR::decode(&signature.r)?;
+                let s = SignatureS::decode(&signature.s)?;
+
+                if r.inputs_len() != s.witnesses.len() {
+                    return Err(AdapterError::VerifySignature(
+                        "signature item mismatch".to_string(),
+                    )
+                    .into());
+                }
+
+                InteroperationImpl::verify_by_ckb_vm(
+                    Default::default(),
+                    &DataProvider::default(),
+                    &InteroperationImpl::dummy_transaction(
+                        r.clone(),
+                        s,
+                        Some(stx.transaction.signature_hash(true).0),
+                    ),
+                    r.dummy_input(),
+                    MAX_VERIFY_CKB_VM_CYCLES,
+                )
+                .map_err(|e| AdapterError::VerifySignature(e.to_string()))?;
+            }
+        }
+        Ok(())
+    }
 }
 
 #[async_trait]
@@ -400,58 +459,7 @@ where
         self.verify_tx_size(ctx.clone(), stx)?;
         self.verify_gas_price(stx)?;
         self.verify_gas_limit(ctx, stx)?;
-
-        let signature = stx.transaction.signature.clone().unwrap();
-        if signature.is_eth_sig() {
-            // Verify secp256k1 signature
-            Secp256k1Recoverable::verify_signature(
-                stx.transaction.signature_hash(true).as_bytes(),
-                signature.as_bytes().as_ref(),
-                recover_intact_pub_key(&stx.public.unwrap()).as_bytes(),
-            )
-            .map_err(|err| AdapterError::VerifySignature(err.to_string()))?;
-
-            return Ok(());
-        }
-
-        // Verify interoperation signature
-        match signature.r[0] {
-            0u8 => {
-                // Call CKB-VM mode
-                let r = rlp::decode::<CellDepWithPubKey>(&signature.r[1..])
-                    .map_err(AdapterError::Rlp)?;
-
-                InteroperationImpl::call_ckb_vm(
-                    Default::default(),
-                    &DataProvider::default(),
-                    r.cell_dep,
-                    &[r.pub_key, signature.s],
-                    u64::MAX,
-                )
-                .map_err(|e| AdapterError::VerifySignature(e.to_string()))?;
-            }
-            _ => {
-                // Verify by mock transaction mode
-                let r = SignatureR::decode(&signature.r)?;
-                let s = SignatureS::decode(&signature.s)?;
-
-                if r.inputs_len() != s.witnesses.len() {
-                    return Err(AdapterError::VerifySignature(
-                        "signature item mismatch".to_string(),
-                    )
-                    .into());
-                }
-
-                InteroperationImpl::verify_by_ckb_vm(
-                    Default::default(),
-                    &DataProvider::default(),
-                    &InteroperationImpl::dummy_transaction(r.clone(), s),
-                    r.dummy_input(),
-                    MAX_VERIFY_CKB_VM_CYCLES,
-                )
-                .map_err(|e| AdapterError::VerifySignature(e.to_string()))?;
-            }
-        }
+        self.verify_signature(stx)?;
 
         Ok(())
     }

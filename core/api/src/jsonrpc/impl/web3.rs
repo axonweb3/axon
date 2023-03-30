@@ -127,7 +127,7 @@ impl<Adapter: APIAdapter + 'static> AxonWeb3RpcServer for Web3RpcImpl<Adapter> {
             if sig.is_eth_sig() {
                 None
             } else {
-                Some(extract_interoperation_tx_sender(sig)?)
+                Some(extract_interoperation_tx_sender(&utx, sig)?)
             }
         } else {
             return Err(Error::Custom("The transaction is not signed".to_string()));
@@ -887,7 +887,10 @@ pub fn from_receipt_to_web3_log(
     }
 }
 
-fn extract_interoperation_tx_sender(signature: &SignatureComponents) -> RpcResult<H160> {
+fn extract_interoperation_tx_sender(
+    utx: &UnverifiedTransaction,
+    signature: &SignatureComponents,
+) -> RpcResult<H160> {
     // Call CKB-VM mode
     if signature.r[0] == 0 {
         let r = rlp::decode::<CellDepWithPubKey>(&signature.r[1..])
@@ -901,7 +904,8 @@ fn extract_interoperation_tx_sender(signature: &SignatureComponents) -> RpcResul
     let s = SignatureS::decode(&signature.s).map_err(|e| Error::Custom(e.to_string()))?;
     let address_source = r.address_source();
 
-    let ckb_tx_view = InteroperationImpl::dummy_transaction(r.clone(), s);
+    let ckb_tx_view =
+        InteroperationImpl::dummy_transaction(r.clone(), s, Some(utx.signature_hash(true).0));
     let dummy_input = r.dummy_input();
 
     let input = ckb_tx_view

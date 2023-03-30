@@ -42,6 +42,7 @@ impl PrecompileContract for CkbVM {
                 &InteroperationImpl::dummy_transaction(
                     SignatureR::new_by_ref(cell_deps, header_deps, inputs, Default::default()),
                     SignatureS::new(witnesses),
+                    None,
                 ),
                 None,
                 gas_to_cycle(gas),

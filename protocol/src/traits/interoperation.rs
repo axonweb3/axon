@@ -28,9 +28,14 @@ pub trait Interoperation: Sync + Send {
 
     /// The function construct the `TransactionView` payload required by
     /// `verify_by_ckb_vm()`.
-    fn dummy_transaction(r: SignatureR, s: SignatureS) -> TransactionView {
+    fn dummy_transaction(
+        r: SignatureR,
+        s: SignatureS,
+        signature_hash: Option<[u8; 32]>,
+    ) -> TransactionView {
         let cell_deps = r.cell_deps();
         let header_deps = r.header_deps();
+        let signature_hash = signature_hash.map(|hash| hash.to_vec()).unwrap_or_default();
 
         let tx_builder = TransactionView::new_advanced_builder()
             .cell_deps(cell_deps.iter().map(Into::into))
@@ -70,7 +75,16 @@ pub trait Interoperation: Sync + Send {
                 }))
                 .output(
                     packed::CellOutputBuilder::default()
-                        .type_(Some(ALWAYS_SUCCESS_TYPE_SCRIPT.clone()).pack())
+                        .type_(
+                            Some(
+                                ALWAYS_SUCCESS_TYPE_SCRIPT
+                                    .clone()
+                                    .as_builder()
+                                    .args(signature_hash.pack())
+                                    .build(),
+                            )
+                            .pack(),
+                        )
                         .capacity(OUTPUT_CAPACITY_OF_REALITY_INPUT.pack())
                         .build(),
                 )
@@ -81,7 +95,16 @@ pub trait Interoperation: Sync + Send {
             .input(packed::CellInput::new(DUMMY_INPUT_OUT_POINT.clone(), 0u64))
             .output(
                 packed::CellOutputBuilder::default()
-                    .type_(Some(ALWAYS_SUCCESS_TYPE_SCRIPT.clone()).pack())
+                    .type_(
+                        Some(
+                            ALWAYS_SUCCESS_TYPE_SCRIPT
+                                .clone()
+                                .as_builder()
+                                .args(signature_hash.pack())
+                                .build(),
+                        )
+                        .pack(),
+                    )
                     .capacity((r.dummy_input().unwrap().capacity() - BYTE_SHANNONS).pack())
                     .build(),
             )
