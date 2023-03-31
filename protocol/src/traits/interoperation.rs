@@ -1,5 +1,5 @@
 use ckb_traits::{CellDataProvider, HeaderProvider};
-use ckb_types::core::{cell::CellProvider, Capacity, Cycle, TransactionView};
+use ckb_types::core::{cell::CellProvider, Cycle, TransactionView};
 use ckb_types::{packed, prelude::*};
 
 use crate::lazy::{ALWAYS_SUCCESS_TYPE_SCRIPT, DUMMY_INPUT_OUT_POINT};
@@ -7,7 +7,25 @@ use crate::types::{Bytes, CellDep, CellWithData, SignatureR, SignatureS, VMResp}
 use crate::{traits::Context, ProtocolResult};
 
 pub const BYTE_SHANNONS: u64 = 100_000_000;
-const OUTPUT_CAPACITY_OF_REALITY_INPUT: Capacity = Capacity::shannons(100 * BYTE_SHANNONS);
+pub const ALWAYS_SUCCESS_CELL_OCCUPIED_CAPACITY: u64 = always_success_cell_bytes() * BYTE_SHANNONS;
+
+/// The always success cell structure:
+/// ```yml
+/// type:
+///     code_hash: ckb_blake2b_256(ALWAYS_SUCCESS)
+///     args: axon_transaction.sig_hash(with_chain_id)
+///     hash_type: data1
+/// lock:
+///     code_hash: H256::zero()
+///     args: 0x
+///     hash_type: data
+/// data: 0x
+/// capacity: 0x277cf2a00  
+/// ```
+/// So the occupied bytes is 32 + 32 + 1 + 32 + 1 + 8 = 106 bytes.
+const fn always_success_cell_bytes() -> u64 {
+    32 + 32 + 1 + 32 + 1 + 8
+}
 
 pub trait Interoperation: Sync + Send {
     fn call_ckb_vm<DL: CellDataProvider>(
@@ -85,11 +103,14 @@ pub trait Interoperation: Sync + Send {
                             )
                             .pack(),
                         )
-                        .capacity(OUTPUT_CAPACITY_OF_REALITY_INPUT.pack())
+                        .capacity(ALWAYS_SUCCESS_CELL_OCCUPIED_CAPACITY.pack())
                         .build(),
                 )
                 .build();
         }
+
+        let output_capacity = (r.dummy_input().unwrap().capacity() - BYTE_SHANNONS)
+            .max(ALWAYS_SUCCESS_CELL_OCCUPIED_CAPACITY);
 
         tx_builder
             .input(packed::CellInput::new(DUMMY_INPUT_OUT_POINT.clone(), 0u64))
@@ -105,7 +126,7 @@ pub trait Interoperation: Sync + Send {
                         )
                         .pack(),
                     )
-                    .capacity((r.dummy_input().unwrap().capacity() - BYTE_SHANNONS).pack())
+                    .capacity(output_capacity.pack())
                     .build(),
             )
             .build()

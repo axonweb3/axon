@@ -2,11 +2,9 @@ use ckb_types::{core::cell::CellMeta, packed, prelude::*};
 use rlp_derive::{RlpDecodable, RlpEncodable};
 use serde::{Deserialize, Serialize};
 
+use crate::traits::{ALWAYS_SUCCESS_CELL_OCCUPIED_CAPACITY, BYTE_SHANNONS};
 use crate::types::{Bytes, TypesError, H256};
-use crate::{
-    ckb_blake2b_256, codec::ProtocolCodec, lazy::DUMMY_INPUT_OUT_POINT, traits::BYTE_SHANNONS,
-    ProtocolResult,
-};
+use crate::{ckb_blake2b_256, codec::ProtocolCodec, lazy::DUMMY_INPUT_OUT_POINT, ProtocolResult};
 
 const CAPACITY_BYTES_LEN: usize = 8;
 
@@ -162,11 +160,14 @@ pub struct CellWithData {
 
 impl From<&CellWithData> for CellMeta {
     fn from(cell: &CellWithData) -> Self {
+        let necessary_capacity =
+            (ALWAYS_SUCCESS_CELL_OCCUPIED_CAPACITY + BYTE_SHANNONS).max(cell.capacity());
+
         CellMeta {
             cell_output:        packed::CellOutputBuilder::default()
                 .lock(cell.lock_script())
                 .type_(cell.type_script())
-                .capacity(cell.capacity().pack())
+                .capacity(necessary_capacity.pack())
                 .build(),
             out_point:          DUMMY_INPUT_OUT_POINT.clone(),
             transaction_info:   None,
