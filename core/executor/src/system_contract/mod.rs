@@ -103,8 +103,8 @@ pub fn init<P: AsRef<Path>, Adapter: ExecutorAdapter>(
         ImageCellContract::default()
             .save_cells(vec![always_success_script_deploy_cell()], 0)
             .unwrap();
-        let changes = generate_mpt_root_changes(&mut backend, ImageCellContract::ADDRESS);
-        return backend.apply(changes, vec![], false);
+        let changes = generate_mpt_root_changes(&mut adapter, ImageCellContract::ADDRESS);
+        return adapter.apply(changes, vec![], false);
     }
 
     CURRENT_HEADER_CELL_ROOT.store(Arc::new(current_cell_root));
@@ -140,7 +140,7 @@ pub fn system_contract_dispatch<Adapter: ExecutorAdapter>(
     None
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct DataProvider;
 
 impl CellProvider for DataProvider {

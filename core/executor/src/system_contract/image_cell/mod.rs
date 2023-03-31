@@ -26,16 +26,12 @@ pub struct ImageCellContract;
 impl SystemContract for ImageCellContract {
     const ADDRESS: H160 = system_contract_address(0x3);
 
-<<<<<<< HEAD
     fn exec_<Adapter: ExecutorAdapter>(
         &self,
         adapter: &mut Adapter,
         tx: &SignedTransaction,
     ) -> TxResp {
-=======
-    fn exec_<B: Backend + ApplyBackend>(&self, backend: &mut B, tx: &SignedTransaction) -> TxResp {
         let sender = tx.sender;
->>>>>>> e895d3f (fix: update nonce and storage root in system contract)
         let tx = &tx.transaction.unsigned;
         let tx_data = tx.data();
         let gas_limit = *tx.gas_limit();
@@ -68,7 +64,7 @@ impl SystemContract for ImageCellContract {
             }
         }
 
-        update_states(backend, sender, Self::ADDRESS);
+        update_states(adapter, sender, Self::ADDRESS);
 
         succeed_resp(gas_limit)
     }

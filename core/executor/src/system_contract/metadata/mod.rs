@@ -85,11 +85,7 @@ impl SystemContract for MetadataContract {
             }
         }
 
-<<<<<<< HEAD
-        update_mpt_root(adapter, MetadataContract::ADDRESS);
-=======
-        update_states(backend, sender, Self::ADDRESS);
->>>>>>> e895d3f (fix: update nonce and storage root in system contract)
+        update_states(adapter, sender, Self::ADDRESS);
 
         succeed_resp(gas_limit)
     }
