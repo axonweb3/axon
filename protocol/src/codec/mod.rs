@@ -4,6 +4,8 @@ pub mod executor;
 pub mod receipt;
 pub mod transaction;
 
+pub use transaction::truncate_slice;
+
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 
 use crate::types::{Address, Bytes, DBBytes, Hex, TypesError};

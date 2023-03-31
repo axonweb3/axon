@@ -10,7 +10,7 @@ use crate::types::{
     UnsignedTransaction, UnverifiedTransaction, H256, U256,
 };
 
-fn truncate_slice<T>(s: &[T], n: usize) -> &[T] {
+pub fn truncate_slice<T>(s: &[T], n: usize) -> &[T] {
     match s.len() {
         l if l <= n => s,
         _ => &s[0..n],
