@@ -363,7 +363,7 @@ mod tests {
 
     use common_crypto::secp256k1_recover;
 
-    use crate::codec::{hex_decode, hex_encode};
+    use crate::codec::hex_decode;
     use crate::types::{
         AddressSource, Bytes, CKBTxMockByRefAndOneInput, CellDep, CellWithData, Public, Script,
         SignatureR, SignatureS, TransactionAction, Witness, H160, H256, U256,
@@ -555,20 +555,6 @@ mod tests {
         let utx = UnverifiedTransaction::decode(&Rlp::new(&raw)).unwrap();
         assert!(utx.check_hash().is_ok());
         assert!(!utx.signature.as_ref().unwrap().is_eth_sig());
-
-        // let sig = utx.signature.clone().unwrap();
-
-        // println!("{:?}", hex_encode(&sig.s));
-
-        // let r = SignatureR::decode(&sig.r).unwrap();
-        // let s = SignatureS::decode(&Rlp::new(&sig.s)).unwrap();
-
-        // println!("{:?}\n{:?}", r, s);
-
-        // let sender =
-        // Address::from_hex("0x9447A236092F194ac774E9aAa5294c87E3AD50fd").
-        // unwrap(); let _stx = SignedTransaction::from_unverified(utx,
-        // Some(sender.0)).unwrap();
     }
 
     #[test]
@@ -605,8 +591,6 @@ mod tests {
             input_cell_with_data:  cell_with_data,
             out_point_addr_source: address_source,
         });
-
-        println!("{:?}", hex_encode(&sig_r.encode()));
 
         assert_eq!(SignatureR::decode(&sig_r.encode()).unwrap(), sig_r);
     }
@@ -646,7 +630,6 @@ mod tests {
             witnesses: vec![witness],
         };
 
-        println!("{:?}", hex_encode(&s.rlp_bytes()));
         assert_eq!(SignatureS::decode(&Rlp::new(&s.rlp_bytes())).unwrap(), s);
     }
 }

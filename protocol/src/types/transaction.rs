@@ -374,14 +374,14 @@ impl From<SignatureComponents> for Bytes {
 }
 
 impl SignatureComponents {
-    pub const ETHEREUM_TX_LEN: usize = 65;
+    pub const SECP256K1_SIGNATURE_LEN: usize = 65;
 
     pub fn as_bytes(&self) -> Bytes {
         self.clone().into()
     }
 
     pub fn is_eth_sig(&self) -> bool {
-        self.len() == Self::ETHEREUM_TX_LEN
+        self.len() == Self::SECP256K1_SIGNATURE_LEN
     }
 
     pub fn add_chain_replay_protection(&self, chain_id: Option<u64>) -> u64 {
