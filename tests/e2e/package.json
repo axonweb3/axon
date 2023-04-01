@@ -9,18 +9,18 @@
     "@chainsafe/dappeteer": "^5",
     "@ethereumjs/tx": "^4.1.1",
     "@ethereumjs/common": "^3.1.1",
-    "puppeteer": "^19.8.5",
+    "puppeteer": "^19.11.1",
     "web3": "^1.8.2",
     "xhr2": "^0.2.1"
   },
   "devDependencies": {
-    "@babel/plugin-transform-modules-commonjs": "^7.20.11",
+    "@babel/plugin-transform-modules-commonjs": "^7.21.5",
     "eslint": "^8.38.0",
     "eslint-config-airbnb": "^19.0.4",
-    "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-sonarjs": "^0.18.0",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-sonarjs": "^0.19.0",
     "http-server": "^14.1.1",
-    "jest": "^29.4.1",
+    "jest": "^29.5.0",
     "wait-on": "^7.0.1"
   },
   "jest": {
