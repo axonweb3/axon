@@ -61,7 +61,7 @@ fn test_update_first(backend: &mut MemoryBackend, executor: &CkbLightClientContr
     assert!(r.exit_reason.is_succeed());
 
     check_root(backend, executor);
-    check_nounce(backend, U256::one());
+    check_nonce(backend, 1);
 
     let queried_header = executor
         .get_header_by_block_hash(&H256::default())
@@ -84,7 +84,7 @@ fn test_update_second(backend: &mut MemoryBackend, executor: &CkbLightClientCont
     assert!(r.exit_reason.is_succeed());
 
     check_root(backend, executor);
-    check_nounce(backend, U256::from(2));
+    check_nonce(backend, 2);
 
     let queried_header = executor
         .get_header_by_block_hash(&H256::from_slice(&header.block_hash))
@@ -159,9 +159,19 @@ fn check_root(backend: &MemoryBackend, executor: &CkbLightClientContract) {
     );
 }
 
-fn check_nounce(backend: &mut MemoryBackend, nounce: U256) {
-    let ckb_account = backend.basic(CkbLightClientContract::ADDRESS);
-    let ic_account = backend.basic(ImageCellContract::ADDRESS);
-    assert_eq!(ckb_account.nonce, nounce);
-    assert_eq!(ic_account.nonce, U256::one());
+fn check_nonce(backend: &mut MemoryBackend, nonce: u64) {
+    assert_eq!(
+        backend.basic(CkbLightClientContract::ADDRESS).nonce,
+        U256::zero()
+    );
+    assert_eq!(
+        backend.basic(ImageCellContract::ADDRESS).nonce,
+        U256::zero()
+    );
+    assert_eq!(
+        backend
+            .basic(H160::from_str("0xf000000000000000000000000000000000000000").unwrap())
+            .nonce,
+        nonce.into()
+    )
 }
