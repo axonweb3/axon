@@ -26,10 +26,8 @@ use protocol::{
 
 use common_apm_derive::trace_span;
 use common_crypto::{Crypto, Secp256k1Recoverable};
-use core_executor::{
-    is_call_system_script,  AxonExecutor, AxonExecutorAdapter,
-};
 use core_executor::system_contract::{metadata::MetadataHandle, DataProvider};
+use core_executor::{is_call_system_script, AxonExecutor, AxonExecutorAdapter};
 use core_interoperation::InteroperationImpl;
 
 use crate::adapter::message::{MsgPullTxs, END_GOSSIP_NEW_TXS, RPC_PULL_TXS};

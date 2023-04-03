@@ -103,7 +103,7 @@ pub fn init<P: AsRef<Path>, Adapter: ExecutorAdapter>(
         ImageCellContract::default()
             .save_cells(vec![always_success_script_deploy_cell()], 0)
             .unwrap();
-        let changes = generate_mpt_root_changes(&mut adapter, ImageCellContract::ADDRESS);
+        let changes = generate_mpt_root_changes(adapter, ImageCellContract::ADDRESS);
         return adapter.apply(changes, vec![], false);
     }
 
