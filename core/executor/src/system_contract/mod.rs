@@ -103,7 +103,7 @@ pub fn init<P: AsRef<Path>, Adapter: ExecutorAdapter>(
         ImageCellContract::default()
             .save_cells(vec![always_success_script_deploy_cell()], 0)
             .unwrap();
-        return update_mpt_root(adapter, CkbLightClientContract::ADDRESS);
+        return update_mpt_root(adapter, ImageCellContract::ADDRESS);
     }
 
     CURRENT_HEADER_CELL_ROOT.store(Arc::new(current_cell_root));

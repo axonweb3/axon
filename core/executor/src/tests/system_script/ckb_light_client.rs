@@ -13,8 +13,7 @@ use crate::tests::{gen_tx, gen_vicinity};
 
 static ROCKSDB_PATH: &str = "./free-space/system-contract/ckb-light-client";
 
-#[test]
-fn test_write_functions() {
+pub fn test_write_functions() {
     let vicinity = gen_vicinity();
     let mut backend = MemoryBackend::new(&vicinity, BTreeMap::new());
 
@@ -164,5 +163,5 @@ fn check_nounce(backend: &mut MemoryBackend, nounce: U256) {
     let ckb_account = backend.basic(CkbLightClientContract::ADDRESS);
     let ic_account = backend.basic(ImageCellContract::ADDRESS);
     assert_eq!(ckb_account.nonce, nounce);
-    assert_eq!(ic_account.nonce, U256::zero());
+    assert_eq!(ic_account.nonce, U256::one());
 }
