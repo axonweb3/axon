@@ -1,6 +1,6 @@
 use std::ops::BitAnd;
 
-use az::UnwrappedAs;
+use az::SaturatingAs;
 use evm::executor::stack::{PrecompileFailure, PrecompileOutput};
 use evm::{Context, ExitError, ExitSucceed};
 use rug::ops::Pow;
@@ -64,12 +64,47 @@ impl PrecompileContract for ModExp {
     }
 
     fn gas_cost(input: &[u8]) -> u64 {
-        let large_number = LargeNumber::parse(input).unwrap();
-        let dynamic_gas =
-            large_number.multiplication_complexity() * large_number.iterator_count() / 3u64;
+        match LargeNumber::parse(input) {
+            Ok(large_number) => {
+                let dynamic_gas =
+                    large_number.multiplication_complexity() * large_number.iterator_count() / 3u64;
 
-        dynamic_gas.max(Integer::from(Self::MIN_GAS)).unwrapped_as()
+                dynamic_gas
+                    .max(Integer::from(Self::MIN_GAS))
+                    .saturating_as()
+            }
+            Err(_) => u64::MAX,
+        }
     }
+}
+
+fn get_data(data: &[u8], mut start: usize, size: usize) -> Result<Integer, PrecompileFailure> {
+    let len = data.len();
+
+    if start > len {
+        start = len;
+    }
+
+    let mut end = start.wrapping_add(size);
+    if end > len {
+        end = len;
+    }
+
+    let mut padded = if start < end {
+        data[start..end].to_vec()
+    } else {
+        Vec::new()
+    };
+
+    padded
+        .try_reserve_exact(size)
+        .map_err(|_| PrecompileFailure::Error {
+            exit_status: ExitError::StackOverflow,
+        })?;
+
+    padded.extend(std::iter::repeat(0).take(size - (end - start)));
+
+    Ok(Integer::from_digits(&padded, Order::MsfBe))
 }
 
 struct LargeNumber {
@@ -82,33 +117,23 @@ struct LargeNumber {
 }
 
 impl LargeNumber {
-    const MAX_NUM_SIZE: usize = 1024;
-
     fn parse(input: &[u8]) -> Result<Self, PrecompileFailure> {
-        let input_len = input.len();
-        if input_len < 96 {
-            return err!("Input length must be at least 96");
+        let base_size = get_data(input, 0, 32)?.saturating_as::<usize>();
+        let exponent_size = get_data(input, 32, 32)?.saturating_as::<usize>();
+        let modulo_size = get_data(input, 64, 32)?.saturating_as::<usize>();
+        let data = if input.len() > 96 {
+            &input[96..]
+        } else {
+            &input[0..0]
         };
-
-        let base_size = Self::parse_big_uint(&input[0..32], true)?.unwrapped_as::<usize>();
-        let exponent_size = Self::parse_big_uint(&input[32..64], true)?.unwrapped_as::<usize>();
-        let modulo_size = Self::parse_big_uint(&input[64..96], true)?.unwrapped_as::<usize>();
-
-        let total_len = base_size + exponent_size + modulo_size + 96;
-        if input_len < total_len {
-            return err!("Insufficient input len");
-        }
-
-        let e_start = 96 + base_size;
-        let m_start = e_start + exponent_size;
 
         Ok(LargeNumber {
             b_size:   base_size,
             e_size:   exponent_size,
             m_size:   modulo_size,
-            base:     Self::parse_big_uint(&input[96..e_start], false)?,
-            exponent: Self::parse_big_uint(&input[e_start..m_start], false)?,
-            modulo:   Self::parse_big_uint(&input[m_start..], false)?,
+            base:     get_data(data, 0, base_size)?,
+            exponent: get_data(data, base_size, exponent_size)?,
+            modulo:   get_data(data, base_size.wrapping_add(exponent_size), modulo_size)?,
         })
     }
 
@@ -136,19 +161,15 @@ impl LargeNumber {
             return Ok(Integer::ZERO);
         }
 
+        // https://github.com/ethereum/go-ethereum/blob/a03490c6b2ff0e1d9a1274afdbe087a695d533eb/core/vm/contracts.go#L385
+        if self.modulo == Integer::ZERO {
+            return Ok(Integer::ZERO);
+        } else if Integer::from(self.base.abs_ref()) == 1 {
+            return Ok(self.base % self.modulo);
+        }
+
         self.base
             .pow_mod(&self.exponent, &self.modulo)
             .map_err(|_| err!(_, "Overflow"))
-    }
-
-    fn parse_big_uint(input: &[u8], is_parse_size: bool) -> Result<Integer, PrecompileFailure> {
-        let max_size_big = Integer::from(Self::MAX_NUM_SIZE);
-        let res = Integer::from_digits(input, Order::MsfBe);
-
-        if is_parse_size && res > max_size_big {
-            return err!("The big size must be at most 1024");
-        }
-
-        Ok(res)
     }
 }
