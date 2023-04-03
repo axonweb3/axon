@@ -13,13 +13,12 @@ use crate::tests::{gen_tx, gen_vicinity};
 
 static ROCKSDB_PATH: &str = "./free-space/system-contract/image-cell";
 
-#[test]
-fn test_write_functions() {
+pub fn test_write_functions() {
     let vicinity = gen_vicinity();
     let mut backend = MemoryBackend::new(&vicinity, BTreeMap::new());
 
     let executor = ImageCellContract::default();
-    init(ROCKSDB_PATH, ConfigRocksDB::default(), backend.clone());
+    init(ROCKSDB_PATH, ConfigRocksDB::default(), &mut backend);
 
     test_update_first(&mut backend, &executor);
     test_update_second(&mut backend, &executor);
@@ -43,7 +42,7 @@ fn test_update_first(backend: &mut MemoryBackend, executor: &ImageCellContract) 
     assert!(r.exit_reason.is_succeed());
 
     check_root(backend, executor);
-    check_nounce(backend, U256::one());
+    check_nounce(backend, U256::from(2));
 
     let cell_key = CellKey::new([7u8; 32], 0x0);
     let get_cell = executor.get_cell(&cell_key).unwrap().unwrap();
@@ -66,7 +65,7 @@ fn test_update_second(backend: &mut MemoryBackend, executor: &ImageCellContract)
     assert!(r.exit_reason.is_succeed());
 
     check_root(backend, executor);
-    check_nounce(backend, U256::from(2));
+    check_nounce(backend, U256::from(3));
 
     let cell_key = CellKey::new([7u8; 32], 0x0);
     let get_cell = executor.get_cell(&cell_key).unwrap().unwrap();

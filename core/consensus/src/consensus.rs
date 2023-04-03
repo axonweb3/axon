@@ -6,7 +6,7 @@ use overlord::types::{
 use overlord::{DurationConfig, Overlord, OverlordHandler};
 
 use protocol::traits::{Consensus, ConsensusAdapter, Context, NodeInfo};
-use protocol::types::{Proposal, Validator, H160};
+use protocol::types::{Proposal, Validator};
 use protocol::{
     async_trait, codec::ProtocolCodec, tokio::sync::Mutex as AsyncMutex, ProtocolResult,
 };
@@ -102,7 +102,6 @@ impl<Adapter: ConsensusAdapter + 'static> Consensus for OverlordConsensus<Adapte
 impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
     pub fn new(
         status: StatusAgent,
-        metadata_address: H160,
         node_info: NodeInfo,
         crypto: Arc<OverlordCrypto>,
         txs_wal: Arc<SignedTxsWAL>,
@@ -112,7 +111,6 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
     ) -> Self {
         let engine = Arc::new(ConsensusEngine::new(
             status,
-            metadata_address,
             node_info.clone(),
             txs_wal,
             Arc::clone(&adapter),
@@ -121,7 +119,9 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
             consensus_wal,
         ));
         let status = engine.status();
-        let metadata = adapter.get_metadata_unchecked(Context::new(), status.last_number + 1);
+        let metadata = adapter
+            .get_metadata_by_block_number(status.last_number + 1)
+            .unwrap();
 
         let overlord = Overlord::new(node_info.self_pub_key, Arc::clone(&engine), crypto, engine);
         let overlord_handler = overlord.get_handler();

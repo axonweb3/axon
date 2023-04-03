@@ -43,6 +43,10 @@ impl EpochSegment {
         self.seg.len() == 1
     }
 
+    pub fn is_last_block_in_epoch(&self, block_number: u64) -> bool {
+        self.seg.iter().any(|e| block_number == *e)
+    }
+
     pub fn as_bytes(&self) -> Vec<u8> {
         self.seg.iter().flat_map(|s| s.to_be_bytes()).collect()
     }

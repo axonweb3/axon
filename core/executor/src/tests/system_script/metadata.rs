@@ -25,7 +25,7 @@ fn test_write_functions() {
 
     let executor = MetadataContract::default();
 
-    init(ROCKSDB_PATH, ConfigRocksDB::default(), backend.clone());
+    init(ROCKSDB_PATH, ConfigRocksDB::default(), &mut backend);
 
     test_init(&mut backend, &executor);
 

@@ -36,31 +36,34 @@ use core_consensus::{
     util::OverlordCrypto, ConsensusWal, DurationConfig, Node, OverlordConsensus,
     OverlordConsensusAdapter, OverlordSynchronization, SignedTxsWAL,
 };
-use core_executor::{system_contract, AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB};
+use core_executor::{
+    system_contract::{self, metadata::MetadataHandle},
+    AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB,
+};
 use core_interoperation::InteroperationImpl;
 use core_mempool::{
     DefaultMemPoolAdapter, MemPoolImpl, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
     RPC_PULL_TXS, RPC_RESP_PULL_TXS, RPC_RESP_PULL_TXS_SYNC,
 };
-use core_metadata::{MetadataAdapterImpl, MetadataController};
 use core_network::{
     observe_listen_port_occupancy, NetworkConfig, NetworkService, PeerId, PeerIdExt,
 };
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 
-use protocol::lazy::{CHAIN_ID, CURRENT_STATE_ROOT};
 #[cfg(unix)]
 use protocol::tokio::signal::unix as os_impl;
 use protocol::tokio::{runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep};
-use protocol::traits::{
-    CommonStorage, Context, Executor, MemPool, MetadataControl, Network, NodeInfo, Storage,
-};
+use protocol::traits::{CommonStorage, Context, Executor, MemPool, Network, NodeInfo, Storage};
 use protocol::types::{
     Account, Address, MerkleRoot, Proposal, RichBlock, Validator, NIL_DATA, RLP_NULL,
 };
 use protocol::{
     codec::{hex_decode, ProtocolCodec},
     types::H160,
+};
+use protocol::{
+    lazy::{CHAIN_ID, CURRENT_STATE_ROOT},
+    types::H256,
 };
 use protocol::{tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
@@ -175,6 +178,10 @@ impl Axon {
             Arc::clone(&storage),
             proposal.into(),
         )?;
+
+        let path_metadata = self.config.data_path_for_system_contract();
+        system_contract::init(path_metadata, self.config.rocksdb.clone(), &mut backend);
+
         let resp = executor.exec(&mut backend, &self.genesis.txs, &[]);
 
         self.state_root = resp.state_root;
@@ -305,37 +312,31 @@ impl Axon {
         );
 
         // Init system contract
-        let path_state = config.data_path_for_system_contract();
-        let backend = AxonExecutorAdapter::from_root(
-            current_block.header.state_root,
-            Arc::clone(&trie_db),
-            Arc::clone(&storage),
-            Proposal::from(current_block.header.clone()).into(),
-        )?;
-        system_contract::init(path_state, config.rocksdb.clone(), backend);
+        if current_block.header.state_root != H256::default() {
+            let path_state = config.data_path_for_system_contract();
+            let mut backend = AxonExecutorAdapter::from_root(
+                current_block.header.state_root,
+                Arc::clone(&trie_db),
+                Arc::clone(&storage),
+                Proposal::from(current_block.header.clone()).into(),
+            )?;
+            system_contract::init(path_state, config.rocksdb.clone(), &mut backend);
+        }
 
-        let metadata_adapter = MetadataAdapterImpl::new(Arc::clone(&storage), Arc::clone(&trie_db));
-        let metadata_controller = Arc::new(MetadataController::new(
-            Arc::new(metadata_adapter),
-            self.config.epoch_len,
-            self.config.metadata_contract_address,
-        ));
-
-        let metadata = metadata_controller.get_metadata(Context::new(), &current_block.header)?;
+        let metadata_handle = Arc::new(MetadataHandle::default());
 
         // Init mempool
-        let mempool_adapter =
-            DefaultMemPoolAdapter::<Secp256k1, _, _, _, _, InteroperationImpl>::new(
-                network_service.handle(),
-                Arc::clone(&storage),
-                Arc::clone(&trie_db),
-                Arc::clone(&metadata_controller),
-                self.genesis.block.header.chain_id,
-                self.genesis.block.header.gas_limit.as_u64(),
-                config.mempool.pool_size as usize,
-                config.mempool.broadcast_txs_size,
-                config.mempool.broadcast_txs_interval,
-            );
+        let mempool_adapter = DefaultMemPoolAdapter::<Secp256k1, _, _, _, InteroperationImpl>::new(
+            network_service.handle(),
+            Arc::clone(&storage),
+            Arc::clone(&trie_db),
+            Arc::clone(&metadata_handle),
+            self.genesis.block.header.chain_id,
+            self.genesis.block.header.gas_limit.as_u64(),
+            config.mempool.pool_size as usize,
+            config.mempool.broadcast_txs_size,
+            config.mempool.broadcast_txs_interval,
+        );
         let mempool = Arc::new(
             MemPoolImpl::new(
                 config.mempool.pool_size as usize,
@@ -378,6 +379,8 @@ impl Axon {
         network_service.register_rpc_response(RPC_RESP_PULL_TXS)?;
 
         network_service.register_rpc_response(RPC_RESP_PULL_TXS_SYNC)?;
+
+        let metadata = metadata_handle.get_metadata_by_block_number(current_block.header.number)?;
 
         // Init Consensus
         let validators: Vec<Validator> = metadata
@@ -444,12 +447,12 @@ impl Axon {
             String::new(),
         ));
 
-        let consensus_adapter = OverlordConsensusAdapter::<_, _, _, _, _>::new(
+        let consensus_adapter = OverlordConsensusAdapter::<_, _, _, _>::new(
             Arc::new(network_service.handle()),
             Arc::clone(&mempool),
             Arc::clone(&storage),
             Arc::clone(&trie_db),
-            Arc::clone(&metadata_controller),
+            Arc::clone(&metadata_handle),
             Arc::clone(&crypto),
         )?;
 
@@ -459,7 +462,6 @@ impl Axon {
 
         let overlord_consensus = Arc::new(OverlordConsensus::new(
             status_agent.clone(),
-            self.config.metadata_contract_address,
             node_info,
             Arc::clone(&crypto),
             Arc::clone(&txs_wal),

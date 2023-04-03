@@ -7,11 +7,12 @@ use parking_lot::RwLock;
 
 use common_apm::Instant;
 use common_apm_derive::trace_span;
+use core_executor::system_contract::metadata::MetadataHandle;
 use core_executor::{AxonExecutor, AxonExecutorAdapter};
 use core_network::{PeerId, PeerIdExt};
 use protocol::traits::{
     CommonConsensusAdapter, ConsensusAdapter, Context, Executor, Gossip, MemPool, MessageTarget,
-    MetadataControl, Network, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
+    Network, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
 };
 use protocol::types::{
     BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Header, Hex, MerkleRoot, Metadata,
@@ -33,7 +34,6 @@ pub struct OverlordConsensusAdapter<
     M: MemPool,
     N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage,
-    MT: MetadataControl,
     DB: trie::DB,
 > {
     network: Arc<N>,
@@ -41,18 +41,17 @@ pub struct OverlordConsensusAdapter<
 
     storage:          Arc<S>,
     trie_db:          Arc<DB>,
-    metadata:         Arc<MT>,
+    metadata:         Arc<MetadataHandle>,
     overlord_handler: RwLock<Option<OverlordHandler<Proposal>>>,
     crypto:           Arc<OverlordCrypto>,
 }
 
 #[async_trait]
-impl<M, N, S, MT, DB> ConsensusAdapter for OverlordConsensusAdapter<M, N, S, MT, DB>
+impl<M, N, S, DB> ConsensusAdapter for OverlordConsensusAdapter<M, N, S, DB>
 where
     M: MemPool + 'static,
     N: Network + Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
-    MT: MetadataControl + 'static,
     DB: trie::DB + 'static,
 {
     #[trace_span(kind = "consensus.adapter")]
@@ -125,12 +124,11 @@ where
 }
 
 #[async_trait]
-impl<M, N, S, MT, DB> SynchronizationAdapter for OverlordConsensusAdapter<M, N, S, MT, DB>
+impl<M, N, S, DB> SynchronizationAdapter for OverlordConsensusAdapter<M, N, S, DB>
 where
     M: MemPool + 'static,
     N: Network + Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
-    MT: MetadataControl + 'static,
     DB: trie::DB + 'static,
 {
     #[trace_span(kind = "consensus.adapter")]
@@ -227,12 +225,11 @@ where
 }
 
 #[async_trait]
-impl<M, N, S, MT, DB> CommonConsensusAdapter for OverlordConsensusAdapter<M, N, S, MT, DB>
+impl<M, N, S, DB> CommonConsensusAdapter for OverlordConsensusAdapter<M, N, S, DB>
 where
     M: MemPool + 'static,
     N: Network + Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
-    MT: MetadataControl + 'static,
     DB: trie::DB + 'static,
 {
     /// Save a block to the database.
@@ -343,16 +340,14 @@ where
             proposal.clone().into(),
         )?;
 
+        let verifier_list = self
+            .metadata
+            .get_metadata_by_block_number(proposal.number)?
+            .verifier_list;
+
         Ok(task::block_in_place(|| {
             let time = Instant::now();
-            let res = AxonExecutor::default().exec(
-                &mut backend,
-                signed_txs,
-                &self
-                    .metadata
-                    .get_metadata_unchecked(ctx, proposal.number)
-                    .verifier_list,
-            );
+            let res = AxonExecutor::default().exec(&mut backend, signed_txs, &verifier_list);
             common_apm::metrics::consensus::CONSENSUS_TIME_HISTOGRAM_VEC_STATIC
                 .exec
                 .observe(common_apm::metrics::duration_to_sec(time.elapsed()));
@@ -361,20 +356,12 @@ where
         }))
     }
 
-    fn need_change_metadata(&self, block_number: u64) -> bool {
-        self.metadata.need_change_metadata(block_number)
+    fn is_last_block_in_current_epoch(&self, block_number: u64) -> ProtocolResult<bool> {
+        self.metadata.is_last_block_in_current_epoch(block_number)
     }
 
-    fn get_metadata_unchecked(&self, ctx: Context, block_number: u64) -> Metadata {
-        self.metadata.get_metadata_unchecked(ctx, block_number)
-    }
-
-    fn get_metadata(&self, ctx: Context, header: &Header) -> ProtocolResult<Metadata> {
-        self.metadata.get_metadata(ctx, header)
-    }
-
-    fn update_metadata(&self, ctx: Context, header: &Header) -> ProtocolResult<()> {
-        self.metadata.update_metadata(ctx, header)
+    fn get_metadata_by_block_number(&self, block_number: u64) -> ProtocolResult<Metadata> {
+        self.metadata.get_metadata_by_block_number(block_number)
     }
 
     #[trace_span(kind = "consensus.adapter")]
@@ -460,7 +447,9 @@ where
         }
 
         // the auth_list for the target should comes from previous number
-        let metadata = self.metadata.get_metadata(ctx.clone(), &block.header)?;
+        let metadata = self
+            .metadata
+            .get_metadata_by_block_number(block.header.number)?;
 
         if !metadata.version.contains(block.header.number) {
             return Err(ConsensusError::ConfusedMetadata(
@@ -606,12 +595,11 @@ where
     }
 }
 
-impl<M, N, S, MT, DB> OverlordConsensusAdapter<M, N, S, MT, DB>
+impl<M, N, S, DB> OverlordConsensusAdapter<M, N, S, DB>
 where
     M: MemPool + 'static,
     N: Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
-    MT: MetadataControl + 'static,
     DB: trie::DB + 'static,
 {
     pub fn new(
@@ -619,7 +607,7 @@ where
         mempool: Arc<M>,
         storage: Arc<S>,
         trie_db: Arc<DB>,
-        metadata: Arc<MT>,
+        metadata: Arc<MetadataHandle>,
         crypto: Arc<OverlordCrypto>,
     ) -> ProtocolResult<Self> {
         Ok(OverlordConsensusAdapter {
