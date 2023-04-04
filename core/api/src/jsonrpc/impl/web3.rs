@@ -7,8 +7,9 @@ use jsonrpsee::core::Error;
 use common_apm::metrics_rpc;
 use protocol::traits::{APIAdapter, Context, Interoperation};
 use protocol::types::{
-    Block, BlockNumber, Bytes, Hash, Header, Hex, Receipt, SignedTransaction, TxResp,
-    UnverifiedTransaction, H160, H256, H64, MAX_RPC_GAS_CAP, MIN_TRANSACTION_GAS_LIMIT, U256,
+    Block, BlockNumber, Bytes, CellDepWithPubKey, Hash, Hasher, Header, Hex, Receipt,
+    SignatureComponents, SignatureR, SignatureS, SignedTransaction, TxResp, UnverifiedTransaction,
+    H160, H256, H64, MAX_RPC_GAS_CAP, MIN_TRANSACTION_GAS_LIMIT, U256,
 };
 use protocol::{
     async_trait, ckb_blake2b_256, codec::ProtocolCodec, lazy::PROTOCOL_VERSION, ProtocolResult,
