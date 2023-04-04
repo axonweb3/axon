@@ -374,24 +374,18 @@ impl From<SignatureComponents> for Bytes {
 }
 
 impl SignatureComponents {
-    pub const ETHEREUM_TX_LEN: usize = 65;
+    pub const SECP256K1_SIGNATURE_LEN: usize = 65;
 
     pub fn as_bytes(&self) -> Bytes {
         self.clone().into()
     }
 
     pub fn is_eth_sig(&self) -> bool {
-        self.standard_v <= 1
+        self.len() == Self::SECP256K1_SIGNATURE_LEN
     }
 
     pub fn add_chain_replay_protection(&self, chain_id: Option<u64>) -> u64 {
-        let id = if let Some(i) = chain_id {
-            35 + i * 2
-        } else {
-            27
-        };
-
-        self.standard_v as u64 + id
+        (self.standard_v as u64) + chain_id.map(|i| i * 2 + 35).unwrap_or(27)
     }
 
     pub fn extract_standard_v(v: u64) -> Option<u8> {
@@ -422,32 +416,45 @@ pub struct SignedTransaction {
     pub public:      Option<Public>,
 }
 
-impl TryFrom<UnverifiedTransaction> for SignedTransaction {
-    type Error = TypesError;
-
-    fn try_from(utx: UnverifiedTransaction) -> Result<Self, Self::Error> {
+impl SignedTransaction {
+    pub fn from_unverified(
+        utx: UnverifiedTransaction,
+        sender: Option<H160>,
+    ) -> ProtocolResult<Self> {
         if utx.signature.is_none() {
-            return Err(TypesError::Unsigned);
+            return Err(TypesError::Unsigned.into());
         }
 
         let hash = utx.signature_hash(true);
-        let public = Public::from_slice(
-            &secp256k1_recover(
-                hash.as_bytes(),
-                utx.signature.as_ref().unwrap().as_bytes().as_ref(),
-            )?
-            .serialize_uncompressed()[1..65],
-        );
+
+        if utx.signature.as_ref().unwrap().is_eth_sig() {
+            let public = Public::from_slice(
+                &secp256k1_recover(
+                    hash.as_bytes(),
+                    utx.signature.as_ref().unwrap().as_bytes().as_ref(),
+                )
+                .map_err(TypesError::Crypto)?
+                .serialize_uncompressed()[1..65],
+            );
+
+            return Ok(SignedTransaction {
+                transaction: utx.calc_hash(),
+                sender:      public_to_address(&public),
+                public:      Some(public),
+            });
+        }
+
+        if sender.is_none() {
+            return Err(TypesError::MissingInteroperationSender.into());
+        }
 
         Ok(SignedTransaction {
             transaction: utx.calc_hash(),
-            sender:      public_to_address(&public),
-            public:      Some(public),
+            sender:      sender.unwrap(),
+            public:      Some(Public::zero()),
         })
     }
-}
 
-impl SignedTransaction {
     pub fn type_(&self) -> u64 {
         self.transaction.unsigned.type_()
     }

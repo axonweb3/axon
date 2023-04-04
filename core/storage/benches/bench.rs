@@ -143,7 +143,7 @@ fn mock_signed_tx() -> SignedTransaction {
     .to_bytes();
     utx.signature = Some(signature.into());
 
-    utx.try_into().unwrap()
+    SignedTransaction::from_unverified(utx, None).unwrap()
 }
 
 fn get_random_bytes(len: usize) -> Bytes {

@@ -42,7 +42,7 @@ fn test_update_first(backend: &mut MemoryBackend, executor: &ImageCellContract) 
     assert!(r.exit_reason.is_succeed());
 
     check_root(backend, executor);
-    check_nounce(backend, U256::from(2));
+    check_nonce(backend, 1);
 
     let cell_key = CellKey::new([7u8; 32], 0x0);
     let get_cell = executor.get_cell(&cell_key).unwrap().unwrap();
@@ -65,7 +65,7 @@ fn test_update_second(backend: &mut MemoryBackend, executor: &ImageCellContract)
     assert!(r.exit_reason.is_succeed());
 
     check_root(backend, executor);
-    check_nounce(backend, U256::from(3));
+    check_nonce(backend, 2);
 
     let cell_key = CellKey::new([7u8; 32], 0x0);
     let get_cell = executor.get_cell(&cell_key).unwrap().unwrap();
@@ -209,10 +209,19 @@ fn prepare_outputs() -> Vec<image_cell_abi::CellInfo> {
     }]
 }
 
-fn check_nounce(backend: &mut MemoryBackend, nounce: U256) {
-    let ic_account = backend.basic(ImageCellContract::ADDRESS);
-    let ckb_account = backend.basic(CkbLightClientContract::ADDRESS);
-
-    assert_eq!(ic_account.nonce, nounce);
-    assert_eq!(ckb_account.nonce, U256::zero());
+fn check_nonce(backend: &mut MemoryBackend, nonce: u64) {
+    assert_eq!(
+        backend.basic(CkbLightClientContract::ADDRESS).nonce,
+        U256::zero()
+    );
+    assert_eq!(
+        backend.basic(ImageCellContract::ADDRESS).nonce,
+        U256::zero()
+    );
+    assert_eq!(
+        backend
+            .basic(H160::from_str("0xf000000000000000000000000000000000000000").unwrap())
+            .nonce,
+        nonce.into()
+    )
 }

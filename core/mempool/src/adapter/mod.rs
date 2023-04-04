@@ -3,9 +3,6 @@ pub mod message;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::{collections::HashMap, error::Error, marker::PhantomData, sync::Arc, time::Duration};
 
-use ckb_types::core::cell::{CellProvider, CellStatus};
-use ckb_types::{core::TransactionView, prelude::*};
-use core_executor::system_contract::metadata::MetadataHandle;
 use dashmap::DashMap;
 use futures::{
     channel::mpsc::{unbounded, TrySendError, UnboundedReceiver, UnboundedSender},
@@ -19,20 +16,19 @@ use protocol::traits::{
     TrustFeedback,
 };
 use protocol::types::{
-    recover_intact_pub_key, AddressSource, BatchSignedTxs, CellDepWithPubKey, CellWithData, Hash,
-    Hasher, MerkleRoot, SignatureComponents, SignatureR, SignatureS, SignedTransaction, H160, U256,
+    recover_intact_pub_key, BatchSignedTxs, CellDepWithPubKey, Hash, MerkleRoot, SignatureR,
+    SignatureS, SignedTransaction, H160, U256,
 };
 use protocol::{
-    async_trait, ckb_blake2b_256, codec::ProtocolCodec, lazy::CURRENT_STATE_ROOT, tokio, trie,
-    Display, ProtocolError, ProtocolErrorKind, ProtocolResult,
+    async_trait, codec::ProtocolCodec, lazy::CURRENT_STATE_ROOT, tokio, trie, Display,
+    ProtocolError, ProtocolErrorKind, ProtocolResult,
 };
 
 use common_apm_derive::trace_span;
 use common_crypto::{Crypto, Secp256k1Recoverable};
-use core_executor::{
-    is_call_system_script, system_contract::DataProvider, AxonExecutor, AxonExecutorAdapter,
-};
-use core_interoperation::{utils::is_dummy_out_point, InteroperationImpl};
+use core_executor::system_contract::{metadata::MetadataHandle, DataProvider};
+use core_executor::{is_call_system_script, AxonExecutor, AxonExecutorAdapter};
+use core_interoperation::InteroperationImpl;
 
 use crate::adapter::message::{MsgPullTxs, END_GOSSIP_NEW_TXS, RPC_PULL_TXS};
 use crate::context::TxContext;
@@ -140,7 +136,7 @@ impl<C, N, S, DB, I> DefaultMemPoolAdapter<C, N, S, DB, I>
 where
     C: Crypto,
     N: Rpc + PeerTrust + Gossip + Clone + Unpin + 'static,
-    S: Storage,
+    S: Storage + 'static,
     DB: trie::DB + 'static,
     I: Interoperation + 'static,
 {
@@ -202,75 +198,6 @@ where
             err_info: "Invalid system script transaction".to_string(),
         }
         .into())
-    }
-
-    fn verify_cell_mapping_sender(
-        &self,
-        sender: H160,
-        ckb_tx_view: &TransactionView,
-        dummy_input: Option<CellWithData>,
-        address_source: AddressSource,
-    ) -> ProtocolResult<()> {
-        let input = ckb_tx_view
-            .inputs()
-            .get(address_source.index as usize)
-            .ok_or(MemPoolError::InvalidAddressSource(address_source))?;
-
-        log::debug!("[mempool]: verify interoperation tx sender \ntx view \n{:?}\ndummy input\n {:?}\naddress source\n{:?}\n", ckb_tx_view, dummy_input, address_source);
-
-        if is_dummy_out_point(&input.previous_output()) {
-            log::debug!("[mempool]: verify interoperation tx dummy input mode.");
-
-            if let Some(cell) = dummy_input {
-                if address_source.type_ == 1 && cell.type_script.is_none() {
-                    return Err(MemPoolError::InvalidAddressSource(address_source).into());
-                }
-
-                let script_hash = if address_source.type_ == 0 {
-                    cell.lock_script_hash()
-                } else {
-                    cell.type_script_hash().unwrap()
-                };
-
-                let expect_sender: H160 = Hasher::digest(script_hash).into();
-                if expect_sender != sender {
-                    return Err(MemPoolError::InvalidSender {
-                        expect: expect_sender,
-                        actual: sender,
-                    }
-                    .into());
-                }
-
-                return Ok(());
-            }
-
-            return Err(MemPoolError::InvalidDummyInput.into());
-        }
-
-        log::debug!("[mempool]: verify interoperation tx reality input mode.");
-        match DataProvider.cell(&input.previous_output(), true) {
-            CellStatus::Live(cell) => {
-                let script_hash = if address_source.type_ == 0 {
-                    ckb_blake2b_256(cell.cell_output.lock().as_slice())
-                } else if let Some(type_script) = cell.cell_output.type_().to_opt() {
-                    ckb_blake2b_256(type_script.as_slice())
-                } else {
-                    return Err(MemPoolError::InvalidAddressSource(address_source).into());
-                };
-
-                let expect_sender: H160 = Hasher::digest(script_hash).into();
-                if expect_sender != sender {
-                    return Err(MemPoolError::InvalidSender {
-                        expect: expect_sender,
-                        actual: sender,
-                    }
-                    .into());
-                }
-
-                Ok(())
-            }
-            _ => Err(MemPoolError::InvalidAddressSource(address_source).into()),
-        }
     }
 
     fn verify_chain_id(&self, ctx: Context, stx: &SignedTransaction) -> ProtocolResult<()> {
@@ -344,6 +271,65 @@ where
             .into());
         }
 
+        Ok(())
+    }
+
+    fn verify_signature(&self, stx: &SignedTransaction) -> ProtocolResult<()> {
+        let signature = stx.transaction.signature.clone().unwrap();
+        if signature.is_eth_sig() {
+            // Verify secp256k1 signature
+            Secp256k1Recoverable::verify_signature(
+                stx.transaction.signature_hash(true).as_bytes(),
+                signature.as_bytes().as_ref(),
+                recover_intact_pub_key(&stx.public.unwrap()).as_bytes(),
+            )
+            .map_err(|err| AdapterError::VerifySignature(err.to_string()))?;
+
+            return Ok(());
+        }
+
+        // Verify interoperation signature
+        match signature.r[0] {
+            0u8 => {
+                // Call CKB-VM mode
+                let r = rlp::decode::<CellDepWithPubKey>(&signature.r[1..])
+                    .map_err(AdapterError::Rlp)?;
+
+                InteroperationImpl::call_ckb_vm(
+                    Default::default(),
+                    &DataProvider::default(),
+                    r.cell_dep,
+                    &[r.pub_key, signature.s],
+                    u64::MAX,
+                )
+                .map_err(|e| AdapterError::VerifySignature(e.to_string()))?;
+            }
+            _ => {
+                // Verify by mock transaction mode
+                let r = SignatureR::decode(&signature.r)?;
+                let s = SignatureS::decode(&signature.s)?;
+
+                if r.inputs_len() != s.witnesses.len() {
+                    return Err(AdapterError::VerifySignature(
+                        "signature item mismatch".to_string(),
+                    )
+                    .into());
+                }
+
+                InteroperationImpl::verify_by_ckb_vm(
+                    Default::default(),
+                    &DataProvider::default(),
+                    &InteroperationImpl::dummy_transaction(
+                        r.clone(),
+                        s,
+                        Some(stx.transaction.signature_hash(true).0),
+                    ),
+                    r.dummy_input(),
+                    MAX_VERIFY_CKB_VM_CYCLES,
+                )
+                .map_err(|e| AdapterError::VerifySignature(e.to_string()))?;
+            }
+        }
         Ok(())
     }
 }
@@ -471,66 +457,7 @@ where
         self.verify_tx_size(ctx.clone(), stx)?;
         self.verify_gas_price(stx)?;
         self.verify_gas_limit(ctx, stx)?;
-
-        // Verify signature
-        let signature = stx.transaction.signature.clone().unwrap();
-        if signature.len() == SignatureComponents::ETHEREUM_TX_LEN {
-            // use original Secp256k1 library to verify
-            Secp256k1Recoverable::verify_signature(
-                stx.transaction.signature_hash(true).as_bytes(),
-                signature.as_bytes().as_ref(),
-                recover_intact_pub_key(&stx.public.unwrap()).as_bytes(),
-            )
-            .map_err(|err| AdapterError::VerifySignature(err.to_string()))?;
-
-            return Ok(());
-        }
-
-        match signature.r[0] {
-            0u8 => {
-                let r = rlp::decode::<CellDepWithPubKey>(&signature.r[1..])
-                    .map_err(AdapterError::Rlp)?;
-
-                InteroperationImpl::call_ckb_vm(
-                    Default::default(),
-                    &DataProvider::default(),
-                    r.cell_dep,
-                    &[r.pub_key, signature.s],
-                    u64::MAX,
-                )
-                .map_err(|e| AdapterError::VerifySignature(e.to_string()))?;
-            }
-            _ => {
-                let r = SignatureR::decode(&signature.r)?;
-                let s = SignatureS::decode(&signature.s)?;
-
-                if r.inputs_len() != s.witnesses.len() {
-                    return Err(AdapterError::VerifySignature(
-                        "signature item mismatch".to_string(),
-                    )
-                    .into());
-                }
-
-                let dummy_ckb_tx = InteroperationImpl::dummy_transaction(r.clone(), s);
-                let dummy_input = r.dummy_input();
-
-                self.verify_cell_mapping_sender(
-                    stx.sender,
-                    &dummy_ckb_tx,
-                    dummy_input.clone(),
-                    r.address_source(),
-                )?;
-
-                InteroperationImpl::verify_by_ckb_vm(
-                    Default::default(),
-                    &DataProvider::default(),
-                    &dummy_ckb_tx,
-                    dummy_input,
-                    MAX_VERIFY_CKB_VM_CYCLES,
-                )
-                .map_err(|e| AdapterError::VerifySignature(e.to_string()))?;
-            }
-        }
+        self.verify_signature(stx)?;
 
         Ok(())
     }

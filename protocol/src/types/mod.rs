@@ -77,6 +77,9 @@ pub enum TypesError {
 
     #[display(fmt = "Invalid address source type")]
     InvalidAddressSourceType,
+
+    #[display(fmt = "Missing interoperation sender")]
+    MissingInteroperationSender,
 }
 
 impl Error for TypesError {}

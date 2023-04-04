@@ -13,7 +13,7 @@ use protocol::types::{SignedTransaction, TxResp, H160, H256};
 
 use crate::exec_try;
 use crate::system_contract::ckb_light_client::store::CkbLightClientStore;
-use crate::system_contract::utils::{succeed_resp, update_mpt_root};
+use crate::system_contract::utils::{succeed_resp, update_states};
 use crate::system_contract::{system_contract_address, SystemContract, CURRENT_HEADER_CELL_ROOT};
 
 static ALLOW_READ: AtomicBool = AtomicBool::new(false);
@@ -29,6 +29,7 @@ impl SystemContract for CkbLightClientContract {
         adapter: &mut Adapter,
         tx: &SignedTransaction,
     ) -> TxResp {
+        let sender = tx.sender;
         let tx = &tx.transaction.unsigned;
         let tx_data = tx.data();
         let gas_limit = *tx.gas_limit();
@@ -65,7 +66,7 @@ impl SystemContract for CkbLightClientContract {
             }
         }
 
-        update_mpt_root(adapter, CkbLightClientContract::ADDRESS);
+        update_states(adapter, sender, Self::ADDRESS);
 
         succeed_resp(gas_limit)
     }

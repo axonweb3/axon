@@ -1,10 +1,12 @@
-use bytes::Bytes;
-use ckb_types::{packed, prelude::*};
-use ethereum_types::H256;
+use ckb_types::{core::cell::CellMeta, packed, prelude::*};
 use rlp_derive::{RlpDecodable, RlpEncodable};
 use serde::{Deserialize, Serialize};
 
-use crate::{codec::ProtocolCodec, types::TypesError, ProtocolResult};
+use crate::traits::{ALWAYS_SUCCESS_CELL_OCCUPIED_CAPACITY, BYTE_SHANNONS};
+use crate::types::{Bytes, TypesError, H256};
+use crate::{ckb_blake2b_256, codec::ProtocolCodec, lazy::DUMMY_INPUT_OUT_POINT, ProtocolResult};
+
+const CAPACITY_BYTES_LEN: usize = 8;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct VMResp {
@@ -114,6 +116,23 @@ impl SignatureR {
             SignatureR::ByRefAndOneInput(_) => false,
         }
     }
+
+    #[cfg(test)]
+    pub(crate) fn encode(&self) -> Bytes {
+        match self {
+            SignatureR::ByRef(r) => {
+                let mut ret = vec![1];
+                ret.extend_from_slice(&rlp::encode(r));
+                ret
+            }
+            SignatureR::ByRefAndOneInput(r) => {
+                let mut ret = vec![2];
+                ret.extend_from_slice(&rlp::encode(r));
+                ret
+            }
+        }
+        .into()
+    }
 }
 
 #[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -139,6 +158,26 @@ pub struct CellWithData {
     pub data:        Bytes,
 }
 
+impl From<&CellWithData> for CellMeta {
+    fn from(cell: &CellWithData) -> Self {
+        let necessary_capacity =
+            (ALWAYS_SUCCESS_CELL_OCCUPIED_CAPACITY + BYTE_SHANNONS).max(cell.capacity());
+
+        CellMeta {
+            cell_output:        packed::CellOutputBuilder::default()
+                .lock(cell.lock_script())
+                .type_(cell.type_script())
+                .capacity(necessary_capacity.pack())
+                .build(),
+            out_point:          DUMMY_INPUT_OUT_POINT.clone(),
+            transaction_info:   None,
+            data_bytes:         cell.data.len() as u64,
+            mem_cell_data_hash: Some(ckb_blake2b_256(&cell.data).pack()),
+            mem_cell_data:      Some(cell.data.clone()),
+        }
+    }
+}
+
 impl CellWithData {
     pub fn capacity(&self) -> u64 {
         let capacity = self
@@ -147,8 +186,9 @@ impl CellWithData {
             .map(|s| s.len())
             .unwrap_or_default()
             + self.lock_script.len()
-            + self.data.len();
-        capacity as u64
+            + self.data.len()
+            + CAPACITY_BYTES_LEN;
+        (capacity as u64) * BYTE_SHANNONS
     }
 
     pub fn lock_script(&self) -> packed::Script {
@@ -228,9 +268,9 @@ impl From<&packed::OutPoint> for OutPoint {
 
 #[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Witness {
+    pub lock:        Option<Bytes>,
     pub input_type:  Option<Bytes>,
     pub output_type: Option<Bytes>,
-    pub lock:        Option<Bytes>,
 }
 
 #[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]

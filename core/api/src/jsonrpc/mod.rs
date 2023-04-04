@@ -5,6 +5,7 @@ mod ws_subscription;
 
 use std::sync::Arc;
 
+use ckb_jsonrpc_types::{CellInfo, HeaderView as CkbHeaderView, OutPoint};
 use jsonrpsee::server::{ServerBuilder, ServerHandle};
 use jsonrpsee::{core::Error, proc_macros::rpc};
 
@@ -200,6 +201,19 @@ pub trait AxonNodeRpc {
     fn pprof(&self, enable: bool) -> RpcResult<bool>;
 }
 
+#[rpc(server)]
+pub trait CkbLightClientRpc {
+    #[method(name = "ckb_getBlockHeaderByHash")]
+    async fn get_block_header_by_hash(&self, hash: Hash) -> RpcResult<Option<CkbHeaderView>>;
+
+    #[method(name = "ckb_getLiveCell")]
+    async fn get_cell_info(
+        &self,
+        out_point: OutPoint,
+        with_data: bool,
+    ) -> RpcResult<Option<CellInfo>>;
+}
+
 pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
     config: Config,
     adapter: Arc<Adapter>,
@@ -210,9 +224,11 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
     let node_rpc =
         r#impl::NodeRpcImpl::new(&config.rpc.client_version, config.data_path).into_rpc();
     let filter = r#impl::filter_module(Arc::clone(&adapter)).into_rpc();
+    let ckb_light_client_rpc = r#impl::CkbLightClientRpcImpl::default().into_rpc();
 
     rpc.merge(node_rpc).unwrap();
     rpc.merge(filter).unwrap();
+    rpc.merge(ckb_light_client_rpc).unwrap();
 
     if let Some(addr) = config.rpc.http_listening_address {
         let server = ServerBuilder::new()
