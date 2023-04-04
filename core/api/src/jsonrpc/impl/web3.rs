@@ -7,7 +7,7 @@ use protocol::lazy::PROTOCOL_VERSION;
 use protocol::traits::{APIAdapter, Context};
 use protocol::types::{
     Block, BlockNumber, Bytes, Hash, Header, Hex, Receipt, SignedTransaction, TxResp,
-    UnverifiedTransaction, H160, H256, H64, MAX_BLOCK_GAS_LIMIT, MIN_TRANSACTION_GAS_LIMIT, U256,
+    UnverifiedTransaction, H160, H256, H64, MAX_RPC_GAS_CAP, MIN_TRANSACTION_GAS_LIMIT, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
 
@@ -313,7 +313,7 @@ impl<Adapter: APIAdapter + 'static> AxonWeb3RpcServer for Web3RpcImpl<Adapter> {
             return Err(Error::Custom("The gas price is too large".to_string()));
         }
 
-        if req.gas.unwrap_or_default() > U256::from(MAX_BLOCK_GAS_LIMIT) {
+        if req.gas.unwrap_or_default() > U256::from(MAX_RPC_GAS_CAP) {
             return Err(Error::Custom("The gas limit is too large".to_string()));
         }
 
