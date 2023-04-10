@@ -12,12 +12,12 @@ use log::{debug, error};
 use parking_lot::Mutex;
 
 use protocol::traits::{
-    Context, Executor, Gossip, Interoperation, MemPoolAdapter, PeerTrust, Priority, Rpc, Storage,
+    Context, Gossip, Interoperation, MemPoolAdapter, PeerTrust, Priority, Rpc, Storage,
     TrustFeedback,
 };
 use protocol::types::{
-    recover_intact_pub_key, BatchSignedTxs, CellDepWithPubKey, Hash, MerkleRoot, SignatureR,
-    SignatureS, SignedTransaction, H160, U256,
+    recover_intact_pub_key, Backend, BatchSignedTxs, CellDepWithPubKey, Hash, MerkleRoot,
+    SignatureR, SignatureS, SignedTransaction, H160, U256,
 };
 use protocol::{
     async_trait, codec::ProtocolCodec, lazy::CURRENT_STATE_ROOT, tokio, trie, Display,
@@ -27,7 +27,7 @@ use protocol::{
 use common_apm_derive::trace_span;
 use common_crypto::{Crypto, Secp256k1Recoverable};
 use core_executor::system_contract::{metadata::MetadataHandle, DataProvider};
-use core_executor::{is_call_system_script, AxonExecutor, AxonExecutorAdapter};
+use core_executor::{is_call_system_script, AxonExecutorAdapter};
 use core_interoperation::InteroperationImpl;
 
 use crate::adapter::message::{MsgPullTxs, END_GOSSIP_NEW_TXS, RPC_PULL_TXS};
@@ -420,7 +420,7 @@ where
             Default::default(),
         )?;
 
-        let account = AxonExecutor::default().get_account(&backend, addr);
+        let account = backend.basic(*addr);
         self.addr_nonce
             .insert(*addr, (account.nonce, account.balance));
 
