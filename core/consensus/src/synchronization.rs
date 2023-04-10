@@ -44,7 +44,7 @@ impl<Adapter: SynchronizationAdapter> Synchronization for OverlordSynchronizatio
         if syncing_lock.is_err() {
             return Ok(());
         }
-        if !self.need_sync(ctx.clone(), remote_number).await? {
+        if !self.need_sync(remote_number).await? {
             return Ok(());
         }
 
@@ -342,7 +342,9 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             &resp,
         );
 
-        let metadata = self.adapter.get_metadata(ctx.clone(), &block.header)?;
+        let metadata = self
+            .adapter
+            .get_metadata_by_block_number(block.header.number)?;
         let new_status = CurrentStatus {
             prev_hash:                  block.hash(),
             last_number:                block.header.number,
@@ -468,7 +470,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         Ok(())
     }
 
-    async fn need_sync(&self, ctx: Context, remote_number: u64) -> ProtocolResult<bool> {
+    async fn need_sync(&self, remote_number: u64) -> ProtocolResult<bool> {
         let mut current_number = self.status.inner().last_number;
         if remote_number == 0 {
             return Ok(false);
@@ -481,7 +483,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         if current_number == remote_number - 1 {
             sleep(Duration::from_millis(
                 self.adapter
-                    .get_metadata_unchecked(ctx.clone(), current_number)
+                    .get_metadata_by_block_number(current_number)?
                     .interval,
             ))
             .await;
@@ -500,7 +502,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         self.status.swap(sync_status.clone());
         let metadata = self
             .adapter
-            .get_metadata_unchecked(ctx.clone(), sync_status.last_number + 1);
+            .get_metadata_by_block_number(sync_status.last_number + 1)?;
 
         self.adapter.update_status(
             ctx,
@@ -606,12 +608,11 @@ mod tests {
     #[tokio::test]
     async fn test_need_sync() {
         let sync = get_mock_synchronization();
-        let ctx = Context::default();
 
-        let result = sync.need_sync(ctx.clone(), 4).await.unwrap();
+        let result = sync.need_sync(4).await.unwrap();
         assert!(result);
 
-        let result = sync.need_sync(ctx, 0).await.unwrap();
+        let result = sync.need_sync(0).await.unwrap();
         assert!(!result);
     }
 

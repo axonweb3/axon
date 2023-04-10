@@ -30,12 +30,10 @@ members = [
     "core/consensus",
     "core/executor",
     "core/mempool",
-    "core/metadata",
     "core/network",
     "core/rpc-client",
     "core/run",
     "core/storage",
-
     "devtools/abi-generator",
     "devtools/genesis-generator",
     "devtools/keypair",

@@ -19,8 +19,7 @@ use common_merkle::TrieMerkle;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
     Block, Bytes, ExecResp, Hash, Hasher, Hex, Log, MerkleRoot, Metadata, Proof, Proposal, Receipt,
-    SignedTransaction, TransactionAction, ValidatorExtend, BASE_FEE_PER_GAS, H160,
-    MAX_BLOCK_GAS_LIMIT, RLP_NULL, U256,
+    SignedTransaction, ValidatorExtend, BASE_FEE_PER_GAS, MAX_BLOCK_GAS_LIMIT, RLP_NULL, U256,
 };
 use protocol::{
     async_trait, lazy::CURRENT_STATE_ROOT, tokio::sync::Mutex as AsyncMutex, ProtocolError,
@@ -41,10 +40,9 @@ use crate::ConsensusError;
 /// validator is for create new block, and authority is for build overlord
 /// status.
 pub struct ConsensusEngine<Adapter> {
-    status:           StatusAgent,
-    node_info:        NodeInfo,
-    metadata_address: H160,
-    exemption_hash:   RwLock<HashSet<Hash>>,
+    status:         StatusAgent,
+    node_info:      NodeInfo,
+    exemption_hash: RwLock<HashSet<Hash>>,
 
     adapter: Arc<Adapter>,
     txs_wal: Arc<SignedTxsWAL>,
@@ -210,7 +208,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         let status = self.status.inner();
         let metadata = self
             .adapter
-            .get_metadata_unchecked(ctx.clone(), current_number + 1);
+            .get_metadata_by_block_number(current_number + 1)?;
 
         if current_number == status.last_number {
             return Ok(Status {
@@ -289,7 +287,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         let next_block_number = current_number + 1;
         let metadata = self
             .adapter
-            .get_metadata_unchecked(ctx.clone(), next_block_number);
+            .get_metadata_by_block_number(next_block_number)?;
         let status = Status {
             height:         next_block_number,
             interval:       Some(metadata.interval),
@@ -387,13 +385,11 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             return Ok(vec![]);
         }
 
-        let current_metadata = self
-            .adapter
-            .get_metadata_unchecked(ctx.clone(), next_number);
+        let current_metadata = self.adapter.get_metadata_by_block_number(next_number)?;
         let old_metadata = if current_metadata.version.contains(next_number - 1) {
             current_metadata
         } else {
-            self.adapter.get_metadata_unchecked(ctx, next_number - 1)
+            self.adapter.get_metadata_by_block_number(next_number - 1)?
         };
 
         let mut old_validators = old_metadata
@@ -448,7 +444,6 @@ impl<Adapter: ConsensusAdapter + 'static> Wal for ConsensusEngine<Adapter> {
 impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
     pub fn new(
         status: StatusAgent,
-        metadata_address: H160,
         node_info: NodeInfo,
         wal: Arc<SignedTxsWAL>,
         adapter: Arc<Adapter>,
@@ -458,7 +453,6 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
     ) -> Self {
         Self {
             status,
-            metadata_address,
             node_info,
             exemption_hash: RwLock::new(HashSet::new()),
             txs_wal: wal,
@@ -473,12 +467,6 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
 
     pub fn status(&self) -> CurrentStatus {
         self.status.inner()
-    }
-
-    fn contains_change_metadata(&self, txs: &[SignedTransaction]) -> bool {
-        let action = TransactionAction::Call(self.metadata_address);
-        txs.iter()
-            .any(|tx| tx.transaction.unsigned.action() == &action)
     }
 
     async fn inner_check_block(&self, ctx: Context, proposal: &Proposal) -> ProtocolResult<()> {
@@ -592,8 +580,6 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         let block = Block::new(proposal, resp.clone());
         let block_number = block.header.number;
         let block_hash = block.hash();
-        let is_change_metadata = self.contains_change_metadata(&txs);
-        let next_block_number = block_number + 1;
 
         let (receipts, _logs) = generate_receipts_and_logs(
             block_number,
@@ -616,14 +602,10 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         // Save the block
         self.adapter.save_block(ctx.clone(), block.clone()).await?;
 
-        if is_change_metadata {
-            self.adapter.update_metadata(ctx.clone(), &block.header)?;
-        }
-
-        if self.adapter.need_change_metadata(next_block_number) {
+        if self.adapter.is_last_block_in_current_epoch(block_number)? {
             let metadata = self
                 .adapter
-                .get_metadata_unchecked(ctx.clone(), next_block_number);
+                .get_metadata_by_block_number(block_number + 1)?;
             let pub_keys = metadata
                 .verifier_list
                 .iter()

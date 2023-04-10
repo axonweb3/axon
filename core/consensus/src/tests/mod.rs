@@ -284,20 +284,12 @@ impl CommonConsensusAdapter for MockSyncAdapter {
         })
     }
 
-    fn need_change_metadata(&self, block_number: u64) -> bool {
-        false
+    fn is_last_block_in_current_epoch(&self, block_number: u64) -> ProtocolResult<bool> {
+        Ok(false)
     }
 
-    fn get_metadata_unchecked(&self, ctx: Context, block_number: u64) -> Metadata {
-        Metadata::default()
-    }
-
-    fn get_metadata(&self, ctx: Context, header: &Header) -> ProtocolResult<Metadata> {
+    fn get_metadata_by_block_number(&self, block_number: u64) -> ProtocolResult<Metadata> {
         Ok(Metadata::default())
-    }
-
-    fn update_metadata(&self, ctx: Context, header: &Header) -> ProtocolResult<()> {
-        Ok(())
     }
 
     async fn broadcast_number(&self, ctx: Context, height: u64) -> ProtocolResult<()> {

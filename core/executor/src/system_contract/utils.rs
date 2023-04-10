@@ -1,6 +1,7 @@
 use evm::ExitSucceed;
+
 use protocol::types::{
-    Apply, ApplyBackend, Backend, Basic, ExitReason, ExitRevert, TxResp, H160, H256, U256,
+    Apply, ApplyBackend, Backend, ExitReason, ExitRevert, TxResp, H160, H256, U256,
 };
 
 use crate::system_contract::{
@@ -34,60 +35,64 @@ pub fn succeed_resp(gas_limit: U256) -> TxResp {
     }
 }
 
-pub fn update_mpt_root<B: Backend + ApplyBackend>(backend: &mut B, address: H160) {
-    let mut account = backend.basic(address);
-    let mut new_storage: Vec<(H256, H256)> = vec![];
+pub fn update_states<B: Backend + ApplyBackend>(
+    backend: &mut B,
+    sender: H160,
+    contract_address: H160,
+) {
+    let mut changes = generate_mpt_root_changes(backend, contract_address);
+    changes.append(&mut generate_sender_changes(backend, sender));
+    backend.apply(changes, vec![], false);
+}
 
-    if address == CkbLightClientContract::ADDRESS || address == ImageCellContract::ADDRESS {
-        new_storage.push((*HEADER_CELL_ROOT_KEY, **CURRENT_HEADER_CELL_ROOT.load()));
-    } else if address == MetadataContract::ADDRESS {
-        new_storage.push((*METADATA_ROOT_KEY, **CURRENT_METADATA_ROOT.load()));
-    } else {
-        unreachable!();
-    }
-    backend.apply(
-        vec![Apply::Modify {
-            address,
-            basic: Basic {
-                balance: account.balance,
-                nonce:   account.nonce + U256::one(),
-            },
-            code: None,
-            storage: new_storage.clone(),
-            reset_storage: false,
-        }],
-        vec![],
-        false,
-    );
+pub fn generate_sender_changes<B: Backend + ApplyBackend>(
+    backend: &mut B,
+    sender: H160,
+) -> Vec<Apply<Vec<(H256, H256)>>> {
+    let mut account = backend.basic(sender);
+    account.nonce += U256::one();
+    vec![Apply::Modify {
+        address:       sender,
+        basic:         account,
+        code:          None,
+        storage:       vec![],
+        reset_storage: false,
+    }]
+}
 
-    // We need to update the roots of CkbLightClient and ImageCell together
-    // so they always equal to each other.
-    // But the nounce is only updated for the contract that is called.
-    // So we need to keep the nounce of the other contract.
-    let other_address: H160;
-    if address == CkbLightClientContract::ADDRESS {
-        account = backend.basic(ImageCellContract::ADDRESS);
-        other_address = ImageCellContract::ADDRESS;
-    } else if address == ImageCellContract::ADDRESS {
-        account = backend.basic(CkbLightClientContract::ADDRESS);
-        other_address = CkbLightClientContract::ADDRESS;
-    } else if address == MetadataContract::ADDRESS {
-        return;
-    } else {
-        unreachable!();
-    }
-    backend.apply(
-        vec![Apply::Modify {
-            address:       other_address,
-            basic:         Basic {
-                balance: account.balance,
-                nonce:   account.nonce,
+pub fn generate_mpt_root_changes<B: Backend + ApplyBackend>(
+    backend: &mut B,
+    contract_address: H160,
+) -> Vec<Apply<Vec<(H256, H256)>>> {
+    if contract_address == CkbLightClientContract::ADDRESS
+        || contract_address == ImageCellContract::ADDRESS
+    {
+        let storage_changes = vec![(*HEADER_CELL_ROOT_KEY, **CURRENT_HEADER_CELL_ROOT.load())];
+        vec![
+            Apply::Modify {
+                address:       CkbLightClientContract::ADDRESS,
+                basic:         backend.basic(CkbLightClientContract::ADDRESS),
+                code:          None,
+                storage:       storage_changes.clone(),
+                reset_storage: false,
             },
+            Apply::Modify {
+                address:       ImageCellContract::ADDRESS,
+                basic:         backend.basic(ImageCellContract::ADDRESS),
+                code:          None,
+                storage:       storage_changes,
+                reset_storage: false,
+            },
+        ]
+    } else if contract_address == MetadataContract::ADDRESS {
+        vec![Apply::Modify {
+            address:       MetadataContract::ADDRESS,
+            basic:         backend.basic(MetadataContract::ADDRESS),
             code:          None,
-            storage:       new_storage,
+            storage:       vec![(*METADATA_ROOT_KEY, **CURRENT_METADATA_ROOT.load())],
             reset_storage: false,
-        }],
-        vec![],
-        false,
-    );
+        }]
+    } else {
+        unreachable!()
+    }
 }

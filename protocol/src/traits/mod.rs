@@ -4,7 +4,6 @@ mod consensus;
 mod executor;
 mod interoperation;
 mod mempool;
-mod metadata;
 mod network;
 mod storage;
 
@@ -16,9 +15,8 @@ pub use consensus::{
 };
 pub use creep::{Cloneable, Context};
 pub use executor::{ApplyBackend, Backend, Executor, ExecutorAdapter};
-pub use interoperation::Interoperation;
+pub use interoperation::{Interoperation, ALWAYS_SUCCESS_CELL_OCCUPIED_CAPACITY, BYTE_SHANNONS};
 pub use mempool::{MemPool, MemPoolAdapter};
-pub use metadata::{MetadataControl, MetadataControlAdapter};
 pub use network::{
     Gossip, MessageCodec, MessageHandler, Network, PeerTag, PeerTrust, Priority, Rpc, TrustFeedback,
 };

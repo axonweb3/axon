@@ -29,7 +29,7 @@ use protocol::{ckb_blake2b_256, traits::ExecutorAdapter};
 
 use crate::system_contract::image_cell::utils::always_success_script_deploy_cell;
 use crate::system_contract::trie_db::RocksTrieDB;
-use crate::system_contract::utils::update_mpt_root;
+use crate::system_contract::utils::generate_mpt_root_changes;
 
 #[macro_export]
 macro_rules! exec_try {
@@ -69,7 +69,7 @@ lazy_static::lazy_static! {
 pub fn init<P: AsRef<Path>, Adapter: ExecutorAdapter>(
     path: P,
     config: ConfigRocksDB,
-    mut adapter: Adapter,
+    adapter: &mut Adapter,
 ) {
     // Init metadata db
     let current_metadata_root = adapter.storage(MetadataContract::ADDRESS, *METADATA_ROOT_KEY);
@@ -103,7 +103,8 @@ pub fn init<P: AsRef<Path>, Adapter: ExecutorAdapter>(
         ImageCellContract::default()
             .save_cells(vec![always_success_script_deploy_cell()], 0)
             .unwrap();
-        return update_mpt_root(&mut adapter, CkbLightClientContract::ADDRESS);
+        let changes = generate_mpt_root_changes(adapter, ImageCellContract::ADDRESS);
+        return adapter.apply(changes, vec![], false);
     }
 
     CURRENT_HEADER_CELL_ROOT.store(Arc::new(current_cell_root));
@@ -124,6 +125,7 @@ pub fn system_contract_dispatch<Adapter: ExecutorAdapter>(
     tx: &SignedTransaction,
 ) -> Option<TxResp> {
     if let Some(addr) = tx.get_to() {
+        log::info!("execute addr {:}", addr);
         if addr == NativeTokenContract::ADDRESS {
             return Some(NativeTokenContract::default().exec_(adapter, tx));
         } else if addr == MetadataContract::ADDRESS {
@@ -138,7 +140,7 @@ pub fn system_contract_dispatch<Adapter: ExecutorAdapter>(
     None
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct DataProvider;
 
 impl CellProvider for DataProvider {

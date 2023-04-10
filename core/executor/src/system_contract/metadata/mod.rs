@@ -17,10 +17,8 @@ use protocol::traits::ExecutorAdapter;
 use protocol::types::{Hasher, Metadata, SignedTransaction, TxResp, H160, H256};
 
 use crate::exec_try;
-use crate::system_contract::utils::{revert_resp, succeed_resp};
-use crate::system_contract::{
-    system_contract_address, update_mpt_root, SystemContract, CURRENT_METADATA_ROOT,
-};
+use crate::system_contract::utils::{revert_resp, succeed_resp, update_states};
+use crate::system_contract::{system_contract_address, SystemContract, CURRENT_METADATA_ROOT};
 
 type Epoch = u64;
 
@@ -87,7 +85,7 @@ impl SystemContract for MetadataContract {
             }
         }
 
-        update_mpt_root(adapter, MetadataContract::ADDRESS);
+        update_states(adapter, sender, Self::ADDRESS);
 
         succeed_resp(gas_limit)
     }

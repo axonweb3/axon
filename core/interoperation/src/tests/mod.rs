@@ -49,7 +49,7 @@ impl TestHandle {
         };
         handle.load_genesis().await;
 
-        let backend = AxonExecutorAdapter::from_root(
+        let mut backend = AxonExecutorAdapter::from_root(
             handle.state_root,
             Arc::clone(&handle.trie_db),
             Arc::clone(&handle.storage),
@@ -60,7 +60,7 @@ impl TestHandle {
         core_executor::system_contract::init(
             path + &salt.to_string() + "/sc",
             Default::default(),
-            backend,
+            &mut backend,
         );
 
         handle

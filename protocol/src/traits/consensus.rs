@@ -132,13 +132,9 @@ pub trait CommonConsensusAdapter: Send + Sync {
         signed_txs: &[SignedTransaction],
     ) -> ProtocolResult<ExecResp>;
 
-    fn need_change_metadata(&self, block_number: u64) -> bool;
+    fn is_last_block_in_current_epoch(&self, block_number: u64) -> ProtocolResult<bool>;
 
-    fn get_metadata_unchecked(&self, ctx: Context, block_number: u64) -> Metadata;
-
-    fn get_metadata(&self, ctx: Context, header: &Header) -> ProtocolResult<Metadata>;
-
-    fn update_metadata(&self, ctx: Context, header: &Header) -> ProtocolResult<()>;
+    fn get_metadata_by_block_number(&self, block_number: u64) -> ProtocolResult<Metadata>;
 
     async fn broadcast_number(&self, ctx: Context, height: u64) -> ProtocolResult<()>;
 

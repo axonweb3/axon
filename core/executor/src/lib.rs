@@ -30,7 +30,10 @@ use protocol::types::{
 };
 
 use crate::precompiles::build_precompile_set;
-use crate::system_contract::{system_contract_dispatch, NativeTokenContract, SystemContract};
+use crate::system_contract::{
+    system_contract_dispatch, CkbLightClientContract, ImageCellContract, MetadataContract,
+    NativeTokenContract, SystemContract,
+};
 
 lazy_static::lazy_static! {
     pub static ref FEE_ALLOCATOR: ArcSwap<Box<dyn FeeAllocate>> = ArcSwap::from_pointee(Box::new(DefaultFeeAllocator::default()));
@@ -50,7 +53,7 @@ pub trait FeeAllocate: Sync + Send {
 pub struct AxonExecutor;
 
 impl Executor for AxonExecutor {
-    // Used for query data API, this function will not modify the world state.
+    // Used for query data API, this function will not modify the global state.
     fn call<B: Backend>(
         &self,
         backend: &B,
@@ -286,8 +289,15 @@ impl AxonExecutor {
 }
 
 pub fn is_call_system_script(action: &TransactionAction) -> bool {
+    let system_contracts = vec![
+        NativeTokenContract::ADDRESS,
+        MetadataContract::ADDRESS,
+        CkbLightClientContract::ADDRESS,
+        ImageCellContract::ADDRESS,
+    ];
+
     match action {
-        TransactionAction::Call(addr) => addr == &NativeTokenContract::ADDRESS,
+        TransactionAction::Call(addr) => system_contracts.contains(addr),
         TransactionAction::Create => false,
     }
 }

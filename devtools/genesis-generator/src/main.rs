@@ -10,7 +10,7 @@ use common_crypto::{
     BlsPrivateKey, BlsPublicKey, PrivateKey, PublicKey, Secp256k1PrivateKey,
     Secp256k1RecoverablePrivateKey, Signature, ToBlsPublicKey, ToPublicKey, UncompressedPublicKey,
 };
-use core_metadata::metadata_abi;
+use core_executor::system_contract::metadata::metadata_abi;
 use protocol::codec::hex_decode;
 use protocol::types::{
     Address, Hasher, Hex, Metadata, RichBlock, SignedTransaction, UnsignedTransaction,
@@ -78,7 +78,7 @@ fn build_axon_txs(
     }
     .calc_hash();
 
-    utx.try_into().unwrap()
+    SignedTransaction::from_unverified(utx, None).unwrap()
 }
 
 // get metadata key from config.toml

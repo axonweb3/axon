@@ -3,8 +3,7 @@ use std::fmt;
 use serde::de::{Error, MapAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use core_consensus::SyncStatus as InnerSyncStatus;
-use protocol::codec::ProtocolCodec;
+use protocol::codec::{truncate_slice, ProtocolCodec};
 use protocol::types::{
     AccessList, Block, Bloom, Bytes, Hash, Header, Hex, Public, Receipt, SignedTransaction, H160,
     H256, H64, MAX_PRIORITY_FEE_PER_GAS, U256, U64,
@@ -14,6 +13,8 @@ pub const EMPTY_UNCLE_HASH: H256 = H256([
     0x1d, 0xcc, 0x4d, 0xe8, 0xde, 0xc7, 0x5d, 0x7a, 0xab, 0x85, 0xb5, 0x67, 0xb6, 0xcc, 0xd4, 0x1a,
     0xd3, 0x12, 0x45, 0x1b, 0x94, 0x8a, 0x74, 0x13, 0xf0, 0xa1, 0x42, 0xfd, 0x40, 0xd4, 0x93, 0x47,
 ]);
+
+use core_consensus::SyncStatus as InnerSyncStatus;
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -71,14 +72,23 @@ pub struct Web3Transaction {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub standard_v:               Option<U256>,
     pub v:                        U256,
-    pub r:                        U256,
-    pub s:                        U256,
+    pub r:                        Hex,
+    pub s:                        Hex,
 }
 
 impl From<SignedTransaction> for Web3Transaction {
     fn from(stx: SignedTransaction) -> Web3Transaction {
         let signature = stx.transaction.signature.clone().unwrap_or_default();
         let is_eip1559 = stx.transaction.unsigned.is_eip1559();
+        let (sig_r, sig_s) = if signature.is_eth_sig() {
+            (
+                Hex::encode(truncate_slice(&signature.r, 32)),
+                Hex::encode(truncate_slice(&signature.s, 32)),
+            )
+        } else {
+            (Hex::encode(signature.r), Hex::encode(signature.s))
+        };
+
         Web3Transaction {
             type_:                    Some(stx.type_().into()),
             block_number:             None,
@@ -108,8 +118,8 @@ impl From<SignedTransaction> for Web3Transaction {
             chain_id:                 stx.transaction.chain_id.map(|id| id.into()),
             standard_v:               None,
             v:                        signature.standard_v.into(),
-            r:                        signature.r.as_ref().into(),
-            s:                        signature.s.as_ref().into(),
+            r:                        sig_r,
+            s:                        sig_s,
         }
     }
 }
@@ -119,6 +129,15 @@ impl From<(SignedTransaction, Receipt)> for Web3Transaction {
         let (stx, receipt) = stx_receipt;
         let signature = stx.transaction.signature.clone().unwrap_or_default();
         let is_eip1559 = stx.transaction.unsigned.is_eip1559();
+        let (sig_r, sig_s) = if signature.is_eth_sig() {
+            (
+                Hex::encode(truncate_slice(&signature.r, 32)),
+                Hex::encode(truncate_slice(&signature.s, 32)),
+            )
+        } else {
+            (Hex::encode(signature.r), Hex::encode(signature.s))
+        };
+
         Web3Transaction {
             type_:                    Some(stx.type_().into()),
             block_number:             Some(receipt.block_number.into()),
@@ -148,8 +167,8 @@ impl From<(SignedTransaction, Receipt)> for Web3Transaction {
             chain_id:                 stx.transaction.chain_id.map(|id| id.into()),
             standard_v:               None,
             v:                        signature.standard_v.into(),
-            r:                        signature.r.as_ref().into(),
-            s:                        signature.s.as_ref().into(),
+            r:                        sig_r,
+            s:                        sig_s,
         }
     }
 }

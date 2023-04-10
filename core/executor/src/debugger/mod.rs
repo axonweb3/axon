@@ -156,7 +156,7 @@ pub fn mock_efficient_signed_tx(tx: Eip1559Transaction, private_key: &str) -> Si
     }
     .calc_hash();
 
-    utx.try_into().unwrap()
+    SignedTransaction::from_unverified(utx, None).unwrap()
 }
 
 pub fn mock_signed_tx(tx: Eip1559Transaction, sender: H160) -> SignedTransaction {

@@ -14,7 +14,7 @@ use protocol::types::{SignedTransaction, TxResp, H160, H256};
 use protocol::ProtocolResult;
 
 use crate::system_contract::image_cell::store::ImageCellStore;
-use crate::system_contract::utils::{succeed_resp, update_mpt_root};
+use crate::system_contract::utils::{succeed_resp, update_states};
 use crate::system_contract::{system_contract_address, SystemContract, CURRENT_HEADER_CELL_ROOT};
 use crate::{exec_try, MPTTrie};
 
@@ -31,6 +31,7 @@ impl SystemContract for ImageCellContract {
         adapter: &mut Adapter,
         tx: &SignedTransaction,
     ) -> TxResp {
+        let sender = tx.sender;
         let tx = &tx.transaction.unsigned;
         let tx_data = tx.data();
         let gas_limit = *tx.gas_limit();
@@ -63,8 +64,7 @@ impl SystemContract for ImageCellContract {
             }
         }
 
-        update_mpt_root(adapter, ImageCellContract::ADDRESS);
-
+        update_states(adapter, sender, Self::ADDRESS);
         succeed_resp(gas_limit)
     }
 }

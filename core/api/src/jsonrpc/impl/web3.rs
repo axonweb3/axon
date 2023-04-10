@@ -1,15 +1,23 @@
 use std::sync::Arc;
 
+use ckb_types::core::cell::{CellProvider, CellStatus};
+use ckb_types::prelude::Entity;
 use jsonrpsee::core::Error;
 
 use common_apm::metrics_rpc;
-use protocol::lazy::PROTOCOL_VERSION;
-use protocol::traits::{APIAdapter, Context};
+use protocol::traits::{APIAdapter, Context, Interoperation};
 use protocol::types::{
-    Block, BlockNumber, Bytes, Hash, Header, Hex, Receipt, SignedTransaction, TxResp,
-    UnverifiedTransaction, H160, H256, H64, MAX_RPC_GAS_CAP, MIN_TRANSACTION_GAS_LIMIT, U256,
+    Block, BlockNumber, Bytes, CellDepWithPubKey, Hash, Hasher, Header, Hex, Receipt,
+    SignatureComponents, SignatureR, SignatureS, SignedTransaction, TxResp, UnverifiedTransaction,
+    H160, H256, H64, MAX_RPC_GAS_CAP, MIN_TRANSACTION_GAS_LIMIT, U256,
 };
-use protocol::{async_trait, codec::ProtocolCodec, ProtocolResult};
+use protocol::{
+    async_trait, ckb_blake2b_256, codec::ProtocolCodec, lazy::PROTOCOL_VERSION, ProtocolResult,
+};
+
+use core_executor::system_contract::DataProvider;
+use core_interoperation::utils::is_dummy_out_point;
+use core_interoperation::InteroperationImpl;
 
 use crate::jsonrpc::web3_types::{
     BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter,
@@ -116,7 +124,18 @@ impl<Adapter: APIAdapter + 'static> AxonWeb3RpcServer for Web3RpcImpl<Adapter> {
 
         utx.check_hash().map_err(|e| Error::Custom(e.to_string()))?;
 
-        let stx = SignedTransaction::try_from(utx).map_err(|e| Error::Custom(e.to_string()))?;
+        let interoperation_sender = if let Some(sig) = utx.signature.as_ref() {
+            if sig.is_eth_sig() {
+                None
+            } else {
+                Some(extract_interoperation_tx_sender(&utx, sig)?)
+            }
+        } else {
+            return Err(Error::Custom("The transaction is not signed".to_string()));
+        };
+
+        let stx = SignedTransaction::from_unverified(utx, interoperation_sender)
+            .map_err(|e| Error::Custom(e.to_string()))?;
         let hash = stx.transaction.hash;
 
         self.adapter
@@ -866,5 +885,73 @@ pub fn from_receipt_to_web3_log(
             };
             logs.push(web3_log);
         }
+    }
+}
+
+fn extract_interoperation_tx_sender(
+    utx: &UnverifiedTransaction,
+    signature: &SignatureComponents,
+) -> RpcResult<H160> {
+    // Call CKB-VM mode
+    if signature.r[0] == 0 {
+        let r = rlp::decode::<CellDepWithPubKey>(&signature.r[1..])
+            .map_err(|e| Error::Custom(e.to_string()))?;
+
+        return Ok(Hasher::digest(&r.pub_key).into());
+    }
+
+    // Verify by CKB-VM mode
+    let r = SignatureR::decode(&signature.r).map_err(|e| Error::Custom(e.to_string()))?;
+    let s = SignatureS::decode(&signature.s).map_err(|e| Error::Custom(e.to_string()))?;
+    let address_source = r.address_source();
+
+    let ckb_tx_view =
+        InteroperationImpl::dummy_transaction(r.clone(), s, Some(utx.signature_hash(true).0));
+    let dummy_input = r.dummy_input();
+
+    let input = ckb_tx_view
+        .inputs()
+        .get(address_source.index as usize)
+        .ok_or(Error::Custom("Invalid address source".to_string()))?;
+
+    log::debug!("[mempool]: verify interoperation tx sender \ntx view \n{:?}\ndummy input\n {:?}\naddress source\n{:?}\n", ckb_tx_view, dummy_input, address_source);
+
+    // Dummy input mode
+    if is_dummy_out_point(&input.previous_output()) {
+        log::debug!("[mempool]: verify interoperation tx dummy input mode.");
+
+        if let Some(cell) = dummy_input {
+            if address_source.type_ == 1 && cell.type_script.is_none() {
+                return Err(Error::Custom(
+                    "Invalid address source in dummy input mode".to_string(),
+                ));
+            }
+
+            let script_hash = if address_source.type_ == 0 {
+                cell.lock_script_hash()
+            } else {
+                cell.type_script_hash().unwrap()
+            };
+
+            return Ok(Hasher::digest(script_hash).into());
+        }
+
+        return Err(Error::Custom("No dummy input cell".to_string()));
+    }
+
+    // Reality input mode
+    match DataProvider.cell(&input.previous_output(), true) {
+        CellStatus::Live(cell) => {
+            let script_hash = if address_source.type_ == 0 {
+                ckb_blake2b_256(cell.cell_output.lock().as_slice())
+            } else if let Some(type_script) = cell.cell_output.type_().to_opt() {
+                ckb_blake2b_256(type_script.as_slice())
+            } else {
+                return Err(Error::Custom("Invalid address source".to_string()));
+            };
+
+            Ok(Hasher::digest(script_hash).into())
+        }
+        _ => Err(Error::Custom("Cannot find input cell in ICSC".to_string())),
     }
 }
