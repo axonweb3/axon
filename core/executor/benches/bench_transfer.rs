@@ -113,7 +113,7 @@ fn mock_transaction(nonce: u64) -> SignedTransaction {
     let mut utx = UnverifiedTransaction {
         unsigned:  UnsignedTransaction::Eip1559(tx),
         signature: None,
-        chain_id:  0,
+        chain_id:  Some(0u64),
         hash:      Default::default(),
     };
 

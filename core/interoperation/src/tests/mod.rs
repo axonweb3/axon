@@ -173,7 +173,7 @@ fn mock_signed_tx(nonce: u64, data: Vec<u8>) -> SignedTransaction {
             r:          Bytes::default(),
             s:          Bytes::default(),
         }),
-        chain_id:  0,
+        chain_id:  Some(0u64),
         hash:      Default::default(),
     };
 

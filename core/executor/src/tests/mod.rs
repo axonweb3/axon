@@ -64,7 +64,7 @@ fn gen_tx(sender: H160, addr: H160, value: u64, data: Vec<u8>) -> SignedTransact
                 r:          Bytes::default(),
                 s:          Bytes::default(),
             }),
-            chain_id:  0u64,
+            chain_id:  Some(0u64),
             hash:      H256::default(),
         },
         sender,

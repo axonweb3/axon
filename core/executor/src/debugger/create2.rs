@@ -45,7 +45,7 @@ fn mock_create2_tx(nonce: U256, sender: H160) -> SignedTransaction {
     let utx = UnverifiedTransaction {
         unsigned:  UnsignedTransaction::Legacy(tx),
         signature: None,
-        chain_id:  5u64,
+        chain_id:  Some(5u64),
         hash:      H256::default(),
     };
 

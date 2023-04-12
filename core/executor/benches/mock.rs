@@ -93,7 +93,7 @@ pub fn mock_transactions(n: usize) -> Vec<SignedTransaction> {
             let mut utx = UnverifiedTransaction {
                 unsigned:  UnsignedTransaction::Eip1559(raw_tx),
                 signature: None,
-                chain_id:  0,
+                chain_id:  Some(0u64),
                 hash:      Default::default(),
             };
             let hash = utx.signature_hash(true);

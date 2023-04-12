@@ -67,7 +67,6 @@ impl SystemContract for CkbLightClientContract {
         }
 
         update_states(adapter, sender, Self::ADDRESS);
-
         succeed_resp(gas_limit)
     }
 }

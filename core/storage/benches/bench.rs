@@ -129,7 +129,7 @@ fn mock_signed_tx() -> SignedTransaction {
             r:          Default::default(),
             s:          Default::default(),
         }),
-        chain_id:  random::<u64>(),
+        chain_id:  Some(random::<u64>()),
         hash:      Default::default(),
     }
     .calc_hash();
