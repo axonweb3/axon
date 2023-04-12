@@ -28,7 +28,7 @@ jobs:
       - name: Git checkout devops
         uses: actions/checkout@v3
         with:
-          repository: liya2017/axon-devops
+          repository: axonweb3/axon-devops
           path: ${{ github.workspace}}/axon-devops
       - name: apply config toml config_toml.patch
         run: |
