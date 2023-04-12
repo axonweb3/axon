@@ -9,7 +9,7 @@
     "@chainsafe/dappeteer": "^5",
     "@ethereumjs/tx": "^4.1.1",
     "@ethereumjs/common": "^3.1.1",
-    "puppeteer": "^19.7.2",
+    "puppeteer": "^19.8.5",
     "web3": "^1.8.2",
     "xhr2": "^0.2.1"
   },
