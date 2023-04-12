@@ -18,7 +18,8 @@ jobs:
       - name: version
         id: version
         run: |
-          tag=${GITHUB_REF/refs\/tags\//}
+          # tag=${GITHUB_REF/refs\/tags\//}
+          tag=v0.1.0-alpha.9
           version=${tag#v}
           major=${version%%.*}
           echo "tag=${tag}" >> $GITHUB_OUTPUT
@@ -31,7 +32,7 @@ jobs:
           token: ${{ github.token }}
           tag_name: ${{ steps.version.outputs.tag }}
 
-  package:    
+  package:
     runs-on: ${{ matrix.job.os }}
     needs:
       - version
@@ -42,24 +43,46 @@ jobs:
             target: x86_64-apple-darwin
             use-cross: false
             REL_PKG: x86_64-apple-darwin.zip
-          # - os: macos-latest
-          #   target: aarch64-apple-darwin
-          #   use-cross: false
+          - os: [self-hosted, macOS, ARM64]
+            target: aarch64-apple-darwin
+            use-cross: false
+            REL_PKG: aarch64-apple-darwin.zip
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             use-cross: false
             REL_PKG: x86_64-unknown-linux-gnu.tar.gz
     steps:
       - name: Installing Rust toolchain
+        if: (!contains(matrix.job.os, 'self-hosted'))
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           target: ${{ matrix.job.target }}
           profile: minimal
           override: true
+      - name: Setup PATH
+        if: contains(matrix.job.os, 'self-hosted')
+        run: |
+          echo /opt/homebrew/bin >> $GITHUB_PATH
+          echo /opt/homebrew/sbin >> $GITHUB_PATH
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+      - name: Install Depedencies
+        if: contains(matrix.job.os, 'self-hosted')
+        run: |
+          if ! [ -d /opt/homebrew/opt/openssl@1.1 ]; then
+            brew install "openssl@1.1"
+          fi
+          if ! type -f gpg &> /dev/null; then
+            brew install gnupg
+          fi
+          if ! [ -f "$HOME/.cargo/bin/rustup" ]; then
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          fi
+
       - name: Checkout repository
         uses: actions/checkout@v3
       - name: Add rust target
+        if: (!contains(matrix.job.os, 'self-hosted'))
         run: rustup target add ${{ matrix.job.target }}
       - run: |
           cargo build --release --target ${{ matrix.job.target }}
@@ -88,7 +111,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: axon_${{ needs.version.outputs.tag }}_${{ matrix.job.REL_PKG }}
-          path: axon_${{ needs.version.outputs.tag }}_${{ matrix.job.REL_PKG }}  
+          path: axon_${{ needs.version.outputs.tag }}_${{ matrix.job.REL_PKG }}
   Upload-release-files:
     runs-on: ubuntu-latest
     strategy:
@@ -96,6 +119,7 @@ jobs:
         include:
           - REL_PKG: x86_64-unknown-linux-gnu.tar.gz
           - REL_PKG: x86_64-apple-darwin.zip
+          - REL_PKG: aarch64-apple-darwin.zip
     needs:
       - version
       - package
@@ -105,7 +129,7 @@ jobs:
       - name: Prepare - Download tar
         uses: actions/download-artifact@v3
         with:
-          name: axon_${{ needs.version.outputs.tag }}_${{ matrix.REL_PKG }}  
+          name: axon_${{ needs.version.outputs.tag }}_${{ matrix.REL_PKG }}
       - name: Upload tar assets
         uses: actions/upload-release-asset@v1
         env:
