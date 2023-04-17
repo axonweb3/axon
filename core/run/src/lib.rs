@@ -144,7 +144,7 @@ impl Axon {
         let mut mpt = MPTTrie::new(Arc::clone(&trie_db));
 
         self.insert_accounts(&mut mpt).await?;
-        self.execute_transactions(&mut mpt, trie_db, &storage)
+        self.execute_transactions(&mut mpt, &trie_db, &storage)
             .await?;
 
         log::info!("The genesis block is created {:?}", self.genesis.block);
@@ -171,19 +171,18 @@ impl Axon {
     async fn execute_transactions<S, DB>(
         &mut self,
         mpt: &mut MPTTrie<RocksTrieDB>,
-        trie_db: Arc<DB>,
+        trie_db: &Arc<DB>,
         storage: &Arc<S>,
     ) -> ProtocolResult<()>
     where
         S: Storage + 'static,
         DB: TrieDB + 'static,
     {
-        let proposal = Proposal::from(&self.genesis.block);
         let executor = AxonExecutor::default();
         let mut backend = AxonExecutorAdapter::from_root(
             mpt.commit()?,
-            trie_db,
-            Arc::clone(&storage),
+            Arc::clone(trie_db),
+            Arc::clone(storage),
             Proposal::new_without_state_root(&self.genesis.block.header).into(),
         )?;
 
@@ -480,7 +479,7 @@ impl Axon {
             current_block.header.state_root,
             Arc::clone(trie_db),
             Arc::clone(storage),
-            Proposal::from(current_block.header.clone()).into(),
+            Proposal::new_without_state_root(&current_block.header).into(),
         )
         .unwrap();
         system_contract::init(
@@ -534,19 +533,19 @@ impl Axon {
 
     async fn get_status_agent(
         &self,
-        storage: &Arc<ImplStorage<RocksAdapter>>,
+        storage: &Arc<impl Storage>,
         block: &Block,
         metadata: &Metadata,
     ) -> StatusAgent {
         let header = &block.header;
         let latest_proof = storage.get_latest_proof(Context::new()).await.unwrap();
         let current_consensus_status = CurrentStatus {
-            prev_hash:                  block.hash(),
-            last_number:                header.number,
-            max_tx_size:                metadata.max_tx_size.into(),
-            tx_num_limit:               metadata.tx_num_limit,
-            proof:                      latest_proof,
-            last_state_root:            if header.number == 0 {
+            prev_hash:       block.hash(),
+            last_number:     header.number,
+            max_tx_size:     metadata.max_tx_size.into(),
+            tx_num_limit:    metadata.tx_num_limit,
+            proof:           latest_proof,
+            last_state_root: if header.number == 0 {
                 self.state_root
             } else {
                 header.state_root
@@ -631,16 +630,11 @@ impl Axon {
             .unwrap();
     }
 
-    fn register_consensus_endpoint<M, N, S, DB>(
+    fn register_consensus_endpoint(
         &self,
         network_service: &mut NetworkService,
-        overlord_consensus: &Arc<OverlordConsensus<OverlordConsensusAdapter<M, N, S, DB>>>,
-    ) where
-        M: MemPool,
-        N: Rpc + PeerTrust + Gossip + Network + 'static,
-        S: Storage,
-        DB: TrieDB,
-    {
+        overlord_consensus: &Arc<impl Consensus + 'static>,
+    ) {
         // register consensus
         network_service
             .register_endpoint_handler(
