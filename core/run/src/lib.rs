@@ -16,10 +16,10 @@ use {
 
 use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
 use common_apm::{server::run_prometheus_server, tracing::global_tracer_register};
-use common_config_parser::types::Config;
+use common_config_parser::types::{Config, ConfigJaeger, ConfigPrometheus};
 use common_crypto::{
-    BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey, ToPublicKey,
-    UncompressedPublicKey,
+    BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey, Secp256k1PublicKey,
+    ToPublicKey, UncompressedPublicKey,
 };
 
 use core_api::{jsonrpc::run_jsonrpc_server, DefaultAPIAdapter};
@@ -33,7 +33,7 @@ use core_consensus::message::{
 };
 use core_consensus::status::{CurrentStatus, StatusAgent};
 use core_consensus::{
-    util::OverlordCrypto, ConsensusWal, DurationConfig, Node, OverlordConsensus,
+    util::OverlordCrypto, ConsensusWal, DurationConfig, OverlordConsensus,
     OverlordConsensusAdapter, OverlordSynchronization, SignedTxsWAL,
 };
 use core_executor::{
@@ -52,20 +52,31 @@ use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 
 #[cfg(unix)]
 use protocol::tokio::signal::unix as os_impl;
-use protocol::tokio::{runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep};
-use protocol::traits::{CommonStorage, Context, Executor, MemPool, Network, NodeInfo, Storage};
-use protocol::types::{
-    Account, Address, MerkleRoot, Proposal, RichBlock, Validator, NIL_DATA, RLP_NULL,
-};
 use protocol::{
     codec::{hex_decode, ProtocolCodec},
-    types::H160,
+    traits::SynchronizationAdapter,
+    types::{ValidatorExtend, H160},
 };
 use protocol::{
     lazy::{CHAIN_ID, CURRENT_STATE_ROOT},
     types::H256,
 };
 use protocol::{tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
+use protocol::{
+    tokio::{runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep},
+    types::Block,
+};
+use protocol::{
+    traits::{CommonStorage, Context, Executor, MemPool, Network, NodeInfo, Storage},
+    types::SignedTransaction,
+};
+use protocol::{
+    traits::{Gossip, PeerTrust, Rpc},
+    trie::DB as TrieDB,
+    types::{
+        Account, Address, MerkleRoot, Metadata, Proposal, RichBlock, Validator, NIL_DATA, RLP_NULL,
+    },
+};
 
 #[cfg(all(
     not(target_env = "msvc"),
@@ -142,6 +153,16 @@ impl Axon {
         )?);
         let mut mpt = MPTTrie::new(Arc::clone(&trie_db));
 
+        self.insert_accounts(&mut mpt).await?;
+        self.execute_transactions(&mut mpt, trie_db, &storage)
+            .await?;
+
+        log::info!("The genesis block is created {:?}", self.genesis.block);
+
+        Ok(())
+    }
+
+    async fn insert_accounts(&self, mpt: &mut MPTTrie<RocksTrieDB>) -> ProtocolResult<()> {
         let distribute_account = Account {
             nonce:        0u64.into(),
             balance:      self.config.accounts.balance,
@@ -170,12 +191,25 @@ impl Axon {
             mpt.insert(wallet.address().as_bytes(), &distribute_account)?;
         }
 
+        Ok(())
+    }
+
+    async fn execute_transactions<S, DB>(
+        &mut self,
+        mpt: &mut MPTTrie<RocksTrieDB>,
+        trie_db: Arc<DB>,
+        storage: &Arc<S>,
+    ) -> ProtocolResult<()>
+    where
+        S: Storage + 'static,
+        DB: TrieDB + 'static,
+    {
         let proposal = Proposal::from(&self.genesis.block);
         let executor = AxonExecutor::default();
         let mut backend = AxonExecutorAdapter::from_root(
             mpt.commit()?,
             trie_db,
-            Arc::clone(&storage),
+            Arc::clone(storage),
             proposal.into(),
         )?;
 
@@ -207,16 +241,15 @@ impl Axon {
             )
             .await?;
 
-        log::info!("The genesis block is created {:?}", self.genesis.block);
-
         Ok(())
     }
 
     pub async fn start(self) -> ProtocolResult<()> {
         // Start jaeger
-        Self::run_jaeger(self.config.clone());
+        Self::run_jaeger(self.config.jaeger.clone());
+
         // Start prometheus http server
-        Self::run_prometheus_server(self.config.clone());
+        Self::run_prometheus_server(self.config.prometheus.clone());
         #[cfg(all(
             not(target_env = "msvc"),
             not(target_os = "macos"),
@@ -225,164 +258,53 @@ impl Axon {
         tokio::spawn(common_memory_tracker::track_current_process());
 
         log::info!("node starts");
+
         observe_listen_port_occupancy(&[self.config.network.listening_address.clone()]).await?;
-        let config = self.config.clone();
-        // Init Block db
-        let path_block = config.data_path_for_block();
-        log::info!("Data path for block: {:?}", path_block);
 
-        let rocks_adapter = Arc::new(RocksAdapter::new(
-            path_block.clone(),
-            config.rocksdb.clone(),
-        )?);
-
-        #[cfg(all(
-            not(target_env = "msvc"),
-            not(target_os = "macos"),
-            feature = "jemalloc"
-        ))]
-        tokio::spawn(common_memory_tracker::track_db_process(
-            "blockdb",
-            rocks_adapter.inner_db(),
-        ));
-
-        let storage = Arc::new(ImplStorage::new(
-            rocks_adapter,
-            self.config.rocksdb.cache_size,
-        ));
+        // Init Block db and get the current block
+        let storage = self.init_storage();
+        let current_block = storage.get_latest_block(Context::new()).await?;
+        log::info!("At block number {}", current_block.header.number + 1);
 
         // Init network
-        let network_config = NetworkConfig::new()
-            .max_connections(config.network.max_connected_peers)?
-            .peer_store_dir(config.data_path.clone().join("peer_store"))
-            .ping_interval(config.network.ping_interval)
-            .max_frame_length(config.network.max_frame_length)
-            .send_buffer_size(config.network.send_buffer_size)
-            .recv_buffer_size(config.network.recv_buffer_size);
-
-        let network_privkey = config.privkey.as_string_trim0x();
-
-        // let allowlist = config.network.allowlist.clone().unwrap_or_default();
-        let network_config = network_config
-            .bootstraps(self.config.network.bootstraps.clone().unwrap_or_default().iter().map(|addr| addr.multi_address.clone()).collect())
-            // .allowlist(allowlist)?
-            .listen_addr(self.config.network.listening_address.clone())
-            .secio_keypair(&network_privkey)?;
-
-        let mut network_service = NetworkService::new(network_config);
-        network_service.set_chain_id(self.genesis.block.header.chain_id.to_string());
+        let mut network_service = self.init_network_service();
 
         // Init trie db
-        let path_state = config.data_path_for_state();
-        let trie_db = Arc::new(RocksTrieDB::new(
-            path_state,
-            config.rocksdb.clone(),
-            config.executor.triedb_cache_size,
-        )?);
-
-        #[cfg(all(
-            not(target_env = "msvc"),
-            not(target_os = "macos"),
-            feature = "jemalloc"
-        ))]
-        tokio::spawn(common_memory_tracker::track_db_process(
-            "triedb",
-            trie_db.inner_db(),
-        ));
+        let trie_db = self.init_trie_db();
 
         // Init full transactions wal
-        let txs_wal_path = config.data_path_for_txs_wal().to_str().unwrap().to_string();
-        let txs_wal = Arc::new(SignedTxsWAL::new(txs_wal_path));
-
-        // Init consensus wal
-        let consensus_wal_path = config
-            .data_path_for_consensus_wal()
+        let txs_wal_path = self
+            .config
+            .data_path_for_txs_wal()
             .to_str()
             .unwrap()
             .to_string();
-        let consensus_wal = Arc::new(ConsensusWal::new(consensus_wal_path));
+        let txs_wal = Arc::new(SignedTxsWAL::new(txs_wal_path));
 
-        // Recover signed transactions of current number
-        let current_block = storage.get_latest_block(Context::new()).await?;
-        let current_stxs = txs_wal.load_by_number(current_block.header.number + 1);
-        log::info!(
-            "Recover {} tx of number {} from wal",
-            current_stxs.len(),
-            current_block.header.number + 1
-        );
-
-        // Init system contract
+        // Init system contract when the chain is not first initiated
         if current_block.header.state_root != H256::default() {
-            let path_state = config.data_path_for_system_contract();
-            let mut backend = AxonExecutorAdapter::from_root(
-                current_block.header.state_root,
-                Arc::clone(&trie_db),
-                Arc::clone(&storage),
-                Proposal::from(current_block.header.clone()).into(),
-            )?;
-            system_contract::init(path_state, config.rocksdb.clone(), &mut backend);
+            self.init_system_contract(&trie_db, &current_block, &storage);
         }
 
+        // Init metadata handle which will be used in mempool
         let metadata_handle = Arc::new(MetadataHandle::default());
 
-        // Init mempool
-        let mempool_adapter = DefaultMemPoolAdapter::<Secp256k1, _, _, _, InteroperationImpl>::new(
-            network_service.handle(),
-            Arc::clone(&storage),
-            Arc::clone(&trie_db),
-            Arc::clone(&metadata_handle),
-            self.genesis.block.header.chain_id,
-            self.genesis.block.header.gas_limit.as_u64(),
-            config.mempool.pool_size as usize,
-            config.mempool.broadcast_txs_size,
-            config.mempool.broadcast_txs_interval,
-        );
-        let mempool = Arc::new(
-            MemPoolImpl::new(
-                config.mempool.pool_size as usize,
-                config.mempool.timeout_gap,
-                mempool_adapter,
-                current_stxs.clone(),
-                config.crosschain_contract_address,
+        // Init mempool and recover signed transactions with the current block number
+        let current_stxs = txs_wal.load_by_number(current_block.header.number + 1);
+        log::info!("Recover {} txs from wal", current_stxs.len());
+
+        let mempool = self
+            .init_mempool(
+                &trie_db,
+                &network_service.handle(),
+                &storage,
+                &metadata_handle,
+                &current_stxs,
             )
-            .await,
-        );
+            .await;
 
-        let monitor_mempool = Arc::clone(&mempool);
-        tokio::spawn(async move {
-            let interval = Duration::from_millis(1000);
-            loop {
-                sleep(interval).await;
-                MEMPOOL_LEN_GAUGE.set(monitor_mempool.len() as i64);
-                MEMPOOL_CO_QUEUE_LEN.set(monitor_mempool.len() as i64);
-            }
-        });
-
-        // self private key
-        let hex_privkey = hex_decode(&config.privkey.as_string_trim0x())?;
-        let my_privkey =
-            Secp256k1PrivateKey::try_from(hex_privkey.as_ref()).map_err(MainError::Crypto)?;
-        let my_pubkey = my_privkey.pub_key();
-        let my_address = Address::from_pubkey_bytes(my_pubkey.to_uncompressed_bytes())?;
-
-        // register broadcast new transaction
-        network_service.register_endpoint_handler(
-            END_GOSSIP_NEW_TXS,
-            NewTxsHandler::new(Arc::clone(&mempool)),
-        )?;
-
-        // register pull txs from other node
-        network_service.register_endpoint_handler(
-            RPC_PULL_TXS,
-            PullTxsHandler::new(Arc::new(network_service.handle()), Arc::clone(&mempool)),
-        )?;
-        network_service.register_rpc_response(RPC_RESP_PULL_TXS)?;
-
-        network_service.register_rpc_response(RPC_RESP_PULL_TXS_SYNC)?;
-
+        // Get the validator list from current metadata for consensus initialization
         let metadata = metadata_handle.get_metadata_by_block_number(current_block.header.number)?;
-
-        // Init Consensus
         let validators: Vec<Validator> = metadata
             .verifier_list
             .iter()
@@ -391,62 +313,19 @@ impl Axon {
                 propose_weight: v.propose_weight,
                 vote_weight:    v.vote_weight,
             })
-            .collect();
+            .collect::<Vec<_>>();
 
-        let node_info = NodeInfo {
-            chain_id:     self.genesis.block.header.chain_id,
-            self_address: my_address.clone(),
-            self_pub_key: my_pubkey.to_bytes(),
-        };
-        let current_header = &current_block.header;
-        let current_number = current_block.header.number;
-        let latest_proof = storage.get_latest_proof(Context::new()).await?;
-
-        let current_consensus_status = CurrentStatus {
-            prev_hash:                  current_block.hash(),
-            last_number:                current_header.number,
-            max_tx_size:                metadata.max_tx_size.into(),
-            tx_num_limit:               metadata.tx_num_limit,
-            last_checkpoint_block_hash: metadata.last_checkpoint_block_hash,
-            proof:                      latest_proof,
-            last_state_root:            if current_number == 0 {
-                self.state_root
-            } else {
-                current_header.state_root
-            },
-        };
-
-        CURRENT_STATE_ROOT.swap(Arc::new(current_consensus_status.last_state_root));
-        CHAIN_ID.swap(Arc::new(current_header.chain_id));
-
-        // set args in mempool
+        // Set args in mempool
         mempool.set_args(
             Context::new(),
-            current_header.state_root,
+            current_block.header.state_root,
             metadata.gas_limit,
             metadata.max_tx_size,
         );
 
-        let consensus_interval = metadata.interval;
-        let status_agent = StatusAgent::new(current_consensus_status);
-
-        let mut bls_pub_keys = HashMap::new();
-        for validator_extend in metadata.verifier_list.iter() {
-            let address = validator_extend.pub_key.as_bytes();
-            let hex_pubkey = hex_decode(&validator_extend.bls_pub_key.as_string_trim0x())?;
-            let pub_key = BlsPublicKey::try_from(hex_pubkey.as_ref()).map_err(MainError::Crypto)?;
-            bls_pub_keys.insert(address, pub_key);
-        }
-
-        let bls_priv_key =
-            BlsPrivateKey::try_from(hex_privkey.as_ref()).map_err(MainError::Crypto)?;
-
-        let crypto = Arc::new(OverlordCrypto::new(
-            bls_priv_key,
-            bls_pub_keys,
-            String::new(),
-        ));
-
+        // Init overlord consensus and synchronization
+        let lock = Arc::new(AsyncMutex::new(()));
+        let crypto = self.init_crypto(&metadata.verifier_list);
         let consensus_adapter = OverlordConsensusAdapter::<_, _, _, _>::new(
             Arc::new(network_service.handle()),
             Arc::clone(&mempool),
@@ -455,82 +334,40 @@ impl Axon {
             Arc::clone(&metadata_handle),
             Arc::clone(&crypto),
         )?;
-
         let consensus_adapter = Arc::new(consensus_adapter);
+        let status_agent = self
+            .get_status_agent(&storage, &current_block, &metadata)
+            .await;
 
-        let lock = Arc::new(AsyncMutex::new(()));
-
-        let overlord_consensus = Arc::new(OverlordConsensus::new(
-            status_agent.clone(),
-            node_info,
-            Arc::clone(&crypto),
-            Arc::clone(&txs_wal),
-            Arc::clone(&consensus_adapter),
-            Arc::clone(&lock),
-            Arc::clone(&consensus_wal),
-        ));
+        let overlord_consensus = self.init_overlord_consensus(
+            &status_agent,
+            &txs_wal,
+            &crypto,
+            &lock,
+            &consensus_adapter,
+        );
 
         consensus_adapter.set_overlord_handler(overlord_consensus.get_overlord_handler());
 
         let synchronization = Arc::new(OverlordSynchronization::<_>::new(
-            config.consensus.sync_txs_chunk_size,
+            self.config.consensus.sync_txs_chunk_size,
             consensus_adapter,
             status_agent.clone(),
             lock,
         ));
 
-        let peer_ids = metadata
-            .verifier_list
-            .iter()
-            .map(|v| PeerId::from_pubkey_bytes(v.pub_key.as_bytes()).map(PeerIdExt::into_bytes_ext))
-            .collect::<Result<Vec<_>, _>>()?;
+        self.tag_consensus(&network_service, &metadata.verifier_list);
 
-        network_service
-            .handle()
-            .tag_consensus(Context::new(), peer_ids)?;
-
-        // register consensus
-        network_service.register_endpoint_handler(
-            END_GOSSIP_SIGNED_PROPOSAL,
-            ProposalMessageHandler::new(Arc::clone(&overlord_consensus)),
-        )?;
-        network_service.register_endpoint_handler(
-            END_GOSSIP_AGGREGATED_VOTE,
-            QCMessageHandler::new(Arc::clone(&overlord_consensus)),
-        )?;
-        network_service.register_endpoint_handler(
-            END_GOSSIP_SIGNED_VOTE,
-            VoteMessageHandler::new(Arc::clone(&overlord_consensus)),
-        )?;
-        network_service.register_endpoint_handler(
-            END_GOSSIP_SIGNED_CHOKE,
-            ChokeMessageHandler::new(Arc::clone(&overlord_consensus)),
-        )?;
-        network_service.register_endpoint_handler(
-            BROADCAST_HEIGHT,
-            RemoteHeightMessageHandler::new(Arc::clone(&synchronization)),
-        )?;
-        network_service.register_endpoint_handler(
-            RPC_SYNC_PULL_BLOCK,
-            PullBlockRpcHandler::new(Arc::new(network_service.handle()), Arc::clone(&storage)),
-        )?;
-
-        network_service.register_endpoint_handler(
-            RPC_SYNC_PULL_PROOF,
-            PullProofRpcHandler::new(Arc::new(network_service.handle()), Arc::clone(&storage)),
-        )?;
-
-        network_service.register_endpoint_handler(
-            RPC_SYNC_PULL_TXS,
-            PullTxsRpcHandler::new(Arc::new(network_service.handle()), Arc::clone(&storage)),
-        )?;
-        network_service.register_rpc_response(RPC_RESP_SYNC_PULL_BLOCK)?;
-        network_service.register_rpc_response(RPC_RESP_SYNC_PULL_PROOF)?;
-        network_service.register_rpc_response(RPC_RESP_SYNC_PULL_TXS)?;
+        // register endpoints to network service
+        self.register_mempool_endpoint(&mut network_service, &mempool);
+        self.register_consensus_endpoint(&mut network_service, &overlord_consensus);
+        self.register_synchronization_endpoint(&mut network_service, &synchronization);
+        self.register_storage_endpoint(&mut network_service, &storage);
+        self.register_rpc(&mut network_service);
 
         let network_handle = network_service.handle();
 
-        // Run network
+        // Run network service at the end of its life cycle
         tokio::spawn(network_service.run());
 
         // Run API
@@ -550,15 +387,414 @@ impl Axon {
         });
 
         // Run consensus
-        let authority_list = validators
-            .iter()
-            .map(|v| Node {
-                address:        v.pub_key.clone(),
-                propose_weight: v.propose_weight,
-                vote_weight:    v.vote_weight,
-            })
-            .collect::<Vec<_>>();
+        Self::run_overlord_consensus(metadata, validators, current_block, overlord_consensus);
 
+        Self::set_ctrl_c_handle().await;
+
+        Ok(())
+    }
+
+    fn init_storage(&self) -> Arc<ImplStorage<RocksAdapter>> {
+        let path_block = self.config.data_path_for_block();
+
+        let rocks_adapter =
+            Arc::new(RocksAdapter::new(path_block, self.config.rocksdb.clone()).unwrap());
+
+        #[cfg(all(
+            not(target_env = "msvc"),
+            not(target_os = "macos"),
+            feature = "jemalloc"
+        ))]
+        tokio::spawn(common_memory_tracker::track_db_process(
+            "blockdb",
+            rocks_adapter.inner_db(),
+        ));
+
+        Arc::new(ImplStorage::new(
+            rocks_adapter,
+            self.config.rocksdb.cache_size,
+        ))
+    }
+
+    fn init_network_service(&self) -> NetworkService {
+        let network_config = NetworkConfig::from_config(&self.config).unwrap();
+        let network_service = NetworkService::new(network_config);
+        network_service.set_chain_id(self.genesis.block.header.chain_id.to_string());
+        network_service
+    }
+
+    fn init_trie_db(&self) -> Arc<RocksTrieDB> {
+        let path_state = self.config.data_path_for_state();
+        let trie_db = Arc::new(
+            RocksTrieDB::new(
+                path_state,
+                self.config.rocksdb.clone(),
+                self.config.executor.triedb_cache_size,
+            )
+            .unwrap(),
+        );
+
+        #[cfg(all(
+            not(target_env = "msvc"),
+            not(target_os = "macos"),
+            feature = "jemalloc"
+        ))]
+        tokio::spawn(common_memory_tracker::track_db_process(
+            "triedb",
+            trie_db.inner_db(),
+        ));
+
+        trie_db
+    }
+
+    async fn init_mempool<N, S, DB>(
+        &self,
+        trie_db: &Arc<DB>,
+        network_service: &N,
+        storage: &Arc<S>,
+        metadata_handle: &Arc<MetadataHandle>,
+        signed_txs: &[SignedTransaction],
+    ) -> Arc<MemPoolImpl<DefaultMemPoolAdapter<Secp256k1, N, S, DB, InteroperationImpl>>>
+    where
+        N: Rpc + PeerTrust + Gossip + Clone + Unpin + 'static,
+        S: Storage + 'static,
+        DB: TrieDB + 'static,
+    {
+        let mempool_adapter = DefaultMemPoolAdapter::<Secp256k1, _, _, _, InteroperationImpl>::new(
+            network_service.clone(),
+            Arc::clone(storage),
+            Arc::clone(trie_db),
+            Arc::clone(metadata_handle),
+            self.genesis.block.header.chain_id,
+            self.genesis.block.header.gas_limit.as_u64(),
+            self.config.mempool.pool_size as usize,
+            self.config.mempool.broadcast_txs_size,
+            self.config.mempool.broadcast_txs_interval,
+        );
+        let mempool = Arc::new(
+            MemPoolImpl::new(
+                self.config.mempool.pool_size as usize,
+                self.config.mempool.timeout_gap,
+                mempool_adapter,
+                signed_txs.to_owned(),
+                self.config.crosschain_contract_address,
+            )
+            .await,
+        );
+
+        // Clone the mempool and spawn a thread to monitor the mempool length.
+        let monitor_mempool = Arc::clone(&mempool);
+        tokio::spawn(async move {
+            let interval = Duration::from_millis(1000);
+            loop {
+                sleep(interval).await;
+                MEMPOOL_LEN_GAUGE.set(monitor_mempool.len() as i64);
+                MEMPOOL_CO_QUEUE_LEN.set(monitor_mempool.len() as i64);
+            }
+        });
+
+        mempool
+    }
+
+    fn init_system_contract(
+        &self,
+        trie_db: &Arc<RocksTrieDB>,
+        current_block: &Block,
+        storage: &Arc<ImplStorage<RocksAdapter>>,
+    ) {
+        let path_system_contract = self.config.data_path_for_system_contract();
+        let mut backend = AxonExecutorAdapter::from_root(
+            current_block.header.state_root,
+            Arc::clone(trie_db),
+            Arc::clone(storage),
+            Proposal::from(current_block.header.clone()).into(),
+        )
+        .unwrap();
+        system_contract::init(
+            path_system_contract,
+            self.config.rocksdb.clone(),
+            &mut backend,
+        );
+    }
+
+    fn get_my_pubkey(&self, hex_privkey: Vec<u8>) -> Secp256k1PublicKey {
+        let my_privkey = Secp256k1PrivateKey::try_from(hex_privkey.as_ref())
+            .map_err(MainError::Crypto)
+            .unwrap();
+
+        my_privkey.pub_key()
+    }
+
+    fn get_my_address(&self, hex_privkey: Vec<u8>) -> Address {
+        let my_pubkey = self.get_my_pubkey(hex_privkey);
+
+        Address::from_pubkey_bytes(my_pubkey.to_uncompressed_bytes()).unwrap()
+    }
+
+    fn get_my_hex_privkey(&self) -> Vec<u8> {
+        hex_decode(&self.config.privkey.as_string_trim0x()).unwrap()
+    }
+
+    fn init_crypto(&self, validators: &[ValidatorExtend]) -> Arc<OverlordCrypto> {
+        // self private key
+        let hex_privkey = self.get_my_hex_privkey();
+        let bls_priv_key = BlsPrivateKey::try_from(hex_privkey.as_ref())
+            .map_err(MainError::Crypto)
+            .unwrap();
+
+        let mut bls_pub_keys = HashMap::new();
+        for validator_extend in validators.iter() {
+            let address = validator_extend.pub_key.as_bytes();
+            let hex_pubkey = hex_decode(&validator_extend.bls_pub_key.as_string_trim0x()).unwrap();
+            let pub_key = BlsPublicKey::try_from(hex_pubkey.as_ref())
+                .map_err(MainError::Crypto)
+                .unwrap();
+            bls_pub_keys.insert(address, pub_key);
+        }
+
+        Arc::new(OverlordCrypto::new(
+            bls_priv_key,
+            bls_pub_keys,
+            String::new(),
+        ))
+    }
+
+    async fn get_status_agent(
+        &self,
+        storage: &Arc<ImplStorage<RocksAdapter>>,
+        block: &Block,
+        metadata: &Metadata,
+    ) -> StatusAgent {
+        let header = &block.header;
+        let latest_proof = storage.get_latest_proof(Context::new()).await.unwrap();
+        let current_consensus_status = CurrentStatus {
+            prev_hash:                  block.hash(),
+            last_number:                header.number,
+            max_tx_size:                metadata.max_tx_size.into(),
+            tx_num_limit:               metadata.tx_num_limit,
+            last_checkpoint_block_hash: metadata.last_checkpoint_block_hash,
+            proof:                      latest_proof,
+            last_state_root:            if header.number == 0 {
+                self.state_root
+            } else {
+                header.state_root
+            },
+        };
+
+        CURRENT_STATE_ROOT.swap(Arc::new(current_consensus_status.last_state_root));
+        CHAIN_ID.swap(Arc::new(header.chain_id));
+
+        StatusAgent::new(current_consensus_status)
+    }
+
+    fn init_overlord_consensus<M, N, S, DB>(
+        &self,
+        status_agent: &StatusAgent,
+        txs_wal: &Arc<SignedTxsWAL>,
+        crypto: &Arc<OverlordCrypto>,
+        lock: &Arc<AsyncMutex<()>>,
+        consensus_adapter: &Arc<OverlordConsensusAdapter<M, N, S, DB>>,
+    ) -> Arc<OverlordConsensus<OverlordConsensusAdapter<M, N, S, DB>>>
+    where
+        M: MemPool,
+        N: Rpc + PeerTrust + Gossip + Network + 'static,
+        S: Storage,
+        DB: TrieDB,
+    {
+        let consensus_wal_path = self
+            .config
+            .data_path_for_consensus_wal()
+            .to_str()
+            .unwrap()
+            .to_string();
+        let consensus_wal = Arc::new(ConsensusWal::new(consensus_wal_path));
+
+        let hex_privkey = self.get_my_hex_privkey();
+        let node_info = NodeInfo {
+            chain_id:     self.genesis.block.header.chain_id,
+            self_address: self.get_my_address(hex_privkey.clone()),
+            self_pub_key: self.get_my_pubkey(hex_privkey).to_bytes(),
+        };
+
+        Arc::new(OverlordConsensus::new(
+            status_agent.clone(),
+            node_info,
+            Arc::clone(crypto),
+            Arc::clone(txs_wal),
+            Arc::clone(consensus_adapter),
+            Arc::clone(lock),
+            Arc::clone(&consensus_wal),
+        ))
+    }
+
+    fn tag_consensus(&self, network_service: &NetworkService, validators: &[ValidatorExtend]) {
+        let peer_ids = validators
+            .iter()
+            .map(|v| PeerId::from_pubkey_bytes(v.pub_key.as_bytes()).map(PeerIdExt::into_bytes_ext))
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+
+        network_service
+            .handle()
+            .tag_consensus(Context::new(), peer_ids)
+            .unwrap();
+    }
+
+    fn register_mempool_endpoint(
+        &self,
+        network_service: &mut NetworkService,
+        mempool: &Arc<impl MemPool + 'static>,
+    ) {
+        // register broadcast new transaction
+        network_service
+            .register_endpoint_handler(END_GOSSIP_NEW_TXS, NewTxsHandler::new(Arc::clone(mempool)))
+            .unwrap();
+
+        // register pull txs from other node
+        network_service
+            .register_endpoint_handler(
+                RPC_PULL_TXS,
+                PullTxsHandler::new(Arc::new(network_service.handle()), Arc::clone(mempool)),
+            )
+            .unwrap();
+    }
+
+    fn register_consensus_endpoint<M, N, S, DB>(
+        &self,
+        network_service: &mut NetworkService,
+        overlord_consensus: &Arc<OverlordConsensus<OverlordConsensusAdapter<M, N, S, DB>>>,
+    ) where
+        M: MemPool,
+        N: Rpc + PeerTrust + Gossip + Network + 'static,
+        S: Storage,
+        DB: TrieDB,
+    {
+        // register consensus
+        network_service
+            .register_endpoint_handler(
+                END_GOSSIP_SIGNED_PROPOSAL,
+                ProposalMessageHandler::new(Arc::clone(overlord_consensus)),
+            )
+            .unwrap();
+        network_service
+            .register_endpoint_handler(
+                END_GOSSIP_AGGREGATED_VOTE,
+                QCMessageHandler::new(Arc::clone(overlord_consensus)),
+            )
+            .unwrap();
+        network_service
+            .register_endpoint_handler(
+                END_GOSSIP_SIGNED_VOTE,
+                VoteMessageHandler::new(Arc::clone(overlord_consensus)),
+            )
+            .unwrap();
+        network_service
+            .register_endpoint_handler(
+                END_GOSSIP_SIGNED_CHOKE,
+                ChokeMessageHandler::new(Arc::clone(overlord_consensus)),
+            )
+            .unwrap();
+    }
+
+    fn register_synchronization_endpoint(
+        &self,
+        network_service: &mut NetworkService,
+        synchronization: &Arc<OverlordSynchronization<impl SynchronizationAdapter + 'static>>,
+    ) {
+        network_service
+            .register_endpoint_handler(
+                BROADCAST_HEIGHT,
+                RemoteHeightMessageHandler::new(Arc::clone(synchronization)),
+            )
+            .unwrap();
+    }
+
+    fn register_storage_endpoint(
+        &self,
+        network_service: &mut NetworkService,
+        storage: &Arc<ImplStorage<RocksAdapter>>,
+    ) {
+        // register storage
+        network_service
+            .register_endpoint_handler(
+                RPC_SYNC_PULL_BLOCK,
+                PullBlockRpcHandler::new(Arc::new(network_service.handle()), Arc::clone(storage)),
+            )
+            .unwrap();
+
+        network_service
+            .register_endpoint_handler(
+                RPC_SYNC_PULL_PROOF,
+                PullProofRpcHandler::new(Arc::new(network_service.handle()), Arc::clone(storage)),
+            )
+            .unwrap();
+
+        network_service
+            .register_endpoint_handler(
+                RPC_SYNC_PULL_TXS,
+                PullTxsRpcHandler::new(Arc::new(network_service.handle()), Arc::clone(storage)),
+            )
+            .unwrap();
+    }
+
+    fn register_rpc(&self, network_service: &mut NetworkService) {
+        network_service
+            .register_rpc_response(RPC_RESP_PULL_TXS)
+            .unwrap();
+        network_service
+            .register_rpc_response(RPC_RESP_PULL_TXS_SYNC)
+            .unwrap();
+        network_service
+            .register_rpc_response(RPC_RESP_SYNC_PULL_BLOCK)
+            .unwrap();
+        network_service
+            .register_rpc_response(RPC_RESP_SYNC_PULL_PROOF)
+            .unwrap();
+        network_service
+            .register_rpc_response(RPC_RESP_SYNC_PULL_TXS)
+            .unwrap();
+    }
+
+    fn run_jaeger(config: Option<ConfigJaeger>) {
+        if let Some(jaeger_config) = config {
+            let service_name = match jaeger_config.service_name {
+                Some(name) => name,
+                None => "axon".to_string(),
+            };
+
+            let tracing_address = match jaeger_config.tracing_address {
+                Some(address) => address,
+                None => std::net::SocketAddr::from(([0, 0, 0, 0], 6831)),
+            };
+
+            let tracing_batch_size = jaeger_config.tracing_batch_size.unwrap_or(50);
+
+            global_tracer_register(&service_name, tracing_address, tracing_batch_size);
+            log::info!("jaeger started");
+        };
+    }
+
+    fn run_prometheus_server(config: Option<ConfigPrometheus>) {
+        let prometheus_listening_address = match config {
+            Some(prometheus_config) => prometheus_config.listening_address.unwrap(),
+            None => std::net::SocketAddr::from(([0, 0, 0, 0], 8100)),
+        };
+        tokio::spawn(run_prometheus_server(prometheus_listening_address));
+
+        log::info!("prometheus started");
+    }
+
+    fn run_overlord_consensus<M, N, S, DB>(
+        metadata: Metadata,
+        validators: Vec<Validator>,
+        current_block: Block,
+        overlord_consensus: Arc<OverlordConsensus<OverlordConsensusAdapter<M, N, S, DB>>>,
+    ) where
+        M: MemPool,
+        N: Rpc + PeerTrust + Gossip + Network + 'static,
+        S: Storage,
+        DB: TrieDB,
+    {
         let timer_config = DurationConfig {
             propose_ratio:   metadata.propose_ratio,
             prevote_ratio:   metadata.prevote_ratio,
@@ -569,9 +805,9 @@ impl Axon {
         tokio::spawn(async move {
             if let Err(e) = overlord_consensus
                 .run(
-                    current_number,
-                    consensus_interval,
-                    authority_list,
+                    current_block.header.number,
+                    metadata.interval,
+                    validators,
                     Some(timer_config),
                 )
                 .await
@@ -579,7 +815,9 @@ impl Axon {
                 log::error!("axon-consensus: {:?} error", e);
             }
         });
+    }
 
+    async fn set_ctrl_c_handle() {
         let ctrl_c_handler = tokio::spawn(async {
             #[cfg(windows)]
             let _ = tokio::signal::ctrl_c().await;
@@ -617,37 +855,6 @@ impl Axon {
             Self::set_profile(false);
             Self::dump_profile();
         }
-
-        Ok(())
-    }
-
-    fn run_jaeger(config: Config) {
-        if let Some(jaeger_config) = config.jaeger {
-            let service_name = match jaeger_config.service_name {
-                Some(name) => name,
-                None => "axon".to_string(),
-            };
-
-            let tracing_address = match jaeger_config.tracing_address {
-                Some(address) => address,
-                None => std::net::SocketAddr::from(([0, 0, 0, 0], 6831)),
-            };
-
-            let tracing_batch_size = jaeger_config.tracing_batch_size.unwrap_or(50);
-
-            global_tracer_register(&service_name, tracing_address, tracing_batch_size);
-            log::info!("jaeger start");
-        };
-    }
-
-    fn run_prometheus_server(config: Config) {
-        let prometheus_listening_address = match config.prometheus {
-            Some(prometheus_config) => prometheus_config.listening_address.unwrap(),
-            None => std::net::SocketAddr::from(([0, 0, 0, 0], 8100)),
-        };
-        tokio::spawn(run_prometheus_server(prometheus_listening_address));
-
-        log::info!("prometheus start");
     }
 
     fn panic_log(info: &PanicInfo) {

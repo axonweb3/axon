@@ -157,9 +157,18 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
         &self,
         init_height: u64,
         interval: u64,
-        authority_list: Vec<Node>,
+        validators: Vec<Validator>,
         timer_config: Option<DurationConfig>,
     ) -> ProtocolResult<()> {
+        let authority_list = validators
+            .into_iter()
+            .map(|v| Node {
+                address:        v.pub_key,
+                propose_weight: v.propose_weight,
+                vote_weight:    v.vote_weight,
+            })
+            .collect::<Vec<_>>();
+
         self.inner
             .run(init_height, interval, authority_list, timer_config)
             .await

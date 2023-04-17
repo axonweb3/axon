@@ -9,6 +9,7 @@ use tentacle::{
     secio::{PeerId, SecioKeyPair},
 };
 
+use common_config_parser::types::Config;
 use protocol::{codec::hex_decode, ProtocolResult};
 
 use crate::error::NetworkError;
@@ -132,9 +133,21 @@ impl NetworkConfig {
         }
     }
 
-    pub fn listen_addr(mut self, addr: Multiaddr) -> Self {
-        self.default_listen = addr;
-        self
+    pub fn from_config(config: &Config) -> ProtocolResult<Self> {
+        let mut network_config = Self::new()
+            .peer_store_dir(config.data_path.clone().join("peer_store"))
+            .ping_interval(config.network.ping_interval)
+            .max_frame_length(config.network.max_frame_length)
+            .send_buffer_size(config.network.send_buffer_size)
+            .recv_buffer_size(config.network.recv_buffer_size)
+            .bootstraps(config.network.bootstraps.clone().unwrap_or_default().iter().map(|addr| addr.multi_address.clone()).collect())
+            // .allowlist(allowlist)?
+            .listen_addr(config.network.listening_address.clone())
+            .secio_keypair(&config.privkey.as_string_trim0x());
+
+        network_config = network_config.max_connections(config.network.max_connected_peers)?;
+
+        Ok(network_config)
     }
 
     pub fn max_connections(mut self, max: Option<usize>) -> ProtocolResult<Self> {
@@ -142,11 +155,14 @@ impl NetworkConfig {
             if max <= self.inbound_conn_limit {
                 return Err(NetworkError::InboundLimitEqualOrSmallerThanMaxConn.into());
             }
-
             self.max_connections = max;
         }
-
         Ok(self)
+    }
+
+    pub fn listen_addr(mut self, addr: Multiaddr) -> Self {
+        self.default_listen = addr;
+        self
     }
 
     pub fn max_frame_length(mut self, max: Option<usize>) -> Self {
@@ -178,16 +194,14 @@ impl NetworkConfig {
         self
     }
 
-    pub fn secio_keypair(mut self, sk_hex: &str) -> ProtocolResult<Self> {
-        let maybe_skp = hex_decode(sk_hex).map(SecioKeyPair::secp256k1_raw_key);
+    pub fn secio_keypair(mut self, sk_hex: &str) -> Self {
+        let skp = hex_decode(sk_hex)
+            .map(SecioKeyPair::secp256k1_raw_key)
+            .unwrap()
+            .unwrap();
+        self.secio_keypair = skp;
 
-        if let Ok(Ok(skp)) = maybe_skp {
-            self.secio_keypair = skp;
-
-            Ok(self)
-        } else {
-            Err(NetworkError::InvalidPrivateKey.into())
-        }
+        self
     }
 
     pub fn ping_interval(mut self, interval: Option<u64>) -> Self {

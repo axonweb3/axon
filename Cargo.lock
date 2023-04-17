@@ -1801,6 +1801,7 @@ dependencies = [
  "bloom-filters",
  "common-apm",
  "common-apm-derive",
+ "common-config-parser",
  "derive_more",
  "env_logger",
  "faketime",
