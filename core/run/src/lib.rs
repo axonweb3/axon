@@ -16,7 +16,7 @@ use {
 
 use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
 use common_apm::{server::run_prometheus_server, tracing::global_tracer_register};
-use common_config_parser::types::Config;
+use common_config_parser::types::{Config, ConfigJaeger, ConfigPrometheus};
 use common_crypto::{
     BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey, Secp256k1PublicKey,
     ToPublicKey, UncompressedPublicKey,
@@ -46,16 +46,12 @@ use core_mempool::{
     RPC_PULL_TXS, RPC_RESP_PULL_TXS, RPC_RESP_PULL_TXS_SYNC,
 };
 use core_network::{
-    observe_listen_port_occupancy, NetworkConfig, NetworkService, NetworkServiceHandle, PeerId,
-    PeerIdExt,
+    observe_listen_port_occupancy, NetworkConfig, NetworkService, PeerId, PeerIdExt,
 };
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 
 #[cfg(unix)]
 use protocol::tokio::signal::unix as os_impl;
-use protocol::types::{
-    Account, Address, MerkleRoot, Metadata, Proposal, RichBlock, Validator, NIL_DATA, RLP_NULL,
-};
 use protocol::{
     codec::{hex_decode, ProtocolCodec},
     traits::SynchronizationAdapter,
@@ -74,6 +70,13 @@ use protocol::{
     traits::{CommonStorage, Context, Executor, MemPool, Network, NodeInfo, Storage},
     types::SignedTransaction,
 };
+use protocol::{
+    traits::{Gossip, PeerTrust, Rpc},
+    trie::DB as TrieDB,
+    types::{
+        Account, Address, MerkleRoot, Metadata, Proposal, RichBlock, Validator, NIL_DATA, RLP_NULL,
+    },
+};
 
 #[cfg(all(
     not(target_env = "msvc"),
@@ -89,25 +92,6 @@ pub struct Axon {
     genesis:    RichBlock,
     state_root: MerkleRoot,
 }
-
-type MempoolType = MemPoolImpl<
-    DefaultMemPoolAdapter<
-        Secp256k1,
-        NetworkServiceHandle,
-        ImplStorage<RocksAdapter>,
-        RocksTrieDB,
-        InteroperationImpl,
-    >,
->;
-
-type OverlordConsensusAdapterType = OverlordConsensusAdapter<
-    MempoolType,
-    NetworkServiceHandle,
-    ImplStorage<RocksAdapter>,
-    RocksTrieDB,
->;
-
-type OverlordConsensusType = OverlordConsensus<OverlordConsensusAdapterType>;
 
 impl Axon {
     pub fn new(config: Config, genesis: RichBlock) -> Axon {
@@ -169,6 +153,16 @@ impl Axon {
         )?);
         let mut mpt = MPTTrie::new(Arc::clone(&trie_db));
 
+        self.insert_accounts(&mut mpt).await?;
+        self.execute_transactions(&mut mpt, trie_db, &storage)
+            .await?;
+
+        log::info!("The genesis block is created {:?}", self.genesis.block);
+
+        Ok(())
+    }
+
+    async fn insert_accounts(&self, mpt: &mut MPTTrie<RocksTrieDB>) -> ProtocolResult<()> {
         let distribute_account = Account {
             nonce:        0u64.into(),
             balance:      self.config.accounts.balance,
@@ -197,12 +191,25 @@ impl Axon {
             mpt.insert(wallet.address().as_bytes(), &distribute_account)?;
         }
 
+        Ok(())
+    }
+
+    async fn execute_transactions<S, DB>(
+        &mut self,
+        mpt: &mut MPTTrie<RocksTrieDB>,
+        trie_db: Arc<DB>,
+        storage: &Arc<S>,
+    ) -> ProtocolResult<()>
+    where
+        S: Storage + 'static,
+        DB: TrieDB + 'static,
+    {
         let proposal = Proposal::from(&self.genesis.block);
         let executor = AxonExecutor::default();
         let mut backend = AxonExecutorAdapter::from_root(
             mpt.commit()?,
             trie_db,
-            Arc::clone(&storage),
+            Arc::clone(storage),
             proposal.into(),
         )?;
 
@@ -234,17 +241,15 @@ impl Axon {
             )
             .await?;
 
-        log::info!("The genesis block is created {:?}", self.genesis.block);
-
         Ok(())
     }
 
     pub async fn start(self) -> ProtocolResult<()> {
         // Start jaeger
-        Self::run_jaeger(self.config.clone());
+        Self::run_jaeger(self.config.jaeger.clone());
 
         // Start prometheus http server
-        Self::run_prometheus_server(self.config.clone());
+        Self::run_prometheus_server(self.config.prometheus.clone());
         #[cfg(all(
             not(target_env = "msvc"),
             not(target_os = "macos"),
@@ -256,26 +261,29 @@ impl Axon {
 
         observe_listen_port_occupancy(&[self.config.network.listening_address.clone()]).await?;
 
-        let config = self.config.clone();
-
         // Init Block db and get the current block
-        let storage = self.init_storage(&config);
+        let storage = self.init_storage();
         let current_block = storage.get_latest_block(Context::new()).await?;
         log::info!("At block number {}", current_block.header.number + 1);
 
         // Init network
-        let mut network_service = self.init_network_service(&config);
+        let mut network_service = self.init_network_service();
 
         // Init trie db
-        let trie_db = self.init_trie_db(&config);
+        let trie_db = self.init_trie_db();
 
         // Init full transactions wal
-        let txs_wal_path = config.data_path_for_txs_wal().to_str().unwrap().to_string();
+        let txs_wal_path = self
+            .config
+            .data_path_for_txs_wal()
+            .to_str()
+            .unwrap()
+            .to_string();
         let txs_wal = Arc::new(SignedTxsWAL::new(txs_wal_path));
 
         // Init system contract when the chain is not first initiated
         if current_block.header.state_root != H256::default() {
-            self.init_system_contract(&trie_db, &config, &current_block, &storage);
+            self.init_system_contract(&trie_db, &current_block, &storage);
         }
 
         // Init metadata handle which will be used in mempool
@@ -287,9 +295,8 @@ impl Axon {
 
         let mempool = self
             .init_mempool(
-                &config,
                 &trie_db,
-                &network_service,
+                &network_service.handle(),
                 &storage,
                 &metadata_handle,
                 &current_stxs,
@@ -318,7 +325,7 @@ impl Axon {
 
         // Init overlord consensus and synchronization
         let lock = Arc::new(AsyncMutex::new(()));
-        let crypto = self.init_crypto(&config, &metadata.verifier_list);
+        let crypto = self.init_crypto(&metadata.verifier_list);
         let consensus_adapter = OverlordConsensusAdapter::<_, _, _, _>::new(
             Arc::new(network_service.handle()),
             Arc::clone(&mempool),
@@ -333,7 +340,6 @@ impl Axon {
             .await;
 
         let overlord_consensus = self.init_overlord_consensus(
-            &config,
             &status_agent,
             &txs_wal,
             &crypto,
@@ -344,7 +350,7 @@ impl Axon {
         consensus_adapter.set_overlord_handler(overlord_consensus.get_overlord_handler());
 
         let synchronization = Arc::new(OverlordSynchronization::<_>::new(
-            config.consensus.sync_txs_chunk_size,
+            self.config.consensus.sync_txs_chunk_size,
             consensus_adapter,
             status_agent.clone(),
             lock,
@@ -371,7 +377,7 @@ impl Axon {
             Arc::clone(&trie_db),
             Arc::new(network_handle),
         ));
-        let _handles = run_jsonrpc_server(config.clone(), api_adapter).await?;
+        let _handles = run_jsonrpc_server(self.config.clone(), api_adapter).await?;
 
         // Run sync
         tokio::spawn(async move {
@@ -388,11 +394,11 @@ impl Axon {
         Ok(())
     }
 
-    fn init_storage(&self, config: &Config) -> Arc<ImplStorage<RocksAdapter>> {
-        let path_block = config.data_path_for_block();
+    fn init_storage(&self) -> Arc<ImplStorage<RocksAdapter>> {
+        let path_block = self.config.data_path_for_block();
 
         let rocks_adapter =
-            Arc::new(RocksAdapter::new(path_block, config.rocksdb.clone()).unwrap());
+            Arc::new(RocksAdapter::new(path_block, self.config.rocksdb.clone()).unwrap());
 
         #[cfg(all(
             not(target_env = "msvc"),
@@ -410,36 +416,20 @@ impl Axon {
         ))
     }
 
-    fn init_network_service(&self, config: &Config) -> NetworkService {
-        let network_config = NetworkConfig::new()
-            .max_connections(config.network.max_connected_peers)
-            .peer_store_dir(config.data_path.clone().join("peer_store"))
-            .ping_interval(config.network.ping_interval)
-            .max_frame_length(config.network.max_frame_length)
-            .send_buffer_size(config.network.send_buffer_size)
-            .recv_buffer_size(config.network.recv_buffer_size);
-
-        let network_privkey = config.privkey.as_string_trim0x();
-
-        // let allowlist = config.network.allowlist.clone().unwrap_or_default();
-        let network_config = network_config
-            .bootstraps(self.config.network.bootstraps.clone().unwrap_or_default().iter().map(|addr| addr.multi_address.clone()).collect())
-            // .allowlist(allowlist)?
-            .listen_addr(self.config.network.listening_address.clone())
-            .secio_keypair(&network_privkey);
-
+    fn init_network_service(&self) -> NetworkService {
+        let network_config = NetworkConfig::from_config(&self.config).unwrap();
         let network_service = NetworkService::new(network_config);
         network_service.set_chain_id(self.genesis.block.header.chain_id.to_string());
         network_service
     }
 
-    fn init_trie_db(&self, config: &Config) -> Arc<RocksTrieDB> {
-        let path_state = config.data_path_for_state();
+    fn init_trie_db(&self) -> Arc<RocksTrieDB> {
+        let path_state = self.config.data_path_for_state();
         let trie_db = Arc::new(
             RocksTrieDB::new(
                 path_state,
-                config.rocksdb.clone(),
-                config.executor.triedb_cache_size,
+                self.config.rocksdb.clone(),
+                self.config.executor.triedb_cache_size,
             )
             .unwrap(),
         );
@@ -457,33 +447,37 @@ impl Axon {
         trie_db
     }
 
-    async fn init_mempool(
+    async fn init_mempool<N, S, DB>(
         &self,
-        config: &Config,
-        trie_db: &Arc<RocksTrieDB>,
-        network_service: &NetworkService,
-        storage: &Arc<ImplStorage<RocksAdapter>>,
+        trie_db: &Arc<DB>,
+        network_service: &N,
+        storage: &Arc<S>,
         metadata_handle: &Arc<MetadataHandle>,
         signed_txs: &[SignedTransaction],
-    ) -> Arc<MempoolType> {
+    ) -> Arc<MemPoolImpl<DefaultMemPoolAdapter<Secp256k1, N, S, DB, InteroperationImpl>>>
+    where
+        N: Rpc + PeerTrust + Gossip + Clone + Unpin + 'static,
+        S: Storage + 'static,
+        DB: TrieDB + 'static,
+    {
         let mempool_adapter = DefaultMemPoolAdapter::<Secp256k1, _, _, _, InteroperationImpl>::new(
-            network_service.handle(),
+            network_service.clone(),
             Arc::clone(storage),
             Arc::clone(trie_db),
             Arc::clone(metadata_handle),
             self.genesis.block.header.chain_id,
             self.genesis.block.header.gas_limit.as_u64(),
-            config.mempool.pool_size as usize,
-            config.mempool.broadcast_txs_size,
-            config.mempool.broadcast_txs_interval,
+            self.config.mempool.pool_size as usize,
+            self.config.mempool.broadcast_txs_size,
+            self.config.mempool.broadcast_txs_interval,
         );
         let mempool = Arc::new(
             MemPoolImpl::new(
-                config.mempool.pool_size as usize,
-                config.mempool.timeout_gap,
+                self.config.mempool.pool_size as usize,
+                self.config.mempool.timeout_gap,
                 mempool_adapter,
                 signed_txs.to_owned(),
-                config.crosschain_contract_address,
+                self.config.crosschain_contract_address,
             )
             .await,
         );
@@ -505,11 +499,10 @@ impl Axon {
     fn init_system_contract(
         &self,
         trie_db: &Arc<RocksTrieDB>,
-        config: &Config,
         current_block: &Block,
         storage: &Arc<ImplStorage<RocksAdapter>>,
     ) {
-        let path_system_contract = config.data_path_for_system_contract();
+        let path_system_contract = self.config.data_path_for_system_contract();
         let mut backend = AxonExecutorAdapter::from_root(
             current_block.header.state_root,
             Arc::clone(trie_db),
@@ -517,7 +510,11 @@ impl Axon {
             Proposal::from(current_block.header.clone()).into(),
         )
         .unwrap();
-        system_contract::init(path_system_contract, config.rocksdb.clone(), &mut backend);
+        system_contract::init(
+            path_system_contract,
+            self.config.rocksdb.clone(),
+            &mut backend,
+        );
     }
 
     fn get_my_pubkey(&self, hex_privkey: Vec<u8>) -> Secp256k1PublicKey {
@@ -534,13 +531,13 @@ impl Axon {
         Address::from_pubkey_bytes(my_pubkey.to_uncompressed_bytes()).unwrap()
     }
 
-    fn get_my_hex_privkey(&self, config: &Config) -> Vec<u8> {
-        hex_decode(&config.privkey.as_string_trim0x()).unwrap()
+    fn get_my_hex_privkey(&self) -> Vec<u8> {
+        hex_decode(&self.config.privkey.as_string_trim0x()).unwrap()
     }
 
-    fn init_crypto(&self, config: &Config, validators: &[ValidatorExtend]) -> Arc<OverlordCrypto> {
+    fn init_crypto(&self, validators: &[ValidatorExtend]) -> Arc<OverlordCrypto> {
         // self private key
-        let hex_privkey = self.get_my_hex_privkey(config);
+        let hex_privkey = self.get_my_hex_privkey();
         let bls_priv_key = BlsPrivateKey::try_from(hex_privkey.as_ref())
             .map_err(MainError::Crypto)
             .unwrap();
@@ -590,23 +587,29 @@ impl Axon {
         StatusAgent::new(current_consensus_status)
     }
 
-    fn init_overlord_consensus(
+    fn init_overlord_consensus<M, N, S, DB>(
         &self,
-        config: &Config,
         status_agent: &StatusAgent,
         txs_wal: &Arc<SignedTxsWAL>,
         crypto: &Arc<OverlordCrypto>,
         lock: &Arc<AsyncMutex<()>>,
-        consensus_adapter: &Arc<OverlordConsensusAdapterType>,
-    ) -> Arc<OverlordConsensusType> {
-        let consensus_wal_path = config
+        consensus_adapter: &Arc<OverlordConsensusAdapter<M, N, S, DB>>,
+    ) -> Arc<OverlordConsensus<OverlordConsensusAdapter<M, N, S, DB>>>
+    where
+        M: MemPool,
+        N: Rpc + PeerTrust + Gossip + Network + 'static,
+        S: Storage,
+        DB: TrieDB,
+    {
+        let consensus_wal_path = self
+            .config
             .data_path_for_consensus_wal()
             .to_str()
             .unwrap()
             .to_string();
         let consensus_wal = Arc::new(ConsensusWal::new(consensus_wal_path));
 
-        let hex_privkey = self.get_my_hex_privkey(config);
+        let hex_privkey = self.get_my_hex_privkey();
         let node_info = NodeInfo {
             chain_id:     self.genesis.block.header.chain_id,
             self_address: self.get_my_address(hex_privkey.clone()),
@@ -656,11 +659,16 @@ impl Axon {
             .unwrap();
     }
 
-    fn register_consensus_endpoint(
+    fn register_consensus_endpoint<M, N, S, DB>(
         &self,
         network_service: &mut NetworkService,
-        overlord_consensus: &Arc<OverlordConsensusType>,
-    ) {
+        overlord_consensus: &Arc<OverlordConsensus<OverlordConsensusAdapter<M, N, S, DB>>>,
+    ) where
+        M: MemPool,
+        N: Rpc + PeerTrust + Gossip + Network + 'static,
+        S: Storage,
+        DB: TrieDB,
+    {
         // register consensus
         network_service
             .register_endpoint_handler(
@@ -747,8 +755,8 @@ impl Axon {
             .unwrap();
     }
 
-    fn run_jaeger(config: Config) {
-        if let Some(jaeger_config) = config.jaeger {
+    fn run_jaeger(config: Option<ConfigJaeger>) {
+        if let Some(jaeger_config) = config {
             let service_name = match jaeger_config.service_name {
                 Some(name) => name,
                 None => "axon".to_string(),
@@ -762,26 +770,31 @@ impl Axon {
             let tracing_batch_size = jaeger_config.tracing_batch_size.unwrap_or(50);
 
             global_tracer_register(&service_name, tracing_address, tracing_batch_size);
-            log::info!("jaeger start");
+            log::info!("jaeger started");
         };
     }
 
-    fn run_prometheus_server(config: Config) {
-        let prometheus_listening_address = match config.prometheus {
+    fn run_prometheus_server(config: Option<ConfigPrometheus>) {
+        let prometheus_listening_address = match config {
             Some(prometheus_config) => prometheus_config.listening_address.unwrap(),
             None => std::net::SocketAddr::from(([0, 0, 0, 0], 8100)),
         };
         tokio::spawn(run_prometheus_server(prometheus_listening_address));
 
-        log::info!("prometheus start");
+        log::info!("prometheus started");
     }
 
-    fn run_overlord_consensus(
+    fn run_overlord_consensus<M, N, S, DB>(
         metadata: Metadata,
         validators: Vec<Validator>,
         current_block: Block,
-        overlord_consensus: Arc<OverlordConsensusType>,
-    ) {
+        overlord_consensus: Arc<OverlordConsensus<OverlordConsensusAdapter<M, N, S, DB>>>,
+    ) where
+        M: MemPool,
+        N: Rpc + PeerTrust + Gossip + Network + 'static,
+        S: Storage,
+        DB: TrieDB,
+    {
         let timer_config = DurationConfig {
             propose_ratio:   metadata.propose_ratio,
             prevote_ratio:   metadata.prevote_ratio,

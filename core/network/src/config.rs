@@ -9,7 +9,10 @@ use tentacle::{
     secio::{PeerId, SecioKeyPair},
 };
 
-use protocol::codec::hex_decode;
+use common_config_parser::types::Config;
+use protocol::{codec::hex_decode, ProtocolResult};
+
+use crate::error::NetworkError;
 
 // TODO: 0.0.0.0 expose? 127.0.0.1 doesn't work because of tentacle-discovery.
 // Default listen address: 0.0.0.0:2337
@@ -130,26 +133,35 @@ impl NetworkConfig {
         }
     }
 
-    pub fn listen_addr(mut self, addr: Multiaddr) -> Self {
-        self.default_listen = addr;
-        self
+    pub fn from_config(config: &Config) -> ProtocolResult<Self> {
+        let mut network_config = Self::new()
+            .peer_store_dir(config.data_path.clone().join("peer_store"))
+            .ping_interval(config.network.ping_interval)
+            .max_frame_length(config.network.max_frame_length)
+            .send_buffer_size(config.network.send_buffer_size)
+            .recv_buffer_size(config.network.recv_buffer_size)
+            .bootstraps(config.network.bootstraps.clone().unwrap_or_default().iter().map(|addr| addr.multi_address.clone()).collect())
+            // .allowlist(allowlist)?
+            .listen_addr(config.network.listening_address.clone())
+            .secio_keypair(&config.privkey.as_string_trim0x());
+
+        network_config = network_config.max_connections(config.network.max_connected_peers)?;
+
+        Ok(network_config)
     }
 
-    pub fn max_connections(mut self, max: Option<usize>) -> Self {
-        if let Some(mut max) = max {
+    pub fn max_connections(mut self, max: Option<usize>) -> ProtocolResult<Self> {
+        if let Some(max) = max {
             if max <= self.inbound_conn_limit {
-                log::warn!(
-                    "max_connections({}) <= inbound_conn_limit({}), \
-                     set max_connections = inbound_conn_limit + 1",
-                    max,
-                    self.inbound_conn_limit
-                );
-                max = self.inbound_conn_limit + 1;
+                return Err(NetworkError::InboundLimitEqualOrSmallerThanMaxConn.into());
             }
-
             self.max_connections = max;
         }
+        Ok(self)
+    }
 
+    pub fn listen_addr(mut self, addr: Multiaddr) -> Self {
+        self.default_listen = addr;
         self
     }
 
