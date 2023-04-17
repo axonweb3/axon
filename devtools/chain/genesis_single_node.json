@@ -24,7 +24,6 @@
         "signature": [],
         "bitmap": []
       },
-      "last_checkpoint_block_hash": "0x0000000000000000000000000000000000000000000000000000000000000000",
       "call_system_script_count": 0,
       "chain_id": 2022
     },

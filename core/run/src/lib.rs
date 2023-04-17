@@ -193,6 +193,7 @@ impl Axon {
 
         self.state_root = resp.state_root;
         self.genesis.block.header.state_root = self.state_root;
+        self.genesis.block.header.receipts_root = resp.receipt_root;
 
         log::info!(
             "Execute the genesis distribute success, genesis state root {:?}, response {:?}",
