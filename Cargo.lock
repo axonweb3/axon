@@ -295,13 +295,13 @@ dependencies = [
  "ckb-traits",
  "ckb-types",
  "common-crypto",
+ "common-hasher",
  "creep",
  "derive_more",
  "ethereum",
  "ethereum-types 0.14.1",
  "evm",
  "faster-hex",
- "hasher",
  "hex",
  "lazy_static",
  "ophelia",
@@ -1501,6 +1501,13 @@ dependencies = [
  "overlord",
  "rand 0.7.3",
  "rlp",
+]
+
+[[package]]
+name = "common-hasher"
+version = "0.1.0"
+dependencies = [
+ "tiny-keccak",
 ]
 
 [[package]]

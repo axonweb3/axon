@@ -6,20 +6,17 @@ pub use ethereum_types::{
     U512, U64,
 };
 
-use hasher::{Hasher as KeccakHasher, HasherKeccak};
 use ophelia::{PublicKey, UncompressedPublicKey};
 use ophelia_secp256k1::Secp256k1PublicKey;
 use overlord::DurationConfig;
 use rlp_derive::{RlpDecodable, RlpEncodable};
 use serde::{de, Deserialize, Serialize};
 
+use common_hasher::keccak256;
+
 use crate::codec::{hex_decode, hex_encode};
 use crate::types::{BlockNumber, Bytes, TypesError};
 use crate::{ProtocolError, ProtocolResult};
-
-lazy_static::lazy_static! {
-    static ref HASHER_INST: HasherKeccak = HasherKeccak::new();
-}
 
 pub type Hash = H256;
 pub type MerkleRoot = Hash;
@@ -55,10 +52,7 @@ impl Hasher {
             return NIL_DATA;
         }
 
-        let hash = HASHER_INST.digest(bytes.as_ref());
-        let mut ret = Hash::default();
-        ret.0.copy_from_slice(&hash[0..32]);
-        ret
+        H256(keccak256(bytes))
     }
 }
 

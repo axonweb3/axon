@@ -21,6 +21,7 @@ members = [
     "common/channel",
     "common/config-parser",
     "common/crypto",
+    "common/hasher",
     "common/logger",
     "common/memory-tracker",
     "common/merkle",
