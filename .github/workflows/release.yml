@@ -18,8 +18,7 @@ jobs:
       - name: version
         id: version
         run: |
-          # tag=${GITHUB_REF/refs\/tags\//}
-          tag=v0.1.0-alpha.9
+          tag=${GITHUB_REF/refs\/tags\//}
           version=${tag#v}
           major=${version%%.*}
           echo "tag=${tag}" >> $GITHUB_OUTPUT
