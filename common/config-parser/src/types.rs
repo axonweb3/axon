@@ -219,12 +219,9 @@ impl ConfigInteroperabilityExtension {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct MnemonicAccountsConfig {
-    pub mnemonic:      String,
-    pub initial_index: Option<u32>,
-    pub path:          Option<String>,
-    pub count:         u32,
-    pub balance:       U256,
+pub struct InitialAccount {
+    pub address: H160,
+    pub balance: U256,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -234,7 +231,7 @@ pub struct Config {
     // db config
     pub data_path: PathBuf,
 
-    pub accounts: MnemonicAccountsConfig,
+    pub accounts: Vec<InitialAccount>,
 
     pub rpc:                         ConfigApi,
     pub network:                     ConfigNetwork,
