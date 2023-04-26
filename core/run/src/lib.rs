@@ -191,6 +191,10 @@ impl Axon {
 
         let resp = executor.exec(&mut backend, &self.genesis.txs, &[]);
 
+        resp.tx_resp.iter().enumerate().for_each(|(i, r)| if !r.exit_reason.is_succeed() {
+            panic!("The {}th tx in genesis execute failed, reason {:?}", i, r.exit_reason);
+        });
+
         self.state_root = resp.state_root;
         self.genesis.block.header.state_root = self.state_root;
         self.genesis.block.header.receipts_root = resp.receipt_root;
