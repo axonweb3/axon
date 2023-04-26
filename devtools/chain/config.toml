@@ -15,6 +15,10 @@ balance = "04ee2d6d415b85acef8100000000"
 address = "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
 balance = "04ee2d6d415b85acef8100000000"
 
+[[accounts]]
+address = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+balance = "04ee2d6d415b85acef8100000000"
+
 [rpc]
 http_listening_address = "0.0.0.0:8000"
 ws_listening_address = "0.0.0.0:8010"
