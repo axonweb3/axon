@@ -22,17 +22,20 @@ pub struct Config {
 
     pub accounts: Vec<InitialAccount>,
 
-    pub rpc:                   ConfigApi,
-    pub network:               ConfigNetwork,
-    pub mempool:               ConfigMempool,
-    pub executor:              ConfigExecutor,
-    pub consensus:             ConfigConsensus,
+    pub rpc:        ConfigApi,
+    pub network:    ConfigNetwork,
+    pub mempool:    ConfigMempool,
+    pub executor:   ConfigExecutor,
+    pub consensus:  ConfigConsensus,
     #[serde(default)]
-    pub logger:                ConfigLogger,
+    pub logger:     ConfigLogger,
     #[serde(default)]
-    pub rocksdb:               ConfigRocksDB,
-    pub jaeger:                Option<ConfigJaeger>,
-    pub prometheus:            Option<ConfigPrometheus>,
+    pub rocksdb:    ConfigRocksDB,
+    pub jaeger:     Option<ConfigJaeger>,
+    pub prometheus: Option<ConfigPrometheus>,
+
+    #[serde(default)]
+    pub ibc_contract_address:  H160,
     pub wckb_contract_address: H160,
 }
 
@@ -77,7 +80,6 @@ impl Config {
         path_state
     }
 }
-
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct ConfigApi {
