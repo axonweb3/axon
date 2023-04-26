@@ -29,8 +29,8 @@ use protocol::tokio::{
     self, runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep,
 };
 use protocol::traits::{
-    CommonStorage, Context, Executor, Gossip, MemPool, Network, NodeInfo, PeerTrust, Rpc, Storage,
-    SynchronizationAdapter,
+    CommonStorage, Consensus, Context, Executor, Gossip, MemPool, Network, NodeInfo, PeerTrust,
+    Rpc, Storage, SynchronizationAdapter,
 };
 use protocol::types::{
     Account, Address, Block, MerkleRoot, Metadata, Proposal, RichBlock, SignedTransaction,
@@ -191,8 +191,13 @@ impl Axon {
 
         let resp = executor.exec(&mut backend, &self.genesis.txs, &[]);
 
-        resp.tx_resp.iter().enumerate().for_each(|(i, r)| if !r.exit_reason.is_succeed() {
-            panic!("The {}th tx in genesis execute failed, reason {:?}", i, r.exit_reason);
+        resp.tx_resp.iter().enumerate().for_each(|(i, r)| {
+            if !r.exit_reason.is_succeed() {
+                panic!(
+                    "The {}th tx in genesis execute failed, reason {:?}",
+                    i, r.exit_reason
+                );
+            }
         });
 
         self.state_root = resp.state_root;
