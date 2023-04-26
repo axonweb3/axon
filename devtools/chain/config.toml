@@ -4,17 +4,19 @@ privkey = "0x37aa0f893d05914a4def0460c0a984d3611546cfb26924d7a7ca6e0db9950a2d"
 # db config
 data_path = "./devtools/chain/data"
 
-epoch_len = 100_000_000
-
-metadata_contract_address = "0xffffffffffffffffffffffffffffffffffffff01"
 crosschain_contract_address = "0xb9dc8bde1db42410d304b5e78c2ff843134e15e0"
 wckb_contract_address = "0xa13763691970d9373d4fab7cc323d7ba06fa9986"
 
-[accounts]
-mnemonic = "test test test test test test test test test test test junk"
-# initial_index = 0
-# path = "m/44'/60'/0'/0"
-count = 10
+[[accounts]]
+address = "0xa0ee7a142d267c1f36714e4a8f75612f20a79720"
+balance = "04ee2d6d415b85acef8100000000"
+
+[[accounts]]
+address = "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+balance = "04ee2d6d415b85acef8100000000"
+
+[[accounts]]
+address = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
 balance = "04ee2d6d415b85acef8100000000"
 
 [rpc]
@@ -70,27 +72,3 @@ tracing_batch_size = 50
 
 [prometheus]
 listening_address = "0.0.0.0:8100"
-
-[cross_client]
-axon_udt_hash = "0xf32ec1e3274c27ac4cc018c92efec443847e9b78ba8cbedca36f0fa8c35d1c9e"
-ckb_uri = "https://mercury-testnet.ckbapp.dev/rpc"
-mercury_uri = "http://127.0.0.1:8116"
-indexer_uri = "http://127.0.0.1:8117"
-start_block_number = 5899094
-checkpoint_interval = 1000
-pk = "0x37aa0f893d05914a4def0460c0a984d3611546cfb26924d7a7ca6e0db9950a2d"
-enable = false
-admin_address = "0x0000000000000000000000000000000000000000"
-node_address = "0x0000000000000000000000000000000000000000"
-selection_lock_hash = "0xf32ec1e3274c27ac4cc018c92efec443847e9b78ba8cbedca36f0fa8c35d1c9e"
-checkpoint_type_hash = "0xf32ec1e3274c27ac4cc018c92efec443847e9b78ba8cbedca36f0fa8c35d1c9e"
-acs_lock_code_hash = "0x97e6179be134d47ca10322a1534d8dcb65052de7e099b5556bea924137839bab"
-request_type_code_hash = "0xd8f9afaad8eb3e26a1ef2538bac91d68635502508358ae901941513bfe2edb1d"
-
-[ibc]
-uri = "127.0.0.1:8118"
-
-[interoperability_extension]
-blockchain_extension_transaction_hashes = [
-    {name = "cardano", id = 2, tx_hash = "0xb1af175009413bf9670dffb7b120f0eca52896a9798bda123df9b25ff7d8f721"}
-]

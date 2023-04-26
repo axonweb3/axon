@@ -1861,7 +1861,6 @@ dependencies = [
  "core-network",
  "core-rpc-client",
  "core-storage",
- "ethers-signers",
  "futures",
  "log",
  "rlp",

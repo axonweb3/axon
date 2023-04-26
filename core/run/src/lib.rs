@@ -1,9 +1,8 @@
 #![allow(clippy::uninlined_format_args, clippy::mutable_key_type)]
 
-use std::{collections::HashMap, panic::PanicInfo, str::FromStr, sync::Arc, time::Duration};
+use std::{collections::HashMap, panic::PanicInfo, sync::Arc, time::Duration};
 
 use backtrace::Backtrace;
-use ethers_signers::{coins_bip39::English, MnemonicBuilder, Signer};
 #[cfg(all(
     not(target_env = "msvc"),
     not(target_os = "macos"),
@@ -20,6 +19,25 @@ use common_config_parser::types::{Config, ConfigJaeger, ConfigPrometheus};
 use common_crypto::{
     BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey, Secp256k1PublicKey,
     ToPublicKey, UncompressedPublicKey,
+};
+
+use protocol::codec::{hex_decode, ProtocolCodec};
+use protocol::lazy::{CHAIN_ID, CURRENT_STATE_ROOT};
+#[cfg(unix)]
+use protocol::tokio::signal::unix as os_impl;
+use protocol::tokio::{
+    self, runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep,
+};
+use protocol::traits::{
+    CommonStorage, Context, Executor, Gossip, MemPool, Network, NodeInfo, PeerTrust, Rpc, Storage,
+    SynchronizationAdapter,
+};
+use protocol::types::{
+    Account, Address, Block, MerkleRoot, Metadata, Proposal, RichBlock, SignedTransaction,
+    Validator, ValidatorExtend, H256, NIL_DATA, RLP_NULL,
+};
+use protocol::{
+    trie::DB as TrieDB, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
 };
 
 use core_api::{jsonrpc::run_jsonrpc_server, DefaultAPIAdapter};
@@ -49,34 +67,6 @@ use core_network::{
     observe_listen_port_occupancy, NetworkConfig, NetworkService, PeerId, PeerIdExt,
 };
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
-
-#[cfg(unix)]
-use protocol::tokio::signal::unix as os_impl;
-use protocol::{
-    codec::{hex_decode, ProtocolCodec},
-    traits::SynchronizationAdapter,
-    types::{ValidatorExtend, H160},
-};
-use protocol::{
-    lazy::{CHAIN_ID, CURRENT_STATE_ROOT},
-    types::H256,
-};
-use protocol::{tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
-use protocol::{
-    tokio::{runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep},
-    types::Block,
-};
-use protocol::{
-    traits::{CommonStorage, Context, Executor, MemPool, Network, NodeInfo, Storage},
-    types::SignedTransaction,
-};
-use protocol::{
-    traits::{Gossip, PeerTrust, Rpc},
-    trie::DB as TrieDB,
-    types::{
-        Account, Address, MerkleRoot, Metadata, Proposal, RichBlock, Validator, NIL_DATA, RLP_NULL,
-    },
-};
 
 #[cfg(all(
     not(target_env = "msvc"),
@@ -163,32 +153,16 @@ impl Axon {
     }
 
     async fn insert_accounts(&self, mpt: &mut MPTTrie<RocksTrieDB>) -> ProtocolResult<()> {
-        let distribute_account = Account {
-            nonce:        0u64.into(),
-            balance:      self.config.accounts.balance,
-            storage_root: RLP_NULL,
-            code_hash:    NIL_DATA,
-        }
-        .encode()?;
+        for account in self.config.accounts.iter() {
+            let raw_account = Account {
+                nonce:        0u64.into(),
+                balance:      account.balance,
+                storage_root: RLP_NULL,
+                code_hash:    NIL_DATA,
+            }
+            .encode()?;
 
-        let genesis_sender = H160::from_str("8ab0cf264df99d83525e9e11c7e4db01558ae1b1").unwrap();
-        mpt.insert(genesis_sender.as_bytes(), &distribute_account)?;
-
-        let mut builder =
-            MnemonicBuilder::<English>::default().phrase(self.config.accounts.mnemonic.as_str());
-        let init_index = self.config.accounts.initial_index.unwrap_or(0);
-        for i in init_index..(init_index + self.config.accounts.count) {
-            builder = match &self.config.accounts.path {
-                Some(path) => builder
-                    .derivation_path(&format!("{}{}", path, i))
-                    .map_err(MainError::WalletError)?,
-                None => builder.index(i).map_err(MainError::WalletError)?,
-            };
-            let wallet = builder
-                .build()
-                .map_err(MainError::WalletError)?
-                .with_chain_id(self.genesis.block.header.chain_id);
-            mpt.insert(wallet.address().as_bytes(), &distribute_account)?;
+            mpt.insert(account.address.as_bytes(), &raw_account)?;
         }
 
         Ok(())
@@ -477,7 +451,6 @@ impl Axon {
                 self.config.mempool.timeout_gap,
                 mempool_adapter,
                 signed_txs.to_owned(),
-                self.config.crosschain_contract_address,
             )
             .await,
         );
@@ -924,9 +897,6 @@ pub enum MainError {
 
     #[display(fmt = "{:?}", _0)]
     JSONParse(serde_json::error::Error),
-
-    #[display(fmt = "{:?}", _0)]
-    WalletError(ethers_signers::WalletError),
 
     #[display(fmt = "other error {:?}", _0)]
     Other(String),
