@@ -5,13 +5,79 @@ use std::path::PathBuf;
 use serde::Deserialize;
 use tentacle_multiaddr::MultiAddr;
 
-use protocol::types::{Hex, H160, H256, U256};
+use protocol::types::{Hex, H160, U256};
 
 pub const DEFAULT_BROADCAST_TXS_SIZE: usize = 200;
 pub const DEFAULT_BROADCAST_TXS_INTERVAL: u64 = 200; // milliseconds
 pub const DEFAULT_OVERLORD_GAP: usize = 5;
 pub const DEFAULT_SYNC_TXS_CHUNK_SIZE: usize = 5000;
 pub const DEFAULT_CACHE_SIZE: usize = 100;
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct Config {
+    // crypto
+    pub privkey:   Hex,
+    // db config
+    pub data_path: PathBuf,
+
+    pub accounts: Vec<InitialAccount>,
+
+    pub rpc:                   ConfigApi,
+    pub network:               ConfigNetwork,
+    pub mempool:               ConfigMempool,
+    pub executor:              ConfigExecutor,
+    pub consensus:             ConfigConsensus,
+    #[serde(default)]
+    pub logger:                ConfigLogger,
+    #[serde(default)]
+    pub rocksdb:               ConfigRocksDB,
+    pub jaeger:                Option<ConfigJaeger>,
+    pub prometheus:            Option<ConfigPrometheus>,
+    pub wckb_contract_address: H160,
+}
+
+impl Config {
+    pub fn data_path_for_system_contract(&self) -> PathBuf {
+        let mut path_state = self.data_path.clone();
+        path_state.push("rocksdb");
+        path_state.push("system_contract");
+        path_state
+    }
+
+    pub fn data_path_for_state(&self) -> PathBuf {
+        let mut path_state = self.data_path.clone();
+        path_state.push("rocksdb");
+        path_state.push("state_data");
+        path_state
+    }
+
+    pub fn data_path_for_block(&self) -> PathBuf {
+        let mut path_state = self.data_path.clone();
+        path_state.push("rocksdb");
+        path_state.push("block_data");
+        path_state
+    }
+
+    pub fn data_path_for_crosschain(&self) -> PathBuf {
+        let mut path_state = self.data_path.clone();
+        path_state.push("rocksdb");
+        path_state.push("crosschain");
+        path_state
+    }
+
+    pub fn data_path_for_txs_wal(&self) -> PathBuf {
+        let mut path_state = self.data_path.clone();
+        path_state.push("txs_wal");
+        path_state
+    }
+
+    pub fn data_path_for_consensus_wal(&self) -> PathBuf {
+        let mut path_state = self.data_path.clone();
+        path_state.push("consensus_wal");
+        path_state
+    }
+}
+
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct ConfigApi {
@@ -24,12 +90,6 @@ pub struct ConfigApi {
     pub client_version:         String,
     #[serde(default = "default_gas_cap")]
     pub gas_cap:                u64,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct ConfigGraphQLTLS {
-    pub private_key_file_path:       PathBuf,
-    pub certificate_chain_file_path: PathBuf,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -169,129 +229,9 @@ pub struct ConfigPrometheus {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct ConfigCrossChain {
-    pub axon_udt_hash:       H256,
-    pub ckb_uri:             String,
-    pub mercury_uri:         String,
-    pub indexer_uri:         String,
-    pub start_block_number:  u64,
-    pub pk:                  Hex,
-    pub enable:              bool,
-    pub checkpoint_interval: u64,
-
-    pub admin_address:        H160,
-    pub node_address:         H160,
-    pub selection_lock_hash:  H256,
-    pub checkpoint_type_hash: H256,
-
-    pub acs_lock_code_hash:     H256,
-    pub request_type_code_hash: H256,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct BlockchainConfig {
-    pub name:    String,
-    pub id:      u8,
-    pub tx_hash: H256,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct ConfigInteroperabilityExtension {
-    pub blockchain_extension_transaction_hashes: Vec<BlockchainConfig>,
-}
-
-impl From<ConfigInteroperabilityExtension> for HashMap<u8, H256> {
-    fn from(ie: ConfigInteroperabilityExtension) -> Self {
-        ie.blockchain_extension_transaction_hashes
-            .into_iter()
-            .map(|v| (v.id, v.tx_hash))
-            .collect()
-    }
-}
-
-impl ConfigInteroperabilityExtension {
-    pub fn get_hashes(&self) -> Vec<H256> {
-        self.blockchain_extension_transaction_hashes
-            .iter()
-            .map(|v| v.tx_hash)
-            .collect()
-    }
-}
-
-#[derive(Clone, Debug, Deserialize)]
 pub struct InitialAccount {
     pub address: H160,
     pub balance: U256,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct Config {
-    // crypto
-    pub privkey:   Hex,
-    // db config
-    pub data_path: PathBuf,
-
-    pub accounts: Vec<InitialAccount>,
-
-    pub rpc:                         ConfigApi,
-    pub network:                     ConfigNetwork,
-    pub mempool:                     ConfigMempool,
-    pub executor:                    ConfigExecutor,
-    pub consensus:                   ConfigConsensus,
-    #[serde(default)]
-    pub logger:                      ConfigLogger,
-    #[serde(default)]
-    pub rocksdb:                     ConfigRocksDB,
-    pub jaeger:                      Option<ConfigJaeger>,
-    pub prometheus:                  Option<ConfigPrometheus>,
-    pub cross_client:                ConfigCrossChain,
-    pub epoch_len:                   u64,
-    pub crosschain_contract_address: H160,
-    pub wckb_contract_address:       H160,
-    pub ibc:                         Option<ConfigIbc>,
-    pub interoperability_extension:  ConfigInteroperabilityExtension,
-}
-
-impl Config {
-    pub fn data_path_for_system_contract(&self) -> PathBuf {
-        let mut path_state = self.data_path.clone();
-        path_state.push("rocksdb");
-        path_state.push("system_contract");
-        path_state
-    }
-
-    pub fn data_path_for_state(&self) -> PathBuf {
-        let mut path_state = self.data_path.clone();
-        path_state.push("rocksdb");
-        path_state.push("state_data");
-        path_state
-    }
-
-    pub fn data_path_for_block(&self) -> PathBuf {
-        let mut path_state = self.data_path.clone();
-        path_state.push("rocksdb");
-        path_state.push("block_data");
-        path_state
-    }
-
-    pub fn data_path_for_crosschain(&self) -> PathBuf {
-        let mut path_state = self.data_path.clone();
-        path_state.push("rocksdb");
-        path_state.push("crosschain");
-        path_state
-    }
-
-    pub fn data_path_for_txs_wal(&self) -> PathBuf {
-        let mut path_state = self.data_path.clone();
-        path_state.push("txs_wal");
-        path_state
-    }
-
-    pub fn data_path_for_consensus_wal(&self) -> PathBuf {
-        let mut path_state = self.data_path.clone();
-        path_state.push("consensus_wal");
-        path_state
-    }
 }
 
 fn default_gas_cap() -> u64 {

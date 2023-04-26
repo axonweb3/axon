@@ -451,7 +451,6 @@ impl Axon {
                 self.config.mempool.timeout_gap,
                 mempool_adapter,
                 signed_txs.to_owned(),
-                self.config.crosschain_contract_address,
             )
             .await,
         );
