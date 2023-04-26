@@ -12,11 +12,7 @@ address = "0xa0ee7a142d267c1f36714e4a8f75612f20a79720"
 balance = "04ee2d6d415b85acef8100000000"
 
 [[accounts]]
-address = "0x8ab0CF264DF99D83525e9E11c7e4db01558AE1b1"
-balance = "04ee2d6d415b85acef8100000000"
-
-[[accounts]]
-address = "0xF386573563C3a75dBbd269FCe9782620826dDAc2"
+address = "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
 balance = "04ee2d6d415b85acef8100000000"
 
 [rpc]
