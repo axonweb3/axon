@@ -1,19 +1,24 @@
+use std::fs::File;
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;
 
-use clap::{crate_version, Arg, ArgMatches, Command};
+use clap::builder::{IntoResettable, Str};
+use clap::{Arg, ArgMatches, Command};
+use semver::Version;
 
 use common_config_parser::{parse_file, types::Config};
 use core_run::Axon;
 use protocol::types::RichBlock;
 
 pub struct AxonCli {
+    version: Version,
     matches: ArgMatches,
 }
 
 impl AxonCli {
-    pub fn init() -> Self {
+    pub fn init(ver: impl IntoResettable<Str>) -> Self {
         let matches = Command::new("axon")
-            .version(crate_version!())
+            .version(ver)
             .arg(
                 Arg::new("config_path")
                     .short('c')
@@ -30,10 +35,12 @@ impl AxonCli {
                     .required(true)
                     .num_args(1),
             )
-            .subcommand(Command::new("run").about("Run axon process"))
-            .get_matches();
+            .subcommand(Command::new("run").about("Run axon process"));
 
-        AxonCli { matches }
+        AxonCli {
+            version: Version::parse(matches.get_version().unwrap()).unwrap(),
+            matches: matches.get_matches(),
+        }
     }
 
     pub fn start(&self) {
@@ -50,10 +57,50 @@ impl AxonCli {
         )
         .unwrap();
 
+        self.check_version(&config);
+
         register_log(&config);
 
         Axon::new(config, genesis).run().unwrap();
     }
+
+    fn check_version(&self, config: &Config) {
+        if !config.data_path.exists() {
+            std::fs::create_dir_all(&config.data_path).unwrap();
+        }
+
+        let f_path = config.data_path_for_version();
+        let mut f = File::options()
+            .create(true)
+            .read(true)
+            .write(true)
+            .open(f_path)
+            .unwrap();
+
+        let mut ver_str = String::new();
+        f.read_to_string(&mut ver_str).unwrap();
+
+        if ver_str.is_empty() {
+            return f.write_all(self.version.to_string().as_bytes()).unwrap();
+        }
+
+        let prev_version = Version::parse(&ver_str).unwrap();
+        if prev_version < latest_compatible_version() {
+            println!(
+                "The previous version {:?} is not compatible with the current version {:?}",
+                prev_version, self.version
+            );
+            std::process::exit(0);
+        }
+
+        f.seek(SeekFrom::Start(0)).unwrap();
+        f.write_all(self.version.to_string().as_bytes()).unwrap();
+        f.sync_all().unwrap();
+    }
+}
+
+fn latest_compatible_version() -> Version {
+    Version::parse("0.1.0-alpha.9").unwrap()
 }
 
 fn register_log(config: &Config) {

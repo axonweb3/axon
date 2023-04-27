@@ -6,6 +6,8 @@ edition = "2021"
 repository = "https://github.com/axonweb3/axon"
 
 [dependencies]
+clap = { version = "4.2", features = ["cargo"] }
+
 # byzantine = { path = "./byzantine" }
 core-api = { path = "./core/api" }
 core-cli = { path = "./core/cli" }
