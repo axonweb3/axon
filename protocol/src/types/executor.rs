@@ -3,8 +3,7 @@ pub use evm::{backend::Log, Config, ExitError, ExitFatal, ExitReason, ExitRevert
 
 use rlp_derive::{RlpDecodable, RlpEncodable};
 
-use crate::codec::ProtocolCodec;
-use crate::types::{Hash, Hasher, Header, MerkleRoot, Proposal, H160, U256};
+use crate::types::{Hash, Header, MerkleRoot, Proposal, H160, U256};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ExecResp {
@@ -44,7 +43,6 @@ impl Default for TxResp {
 #[derive(RlpEncodable, RlpDecodable, Default, Clone, Debug, PartialEq, Eq)]
 pub struct ExecutorContext {
     pub block_number:           U256,
-    pub block_hash:             Hash,
     pub block_coinbase:         H160,
     pub block_timestamp:        U256,
     pub chain_id:               U256,
@@ -60,7 +58,6 @@ impl From<Proposal> for ExecutorContext {
     fn from(h: Proposal) -> Self {
         ExecutorContext {
             block_number:           h.number.into(),
-            block_hash:             Hasher::digest(h.encode().unwrap()),
             block_coinbase:         h.proposer,
             block_timestamp:        h.timestamp.into(),
             chain_id:               h.chain_id.into(),
@@ -78,7 +75,6 @@ impl From<&Header> for ExecutorContext {
     fn from(h: &Header) -> ExecutorContext {
         ExecutorContext {
             block_number:           h.number.into(),
-            block_hash:             Hasher::digest(h.encode().unwrap()),
             block_coinbase:         h.proposer,
             block_timestamp:        h.timestamp.into(),
             chain_id:               h.chain_id.into(),

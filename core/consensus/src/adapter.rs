@@ -417,7 +417,7 @@ where
 
     #[trace_span(kind = "consensus.adapter")]
     async fn verify_proof(&self, ctx: Context, block: Block, proof: Proof) -> ProtocolResult<()> {
-        // the block 0 has no proof, which is consensus-ed by community, not by chain
+        // The block 0 has no proof, which is consensus by community, not by chain.
         if block.header.number == 0 {
             return Ok(());
         };
@@ -435,11 +435,19 @@ where
             .into());
         }
 
-        let proposal_hash = Proposal::from(&block).hash();
+        let prev_block = self
+            .get_block_by_number(ctx.clone(), block.header.number - 1)
+            .await?;
+        let proposal_hash = Proposal::new_with_state_root(
+            &block.header,
+            prev_block.header.state_root,
+            block.tx_hashes,
+        )
+        .hash();
 
         if proposal_hash != proof.block_hash {
             log::error!(
-                "[consensus] verify_proof, blockhash: {:?}, proof.block_hash: {:?}",
+                "[consensus] verify_proof, block hash: {:?}, proof.block_hash: {:?}",
                 proposal_hash,
                 proof.block_hash
             );

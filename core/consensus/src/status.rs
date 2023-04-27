@@ -23,11 +23,10 @@ impl StatusAgent {
 
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct CurrentStatus {
-    pub prev_hash:                  Hash,
-    pub last_number:                BlockNumber,
-    pub last_state_root:            H256,
-    pub tx_num_limit:               u64,
-    pub max_tx_size:                U256,
-    pub proof:                      Proof,
-    pub last_checkpoint_block_hash: Hash,
+    pub prev_hash:       Hash,
+    pub last_number:     BlockNumber,
+    pub last_state_root: H256,
+    pub tx_num_limit:    u64,
+    pub max_tx_size:     U256,
+    pub proof:           Proof,
 }

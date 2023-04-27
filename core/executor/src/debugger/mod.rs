@@ -100,7 +100,6 @@ impl EvmDebugger {
     fn backend(&self, number: u64) -> AxonExecutorAdapter<ImplStorage<RocksAdapter>, RocksTrieDB> {
         let exec_ctx = ExecutorContext {
             block_number:           number.into(),
-            block_hash:             H256::random(),
             block_coinbase:         H160::random(),
             block_timestamp:        time_now().into(),
             chain_id:               5u64.into(),

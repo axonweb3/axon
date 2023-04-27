@@ -42,14 +42,12 @@ where
             .get_block_by_number(Context::new(), number)
             .await?
             .ok_or_else(|| APIError::Adapter(format!("Cannot get {:?} block", number)))?;
-        let state_root = block.header.state_root;
-        let proposal = Proposal::from(&block);
 
         AxonExecutorAdapter::from_root(
-            state_root,
+            block.header.state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
-            ExecutorContext::from(proposal),
+            Proposal::new_without_state_root(&block.header).into(),
         )
     }
 }

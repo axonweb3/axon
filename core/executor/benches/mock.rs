@@ -12,12 +12,12 @@ use protocol::{
     types::{
         public_to_address, Account, Address, Bytes, Eip1559Transaction, ExecutorContext, Public,
         SignedTransaction, TransactionAction, UnsignedTransaction, UnverifiedTransaction, H160,
-        H256, H512, NIL_DATA, RLP_NULL, U256,
+        H512, NIL_DATA, RLP_NULL, U256,
     },
 };
 
 lazy_static::lazy_static! {
-    static ref PRIVITE_KEY: Secp256k1RecoverablePrivateKey
+    static ref PRIVATE_KEY: Secp256k1RecoverablePrivateKey
         = Secp256k1RecoverablePrivateKey::try_from(hex_decode("95500289866f83502cc1fb894ef5e2b840ca5f867cc9e84ab32fb8872b5dd36c").unwrap().as_ref()).unwrap();
     static ref DISTRIBUTE_ADDRESS: Address = Address::from_hex("0x35e70c3f5a794a77efc2ec5ba964bffcc7fd2c0a").unwrap();
 }
@@ -49,7 +49,6 @@ pub fn init_account() -> (Account, Address) {
 pub fn mock_executor_context() -> ExecutorContext {
     ExecutorContext {
         block_number:           1u64.into(),
-        block_hash:             rand_hash(),
         block_coinbase:         DISTRIBUTE_ADDRESS.0,
         block_timestamp:        time_now().into(),
         chain_id:               U256::one(),
@@ -68,8 +67,8 @@ pub fn mock_transactions(n: usize) -> Vec<SignedTransaction> {
     let mut result = Vec::with_capacity(n);
     for i in 0..n {
         let (sender_addr, sender_pub_key, sender_priv_key) = if i == 0 {
-            let pub_key = Public::from_slice(&PRIVITE_KEY.pub_key().to_uncompressed_bytes()[1..65]);
-            (public_to_address(&pub_key), pub_key, PRIVITE_KEY.to_bytes())
+            let pub_key = Public::from_slice(&PRIVATE_KEY.pub_key().to_uncompressed_bytes()[1..65]);
+            (public_to_address(&pub_key), pub_key, PRIVATE_KEY.to_bytes())
         } else {
             let idx = n - 1;
             let key_pair = key_pairs.get(idx).unwrap();
@@ -142,11 +141,6 @@ fn gen_key_pairs(n: usize) -> Vec<KeyPair> {
     }
 
     result
-}
-
-#[inline]
-fn rand_hash() -> H256 {
-    H256::random()
 }
 
 #[inline]

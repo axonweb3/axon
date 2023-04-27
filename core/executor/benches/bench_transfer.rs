@@ -18,7 +18,7 @@ use protocol::types::{
 };
 
 lazy_static::lazy_static! {
-    static ref PRIVITE_KEY: Secp256k1RecoverablePrivateKey
+    static ref PRIVATE_KEY: Secp256k1RecoverablePrivateKey
         = Secp256k1RecoverablePrivateKey::try_from(hex_decode("95500289866f83502cc1fb894ef5e2b840ca5f867cc9e84ab32fb8872b5dd36c").unwrap().as_ref()).unwrap();
     static ref DISTRIBUTE_ADDRESS: Address = Address::from_hex("0x35e70c3f5a794a77efc2ec5ba964bffcc7fd2c0a").unwrap();
 }
@@ -67,7 +67,6 @@ impl BenchAdapter {
             Arc::clone(&self.storage),
             ExecutorContext {
                 block_number:           1u64.into(),
-                block_hash:             rand_hash(),
                 block_coinbase:         DISTRIBUTE_ADDRESS.0,
                 block_timestamp:        time_now().into(),
                 chain_id:               U256::one(),
@@ -81,10 +80,6 @@ impl BenchAdapter {
         )
         .unwrap()
     }
-}
-
-fn rand_hash() -> Hash {
-    Hash::random()
 }
 
 fn time_now() -> u64 {
@@ -118,12 +113,12 @@ fn mock_transaction(nonce: u64) -> SignedTransaction {
     };
 
     let raw = utx.signature_hash(true);
-    let signature = Secp256k1Recoverable::sign_message(raw.as_bytes(), &PRIVITE_KEY.to_bytes())
+    let signature = Secp256k1Recoverable::sign_message(raw.as_bytes(), &PRIVATE_KEY.to_bytes())
         .unwrap()
         .to_bytes();
     utx.signature = Some(signature.into());
 
-    let pub_key = Public::from_slice(&PRIVITE_KEY.pub_key().to_uncompressed_bytes()[1..65]);
+    let pub_key = Public::from_slice(&PRIVATE_KEY.pub_key().to_uncompressed_bytes()[1..65]);
 
     SignedTransaction {
         transaction: utx.calc_hash(),
