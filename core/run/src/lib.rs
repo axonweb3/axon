@@ -55,7 +55,7 @@ use core_consensus::{
     OverlordConsensusAdapter, OverlordSynchronization, SignedTxsWAL,
 };
 use core_executor::{
-    system_contract::{self, metadata::MetadataHandle},
+    system_contract::{self, check_ckb_related_info_exist, metadata::MetadataHandle},
     AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB,
 };
 use core_interoperation::InteroperationImpl;
@@ -146,6 +146,10 @@ impl Axon {
         self.insert_accounts(&mut mpt).await?;
         self.execute_transactions(&mut mpt, &trie_db, &storage)
             .await?;
+
+        if !check_ckb_related_info_exist() {
+            return Err(MainError::GenesisMissingCkbRelatedInfo.into());
+        }
 
         log::info!("The genesis block is created {:?}", self.genesis.block);
 
@@ -903,6 +907,9 @@ pub enum MainError {
 
     #[display(fmt = "other error {:?}", _0)]
     Other(String),
+
+    #[display(fmt = "genesis missing set ckb related info tx")]
+    GenesisMissingCkbRelatedInfo,
 }
 
 impl std::error::Error for MainError {}

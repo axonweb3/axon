@@ -310,20 +310,19 @@ impl MetadataVersion {
     RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq,
 )]
 pub struct Metadata {
-    pub version:                    MetadataVersion,
-    pub epoch:                      u64,
-    pub gas_limit:                  u64,
-    pub gas_price:                  u64,
-    pub interval:                   u64,
-    pub verifier_list:              Vec<ValidatorExtend>,
-    pub propose_ratio:              u64,
-    pub prevote_ratio:              u64,
-    pub precommit_ratio:            u64,
-    pub brake_ratio:                u64,
-    pub tx_num_limit:               u64,
-    pub max_tx_size:                u64,
-    #[serde(default)]
-    pub last_checkpoint_block_hash: Hash,
+    pub version:         MetadataVersion,
+    pub epoch:           u64,
+    pub gas_limit:       u64,
+    pub gas_price:       u64,
+    pub interval:        u64,
+    pub verifier_list:   Vec<ValidatorExtend>,
+    pub propose_ratio:   u64,
+    pub prevote_ratio:   u64,
+    pub precommit_ratio: u64,
+    pub brake_ratio:     u64,
+    pub tx_num_limit:    u64,
+    pub max_tx_size:     u64,
+    pub propose_counter: Vec<ProposeCount>,
 }
 
 impl From<Metadata> for DurationConfig {
@@ -333,6 +332,21 @@ impl From<Metadata> for DurationConfig {
             prevote_ratio:   m.prevote_ratio,
             precommit_ratio: m.precommit_ratio,
             brake_ratio:     m.brake_ratio,
+        }
+    }
+}
+
+#[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct ProposeCount {
+    pub address: H160,
+    pub count:   u64,
+}
+
+impl From<(H160, u64)> for ProposeCount {
+    fn from(value: (H160, u64)) -> Self {
+        ProposeCount {
+            address: value.0,
+            count:   value.1,
         }
     }
 }
@@ -390,6 +404,14 @@ impl std::fmt::Debug for ValidatorExtend {
             pk, self.pub_key, self.address, self.propose_weight, self.vote_weight
         )
     }
+}
+
+#[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct CkbRelatedInfo {
+    pub metadata_type_id:       H256,
+    pub checkpoint_type_id:     H256,
+    pub stake_token_type_id:    H256,
+    pub delegate_token_type_id: H256,
 }
 
 fn ensure_len(real: usize, expect: usize) -> ProtocolResult<()> {

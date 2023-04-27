@@ -9,7 +9,7 @@ pub mod metadata;
 
 pub use crate::system_contract::ckb_light_client::CkbLightClientContract;
 pub use crate::system_contract::image_cell::ImageCellContract;
-pub use crate::system_contract::metadata::MetadataContract;
+pub use crate::system_contract::metadata::{check_ckb_related_info_exist, MetadataContract};
 pub use crate::system_contract::native_token::NativeTokenContract;
 
 use std::path::Path;

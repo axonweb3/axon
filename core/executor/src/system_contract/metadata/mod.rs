@@ -26,6 +26,7 @@ const METADATA_CACHE_SIZE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(1
 
 lazy_static::lazy_static! {
     static ref EPOCH_SEGMENT_KEY: H256 = Hasher::digest("epoch_segment");
+    static ref CKB_RELATED_INFO_KEY: H256 = Hasher::digest("ckb_related_info");
     static ref METADATA_CACHE: RwLock<LruCache<Epoch, Metadata>> =  RwLock::new(LruCache::new(METADATA_CACHE_SIZE));
 }
 
@@ -78,6 +79,17 @@ impl SystemContract for MetadataContract {
                     "[metadata] append metadata"
                 );
             }
+            metadata_abi::MetadataContractCalls::SetCkbRelatedInfo(c) => {
+                if !adapter.block_number().is_zero() {
+                    return revert_resp(gas_limit);
+                }
+
+                exec_try!(
+                    store.set_ckb_related_info(&c.ckb_related_info.into()),
+                    gas_limit,
+                    "[metadata] set ckb related info"
+                );
+            }
             // TODO: Metadata doesn't accept all abi calls so far.
             _ => {
                 log::error!("[metadata] invalid tx data");
@@ -91,6 +103,13 @@ impl SystemContract for MetadataContract {
     }
 
     fn after_block_hook<Adapter: ExecutorAdapter>(&self, adapter: &mut Adapter) {
-        let _origin = adapter.origin();
+        MetadataStore::new()
+            .unwrap()
+            .update_propose_count(adapter.block_number().as_u64(), &adapter.origin())
+            .unwrap();
     }
+}
+
+pub fn check_ckb_related_info_exist() -> bool {
+    MetadataHandle::default().get_ckb_related_info().is_ok()
 }

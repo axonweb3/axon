@@ -103,9 +103,21 @@
             "type": "uint64"
           },
           {
-            "internalType": "bytes32",
-            "name": "last_checkpoint_block_hash",
-            "type": "bytes32"
+            "components": [
+              {
+                "internalType": "address",
+                "name": "address_",
+                "type": "address"
+              },
+              {
+                "internalType": "uint64",
+                "name": "count",
+                "type": "uint64"
+              }
+            ],
+            "internalType": "struct MetadataManager.ProposeCount",
+            "name": "propose_counter",
+            "type": "tuple"
           }
         ],
         "internalType": "struct MetadataManager.Metadata",
@@ -237,9 +249,21 @@
             "type": "uint64"
           },
           {
-            "internalType": "bytes32",
-            "name": "last_checkpoint_block_hash",
-            "type": "bytes32"
+            "components": [
+              {
+                "internalType": "address",
+                "name": "address_",
+                "type": "address"
+              },
+              {
+                "internalType": "uint64",
+                "name": "count",
+                "type": "uint64"
+              }
+            ],
+            "internalType": "struct MetadataManager.ProposeCount",
+            "name": "propose_counter",
+            "type": "tuple[]"
           }
         ],
         "internalType": "struct MetadataManager.Metadata",
@@ -303,6 +327,41 @@
         "type": "uint256"
       }
     ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "metadata_type_id",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "checkpoint_type_id",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "stake_token_type_id",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "delegate_token_type_id",
+            "type": "bytes32"
+          }
+        ],
+        "internalType": "struct MetadataManager.CkbRelatedInfo",
+        "name": "ckb_related_info",
+        "type": "tuple"
+      }
+    ],
+    "name": "setCkbRelatedInfo",
+    "outputs": [],
     "stateMutability": "view",
     "type": "function"
   }
