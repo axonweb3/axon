@@ -37,7 +37,7 @@ impl Proposal {
         Hasher::digest(self.encode().unwrap())
     }
 
-    pub fn new_with_state_root(h: &Header, state_root: MerkleRoot) -> Self {
+    pub fn new_with_state_root(h: &Header, state_root: MerkleRoot, hashes: Vec<Hash>) -> Self {
         Proposal {
             prev_hash:                h.prev_hash,
             proposer:                 h.proposer,
@@ -53,7 +53,7 @@ impl Proposal {
             proof:                    h.proof.clone(),
             chain_id:                 h.chain_id,
             call_system_script_count: h.call_system_script_count,
-            tx_hashes:                vec![],
+            tx_hashes:                hashes,
         }
     }
 

@@ -438,8 +438,12 @@ where
         let prev_block = self
             .get_block_by_number(ctx.clone(), block.header.number - 1)
             .await?;
-        let proposal_hash =
-            Proposal::new_with_state_root(&block.header, prev_block.header.state_root).hash();
+        let proposal_hash = Proposal::new_with_state_root(
+            &block.header,
+            prev_block.header.state_root,
+            block.tx_hashes,
+        )
+        .hash();
 
         if proposal_hash != proof.block_hash {
             log::error!(
