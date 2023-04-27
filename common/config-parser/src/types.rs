@@ -61,13 +61,6 @@ impl Config {
         path_state
     }
 
-    pub fn data_path_for_crosschain(&self) -> PathBuf {
-        let mut path_state = self.data_path.clone();
-        path_state.push("rocksdb");
-        path_state.push("crosschain");
-        path_state
-    }
-
     pub fn data_path_for_txs_wal(&self) -> PathBuf {
         let mut path_state = self.data_path.clone();
         path_state.push("txs_wal");
@@ -77,6 +70,12 @@ impl Config {
     pub fn data_path_for_consensus_wal(&self) -> PathBuf {
         let mut path_state = self.data_path.clone();
         path_state.push("consensus_wal");
+        path_state
+    }
+
+    pub fn data_path_for_version(&self) -> PathBuf {
+        let mut path_state = self.data_path.clone();
+        path_state.push("axon.ver");
         path_state
     }
 }

@@ -258,6 +258,7 @@ name = "axon"
 version = "0.1.0"
 dependencies = [
  "axon-protocol",
+ "clap 4.2.1",
  "core-api",
  "core-cli",
  "core-consensus",
@@ -1656,6 +1657,7 @@ dependencies = [
  "common-config-parser",
  "common-logger",
  "core-run",
+ "semver",
  "serde",
  "serde_json",
 ]
