@@ -4,18 +4,48 @@ privkey = "0x0179ffa9c9d7bfdef64b29b5800bf6954caa033973a875ddc4393826b9c78db0"
 # db config
 data_path = "./devtools/chain/data5"
 
-epoch_len = 100_000_000
+crosschain_contract_address = "0xb9dc8bde1db42410d304b5e78c2ff843134e15e0"
+wckb_contract_address = "0xa13763691970d9373d4fab7cc323d7ba06fa9986"
 
-metadata_contract_address = "0xb00d616b820c39619ee29e5144d0226cf8b5c15a"
-crosschain_contract_address = "0xb484fd480e598621638f380f404697cd9f58b0f8"
-wckb_contract_address = "0x4af5ec5e3d29d9ddd7f4bf91a022131c41b72352"
+[[accounts]]
+address = "0xa0ee7a142d267c1f36714e4a8f75612f20a79720"
+balance = "04ee2d6d415b85acef8100000000"
 
-[accounts]
-mnemonic = "test test test test test test test test test test test junk"
-# initial_index = 0
-# path = "m/44'/60'/0'/0"
-count = 10
-balance = "56bc75e2d63100000"
+[[accounts]]
+address = "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266"
+balance = "04ee2d6d415b85acef8100000000"
+
+[[accounts]]
+address = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+balance = "04ee2d6d415b85acef8100000000"
+
+[[accounts]]
+address = "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+balance = "04ee2d6d415b85acef8100000000"
+
+[[accounts]]
+address = "0x90F79bf6EB2c4f870365E785982E1f101E93b906"
+balance = "04ee2d6d415b85acef8100000000"
+
+[[accounts]]
+address = "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65"
+balance = "04ee2d6d415b85acef8100000000"
+
+[[accounts]]
+address = "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc"
+balance = "04ee2d6d415b85acef8100000000"
+
+[[accounts]]
+address = "0x976EA74026E726554dB657fA54763abd0C3a0aa9"
+balance = "04ee2d6d415b85acef8100000000"
+
+[[accounts]]
+address = "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955"
+balance = "04ee2d6d415b85acef8100000000"
+
+[[accounts]]
+address = "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f"
+balance = "04ee2d6d415b85acef8100000000"
 
 [rpc]
 http_listening_address = "0.0.0.0:8000"
@@ -83,24 +113,3 @@ cache_size = 134217728
 # Provide an options file to tune RocksDB for your workload and your system configuration.
 # More details can be found in [the official tuning guide](https://github.com/facebook/rocksdb/wiki/RocksDB-Tuning-Guide).
 options_file = "default.db-options"
-
-[cross_client]
-axon_udt_hash = "0xf32ec1e3274c27ac4cc018c92efec443847e9b78ba8cbedca36f0fa8c35d1c9e"
-ckb_uri = "http://47.111.84.118:81/"
-mercury_uri = "http://127.0.0.1:8116"
-indexer_uri = "http://127.0.0.1:8117"
-start_block_number = 5760719
-checkpoint_interval = 1000
-pk = "0x37aa0f893d05914a4def0460c0a984d3611546cfb26924d7a7ca6e0db9950a2d"
-enable = true
-admin_address = "0x0000000000000000000000000000000000000000"
-node_address = "0x0000000000000000000000000000000000000000"
-selection_lock_hash = "0xf32ec1e3274c27ac4cc018c92efec443847e9b78ba8cbedca36f0fa8c35d1c9e"
-checkpoint_type_hash = "0xf32ec1e3274c27ac4cc018c92efec443847e9b78ba8cbedca36f0fa8c35d1c9e"
-acs_lock_code_hash = "0x97e6179be134d47ca10322a1534d8dcb65052de7e099b5556bea924137839bab"
-request_type_code_hash = "0xd8f9afaad8eb3e26a1ef2538bac91d68635502508358ae901941513bfe2edb1d"
-
-[interoperability_extension]
-blockchain_extension_transaction_hashes = [
-    {name = "cardano", id = 2, tx_hash = "0xb1af175009413bf9670dffb7b120f0eca52896a9798bda123df9b25ff7d8f721"}
-]
