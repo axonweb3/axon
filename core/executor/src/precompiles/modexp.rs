@@ -150,7 +150,9 @@ impl LargeNumber {
             let bytes: [u8; 32] = [0xFF; 32];
             let max_256_bit_uint = Integer::from_digits(&bytes, Order::MsfBe);
             (8 * (self.e_size - 32))
-                + ((self.exponent.clone().bitand(max_256_bit_uint)).significant_bits() - 1) as usize
+                + ((self.exponent.clone().bitand(max_256_bit_uint))
+                    .significant_bits()
+                    .saturating_sub(1)) as usize
         };
 
         iter_count.max(1) as u64
