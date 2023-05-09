@@ -5,10 +5,10 @@ use tentacle::{
     context::ServiceContext,
     error::{DialerErrorKind, HandshakeErrorKind, ProtocolHandleErrorKind},
     multiaddr::Multiaddr,
-    secio::{error::SecioError, PeerId},
+    secio::{error::SecioError, KeyProvider, PeerId},
     service::{
-        ProtocolHandle, Service, ServiceAsyncControl, ServiceError, ServiceEvent, SessionType,
-        TargetProtocol, TcpSocket,
+        HandshakeType, ProtocolHandle, Service, ServiceAsyncControl, ServiceError, ServiceEvent,
+        SessionType, TargetProtocol, TcpSocket,
     },
     traits::ServiceHandle,
     utils::{extract_peer_id, is_reachable, multiaddr_to_socketaddr},
@@ -184,7 +184,7 @@ impl Network for NetworkServiceHandle {
     }
 }
 
-pub struct NetworkService {
+pub struct NetworkService<K> {
     // Config backup
     config: Arc<NetworkConfig>,
 
@@ -194,14 +194,17 @@ pub struct NetworkService {
 
     // Core service
     peer_mgr_handle: Arc<PeerManager>,
-    net:             Option<Service<ServiceHandler>>,
+    net:             Option<Service<ServiceHandler, K>>,
 
     control:            ServiceAsyncControl,
     try_identify_count: u8,
 }
 
-impl NetworkService {
-    pub fn new(config: NetworkConfig) -> Self {
+impl<K> NetworkService<K>
+where
+    K: KeyProvider,
+{
+    pub fn new(config: NetworkConfig, key_provider: K) -> Self {
         let config = Arc::new(config);
         let peer_manager = Arc::new(PeerManager::new(Arc::clone(&config)));
         let service_handle = ServiceHandler {
@@ -262,7 +265,7 @@ impl NetworkService {
         }
 
         service_builder = service_builder
-            .key_pair(config.secio_keypair.clone())
+            .handshake_type(HandshakeType::Secio(key_provider))
             .yamux_config(yamux_config)
             .forever(true)
             .max_connection_number(config.max_connections)
