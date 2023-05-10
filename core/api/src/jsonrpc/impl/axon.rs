@@ -4,7 +4,7 @@ use jsonrpsee::core::Error;
 
 use protocol::async_trait;
 use protocol::traits::{APIAdapter, Context};
-use protocol::types::{Block, Proof};
+use protocol::types::{Block, Metadata, Proof, U256};
 
 use crate::jsonrpc::web3_types::BlockId;
 use crate::jsonrpc::{AxonRpcServer, RpcResult};
@@ -41,6 +41,26 @@ impl<Adapter: APIAdapter + 'static> AxonRpcServer for AxonRpcImpl<Adapter> {
             .get_block_by_id(block_id)
             .await?
             .map(|b| b.header.proof);
+        Ok(ret)
+    }
+
+    async fn get_metadata_by_number(&self, block_number: U256) -> RpcResult<Metadata> {
+        let ret = self
+            .adapter
+            .get_metadata_by_number(Context::new(), Some(block_number.as_u64()))
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+
+        Ok(ret)
+    }
+
+    async fn get_current_metadata(&self) -> RpcResult<Metadata> {
+        let ret = self
+            .adapter
+            .get_metadata_by_number(Context::new(), None)
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+
         Ok(ret)
     }
 }

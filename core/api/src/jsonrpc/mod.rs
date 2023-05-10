@@ -11,7 +11,7 @@ use jsonrpsee::{core::Error, proc_macros::rpc};
 
 use common_config_parser::types::Config;
 use protocol::traits::APIAdapter;
-use protocol::types::{Block, Hash, Hex, Proof, H160, H256, U256};
+use protocol::types::{Block, Hash, Hex, Metadata, Proof, H160, H256, U256};
 use protocol::ProtocolResult;
 
 use crate::jsonrpc::web3_types::{
@@ -209,6 +209,12 @@ pub trait AxonRpc {
 
     #[method(name = "axon_getProofById")]
     async fn get_proof_by_id(&self, block_id: BlockId) -> RpcResult<Option<Proof>>;
+
+    #[method(name = "axon_getMetadataByNumber")]
+    async fn get_metadata_by_number(&self, block_number: U256) -> RpcResult<Metadata>;
+
+    #[method(name = "axon_getCurrentMetadata")]
+    async fn get_current_metadata(&self) -> RpcResult<Metadata>;
 }
 
 #[rpc(server)]
