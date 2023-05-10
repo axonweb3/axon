@@ -23,7 +23,7 @@ use crate::jsonrpc::web3_types::{
     BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter,
     Web3Log, Web3Receipt, Web3Transaction,
 };
-use crate::jsonrpc::{error::RpcError, AxonWeb3RpcServer, RpcResult};
+use crate::jsonrpc::{error::RpcError, RpcResult, Web3RpcServer};
 use crate::APIError;
 
 pub(crate) const MAX_LOG_NUM: usize = 10000;
@@ -90,7 +90,7 @@ impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
 }
 
 #[async_trait]
-impl<Adapter: APIAdapter + 'static> AxonWeb3RpcServer for Web3RpcImpl<Adapter> {
+impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
     #[metrics_rpc("eth_sendRawTransaction")]
     async fn send_raw_transaction(&self, tx: Hex) -> RpcResult<H256> {
         let utx = UnverifiedTransaction::decode(&tx.as_bytes())
