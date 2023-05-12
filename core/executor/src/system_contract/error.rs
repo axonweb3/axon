@@ -71,6 +71,9 @@ pub enum SystemScriptError {
 
     #[error("Add for past epoch")]
     PastEpoch,
+
+    #[error("None CKB related info")]
+    NoneCkbRelatedInfo,
 }
 
 impl From<SystemScriptError> for ProtocolError {

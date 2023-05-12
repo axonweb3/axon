@@ -107,7 +107,7 @@ impl MetadataStore {
         let raw = self
             .trie
             .get(CKB_RELATED_INFO_KEY.as_bytes())?
-            .expect("ckb related info should exist");
+            .ok_or_else(|| SystemScriptError::NoneCkbRelatedInfo)?;
         CkbRelatedInfo::decode(raw)
     }
 

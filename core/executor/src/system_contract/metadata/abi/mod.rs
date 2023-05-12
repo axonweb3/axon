@@ -119,3 +119,23 @@ impl From<metadata_abi::CkbRelatedInfo> for CkbRelatedInfo {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ethers::core::abi::AbiEncode;
+
+    #[test]
+    fn test_print_ckb_related_info() {
+        let info: metadata_abi::CkbRelatedInfo = CkbRelatedInfo {
+            metadata_type_id:       H256::from([1u8; 32]),
+            checkpoint_type_id:     H256::from([2u8; 32]),
+            stake_token_type_id:    H256::from([3u8; 32]),
+            delegate_token_type_id: H256::from([4u8; 32]),
+        }
+        .into();
+
+        let raw = AbiEncode::encode(info);
+        println!("{:?}", raw);
+    }
+}
