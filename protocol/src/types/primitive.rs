@@ -322,6 +322,7 @@ pub struct Metadata {
     pub brake_ratio:     u64,
     pub tx_num_limit:    u64,
     pub max_tx_size:     u64,
+    #[serde(skip_deserializing)]
     pub propose_counter: Vec<ProposeCount>,
 }
 

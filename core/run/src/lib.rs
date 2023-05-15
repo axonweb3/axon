@@ -108,6 +108,7 @@ impl Axon {
             self.start().await
         })?;
         rt.shutdown_timeout(std::time::Duration::from_secs(1));
+
         Ok(())
     }
 

@@ -117,7 +117,7 @@
             ],
             "internalType": "struct MetadataManager.ProposeCount",
             "name": "propose_counter",
-            "type": "tuple"
+            "type": "tuple[]"
           }
         ],
         "internalType": "struct MetadataManager.Metadata",

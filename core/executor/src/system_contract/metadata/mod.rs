@@ -103,9 +103,14 @@ impl SystemContract for MetadataContract {
     }
 
     fn after_block_hook<Adapter: ExecutorAdapter>(&self, adapter: &mut Adapter) {
+        let block_number = adapter.block_number();
+        if block_number.is_zero() {
+            return;
+        }
+
         MetadataStore::new()
             .unwrap()
-            .update_propose_count(adapter.block_number().as_u64(), &adapter.origin())
+            .update_propose_count(block_number.as_u64(), &adapter.origin())
             .unwrap();
     }
 }
