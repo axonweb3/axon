@@ -63,6 +63,9 @@ pub enum SystemScriptError {
     #[error("Query for future epoch")]
     FutureEpoch,
 
+    #[error("Missing {0} metadata record")]
+    MissingRecord(u64),
+
     #[error("Decode epoch segment error {0}")]
     DecodeEpochSegment(String),
 

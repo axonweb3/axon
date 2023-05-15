@@ -4,14 +4,11 @@ use std::sync::Arc;
 use protocol::types::{CkbRelatedInfo, Metadata, H160, H256};
 use protocol::{codec::ProtocolCodec, ProtocolResult};
 
-use crate::system_contract::error::SystemScriptError;
-use crate::system_contract::metadata::CKB_RELATED_INFO_KEY;
+use crate::{system_contract::error::SystemScriptError, MPTTrie};
 use crate::system_contract::metadata::{
-    segment::EpochSegment, CURRENT_METADATA_ROOT, EPOCH_SEGMENT_KEY,
+    segment::EpochSegment, CURRENT_METADATA_ROOT, EPOCH_SEGMENT_KEY, CKB_RELATED_INFO_KEY
 };
-use crate::system_contract::trie_db::RocksTrieDB;
-use crate::system_contract::METADATA_DB;
-use crate::MPTTrie;
+use crate::system_contract::{trie_db::RocksTrieDB, METADATA_DB};
 
 pub struct MetadataStore {
     pub trie: MPTTrie<RocksTrieDB>,
@@ -94,7 +91,7 @@ impl MetadataStore {
         let raw = self
             .trie
             .get(&epoch.to_be_bytes())?
-            .ok_or_else(|| SystemScriptError::FutureEpoch)?;
+            .ok_or_else(|| SystemScriptError::MissingRecord(epoch))?;
         Metadata::decode(raw)
     }
 
