@@ -11,7 +11,7 @@ use jsonrpsee::{core::Error, proc_macros::rpc};
 
 use common_config_parser::types::Config;
 use protocol::traits::APIAdapter;
-use protocol::types::{Hash, Hex, H160, H256, U256};
+use protocol::types::{Block, Hash, Hex, Proof, H160, H256, U256};
 use protocol::ProtocolResult;
 
 use crate::jsonrpc::web3_types::{
@@ -24,7 +24,7 @@ use crate::APIError;
 type RpcResult<T> = Result<T, Error>;
 
 #[rpc(server)]
-pub trait AxonWeb3Rpc {
+pub trait Web3Rpc {
     /// Sends signed transaction, returning its hash.
     #[method(name = "eth_sendRawTransaction")]
     async fn send_raw_transaction(&self, tx: Hex) -> RpcResult<H256>;
@@ -140,6 +140,7 @@ pub trait AxonWeb3Rpc {
 
     #[method(name = "eth_getUncleCountByBlockHash")]
     async fn get_uncle_count_by_block_hash(&self, hash: Hash) -> RpcResult<U256>;
+
     #[method(name = "eth_getUncleCountByBlockNumber")]
     async fn get_uncle_count_by_block_number(&self, number: BlockId) -> RpcResult<U256>;
 }
@@ -202,6 +203,15 @@ pub trait AxonNodeRpc {
 }
 
 #[rpc(server)]
+pub trait AxonRpc {
+    #[method(name = "axon_getBlockById")]
+    async fn get_block_by_id(&self, block_id: BlockId) -> RpcResult<Option<Block>>;
+
+    #[method(name = "axon_getProofById")]
+    async fn get_proof_by_id(&self, block_id: BlockId) -> RpcResult<Option<Proof>>;
+}
+
+#[rpc(server)]
 pub trait CkbLightClientRpc {
     #[method(name = "ckb_getBlockHeaderByHash")]
     async fn get_block_header_by_hash(&self, hash: Hash) -> RpcResult<Option<CkbHeaderView>>;
@@ -223,10 +233,12 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
     let mut rpc = r#impl::Web3RpcImpl::new(Arc::clone(&adapter), config.rpc.gas_cap).into_rpc();
     let node_rpc =
         r#impl::NodeRpcImpl::new(&config.rpc.client_version, config.data_path).into_rpc();
+    let axon_rpc = r#impl::AxonRpcImpl::new(Arc::clone(&adapter)).into_rpc();
     let filter = r#impl::filter_module(Arc::clone(&adapter)).into_rpc();
     let ckb_light_client_rpc = r#impl::CkbLightClientRpcImpl::default().into_rpc();
 
     rpc.merge(node_rpc).unwrap();
+    rpc.merge(axon_rpc).unwrap();
     rpc.merge(filter).unwrap();
     rpc.merge(ckb_light_client_rpc).unwrap();
 

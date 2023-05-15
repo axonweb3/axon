@@ -37,8 +37,6 @@ impl RocksAdapter {
             map_category(StorageCategory::Wal),
             map_category(StorageCategory::HashHeight),
             map_category(StorageCategory::Code),
-            map_category(StorageCategory::CkbCrossChain),
-            map_category(StorageCategory::IbcCrossChain),
         ];
 
         let (mut opts, cf_descriptors) = if let Some(ref file) = config.options_file {
@@ -286,8 +284,6 @@ const C_RECEIPTS: &str = "c4";
 const C_WALS: &str = "c5";
 const C_HASH_HEIGHT_MAP: &str = "c6";
 const C_EVM_CODE_MAP: &str = "c7";
-const C_CKB_CROSSCHAIN_MAP: &str = "c8";
-const C_IBC_CROSSCHAIN_MAP: &str = "c9";
 
 fn map_category(c: StorageCategory) -> &'static str {
     match c {
@@ -298,8 +294,6 @@ fn map_category(c: StorageCategory) -> &'static str {
         StorageCategory::Wal => C_WALS,
         StorageCategory::HashHeight => C_HASH_HEIGHT_MAP,
         StorageCategory::Code => C_EVM_CODE_MAP,
-        StorageCategory::CkbCrossChain => C_CKB_CROSSCHAIN_MAP,
-        StorageCategory::IbcCrossChain => C_IBC_CROSSCHAIN_MAP,
     }
 }
 
