@@ -5,9 +5,9 @@ use core_executor::{
 };
 use protocol::traits::{APIAdapter, Context, Executor, ExecutorAdapter, MemPool, Network, Storage};
 use protocol::types::{
-    Account, BigEndianHash, Block, BlockNumber, Bytes, ExecutorContext, Hash, Header, Metadata,
-    Proposal, Receipt, SignedTransaction, TxResp, H160, MAX_BLOCK_GAS_LIMIT, NIL_DATA, RLP_NULL,
-    U256,
+    Account, BigEndianHash, Block, BlockNumber, Bytes, CkbRelatedInfo, ExecutorContext, Hash,
+    Header, Metadata, Proposal, Receipt, SignedTransaction, TxResp, H160, MAX_BLOCK_GAS_LIMIT,
+    NIL_DATA, RLP_NULL, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, trie, ProtocolResult};
 
@@ -242,5 +242,9 @@ where
 
         let num = self.storage.get_latest_block_header(ctx).await?.number;
         MetadataHandle::default().get_metadata_by_block_number(num)
+    }
+
+    async fn get_ckb_related_info(&self, ctx: Context) -> ProtocolResult<CkbRelatedInfo> {
+        MetadataHandle::default().get_ckb_related_info()
     }
 }

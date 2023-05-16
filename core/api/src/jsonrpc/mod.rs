@@ -11,7 +11,7 @@ use jsonrpsee::{core::Error, proc_macros::rpc};
 
 use common_config_parser::types::Config;
 use protocol::traits::APIAdapter;
-use protocol::types::{Block, Hash, Hex, Metadata, Proof, H160, H256, U256};
+use protocol::types::{Block, CkbRelatedInfo, Hash, Hex, Metadata, Proof, H160, H256, U256};
 use protocol::ProtocolResult;
 
 use crate::jsonrpc::web3_types::{
@@ -215,6 +215,9 @@ pub trait AxonRpc {
 
     #[method(name = "axon_getCurrentMetadata")]
     async fn get_current_metadata(&self) -> RpcResult<Metadata>;
+
+    #[method(name = "axon_getCkbRelatedInfo")]
+    async fn get_ckb_related_info(&self) -> RpcResult<CkbRelatedInfo>;
 }
 
 #[rpc(server)]

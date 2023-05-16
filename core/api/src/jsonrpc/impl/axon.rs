@@ -4,7 +4,7 @@ use jsonrpsee::core::Error;
 
 use protocol::async_trait;
 use protocol::traits::{APIAdapter, Context};
-use protocol::types::{Block, Metadata, Proof, U256};
+use protocol::types::{Block, CkbRelatedInfo, Metadata, Proof, U256};
 
 use crate::jsonrpc::web3_types::BlockId;
 use crate::jsonrpc::{AxonRpcServer, RpcResult};
@@ -58,6 +58,16 @@ impl<Adapter: APIAdapter + 'static> AxonRpcServer for AxonRpcImpl<Adapter> {
         let ret = self
             .adapter
             .get_metadata_by_number(Context::new(), None)
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+
+        Ok(ret)
+    }
+
+    async fn get_ckb_related_info(&self) -> RpcResult<CkbRelatedInfo> {
+        let ret = self
+            .adapter
+            .get_ckb_related_info(Context::new())
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
