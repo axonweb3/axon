@@ -101,10 +101,12 @@ impl From<metadata_abi::ProposeCount> for ProposeCount {
 impl From<CkbRelatedInfo> for metadata_abi::CkbRelatedInfo {
     fn from(value: CkbRelatedInfo) -> Self {
         metadata_abi::CkbRelatedInfo {
-            metadata_type_id:       value.metadata_type_id.0,
-            checkpoint_type_id:     value.checkpoint_type_id.0,
-            stake_token_type_id:    value.stake_token_type_id.0,
-            delegate_token_type_id: value.delegate_token_type_id.0,
+            metadata_type_id:     value.metadata_type_id.0,
+            checkpoint_type_id:   value.checkpoint_type_id.0,
+            xudt_args:            value.xudt_args.0,
+            stake_smt_type_id:    value.stake_smt_type_id.0,
+            delegate_smt_type_id: value.delegate_smt_type_id.0,
+            reward_smt_type_id:   value.reward_smt_type_id.0,
         }
     }
 }
@@ -112,10 +114,12 @@ impl From<CkbRelatedInfo> for metadata_abi::CkbRelatedInfo {
 impl From<metadata_abi::CkbRelatedInfo> for CkbRelatedInfo {
     fn from(value: metadata_abi::CkbRelatedInfo) -> Self {
         CkbRelatedInfo {
-            metadata_type_id:       H256(value.metadata_type_id),
-            checkpoint_type_id:     H256(value.checkpoint_type_id),
-            stake_token_type_id:    H256(value.stake_token_type_id),
-            delegate_token_type_id: H256(value.delegate_token_type_id),
+            metadata_type_id:     H256(value.metadata_type_id),
+            checkpoint_type_id:   H256(value.checkpoint_type_id),
+            xudt_args:            H256(value.xudt_args),
+            stake_smt_type_id:    H256(value.stake_smt_type_id),
+            delegate_smt_type_id: H256(value.delegate_smt_type_id),
+            reward_smt_type_id:   H256(value.reward_smt_type_id),
         }
     }
 }
@@ -123,19 +127,25 @@ impl From<metadata_abi::CkbRelatedInfo> for CkbRelatedInfo {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ethers::core::abi::AbiEncode;
+    use ethers::core::abi::{AbiDecode, AbiEncode};
 
     #[test]
     fn test_print_ckb_related_info() {
         let info: metadata_abi::CkbRelatedInfo = CkbRelatedInfo {
-            metadata_type_id:       H256::from([1u8; 32]),
-            checkpoint_type_id:     H256::from([2u8; 32]),
-            stake_token_type_id:    H256::from([3u8; 32]),
-            delegate_token_type_id: H256::from([4u8; 32]),
+            metadata_type_id:     H256::from([1u8; 32]),
+            checkpoint_type_id:   H256::from([2u8; 32]),
+            xudt_args:            H256::from([3u8; 32]),
+            stake_smt_type_id:    H256::from([4u8; 32]),
+            delegate_smt_type_id: H256::from([5u8; 32]),
+            reward_smt_type_id:   H256::from([6u8; 32]),
         }
         .into();
+        let call = metadata_abi::SetCkbRelatedInfoCall {
+            ckb_related_info: info,
+        };
 
-        let raw = AbiEncode::encode(info);
-        println!("{:?}", raw);
+        let raw = AbiEncode::encode(call.clone());
+        let decode = metadata_abi::SetCkbRelatedInfoCall::decode(&raw).unwrap();
+        assert_eq!(call, decode);
     }
 }

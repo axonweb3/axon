@@ -131,13 +131,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "construct",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "uint64",
@@ -290,12 +283,22 @@
           },
           {
             "internalType": "bytes32",
-            "name": "stake_token_type_id",
+            "name": "xudt_args",
             "type": "bytes32"
           },
           {
             "internalType": "bytes32",
-            "name": "delegate_token_type_id",
+            "name": "stake_smt_type_id",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "delegate_smt_type_id",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "reward_smt_type_id",
             "type": "bytes32"
           }
         ],

@@ -415,10 +415,12 @@ impl std::fmt::Debug for ValidatorExtend {
 
 #[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct CkbRelatedInfo {
-    pub metadata_type_id:       H256,
-    pub checkpoint_type_id:     H256,
-    pub stake_token_type_id:    H256,
-    pub delegate_token_type_id: H256,
+    pub metadata_type_id:     H256,
+    pub checkpoint_type_id:   H256,
+    pub xudt_args:            H256,
+    pub stake_smt_type_id:    H256,
+    pub delegate_smt_type_id: H256,
+    pub reward_smt_type_id:   H256,
 }
 
 fn ensure_len(real: usize, expect: usize) -> ProtocolResult<()> {
