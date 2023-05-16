@@ -9,7 +9,7 @@ jemalloc-ctl = { version = "0.5", package = "tikv-jemalloc-ctl" }
 libc = "0.2"
 log = "0.4"
 once_cell = "1.17"
-rocksdb = { version = "0.19", package = "ckb-rocksdb" }
+rocksdb = { version = "0.20", package = "ckb-rocksdb" }
 
 common-apm = { path = "../apm" }
 protocol = { path = "../../protocol", package = "axon-protocol" }
