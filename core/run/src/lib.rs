@@ -54,10 +54,8 @@ use core_consensus::{
     util::OverlordCrypto, ConsensusWal, DurationConfig, OverlordConsensus,
     OverlordConsensusAdapter, OverlordSynchronization, SignedTxsWAL,
 };
-use core_executor::{
-    system_contract::{self, metadata::MetadataHandle},
-    AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB,
-};
+use core_executor::system_contract::{self, metadata::MetadataHandle};
+use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB};
 use core_interoperation::InteroperationImpl;
 use core_mempool::{
     DefaultMemPoolAdapter, MemPoolImpl, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
@@ -110,6 +108,7 @@ impl Axon {
             self.start().await
         })?;
         rt.shutdown_timeout(std::time::Duration::from_secs(1));
+
         Ok(())
     }
 

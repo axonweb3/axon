@@ -103,9 +103,21 @@
             "type": "uint64"
           },
           {
-            "internalType": "bytes32",
-            "name": "last_checkpoint_block_hash",
-            "type": "bytes32"
+            "components": [
+              {
+                "internalType": "address",
+                "name": "address_",
+                "type": "address"
+              },
+              {
+                "internalType": "uint64",
+                "name": "count",
+                "type": "uint64"
+              }
+            ],
+            "internalType": "struct MetadataManager.ProposeCount",
+            "name": "propose_counter",
+            "type": "tuple[]"
           }
         ],
         "internalType": "struct MetadataManager.Metadata",
@@ -114,13 +126,6 @@
       }
     ],
     "name": "appendMetadata",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "construct",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -237,9 +242,21 @@
             "type": "uint64"
           },
           {
-            "internalType": "bytes32",
-            "name": "last_checkpoint_block_hash",
-            "type": "bytes32"
+            "components": [
+              {
+                "internalType": "address",
+                "name": "address_",
+                "type": "address"
+              },
+              {
+                "internalType": "uint64",
+                "name": "count",
+                "type": "uint64"
+              }
+            ],
+            "internalType": "struct MetadataManager.ProposeCount",
+            "name": "propose_counter",
+            "type": "tuple[]"
           }
         ],
         "internalType": "struct MetadataManager.Metadata",
@@ -253,56 +270,45 @@
   {
     "inputs": [
       {
-        "internalType": "address",
-        "name": "verifier",
-        "type": "address"
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "metadata_type_id",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "checkpoint_type_id",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "xudt_args",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "stake_smt_type_id",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "delegate_smt_type_id",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "reward_smt_type_id",
+            "type": "bytes32"
+          }
+        ],
+        "internalType": "struct MetadataManager.CkbRelatedInfo",
+        "name": "ckb_related_info",
+        "type": "tuple"
       }
     ],
-    "name": "isProposer",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "relayer",
-        "type": "address"
-      }
-    ],
-    "name": "isVerifier",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "verifierList",
-    "outputs": [
-      {
-        "internalType": "address[]",
-        "name": "",
-        "type": "address[]"
-      },
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
+    "name": "setCkbRelatedInfo",
+    "outputs": [],
     "stateMutability": "view",
     "type": "function"
   }
