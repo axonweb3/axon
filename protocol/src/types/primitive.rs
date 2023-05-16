@@ -343,6 +343,12 @@ pub struct ProposeCount {
     pub count:   u64,
 }
 
+impl ProposeCount {
+    pub fn increase(&mut self) {
+        self.count += 1;
+    }
+}
+
 impl From<(H160, u64)> for ProposeCount {
     fn from(value: (H160, u64)) -> Self {
         ProposeCount {

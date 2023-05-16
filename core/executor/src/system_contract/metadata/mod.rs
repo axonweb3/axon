@@ -17,7 +17,9 @@ use protocol::traits::ExecutorAdapter;
 use protocol::types::{Hasher, Metadata, SignedTransaction, TxResp, H160, H256};
 
 use crate::exec_try;
-use crate::system_contract::utils::{revert_resp, succeed_resp, update_states};
+use crate::system_contract::utils::{
+    generate_mpt_root_changes, revert_resp, succeed_resp, update_states,
+};
 use crate::system_contract::{system_contract_address, SystemContract, CURRENT_METADATA_ROOT};
 
 type Epoch = u64;
@@ -108,10 +110,15 @@ impl SystemContract for MetadataContract {
             return;
         }
 
-        MetadataStore::new()
+        if let Err(e) = MetadataStore::new()
             .unwrap()
             .update_propose_count(block_number.as_u64(), &adapter.origin())
-            .unwrap();
+        {
+            panic!("Update propose count at {:?} failed: {:?}", block_number, e)
+        }
+
+        let changes = generate_mpt_root_changes(adapter, Self::ADDRESS);
+        adapter.apply(changes, vec![], false);
     }
 }
 

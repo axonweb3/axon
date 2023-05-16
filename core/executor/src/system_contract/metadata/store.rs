@@ -4,11 +4,11 @@ use std::sync::Arc;
 use protocol::types::{CkbRelatedInfo, Metadata, H160, H256};
 use protocol::{codec::ProtocolCodec, ProtocolResult};
 
-use crate::{system_contract::error::SystemScriptError, MPTTrie};
 use crate::system_contract::metadata::{
-    segment::EpochSegment, CURRENT_METADATA_ROOT, EPOCH_SEGMENT_KEY, CKB_RELATED_INFO_KEY
+    segment::EpochSegment, CKB_RELATED_INFO_KEY, CURRENT_METADATA_ROOT, EPOCH_SEGMENT_KEY,
 };
 use crate::system_contract::{trie_db::RocksTrieDB, METADATA_DB};
+use crate::{system_contract::error::SystemScriptError, MPTTrie};
 
 pub struct MetadataStore {
     pub trie: MPTTrie<RocksTrieDB>,
@@ -62,6 +62,7 @@ impl MetadataStore {
             return Err(SystemScriptError::PastEpoch.into());
         }
 
+        // Build propose counter
         let map = metadata
             .verifier_list
             .iter()
@@ -74,6 +75,28 @@ impl MetadataStore {
 
         self.trie
             .insert(EPOCH_SEGMENT_KEY.as_bytes(), &epoch_segment.as_bytes())?;
+        self.trie
+            .insert(&metadata.epoch.to_be_bytes(), &metadata.encode()?)?;
+        let new_root = self.trie.commit()?;
+        CURRENT_METADATA_ROOT.swap(Arc::new(new_root));
+
+        Ok(())
+    }
+
+    pub fn update_propose_count(
+        &mut self,
+        block_number: u64,
+        proposer: &H160,
+    ) -> ProtocolResult<()> {
+        let mut metadata = self.get_metadata_by_block_number(block_number)?;
+        if let Some(counter) = metadata
+            .propose_counter
+            .iter_mut()
+            .find(|p| &p.address == proposer)
+        {
+            counter.increase();
+        }
+
         self.trie
             .insert(&metadata.epoch.to_be_bytes(), &metadata.encode()?)?;
         let new_root = self.trie.commit()?;
@@ -106,28 +129,6 @@ impl MetadataStore {
             .get(CKB_RELATED_INFO_KEY.as_bytes())?
             .ok_or_else(|| SystemScriptError::NoneCkbRelatedInfo)?;
         CkbRelatedInfo::decode(raw)
-    }
-
-    pub fn update_propose_count(
-        &mut self,
-        block_number: u64,
-        proposer: &H160,
-    ) -> ProtocolResult<()> {
-        let mut metadata = self.get_metadata_by_block_number(block_number)?;
-        let mut map = metadata
-            .propose_counter
-            .iter()
-            .map(|c| (c.address, c.count))
-            .collect::<BTreeMap<_, _>>();
-        *map.get_mut(proposer).unwrap() += 1;
-        metadata.propose_counter = map.into_iter().map(Into::into).collect();
-
-        self.trie
-            .insert(&metadata.epoch.to_be_bytes(), &metadata.encode()?)?;
-        let new_root = self.trie.commit()?;
-        CURRENT_METADATA_ROOT.swap(Arc::new(new_root));
-
-        Ok(())
     }
 
     fn get_epoch_by_block_number(&self, block_number: u64) -> ProtocolResult<u64> {
