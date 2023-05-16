@@ -244,7 +244,7 @@ where
         MetadataHandle::default().get_metadata_by_block_number(num)
     }
 
-    async fn get_ckb_related_info(&self, ctx: Context) -> ProtocolResult<CkbRelatedInfo> {
+    async fn get_ckb_related_info(&self, _ctx: Context) -> ProtocolResult<CkbRelatedInfo> {
         MetadataHandle::default().get_ckb_related_info()
     }
 }
