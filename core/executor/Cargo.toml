@@ -30,7 +30,7 @@ protocol = { path = "../../protocol", package = "axon-protocol" }
 ripemd = "0.1"
 rlp = "0.5"
 rlp-derive = "0.1"
-rocksdb = { version = "0.19", package = "ckb-rocksdb" }
+rocksdb = { version = "0.20", package = "ckb-rocksdb" }
 rug = "1.19"
 sha2 = "0.10"
 thiserror = "1.0"

@@ -11,7 +11,7 @@ lazy_static = "1.4"
 log = "0.4"
 lru = "0.10"
 parking_lot = "0.12"
-rocksdb = { version = "0.19", package = "ckb-rocksdb" }
+rocksdb = { version = "0.20", package = "ckb-rocksdb" }
 
 common-apm = { path = "../../common/apm" }
 common-apm-derive = { path = "../../common/apm-derive" }
