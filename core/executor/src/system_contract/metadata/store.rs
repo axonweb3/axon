@@ -62,7 +62,8 @@ impl MetadataStore {
             return Err(SystemScriptError::PastEpoch.into());
         }
 
-        if (metadata.version.start != epoch_segment.last_block_number() + 1) && metadata.epoch != 0 {
+        if (metadata.version.start != epoch_segment.last_block_number() + 1) && metadata.epoch != 0
+        {
             return Err(SystemScriptError::MetadataVersionDiscontinuity.into());
         }
 
