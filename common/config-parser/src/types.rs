@@ -9,7 +9,6 @@ use protocol::types::{Hex, H160, U256};
 
 pub const DEFAULT_BROADCAST_TXS_SIZE: usize = 200;
 pub const DEFAULT_BROADCAST_TXS_INTERVAL: u64 = 200; // milliseconds
-pub const DEFAULT_OVERLORD_GAP: usize = 5;
 pub const DEFAULT_SYNC_TXS_CHUNK_SIZE: usize = 5000;
 pub const DEFAULT_CACHE_SIZE: usize = 100;
 
@@ -121,18 +120,12 @@ pub struct ConfigNetworkBootstrap {
     pub multi_address: MultiAddr,
 }
 
-fn default_overlord_gap() -> usize {
-    DEFAULT_OVERLORD_GAP
-}
-
 fn default_sync_txs_chunk_size() -> usize {
     DEFAULT_SYNC_TXS_CHUNK_SIZE
 }
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct ConfigConsensus {
-    #[serde(default = "default_overlord_gap")]
-    pub overlord_gap:        usize,
     #[serde(default = "default_sync_txs_chunk_size")]
     pub sync_txs_chunk_size: usize,
 }
