@@ -17,24 +17,35 @@ use protocol::types::{
     UnverifiedTransaction, ValidatorExtend, H160,
 };
 
-fn genesis_generator(priv_key: Secp256k1RecoverablePrivateKey, chain_id: u64, metadata: Metadata) {
+fn genesis_generator(
+    priv_key: Secp256k1RecoverablePrivateKey,
+    chain_id: u64,
+    metadata: (Metadata, Metadata),
+) {
     // template json file path
     let input_path = "../chain/genesis_single_node.json";
     // read block info from template json file
     let mut genesis: RichBlock =
         serde_json::from_slice(&std::fs::read(input_path).unwrap()).unwrap();
 
-    let data =
+    let data_0 =
         metadata_abi::MetadataContractCalls::AppendMetadata(metadata_abi::AppendMetadataCall {
-            metadata: metadata.into(),
+            metadata: metadata.0.into(),
+        })
+        .encode();
+    let data_1 =
+        metadata_abi::MetadataContractCalls::AppendMetadata(metadata_abi::AppendMetadataCall {
+            metadata: metadata.1.into(),
         })
         .encode();
 
     for (idx, tx) in genesis.txs.iter_mut().enumerate() {
         let mut utx = tx.transaction.unsigned.clone();
 
-        if idx == 2 {
-            utx.set_data(data.clone().into());
+        if idx == 1 {
+            utx.set_data(data_0.clone().into());
+        } else if idx == 2 {
+            utx.set_data(data_1.clone().into())
         }
 
         let new_tx = build_axon_txs(&priv_key, utx, chain_id);
@@ -82,7 +93,7 @@ fn build_axon_txs(
 }
 
 // get metadata key from config.toml
-fn get_metadata(config_path: String) -> Metadata {
+fn get_metadata(config_path: String) -> (Metadata, Metadata) {
     let entries = fs::read_dir(config_path)
         .unwrap()
         .filter_map(|res| {
@@ -114,10 +125,14 @@ fn get_metadata(config_path: String) -> Metadata {
         })
         .collect::<Vec<_>>();
 
-    println!("{:?}", ve_list);
-
     metadata.verifier_list = ve_list;
-    metadata
+
+    let mut metadata_1 = metadata.clone();
+    metadata_1.epoch = metadata.epoch + 1;
+    metadata_1.version.start = metadata.version.end + 1;
+    metadata_1.version.end = metadata_1.version.start + metadata.version.end - 1;
+
+    (metadata, metadata_1)
 }
 
 // get ValidatorExtend properties values

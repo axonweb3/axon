@@ -261,7 +261,8 @@ mod serde_hex {
 #[cfg(test)]
 mod tests {
     use crate::types::{
-        Block, Header, Hex, Metadata, MetadataVersion, RichBlock, ValidatorExtend, H160,
+        Block, Header, Hex, Metadata, MetadataVersion, ProposeCount, RichBlock, ValidatorExtend,
+        H160,
     };
     use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -326,7 +327,10 @@ mod tests {
                 propose_weight: 1,
                 vote_weight: 1,
             }],
-            last_checkpoint_block_hash : Default::default(),
+            propose_counter: vec![ProposeCount {
+                address: H160::default(),
+                count: 0,
+            }],
         };
 
         println!("{}", serde_json::to_string(&metadata).unwrap());

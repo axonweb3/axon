@@ -11,9 +11,7 @@ clap = { version = "3.2", features = ["yaml", "cargo"] }
 common-config-parser = { path = "../../common/config-parser" }
 common-crypto = { path = "../../common/crypto" }
 core-executor = { path = "../../core/executor" }
-ethers-contract = { version = "2.0", features = ["abigen"] }
 ethers-core = "2.0"
-ethers-providers = "2.0"
 ophelia = "0.3"
 protocol = { path = "../../protocol", package = "axon-protocol" }
 rand = "0.7"
