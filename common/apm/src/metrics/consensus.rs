@@ -88,7 +88,7 @@ lazy_static! {
         register_int_gauge!("axon_consensus_height", "Height of axon").unwrap();
     pub static ref ENGINE_EXECUTING_BLOCK_GAUGE: IntGauge =
         register_int_gauge!("axon_executing_block_count", "The executing blocks").unwrap();
-    pub static ref ENGINE_COMMITED_TX_COUNTER: IntCounter = register_int_counter!(
+    pub static ref ENGINE_COMMITTED_TX_COUNTER: IntCounter = register_int_counter!(
         "axon_consensus_committed_tx_total",
         "The committed transactions"
     )

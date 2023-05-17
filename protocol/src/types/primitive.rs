@@ -304,7 +304,7 @@ impl MetadataVersion {
     }
 
     pub fn contains(&self, number: BlockNumber) -> bool {
-        self.start <= number && number < self.end
+        self.start < number && number <= self.end
     }
 }
 

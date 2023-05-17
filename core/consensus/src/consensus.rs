@@ -100,7 +100,7 @@ impl<Adapter: ConsensusAdapter + 'static> Consensus for OverlordConsensus<Adapte
 }
 
 impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
-    pub fn new(
+    pub async fn new(
         status: StatusAgent,
         node_info: NodeInfo,
         crypto: Arc<OverlordCrypto>,
@@ -121,6 +121,7 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
         let status = engine.status();
         let metadata = adapter
             .get_metadata_by_block_number(status.last_number + 1)
+            .await
             .unwrap();
 
         let overlord = Overlord::new(node_info.self_pub_key, Arc::clone(&engine), crypto, engine);
