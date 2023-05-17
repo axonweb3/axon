@@ -292,6 +292,67 @@ impl AxonExecutor {
             removed:      false,
         }
     }
+
+    #[cfg(test)]
+    fn test_exec<Adapter: ExecutorAdapter>(
+        &self,
+        adapter: &mut Adapter,
+        txs: &[SignedTransaction],
+        validators: &[ValidatorExtend],
+    ) -> ExecResp {
+        let txs_len = txs.len();
+        let block_number = adapter.block_number();
+        let mut res = Vec::with_capacity(txs_len);
+        let mut hashes = Vec::with_capacity(txs_len);
+        let (mut gas, mut fee) = (0u64, U256::zero());
+        let precompiles = build_precompile_set();
+        let config = Config::london();
+
+        for tx in txs.iter() {
+            adapter.set_gas_price(tx.transaction.unsigned.gas_price());
+            adapter.set_origin(tx.sender);
+
+            // Execute a transaction, if system contract dispatch return None, means the
+            // transaction called EVM
+            let mut r = system_contract_dispatch(adapter, tx)
+                .unwrap_or_else(|| Self::evm_exec(adapter, &config, &precompiles, tx));
+
+            r.logs = adapter.get_logs();
+            gas += r.gas_used;
+            fee = fee.checked_add(r.fee_cost).unwrap_or(U256::max_value());
+
+            hashes.push(Hasher::digest(&r.ret));
+            res.push(r);
+        }
+
+        // Allocate collected fee for validators
+        if !block_number.is_zero() {
+            let alloc =
+                (*FEE_ALLOCATOR)
+                    .load()
+                    .allocate(block_number, fee, adapter.origin(), validators);
+
+            for i in alloc.iter() {
+                if !i.amount.is_zero() {
+                    let mut account = adapter.get_account(&i.address);
+                    account.balance += i.amount;
+                    adapter.save_account(&i.address, &account);
+                }
+            }
+        }
+
+        // commit changes by all txs included in this block only once
+        let new_state_root = adapter.commit();
+
+        ExecResp {
+            state_root:   new_state_root,
+            receipt_root: TrieMerkle::from_iter(hashes.iter().enumerate())
+                .root_hash()
+                .unwrap_or_default(),
+            gas_used:     gas,
+            tx_resp:      res,
+        }
+    }
 }
 
 pub fn is_call_system_script(action: &TransactionAction) -> bool {

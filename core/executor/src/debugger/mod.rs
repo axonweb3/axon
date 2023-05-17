@@ -78,7 +78,7 @@ impl EvmDebugger {
     pub fn exec(&mut self, number: u64, txs: Vec<SignedTransaction>) -> ExecResp {
         let mut backend = self.backend(number);
         let evm = AxonExecutor::default();
-        let res = evm.exec(&mut backend, &txs, &[]);
+        let res = evm.test_exec(&mut backend, &txs, &[]);
         self.state_root = res.state_root;
         res
     }
