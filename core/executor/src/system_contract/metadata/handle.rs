@@ -1,4 +1,4 @@
-use protocol::types::{Metadata, H160};
+use protocol::types::{CkbRelatedInfo, Metadata, H160};
 use protocol::ProtocolResult;
 
 use crate::system_contract::metadata::MetadataStore;
@@ -36,5 +36,9 @@ impl MetadataHandle {
     pub fn is_validator(&self, block_number: u64, address: H160) -> ProtocolResult<bool> {
         let metadata = self.get_metadata_by_block_number(block_number)?;
         Ok(metadata.verifier_list.iter().any(|v| v.address == address))
+    }
+
+    pub fn get_ckb_related_info(&self) -> ProtocolResult<CkbRelatedInfo> {
+        MetadataStore::new()?.get_ckb_related_info()
     }
 }

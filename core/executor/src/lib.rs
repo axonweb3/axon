@@ -31,8 +31,8 @@ use protocol::types::{
 
 use crate::precompiles::build_precompile_set;
 use crate::system_contract::{
-    system_contract_dispatch, CkbLightClientContract, ImageCellContract, MetadataContract,
-    NativeTokenContract, SystemContract,
+    after_block_hook, before_block_hook, system_contract_dispatch, CkbLightClientContract,
+    ImageCellContract, MetadataContract, NativeTokenContract, SystemContract,
 };
 
 lazy_static::lazy_static! {
@@ -130,6 +130,9 @@ impl Executor for AxonExecutor {
         let precompiles = build_precompile_set();
         let config = Config::london();
 
+        // Execute system contracts before block hook.
+        before_block_hook(adapter);
+
         for tx in txs.iter() {
             adapter.set_gas_price(tx.transaction.unsigned.gas_price());
             adapter.set_origin(tx.sender);
@@ -162,6 +165,9 @@ impl Executor for AxonExecutor {
                 }
             }
         }
+
+        // Execute system contracts after block hook.
+        after_block_hook(adapter);
 
         // commit changes by all txs included in this block only once
         let new_state_root = adapter.commit();

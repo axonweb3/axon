@@ -17,7 +17,9 @@ use protocol::traits::ExecutorAdapter;
 use protocol::types::{Hasher, Metadata, SignedTransaction, TxResp, H160, H256};
 
 use crate::exec_try;
-use crate::system_contract::utils::{revert_resp, succeed_resp, update_states};
+use crate::system_contract::utils::{
+    generate_mpt_root_changes, revert_resp, succeed_resp, update_states,
+};
 use crate::system_contract::{system_contract_address, SystemContract, CURRENT_METADATA_ROOT};
 
 type Epoch = u64;
@@ -26,6 +28,7 @@ const METADATA_CACHE_SIZE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(1
 
 lazy_static::lazy_static! {
     static ref EPOCH_SEGMENT_KEY: H256 = Hasher::digest("epoch_segment");
+    static ref CKB_RELATED_INFO_KEY: H256 = Hasher::digest("ckb_related_info");
     static ref METADATA_CACHE: RwLock<LruCache<Epoch, Metadata>> =  RwLock::new(LruCache::new(METADATA_CACHE_SIZE));
 }
 
@@ -78,6 +81,17 @@ impl SystemContract for MetadataContract {
                     "[metadata] append metadata"
                 );
             }
+            metadata_abi::MetadataContractCalls::SetCkbRelatedInfo(c) => {
+                if !adapter.block_number().is_zero() {
+                    return revert_resp(gas_limit);
+                }
+
+                exec_try!(
+                    store.set_ckb_related_info(&c.ckb_related_info.into()),
+                    gas_limit,
+                    "[metadata] set ckb related info"
+                );
+            }
             // TODO: Metadata doesn't accept all abi calls so far.
             _ => {
                 log::error!("[metadata] invalid tx data");
@@ -89,4 +103,25 @@ impl SystemContract for MetadataContract {
 
         succeed_resp(gas_limit)
     }
+
+    fn after_block_hook<Adapter: ExecutorAdapter>(&self, adapter: &mut Adapter) {
+        let block_number = adapter.block_number();
+        if block_number.is_zero() {
+            return;
+        }
+
+        if let Err(e) = MetadataStore::new()
+            .unwrap()
+            .update_propose_count(block_number.as_u64(), &adapter.origin())
+        {
+            panic!("Update propose count at {:?} failed: {:?}", block_number, e)
+        }
+
+        let changes = generate_mpt_root_changes(adapter, Self::ADDRESS);
+        adapter.apply(changes, vec![], false);
+    }
+}
+
+pub fn check_ckb_related_info_exist() -> bool {
+    MetadataHandle::default().get_ckb_related_info().is_ok()
 }

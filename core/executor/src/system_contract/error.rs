@@ -63,6 +63,9 @@ pub enum SystemScriptError {
     #[error("Query for future epoch")]
     FutureEpoch,
 
+    #[error("Missing {0} metadata record")]
+    MissingRecord(u64),
+
     #[error("Decode epoch segment error {0}")]
     DecodeEpochSegment(String),
 
@@ -71,6 +74,9 @@ pub enum SystemScriptError {
 
     #[error("Add for past epoch")]
     PastEpoch,
+
+    #[error("None CKB related info")]
+    NoneCkbRelatedInfo,
 }
 
 impl From<SystemScriptError> for ProtocolError {

@@ -1,15 +1,14 @@
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use protocol::types::{Metadata, H256};
+use protocol::types::{CkbRelatedInfo, Metadata, H160, H256};
 use protocol::{codec::ProtocolCodec, ProtocolResult};
 
-use crate::system_contract::error::SystemScriptError;
 use crate::system_contract::metadata::{
-    segment::EpochSegment, CURRENT_METADATA_ROOT, EPOCH_SEGMENT_KEY,
+    segment::EpochSegment, CKB_RELATED_INFO_KEY, CURRENT_METADATA_ROOT, EPOCH_SEGMENT_KEY,
 };
-use crate::system_contract::trie_db::RocksTrieDB;
-use crate::system_contract::METADATA_DB;
-use crate::MPTTrie;
+use crate::system_contract::{trie_db::RocksTrieDB, METADATA_DB};
+use crate::{system_contract::error::SystemScriptError, MPTTrie};
 
 pub struct MetadataStore {
     pub trie: MPTTrie<RocksTrieDB>,
@@ -41,6 +40,11 @@ impl MetadataStore {
         Ok(MetadataStore { trie })
     }
 
+    pub fn set_ckb_related_info(&mut self, info: &CkbRelatedInfo) -> ProtocolResult<()> {
+        self.trie
+            .insert(CKB_RELATED_INFO_KEY.as_bytes(), &info.encode()?)
+    }
+
     pub fn append_metadata(&mut self, metadata: &Metadata) -> ProtocolResult<()> {
         let mut epoch_segment = EpochSegment::from_raw(
             self.trie
@@ -58,10 +62,41 @@ impl MetadataStore {
             return Err(SystemScriptError::PastEpoch.into());
         }
 
+        // Build propose counter
+        let map = metadata
+            .verifier_list
+            .iter()
+            .map(|v| (v.address, 0u64))
+            .collect::<BTreeMap<_, _>>();
+        let mut metadata = metadata.clone();
+        metadata.propose_counter = map.into_iter().map(Into::into).collect();
+
         epoch_segment.append_endpoint(metadata.version.end)?;
 
         self.trie
             .insert(EPOCH_SEGMENT_KEY.as_bytes(), &epoch_segment.as_bytes())?;
+        self.trie
+            .insert(&metadata.epoch.to_be_bytes(), &metadata.encode()?)?;
+        let new_root = self.trie.commit()?;
+        CURRENT_METADATA_ROOT.swap(Arc::new(new_root));
+
+        Ok(())
+    }
+
+    pub fn update_propose_count(
+        &mut self,
+        block_number: u64,
+        proposer: &H160,
+    ) -> ProtocolResult<()> {
+        let mut metadata = self.get_metadata_by_block_number(block_number)?;
+        if let Some(counter) = metadata
+            .propose_counter
+            .iter_mut()
+            .find(|p| &p.address == proposer)
+        {
+            counter.increase();
+        }
+
         self.trie
             .insert(&metadata.epoch.to_be_bytes(), &metadata.encode()?)?;
         let new_root = self.trie.commit()?;
@@ -79,7 +114,24 @@ impl MetadataStore {
         let raw = self
             .trie
             .get(&epoch.to_be_bytes())?
-            .ok_or_else(|| SystemScriptError::FutureEpoch)?;
+            .ok_or_else(|| SystemScriptError::MissingRecord(epoch))?;
         Metadata::decode(raw)
+    }
+
+    pub fn get_metadata_by_block_number(&self, block_number: u64) -> ProtocolResult<Metadata> {
+        let epoch = self.get_epoch_by_block_number(block_number)?;
+        self.get_metadata(epoch)
+    }
+
+    pub fn get_ckb_related_info(&self) -> ProtocolResult<CkbRelatedInfo> {
+        let raw = self
+            .trie
+            .get(CKB_RELATED_INFO_KEY.as_bytes())?
+            .ok_or_else(|| SystemScriptError::NoneCkbRelatedInfo)?;
+        CkbRelatedInfo::decode(raw)
+    }
+
+    fn get_epoch_by_block_number(&self, block_number: u64) -> ProtocolResult<u64> {
+        self.get_epoch_segment()?.get_epoch_number(block_number)
     }
 }

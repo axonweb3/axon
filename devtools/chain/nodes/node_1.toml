@@ -58,7 +58,6 @@ listening_address = "/ip4/127.0.0.1/tcp/10001"
 rpc_timeout = 10
 
 [consensus]
-overlord_gap = 5
 sync_txs_chunk_size = 5000
 
 [[network.bootstraps]]

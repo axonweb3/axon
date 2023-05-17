@@ -1,7 +1,7 @@
 {
 	"version": {
-		"start": 0,
-		"end": 99999999
+		"start": 1,
+		"end": 100000000
 	},
 	"epoch": 0,
 	"common_ref": "0x6c747758636859487038",
