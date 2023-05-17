@@ -1,7 +1,7 @@
 use rlp_derive::{RlpDecodable, RlpEncodable};
 use serde::{Deserialize, Serialize};
 
-use crate::codec::ProtocolCodec;
+use crate::codec::{serialize_bytes, serialize_uint, ProtocolCodec};
 use crate::types::{
     Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, MerkleRoot, SignedTransaction, H160, H64,
     U256,
@@ -20,19 +20,19 @@ pub struct Proposal {
     pub prev_state_root:          MerkleRoot,
     pub transactions_root:        MerkleRoot,
     pub signed_txs_hash:          Hash,
-    #[serde(serialize_with = "serde_hex::serialize_uint")]
+    #[serde(serialize_with = "serialize_uint")]
     pub timestamp:                u64,
-    #[serde(serialize_with = "serde_hex::serialize_uint")]
+    #[serde(serialize_with = "serialize_uint")]
     pub number:                   BlockNumber,
     pub gas_limit:                U256,
-    #[serde(serialize_with = "serde_hex::serialize_bytes")]
+    #[serde(serialize_with = "serialize_bytes")]
     pub extra_data:               Bytes,
     pub mixed_hash:               Option<Hash>,
     pub base_fee_per_gas:         U256,
     pub proof:                    Proof,
-    #[serde(serialize_with = "serde_hex::serialize_uint")]
+    #[serde(serialize_with = "serialize_uint")]
     pub chain_id:                 u64,
-    #[serde(serialize_with = "serde_hex::serialize_uint")]
+    #[serde(serialize_with = "serialize_uint")]
     pub call_system_script_count: u32,
     pub tx_hashes:                Vec<Hash>,
 }
@@ -150,21 +150,21 @@ pub struct Header {
     pub receipts_root:            MerkleRoot,
     pub log_bloom:                Bloom,
     pub difficulty:               U256,
-    #[serde(serialize_with = "serde_hex::serialize_uint")]
+    #[serde(serialize_with = "serialize_uint")]
     pub timestamp:                u64,
-    #[serde(serialize_with = "serde_hex::serialize_uint")]
+    #[serde(serialize_with = "serialize_uint")]
     pub number:                   BlockNumber,
     pub gas_used:                 U256,
     pub gas_limit:                U256,
-    #[serde(serialize_with = "serde_hex::serialize_bytes")]
+    #[serde(serialize_with = "serialize_bytes")]
     pub extra_data:               Bytes,
     pub mixed_hash:               Option<Hash>,
     pub nonce:                    H64,
     pub base_fee_per_gas:         U256,
     pub proof:                    Proof,
-    #[serde(serialize_with = "serde_hex::serialize_uint")]
+    #[serde(serialize_with = "serialize_uint")]
     pub call_system_script_count: u32,
-    #[serde(serialize_with = "serde_hex::serialize_uint")]
+    #[serde(serialize_with = "serialize_uint")]
     pub chain_id:                 u64,
 }
 
@@ -182,14 +182,14 @@ impl Header {
     RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq,
 )]
 pub struct Proof {
-    #[serde(serialize_with = "serde_hex::serialize_uint")]
+    #[serde(serialize_with = "serialize_uint")]
     pub number:     u64,
-    #[serde(serialize_with = "serde_hex::serialize_uint")]
+    #[serde(serialize_with = "serialize_uint")]
     pub round:      u64,
     pub block_hash: Hash,
-    #[serde(serialize_with = "serde_hex::serialize_bytes")]
+    #[serde(serialize_with = "serialize_bytes")]
     pub signature:  Bytes,
-    #[serde(serialize_with = "serde_hex::serialize_bytes")]
+    #[serde(serialize_with = "serialize_bytes")]
     pub bitmap:     Bytes,
 }
 
@@ -197,65 +197,6 @@ pub struct Proof {
 pub struct RichBlock {
     pub block: Block,
     pub txs:   Vec<SignedTransaction>,
-}
-
-mod serde_hex {
-    use serde::Serializer;
-
-    use crate::types::{Bytes, Hex, U256};
-
-    static CHARS: &[u8] = b"0123456789abcdef";
-
-    pub fn serialize_bytes<S>(val: &Bytes, s: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        s.serialize_str(&Hex::encode(val).as_string())
-    }
-
-    pub fn serialize_uint<S, U>(val: &U, s: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-        U: Into<U256> + Copy,
-    {
-        let val: U256 = (*val).into();
-        let mut slice = [0u8; 2 + 64];
-        let mut bytes = [0u8; 32];
-        val.to_big_endian(&mut bytes);
-        let non_zero = bytes.iter().take_while(|b| **b == 0).count();
-        let bytes = &bytes[non_zero..];
-
-        if bytes.is_empty() {
-            s.serialize_str("0x0")
-        } else {
-            s.serialize_str(to_hex_raw(&mut slice, bytes, true))
-        }
-    }
-
-    fn to_hex_raw<'a>(v: &'a mut [u8], bytes: &[u8], skip_leading_zero: bool) -> &'a str {
-        assert!(v.len() > 1 + bytes.len() * 2);
-
-        v[0] = b'0';
-        v[1] = b'x';
-
-        let mut idx = 2;
-        let first_nibble = bytes[0] >> 4;
-        if first_nibble != 0 || !skip_leading_zero {
-            v[idx] = CHARS[first_nibble as usize];
-            idx += 1;
-        }
-        v[idx] = CHARS[(bytes[0] & 0xf) as usize];
-        idx += 1;
-
-        for &byte in bytes.iter().skip(1) {
-            v[idx] = CHARS[(byte >> 4) as usize];
-            v[idx + 1] = CHARS[(byte & 0xf) as usize];
-            idx += 2;
-        }
-
-        // SAFETY: all characters come either from CHARS or "0x", therefore valid UTF8
-        unsafe { std::str::from_utf8_unchecked(&v[0..idx]) }
-    }
 }
 
 #[cfg(test)]

@@ -14,7 +14,7 @@ use serde::{de, Deserialize, Serialize};
 
 use common_hasher::keccak256;
 
-use crate::codec::{hex_decode, hex_encode};
+use crate::codec::{hex_decode, hex_encode, serialize_uint};
 use crate::types::{BlockNumber, Bytes, TypesError};
 use crate::{ProtocolError, ProtocolResult};
 
@@ -292,7 +292,9 @@ impl fmt::Display for Address {
     RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Debug, Copy, PartialEq, Eq,
 )]
 pub struct MetadataVersion {
+    #[serde(serialize_with = "serialize_uint")]
     pub start: BlockNumber,
+    #[serde(serialize_with = "serialize_uint")]
     pub end:   BlockNumber,
 }
 
@@ -311,16 +313,26 @@ impl MetadataVersion {
 )]
 pub struct Metadata {
     pub version:         MetadataVersion,
+    #[serde(serialize_with = "serialize_uint")]
     pub epoch:           u64,
+    #[serde(serialize_with = "serialize_uint")]
     pub gas_limit:       u64,
+    #[serde(serialize_with = "serialize_uint")]
     pub gas_price:       u64,
+    #[serde(serialize_with = "serialize_uint")]
     pub interval:        u64,
     pub verifier_list:   Vec<ValidatorExtend>,
+    #[serde(serialize_with = "serialize_uint")]
     pub propose_ratio:   u64,
+    #[serde(serialize_with = "serialize_uint")]
     pub prevote_ratio:   u64,
+    #[serde(serialize_with = "serialize_uint")]
     pub precommit_ratio: u64,
+    #[serde(serialize_with = "serialize_uint")]
     pub brake_ratio:     u64,
+    #[serde(serialize_with = "serialize_uint")]
     pub tx_num_limit:    u64,
+    #[serde(serialize_with = "serialize_uint")]
     pub max_tx_size:     u64,
     #[serde(skip_deserializing)]
     pub propose_counter: Vec<ProposeCount>,
@@ -340,6 +352,7 @@ impl From<Metadata> for DurationConfig {
 #[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct ProposeCount {
     pub address: H160,
+    #[serde(serialize_with = "serialize_uint")]
     pub count:   u64,
 }
 
@@ -370,7 +383,9 @@ pub struct ValidatorExtend {
     pub bls_pub_key:    Hex,
     pub pub_key:        Hex,
     pub address:        H160,
+    #[serde(serialize_with = "serialize_uint")]
     pub propose_weight: u32,
+    #[serde(serialize_with = "serialize_uint")]
     pub vote_weight:    u32,
 }
 
@@ -464,6 +479,7 @@ pub fn checksum(address: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
 
     #[test]
     fn test_eip55() {
@@ -498,5 +514,20 @@ mod tests {
         let bytes = Hex::empty();
         let hash = Hasher::digest(bytes.as_bytes());
         assert_eq!(hash, NIL_DATA);
+    }
+
+    #[test]
+    fn test_metadata_json_serialize() {
+        let metadata: Metadata = serde_json::from_slice(
+            &fs::read("../devtools/genesis-generator/metadata.json").unwrap(),
+        )
+        .unwrap();
+        let json = serde_json::to_value(metadata).unwrap();
+
+        println!("{:?}", json.to_string());
+
+        assert!(json.get("version").unwrap().is_object());
+        assert!(json.get("epoch").unwrap().is_string());
+        assert!(json.get("propose_counter").unwrap().is_array());
     }
 }

@@ -145,7 +145,7 @@ mod tests {
         };
 
         let raw = AbiEncode::encode(call.clone());
-        let decode = metadata_abi::SetCkbRelatedInfoCall::decode(&raw).unwrap();
+        let decode = metadata_abi::SetCkbRelatedInfoCall::decode(raw).unwrap();
         assert_eq!(call, decode);
     }
 }
