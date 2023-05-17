@@ -4,7 +4,6 @@ on:
     branches:
       - main
     paths:
-    - 'devtools/chain/config.toml'
     - 'devtools/chain/genesis_multi_nodes.json'
     - 'devtools/chain/default.db-options'
 jobs:
@@ -24,10 +23,10 @@ jobs:
         run: |
           # copy default.db-options & genesis_multi_nodes.json to axon-devops always
           cp ${{ github.workspace}}/devtools/chain/default.db-options ${{ github.workspace}}/axon-devops/deploy/templates
-          cp ${{ github.workspace}}/devtools/chain/default.db-options ${{ github.workspace}}/axon-devops/docker-deploy/templates
+          cp ${{ github.workspace}}/devtools/chain/default.db-options ${{ github.workspace}}/axon-devops/docker-deploy/devtools/chain
           cp ${{ github.workspace}}/devtools/chain/default.db-options ${{ github.workspace}}/axon-devops/k8s-deploy/k8s/axon/axon-config
           cp ${{ github.workspace}}/devtools/chain/nodes/genesis_multi_nodes.json ${{ github.workspace}}/axon-devops/deploy/templates/genesis.json
-          cp ${{ github.workspace}}/devtools/chain/nodes/genesis_multi_nodes.json ${{ github.workspace}}/axon-devops/docker-deploy/templates/genesis.json
+          cp ${{ github.workspace}}/devtools/chain/nodes/genesis_multi_nodes.json ${{ github.workspace}}/axon-devops/docker-deploy/devtools/chain/genesis.json
           cp ${{ github.workspace}}/devtools/chain/nodes/genesis_multi_nodes.json ${{ github.workspace}}/axon-devops/k8s-deploy/k8s/axon/axon-config/genesis.json
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
