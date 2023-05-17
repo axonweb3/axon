@@ -43,6 +43,10 @@ impl EpochSegment {
         self.seg.len() == 1
     }
 
+    pub fn last_block_number(&self) -> u64 {
+        *self.seg.last().unwrap()
+    }
+
     pub fn is_last_block_in_epoch(&self, block_number: u64) -> bool {
         self.seg.iter().any(|e| block_number == *e)
     }

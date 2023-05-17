@@ -77,6 +77,9 @@ pub enum SystemScriptError {
 
     #[error("None CKB related info")]
     NoneCkbRelatedInfo,
+
+    #[error("Metadata version is discontinuous")]
+    MetadataVersionDiscontinuity,
 }
 
 impl From<SystemScriptError> for ProtocolError {
