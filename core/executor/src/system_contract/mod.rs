@@ -37,8 +37,8 @@ pub const fn system_contract_address(addr: u8) -> H160 {
         0xff, 0xff, 0xff, 0xff, addr,
     ])
 }
-const HEADER_CELL_DB_CACHE_SIZE: usize = 20;
-const METADATA_DB_CACHE_SIZE: usize = 20;
+const HEADER_CELL_DB_CACHE_SIZE: usize = 200;
+const METADATA_DB_CACHE_SIZE: usize = 10;
 
 /// System contract init section. It needs to initialize two databases, one for
 /// Metadata and one for CkbLightClient&ImageCell

@@ -666,13 +666,14 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
     }
 
     async fn alert_missing_next_metadata(&self, current_epoch: u64) {
+        let next_epoch = current_epoch + 1;
         if self
             .adapter
-            .get_metadata_by_block_number(current_epoch + 1)
+            .get_metadata_by_block_number(next_epoch)
             .await
             .is_err()
         {
-            log::error!("Missing next metadata!");
+            log::error!("Missing next {:?} metadata!", next_epoch);
         }
     }
 

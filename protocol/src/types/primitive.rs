@@ -530,4 +530,19 @@ mod tests {
         assert!(json.get("epoch").unwrap().is_string());
         assert!(json.get("propose_counter").unwrap().is_array());
     }
+
+    #[test]
+    fn test_metadata_version() {
+        let version_0 = MetadataVersion {
+            start: 1,
+            end:   100,
+        };
+        let version_1 = MetadataVersion {
+            start: 101,
+            end:   200,
+        };
+
+        (1..=100).for_each(|n| assert!(version_0.contains(n)));
+        (101..=200).for_each(|n| assert!(version_1.contains(n)));
+    }
 }
