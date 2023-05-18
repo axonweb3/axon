@@ -208,7 +208,8 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         let status = self.status.inner();
         let metadata = self
             .adapter
-            .get_metadata_by_block_number(current_number + 1)?;
+            .get_metadata_by_block_number(current_number + 1)
+            .await?;
 
         if current_number == status.last_number {
             return Ok(Status {
@@ -287,7 +288,9 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         let next_block_number = current_number + 1;
         let metadata = self
             .adapter
-            .get_metadata_by_block_number(next_block_number)?;
+            .get_metadata_by_block_number(next_block_number)
+            .await?;
+        let epoch = metadata.epoch;
         let status = Status {
             height:         next_block_number,
             interval:       Some(metadata.interval),
@@ -296,7 +299,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         };
 
         self.adapter.broadcast_number(ctx, current_number).await?;
-
+        self.alert_missing_next_metadata(epoch).await;
         self.metric_commit(current_number, txs_len);
 
         Ok(status)
@@ -385,11 +388,16 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             return Ok(vec![]);
         }
 
-        let current_metadata = self.adapter.get_metadata_by_block_number(next_number)?;
+        let current_metadata = self
+            .adapter
+            .get_metadata_by_block_number(next_number)
+            .await?;
         let old_metadata = if current_metadata.version.contains(next_number - 1) {
             current_metadata
         } else {
-            self.adapter.get_metadata_by_block_number(next_number - 1)?
+            self.adapter
+                .get_metadata_by_block_number(next_number - 1)
+                .await?
         };
 
         let mut old_validators = old_metadata
@@ -602,10 +610,15 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         // Save the block
         self.adapter.save_block(ctx.clone(), block.clone()).await?;
 
-        if self.adapter.is_last_block_in_current_epoch(block_number)? {
+        if self
+            .adapter
+            .is_last_block_in_current_epoch(block_number)
+            .await?
+        {
             let metadata = self
                 .adapter
-                .get_metadata_by_block_number(block_number + 1)?;
+                .get_metadata_by_block_number(block_number + 1)
+                .await?;
             let pub_keys = metadata
                 .verifier_list
                 .iter()
@@ -652,9 +665,21 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         Ok(())
     }
 
+    async fn alert_missing_next_metadata(&self, current_epoch: u64) {
+        let next_epoch = current_epoch + 1;
+        if self
+            .adapter
+            .get_metadata_by_block_number(next_epoch)
+            .await
+            .is_err()
+        {
+            log::error!("Missing next {:?} metadata!", next_epoch);
+        }
+    }
+
     fn metric_commit(&self, current_height: u64, txs_len: usize) {
         common_apm::metrics::consensus::ENGINE_HEIGHT_GAUGE.set((current_height + 1) as i64);
-        common_apm::metrics::consensus::ENGINE_COMMITED_TX_COUNTER.inc_by(txs_len as u64);
+        common_apm::metrics::consensus::ENGINE_COMMITTED_TX_COUNTER.inc_by(txs_len as u64);
 
         let now = time_now();
         let last_commit_time = *(self.last_commit_time.read());

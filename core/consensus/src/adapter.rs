@@ -356,12 +356,16 @@ where
         }))
     }
 
-    fn is_last_block_in_current_epoch(&self, block_number: u64) -> ProtocolResult<bool> {
+    async fn is_last_block_in_current_epoch(&self, block_number: u64) -> ProtocolResult<bool> {
         self.metadata.is_last_block_in_current_epoch(block_number)
     }
 
-    fn get_metadata_by_block_number(&self, block_number: u64) -> ProtocolResult<Metadata> {
+    async fn get_metadata_by_block_number(&self, block_number: u64) -> ProtocolResult<Metadata> {
         self.metadata.get_metadata_by_block_number(block_number)
+    }
+
+    async fn get_metadata_by_epoch(&self, epoch: u64) -> ProtocolResult<Metadata> {
+        self.metadata.get_metadata_by_epoch(epoch)
     }
 
     #[trace_span(kind = "consensus.adapter")]
@@ -498,7 +502,8 @@ where
             block.header.number,
             weight_map,
             signed_voters.clone(),
-        )?;
+        )
+        .await?;
 
         let vote_hash = self.crypto.hash(Bytes::from(rlp::encode(&vote)));
         let hex_pubkeys = metadata
@@ -519,7 +524,7 @@ where
             vote_hash.clone(),
             proof.signature.clone(),
             hex_pubkeys,
-        ).map_err(|e| {
+        ).await.map_err(|e| {
             log::error!("[consensus] verify_proof_signature error, number {}, vote: {:?}, vote_hash:{:?}, sig:{:?}, signed_voter:{:?}",
             block.header.number,
             vote,
@@ -534,7 +539,7 @@ where
     }
 
     #[trace_span(kind = "consensus.adapter")]
-    fn verify_proof_signature(
+    async fn verify_proof_signature(
         &self,
         ctx: Context,
         block_number: u64,
@@ -556,7 +561,7 @@ where
     }
 
     #[trace_span(kind = "consensus.adapter")]
-    fn verify_proof_weight(
+    async fn verify_proof_weight(
         &self,
         ctx: Context,
         block_number: u64,

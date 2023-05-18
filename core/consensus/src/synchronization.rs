@@ -92,7 +92,7 @@ impl<Adapter: SynchronizationAdapter> Synchronization for OverlordSynchronizatio
             sync_status.last_number,
         );
 
-        self.update_status(ctx, sync_status_agent)?;
+        self.update_status(ctx, sync_status_agent).await?;
         SYNC_STATUS.write().finish();
 
         Ok(())
@@ -352,7 +352,8 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
 
         let metadata = self
             .adapter
-            .get_metadata_by_block_number(block.header.number)?;
+            .get_metadata_by_block_number(block.header.number)
+            .await?;
         let new_status = CurrentStatus {
             prev_hash:       block.hash(),
             last_number:     block.header.number,
@@ -490,7 +491,8 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         if current_number == remote_number - 1 {
             sleep(Duration::from_millis(
                 self.adapter
-                    .get_metadata_by_block_number(current_number)?
+                    .get_metadata_by_block_number(current_number)
+                    .await?
                     .interval,
             ))
             .await;
@@ -504,12 +506,17 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         Ok(true)
     }
 
-    fn update_status(&self, ctx: Context, sync_status_agent: StatusAgent) -> ProtocolResult<()> {
+    async fn update_status(
+        &self,
+        ctx: Context,
+        sync_status_agent: StatusAgent,
+    ) -> ProtocolResult<()> {
         let sync_status = sync_status_agent.inner();
         self.status.swap(sync_status.clone());
         let metadata = self
             .adapter
-            .get_metadata_by_block_number(sync_status.last_number + 1)?;
+            .get_metadata_by_block_number(sync_status.last_number + 1)
+            .await?;
 
         self.adapter.update_status(
             ctx,
@@ -629,7 +636,7 @@ mod tests {
         let ctx = Context::default();
 
         let sync_status_agent = StatusAgent::new(CurrentStatus::default());
-        let result = sync.update_status(ctx, sync_status_agent);
+        let result = sync.update_status(ctx, sync_status_agent).await;
         assert!(result.is_ok());
     }
 

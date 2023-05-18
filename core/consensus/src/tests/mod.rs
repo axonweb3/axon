@@ -282,11 +282,15 @@ impl CommonConsensusAdapter for MockSyncAdapter {
         })
     }
 
-    fn is_last_block_in_current_epoch(&self, block_number: u64) -> ProtocolResult<bool> {
+    async fn is_last_block_in_current_epoch(&self, block_number: u64) -> ProtocolResult<bool> {
         Ok(false)
     }
 
-    fn get_metadata_by_block_number(&self, block_number: u64) -> ProtocolResult<Metadata> {
+    async fn get_metadata_by_block_number(&self, block_number: u64) -> ProtocolResult<Metadata> {
+        Ok(Metadata::default())
+    }
+
+    async fn get_metadata_by_epoch(&self, epoch: u64) -> ProtocolResult<Metadata> {
         Ok(Metadata::default())
     }
 
@@ -309,7 +313,7 @@ impl CommonConsensusAdapter for MockSyncAdapter {
         Ok(())
     }
 
-    fn verify_proof_signature(
+    async fn verify_proof_signature(
         &self,
         ctx: Context,
         block_height: u64,
@@ -320,7 +324,7 @@ impl CommonConsensusAdapter for MockSyncAdapter {
         Ok(())
     }
 
-    fn verify_proof_weight(
+    async fn verify_proof_weight(
         &self,
         ctx: Context,
         block_height: u64,

@@ -132,9 +132,11 @@ pub trait CommonConsensusAdapter: Send + Sync {
         signed_txs: &[SignedTransaction],
     ) -> ProtocolResult<ExecResp>;
 
-    fn is_last_block_in_current_epoch(&self, block_number: u64) -> ProtocolResult<bool>;
+    async fn is_last_block_in_current_epoch(&self, block_number: u64) -> ProtocolResult<bool>;
 
-    fn get_metadata_by_block_number(&self, block_number: u64) -> ProtocolResult<Metadata>;
+    async fn get_metadata_by_block_number(&self, block_number: u64) -> ProtocolResult<Metadata>;
+
+    async fn get_metadata_by_epoch(&self, epoch: u64) -> ProtocolResult<Metadata>;
 
     async fn broadcast_number(&self, ctx: Context, height: u64) -> ProtocolResult<()>;
 
@@ -146,7 +148,7 @@ pub trait CommonConsensusAdapter: Send + Sync {
 
     async fn verify_block_header(&self, ctx: Context, block: &Proposal) -> ProtocolResult<()>;
 
-    fn verify_proof_signature(
+    async fn verify_proof_signature(
         &self,
         ctx: Context,
         block_height: u64,
@@ -155,7 +157,7 @@ pub trait CommonConsensusAdapter: Send + Sync {
         vote_pubkeys: Vec<Hex>,
     ) -> ProtocolResult<()>;
 
-    fn verify_proof_weight(
+    async fn verify_proof_weight(
         &self,
         ctx: Context,
         block_height: u64,

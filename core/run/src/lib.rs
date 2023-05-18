@@ -321,13 +321,9 @@ impl Axon {
             .get_status_agent(&storage, &current_block, &metadata)
             .await;
 
-        let overlord_consensus = self.init_overlord_consensus(
-            &status_agent,
-            &txs_wal,
-            &crypto,
-            &lock,
-            &consensus_adapter,
-        );
+        let overlord_consensus = self
+            .init_overlord_consensus(&status_agent, &txs_wal, &crypto, &lock, &consensus_adapter)
+            .await;
 
         consensus_adapter.set_overlord_handler(overlord_consensus.get_overlord_handler());
 
@@ -567,7 +563,7 @@ impl Axon {
         StatusAgent::new(current_consensus_status)
     }
 
-    fn init_overlord_consensus<M, N, S, DB>(
+    async fn init_overlord_consensus<M, N, S, DB>(
         &self,
         status_agent: &StatusAgent,
         txs_wal: &Arc<SignedTxsWAL>,
@@ -576,10 +572,10 @@ impl Axon {
         consensus_adapter: &Arc<OverlordConsensusAdapter<M, N, S, DB>>,
     ) -> Arc<OverlordConsensus<OverlordConsensusAdapter<M, N, S, DB>>>
     where
-        M: MemPool,
+        M: MemPool + 'static,
         N: Rpc + PeerTrust + Gossip + Network + 'static,
-        S: Storage,
-        DB: TrieDB,
+        S: Storage + 'static,
+        DB: TrieDB + 'static,
     {
         let consensus_wal_path = self
             .config
@@ -596,15 +592,18 @@ impl Axon {
             self_pub_key: self.get_my_pubkey(hex_privkey).to_bytes(),
         };
 
-        Arc::new(OverlordConsensus::new(
-            status_agent.clone(),
-            node_info,
-            Arc::clone(crypto),
-            Arc::clone(txs_wal),
-            Arc::clone(consensus_adapter),
-            Arc::clone(lock),
-            Arc::clone(&consensus_wal),
-        ))
+        Arc::new(
+            OverlordConsensus::new(
+                status_agent.clone(),
+                node_info,
+                Arc::clone(crypto),
+                Arc::clone(txs_wal),
+                Arc::clone(consensus_adapter),
+                Arc::clone(lock),
+                Arc::clone(&consensus_wal),
+            )
+            .await,
+        )
     }
 
     fn tag_consensus(&self, network_service: &NetworkService, validators: &[ValidatorExtend]) {
