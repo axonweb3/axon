@@ -2,16 +2,208 @@
 
 ## [Unreleased](https://github.com/axonweb3/axon/tree/HEAD)
 
-[Full Changelog](https://github.com/axonweb3/axon/compare/v0.1.0-alpha.6...HEAD)
+[Full Changelog](https://github.com/axonweb3/axon/compare/v0.1.0-beta.1...HEAD)
 
 **Closed issues:**
 
+- Axon Development Updates 04/05/2023 [\#1143](https://github.com/axonweb3/axon/issues/1143)
+
+## [v0.1.0-beta.1](https://github.com/axonweb3/axon/tree/v0.1.0-beta.1) (2023-05-18)
+
+[Full Changelog](https://github.com/axonweb3/axon/compare/v0...v0.1.0-beta.1)
+
+### 🚀 Features
+
+- feat: enable fetch privkey from env [\#1192](https://github.com/axonweb3/axon/pull/1192) ([driftluo](https://github.com/driftluo))
+- feat\(API\): add get metadata rpc method [\#1188](https://github.com/axonweb3/axon/pull/1188) ([KaoImin](https://github.com/KaoImin))
+- feat\(API\): add axon exclusive rpc method [\#1184](https://github.com/axonweb3/axon/pull/1184) ([KaoImin](https://github.com/KaoImin))
+- feat\(cli\): add version compatible check [\#1166](https://github.com/axonweb3/axon/pull/1166) ([KaoImin](https://github.com/KaoImin))
+- feat\(executor\): add block hook in system contract [\#1165](https://github.com/axonweb3/axon/pull/1165) ([KaoImin](https://github.com/KaoImin))
+
+🐛 Bug Fixes
+
+- fix: check the first block in a new metadata [\#1191](https://github.com/axonweb3/axon/pull/1191) ([KaoImin](https://github.com/KaoImin))
+- fix: fix modexp gas cost [\#1183](https://github.com/axonweb3/axon/pull/1183) ([driftluo](https://github.com/driftluo))
+- refactor: fix clippy error [\#1169](https://github.com/axonweb3/axon/pull/1169) ([liya2017](https://github.com/liya2017))
+
+### 🐝  refactor
+
+- refactor: remove useless code about overlord\_gap [\#1187](https://github.com/axonweb3/axon/pull/1187) ([liya2017](https://github.com/liya2017))
+- refactor: update k8s config files [\#1181](https://github.com/axonweb3/axon/pull/1181) ([liya2017](https://github.com/liya2017))
+- refactor: update config file [\#1163](https://github.com/axonweb3/axon/pull/1163) ([liya2017](https://github.com/liya2017))
+- refactor: change the initial distributed and config file [\#1162](https://github.com/axonweb3/axon/pull/1162) ([KaoImin](https://github.com/KaoImin))
+- refactor: remove useless field in header [\#1152](https://github.com/axonweb3/axon/pull/1152) ([KaoImin](https://github.com/KaoImin))
+
+### 🧰 Chore
+
+- chore: release v0.1.0-beta.1 version [\#1193](https://github.com/axonweb3/axon/pull/1193) ([KaoImin](https://github.com/KaoImin))
+- chore: upgrade rocksdb version to 0.20 [\#1185](https://github.com/axonweb3/axon/pull/1185) ([driftluo](https://github.com/driftluo))
+- chore: bump rust toochain to 1.69 [\#1167](https://github.com/axonweb3/axon/pull/1167) ([liya2017](https://github.com/liya2017))
+
+⬆️ Dependency Updates
+
+- chore\(deps\): bump docker/setup-qemu-action from 1 to 2 [\#1154](https://github.com/axonweb3/axon/pull/1154) ([dependabot[bot]](https://github.com/apps/dependabot))
+
+**Closed issues:**
+
+- Move  config from  to ENV variable [\#1186](https://github.com/axonweb3/axon/issues/1186)
+- Creating multiaddress for node.toml [\#1158](https://github.com/axonweb3/axon/issues/1158)
+- Consider implementing EIP-1898 \( to  of \) [\#1155](https://github.com/axonweb3/axon/issues/1155)
+- Axon Development Updates 03/22/2023 [\#1110](https://github.com/axonweb3/axon/issues/1110)
+- Axon logo collect [\#923](https://github.com/axonweb3/axon/issues/923)
+
+**Merged pull requests:**
+
+- ci: update copy\_config\_to\_devops.yml [\#1189](https://github.com/axonweb3/axon/pull/1189) ([liya2017](https://github.com/liya2017))
+- ci: remove apply patch for config.toml due to some errors [\#1164](https://github.com/axonweb3/axon/pull/1164) ([liya2017](https://github.com/liya2017))
+- ci: increase timeout of build-docker image workflow [\#1161](https://github.com/axonweb3/axon/pull/1161) ([liya2017](https://github.com/liya2017))
+
+## [v0](https://github.com/axonweb3/axon/tree/v0) (2023-04-18)
+
+[Full Changelog](https://github.com/axonweb3/axon/compare/v0.1.0-alpha.9...v0)
+
+## [v0.1.0-alpha.9](https://github.com/axonweb3/axon/tree/v0.1.0-alpha.9) (2023-04-18)
+
+[Full Changelog](https://github.com/axonweb3/axon/compare/v0.1.0-alpha.8...v0.1.0-alpha.9)
+
+### 🚀 Features
+
+- feat\(executor\): remove modexp limit [\#1119](https://github.com/axonweb3/axon/pull/1119) ([driftluo](https://github.com/driftluo))
+- feat: add EIP-1898 blockHash option to JSON-RPC methods [\#1101](https://github.com/axonweb3/axon/pull/1101) ([ahonn](https://github.com/ahonn))
+
+🐛 Bug Fixes
+
+- fix\(executor\): should check all system contracts' address [\#1142](https://github.com/axonweb3/axon/pull/1142) ([peterzhb](https://github.com/peterzhb))
+- fix\(executor\): fix conflict test db path [\#1109](https://github.com/axonweb3/axon/pull/1109) ([peterzhb](https://github.com/peterzhb))
+- fix: fix several bugs about interoperability signature verification [\#1105](https://github.com/axonweb3/axon/pull/1105) ([KaoImin](https://github.com/KaoImin))
+
+### 🐝  refactor
+
+- refactor: change keccak hash function [\#1157](https://github.com/axonweb3/axon/pull/1157) ([KaoImin](https://github.com/KaoImin))
+- ci: change repository org name to axonweb3 [\#1144](https://github.com/axonweb3/axon/pull/1144) ([liya2017](https://github.com/liya2017))
+- refactor: change the maximum RPC gas cap limit [\#1133](https://github.com/axonweb3/axon/pull/1133) ([ahonn](https://github.com/ahonn))
+- refactor\(core\): refactor axon start [\#1116](https://github.com/axonweb3/axon/pull/1116) ([peterzhb](https://github.com/peterzhb))
+- refactor\(executor\): switch to metadata system contract [\#1115](https://github.com/axonweb3/axon/pull/1115) ([peterzhb](https://github.com/peterzhb))
+- refactor: change the bound of ExecutorAdapter trait [\#1112](https://github.com/axonweb3/axon/pull/1112) ([KaoImin](https://github.com/KaoImin))
+
+⬆️ Dependency Updates
+
+- chore\(deps\): bump axum from 0.6.12 to 0.6.15 [\#1150](https://github.com/axonweb3/axon/pull/1150) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump puppeteer from 19.7.2 to 19.8.5 in /tests/e2e [\#1149](https://github.com/axonweb3/axon/pull/1149) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps-dev\): bump eslint from 8.35.0 to 8.38.0 in /tests/e2e [\#1148](https://github.com/axonweb3/axon/pull/1148) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump peter-evans/create-pull-request from 4 to 5 [\#1141](https://github.com/axonweb3/axon/pull/1141) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump proc-macro2 from 1.0.54 to 1.0.56 [\#1140](https://github.com/axonweb3/axon/pull/1140) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump proc-macro2 from 1.0.52 to 1.0.55 [\#1132](https://github.com/axonweb3/axon/pull/1132) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump serde from 1.0.157 to 1.0.159 [\#1114](https://github.com/axonweb3/axon/pull/1114) ([dependabot[bot]](https://github.com/apps/dependabot))
+
+**Closed issues:**
+
+- Build and publish Axon images for M1 [\#1135](https://github.com/axonweb3/axon/issues/1135)
+- Axon Development Updates 03/08/2023 [\#1071](https://github.com/axonweb3/axon/issues/1071)
+- eth\_call gas limit 30 million incompatible with graph-node 50 million requirement [\#705](https://github.com/axonweb3/axon/issues/705)
+- Get an custom error from  [\#375](https://github.com/axonweb3/axon/issues/375)
+
+**Merged pull requests:**
+
+- ci: change tag value [\#1156](https://github.com/axonweb3/axon/pull/1156) ([liya2017](https://github.com/liya2017))
+- refactor: build docker image for arm64 [\#1153](https://github.com/axonweb3/axon/pull/1153) ([liya2017](https://github.com/liya2017))
+- ci: build axon binary for M1 [\#1147](https://github.com/axonweb3/axon/pull/1147) ([liya2017](https://github.com/liya2017))
+- feat: support pre EIP-155 transaction [\#1111](https://github.com/axonweb3/axon/pull/1111) ([hongda3141](https://github.com/hongda3141))
+
+## [v0.1.0-alpha.8](https://github.com/axonweb3/axon/tree/v0.1.0-alpha.8) (2023-03-22)
+
+[Full Changelog](https://github.com/axonweb3/axon/compare/v0.1.0-alpha.7...v0.1.0-alpha.8)
+
+### 🚀 Features
+
+- feat\(executor\): add ckb light client system contract [\#1068](https://github.com/axonweb3/axon/pull/1068) ([peterzhb](https://github.com/peterzhb))
+
+🐛 Bug Fixes
+
+- fix: decode interoperation transaction signature [\#1092](https://github.com/axonweb3/axon/pull/1092) ([KaoImin](https://github.com/KaoImin))
+- fix\(interoperation\): the cell capacity calculation [\#1074](https://github.com/axonweb3/axon/pull/1074) ([KaoImin](https://github.com/KaoImin))
+
+### 🐝  refactor
+
+- refactor: configure the server to serve JSON-RPC [\#1093](https://github.com/axonweb3/axon/pull/1093) ([liya2017](https://github.com/liya2017))
+- refactor: remove outdated cross chain code [\#1085](https://github.com/axonweb3/axon/pull/1085) ([KaoImin](https://github.com/KaoImin))
+- refactor: move system contracts solidity projects to builtin-contract [\#1084](https://github.com/axonweb3/axon/pull/1084) ([peterzhb](https://github.com/peterzhb))
+- refactor: change max\_connections num type to u32 [\#1076](https://github.com/axonweb3/axon/pull/1076) ([liya2017](https://github.com/liya2017))
+- refactor: allow image cell system contract to receive multiple blocks [\#1069](https://github.com/axonweb3/axon/pull/1069) ([felicityin](https://github.com/felicityin))
+
+### 🧰 Chore
+
+- chore: update new axon logo [\#1103](https://github.com/axonweb3/axon/pull/1103) ([KaoImin](https://github.com/KaoImin))
+- chore: add editor config [\#1102](https://github.com/axonweb3/axon/pull/1102) ([ahonn](https://github.com/ahonn))
+- chore: bump ckb related dependencies version to 0.108 [\#1095](https://github.com/axonweb3/axon/pull/1095) ([liya2017](https://github.com/liya2017))
+
+⬆️ Dependency Updates
+
+- chore\(deps\): bump serde from 1.0.155 to 1.0.157 [\#1100](https://github.com/axonweb3/axon/pull/1100) ([dependabot[bot]](https://github.com/apps/dependabot))
+
+**Closed issues:**
+
+- Axon Development Updates 02/24/2023 [\#1039](https://github.com/axonweb3/axon/issues/1039)
+
+**Merged pull requests:**
+
+- \[ImgBot\] Optimize images [\#1104](https://github.com/axonweb3/axon/pull/1104) ([imgbot[bot]](https://github.com/apps/imgbot))
+- chore: remove unused crate byzantine [\#1090](https://github.com/axonweb3/axon/pull/1090) ([jjyr](https://github.com/jjyr))
+- ci: change pr lint workflow [\#1083](https://github.com/axonweb3/axon/pull/1083) ([liya2017](https://github.com/liya2017))
+- test: add unit test of decode interoperation signature [\#1077](https://github.com/axonweb3/axon/pull/1077) ([KaoImin](https://github.com/KaoImin))
+- chore: bump rust toolchain to 1.68 [\#1070](https://github.com/axonweb3/axon/pull/1070) ([ahonn](https://github.com/ahonn))
+
+## [v0.1.0-alpha.7](https://github.com/axonweb3/axon/tree/v0.1.0-alpha.7) (2023-03-13)
+
+[Full Changelog](https://github.com/axonweb3/axon/compare/v0.1.0-alpha.6...v0.1.0-alpha.7)
+
+### 📖 Documentation
+
+- docs: update README.md [\#1067](https://github.com/axonweb3/axon/pull/1067) ([linnnsss](https://github.com/linnnsss))
+- docs: automated update CHANGELOG.md [\#1040](https://github.com/axonweb3/axon/pull/1040) ([liya2017](https://github.com/liya2017))
+
+### 🚀 Features
+
+- feat\(API\): add several eth APIs [\#1045](https://github.com/axonweb3/axon/pull/1045) ([peterzhb](https://github.com/peterzhb))
+- feat\(interoperation\): add dummy input mode of cell verify [\#1044](https://github.com/axonweb3/axon/pull/1044) ([KaoImin](https://github.com/KaoImin))
+
+### 🐝  refactor
+
+- Revert refactor(protocol)!: remove useless fields of block [\#1065](https://github.com/axonweb3/axon/pull/1065) ([KaoImin](https://github.com/KaoImin))
+- refactor\(protocol\)!: remove useless fields of block [\#1058](https://github.com/axonweb3/axon/pull/1058) ([KaoImin](https://github.com/KaoImin))
+- refactor: cargo format  [\#1049](https://github.com/axonweb3/axon/pull/1049) ([liya2017](https://github.com/liya2017))
+- refactor: change metadata contract to system contract [\#1035](https://github.com/axonweb3/axon/pull/1035) ([KaoImin](https://github.com/KaoImin))
+
+### 🧰 Chore
+
+- chore: bump lru and jsonrpsee to latest [\#1072](https://github.com/axonweb3/axon/pull/1072) ([liya2017](https://github.com/liya2017))
+- chore\(deps\): bump gmp-mpfr-sys to 1.5.1 [\#1064](https://github.com/axonweb3/axon/pull/1064) ([zeroqn](https://github.com/zeroqn))
+- chore\(e2e\): bump dappeteer from 3.0.0 to 5.0.1 [\#1062](https://github.com/axonweb3/axon/pull/1062) ([hongda3141](https://github.com/hongda3141))
+- chore\(deps\): bump axum from 0.6.6 to 0.6.8 [\#1042](https://github.com/axonweb3/axon/pull/1042) ([dependabot[bot]](https://github.com/apps/dependabot))
+
+⬆️ Dependency Updates
+
+- chore\(deps\): bump ethers-signers from 1.0.2 to 1.5.0 [\#1056](https://github.com/axonweb3/axon/pull/1056) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump web3 from 1.8.0 to 1.8.2 in /tests/e2e [\#1053](https://github.com/axonweb3/axon/pull/1053) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump puppeteer from 19.6.2 to 19.7.2 in /tests/e2e [\#1052](https://github.com/axonweb3/axon/pull/1052) ([dependabot[bot]](https://github.com/apps/dependabot))
+- chore\(deps\): bump actions/upload-artifact from 2 to 3 [\#1041](https://github.com/axonweb3/axon/pull/1041) ([dependabot[bot]](https://github.com/apps/dependabot))
+
+**Closed issues:**
+
+- Axon Development Updates 02/08/2023  [\#1024](https://github.com/axonweb3/axon/issues/1024)
 - Axon Development Updates 01/18/2023 [\#985](https://github.com/axonweb3/axon/issues/985)
 - Axon Development Updates 01/04/2023  [\#965](https://github.com/axonweb3/axon/issues/965)
 
+**Merged pull requests:**
+
+- feat: remove header from image cell system contract [\#1066](https://github.com/axonweb3/axon/pull/1066) ([felicityin](https://github.com/felicityin))
+- chore\(deps\): upgrade builtin-contract/tests js deps [\#1057](https://github.com/axonweb3/axon/pull/1057) ([ahonn](https://github.com/ahonn))
+- docs: add staking description to README.md [\#1048](https://github.com/axonweb3/axon/pull/1048) ([dsy124](https://github.com/dsy124))
+- refactor\(executor\): change the get cell precompile contract  [\#1047](https://github.com/axonweb3/axon/pull/1047) ([felicityin](https://github.com/felicityin))
+
 ## [v0.1.0-alpha.6](https://github.com/axonweb3/axon/tree/v0.1.0-alpha.6) (2023-02-16)
 
-[Full Changelog](https://github.com/axonweb3/axon/compare/v0...v0.1.0-alpha.6)
+[Full Changelog](https://github.com/axonweb3/axon/compare/v0.1.0-alpha.5...v0.1.0-alpha.6)
 
 ### 📖 Documentation
 
@@ -35,10 +227,6 @@
 
 - chore: remove the useless ci caches daily [\#1034](https://github.com/axonweb3/axon/pull/1034) ([liya2017](https://github.com/liya2017))
 - refactor: change the cache size of system contract to 20 [\#1029](https://github.com/axonweb3/axon/pull/1029) ([liya2017](https://github.com/liya2017))
-
-## [v0](https://github.com/axonweb3/axon/tree/v0) (2023-02-07)
-
-[Full Changelog](https://github.com/axonweb3/axon/compare/v0.1.0-alpha.5...v0)
 
 ## [v0.1.0-alpha.5](https://github.com/axonweb3/axon/tree/v0.1.0-alpha.5) (2023-02-07)
 
