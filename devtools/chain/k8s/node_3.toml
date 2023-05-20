@@ -81,7 +81,7 @@ broadcast_txs_interval = 200
 
 [executor]
 light = false
-triedb_cache_size = 2000
+triedb_cache_size = 500
 
 [logger]
 filter = "info"
@@ -92,11 +92,11 @@ log_to_file = true
 file_size_limit = 1073741824 # 1 GiB
 metrics = true
 # you can specify log level for modules with config below
-modules_level = { "overlord::state::process" = "debug" }
+# modules_level = { "overlord::state::process" = "debug" }
 
 [rocksdb]
 max_open_files = 64
-cache_size = 134217728
+cache_size = 200
 # Provide an options file to tune RocksDB for your workload and your system configuration.
 # More details can be found in [the official tuning guide](https://github.com/facebook/rocksdb/wiki/RocksDB-Tuning-Guide).
 options_file = "default.db-options"
