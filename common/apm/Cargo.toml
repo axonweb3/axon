@@ -21,4 +21,4 @@ rustracing_jaeger = { git = "http://github.com/KaoImin/rustracing_jaeger", branc
 trackable = "1.2"
 
 common-apm-derive = { path = "../apm-derive" }
-protocol = { path = "../../protocol", package = "axon-protocol" }
+protocol = { path = "../../protocol", package = "axon-protocol", default-features = false }

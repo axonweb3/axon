@@ -13,4 +13,4 @@ stringreader = "0.1"
 tentacle-multiaddr = "0.3"
 toml = "0.7"
 
-protocol = { path = "../../protocol", package = "axon-protocol" }
+protocol = { path = "../../protocol", package = "axon-protocol", default-features = false }

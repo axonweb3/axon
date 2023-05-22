@@ -1,7 +1,9 @@
 use rlp_derive::{RlpDecodable, RlpEncodable};
 use serde::{Deserialize, Serialize};
 
-use crate::codec::{serialize_bytes, serialize_uint, ProtocolCodec};
+use crate::codec::ProtocolCodec;
+#[cfg(feature = "hex-serialize")]
+use crate::codec::{serialize_bytes, serialize_uint};
 use crate::types::{
     Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, MerkleRoot, SignedTransaction, H160, H64,
     U256,
@@ -20,19 +22,19 @@ pub struct Proposal {
     pub prev_state_root:          MerkleRoot,
     pub transactions_root:        MerkleRoot,
     pub signed_txs_hash:          Hash,
-    #[serde(serialize_with = "serialize_uint")]
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub timestamp:                u64,
-    #[serde(serialize_with = "serialize_uint")]
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub number:                   BlockNumber,
     pub gas_limit:                U256,
-    #[serde(serialize_with = "serialize_bytes")]
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_bytes"))]
     pub extra_data:               Bytes,
     pub mixed_hash:               Option<Hash>,
     pub base_fee_per_gas:         U256,
     pub proof:                    Proof,
-    #[serde(serialize_with = "serialize_uint")]
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub chain_id:                 u64,
-    #[serde(serialize_with = "serialize_uint")]
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub call_system_script_count: u32,
     pub tx_hashes:                Vec<Hash>,
 }
@@ -150,21 +152,21 @@ pub struct Header {
     pub receipts_root:            MerkleRoot,
     pub log_bloom:                Bloom,
     pub difficulty:               U256,
-    #[serde(serialize_with = "serialize_uint")]
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub timestamp:                u64,
-    #[serde(serialize_with = "serialize_uint")]
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub number:                   BlockNumber,
     pub gas_used:                 U256,
     pub gas_limit:                U256,
-    #[serde(serialize_with = "serialize_bytes")]
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_bytes"))]
     pub extra_data:               Bytes,
     pub mixed_hash:               Option<Hash>,
     pub nonce:                    H64,
     pub base_fee_per_gas:         U256,
     pub proof:                    Proof,
-    #[serde(serialize_with = "serialize_uint")]
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub call_system_script_count: u32,
-    #[serde(serialize_with = "serialize_uint")]
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub chain_id:                 u64,
 }
 
@@ -182,14 +184,14 @@ impl Header {
     RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq,
 )]
 pub struct Proof {
-    #[serde(serialize_with = "serialize_uint")]
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub number:     u64,
-    #[serde(serialize_with = "serialize_uint")]
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub round:      u64,
     pub block_hash: Hash,
-    #[serde(serialize_with = "serialize_bytes")]
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_bytes"))]
     pub signature:  Bytes,
-    #[serde(serialize_with = "serialize_bytes")]
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_bytes"))]
     pub bitmap:     Bytes,
 }
 

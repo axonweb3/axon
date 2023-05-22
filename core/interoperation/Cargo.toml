@@ -15,7 +15,7 @@ ckb-vm = { version = "0.22.2", features = ["asm"] }
 lazy_static = "1.4"
 log = "0.4"
 
-protocol = { path = "../../protocol", package = "axon-protocol" }
+protocol = { path = "../../protocol", package = "axon-protocol", default-features = false }
 
 [dev-dependencies]
 cardano-serialization-lib = "7.0"
