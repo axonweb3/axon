@@ -1,16 +1,16 @@
-use ckb_types::{packed, prelude::*};
-use ethers::{
-    abi::{encode, parse_abi, FunctionExt, Token},
-    types::U256,
-};
+use ckb_types::{packed, prelude::Entity};
+use ethers::{abi::AbiEncode, core::types::Bytes as EthBytes};
+use ethers::contract::{EthAbiCodec, EthAbiType};
 use evm::executor::stack::{PrecompileFailure, PrecompileOutput};
 use evm::{Context, ExitError, ExitSucceed};
 
 use protocol::types::{H160, H256};
 
 use crate::precompiles::{axon_precompile_address, PrecompileContract};
-use crate::system_contract::image_cell::{CellInfo, CellKey};
+use crate::system_contract::image_cell::{image_cell_abi, CellKey};
 use crate::{err, system_contract::image_cell::ImageCellContract};
+
+const INPUT_LEN: usize = 32 + 4;
 
 #[derive(Default, Clone)]
 pub struct GetCell;
@@ -36,18 +36,20 @@ impl PrecompileContract for GetCell {
 
         let cell = ImageCellContract::default()
             .get_cell(&CellKey { tx_hash, index })
-            .map_err(|_| err!(_, "get cell"))?;
-
-        let output = if let Some(cell) = cell {
-            encode_cell(cell)
-        } else {
-            encode_default()
-        };
+            .map_err(|_| err!(_, "get cell"))?
+            .map(|c| Cell {
+                cell_output:     packed::CellOutput::new_unchecked(c.cell_output.into()).into(),
+                cell_data:       c.cell_data.into(),
+                is_consumed:     c.consumed_number.is_some(),
+                created_number:  c.created_number,
+                consumed_number: c.consumed_number.unwrap_or_default(),
+            })
+            .unwrap_or_default();
 
         Ok((
             PrecompileOutput {
                 exit_status: ExitSucceed::Returned,
-                output,
+                output:      cell.encode(),
             },
             gas,
         ))
@@ -60,80 +62,21 @@ impl PrecompileContract for GetCell {
 }
 
 fn parse_input(input: &[u8]) -> Result<(H256, u32), PrecompileFailure> {
-    let contract = parse_abi(&[
-        "function getCell(bytes32 txHash, uint32 index) external returns (tuple(bool exists, bool hasTypeScript, bool hasConsumedNumber, uint64 createdNumber, uint64 consumedNumber, uint64 capacity, uint8 lockHashType, uint8 typeHashType, bytes lockCodeHash, bytes typeCodeHash, bytes lockArgs, bytes typeArgs, bytes data) memory)",
-    ]).map_err(|_| err!(_, "invalid abi"))?;
-
-    let function = contract
-        .functions()
-        .find(|fun| fun.selector() == input[0..4])
-        .ok_or(err!(_, "unknown selector"))?;
-
-    let func_input = function
-        .decode_input(&input[4..])
-        .map_err(|_| err!(_, "invalid function name"))?;
-
-    match &func_input[..] {
-        [Token::FixedBytes(tx_hash), Token::Uint(index)] => {
-            Ok((H256::from_slice(&tx_hash[..]), index.as_u32()))
-        }
-        _ => Err(err!(_, "invalid input")),
+    if input.len() != INPUT_LEN {
+        return Err(err!(_, "invalid input"));
     }
+
+    let tx_hash = H256::from_slice(&input[0..32]);
+    let index = u32::from_le_bytes(input[32..INPUT_LEN].try_into().unwrap());
+
+    Ok((tx_hash, index))
 }
 
-fn encode_cell(cell: CellInfo) -> Vec<u8> {
-    let cell_output = packed::CellOutput::new_unchecked(cell.cell_output);
-
-    let lock = cell_output.lock();
-    let lock_hash_type: u8 = lock.hash_type().into();
-
-    let type_ = cell_output.type_();
-    let (type_script_exists, type_hash_type, type_code_hash, type_args) =
-        if let Some(type_) = type_.to_opt() {
-            let hash_type: u8 = type_.hash_type().into();
-            (
-                true,
-                hash_type,
-                type_.code_hash().raw_data().to_vec(),
-                type_.args().raw_data().to_vec(),
-            )
-        } else {
-            (false, 0, Vec::with_capacity(32), Vec::new())
-        };
-
-    let capacity: u64 = cell_output.capacity().unpack();
-
-    encode(&[Token::Tuple(vec![
-        Token::Bool(true),
-        Token::Bool(type_script_exists),
-        Token::Bool(cell.consumed_number.is_some()),
-        Token::Uint(U256::from(cell.created_number)),
-        Token::Uint(U256::from(cell.consumed_number.unwrap_or(0))),
-        Token::Uint(U256::from(capacity)),
-        Token::Uint(U256::from(lock_hash_type)),
-        Token::Uint(U256::from(type_hash_type)),
-        Token::Bytes(lock.code_hash().as_bytes().to_vec()),
-        Token::Bytes(type_code_hash),
-        Token::Bytes(lock.args().as_bytes().to_vec()),
-        Token::Bytes(type_args),
-        Token::Bytes(cell.cell_data.to_vec()),
-    ])])
-}
-
-fn encode_default() -> Vec<u8> {
-    encode(&[Token::Tuple(vec![
-        Token::Bool(false),
-        Token::Bool(false),
-        Token::Bool(false),
-        Token::Uint(U256::from(0)),
-        Token::Uint(U256::from(0)),
-        Token::Uint(U256::from(0)),
-        Token::Uint(U256::from(0)),
-        Token::Uint(U256::from(0)),
-        Token::Bytes(Vec::new()),
-        Token::Bytes(Vec::new()),
-        Token::Bytes(Vec::new()),
-        Token::Bytes(Vec::new()),
-        Token::Bytes(Vec::new()),
-    ])])
+#[derive(EthAbiType, EthAbiCodec, Default, Clone, Debug, PartialEq, Eq)]
+pub struct Cell {
+    pub cell_output:     image_cell_abi::CellOutput,
+    pub cell_data:       EthBytes,
+    pub is_consumed:     bool,
+    pub created_number:  u64,
+    pub consumed_number: u64,
 }

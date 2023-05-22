@@ -3,8 +3,8 @@ use std::str::FromStr;
 
 use ethers::abi::AbiEncode;
 
-use protocol::types::{Backend, MemoryBackend, TxResp, H160, H256, U256};
 use common_config_parser::types::ConfigRocksDB;
+use protocol::types::{Backend, MemoryBackend, TxResp, H160, H256, U256};
 
 use crate::system_contract::ckb_light_client::{ckb_light_client_abi, CkbLightClientContract};
 use crate::system_contract::{init, ImageCellContract, SystemContract, HEADER_CELL_ROOT_KEY};
