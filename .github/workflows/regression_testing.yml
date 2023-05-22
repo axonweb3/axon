@@ -1,0 +1,23 @@
+name: regression test
+
+on:
+  push:
+    branches:
+      - "main"
+jobs:
+  trigger-somking-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Generate axon-bot token
+        id: generate_axon_bot_token
+        uses: wow-actions/use-app-token@v2
+        with:
+          app_id: ${{ secrets.AXON_BOT_APP_ID }}
+          private_key: ${{ secrets.AXON_BOT_PRIVATE_KEY }}
+      - name: Invoke fmt test
+        uses: aurelien-baudet/workflow-dispatch@v2
+        with:
+          workflow: test
+          token: ${{ secrets.GITHUB_TOKEN }}
+          inputs: '{ "dispatch": "regression1111" }'
