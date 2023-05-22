@@ -1,3 +1,4 @@
+use ethers::abi::AbiDecode;
 use evm::executor::stack::{PrecompileFailure, PrecompileOutput};
 use evm::{Context, ExitError, ExitSucceed};
 
@@ -26,7 +27,8 @@ impl PrecompileContract for GetHeader {
             }
         }
 
-        let block_hash = H256::from_slice(input);
+        let block_hash =
+            H256(<[u8; 32] as AbiDecode>::decode(input).map_err(|_| err!(_, "decode input"))?);
 
         let raw = CkbLightClientContract::default()
             .get_raw(&block_hash.0)

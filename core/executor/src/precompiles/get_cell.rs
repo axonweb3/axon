@@ -1,6 +1,7 @@
 use ckb_types::{packed, prelude::Entity};
-use ethers::{abi::AbiEncode, core::types::Bytes as EthBytes};
+use ethers::abi::{AbiDecode, AbiEncode};
 use ethers::contract::{EthAbiCodec, EthAbiType};
+use ethers::{core::types::Bytes as EthBytes};
 use evm::executor::stack::{PrecompileFailure, PrecompileOutput};
 use evm::{Context, ExitError, ExitSucceed};
 
@@ -9,8 +10,6 @@ use protocol::types::{H160, H256};
 use crate::precompiles::{axon_precompile_address, PrecompileContract};
 use crate::system_contract::image_cell::{image_cell_abi, CellKey};
 use crate::{err, system_contract::image_cell::ImageCellContract};
-
-const INPUT_LEN: usize = 32 + 4;
 
 #[derive(Default, Clone)]
 pub struct GetCell;
@@ -62,14 +61,10 @@ impl PrecompileContract for GetCell {
 }
 
 fn parse_input(input: &[u8]) -> Result<(H256, u32), PrecompileFailure> {
-    if input.len() != INPUT_LEN {
-        return Err(err!(_, "invalid input"));
-    }
+    let out_point = <image_cell_abi::OutPoint as AbiDecode>::decode(input)
+        .map_err(|_| err!(_, "decode input"))?;
 
-    let tx_hash = H256::from_slice(&input[0..32]);
-    let index = u32::from_le_bytes(input[32..INPUT_LEN].try_into().unwrap());
-
-    Ok((tx_hash, index))
+    Ok((H256(out_point.tx_hash), out_point.index))
 }
 
 #[derive(EthAbiType, EthAbiCodec, Default, Clone, Debug, PartialEq, Eq)]
