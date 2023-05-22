@@ -1,7 +1,7 @@
 use ckb_types::{packed, prelude::Entity};
 use ethers::abi::{AbiDecode, AbiEncode};
 use ethers::contract::{EthAbiCodec, EthAbiType};
-use ethers::{core::types::Bytes as EthBytes};
+use ethers::core::types::Bytes as EthBytes;
 use evm::executor::stack::{PrecompileFailure, PrecompileOutput};
 use evm::{Context, ExitError, ExitSucceed};
 
@@ -37,7 +37,7 @@ impl PrecompileContract for GetCell {
             .get_cell(&CellKey { tx_hash, index })
             .map_err(|_| err!(_, "get cell"))?
             .map(|c| Cell {
-                cell_output:     packed::CellOutput::new_unchecked(c.cell_output.into()).into(),
+                cell_output:     packed::CellOutput::new_unchecked(c.cell_output).into(),
                 cell_data:       c.cell_data.into(),
                 is_consumed:     c.consumed_number.is_some(),
                 created_number:  c.created_number,
