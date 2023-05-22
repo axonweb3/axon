@@ -11,16 +11,16 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@ethereumjs/tx": "^4.0.2",
+    "@ethereumjs/tx": "^4.1.2",
     "@nomiclabs/hardhat-ethers": "^2.2.2",
-    "@nomiclabs/hardhat-waffle": "^2.0.2",
-    "@openzeppelin/contracts": "^4.8.1",
+    "@nomiclabs/hardhat-waffle": "^2.0.5",
+    "@openzeppelin/contracts": "^4.8.3",
     "@openzeppelin/hardhat-upgrades": "^1.22.0",
     "chai": "^4.3.6",
     "ethereum-waffle": "^3.4.4",
     "ethereumjs-util": "^7.1.4",
     "ethers": "^5.7.1",
-    "hardhat": "^2.12.7"
+    "hardhat": "^2.14.0"
   },
   "dependencies": {
     "dotenv": "^16.0.3"
