@@ -16,14 +16,14 @@ use std::path::Path;
 use std::sync::Arc;
 
 use arc_swap::ArcSwap;
-use common_config_parser::types::ConfigRocksDB;
 use once_cell::sync::OnceCell;
 
 use ckb_traits::{CellDataProvider, HeaderProvider};
 use ckb_types::core::cell::{CellProvider, CellStatus};
-use ckb_types::core::HeaderView;
+use ckb_types::core::{HeaderBuilder, HeaderView};
 use ckb_types::{packed, prelude::*};
 
+use common_config_parser::types::ConfigRocksDB;
 use protocol::types::{Bytes, Hasher, SignedTransaction, TxResp, H160, H256};
 use protocol::{ckb_blake2b_256, traits::ExecutorAdapter};
 
@@ -201,6 +201,20 @@ impl HeaderProvider for DataProvider {
             .get_header_by_block_hash(&H256(block_hash.0))
             .ok()
             .flatten()
-            .map(|h| h.into_view())
+            .map(|h| {
+                HeaderBuilder::default()
+                    .version(h.version.pack())
+                    .parent_hash(h.parent_hash.pack())
+                    .timestamp(h.timestamp.pack())
+                    .number(h.number.pack())
+                    .epoch(h.epoch.pack())
+                    .transactions_root(h.transactions_root.pack())
+                    .proposals_hash(h.proposals_hash.pack())
+                    .extra_hash(h.extra_hash.pack())
+                    .compact_target(h.compact_target.pack())
+                    .dao(h.dao.pack())
+                    .nonce(h.nonce.pack())
+                    .build()
+            })
     }
 }

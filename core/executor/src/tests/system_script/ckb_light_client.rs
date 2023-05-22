@@ -1,11 +1,10 @@
 use std::collections::BTreeMap;
 use std::str::FromStr;
 
-use ckb_types::{packed, prelude::*};
-use protocol::types::{Backend, MemoryBackend, TxResp, H160, H256, U256};
-
-use common_config_parser::types::ConfigRocksDB;
 use ethers::abi::AbiEncode;
+
+use protocol::types::{Backend, MemoryBackend, TxResp, H160, H256, U256};
+use common_config_parser::types::ConfigRocksDB;
 
 use crate::system_contract::ckb_light_client::{ckb_light_client_abi, CkbLightClientContract};
 use crate::system_contract::{init, ImageCellContract, SystemContract, HEADER_CELL_ROOT_KEY};
@@ -47,7 +46,8 @@ fn prepare_header_2() -> ckb_light_client_abi::Header {
         transactions_root: [1u8; 32],
         version:           0x1,
         nonce:             0x1,
-        uncles_hash:       [0u8; 32],
+        extra_hash:        [0u8; 32],
+        extension:         Default::default(),
     }
 }
 
@@ -68,10 +68,7 @@ fn test_update_first(backend: &mut MemoryBackend, executor: &CkbLightClientContr
         .unwrap()
         .unwrap();
 
-    assert_eq!(
-        queried_header.as_bytes(),
-        packed::Header::from(header).as_bytes()
-    );
+    assert_eq!(queried_header, header);
 }
 
 fn test_update_second(backend: &mut MemoryBackend, executor: &CkbLightClientContract) {
@@ -91,10 +88,7 @@ fn test_update_second(backend: &mut MemoryBackend, executor: &CkbLightClientCont
         .unwrap()
         .unwrap();
 
-    assert_eq!(
-        queried_header.as_bytes(),
-        packed::Header::from(header).as_bytes()
-    );
+    assert_eq!(queried_header, header);
 }
 
 fn test_roll_back_first(backend: &mut MemoryBackend, executor: &CkbLightClientContract) {
@@ -111,10 +105,8 @@ fn test_roll_back_first(backend: &mut MemoryBackend, executor: &CkbLightClientCo
         .get_header_by_block_hash(&H256::default())
         .unwrap()
         .unwrap();
-    assert_eq!(
-        queried_header.as_bytes(),
-        packed::Header::from(prepare_header_1()).as_bytes()
-    );
+
+    assert_eq!(queried_header, prepare_header_1());
 }
 
 fn test_roll_back_second(backend: &mut MemoryBackend, executor: &CkbLightClientContract) {

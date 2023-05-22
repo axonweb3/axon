@@ -1,5 +1,6 @@
 use std::io;
 
+use ethers::abi::AbiError;
 use thiserror::Error;
 
 use protocol::{ProtocolError, ProtocolErrorKind};
@@ -53,6 +54,9 @@ pub enum SystemScriptError {
 
     #[error("Molecule verification error: {0}")]
     MoleculeVerification(#[from] molecule::error::VerificationError),
+
+    #[error("Abi decode error: {0}")]
+    AbiDecode(#[from] AbiError),
 
     #[error("TrieDB has not been initialized")]
     TrieDbNotInit,

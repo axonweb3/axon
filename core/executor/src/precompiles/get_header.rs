@@ -1,14 +1,10 @@
 use evm::executor::stack::{PrecompileFailure, PrecompileOutput};
 use evm::{Context, ExitError, ExitSucceed};
 
-use ckb_types::prelude::Entity;
 use protocol::types::{H160, H256};
 
-use crate::system_contract::CkbLightClientContract;
-use crate::{
-    err,
-    precompiles::{axon_precompile_address, PrecompileContract},
-};
+use crate::precompiles::{axon_precompile_address, PrecompileContract};
+use crate::{err, system_contract::CkbLightClientContract};
 
 #[derive(Default, Clone)]
 pub struct GetHeader;
@@ -32,15 +28,14 @@ impl PrecompileContract for GetHeader {
 
         let block_hash = H256::from_slice(input);
 
-        let header = CkbLightClientContract::default()
-            .get_header_by_block_hash(&block_hash)
+        let raw = CkbLightClientContract::default()
+            .get_raw(&block_hash.0)
             .map_err(|_| err!(_, "get header"))?;
 
-        // todo: need refactoring on encode/decode
         Ok((
             PrecompileOutput {
                 exit_status: ExitSucceed::Returned,
-                output:      header.map(|h| h.as_bytes().to_vec()).unwrap_or_default(),
+                output:      raw.unwrap_or_default(),
             },
             gas,
         ))
