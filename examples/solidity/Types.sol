@@ -31,3 +31,19 @@ enum ScriptHashType {
     Type,
     Data1
 }
+
+struct Header {
+    uint32 version;
+    uint32 compactTarget;
+    uint64 timestamp;
+    uint64 number;
+    uint64 epch;
+    bytes32 parentHash;
+    bytes32 transactionsRoot;
+    bytes32 proposalsHash;
+    bytes32 extraHash;
+    bytes32 dao;
+    uint128 nonce;
+    bytes extension;
+    bytes32 blockHash;
+}
