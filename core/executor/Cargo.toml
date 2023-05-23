@@ -26,7 +26,7 @@ lru = "0.10"
 molecule = "0.7"
 once_cell = "1.17"
 parking_lot = "0.12"
-protocol = { path = "../../protocol", package = "axon-protocol" }
+protocol = { path = "../../protocol", package = "axon-protocol", default-features = false }
 ripemd = "0.1"
 rlp = "0.5"
 rlp-derive = "0.1"

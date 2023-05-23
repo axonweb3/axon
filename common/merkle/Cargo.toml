@@ -10,7 +10,7 @@ hasher = "0.1"
 rlp = "0.5"
 static_merkle_tree = "1.1"
 
-protocol = { path = "../../protocol", package = "axon-protocol" }
+protocol = { path = "../../protocol", package = "axon-protocol", default-features = false }
 
 [dev-dependencies]
 criterion = "0.4"
