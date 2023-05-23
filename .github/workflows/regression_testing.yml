@@ -1,23 +1,146 @@
-name: regression test
+name: Regression test
 
 on:
-  push:
-    branches:
-      - "main"
+  workflow_dispatch:
+  schedule:
+    - cron: "0 2 * * *"
 jobs:
-  trigger-somking-test:
+  invoke-cargo-cliipy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Generate axon-bot token
-        id: generate_axon_bot_token
-        uses: wow-actions/use-app-token@v2
-        with:
-          app_id: ${{ secrets.AXON_BOT_APP_ID }}
-          private_key: ${{ secrets.AXON_BOT_PRIVATE_KEY }}
-      - name: Invoke fmt test
+      - name: Invoke Cargo Clippy test
+        id: invoke-cargo-cliipy
         uses: aurelien-baudet/workflow-dispatch@v2
         with:
-          workflow: test
+          workflow: Cargo Clippy
           token: ${{ secrets.GITHUB_TOKEN }}
-          inputs: '{ "dispatch": "regression1111" }'
+          inputs: '{ "dispatch": "regression" }'
+
+
+  invoke-fmt-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invoke fmt test
+        id: invoke-fmt-test
+        uses: aurelien-baudet/workflow-dispatch@v2
+        with:
+          workflow: Code Format
+          token: ${{ secrets.GITHUB_TOKEN }}
+          inputs: '{ "dispatch": "regression" }'
+
+  invoke-E2E-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invoke fmt test
+        id: invoke-E2E-test
+        uses: aurelien-baudet/workflow-dispatch@v2
+        with:
+          workflow:  E2E Tests
+          token: ${{ secrets.GITHUB_TOKEN }}
+          inputs: '{ "dispatch": "regression" }'
+
+  invoke-unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invoke Unit Tests test
+        id: invoke-unit-test
+        uses: aurelien-baudet/workflow-dispatch@v2
+        with:
+          workflow:  Unit Tests
+          token: ${{ secrets.GITHUB_TOKEN }}
+          inputs: '{ "dispatch": "regression" }'
+
+  invoke-v3-core-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invoke v3 core test
+        id: invoke-v3-core-test
+        uses: aurelien-baudet/workflow-dispatch@v2
+        with:
+          workflow:  v3 Core Tests
+          wait-for-completion-timeout: 2h
+          token: ${{ secrets.GITHUB_TOKEN }}
+          inputs: '{ "dispatch": "regression" }'
+
+  invoke-web3-compatible-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invoke web3 compatible test
+        id: invoke-web3-compatible-test
+        uses: aurelien-baudet/workflow-dispatch@v2
+        with:
+          workflow:  Web3 Compatible Tests
+          wait-for-completion-timeout: 2h
+          token: ${{ secrets.GITHUB_TOKEN }}
+          inputs: '{ "dispatch": "regression" }'
+
+  invoke-openzeppelin-test-1-5-and-12-15-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invoke OCT 1-5 And 12-15 test
+        id: invoke-openzeppelin-test-1-5-and-12-15-test
+        uses: aurelien-baudet/workflow-dispatch@v2
+        with:
+          workflow:  OCT 1-5 And 12-15
+          wait-for-completion-timeout: 2h
+          token: ${{ secrets.GITHUB_TOKEN }}
+          inputs: '{ "dispatch": "regression" }'
+
+  invoke-OCT-6-10-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invoke OCT 1-5 And 12-15 test
+        id: invoke-OCT-6-10-test
+        uses: aurelien-baudet/workflow-dispatch@v2
+        with:
+          workflow:  OCT 6-10
+          wait-for-completion-timeout: 2h
+          token: ${{ secrets.GITHUB_TOKEN }}
+          inputs: '{ "dispatch": "regression" }'
+
+  invoke-OCT-11-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invoke OCT 11 test
+        id: invoke-OCT-11-test
+        uses: aurelien-baudet/workflow-dispatch@v2
+        with:
+          workflow:  OCT 11
+          wait-for-completion-timeout: 2h
+          token: ${{ secrets.GITHUB_TOKEN }}
+          inputs: '{ "dispatch": "regression" }'
+
+  invoke-OCT-16-19-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invoke OCT 16-19 test
+        id: invoke-OCT-16-19-test
+        uses: aurelien-baudet/workflow-dispatch@v2
+        with:
+          workflow:  OCT 16-19
+          wait-for-completion-timeout: 2h
+          token: ${{ secrets.GITHUB_TOKEN }}
+          inputs: '{ "dispatch": "regression" }'
+
+  invoke-chaos-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invoke OCT 16-19 test
+        id: invoke-chaos-test
+        uses: aurelien-baudet/workflow-dispatch@v2
+        with:
+          workflow:  OCT 16-19
+          wait-for-completion-timeout: 2h
+          token: ${{ secrets.GITHUB_TOKEN }}
+          inputs: '{ "dispatch": "regression" }'
+
+  output-result:
+    runs-on: ubuntu-latest
+    needs: [invoke-cargo-cliipy, invoke-fmt-test,invoke-E2E-test,invoke-unit-test,invoke-v3-core-test,invoke-web3-compatible-test,invoke-openzeppelin-test-1-5-and-12-15-test,invoke-OCT-6-10-test,invoke-OCT-11-test,invoke-OCT-16-19-test,invoke-chaos-test]
+    if: always()
+    steps:
+    - name: send message
+      uses: nobrayner/discord-webhook@v1
+      with:
+        github-token: ${{ secrets.github_token }}
+        discord-webhook: ${{ secrets.DISCORD_WEBHOOK }}

@@ -89,7 +89,8 @@ jobs:
   finally:
     name: Finally
     needs: [ Coverage ]
-    if: always() && contains(github.event_name, 'workflow_dispatch')
+    if: always() && contains(github.event_name, 'workflow_dispatch') &&
+        github.event.inputs.dispatch != 'regression' && github.repository_owner == 'axonweb3'
     runs-on: ubuntu-latest
     steps:
       - name: Generate axon-bot token
