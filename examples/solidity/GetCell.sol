@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
-import "../IPrecompiles.sol";
+import "./Types.sol";
 
 contract GetCell {
     event GetCellEvent(Cell);
@@ -10,8 +10,10 @@ contract GetCell {
     Cell cell;
 
     function testGetCell(bytes32 txHash, uint32 index) public {
-        cell = CellProvider(address(0x0103)).getCell(txHash, index);
-        if (cell.exists) {
+        (bool isSuccess, bytes memory res) = address(0x0103).staticcall(abi.encode(OutPoint(txHash, index)));
+
+        if (isSuccess) {
+            cell = abi.decode(res, (Cell));
             emit GetCellEvent(cell);
         } else {
             emit NotGetCellEvent();
