@@ -43,6 +43,6 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64/v8
+          platforms: linux/amd64
           push: true
           tags: axonweb3/axon:${{ steps.tag_name.outputs.tag_name }}

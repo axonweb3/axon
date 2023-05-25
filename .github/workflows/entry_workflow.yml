@@ -43,9 +43,9 @@ jobs:
               .replace(/\\n/g, "\\\\n")
               .replace(/\\r/g, "\\\\r")
               .replace(/\\t/g, "\\\\t");
-            
+
             // get pr comments body,not issue comments body
-            const pr = 
+            const pr =
              await github.rest.pulls.get({
                owner: context.repo.owner,
                repo: context.repo.repo,
@@ -69,7 +69,7 @@ jobs:
               core.info(`${JSON.stringify(resp, null, 2)}`);
               check_list=`${check_list}\n - Code Format`;
               }
-              
+
             // check Cargo Clippy exist or not
             const clippy_match = pr.data.body.includes("[x] Cargo Clippy");
             if (clippy_match) {
@@ -262,7 +262,7 @@ jobs:
                 pull_number: dispatch.issue.number,
               })
               ).data.head;
-            let integrationTestInfo = `  
+            let integrationTestInfo = `
             \### CI tests run on commit:
             - commit id: https://github.com/${{ github.repository }}/commit/${pr.sha}`;
             integrationTestInfo = `${integrationTestInfo}`;
