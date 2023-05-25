@@ -21,6 +21,8 @@ use crate::jsonrpc::web3_types::{
 use crate::jsonrpc::ws_subscription::{ws_subscription_module, HexIdProvider};
 use crate::APIError;
 
+use self::web3_types::BlockCount;
+
 type RpcResult<T> = Result<T, Error>;
 
 #[rpc(server)]
@@ -85,7 +87,7 @@ pub trait Web3Rpc {
     #[method(name = "eth_feeHistory")]
     async fn fee_history(
         &self,
-        block_count: U256,
+        block_count: BlockCount,
         newest_block: BlockId,
         reward_percentiles: Option<Vec<f64>>,
     ) -> RpcResult<Web3FeeHistory>;
