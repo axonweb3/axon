@@ -178,11 +178,6 @@ impl Default for ConfigRocksDB {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct ConfigIbc {
-    pub uri: String,
-}
-
-#[derive(Clone, Debug, Deserialize)]
 pub struct ConfigLogger {
     pub filter:                     String,
     pub log_to_console:             bool,

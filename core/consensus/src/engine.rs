@@ -239,9 +239,6 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             signature:  commit.proof.signature.signature.clone(),
             bitmap:     commit.proof.signature.address_bitmap.clone(),
         };
-        common_apm::metrics::consensus::ENGINE_ROUND_GAUGE.set(commit.proof.round as i64);
-
-        self.adapter.save_proof(ctx.clone(), proof.clone()).await?;
 
         // Get full transactions from mempool. If is error, try get from wal.
         let signed_txs = match self
@@ -596,6 +593,10 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             &txs,
             &resp,
         );
+
+        common_apm::metrics::consensus::ENGINE_ROUND_GAUGE.set(proof.round as i64);
+
+        self.adapter.save_proof(ctx.clone(), proof.clone()).await?;
 
         // Save signed transactions
         self.adapter
