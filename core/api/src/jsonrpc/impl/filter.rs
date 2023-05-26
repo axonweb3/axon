@@ -6,6 +6,7 @@ use jsonrpsee::core::Error;
 use serde::{Deserialize, Serialize};
 
 use protocol::async_trait;
+use protocol::rand::prelude::*;
 use protocol::tokio::sync::mpsc::{channel, Receiver, Sender};
 use protocol::tokio::{self, select, sync::oneshot, time::interval};
 use protocol::traits::{APIAdapter, Context};
@@ -133,7 +134,6 @@ pub enum Command {
 pub struct FilterHub<Adapter> {
     logs_hub:   HashMap<U256, (LoggerFilter, Instant)>,
     blocks_hub: HashMap<U256, (BlockNumber, Instant)>,
-    id:         u64,
     recv:       Receiver<Command>,
     adapter:    Arc<Adapter>,
 }
@@ -146,7 +146,6 @@ where
         Self {
             logs_hub: HashMap::new(),
             blocks_hub: HashMap::new(),
-            id: 0,
             recv,
             adapter,
         }
@@ -187,7 +186,8 @@ where
     async fn handle(&mut self, cmd: Command) {
         match cmd {
             Command::NewLogs((mut filter, sender)) => {
-                self.id += 1;
+                let id = random_id();
+
                 let header = self
                     .adapter
                     .get_block_header_by_number(Context::new(), None)
@@ -205,21 +205,19 @@ where
                     _ => filter.from_block = Some(BlockId::Num(U64::from(header.number + 1))),
                 }
 
-                self.logs_hub
-                    .insert(self.id.into(), (filter, Instant::now()));
-                sender.send(self.id.into()).unwrap()
+                self.logs_hub.insert(id, (filter, Instant::now()));
+                sender.send(id).unwrap()
             }
             Command::NewBlocks(sender) => {
-                self.id += 1;
+                let id = random_id();
                 let header = self
                     .adapter
                     .get_block_header_by_number(Context::new(), None)
                     .await
                     .unwrap()
                     .unwrap();
-                self.blocks_hub
-                    .insert(self.id.into(), (header.number, Instant::now()));
-                sender.send(self.id.into()).unwrap()
+                self.blocks_hub.insert(id, (header.number, Instant::now()));
+                sender.send(id).unwrap()
             }
             Command::FilterRequest((id, sender)) => self.impl_filter(id, sender).await,
             Command::Uninstall((id, sender)) => {
@@ -381,4 +379,9 @@ where
         *time = Instant::now();
         Ok(all_logs)
     }
+}
+
+fn random_id() -> U256 {
+    let bytes: [u8; 32] = thread_rng().gen();
+    U256::from_big_endian(&bytes)
 }
