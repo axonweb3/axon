@@ -71,7 +71,7 @@
           },
           {
             "internalType": "bytes32",
-            "name": "unclesHash",
+            "name": "extraHash",
             "type": "bytes32"
           },
           {
@@ -83,6 +83,11 @@
             "internalType": "uint128",
             "name": "nonce",
             "type": "uint128"
+          },
+          {
+            "internalType": "bytes",
+            "name": "extension",
+            "type": "bytes"
           },
           {
             "internalType": "bytes32",

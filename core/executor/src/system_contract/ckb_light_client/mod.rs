@@ -3,13 +3,12 @@ mod store;
 
 pub use abi::ckb_light_client_abi;
 
-use ckb_types::packed;
-use ethers::abi::AbiDecode;
-use protocol::ProtocolResult;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use protocol::traits::ExecutorAdapter;
+use ethers::abi::AbiDecode;
+
 use protocol::types::{SignedTransaction, TxResp, H160, H256};
+use protocol::{traits::ExecutorAdapter, ProtocolResult};
 
 use crate::exec_try;
 use crate::system_contract::ckb_light_client::store::CkbLightClientStore;
@@ -79,9 +78,15 @@ impl CkbLightClientContract {
     pub fn get_header_by_block_hash(
         &self,
         block_hash: &H256,
-    ) -> ProtocolResult<Option<packed::Header>> {
+    ) -> ProtocolResult<Option<ckb_light_client_abi::Header>> {
         let store = CkbLightClientStore::new()?;
         store.get_header(&block_hash.0)
+    }
+
+    pub fn get_raw(&self, key: &[u8]) -> ProtocolResult<Option<Vec<u8>>> {
+        let store = CkbLightClientStore::new()?;
+        let ret = store.trie.get(key)?.map(Into::into);
+        Ok(ret)
     }
 
     pub fn allow_read(&self) -> bool {

@@ -1,15 +1,14 @@
 use std::sync::Arc;
 
-use crate::MPTTrie;
-use ckb_types::packed;
-use ckb_types::prelude::Entity;
-use protocol::types::H256;
-use protocol::ProtocolResult;
+use ethers::abi::{AbiDecode, AbiEncode};
+
+use protocol::{types::H256, ProtocolResult};
 
 use crate::system_contract::{
     ckb_light_client::ckb_light_client_abi, error::SystemScriptError, trie_db::RocksTrieDB,
     CURRENT_HEADER_CELL_ROOT, HEADER_CELL_DB,
 };
+use crate::MPTTrie;
 
 pub struct CkbLightClientStore {
     pub trie: MPTTrie<RocksTrieDB>,
@@ -52,8 +51,11 @@ impl CkbLightClientStore {
         self.commit()
     }
 
-    pub fn get_header(&self, block_hash: &[u8]) -> ProtocolResult<Option<packed::Header>> {
-        let header = match self.trie.get(block_hash) {
+    pub fn get_header(
+        &self,
+        block_hash: &[u8],
+    ) -> ProtocolResult<Option<ckb_light_client_abi::Header>> {
+        let raw = match self.trie.get(block_hash) {
             Ok(n) => match n {
                 Some(n) => n,
                 None => return Ok(None),
@@ -62,15 +64,14 @@ impl CkbLightClientStore {
         };
 
         Ok(Some(
-            packed::Header::from_slice(&header).map_err(SystemScriptError::MoleculeVerification)?,
+            <ckb_light_client_abi::Header as AbiDecode>::decode(raw)
+                .map_err(SystemScriptError::AbiDecode)?,
         ))
     }
 
     fn save_header(&mut self, header: &ckb_light_client_abi::Header) -> ProtocolResult<()> {
-        let packed_header = packed::Header::from(header.clone());
-
         self.trie
-            .insert(&H256(header.block_hash).0, &packed_header.as_bytes())
+            .insert(&header.block_hash, &header.clone().encode())
             .map_err(|e| SystemScriptError::InsertHeader(e.to_string()).into())
     }
 
