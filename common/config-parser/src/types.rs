@@ -94,25 +94,17 @@ pub struct ConfigApi {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct ConfigNetwork {
-    pub bootstraps:                 Option<Vec<ConfigNetworkBootstrap>>,
-    pub allowlist:                  Option<Vec<String>>,
-    pub allowlist_only:             Option<bool>,
-    pub trust_interval_duration:    Option<u64>,
-    pub trust_max_history_duration: Option<u64>,
-    pub fatal_ban_duration:         Option<u64>,
-    pub soft_ban_duration:          Option<u64>,
-    pub max_connected_peers:        Option<usize>,
-    pub same_ip_conn_limit:         Option<usize>,
-    pub inbound_conn_limit:         Option<usize>,
-    pub listening_address:          MultiAddr,
-    pub rpc_timeout:                Option<u64>,
-    pub selfcheck_interval:         Option<u64>,
-    pub send_buffer_size:           Option<usize>,
-    pub write_timeout:              Option<u64>,
-    pub recv_buffer_size:           Option<usize>,
-    pub max_frame_length:           Option<usize>,
-    pub max_wait_streams:           Option<usize>,
-    pub ping_interval:              Option<u64>,
+    pub bootstraps:          Option<Vec<ConfigNetworkBootstrap>>,
+    pub allowlist:           Option<Vec<String>>,
+    pub allowlist_only:      Option<bool>,
+    pub max_connected_peers: Option<usize>,
+    pub inbound_conn_limit:  Option<usize>,
+    pub listening_address:   MultiAddr,
+    pub rpc_timeout:         Option<u64>,
+    pub send_buffer_size:    Option<usize>,
+    pub recv_buffer_size:    Option<usize>,
+    pub max_frame_length:    Option<usize>,
+    pub ping_interval:       Option<u64>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
