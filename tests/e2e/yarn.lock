@@ -524,9 +524,9 @@
   integrity sha512-hldFFYuf49ed7DAakWVXSJODuq3pzJEguD8tQ7h+sGkM18vja+OFoJI9krnGmgzyuZC2ETX0NOIcCTy31v2Mtg==
 
 "@chainsafe/dappeteer@^5":
-  version "5.0.1"
-  resolved "https://registry.yarnpkg.com/@chainsafe/dappeteer/-/dappeteer-5.0.1.tgz#7274a2b70e60613704c9f3ea14227a51f360fcf0"
-  integrity sha512-A1j0l+/dhH5REqhBiSLsLuAKqExgonO9nKh+pUhJmTjhJtvXoxo+1vbNxE9URp2eIPOF2ndAgGfBhIzuPSGdHw==
+  version "5.1.1"
+  resolved "https://registry.yarnpkg.com/@chainsafe/dappeteer/-/dappeteer-5.1.1.tgz#7dc65e5cd1d6f67b3e7812fb4e5b5fa30ee8a9bb"
+  integrity sha512-UQ2rFYXZ7IAc62IIi8Hb4XZLbE67GpZFnnOvMbfbU/JfMS7N3F6QTvCWpIEwQ0qaQ7+ZLL4/FOXszbJYQmp+Xw==
   dependencies:
     "@metamask/providers" "^9.1.0"
     fs-extra "^11.1.0"
