@@ -88,7 +88,7 @@ impl UnsignedTransaction {
         match self {
             UnsignedTransaction::Legacy(tx) => tx.gas_price,
             UnsignedTransaction::Eip2930(tx) => tx.gas_price,
-            UnsignedTransaction::Eip1559(tx) => tx.gas_price.min(tx.max_priority_fee_per_gas),
+            UnsignedTransaction::Eip1559(tx) => tx.gas_price.max(tx.max_priority_fee_per_gas),
         }
     }
 
