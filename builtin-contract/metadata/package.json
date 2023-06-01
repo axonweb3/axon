@@ -19,6 +19,6 @@
     "ethereum-waffle": "^3.4.4",
     "ethereumjs-util": "^7.1.5",
     "ethers": "^5.7.1",
-    "hardhat": "^2.14.0"
+    "hardhat": "^2.14.1"
   }
 }
