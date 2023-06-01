@@ -14,6 +14,6 @@ describe("web3_clientVersion", () => {
       () => document.getElementById("clientVersion").innerText !== "",
     );
 
-    await expect(page.$eval("#clientVersion", (e) => e.innerText)).resolves.toBe("MetaMask/v10.25.0");
+    await expect(page.$eval("#clientVersion", (e) => e.innerText)).resolves.toBe("MetaMask/v10.29.0");
   });
 });
