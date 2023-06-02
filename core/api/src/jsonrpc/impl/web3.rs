@@ -618,6 +618,13 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
                     return Err(Error::Custom(format!("Invalid from_block {}", start)));
                 }
 
+                if end.saturating_sub(start) > 1000 {
+                    return Err(Error::Custom(format!(
+                        "Invalid block range {} to {}, limit to 1k",
+                        start, end
+                    )));
+                }
+
                 let mut visiter_last_block = false;
                 for n in start..=end {
                     if n == latest_number {
