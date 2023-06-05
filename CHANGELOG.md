@@ -1,16 +1,58 @@
 # 📑 Changelog
 
-## [Unreleased](https://github.com/axonweb3/axon/tree/HEAD)
+## [v0.1.0-beta.2](https://github.com/axonweb3/axon/tree/v0.1.0-beta.2) (2023-06-05)
 
-[Full Changelog](https://github.com/axonweb3/axon/compare/v0.1.0-beta.1...HEAD)
+[Full Changelog](https://github.com/axonweb3/axon/compare/v0...v0.1.0-beta.2)
+
+### 📖 Documentation
+
+- docs: automated update CHANGELOG.md [\#1194](https://github.com/axonweb3/axon/pull/1194) ([liya2017](https://github.com/liya2017))
+
+### 🚀 Features
+
+- feat: add an example of get cell precompile contract [\#1196](https://github.com/axonweb3/axon/pull/1196) ([felicityin](https://github.com/felicityin))
+
+🐛 Bug Fixes
+
+- fix\(API\): update eth fee history rpc method [\#1206](https://github.com/axonweb3/axon/pull/1206) ([hongda3141](https://github.com/hongda3141))
+
+### 🐝  refactor
+
+- refactor\(consensus\): change save proof moment [\#1207](https://github.com/axonweb3/axon/pull/1207) ([KaoImin](https://github.com/KaoImin))
+- refactor: change the default feature of protocol [\#1200](https://github.com/axonweb3/axon/pull/1200) ([KaoImin](https://github.com/KaoImin))
+- refactor\(executor\): change ckb light client ABI [\#1199](https://github.com/axonweb3/axon/pull/1199) ([KaoImin](https://github.com/KaoImin))
+- refactor: change the value of cache\_size [\#1195](https://github.com/axonweb3/axon/pull/1195) ([liya2017](https://github.com/liya2017))
+
+### 🧰 Chore
+
+- chore: remove useless config [\#1209](https://github.com/axonweb3/axon/pull/1209) ([driftluo](https://github.com/driftluo))
+- ci: ci for regression test [\#1201](https://github.com/axonweb3/axon/pull/1201) ([liya2017](https://github.com/liya2017))
+
+⬆️ Dependency Updates
+
+- chore: upgrade js deps [\#1197](https://github.com/axonweb3/axon/pull/1197) ([ahonn](https://github.com/ahonn))
 
 **Closed issues:**
 
+- Axon Development Updates 04/28/2023 [\#1168](https://github.com/axonweb3/axon/issues/1168)
 - Axon Development Updates 04/05/2023 [\#1143](https://github.com/axonweb3/axon/issues/1143)
+
+**Merged pull requests:**
+
+- ci: a job to build arm64 image [\#1211](https://github.com/axonweb3/axon/pull/1211) ([liya2017](https://github.com/liya2017))
+- Optimize Dockerfile to reduce image size [\#1208](https://github.com/axonweb3/axon/pull/1208) ([jiangxianliang007](https://github.com/jiangxianliang007))
+- ci: locked the runner versions [\#1205](https://github.com/axonweb3/axon/pull/1205) ([liya2017](https://github.com/liya2017))
+- ci: ci for axon start test with short genesis [\#1204](https://github.com/axonweb3/axon/pull/1204) ([liya2017](https://github.com/liya2017))
+- feat: random filter id [\#1203](https://github.com/axonweb3/axon/pull/1203) ([blckngm](https://github.com/blckngm))
+- update docker-compose.yaml  genesis.json to genesis\_single\_node.json [\#1202](https://github.com/axonweb3/axon/pull/1202) ([jiangxianliang007](https://github.com/jiangxianliang007))
+
+## [v0](https://github.com/axonweb3/axon/tree/v0) (2023-05-18)
+
+[Full Changelog](https://github.com/axonweb3/axon/compare/v0.1.0-beta.1...v0)
 
 ## [v0.1.0-beta.1](https://github.com/axonweb3/axon/tree/v0.1.0-beta.1) (2023-05-18)
 
-[Full Changelog](https://github.com/axonweb3/axon/compare/v0...v0.1.0-beta.1)
+[Full Changelog](https://github.com/axonweb3/axon/compare/v0.1.0-alpha.9...v0.1.0-beta.1)
 
 ### 🚀 Features
 
@@ -57,10 +99,6 @@
 - ci: update copy\_config\_to\_devops.yml [\#1189](https://github.com/axonweb3/axon/pull/1189) ([liya2017](https://github.com/liya2017))
 - ci: remove apply patch for config.toml due to some errors [\#1164](https://github.com/axonweb3/axon/pull/1164) ([liya2017](https://github.com/liya2017))
 - ci: increase timeout of build-docker image workflow [\#1161](https://github.com/axonweb3/axon/pull/1161) ([liya2017](https://github.com/liya2017))
-
-## [v0](https://github.com/axonweb3/axon/tree/v0) (2023-04-18)
-
-[Full Changelog](https://github.com/axonweb3/axon/compare/v0.1.0-alpha.9...v0)
 
 ## [v0.1.0-alpha.9](https://github.com/axonweb3/axon/tree/v0.1.0-alpha.9) (2023-04-18)
 
