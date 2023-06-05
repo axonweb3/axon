@@ -79,7 +79,7 @@ impl PeerStore {
                 )
             })
             .and_then(|file| {
-                Manager::load(file).map_err(|err| {
+                Manager::load(std::io::BufReader::new(file)).map_err(|err| {
                     error!(
                         "Failed to load AddrManager db, file: {:?}, error: {:?}",
                         addr_manager_path, err
@@ -96,7 +96,7 @@ impl PeerStore {
                 )
             })
             .and_then(|file| {
-                BanList::load(file).map_err(|err| {
+                BanList::load(std::io::BufReader::new(file)).map_err(|err| {
                     error!(
                         "Failed to load BanList db, file: {:?}, error: {:?}",
                         ban_list_path, err
