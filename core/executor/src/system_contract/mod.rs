@@ -14,10 +14,9 @@ pub use crate::system_contract::native_token::NativeTokenContract;
 
 use std::path::Path;
 use std::sync::Arc;
+use std::sync::OnceLock;
 
 use arc_swap::ArcSwap;
-use once_cell::sync::OnceCell;
-
 use ckb_traits::{CellDataProvider, HeaderProvider};
 use ckb_types::core::cell::{CellProvider, CellStatus};
 use ckb_types::core::{HeaderBuilder, HeaderView};
@@ -42,8 +41,8 @@ const METADATA_DB_CACHE_SIZE: usize = 10;
 
 /// System contract init section. It needs to initialize two databases, one for
 /// Metadata and one for CkbLightClient&ImageCell
-static HEADER_CELL_DB: OnceCell<Arc<RocksTrieDB>> = OnceCell::new();
-static METADATA_DB: OnceCell<Arc<RocksTrieDB>> = OnceCell::new();
+static HEADER_CELL_DB: OnceLock<Arc<RocksTrieDB>> = OnceLock::new();
+static METADATA_DB: OnceLock<Arc<RocksTrieDB>> = OnceLock::new();
 
 lazy_static::lazy_static! {
     pub static ref HEADER_CELL_ROOT_KEY: H256 = Hasher::digest("header_cell_mpt_root");

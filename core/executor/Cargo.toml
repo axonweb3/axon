@@ -17,14 +17,13 @@ common-crypto = { path = "../../common/crypto" }
 common-merkle = { path = "../../common/merkle" }
 core-interoperation = { path = "../interoperation" }
 ethers = "2.0"
-evm = { version = "0.37", features = ["tracing"] }
+evm = { version = "0.39", features = ["tracing"] }
 futures = "0.3"
 hasher = "0.1"
 lazy_static = "1.4"
 log = "0.4"
 lru = "0.10"
 molecule = "0.7"
-once_cell = "1.17"
 parking_lot = "0.12"
 protocol = { path = "../../protocol", package = "axon-protocol", default-features = false }
 ripemd = "0.1"

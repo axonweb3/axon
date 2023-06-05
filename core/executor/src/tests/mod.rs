@@ -43,6 +43,7 @@ fn gen_vicinity() -> MemoryVicinity {
         block_gas_limit:        Default::default(),
         chain_id:               U256::one(),
         block_base_fee_per_gas: U256::zero(),
+        block_randomness:       None,
     }
 }
 
