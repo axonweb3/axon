@@ -719,12 +719,76 @@ pub struct SyncStatus {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-#[serde(deny_unknown_fields, rename_all = "camelCase")]
-pub struct Web3FeeHistory {
+#[serde(deny_unknown_fields, rename_all = "camelCase", untagged)]
+pub enum BlockCount {
+    U64Type(u64),
+    U256Type(U256),
+}
+
+/// Response type for `eth_feeHistory` RPC call.
+/// Three types of response are possible:
+/// 1. With reward, it returned when request parameter REWARDPERCENTILES is not
+/// null: `{"oldestBlock": "0x...", "reward": [["0x...", ...], ...],
+/// "baseFeePerGas": ["0x...", ...], "gasUsedRatio": [0.0, ...]}` 2. Without
+/// reward, it returned when request parameter REWARDPERCENTILES is null:
+/// `{"oldestBlock": "0x...", "baseFeePerGas": ["0x...", ...], "gasUsedRatio":
+/// [0.0, ...]}` 3. Zero block count, it returned when request parameter
+/// BLOCKCOUNT is 0: `{"oldestBlock": "0x...", "baseFeePerGas": [],
+/// "gasUsedRatio": []}` See https://docs.infura.io/infura/networks/ethereum/json-rpc-methods/eth_feehistory
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase", untagged)]
+pub enum Web3FeeHistory {
+    WithReward(FeeHistoryWithReward),
+    WithoutReward(FeeHistoryWithoutReward),
+    ZeroBlockCount(FeeHistoryEmpty),
+}
+
+/// Response type for `eth_feeHistory` RPC call with parameter REWARDPERCENTILES
+/// is not null.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct FeeHistoryWithReward {
+    /// Lowest number block of the returned range.
     pub oldest_block:     U256,
-    pub reward:           Option<Vec<U256>>,
+    /// An array of block base fees per gas.
+    /// This includes the next block after the newest of the returned range,
+    /// because this value can be derived from the newest block. Zeroes are
+    /// returned for pre-EIP-1559 blocks.
     pub base_fee_per_gas: Vec<U256>,
-    pub gas_used_ratio:   Vec<U256>,
+    /// An array of block gas used ratios. These are calculated as the ratio
+    /// of `gasUsed` and `gasLimit`.
+    pub gas_used_ratio:   Vec<f64>,
+    /// An (optional) array of effective priority fee per gas data points from a
+    /// single block. All zeroes are returned if the block is empty.
+    pub reward:           Vec<Vec<U256>>,
+}
+
+/// Response type for `eth_feeHistory` RPC call with parameter REWARDPERCENTILES
+/// is null.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct FeeHistoryWithoutReward {
+    /// Lowest number block of the returned range.
+    pub oldest_block:     U256,
+    /// An array of block base fees per gas.
+    /// This includes the next block after the newest of the returned range,
+    /// because this value can be derived from the newest block. Zeroes are
+    /// returned for pre-EIP-1559 blocks.
+    pub base_fee_per_gas: Vec<U256>,
+    /// An array of block gas used ratios. These are calculated as the ratio
+    /// of `gasUsed` and `gasLimit`.
+    pub gas_used_ratio:   Vec<f64>,
+}
+
+/// Response type for `eth_feeHistory` RPC call with parameter BLOCKCOUNT is 0.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct FeeHistoryEmpty {
+    /// Lowest number block of the returned range.
+    pub oldest_block:   U256,
+    /// An array of block gas used ratios. These are calculated as the ratio
+    /// of `gasUsed` and `gasLimit`.
+    pub gas_used_ratio: Option<Vec<f64>>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]

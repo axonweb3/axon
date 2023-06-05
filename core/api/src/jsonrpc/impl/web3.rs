@@ -9,7 +9,8 @@ use protocol::traits::{APIAdapter, Context, Interoperation};
 use protocol::types::{
     Block, BlockNumber, Bytes, CellDepWithPubKey, Hash, Hasher, Header, Hex, Proposal, Receipt,
     SignatureComponents, SignatureR, SignatureS, SignedTransaction, TxResp, UnverifiedTransaction,
-    H160, H256, H64, MAX_RPC_GAS_CAP, MIN_TRANSACTION_GAS_LIMIT, U256,
+    BASE_FEE_PER_GAS, H160, H256, H64, MAX_FEE_HISTORY, MAX_RPC_GAS_CAP, MIN_TRANSACTION_GAS_LIMIT,
+    U256,
 };
 use protocol::{
     async_trait, ckb_blake2b_256, codec::ProtocolCodec, lazy::PROTOCOL_VERSION, ProtocolResult,
@@ -20,8 +21,9 @@ use core_interoperation::utils::is_dummy_out_point;
 use core_interoperation::InteroperationImpl;
 
 use crate::jsonrpc::web3_types::{
-    BlockId, RichTransactionOrHash, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter,
-    Web3Log, Web3Receipt, Web3Transaction,
+    BlockCount, BlockId, FeeHistoryEmpty, FeeHistoryWithReward, FeeHistoryWithoutReward,
+    RichTransactionOrHash, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter, Web3Log,
+    Web3Receipt, Web3Transaction,
 };
 use crate::jsonrpc::{error::RpcError, RpcResult, Web3RpcServer};
 use crate::APIError;
@@ -86,6 +88,105 @@ impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
                 Proposal::new_without_state_root(&mock_header),
             )
             .await
+    }
+
+    async fn calculate_rewards(
+        &self,
+        block_number: u64,
+        base_fee_par_gas: U256,
+        txs: Vec<H256>,
+        reward_percentiles: Vec<f64>,
+        reward: &mut Vec<Vec<U256>>,
+    ) -> Result<(), Error> {
+        let receipts = self
+            .adapter
+            .get_receipts_by_hashes(Context::new(), block_number, &txs)
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+
+        let effective_priority_fees: Vec<U256> = receipts
+            .iter()
+            .map(|receipt| {
+                receipt
+                    .as_ref()
+                    .map(|r| r.used_gas.saturating_sub(base_fee_par_gas))
+                    .unwrap_or(U256::zero())
+            })
+            .collect();
+
+        let reward_vec: Vec<U256> = reward_percentiles
+            .iter()
+            .map(|percentile| {
+                let index =
+                    calculate_effective_priority_fees_index(percentile, &effective_priority_fees);
+                effective_priority_fees
+                    .get(index)
+                    .cloned()
+                    .unwrap_or(U256::zero())
+            })
+            .collect();
+
+        reward.push(reward_vec);
+
+        Ok(())
+    }
+
+    async fn inner_fee_history(
+        &self,
+        height: Option<u64>,
+        block_count: U256,
+        reward_percentiles: &Option<Vec<f64>>,
+    ) -> Result<(u64, Vec<U256>, Vec<f64>, Vec<Vec<U256>>), Error> {
+        let latest_block = self
+            .adapter
+            .get_block_by_number(Context::new(), height)
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?
+            .ok_or_else(|| Error::Custom("Latest block not found".to_string()))?;
+
+        let latest_block_number = latest_block.header.number;
+        let oldest_block_number = latest_block_number
+            .saturating_sub(block_count.as_u64())
+            .saturating_add(1);
+
+        let mut bash_fee_per_gases: Vec<U256> = Vec::new();
+        let mut gas_used_ratios: Vec<f64> = Vec::new();
+        let mut reward: Vec<Vec<U256>> = Vec::new();
+
+        for i in oldest_block_number..=latest_block_number {
+            let block = match self
+                .adapter
+                .get_block_by_number(Context::new(), i.into())
+                .await
+            {
+                Ok(Some(block)) => block,
+                _ => continue,
+            };
+
+            let gas_used_ratio = calculate_gas_used_ratio(&block);
+            gas_used_ratios.push(gas_used_ratio);
+            bash_fee_per_gases.push(block.header.base_fee_per_gas);
+            bash_fee_per_gases.push(next_block_base_fee_per_gas());
+
+            if let Some(reward_percentiles) = reward_percentiles.clone() {
+                let txs = block.tx_hashes;
+                self.calculate_rewards(
+                    block.header.number,
+                    block.header.base_fee_per_gas,
+                    txs,
+                    reward_percentiles,
+                    &mut reward,
+                )
+                .await?;
+            }
+        }
+
+        Ok((
+            oldest_block_number,
+            bash_fee_per_gases,
+            gas_used_ratios,
+            reward,
+        ))
     }
 }
 
@@ -658,16 +759,136 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
     #[metrics_rpc("eth_feeHistory")]
     async fn fee_history(
         &self,
-        _block_count: U256,
-        _newest_block: BlockId,
-        _reward_percentiles: Option<Vec<f64>>,
+        block_count: BlockCount,
+        newest_block: BlockId,
+        reward_percentiles: Option<Vec<f64>>,
     ) -> RpcResult<Web3FeeHistory> {
-        Ok(Web3FeeHistory {
-            oldest_block:     U256::from(0),
-            reward:           None,
-            base_fee_per_gas: Vec::new(),
-            gas_used_ratio:   Vec::new(),
-        })
+        check_reward_percentiles(&reward_percentiles)?;
+
+        let mut blocks_count;
+        match block_count {
+            BlockCount::U256Type(n) => blocks_count = n,
+            BlockCount::U64Type(n) => blocks_count = n.into(),
+        }
+        // Between 1 and 1024 blocks can be requested in a single query.
+        if blocks_count > MAX_FEE_HISTORY.into() {
+            blocks_count = MAX_FEE_HISTORY.into();
+        }
+        if blocks_count == 0.into() {
+            return Ok(Web3FeeHistory::ZeroBlockCount(FeeHistoryEmpty {
+                oldest_block:   U256::zero(),
+                gas_used_ratio: None,
+            }));
+        }
+        match newest_block {
+            BlockId::Num(number) => {
+                let (oldest_block_number, bash_fee_per_gases, gas_used_ratios, reward) = self
+                    .inner_fee_history(number.as_u64().into(), blocks_count, &reward_percentiles)
+                    .await?;
+
+                match reward_percentiles {
+                    None => Ok(Web3FeeHistory::WithoutReward(FeeHistoryWithoutReward {
+                        oldest_block:     oldest_block_number.into(),
+                        base_fee_per_gas: bash_fee_per_gases,
+                        gas_used_ratio:   gas_used_ratios,
+                    })),
+                    Some(reward_percentiles) => {
+                        if reward_percentiles.is_empty() {
+                            return Ok(Web3FeeHistory::WithoutReward(FeeHistoryWithoutReward {
+                                oldest_block:     oldest_block_number.into(),
+                                base_fee_per_gas: bash_fee_per_gases,
+                                gas_used_ratio:   gas_used_ratios,
+                            }));
+                        }
+                        Ok(Web3FeeHistory::WithReward(FeeHistoryWithReward {
+                            oldest_block: oldest_block_number.into(),
+                            reward,
+                            base_fee_per_gas: bash_fee_per_gases,
+                            gas_used_ratio: gas_used_ratios,
+                        }))
+                    }
+                }
+            }
+            BlockId::Latest | BlockId::Pending => {
+                let (oldest_block_number, bash_fee_per_gases, gas_used_ratios, reward) = self
+                    .inner_fee_history(None, blocks_count, &reward_percentiles)
+                    .await?;
+
+                match reward_percentiles {
+                    None => Ok(Web3FeeHistory::WithoutReward(FeeHistoryWithoutReward {
+                        oldest_block:     oldest_block_number.into(),
+                        base_fee_per_gas: bash_fee_per_gases,
+                        gas_used_ratio:   gas_used_ratios,
+                    })),
+                    Some(reward_percentiles) => {
+                        if reward_percentiles.is_empty() {
+                            return Ok(Web3FeeHistory::WithoutReward(FeeHistoryWithoutReward {
+                                oldest_block:     oldest_block_number.into(),
+                                base_fee_per_gas: bash_fee_per_gases,
+                                gas_used_ratio:   gas_used_ratios,
+                            }));
+                        }
+                        Ok(Web3FeeHistory::WithReward(FeeHistoryWithReward {
+                            oldest_block: oldest_block_number.into(),
+                            reward,
+                            base_fee_per_gas: bash_fee_per_gases,
+                            gas_used_ratio: gas_used_ratios,
+                        }))
+                    }
+                }
+            }
+            BlockId::Earliest => {
+                let first_block = self
+                    .adapter
+                    .get_block_by_number(Context::new(), Some(0))
+                    .await
+                    .map_err(|e| Error::Custom(e.to_string()))?
+                    .unwrap();
+                let base_fee_per_gas = vec![
+                    first_block.header.base_fee_per_gas,
+                    next_block_base_fee_per_gas(),
+                ];
+                let gas_used_ratio = vec![calculate_gas_used_ratio(&first_block)];
+
+                match reward_percentiles {
+                    None => Ok(Web3FeeHistory::WithoutReward(FeeHistoryWithoutReward {
+                        oldest_block: first_block.header.number.into(),
+                        base_fee_per_gas,
+                        gas_used_ratio,
+                    })),
+                    Some(reward_percentiles) => {
+                        if reward_percentiles.is_empty() {
+                            return Ok(Web3FeeHistory::WithoutReward(FeeHistoryWithoutReward {
+                                oldest_block: first_block.header.number.into(),
+                                base_fee_per_gas,
+                                gas_used_ratio,
+                            }));
+                        }
+                        let mut reward: Vec<Vec<U256>> = Vec::new();
+                        self.calculate_rewards(
+                            first_block.header.number,
+                            first_block.header.base_fee_per_gas,
+                            first_block.tx_hashes,
+                            reward_percentiles,
+                            &mut reward,
+                        )
+                        .await?;
+                        Ok(Web3FeeHistory::WithReward(FeeHistoryWithReward {
+                            oldest_block: first_block.header.number.into(),
+                            reward,
+                            base_fee_per_gas,
+                            gas_used_ratio,
+                        }))
+                    }
+                }
+            }
+            _ => {
+                return Err(Error::Custom(format!(
+                    "Invalid parameter newest_block {:?}",
+                    newest_block
+                )))
+            }
+        }
     }
 
     #[metrics_rpc("eth_accounts")]
@@ -805,6 +1026,51 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
     async fn get_uncle_count_by_block_number(&self, _number: BlockId) -> RpcResult<U256> {
         Ok(U256::zero())
     }
+}
+
+// 1. checks for rewardPercentile's sorted-ness
+// 2. check if any of rewardPercentile is greater than 100 or less than 0
+fn check_reward_percentiles(reward_percentiles: &Option<Vec<f64>>) -> RpcResult<()> {
+    reward_percentiles
+        .as_ref()
+        .and_then(|percentiles| {
+            percentiles
+                .windows(2)
+                .enumerate()
+                .find(|(_, window)| window[0] >= window[1] || window[0] < 0.0 || window[0] > 100.0)
+                .map(|(_, vec)| vec)
+        })
+        .map(|vec| {
+            Err(Error::Custom(format!(
+                "Invalid parameter reward_percentiles: {} {}",
+                vec[0], vec[1]
+            )))
+        })
+        .unwrap_or(Ok(()))
+}
+
+// Calculates the gas used ratio for the block.
+fn calculate_gas_used_ratio(block: &Block) -> f64 {
+    (block.header.gas_limit != U256::zero())
+        .then(|| {
+            block.header.gas_used.as_u64() as f64 / block.header.gas_limit.as_u64() as f64 * 100f64
+        })
+        .unwrap_or(0f64)
+}
+
+// Calculates the effective priority fees index in the effective priority fees
+// vector.
+fn calculate_effective_priority_fees_index(
+    percentile: &f64,
+    effective_priority_fees: &Vec<U256>,
+) -> usize {
+    ((percentile * effective_priority_fees.len() as f64 / 100f64).floor() as usize)
+        .saturating_sub(1)
+}
+
+// Get the base fee per gas for the next block.
+fn next_block_base_fee_per_gas() -> U256 {
+    BASE_FEE_PER_GAS.into()
 }
 
 fn mock_header_by_call_req(latest_header: Header, call_req: &Web3CallRequest) -> Header {

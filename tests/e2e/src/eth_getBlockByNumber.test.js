@@ -44,9 +44,9 @@ describe("eth_getBlockByNumber", () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
+    await testType.type("1"); // 0: none params 1: common params to request 2: more params 3: less params
     await param1.type("0xfffffff");
     await param2.type("true");
-    await testType.type("1"); // 0: none params 1: common params to request 2: more params 3: less params
     await goto.check(page, "null");
   });
 
@@ -81,9 +81,9 @@ describe("eth_getBlockByNumber", () => {
     const testType = await page.$(goto.pageIds.testTypeId);
     const param1 = await page.$(goto.pageIds.param1Id);
     const param2 = await page.$(goto.pageIds.param2Id);
+    await testType.type("2"); // 0: none params 1: common params to request 2: more params 3: less params
     await param1.type(testDataInfo.hexBlockNumber);
     await param2.type("true");
-    await testType.type("2"); // 0: none params 1: common params to request 2: more params 3: less params
     await goto.check(page, "-32602");
   });
 });

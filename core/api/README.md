@@ -605,10 +605,11 @@ Request
 {
   "id": 1,
   "jsonrpc": "2.0",
-  "method": "eth_getTransactionReceipt",
+  "method": "eth_feeHistory",
   "params": [
-    "0x8",
-	"0x1b4"
+    "0x1",
+	"latest"
+	[20, 30],
   ]
 }
 ```
@@ -622,9 +623,9 @@ Response
 	"jsonrpc": "2.0",
 	"result": {
 		"oldestBlock": "0x0",
-		"reward": null,
-		"baseFeePerGas": [],
-		"gasUsedRatio": []
+		"baseFeePerGas": ["0x539","0x539"],
+		"gasUsedRatio": [0.0],
+		"reward": [["0x0"]]
 	},
 	"id": 2
 }

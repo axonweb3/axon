@@ -1,18 +1,45 @@
 <html>
   <body>
-    <div>
-      <button id="getFeeHistory">Get fee history</button>
-      <div>Fee history: <span id="feeHistory"></span></div>
+    <button id="btn">eth_feeHistory</button>
+    <div><input type="text" id="testType" value="" /></div>
+    <div> value: <span id="ret"></span></div>
     </div>
   </body>
   <script>
-    document.getElementById("getFeeHistory").addEventListener("click", () => {
-      ethereum
-        .request({ method: "eth_feeHistory", params: ["0x1", "latest", []] })
+    document.getElementById("btn").addEventListener("click", () => {
+      const t_type = document.getElementById("testType").value;
+      if (t_type === "1") {
+        ethereum
+        .request({ method: "eth_feeHistory", params: ["0x1", "earliest", [25, 75]] })
         .then((result) => {
-          document.getElementById("feeHistory").innerHTML =
+          document.getElementById("ret").innerHTML =
             JSON.stringify(result);
         });
+      }
+      if (t_type === "2") {
+        ethereum
+        .request({ method: "eth_feeHistory", params: ["0x1", "earliest", []] })
+        .then((result) => {
+          document.getElementById("ret").innerHTML =
+            JSON.stringify(result);
+        });
+      }
+      if (t_type === "3") {
+        ethereum
+        .request({ method: "eth_feeHistory", params: ["0x0", "earliest", [25, 75]] })
+        .then((result) => {
+          document.getElementById("ret").innerHTML =
+            JSON.stringify(result);
+        });
+      }
+      if (t_type === "4") {
+        ethereum
+        .request({ method: "eth_feeHistory", params: ["0x1", "0x0", [25, 75]] })
+        .then((result) => {
+          document.getElementById("ret").innerHTML =
+            JSON.stringify(result);
+        });
+      }
     });
   </script>
 </html>
