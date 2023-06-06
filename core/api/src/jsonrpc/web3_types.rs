@@ -438,10 +438,16 @@ impl<'a> Visitor<'a> for BlockIdVisitor {
                     }
                     "blockHash" => {
                         let value: String = visitor.next_value()?;
-                        if value.len() != 32 {
+                        let raw_value = Hex::decode(value.clone())
+                            .map_err(|e| Error::custom(format!("Invalid hex code: {}", e)))?;
+                        if raw_value.len() != 32 {
                             return Err(Error::custom(format!("Invalid block hash: {}", value)));
+                        } else {
+                            let mut v = [0u8; 32];
+                            v.copy_from_slice(&raw_value);
+                            block_hash = Some(v.into());
+                            break;
                         }
-                        block_hash = Some(H256::from_slice(value.as_bytes()))
                     }
                     key => return Err(Error::custom(format!("Unknown key: {}", key))),
                 },
