@@ -31,15 +31,17 @@ use crate::APIError;
 pub(crate) const MAX_LOG_NUM: usize = 10000;
 
 pub struct Web3RpcImpl<Adapter> {
-    adapter: Arc<Adapter>,
-    gas_cap: U256,
+    adapter:                    Arc<Adapter>,
+    max_gas_cap:                U256,
+    log_filter_max_block_range: u64,
 }
 
 impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
-    pub fn new(adapter: Arc<Adapter>, gas_cap: u64) -> Self {
+    pub fn new(adapter: Arc<Adapter>, max_gas_cap: u64, log_filter_max_block_range: u64) -> Self {
         Self {
             adapter,
-            gas_cap: gas_cap.into(),
+            max_gas_cap: max_gas_cap.into(),
+            log_filter_max_block_range,
         }
     }
 
@@ -217,7 +219,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             ));
         }
 
-        if gas_limit > self.gas_cap {
+        if gas_limit > self.max_gas_cap {
             return Err(Error::Custom(
                 "The transaction gas limit is too large".to_string(),
             ));
@@ -719,10 +721,10 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
                     return Err(Error::Custom(format!("Invalid from_block {}", start)));
                 }
 
-                if end.saturating_sub(start) > 1000 {
+                if end.saturating_sub(start) > self.log_filter_max_block_range {
                     return Err(Error::Custom(format!(
-                        "Invalid block range {} to {}, limit to 1k",
-                        start, end
+                        "Invalid block range {:?} to {:?}, limit to {:?}",
+                        start, end, self.log_filter_max_block_range
                     )));
                 }
 

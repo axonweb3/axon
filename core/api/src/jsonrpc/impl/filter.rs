@@ -15,13 +15,16 @@ use protocol::types::{BlockNumber, Hash, Receipt, H160, H256, U256, U64};
 use crate::jsonrpc::web3_types::{BlockId, FilterChanges, RawLoggerFilter, Web3Log};
 use crate::jsonrpc::{r#impl::from_receipt_to_web3_log, RpcResult, Web3FilterServer};
 
-pub fn filter_module<Adapter>(adapter: Arc<Adapter>) -> AxonWeb3RpcFilter
+pub fn filter_module<Adapter>(
+    adapter: Arc<Adapter>,
+    log_filter_max_block_range: u64,
+) -> AxonWeb3RpcFilter
 where
     Adapter: APIAdapter + 'static,
 {
     let (tx, rx) = channel(128);
 
-    tokio::spawn(FilterHub::new(adapter, rx).run());
+    tokio::spawn(FilterHub::new(adapter, rx, log_filter_max_block_range).run());
 
     AxonWeb3RpcFilter { sender: tx }
 }
@@ -132,22 +135,28 @@ pub enum Command {
 }
 
 pub struct FilterHub<Adapter> {
-    logs_hub:   HashMap<U256, (LoggerFilter, Instant)>,
-    blocks_hub: HashMap<U256, (BlockNumber, Instant)>,
-    recv:       Receiver<Command>,
-    adapter:    Arc<Adapter>,
+    logs_hub:                   HashMap<U256, (LoggerFilter, Instant)>,
+    blocks_hub:                 HashMap<U256, (BlockNumber, Instant)>,
+    recv:                       Receiver<Command>,
+    adapter:                    Arc<Adapter>,
+    log_filter_max_block_range: u64,
 }
 
 impl<Adapter> FilterHub<Adapter>
 where
     Adapter: APIAdapter + 'static,
 {
-    pub fn new(adapter: Arc<Adapter>, recv: Receiver<Command>) -> Self {
+    pub fn new(
+        adapter: Arc<Adapter>,
+        recv: Receiver<Command>,
+        log_filter_max_block_range: u64,
+    ) -> Self {
         Self {
             logs_hub: HashMap::new(),
             blocks_hub: HashMap::new(),
             recv,
             adapter,
+            log_filter_max_block_range,
         }
     }
 
@@ -325,7 +334,12 @@ where
         if start > latest_number {
             return Ok(Vec::new());
         }
-
+        if end.saturating_sub(start) > self.log_filter_max_block_range {
+            return Err(Error::Custom(format!(
+                "Invalid block range {:?} to {:?}, limit to {:?}",
+                start, end, self.log_filter_max_block_range
+            )));
+        }
         let extend_logs = |logs: &mut Vec<Web3Log>, receipts: Vec<Option<Receipt>>| {
             for (index, receipt) in receipts.into_iter().flatten().enumerate() {
                 from_receipt_to_web3_log(

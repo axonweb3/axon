@@ -241,11 +241,19 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
 ) -> ProtocolResult<(Option<ServerHandle>, Option<ServerHandle>)> {
     let mut ret = (None, None);
 
-    let mut rpc = r#impl::Web3RpcImpl::new(Arc::clone(&adapter), config.rpc.gas_cap).into_rpc();
+    let mut rpc = r#impl::Web3RpcImpl::new(
+        Arc::clone(&adapter),
+        config.web3.max_gas_cap,
+        config.web3.log_filter_max_block_range,
+    )
+    .into_rpc();
+
     let node_rpc =
         r#impl::NodeRpcImpl::new(&config.rpc.client_version, config.data_path).into_rpc();
     let axon_rpc = r#impl::AxonRpcImpl::new(Arc::clone(&adapter)).into_rpc();
-    let filter = r#impl::filter_module(Arc::clone(&adapter)).into_rpc();
+    let filter =
+        r#impl::filter_module(Arc::clone(&adapter), config.web3.log_filter_max_block_range)
+    .into_rpc();
     let ckb_light_client_rpc = r#impl::CkbLightClientRpcImpl::default().into_rpc();
 
     rpc.merge(node_rpc).unwrap();
