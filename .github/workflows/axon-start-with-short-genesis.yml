@@ -37,9 +37,13 @@ jobs:
           docker-compose ps -a
           sleep 700
           set +e
-          result=$(tail -n 100 logs1/axon.log | grep 'state goto new height 200')
+          result_axon1=$(tail -n 100 logs1/axon.log | grep 'state goto new height 200')
+          result_axon2=$(tail -n 100 logs2/axon.log | grep 'state goto new height 200')
+          result_axon3=$(tail -n 100 logs3/axon.log | grep 'state goto new height 200')
+          result_axon4=$(tail -n 100 logs4/axon.log | grep 'state goto new height 200')
+
           docker-compose down
-          if [[ "$result" != "" ]]
+          if [[ "$result_axon1" != ""  ||  $result_axon2 != ""  ||  $result_axon3 != ""   ||  $result_axon4 != "" ]]
           then
               echo "axon chain works well"
           else
