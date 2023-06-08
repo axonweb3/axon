@@ -22,6 +22,7 @@ pub struct Config {
     pub accounts: Vec<InitialAccount>,
 
     pub rpc:        ConfigApi,
+    pub web3:       ConfigWeb3,
     pub network:    ConfigNetwork,
     pub mempool:    ConfigMempool,
     pub executor:   ConfigExecutor,
@@ -88,8 +89,14 @@ pub struct ConfigApi {
     pub enable_dump_profile:    Option<bool>,
     #[serde(default)]
     pub client_version:         String,
-    #[serde(default = "default_gas_cap")]
-    pub gas_cap:                u64,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct ConfigWeb3 {
+    #[serde(default = "default_log_filter_max_block_range")]
+    pub log_filter_max_block_range: u64,
+    #[serde(default = "default_max_gas_cap")]
+    pub max_gas_cap:                u64,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -215,8 +222,12 @@ pub struct InitialAccount {
     pub balance: U256,
 }
 
-fn default_gas_cap() -> u64 {
+fn default_max_gas_cap() -> u64 {
     25_000_000
+}
+
+fn default_log_filter_max_block_range() -> u64 {
+    10_000
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
