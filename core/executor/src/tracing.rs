@@ -485,7 +485,7 @@ mod wrapped_event {
                             .field("scheme", scheme)
                             .field("value", value)
                             .field("gas", target_gas)
-                            .finish(),
+                            .finish_non_exhaustive(),
                         Event::TransactCreate {
                             caller,
                             value,
@@ -498,7 +498,7 @@ mod wrapped_event {
                             .field("value", value)
                             .field("gas", gas_limit)
                             .field("address", address)
-                            .finish(),
+                            .finish_non_exhaustive(),
                         Event::TransactCreate2 {
                             caller,
                             value,
@@ -513,7 +513,7 @@ mod wrapped_event {
                             .field("salt", salt)
                             .field("gas", gas_limit)
                             .field("address", address)
-                            .finish(),
+                            .finish_non_exhaustive(),
                         _ => Debug::fmt(event, f),
                     }
                 }
@@ -532,6 +532,15 @@ mod wrapped_event {
                             .field("opcode", opcode)
                             .field("position", position)
                             .field("stack", stack)
+                            .finish_non_exhaustive(),
+                        Event::StepResult {
+                            result,
+                            return_value,
+                        } => f
+                            .debug_struct("StepResult")
+                            .field("result", result)
+                            .field("return_len", &return_value.len())
+                            .field("return_value", return_value)
                             .finish(),
                         _ => Debug::fmt(event, f),
                     }

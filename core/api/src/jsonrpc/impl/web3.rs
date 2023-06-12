@@ -77,6 +77,7 @@ impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
 
         let mock_header = mock_header_by_call_req(header, &req);
 
+        // Todo: change the enable_trace flag to false
         self.adapter
             .evm_call(
                 Context::new(),
@@ -88,6 +89,7 @@ impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
                 data.to_vec(),
                 mock_header.state_root,
                 Proposal::new_without_state_root(&mock_header),
+                true,
             )
             .await
     }

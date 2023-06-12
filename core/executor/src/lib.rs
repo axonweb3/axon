@@ -66,7 +66,7 @@ impl Executor for AxonExecutor {
         value: U256,
         data: Vec<u8>,
     ) -> TxResp {
-        let config = Config::london();
+        let config = self.config(false);
         let metadata = StackSubstateMetadata::new(gas_limit, &config);
         let state = MemoryStackState::new(metadata, backend);
         let precompiles = build_precompile_set();
@@ -123,7 +123,7 @@ impl Executor for AxonExecutor {
         let mut hashes = Vec::with_capacity(txs_len);
         let (mut gas, mut fee) = (0u64, U256::zero());
         let precompiles = build_precompile_set();
-        let config = Config::london();
+        let config = self.config(block_number.is_zero());
 
         // Execute system contracts before block hook.
         before_block_hook(adapter);
@@ -309,6 +309,18 @@ impl AxonExecutor {
         trace_using(&mut listener, || {
             self.call(backend, gas_limit, from, to, value, data)
         })
+    }
+
+    // Todo: add the is_genesis judgement
+    fn config(&self, _is_genesis: bool) -> Config {
+        let mut config = Config::london();
+
+        // if is_genesis {
+        //     config.create_contract_limit = Some(0xc000);
+        // }
+
+        config.create_contract_limit = Some(0xc000);
+        config
     }
 
     #[cfg(test)]

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use core_executor::{
     system_contract::metadata::MetadataHandle, AxonExecutor, AxonExecutorAdapter, MPTTrie,
 };
-use protocol::traits::{APIAdapter, Context, ExecutorAdapter, MemPool, Network, Storage};
+use protocol::traits::{APIAdapter, Context, Executor, ExecutorAdapter, MemPool, Network, Storage};
 use protocol::types::{
     Account, BigEndianHash, Block, BlockNumber, Bytes, CkbRelatedInfo, ExecutorContext, Hash,
     Header, Metadata, Proposal, Receipt, SignedTransaction, TxResp, H160, MAX_BLOCK_GAS_LIMIT,
@@ -182,6 +182,7 @@ where
         data: Vec<u8>,
         state_root: Hash,
         mock_header: Proposal,
+        enable_trace: bool,
     ) -> ProtocolResult<TxResp> {
         let mut exec_ctx = ExecutorContext::from(mock_header);
         exec_ctx.origin = from.unwrap_or_default();
@@ -197,7 +198,13 @@ where
             .map(|gas| gas.as_u64())
             .unwrap_or(MAX_BLOCK_GAS_LIMIT);
 
-        Ok(AxonExecutor::default().tracing_call(&backend, gas_limit, from, to, value, data))
+        if enable_trace {
+            return Ok(
+                AxonExecutor::default().tracing_call(&backend, gas_limit, from, to, value, data)
+            );
+        }
+
+        Ok(AxonExecutor::default().call(&backend, gas_limit, from, to, value, data))
     }
 
     async fn get_code_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>> {

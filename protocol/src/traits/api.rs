@@ -78,6 +78,7 @@ pub trait APIAdapter: Send + Sync {
         data: Vec<u8>,
         state_root: Hash,
         proposal: Proposal,
+        enable_trace: bool,
     ) -> ProtocolResult<TxResp>;
 
     async fn get_code_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>>;
