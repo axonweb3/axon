@@ -37,6 +37,7 @@ num-traits = "0.2"
 [features]
 default = []
 random_leader = ["overlord/random_leader"]
+tracing = ["core-executor/tracing"]
 
 [[bench]]
 harness = false

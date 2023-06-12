@@ -36,3 +36,4 @@ jemallocator = { version = "0.5", features = ["profiling", "stats", "unprefixed_
 
 [features]
 jemalloc = ["dep:jemallocator", "dep:jemalloc-ctl", "dep:common-memory-tracker"]
+tracing = ["core-executor/tracing", "core-consensus/tracing"]

@@ -1507,7 +1507,7 @@ name = "common-crypto"
 version = "0.2.1"
 dependencies = [
  "axon-protocol",
- "criterion",
+ "criterion 0.4.0",
  "ophelia",
  "ophelia-blst",
  "ophelia-secp256k1",
@@ -1556,7 +1556,7 @@ name = "common-merkle"
 version = "0.2.1"
 dependencies = [
  "axon-protocol",
- "criterion",
+ "criterion 0.4.0",
  "hasher",
  "rand 0.7.3",
  "rlp",
@@ -1669,7 +1669,7 @@ dependencies = [
  "core-mempool",
  "core-network",
  "core-storage",
- "criterion",
+ "criterion 0.4.0",
  "futures",
  "json",
  "lazy_static",
@@ -1703,12 +1703,13 @@ dependencies = [
  "core-interoperation",
  "core-rpc-client",
  "core-storage",
- "criterion",
+ "criterion 0.5.1",
  "ethabi 18.0.0",
  "ethabi-contract",
  "ethabi-derive",
  "ethers",
  "evm",
+ "evm-runtime",
  "futures",
  "hashbrown 0.13.2",
  "hasher",
@@ -1782,7 +1783,7 @@ dependencies = [
  "core-executor",
  "core-interoperation",
  "core-network",
- "criterion",
+ "criterion 0.4.0",
  "crossbeam-queue",
  "dashmap",
  "futures",
@@ -1875,7 +1876,7 @@ dependencies = [
  "common-apm-derive",
  "common-config-parser",
  "common-crypto",
- "criterion",
+ "criterion 0.4.0",
  "futures",
  "lazy_static",
  "log",
@@ -1945,6 +1946,32 @@ dependencies = [
  "serde_json",
  "tinytemplate",
  "tokio",
+ "walkdir",
+]
+
+[[package]]
+name = "criterion"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f2b12d017a929603d80db1831cd3a24082f8137ce19c69e6447f54f5fc8d692f"
+dependencies = [
+ "anes",
+ "cast",
+ "ciborium",
+ "clap 4.2.7",
+ "criterion-plot",
+ "is-terminal",
+ "itertools",
+ "num-traits",
+ "once_cell",
+ "oorandom",
+ "plotters",
+ "rayon",
+ "regex",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "tinytemplate",
  "walkdir",
 ]
 

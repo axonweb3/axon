@@ -50,6 +50,7 @@ jemalloc = ["core-run/jemalloc"]
 pprof = ["core-api/pprof"]
 random_leader = ["core-consensus/random_leader"]
 # tentacle_metrics = ["core-network/tentacle_metrics"]
+tracing = ["core-run/tracing"]
 
 [profile.release]
 overflow-checks = true

@@ -7,9 +7,11 @@ mod precompiles;
 pub mod system_contract;
 #[cfg(test)]
 mod tests;
+mod tracing;
 mod utils;
 
 pub use crate::adapter::{AxonExecutorAdapter, MPTTrie, RocksTrieDB};
+pub use crate::tracing::TransactionTrace;
 pub use crate::utils::{
     code_address, decode_revert_msg, logs_bloom, DefaultFeeAllocator, FeeInlet,
 };
@@ -34,6 +36,7 @@ use crate::system_contract::{
     after_block_hook, before_block_hook, system_contract_dispatch, CkbLightClientContract,
     ImageCellContract, MetadataContract, NativeTokenContract, SystemContract,
 };
+use crate::tracing::{trace_using, AxonListener};
 
 lazy_static::lazy_static! {
     pub static ref FEE_ALLOCATOR: ArcSwap<Box<dyn FeeAllocate>> = ArcSwap::from_pointee(Box::new(DefaultFeeAllocator::default()));
@@ -69,6 +72,7 @@ impl Executor for AxonExecutor {
         let precompiles = build_precompile_set();
         let mut executor = StackExecutor::new_with_precompiles(state, &config, &precompiles);
 
+        let from = from.unwrap_or_default();
         let base_gas = if to.is_some() {
             GAS_CALL_TRANSACTION + data_gas_cost(&data)
         } else {
@@ -76,16 +80,9 @@ impl Executor for AxonExecutor {
         };
 
         let (exit, res) = if let Some(addr) = &to {
-            executor.transact_call(
-                from.unwrap_or_default(),
-                *addr,
-                value,
-                data,
-                gas_limit,
-                Vec::new(),
-            )
+            executor.transact_call(from, *addr, value, data, gas_limit, Vec::new())
         } else {
-            executor.transact_create(from.unwrap_or_default(), value, data, gas_limit, Vec::new())
+            executor.transact_create(from, value, data, gas_limit, Vec::new())
         };
 
         let used_gas = executor.used_gas() + base_gas;
@@ -103,9 +100,7 @@ impl Executor for AxonExecutor {
             code_address: if to.is_none() {
                 Some(
                     executor
-                        .create_address(CreateScheme::Legacy {
-                            caller: from.unwrap_or_default(),
-                        })
+                        .create_address(CreateScheme::Legacy { caller: from })
                         .into(),
                 )
             } else {
@@ -139,8 +134,16 @@ impl Executor for AxonExecutor {
 
             // Execute a transaction, if system contract dispatch return None, means the
             // transaction called EVM
-            let mut r = system_contract_dispatch(adapter, tx)
-                .unwrap_or_else(|| Self::evm_exec(adapter, &config, &precompiles, tx));
+            let mut r = if cfg!(feature = "tracing") {
+                let mut listener = AxonListener::new();
+                trace_using(&mut listener, || {
+                    system_contract_dispatch(adapter, tx)
+                        .unwrap_or_else(|| Self::evm_exec(adapter, &config, &precompiles, tx))
+                })
+            } else {
+                system_contract_dispatch(adapter, tx)
+                    .unwrap_or_else(|| Self::evm_exec(adapter, &config, &precompiles, tx))
+            };
 
             r.logs = adapter.get_logs();
             gas += r.gas_used;
@@ -291,6 +294,21 @@ impl AxonExecutor {
             code_address: code_addr,
             removed:      false,
         }
+    }
+
+    pub fn tracing_call<B: Backend>(
+        &self,
+        backend: &B,
+        gas_limit: u64,
+        from: Option<H160>,
+        to: Option<H160>,
+        value: U256,
+        data: Vec<u8>,
+    ) -> TxResp {
+        let mut listener = AxonListener::new();
+        trace_using(&mut listener, || {
+            self.call(backend, gas_limit, from, to, value, data)
+        })
     }
 
     #[cfg(test)]

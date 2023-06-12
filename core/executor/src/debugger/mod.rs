@@ -6,8 +6,6 @@ mod uniswap2;
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use evm::tracing::{Event, EventListener};
-
 use common_config_parser::parse_file;
 use common_crypto::{PrivateKey, Secp256k1RecoverablePrivateKey, Signature};
 use protocol::codec::{hex_decode, ProtocolCodec};
@@ -122,15 +120,6 @@ impl EvmDebugger {
 
     fn nonce(&self, addr: H160) -> U256 {
         self.backend(0).basic(addr).nonce
-    }
-}
-
-#[derive(Default)]
-pub struct EvmListener;
-
-impl EventListener for EvmListener {
-    fn event(&mut self, event: Event) {
-        println!("EVM event {:?}", event);
     }
 }
 

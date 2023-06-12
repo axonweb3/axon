@@ -21,7 +21,7 @@ serde_json = "1.0"
 common-apm = { path = "../../common/apm" }
 common-config-parser = { path = "../../common/config-parser" }
 core-consensus = { path = "../../core/consensus" }
-core-executor = { path = "../../core/executor" }
+core-executor = { path = "../../core/executor", features = ["tracing"] }
 core-interoperation ={ path = "../../core/interoperation" }
 either = { version = "1.8", features = ["serde"] }
 protocol = { path = "../../protocol", package = "axon-protocol" }
