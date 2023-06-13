@@ -11,7 +11,6 @@ mod tracing;
 mod utils;
 
 pub use crate::adapter::{AxonExecutorAdapter, MPTTrie, RocksTrieDB};
-pub use crate::tracing::TransactionTrace;
 pub use crate::utils::{
     code_address, decode_revert_msg, logs_bloom, DefaultFeeAllocator, FeeInlet,
 };
@@ -27,8 +26,9 @@ use common_merkle::TrieMerkle;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{Backend, Executor, ExecutorAdapter};
 use protocol::types::{
-    data_gas_cost, Account, Config, ExecResp, Hasher, SignedTransaction, TransactionAction, TxResp,
-    ValidatorExtend, GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160, NIL_DATA, RLP_NULL, U256,
+    data_gas_cost, Account, Config, ExecResp, Hasher, SignedTransaction, TransactionAction,
+    TransactionTrace, TxResp, ValidatorExtend, GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160,
+    NIL_DATA, RLP_NULL, U256,
 };
 
 use crate::precompiles::build_precompile_set;
@@ -136,7 +136,7 @@ impl Executor for AxonExecutor {
             // transaction called EVM
             let mut r = if cfg!(feature = "tracing") {
                 let mut listener = AxonListener::new();
-                trace_using(&mut listener, || {
+                trace_using(&mut listener, true, || {
                     system_contract_dispatch(adapter, tx)
                         .unwrap_or_else(|| Self::evm_exec(adapter, &config, &precompiles, tx))
                 })
@@ -304,11 +304,13 @@ impl AxonExecutor {
         to: Option<H160>,
         value: U256,
         data: Vec<u8>,
-    ) -> TxResp {
+    ) -> (TxResp, TransactionTrace) {
         let mut listener = AxonListener::new();
-        trace_using(&mut listener, || {
+        let resp = trace_using(&mut listener, false, || {
             self.call(backend, gas_limit, from, to, value, data)
-        })
+        });
+
+        (resp, listener.finish().try_into().unwrap())
     }
 
     // Todo: add the is_genesis judgement

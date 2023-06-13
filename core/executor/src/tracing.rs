@@ -1,71 +1,44 @@
-use std::{cell::RefCell, ops::Index, ptr::NonNull, rc::Rc};
+use std::{cell::RefCell, ptr::NonNull, rc::Rc};
 
 use evm::gasometer::tracing as gas_tracing;
-use evm::{tracing as evm_tracing, Capture, Opcode};
+use evm::{tracing as evm_tracing, Capture};
 use evm_runtime::tracing as runtime_tracing;
 
-use protocol::types::H256;
+use protocol::types::{Hex, TransactionTrace as Web3TransactionTrace, H160, H256, U256};
 
-use crate::tracing::wrapped_event::WrappedEvent;
+use crate::tracing::{wrapped_event::WrappedEvent, wrapped_opcode::Opcode};
 
 macro_rules! trace_type {
-    ($($name: ident,)*) => {
-        $(
-            #[derive(Default, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-            pub struct $name(pub [u8; 32]);
-
-            impl $name {
-                pub fn into_raw(self) -> [u8; 32] {
-                    self.0
-                }
-            }
-        )*
-    };
-
-    (Vec $(, $name: ident)*) => {
-        $(
-            #[derive(Default, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-            pub struct $name(pub Vec<[u8; 32]>);
-
-            impl $name {
-                pub fn len(&self) -> usize {
-                    self.0.len()
-                }
-
-                #[allow(dead_code)]
-                pub fn is_empty(&self) -> bool {
-                    self.0.is_empty()
-                }
-
-                pub fn into_raw(self) -> Vec<[u8; 32]> {
-                    self.0
-                }
-            }
-        )*
-    };
-
-    ($name: ident, $key: ident, $val: ident) => {
+    ($name: ident, $type_: ty) => {
         #[derive(Default, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-        pub struct $name(pub std::collections::BTreeMap<$key, $val>);
+        pub struct $name(pub $type_);
+    };
 
-        impl IntoIterator for $name {
-            type Item = ($key, $val);
-            type IntoIter = std::collections::btree_map::IntoIter<$key, $val>;
+    ($name: ident, Vec, $type_: ty) => {
+        #[derive(Default, Clone, Debug, PartialEq, Eq)]
+        pub struct $name(pub Vec<$type_>);
 
-            fn into_iter(self) -> Self::IntoIter {
-                self.0.into_iter()
+        impl $name {
+            #[allow(dead_code)]
+            pub fn len(&self) -> usize {
+                self.0.len()
             }
         }
+    };
+
+    ($name: ident, BTreeMap, ($key: ident, $val: ident)) => {
+        #[derive(Default, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+        pub struct $name(pub std::collections::BTreeMap<$key, $val>);
 
         impl $name {
             pub fn insert(&mut self, key: $key, value: $val) {
                 self.0.insert(key, value);
             }
         }
-    }
+    };
 }
 
-pub fn trace_using<T, R, F>(listener: &mut T, f: F) -> R
+pub fn trace_using<T, R, F>(listener: &mut T, enable_gasometer: bool, f: F) -> R
 where
     T: evm_tracing::EventListener
         + runtime_tracing::EventListener
@@ -75,12 +48,19 @@ where
 {
     let mut evm_listener = SharedMutableReference::new(listener);
     let mut runtime_listener = evm_listener.clone();
-    let mut gas_listener = evm_listener.clone();
 
-    gas_tracing::using(&mut gas_listener, || {
-        runtime_tracing::using(&mut runtime_listener, || {
-            evm_tracing::using(&mut evm_listener, f)
-        })
+    if enable_gasometer {
+        let mut gas_listener = evm_listener.clone();
+
+        return evm_tracing::using(&mut gas_listener, || {
+            runtime_tracing::using(&mut runtime_listener, || {
+                gas_tracing::using(&mut evm_listener, f)
+            })
+        });
+    }
+
+    evm_tracing::using(&mut runtime_listener, || {
+        runtime_tracing::using(&mut evm_listener, f)
     })
 }
 
@@ -132,6 +112,7 @@ impl<T: gas_tracing::EventListener> gas_tracing::EventListener for SharedMutable
 #[derive(Default, Clone, Debug)]
 pub struct AxonListener {
     logs:               Vec<TraceLog>,
+    type_:              Option<String>,
     current:            TraceLog,
     current_memory_gas: u64,
     gas_used:           u64,
@@ -147,15 +128,63 @@ impl evm_tracing::EventListener for AxonListener {
         log::info!("EVM event {:?}", WrappedEvent::from(&event));
 
         match event {
-            Event::Call { .. } | Event::Create { .. } | Event::PrecompileSubcall { .. } => {
-                self.current.depth += 1;
-            }
-            Event::Exit {
-                reason: _,
-                return_value,
+            Event::TransactCall {
+                caller,
+                address,
+                value,
+                data,
+                ..
             } => {
+                self.current.from = caller;
+                self.current.to = address;
+                self.current.value = value;
+                self.current.input = data.to_vec();
+                self.current.depth += 1;
+
+                if self.type_.is_none() {
+                    self.type_ = Some("CALL".to_string());
+                }
+            }
+
+            Event::TransactCreate {
+                caller,
+                value,
+                init_code,
+                address,
+                ..
+            } => {
+                self.current.from = caller;
+                self.current.to = address;
+                self.current.value = value;
+                self.current.input = init_code.to_vec();
+                self.current.depth += 1;
+
+                if self.type_.is_none() {
+                    self.type_ = Some("CREATE".to_string());
+                }
+            }
+
+            Event::TransactCreate2 {
+                caller,
+                value,
+                init_code,
+                address,
+                ..
+            } => {
+                self.current.from = caller;
+                self.current.to = address;
+                self.current.value = value;
+                self.current.input = init_code.to_vec();
+                self.current.depth += 1;
+
+                if self.type_.is_none() {
+                    self.type_ = Some("CREATE2".to_string());
+                }
+            }
+
+            Event::Exit { return_value, .. } => {
                 // If the depth is not zero then an error must have occurred to exit early.
-                if !self.current.depth == 0 {
+                if self.current.depth != 0 {
                     self.failed = true;
                     self.output = return_value.to_vec();
                 }
@@ -175,16 +204,20 @@ impl runtime_tracing::EventListener for AxonListener {
 
         match event {
             Event::Step {
-                context: _,
+                context,
                 opcode,
                 position,
                 stack,
                 memory,
             } => {
-                self.current.opcode = opcode;
                 if let Ok(pc) = position {
-                    self.current.program_counter = *pc as u32;
+                    self.current.program_counter = *pc;
                 }
+
+                self.current.type_ = Opcode::from(opcode).to_string();
+                self.current.from = context.caller;
+                self.current.to = context.address;
+                self.current.opcode = opcode.into();
                 self.current.stack = stack.data().as_slice().into();
                 self.current.memory = memory.data().as_slice().into();
             }
@@ -199,50 +232,44 @@ impl runtime_tracing::EventListener for AxonListener {
                         self.logs.push(self.current.clone());
                     }
                     Err(Capture::Exit(reason)) => {
-                        // Step completed, push current log into the record
+                        // Step completed, push current log into the record, reduce depth by 1
                         self.logs.push(self.current.clone());
-                        // Current sub-call completed, reduce depth by 1
-                        self.current.depth -= 1;
+                        self.current.output = return_value.to_vec();
+                        self.current.depth = self.current.depth.saturating_sub(1);
 
                         // if the depth is 0 then the transaction is complete
                         if self.current.depth == 0 {
                             if !return_value.is_empty() {
                                 self.output = return_value.to_vec();
                             }
+
                             if !reason.is_succeed() {
                                 self.failed = true;
                             }
                         }
                     }
+
                     Err(Capture::Trap(opcode)) => {
                         // "Trap" here means that there is some opcode which has special
                         // handling logic outside the core `step` function. This means the
                         // `StepResult` does not necessarily indicate the current log
                         // is finished yet. In particular, `SLoad` and `SStore` events come
                         // _after_ the `StepResult`, but still correspond to the current step.
-                        if opcode == &Opcode::SLOAD || opcode == &Opcode::SSTORE {
+                        if opcode == &evm::Opcode::SLOAD || opcode == &evm::Opcode::SSTORE {
                             self.logs.push(self.current.clone());
                         }
                     }
                 }
             }
 
-            Event::SLoad {
-                address: _,
-                index,
-                value,
-            } => {
+            Event::SLoad { index, value, .. } => {
                 self.current
                     .storage
                     .insert(LogStorageKey(index.0), LogStorageValue(value.0));
                 self.logs.push(self.current.clone());
             }
 
-            Event::SStore {
-                address: _,
-                index,
-                value,
-            } => {
+            Event::SStore { index, value, .. } => {
                 self.current
                     .storage
                     .insert(LogStorageKey(index.0), LogStorageValue(value.0));
@@ -260,20 +287,19 @@ impl gas_tracing::EventListener for AxonListener {
         log::info!("EVM gas event {:?}", WrappedEvent::from(&event));
 
         match event {
-            Event::RecordCost { cost, snapshot: _ } => {
+            Event::RecordCost { cost, .. } => {
                 self.current.gas_cost = cost;
             }
+
             Event::RecordDynamicCost {
                 gas_cost,
                 memory_gas,
-                gas_refund: _,
-                snapshot: _,
+                ..
             } => {
                 // In SputnikVM memory gas is cumulative (ie this event always shows the total)
-                // gas spent on memory up to this point. But geth traces simply
-                // show how much gas each step took, regardless of how that gas
-                // was used. So if this step caused an increase to the
-                // memory gas then we need to record that.
+                // gas spent on memory up to this point. But geth traces simply show how much
+                // gas each step took, regardless of how that gas was used. So if this step
+                // caused an increase to the memory gas then we need to record that.
                 let memory_cost_diff = if memory_gas > self.current_memory_gas {
                     memory_gas - self.current_memory_gas
                 } else {
@@ -282,16 +308,15 @@ impl gas_tracing::EventListener for AxonListener {
                 self.current_memory_gas = memory_gas;
                 self.current.gas_cost = gas_cost + memory_cost_diff;
             }
-            Event::RecordRefund {
-                refund: _,
-                snapshot,
-            } => {
-                // This one seems to show up at the end of a transaction, so it
-                // can be used to set the total gas used.
+
+            Event::RecordRefund { snapshot, .. } => {
+                // This one seems to show up at the end of a transaction, so it can be used to
+                // set the total gas used.
                 if let Some(snapshot) = snapshot {
                     self.gas_used = snapshot.used_gas;
                 }
             }
+
             Event::RecordTransaction { .. } | Event::RecordStipend { .. } => (),
         }
     }
@@ -303,37 +328,32 @@ impl AxonListener {
     }
 
     pub fn finish(self) -> TransactionTrace {
-        TransactionTrace::new(self.gas_used, self.failed, self.output, Logs(self.logs))
+        TransactionTrace {
+            gas:          self.gas_used,
+            failed:       self.failed,
+            return_value: self.output,
+            struct_logs:  Logs(self.logs),
+        }
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct TraceLog {
-    pub depth:           u32,
+    pub type_:           String,
+    pub depth:           usize,
+    pub from:            H160,
+    pub to:              H160,
+    pub value:           U256,
+    pub input:           Vec<u8>,
+    pub output:          Vec<u8>,
     pub error:           Option<String>,
     pub gas:             u64,
     pub gas_cost:        u64,
-    pub memory:          LogMemory,
     pub opcode:          Opcode,
-    pub program_counter: u32,
+    pub program_counter: usize,
+    pub memory:          LogMemory,
     pub stack:           LogStack,
     pub storage:         LogStorage,
-}
-
-impl Default for TraceLog {
-    fn default() -> Self {
-        Self {
-            depth:           Default::default(),
-            error:           Default::default(),
-            gas:             Default::default(),
-            gas_cost:        Default::default(),
-            memory:          Default::default(),
-            opcode:          Opcode::STOP,
-            program_counter: Default::default(),
-            stack:           Default::default(),
-            storage:         Default::default(),
-        }
-    }
 }
 
 #[derive(Default, Clone, Debug, PartialEq, Eq)]
@@ -344,92 +364,95 @@ pub struct TransactionTrace {
     struct_logs:  Logs,
 }
 
-impl TransactionTrace {
-    pub fn new(
-        gas: u64,
-        failed: bool,
-        return_value: Vec<u8>,
-        struct_logs: Logs,
-    ) -> TransactionTrace {
-        Self {
-            gas,
-            failed,
-            return_value,
-            struct_logs,
+impl TryFrom<TransactionTrace> for Web3TransactionTrace {
+    type Error = String;
+
+    fn try_from(mut value: TransactionTrace) -> Result<Self, Self::Error> {
+        let log_len = value.struct_logs.len();
+
+        if log_len == 0 {
+            return Err("No logs".to_string());
         }
-    }
 
-    pub fn gas(&self) -> u64 {
-        self.gas
-    }
+        let root = value.struct_logs.0.swap_remove(0);
+        let mut ret = Web3TransactionTrace {
+            type_:         root.type_,
+            from:          root.from,
+            to:            root.to,
+            value:         root.value,
+            input:         Hex::encode(root.input),
+            output:        Hex::encode(&value.return_value),
+            gas:           U256::zero(),
+            gas_used:      value.gas.into(),
+            error:         None,
+            revert_reason: None,
+            calls:         None,
+        };
 
-    pub fn result(&self) -> &[u8] {
-        self.return_value.as_slice()
-    }
+        if log_len > 1 {
+            let logs = &value.struct_logs.0;
 
-    pub fn logs(&self) -> &Logs {
-        &self.struct_logs
+            if !logs.windows(2).all(|pair| {
+                let (prev, next) = (&pair[0], &pair[1]);
+
+                prev.depth == next.depth
+                    || prev.depth + 1 == next.depth
+                    || prev.depth == next.depth + 1
+            }) {
+                return Err("Log depth variation is not smooth".to_string());
+            }
+
+            ret.calls = Some(build_subcalls(logs, &mut 0, logs[0].depth));
+        }
+
+        Ok(ret)
     }
 }
 
-#[derive(Default, Clone, Debug, PartialEq, Eq)]
-pub struct StepTransactionTrace {
-    inner: TransactionTrace,
-    step:  usize,
-}
+fn build_subcalls(
+    traces: &[TraceLog],
+    index: &mut usize,
+    current_depth: usize,
+) -> Vec<Web3TransactionTrace> {
+    let trace_len = traces.len();
+    let mut stack = Vec::new();
 
-#[allow(dead_code)]
-impl StepTransactionTrace {
-    pub fn new(transaction_trace: TransactionTrace) -> Self {
-        Self {
-            inner: transaction_trace,
-            step:  0,
-        }
-    }
+    while *index < trace_len {
+        let t_log = &traces[*index];
 
-    pub fn step(&mut self) -> Option<&TraceLog> {
-        if self.step > self.inner.struct_logs.len() {
-            None
+        if t_log.depth == current_depth {
+            stack.push(Web3TransactionTrace {
+                type_:         t_log.type_.clone(),
+                from:          t_log.from,
+                to:            t_log.to,
+                value:         t_log.value,
+                gas:           t_log.gas.into(),
+                gas_used:      t_log.gas_cost.into(),
+                input:         Hex::encode(&t_log.input),
+                output:        Hex::encode(&t_log.output),
+                error:         None,
+                revert_reason: None,
+                calls:         None,
+            });
+
+            *index += 1;
+        } else if t_log.depth == (current_depth + 1) {
+            stack.last_mut().unwrap().calls =
+                Some(build_subcalls(traces, index, current_depth + 1));
         } else {
-            self.step += 1;
-            Some(&self.inner.struct_logs[self.step])
+            return stack;
         }
     }
+
+    stack
 }
 
-#[derive(Default, Clone, Debug, PartialEq, Eq)]
-pub struct Logs(pub Vec<TraceLog>);
-
-impl Logs {
-    pub fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-}
-
-impl Index<usize> for Logs {
-    type Output = TraceLog;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        &self.0[index]
-    }
-}
-
-impl IntoIterator for Logs {
-    type IntoIter = std::vec::IntoIter<Self::Item>;
-    type Item = TraceLog;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
-    }
-}
-
-trace_type!(LogStorageKey, LogStorageValue,);
-trace_type!(Vec, LogMemory, LogStack);
-trace_type!(LogStorage, LogStorageKey, LogStorageValue);
+trace_type!(LogStorageKey, [u8; 32]);
+trace_type!(LogStorageValue, [u8; 32]);
+trace_type!(LogMemory, Vec, [u8; 32]);
+trace_type!(LogStack, Vec, [u8; 32]);
+trace_type!(Logs, Vec, TraceLog);
+trace_type!(LogStorage, BTreeMap, (LogStorageKey, LogStorageValue));
 
 impl From<&[u8]> for LogMemory {
     fn from(bytes: &[u8]) -> Self {
@@ -450,6 +473,37 @@ impl From<&[H256]> for LogStack {
     fn from(stack: &[H256]) -> Self {
         let vec = stack.iter().map(|bytes| bytes.0).collect();
         Self(vec)
+    }
+}
+
+mod wrapped_opcode {
+    use std::cmp::{Eq, PartialEq};
+    use std::fmt::{Display, Formatter, Result};
+
+    #[derive(Default, Clone, Copy, Debug, PartialEq, Eq)]
+    pub struct Opcode(u8);
+
+    impl From<evm::Opcode> for Opcode {
+        fn from(value: evm::Opcode) -> Self {
+            Opcode::new(value.as_u8())
+        }
+    }
+
+    impl Display for Opcode {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result {
+            Display::fmt(
+                &revm_interpreter::opcode::OpCode::try_from_u8(self.0)
+                    .unwrap()
+                    .as_str(),
+                f,
+            )
+        }
+    }
+
+    impl Opcode {
+        pub fn new(value: u8) -> Self {
+            Self(value)
+        }
     }
 }
 
@@ -566,5 +620,126 @@ mod wrapped_event {
         fn from(event: &'a gas_tracing::Event) -> Self {
             Self::Gas(event)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn mock_trace(depth: usize) -> TraceLog {
+        TraceLog {
+            depth,
+            value: depth.into(),
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn test_build_subcalls() {
+        let logs = vec![
+            mock_trace(1),
+            mock_trace(1),
+            mock_trace(2),
+            mock_trace(3),
+            mock_trace(2),
+            mock_trace(1),
+            mock_trace(2),
+            mock_trace(1),
+        ];
+
+        let res = build_subcalls(&logs, &mut 0, 1);
+        let data = r#"[
+        {
+            "type_": "",
+            "from": "0x0000000000000000000000000000000000000000",
+            "to": "0x0000000000000000000000000000000000000000",
+            "value": "0x1",
+            "gas": "0x0",
+            "gas_used": "0x0",
+            "input": "0x",
+            "output": "0x"
+        },
+        {
+            "type_": "",
+            "from": "0x0000000000000000000000000000000000000000",
+            "to": "0x0000000000000000000000000000000000000000",
+            "value": "0x1",
+            "gas": "0x0",
+            "gas_used": "0x0",
+            "input": "0x",
+            "output": "0x",
+            "calls": [
+                {
+                    "type_": "",
+                    "from": "0x0000000000000000000000000000000000000000",
+                    "to": "0x0000000000000000000000000000000000000000",
+                    "value": "0x2",
+                    "gas": "0x0",
+                    "gas_used": "0x0",
+                    "input": "0x",
+                    "output": "0x",
+                    "calls": [
+                        {
+                            "type_": "",
+                            "from": "0x0000000000000000000000000000000000000000",
+                            "to": "0x0000000000000000000000000000000000000000",
+                            "value": "0x3",
+                            "gas": "0x0",
+                            "gas_used": "0x0",
+                            "input": "0x",
+                            "output": "0x"
+                        }
+                    ]
+                },
+                {
+                    "type_": "",
+                    "from": "0x0000000000000000000000000000000000000000",
+                    "to": "0x0000000000000000000000000000000000000000",
+                    "value": "0x2",
+                    "gas": "0x0",
+                    "gas_used": "0x0",
+                    "input": "0x",
+                    "output": "0x"
+                }
+            ]
+        },
+        {
+            "type_": "",
+            "from": "0x0000000000000000000000000000000000000000",
+            "to": "0x0000000000000000000000000000000000000000",
+            "value": "0x1",
+            "gas": "0x0",
+            "gas_used": "0x0",
+            "input": "0x",
+            "output": "0x",
+            "calls": [
+                {
+                    "type_": "",
+                    "from": "0x0000000000000000000000000000000000000000",
+                    "to": "0x0000000000000000000000000000000000000000",
+                    "value": "0x2",
+                    "gas": "0x0",
+                    "gas_used": "0x0",
+                    "input": "0x",
+                    "output": "0x"
+                }
+            ]
+        },
+        {
+            "type_": "",
+            "from": "0x0000000000000000000000000000000000000000",
+            "to": "0x0000000000000000000000000000000000000000",
+            "value": "0x1",
+            "gas": "0x0",
+            "gas_used": "0x0",
+            "input": "0x",
+            "output": "0x"
+        }]"#;
+
+        assert_eq!(
+            res,
+            serde_json::from_str::<Vec<Web3TransactionTrace>>(data).unwrap()
+        );
     }
 }

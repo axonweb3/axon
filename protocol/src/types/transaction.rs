@@ -7,7 +7,9 @@ use serde::{Deserialize, Serialize};
 
 use common_crypto::secp256k1_recover;
 
-use crate::types::{Bytes, BytesMut, Hash, Hasher, Public, TypesError, H160, H256, H520, U256};
+use crate::types::{
+    Bytes, BytesMut, Hash, Hasher, Hex, Public, TypesError, H160, H256, H520, U256,
+};
 use crate::ProtocolResult;
 
 pub const GAS_PER_ZERO_BYTE: u64 = 4;
@@ -468,6 +470,24 @@ impl SignedTransaction {
     pub fn get_to(&self) -> Option<H160> {
         self.transaction.unsigned.to()
     }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct TransactionTrace {
+    pub type_:         String,
+    pub from:          H160,
+    pub to:            H160,
+    pub value:         U256,
+    pub gas:           U256,
+    pub gas_used:      U256,
+    pub input:         Hex,
+    pub output:        Hex,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error:         Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub revert_reason: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub calls:         Option<Vec<TransactionTrace>>,
 }
 
 pub fn public_to_address(public: &Public) -> H160 {

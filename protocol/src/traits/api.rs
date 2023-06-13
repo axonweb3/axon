@@ -1,6 +1,6 @@
 use crate::types::{
     Account, Block, BlockNumber, Bytes, CkbRelatedInfo, Hash, Header, Metadata, Proposal, Receipt,
-    SignedTransaction, TxResp, H160, U256,
+    SignedTransaction, TransactionTrace, TxResp, H160, U256,
 };
 use crate::{async_trait, traits::Context, ProtocolResult};
 
@@ -79,7 +79,7 @@ pub trait APIAdapter: Send + Sync {
         state_root: Hash,
         proposal: Proposal,
         enable_trace: bool,
-    ) -> ProtocolResult<TxResp>;
+    ) -> ProtocolResult<(TxResp, Option<TransactionTrace>)>;
 
     async fn get_code_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>>;
 

@@ -27,6 +27,7 @@ lru = "0.10"
 molecule = "0.7"
 parking_lot = "0.12"
 protocol = { path = "../../protocol", package = "axon-protocol", default-features = false }
+revm-interpreter = "1.1"
 ripemd = "0.1"
 rlp = "0.5"
 rlp-derive = "0.1"

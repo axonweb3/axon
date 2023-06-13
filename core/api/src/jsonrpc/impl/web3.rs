@@ -92,6 +92,7 @@ impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
                 true,
             )
             .await
+            .map(|r| r.0)
     }
 
     async fn calculate_rewards(

@@ -6,8 +6,8 @@ use core_executor::{
 use protocol::traits::{APIAdapter, Context, Executor, ExecutorAdapter, MemPool, Network, Storage};
 use protocol::types::{
     Account, BigEndianHash, Block, BlockNumber, Bytes, CkbRelatedInfo, ExecutorContext, Hash,
-    Header, Metadata, Proposal, Receipt, SignedTransaction, TxResp, H160, MAX_BLOCK_GAS_LIMIT,
-    NIL_DATA, RLP_NULL, U256,
+    Header, Metadata, Proposal, Receipt, SignedTransaction, TransactionTrace, TxResp, H160,
+    MAX_BLOCK_GAS_LIMIT, NIL_DATA, RLP_NULL, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, trie, ProtocolResult};
 
@@ -183,7 +183,7 @@ where
         state_root: Hash,
         mock_header: Proposal,
         enable_trace: bool,
-    ) -> ProtocolResult<TxResp> {
+    ) -> ProtocolResult<(TxResp, Option<TransactionTrace>)> {
         let mut exec_ctx = ExecutorContext::from(mock_header);
         exec_ctx.origin = from.unwrap_or_default();
         exec_ctx.gas_price = gas_price.unwrap_or_else(U256::one);
@@ -199,12 +199,16 @@ where
             .unwrap_or(MAX_BLOCK_GAS_LIMIT);
 
         if enable_trace {
-            return Ok(
-                AxonExecutor::default().tracing_call(&backend, gas_limit, from, to, value, data)
-            );
+            let ret =
+                AxonExecutor::default().tracing_call(&backend, gas_limit, from, to, value, data);
+
+            return Ok((ret.0, Some(ret.1)));
         }
 
-        Ok(AxonExecutor::default().call(&backend, gas_limit, from, to, value, data))
+        Ok((
+            AxonExecutor::default().call(&backend, gas_limit, from, to, value, data),
+            None,
+        ))
     }
 
     async fn get_code_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>> {
