@@ -29,11 +29,7 @@ impl<Adapter: APIAdapter + 'static> AxonRpcServer for AxonRpcImpl<Adapter> {
                     .get_block_by_number(Context::new(), Some(num.as_u64()))
                     .await
             }
-            BlockId::Latest => {
-                self.adapter
-                    .get_block_by_number(Context::new(), None)
-                    .await
-            }
+            BlockId::Latest => self.adapter.get_block_by_number(Context::new(), None).await,
             _ => return Err(Error::InvalidRequestId),
         }
         .map_err(|e| Error::Custom(e.to_string()))?;
