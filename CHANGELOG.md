@@ -1,8 +1,47 @@
 # 📑 Changelog
 
+## [v0.1.0-beta.3](https://github.com/axonweb3/axon/tree/v0.1.0-beta.3) (2023-06-15)
+
+[Full Changelog](https://github.com/axonweb3/axon/compare/v0...v0.1.0-beta.3)
+
+**Implemented enhancements:**
+
+- perf: reduce load peer store cost [\#1227](https://github.com/axonweb3/axon/pull/1227) ([driftluo](https://github.com/driftluo))
+
+### 📖 Documentation
+
+- docs: automated update CHANGELOG.md [\#1226](https://github.com/axonweb3/axon/pull/1226) ([liya2017](https://github.com/liya2017))
+
+### 🚀 Features
+
+- feat\(config\): configure limit get log [\#1229](https://github.com/axonweb3/axon/pull/1229) ([liya2017](https://github.com/liya2017))
+
+🐛 Bug Fixes
+
+- fix\(API\): add latest parameter for BlockId type [\#1233](https://github.com/axonweb3/axon/pull/1233) ([hongda3141](https://github.com/hongda3141))
+- fix: fix block id decode [\#1231](https://github.com/axonweb3/axon/pull/1231) ([driftluo](https://github.com/driftluo))
+
+### 🐝  refactor
+
+- refactor: update config file [\#1236](https://github.com/axonweb3/axon/pull/1236) ([liya2017](https://github.com/liya2017))
+
+**Closed issues:**
+
+- Invalid block hash when calling eth\_call with blockHash EIP1898 argument [\#1228](https://github.com/axonweb3/axon/issues/1228)
+- Axon Development Updates 05/17/2023 [\#1190](https://github.com/axonweb3/axon/issues/1190)
+- eth\_feeHistory returns reward: null which is not parseable by some JSON RPC clients [\#1106](https://github.com/axonweb3/axon/issues/1106)
+
+**Merged pull requests:**
+
+- ci: enhance axon start test check [\#1232](https://github.com/axonweb3/axon/pull/1232) ([liya2017](https://github.com/liya2017))
+
+## [v0](https://github.com/axonweb3/axon/tree/v0) (2023-06-05)
+
+[Full Changelog](https://github.com/axonweb3/axon/compare/v0.1.0-beta.2...v0)
+
 ## [v0.1.0-beta.2](https://github.com/axonweb3/axon/tree/v0.1.0-beta.2) (2023-06-05)
 
-[Full Changelog](https://github.com/axonweb3/axon/compare/v0...v0.1.0-beta.2)
+[Full Changelog](https://github.com/axonweb3/axon/compare/v0.1.0-beta.1...v0.1.0-beta.2)
 
 ### 📖 Documentation
 
@@ -45,10 +84,6 @@
 - ci: ci for axon start test with short genesis [\#1204](https://github.com/axonweb3/axon/pull/1204) ([liya2017](https://github.com/liya2017))
 - feat: random filter id [\#1203](https://github.com/axonweb3/axon/pull/1203) ([blckngm](https://github.com/blckngm))
 - update docker-compose.yaml  genesis.json to genesis\_single\_node.json [\#1202](https://github.com/axonweb3/axon/pull/1202) ([jiangxianliang007](https://github.com/jiangxianliang007))
-
-## [v0](https://github.com/axonweb3/axon/tree/v0) (2023-05-18)
-
-[Full Changelog](https://github.com/axonweb3/axon/compare/v0.1.0-beta.1...v0)
 
 ## [v0.1.0-beta.1](https://github.com/axonweb3/axon/tree/v0.1.0-beta.1) (2023-05-18)
 
