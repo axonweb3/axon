@@ -24,7 +24,6 @@ lazy_static = "1.4"
 log = "0.4"
 lru = "0.10"
 molecule = "0.7"
-once_cell = "1.17"
 parking_lot = "0.12"
 protocol = { path = "../../protocol", package = "axon-protocol", default-features = false }
 ripemd = "0.1"
@@ -42,7 +41,7 @@ ckb-types = "0.108"
 common-crypto = { path = "../../common/crypto" }
 core-rpc-client = { path = "../rpc-client" }
 core-storage = { path = "../storage" }
-criterion = "0.4"
+criterion = "0.5"
 ethabi = "18.0"
 ethabi-contract = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
 ethabi-derive = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
