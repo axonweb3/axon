@@ -24,7 +24,7 @@ core-network = { path = "../../core/network" }
 protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [dev-dependencies]
-criterion = { version = "0.4", features = ["async_tokio"] }
+criterion = { version = "0.5", features = ["async_tokio"] }
 parking_lot = "0.12"
 
 [[bench]]

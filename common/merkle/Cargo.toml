@@ -13,7 +13,7 @@ static_merkle_tree = "1.1"
 protocol = { path = "../../protocol", package = "axon-protocol", default-features = false }
 
 [dev-dependencies]
-criterion = "0.4"
+criterion = "0.5"
 rand = "0.7"
 
 [[bench]]
