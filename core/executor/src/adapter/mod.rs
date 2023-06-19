@@ -138,10 +138,6 @@ where
         self.exec_ctx.block_base_fee_per_gas
     }
 
-    fn block_randomness(&self) -> Option<H256> {
-        None
-    }
-
     fn chain_id(&self) -> U256 {
         self.exec_ctx.chain_id
     }
