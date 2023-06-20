@@ -1,9 +1,10 @@
 use std::fmt;
 
+use either::Either;
 use serde::de::{Error, MapAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use protocol::codec::{truncate_slice, ProtocolCodec};
+use protocol::codec::ProtocolCodec;
 use protocol::types::{
     AccessList, Block, Bloom, Bytes, Hash, Header, Hex, Public, Receipt, SignedTransaction, H160,
     H256, H64, MAX_PRIORITY_FEE_PER_GAS, U256, U64,
@@ -72,8 +73,12 @@ pub struct Web3Transaction {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub standard_v:               Option<U256>,
     pub v:                        U256,
-    pub r:                        Hex,
-    pub s:                        Hex,
+    // Quantity for eth sig, hex bytes for interop sig.
+    #[serde(with = "either::serde_untagged")]
+    pub r:                        Either<U256, Hex>,
+    // Quantity for eth sig, hex bytes for interop sig.
+    #[serde(with = "either::serde_untagged")]
+    pub s:                        Either<U256, Hex>,
 }
 
 impl From<SignedTransaction> for Web3Transaction {
@@ -82,11 +87,14 @@ impl From<SignedTransaction> for Web3Transaction {
         let is_eip1559 = stx.transaction.unsigned.is_eip1559();
         let (sig_r, sig_s) = if signature.is_eth_sig() {
             (
-                Hex::encode(truncate_slice(&signature.r, 32)),
-                Hex::encode(truncate_slice(&signature.s, 32)),
+                Either::Left(U256::from(&signature.r[..])),
+                Either::Left(U256::from(&signature.s[..])),
             )
         } else {
-            (Hex::encode(signature.r), Hex::encode(signature.s))
+            (
+                Either::Right(Hex::encode(signature.r)),
+                Either::Right(Hex::encode(signature.s)),
+            )
         };
 
         Web3Transaction {
@@ -131,11 +139,14 @@ impl From<(SignedTransaction, Receipt)> for Web3Transaction {
         let is_eip1559 = stx.transaction.unsigned.is_eip1559();
         let (sig_r, sig_s) = if signature.is_eth_sig() {
             (
-                Hex::encode(truncate_slice(&signature.r, 32)),
-                Hex::encode(truncate_slice(&signature.s, 32)),
+                Either::Left(U256::from(&signature.r[..])),
+                Either::Left(U256::from(&signature.s[..])),
             )
         } else {
-            (Hex::encode(signature.r), Hex::encode(signature.s))
+            (
+                Either::Right(Hex::encode(signature.r)),
+                Either::Right(Hex::encode(signature.s)),
+            )
         };
 
         Web3Transaction {
@@ -858,7 +869,7 @@ pub struct RawLoggerFilter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use protocol::rand::random;
+    use protocol::{rand::random, types::UnverifiedTransaction};
 
     #[test]
     fn test_sync_status_json() {
@@ -875,5 +886,24 @@ mod tests {
         });
         let json = json::parse(&serde_json::to_string(&status).unwrap()).unwrap();
         assert!(json.is_object());
+    }
+
+    // Test json serialization of web3 transactions, esp. that r/s don't have
+    // leading zeros.
+    #[test]
+    fn test_web3_transaction_json() {
+        // https://etherscan.io/getRawTx?tx=0x07c7388b03ab8403deeaefc551efbc632f8531f04dc9993a274dbba9bbb98cbf
+        let tx = Hex::decode("0x02f902f801728405f5e1008509898edcf78302ffb8943fc91a3afd70395cd496c647d5a6cc9d4b2b7fad8802c68af0bb140000b902843593564c000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000006480c64700000000000000000000000000000000000000000000000000000000000000020b080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000002c68af0bb1400000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000002c68af0bb1400000000000000000000000000000000000000000004a715ce36374beaa635218d9700000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000c3681a720605bd6f8fe9a2fabff6a7cdecdc605dc080a0d253ee687ab2d9734a5073d64a0ba26bc3bc1cf4582005137bba05ef88616ea89e8ba79925267b17403fdf3ab47641b4aa52322dc385429cc92a7003c5d7c2".into()).unwrap();
+        let tx = UnverifiedTransaction::decode(tx).unwrap();
+        let tx = SignedTransaction::from_unverified(tx, None).unwrap();
+        let tx_json = serde_json::to_value(Web3Transaction::from(tx)).unwrap();
+        assert_eq!(
+            tx_json["r"],
+            "0xd253ee687ab2d9734a5073d64a0ba26bc3bc1cf4582005137bba05ef88616ea8"
+        );
+        assert_eq!(
+            tx_json["s"],
+            "0x8ba79925267b17403fdf3ab47641b4aa52322dc385429cc92a7003c5d7c2"
+        );
     }
 }
