@@ -23,7 +23,7 @@ common-config-parser = { path = "../../common/config-parser" }
 core-consensus = { path = "../../core/consensus" }
 core-executor = { path = "../../core/executor" }
 core-interoperation ={ path = "../../core/interoperation" }
-either = { version = "1.8.1", features = ["serde"] }
+either = { version = "1.8", features = ["serde"] }
 protocol = { path = "../../protocol", package = "axon-protocol" }
 
 [dev-dependencies]
