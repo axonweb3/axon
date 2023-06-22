@@ -1,4 +1,4 @@
-use axon::{FeeAllocate, FeeInlet, ValidatorExtend, H160, U256};
+use axon::{async_trait, FeeAllocate, FeeInlet, KeyProvider, ValidatorExtend, H160, U256};
 
 #[derive(Default, Clone, Debug)]
 struct CustomFeeAllocator;
@@ -16,6 +16,38 @@ impl FeeAllocate for CustomFeeAllocator {
     }
 }
 
+#[derive(Default, Clone, Debug)]
+struct CustomKey;
+
+#[async_trait]
+impl KeyProvider for CustomKey {
+    type Error = std::io::Error;
+
+    async fn sign_ecdsa_async<T: AsRef<[u8]> + Send>(
+        &self,
+        _message: T,
+    ) -> Result<Vec<u8>, Self::Error> {
+        todo!()
+    }
+
+    fn sign_ecdsa<T: AsRef<[u8]>>(&self, _message: T) -> Result<Vec<u8>, Self::Error> {
+        todo!()
+    }
+
+    fn pubkey(&self) -> Vec<u8> {
+        todo!()
+    }
+
+    fn verify_ecdsa<P, T, F>(&self, _pubkey: P, _message: T, _signature: F) -> bool
+    where
+        P: AsRef<[u8]>,
+        T: AsRef<[u8]>,
+        F: AsRef<[u8]>,
+    {
+        todo!()
+    }
+}
+
 fn main() {
-    axon::run(CustomFeeAllocator::default())
+    axon::run(CustomFeeAllocator::default(), CustomKey::default())
 }

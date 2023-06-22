@@ -82,7 +82,7 @@ async fn main() {
         let bt_conf = NetworkConfig::new()
             .listen_addr("/ip4/127.0.0.1/tcp/1337".parse().unwrap())
             .secio_keypair(&bt_seckey);
-        let mut bootstrap = NetworkService::new(bt_conf);
+        let mut bootstrap = NetworkService::new(bt_conf, bt_keypair);
         let handle = bootstrap.handle();
 
         let check_out = Checkout {
@@ -119,7 +119,7 @@ async fn main() {
                 .parse()
                 .unwrap()]);
 
-        let mut peer = NetworkService::new(peer_conf);
+        let mut peer = NetworkService::new(peer_conf, bt_keypair);
         let handle = peer.handle();
 
         let take_my_money = TakeMyMoney { shop: handle };

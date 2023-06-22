@@ -17,7 +17,10 @@ mod traits;
 pub use self::config::NetworkConfig;
 pub use self::service::{NetworkService, NetworkServiceHandle};
 pub use self::traits::NetworkContext;
-pub use tentacle::{multiaddr, secio::PeerId};
+pub use tentacle::{
+    multiaddr,
+    secio::{error::SecioError, KeyProvider, PeerId, SecioKeyPair},
+};
 
 use crate::error::NetworkError;
 use protocol::types::Bytes;
@@ -25,10 +28,9 @@ use tentacle::secio::PublicKey;
 
 pub trait PeerIdExt {
     fn from_pubkey_bytes<'a, B: AsRef<[u8]> + 'a>(bytes: B) -> Result<PeerId, NetworkError> {
-        let pubkey = PublicKey::secp256k1_raw_key(bytes.as_ref())
-            .map_err(|_| NetworkError::InvalidPublicKey)?;
-
-        Ok(PeerId::from_public_key(&pubkey))
+        Ok(PeerId::from_public_key(&PublicKey::from_raw_key(
+            bytes.as_ref().to_vec(),
+        )))
     }
 
     fn from_bytes<'a, B: AsRef<[u8]> + 'a>(bytes: B) -> Result<PeerId, NetworkError> {

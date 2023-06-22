@@ -37,7 +37,8 @@ use protocol::types::{
     Validator, ValidatorExtend, H256, NIL_DATA, RLP_NULL,
 };
 use protocol::{
-    trie::DB as TrieDB, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
+    async_trait, trie::DB as TrieDB, Display, From, ProtocolError, ProtocolErrorKind,
+    ProtocolResult,
 };
 
 use core_api::{jsonrpc::run_jsonrpc_server, DefaultAPIAdapter};
@@ -62,9 +63,11 @@ use core_mempool::{
     RPC_PULL_TXS, RPC_RESP_PULL_TXS, RPC_RESP_PULL_TXS_SYNC,
 };
 use core_network::{
-    observe_listen_port_occupancy, NetworkConfig, NetworkService, PeerId, PeerIdExt,
+    observe_listen_port_occupancy, NetworkConfig, NetworkService, PeerId, PeerIdExt, SecioError,
 };
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
+
+pub use core_network::{KeyProvider, SecioKeyPair};
 
 #[cfg(all(
     not(target_env = "msvc"),
@@ -90,7 +93,7 @@ impl Axon {
         }
     }
 
-    pub fn run(mut self) -> ProtocolResult<()> {
+    pub fn run<K: KeyProvider>(mut self, key_provider: Option<K>) -> ProtocolResult<()> {
         #[cfg(all(
             not(target_env = "msvc"),
             not(target_os = "macos"),
@@ -105,7 +108,7 @@ impl Axon {
 
         rt.block_on(async move {
             self.create_genesis().await?;
-            self.start().await
+            self.start(key_provider).await
         })?;
         rt.shutdown_timeout(std::time::Duration::from_secs(1));
 
@@ -226,7 +229,7 @@ impl Axon {
         Ok(())
     }
 
-    pub async fn start(self) -> ProtocolResult<()> {
+    pub async fn start<K: KeyProvider>(self, key_provider: Option<K>) -> ProtocolResult<()> {
         // Start jaeger
         Self::run_jaeger(self.config.jaeger.clone());
 
@@ -249,7 +252,7 @@ impl Axon {
         log::info!("At block number {}", current_block.header.number + 1);
 
         // Init network
-        let mut network_service = self.init_network_service();
+        let mut network_service = self.init_network_service(key_provider);
 
         // Init trie db
         let trie_db = self.init_trie_db();
@@ -394,9 +397,17 @@ impl Axon {
         ))
     }
 
-    fn init_network_service(&self) -> NetworkService {
+    fn init_network_service<K: KeyProvider>(
+        &self,
+        key_provider: Option<K>,
+    ) -> NetworkService<KeyP<K>> {
         let network_config = NetworkConfig::from_config(&self.config).unwrap();
-        let network_service = NetworkService::new(network_config);
+
+        let key = key_provider
+            .map(KeyP::Custom)
+            .unwrap_or(KeyP::Default(network_config.secio_keypair.clone()));
+
+        let network_service = NetworkService::new(network_config, key);
         network_service.set_chain_id(self.genesis.block.header.chain_id.to_string());
         network_service
     }
@@ -606,7 +617,11 @@ impl Axon {
         )
     }
 
-    fn tag_consensus(&self, network_service: &NetworkService, validators: &[ValidatorExtend]) {
+    fn tag_consensus<K: KeyProvider>(
+        &self,
+        network_service: &NetworkService<K>,
+        validators: &[ValidatorExtend],
+    ) {
         let peer_ids = validators
             .iter()
             .map(|v| PeerId::from_pubkey_bytes(v.pub_key.as_bytes()).map(PeerIdExt::into_bytes_ext))
@@ -619,9 +634,9 @@ impl Axon {
             .unwrap();
     }
 
-    fn register_mempool_endpoint(
+    fn register_mempool_endpoint<K: KeyProvider>(
         &self,
-        network_service: &mut NetworkService,
+        network_service: &mut NetworkService<K>,
         mempool: &Arc<impl MemPool + 'static>,
     ) {
         // register broadcast new transaction
@@ -638,9 +653,9 @@ impl Axon {
             .unwrap();
     }
 
-    fn register_consensus_endpoint(
+    fn register_consensus_endpoint<K: KeyProvider>(
         &self,
-        network_service: &mut NetworkService,
+        network_service: &mut NetworkService<K>,
         overlord_consensus: &Arc<impl Consensus + 'static>,
     ) {
         // register consensus
@@ -670,9 +685,9 @@ impl Axon {
             .unwrap();
     }
 
-    fn register_synchronization_endpoint(
+    fn register_synchronization_endpoint<K: KeyProvider>(
         &self,
-        network_service: &mut NetworkService,
+        network_service: &mut NetworkService<K>,
         synchronization: &Arc<OverlordSynchronization<impl SynchronizationAdapter + 'static>>,
     ) {
         network_service
@@ -683,9 +698,9 @@ impl Axon {
             .unwrap();
     }
 
-    fn register_storage_endpoint(
+    fn register_storage_endpoint<K: KeyProvider>(
         &self,
-        network_service: &mut NetworkService,
+        network_service: &mut NetworkService<K>,
         storage: &Arc<ImplStorage<RocksAdapter>>,
     ) {
         // register storage
@@ -711,7 +726,7 @@ impl Axon {
             .unwrap();
     }
 
-    fn register_rpc(&self, network_service: &mut NetworkService) {
+    fn register_rpc<K: KeyProvider>(&self, network_service: &mut NetworkService<K>) {
         network_service
             .register_rpc_response(RPC_RESP_PULL_TXS)
             .unwrap();
@@ -908,6 +923,59 @@ impl std::error::Error for MainError {}
 impl From<MainError> for ProtocolError {
     fn from(error: MainError) -> ProtocolError {
         ProtocolError::new(ProtocolErrorKind::Main, Box::new(error))
+    }
+}
+
+#[derive(Clone)]
+enum KeyP<K: KeyProvider> {
+    Custom(K),
+    Default(SecioKeyPair),
+}
+#[async_trait]
+impl<K> KeyProvider for KeyP<K>
+where
+    K: KeyProvider,
+{
+    type Error = SecioError;
+
+    async fn sign_ecdsa_async<T: AsRef<[u8]> + Send>(
+        &self,
+        message: T,
+    ) -> Result<Vec<u8>, Self::Error> {
+        match self {
+            KeyP::Custom(k) => k.sign_ecdsa_async(message).await.map_err(Into::into),
+            KeyP::Default(k) => k.sign_ecdsa_async(message).await,
+        }
+    }
+
+    /// Constructs a signature for `msg` using the secret key `sk`
+    fn sign_ecdsa<T: AsRef<[u8]>>(&self, message: T) -> Result<Vec<u8>, Self::Error> {
+        match self {
+            KeyP::Custom(k) => k.sign_ecdsa(message).map_err(Into::into),
+            KeyP::Default(k) => k.sign_ecdsa(message),
+        }
+    }
+
+    /// Creates a new public key from the [`KeyProvider`].
+    fn pubkey(&self) -> Vec<u8> {
+        match self {
+            KeyP::Custom(k) => k.pubkey(),
+            KeyP::Default(k) => k.pubkey(),
+        }
+    }
+
+    /// Checks that `sig` is a valid ECDSA signature for `msg` using the
+    /// pubkey.
+    fn verify_ecdsa<P, T, F>(&self, pubkey: P, message: T, signature: F) -> bool
+    where
+        P: AsRef<[u8]>,
+        T: AsRef<[u8]>,
+        F: AsRef<[u8]>,
+    {
+        match self {
+            KeyP::Custom(k) => k.verify_ecdsa(pubkey, message, signature),
+            KeyP::Default(k) => k.verify_ecdsa(pubkey, message, signature),
+        }
     }
 }
 
