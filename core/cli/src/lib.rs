@@ -114,8 +114,12 @@ fn atomic_write(p: &Path, content: &[u8]) -> std::io::Result<()> {
 
     let mut tmp = tempfile::NamedTempFile::new_in(parent)?;
     tmp.as_file_mut().write_all(content)?;
-    let f = tmp.persist(p)?;
-    f.sync_all()?;
+    // https://stackoverflow.com/questions/7433057/is-rename-without-fsync-safe
+    tmp.as_file_mut().sync_all()?;
+    tmp.persist(p)?;
+    let parent = std::fs::OpenOptions::new().read(true).open(parent)?;
+    parent.sync_all()?;
+
     Ok(())
 }
 
