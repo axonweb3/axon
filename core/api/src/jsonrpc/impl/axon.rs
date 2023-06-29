@@ -4,7 +4,7 @@ use jsonrpsee::core::Error;
 
 use protocol::async_trait;
 use protocol::traits::{APIAdapter, Context};
-use protocol::types::{Block, CkbRelatedInfo, Metadata, Proof, U256};
+use protocol::types::{Block, CkbRelatedInfo, Metadata, Proof, Proposal, U256};
 
 use crate::jsonrpc::web3_types::BlockId;
 use crate::jsonrpc::{AxonRpcServer, RpcResult};
@@ -53,6 +53,28 @@ impl<Adapter: APIAdapter + 'static> AxonRpcServer for AxonRpcImpl<Adapter> {
             .map_err(|e| Error::Custom(e.to_string()))?;
 
         Ok(ret)
+    }
+
+    async fn get_proposal_by_number(&self, block_number: U256) -> RpcResult<Proposal> {
+        let block_number = block_number.as_u64();
+        let prev_block = self
+            .adapter
+            .get_block_by_number(Context::new(), Some(block_number - 1))
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?
+            .ok_or_else(|| Error::Custom("prev block not found".to_string()))?;
+        let block = self
+            .adapter
+            .get_block_by_number(Context::new(), Some(block_number))
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?
+            .ok_or_else(|| Error::Custom("block not found".to_string()))?;
+
+        Ok(Proposal::new_with_state_root(
+            &block.header,
+            prev_block.header.state_root,
+            block.tx_hashes,
+        ))
     }
 
     async fn get_current_metadata(&self) -> RpcResult<Metadata> {
