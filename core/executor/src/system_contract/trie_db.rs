@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fs, path::Path, sync::Arc};
 
 use parking_lot::Mutex;
-use rocksdb::ops::{Delete, Get, Open, Put};
+use rocksdb::ops::{Get, Open, Put};
 use rocksdb::{FullOptions, Options, DB};
 
 use common_config_parser::types::ConfigRocksDB;
@@ -114,13 +114,7 @@ impl trie::DB for RocksTrieDB {
         self.flush()
     }
 
-    fn remove(&self, key: &[u8]) -> Result<(), Self::Error> {
-        self.db.delete(key).map_err(SystemScriptError::RocksDB)?;
-
-        {
-            self.cache.lock().remove(key);
-        }
-
+    fn remove(&self, _key: &[u8]) -> Result<(), Self::Error> {
         Ok(())
     }
 
