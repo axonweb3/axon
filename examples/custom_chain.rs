@@ -49,5 +49,5 @@ impl KeyProvider for CustomKey {
 }
 
 fn main() -> anyhow::Result<()> {
-    axon::run(CustomFeeAllocator::default(), CustomKey::default())
+    axon::run(CustomFeeAllocator::default(), CustomKey::default(), "0.1.0")
 }

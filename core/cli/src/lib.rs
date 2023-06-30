@@ -2,7 +2,6 @@ use std::io::{self, Write};
 use std::path::Path;
 
 use anyhow::{anyhow, bail, Context as _, Result};
-use clap::builder::{IntoResettable, Str};
 use clap::{Arg, ArgMatches, Command};
 use semver::Version;
 
@@ -16,9 +15,9 @@ pub struct AxonCli {
 }
 
 impl AxonCli {
-    pub fn init(ver: impl IntoResettable<Str>) -> Self {
+    pub fn init(axon_version: Version, cli_version: &'static str) -> Self {
         let matches = Command::new("axon")
-            .version(ver)
+            .version(cli_version)
             .arg(
                 Arg::new("config_path")
                     .short('c')
@@ -38,7 +37,7 @@ impl AxonCli {
             .subcommand(Command::new("run").about("Run axon process"));
 
         AxonCli {
-            version: Version::parse(matches.get_version().unwrap()).unwrap(),
+            version: axon_version,
             matches: matches.get_matches(),
         }
     }
