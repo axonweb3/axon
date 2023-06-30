@@ -1,6 +1,7 @@
 use std::io::{self, Write};
 use std::path::Path;
 
+use anyhow::{anyhow, bail, Context as _, Result};
 use clap::builder::{IntoResettable, Str};
 use clap::{Arg, ArgMatches, Command};
 use semver::Version;
@@ -42,14 +43,19 @@ impl AxonCli {
         }
     }
 
-    pub fn start(&self) {
+    pub fn start(&self) -> Result<()> {
         self.start_with_custom_key_provider::<SecioKeyPair>(None)
     }
 
-    pub fn start_with_custom_key_provider<K: KeyProvider>(&self, key_provider: Option<K>) {
+    pub fn start_with_custom_key_provider<K: KeyProvider>(
+        &self,
+        key_provider: Option<K>,
+    ) -> Result<()> {
         let config_path = self.matches.get_one::<String>("config_path").unwrap();
-        let path = Path::new(&config_path).parent().unwrap();
-        let mut config: Config = parse_file(config_path, false).unwrap();
+        let path = Path::new(&config_path)
+            .parent()
+            .context("getting parent directory of config file")?;
+        let mut config: Config = parse_file(config_path, false).context("parsing config file")?;
 
         if let Some(ref mut f) = config.rocksdb.options_file {
             *f = path.join(&f)
@@ -58,29 +64,29 @@ impl AxonCli {
             self.matches.get_one::<String>("genesis_path").unwrap(),
             true,
         )
-        .unwrap();
+        .context("parsing genesis file")?;
 
-        self.check_version(&config);
+        self.check_version(&config)?;
 
         register_log(&config);
 
-        Axon::new(config, genesis).run(key_provider).unwrap();
+        Axon::new(config, genesis)
+            .run(key_provider)
+            // Have to convert to string because ProtocolError is not Sync.
+            .map_err(|e| anyhow!(e.to_string()))?;
+        Ok(())
     }
 
-    fn check_version(&self, config: &Config) {
-        if !config.data_path.exists() {
-            std::fs::create_dir_all(&config.data_path).unwrap();
-        }
-
+    fn check_version(&self, config: &Config) -> Result<()> {
         check_version(
             &config.data_path_for_version(),
             &self.version,
             &latest_compatible_version(),
-        );
+        )
     }
 }
 
-fn check_version(p: &Path, current: &Version, least_compatible: &Version) {
+fn check_version(p: &Path, current: &Version, least_compatible: &Version) -> Result<()> {
     let ver_str = match std::fs::read_to_string(p) {
         Ok(x) => x,
         Err(e) if e.kind() == io::ErrorKind::NotFound => "".into(),
@@ -88,17 +94,20 @@ fn check_version(p: &Path, current: &Version, least_compatible: &Version) {
     };
 
     if ver_str.is_empty() {
-        return atomic_write(p, current.to_string().as_bytes()).unwrap();
+        atomic_write(p, current.to_string().as_bytes())?;
+        return Ok(());
     }
 
     let prev_version = Version::parse(&ver_str).unwrap();
     if prev_version < *least_compatible {
-        panic!(
+        bail!(
             "The previous version {} is not compatible with the current version {}",
-            prev_version, current
+            prev_version,
+            current
         );
     }
-    atomic_write(p, current.to_string().as_bytes()).unwrap();
+    atomic_write(p, current.to_string().as_bytes())?;
+    Ok(())
 }
 
 /// Write content to p atomically. Create the parent directory if it doesn't
@@ -147,7 +156,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_check_version() {
+    fn test_check_version() -> Result<()> {
         let tmp = NamedTempFile::new().unwrap();
         let p = tmp.path();
         // We just want NamedTempFile to delete the file on drop. We want to
@@ -156,19 +165,23 @@ mod tests {
 
         let least_compatible = "0.1.0-alpha.9".parse().unwrap();
 
-        check_version(p, &"0.1.15".parse().unwrap(), &least_compatible);
+        check_version(p, &"0.1.15".parse().unwrap(), &least_compatible)?;
         assert_eq!(std::fs::read_to_string(p).unwrap(), "0.1.15");
 
-        check_version(p, &"0.2.0".parse().unwrap(), &least_compatible);
+        check_version(p, &"0.2.0".parse().unwrap(), &least_compatible)?;
         assert_eq!(std::fs::read_to_string(p).unwrap(), "0.2.0");
+
+        Ok(())
     }
 
-    #[should_panic = "The previous version"]
     #[test]
-    fn test_check_version_failure() {
+    fn test_check_version_failure() -> Result<()> {
         let tmp = NamedTempFile::new().unwrap();
         let p = tmp.path();
-        check_version(p, &"0.1.0".parse().unwrap(), &"0.1.0".parse().unwrap());
-        check_version(p, &"0.2.0".parse().unwrap(), &"0.2.0".parse().unwrap());
+        check_version(p, &"0.1.0".parse().unwrap(), &"0.1.0".parse().unwrap())?;
+        let err =
+            check_version(p, &"0.2.0".parse().unwrap(), &"0.2.0".parse().unwrap()).unwrap_err();
+        assert!(err.to_string().contains("The previous version"));
+        Ok(())
     }
 }

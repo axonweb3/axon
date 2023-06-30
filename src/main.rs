@@ -1,5 +1,5 @@
 use core_cli::AxonCli;
 
-fn main() {
-    AxonCli::init(clap::crate_version!()).start();
+fn main() -> anyhow::Result<()> {
+    AxonCli::init(clap::crate_version!()).start()
 }
