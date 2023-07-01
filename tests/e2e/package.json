@@ -7,15 +7,15 @@
   },
   "dependencies": {
     "@chainsafe/dappeteer": "^5",
-    "@ethereumjs/tx": "^4.2.0",
+    "@ethereumjs/tx": "^4.1.1",
     "@ethereumjs/common": "^3.1.1",
-    "puppeteer": "^19.11.1",
-    "web3": "^4.0.2",
+    "puppeteer": "^20.7.4",
+    "web3": "^1.8.2",
     "xhr2": "^0.2.1"
   },
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.21.5",
-    "eslint": "^8.44.0",
+    "eslint": "^8.38.0",
     "eslint-config-airbnb": "^19.0.4",
     "eslint-plugin-import": "^2.27.5",
     "eslint-plugin-sonarjs": "^0.19.0",
