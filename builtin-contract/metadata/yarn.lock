@@ -794,28 +794,51 @@
   resolved "https://registry.yarnpkg.com/@nomiclabs/hardhat-waffle/-/hardhat-waffle-2.0.6.tgz#d11cb063a5f61a77806053e54009c40ddee49a54"
   integrity sha512-+Wz0hwmJGSI17B+BhU/qFRZ1l6/xMW82QGXE/Gi+WTmwgJrQefuBs1lIf7hzQ1hLk6hpkvb/zwcNkpVKRYTQYg==
 
-"@openzeppelin/hardhat-upgrades@^1.23.1":
-  version "1.26.0"
-  resolved "https://registry.yarnpkg.com/@openzeppelin/hardhat-upgrades/-/hardhat-upgrades-1.26.0.tgz#a1c667c6fd59fa90d026bab461486ea2bffb948f"
-  integrity sha512-ggCvdIf7A9QcMedCaswecgt3N7hacx3qYOn+4bNPqMAwslo/SJ9vN4AhV0VWkDcY4CqFFou3RFQmDWNeLMBX9A==
+"@openzeppelin/defender-base-client@^1.46.0":
+  version "1.46.0"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/defender-base-client/-/defender-base-client-1.46.0.tgz#aa5177f8fbad23fd03d78f3dbe06664bbe9333ff"
+  integrity sha512-EMnVBcfE6ZN5yMxfaxrFF3eqyGp2RQp3oSRSRP+R3yuCRJf8VCc2ArdZf1QPmQQzbq70nl8EZa03mmAqPauNlQ==
   dependencies:
-    "@openzeppelin/upgrades-core" "^1.26.2"
+    amazon-cognito-identity-js "^6.0.1"
+    async-retry "^1.3.3"
+    axios "^0.21.2"
+    lodash "^4.17.19"
+    node-fetch "^2.6.0"
+
+"@openzeppelin/hardhat-upgrades@^1.28.0":
+  version "1.28.0"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/hardhat-upgrades/-/hardhat-upgrades-1.28.0.tgz#6361f313a8a879d8a08a5e395acf0933bc190950"
+  integrity sha512-7sb/Jf+X+uIufOBnmHR0FJVWuxEs2lpxjJnLNN6eCJCP8nD0v+Ot5lTOW2Qb/GFnh+fLvJtEkhkowz4ZQ57+zQ==
+  dependencies:
+    "@openzeppelin/defender-base-client" "^1.46.0"
+    "@openzeppelin/platform-deploy-client" "^0.8.0"
+    "@openzeppelin/upgrades-core" "^1.27.0"
     chalk "^4.1.0"
     debug "^4.1.1"
-    defender-base-client "^1.44.0"
-    platform-deploy-client "^0.6.0"
     proper-lockfile "^4.1.1"
 
-"@openzeppelin/upgrades-core@^1.26.2":
-  version "1.26.2"
-  resolved "https://registry.yarnpkg.com/@openzeppelin/upgrades-core/-/upgrades-core-1.26.2.tgz#6ac3d16dca21d9bd76bd55a8a34121b4a78dd2c2"
-  integrity sha512-TJORrgyun5qflPos/47P3j61gDw+7W+tEirSBOYRxfVL1WGjX1n8iaLrijPIqzyeS1MKguN1nckAMspQ4SKrxw==
+"@openzeppelin/platform-deploy-client@^0.8.0":
+  version "0.8.0"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/platform-deploy-client/-/platform-deploy-client-0.8.0.tgz#af6596275a19c283d6145f0128cc1247d18223c1"
+  integrity sha512-POx3AsnKwKSV/ZLOU/gheksj0Lq7Is1q2F3pKmcFjGZiibf+4kjGxr4eSMrT+2qgKYZQH1ZLQZ+SkbguD8fTvA==
+  dependencies:
+    "@ethersproject/abi" "^5.6.3"
+    "@openzeppelin/defender-base-client" "^1.46.0"
+    axios "^0.21.2"
+    lodash "^4.17.19"
+    node-fetch "^2.6.0"
+
+"@openzeppelin/upgrades-core@^1.27.0":
+  version "1.27.1"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/upgrades-core/-/upgrades-core-1.27.1.tgz#4dff06915ec665ee45789471071ebc4354e834dd"
+  integrity sha512-6tLcu6jt0nYdJNr+LRicBgP3jp+//B+dixgB3KsvycSglCHNfmBNDf0ZQ3ZquDdLL0QQmKzIs1EBRVp6lNvPnQ==
   dependencies:
     cbor "^8.0.0"
     chalk "^4.1.0"
     compare-versions "^5.0.0"
     debug "^4.1.1"
     ethereumjs-util "^7.0.3"
+    minimist "^1.2.7"
     proper-lockfile "^4.1.1"
     solidity-ast "^0.4.15"
 
@@ -2895,17 +2918,6 @@ deep-equal@~1.1.1:
     object-is "^1.0.1"
     object-keys "^1.1.1"
     regexp.prototype.flags "^1.2.0"
-
-defender-base-client@^1.44.0:
-  version "1.44.0"
-  resolved "https://registry.yarnpkg.com/defender-base-client/-/defender-base-client-1.44.0.tgz#afe724447c0f9177b999b70b9f14dd70d61d5a7a"
-  integrity sha512-8ZgGA93+FlxNwG9LN1nu/Au5AyCKwAWJGNf0VLiPmh4GX/Nali/7kv72K+OtZgGxTLtKDKfgN4cnhEZwfrc8dg==
-  dependencies:
-    amazon-cognito-identity-js "^6.0.1"
-    async-retry "^1.3.3"
-    axios "^0.21.2"
-    lodash "^4.17.19"
-    node-fetch "^2.6.0"
 
 defer-to-connect@^1.0.1:
   version "1.1.3"
@@ -5667,7 +5679,7 @@ minimatch@^3.0.4, minimatch@^3.1.1:
   dependencies:
     brace-expansion "^1.1.7"
 
-minimist@^1.2.0, minimist@^1.2.6, minimist@~1.2.7:
+minimist@^1.2.0, minimist@^1.2.6, minimist@^1.2.7, minimist@~1.2.7:
   version "1.2.8"
   resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.8.tgz#c1a464e7693302e082a075cee0c057741ac4772c"
   integrity sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==
@@ -6270,17 +6282,6 @@ pinkie@^2.0.0:
   version "2.0.4"
   resolved "https://registry.yarnpkg.com/pinkie/-/pinkie-2.0.4.tgz#72556b80cfa0d48a974e80e77248e80ed4f7f870"
   integrity sha512-MnUuEycAemtSaeFSjXKW/aroV7akBbY+Sv+RkyqFjgAe73F+MR0TBWKBRDkmfWq/HiFmdavfZ1G7h4SPZXaCSg==
-
-platform-deploy-client@^0.6.0:
-  version "0.6.0"
-  resolved "https://registry.yarnpkg.com/platform-deploy-client/-/platform-deploy-client-0.6.0.tgz#1f7a59d0cbae2e78f65ad253d7cc1aff67e3de0e"
-  integrity sha512-mBfnOvF2gb9acGJjlXBQ6VOAkKFRdljsNKHUVY5xKqzKP2PNh/RqCIvi5AR5NqLMrQ3XaMIwRvmwAjtGw7JhYg==
-  dependencies:
-    "@ethersproject/abi" "^5.6.3"
-    axios "^0.21.2"
-    defender-base-client "^1.44.0"
-    lodash "^4.17.19"
-    node-fetch "^2.6.0"
 
 posix-character-classes@^0.1.0:
   version "0.1.1"
