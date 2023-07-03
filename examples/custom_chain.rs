@@ -48,6 +48,10 @@ impl KeyProvider for CustomKey {
     }
 }
 
-fn main() -> anyhow::Result<()> {
-    axon::run(CustomFeeAllocator::default(), CustomKey::default(), "0.1.0")
+fn main() {
+    let result = axon::run(CustomFeeAllocator::default(), CustomKey::default(), "0.1.0");
+    if let Err(e) = result {
+        eprintln!("Error {e}");
+        std::process::exit(1);
+    }
 }

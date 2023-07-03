@@ -1,9 +1,13 @@
 use core_cli::AxonCli;
 
-fn main() -> anyhow::Result<()> {
-    AxonCli::init(
+fn main() {
+    let result = AxonCli::init(
         clap::crate_version!().parse().unwrap(),
         concat!(clap::crate_version!(), env!("AXON_GIT_DESCRIPTION")),
     )
-    .start()
+    .start();
+    if let Err(e) = result {
+        eprintln!("Error {e}");
+        std::process::exit(1);
+    }
 }
