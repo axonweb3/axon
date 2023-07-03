@@ -7,10 +7,9 @@ use protocol::ckb_blake2b_256;
 use protocol::types::H256;
 use protocol::ProtocolResult;
 
-use crate::system_contract::error::SystemScriptError;
 use crate::system_contract::image_cell::{image_cell_abi, MPTTrie};
-use crate::system_contract::trie_db::RocksTrieDB;
 use crate::system_contract::{CURRENT_HEADER_CELL_ROOT, HEADER_CELL_DB};
+use crate::{adapter::RocksTrieDB, system_contract::error::SystemScriptError};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CellKey {
