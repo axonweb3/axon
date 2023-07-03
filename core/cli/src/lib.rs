@@ -1,13 +1,48 @@
 use std::io::{self, Write};
 use std::path::Path;
 
-use clap::builder::{IntoResettable, Str};
 use clap::{Arg, ArgMatches, Command};
+use protocol::ProtocolError;
 use semver::Version;
+use thiserror::Error;
 
-use common_config_parser::{parse_file, types::Config};
+use common_config_parser::{parse_file, types::Config, ParseError};
 use core_run::{Axon, KeyProvider, SecioKeyPair};
 use protocol::types::RichBlock;
+
+#[non_exhaustive]
+#[derive(Error, Debug)]
+pub enum Error {
+    // Boxing so the error type isn't too large (clippy::result-large-err).
+    #[error(transparent)]
+    CheckingVersion(Box<CheckingVersionError>),
+    #[error("reading data version: {0}")]
+    ReadingVersion(#[source] io::Error),
+    #[error("writing data version: {0}")]
+    WritingVersion(#[source] io::Error),
+
+    #[error("parsing config: {0}")]
+    ParsingConfig(#[source] ParseError),
+    #[error("getting parent directory of config file")]
+    GettingParent,
+    #[error("parsing genesis: {0}")]
+    ParsingGenesis(#[source] ParseError),
+
+    #[error(transparent)]
+    Running(ProtocolError),
+}
+
+#[non_exhaustive]
+#[derive(Error, Debug)]
+#[cfg_attr(test, derive(PartialEq, Eq))]
+#[error("data version({data}) is not compatible with the current axon version({current}), version >= {least_compatible} is supported")]
+pub struct CheckingVersionError {
+    pub current:          Version,
+    pub data:             Version,
+    pub least_compatible: Version,
+}
+
+pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 pub struct AxonCli {
     version: Version,
@@ -15,9 +50,9 @@ pub struct AxonCli {
 }
 
 impl AxonCli {
-    pub fn init(ver: impl IntoResettable<Str>) -> Self {
+    pub fn init(axon_version: Version, cli_version: &'static str) -> Self {
         let matches = Command::new("axon")
-            .version(ver)
+            .version(cli_version)
             .arg(
                 Arg::new("config_path")
                     .short('c')
@@ -37,19 +72,24 @@ impl AxonCli {
             .subcommand(Command::new("run").about("Run axon process"));
 
         AxonCli {
-            version: Version::parse(matches.get_version().unwrap()).unwrap(),
+            version: axon_version,
             matches: matches.get_matches(),
         }
     }
 
-    pub fn start(&self) {
+    pub fn start(&self) -> Result<()> {
         self.start_with_custom_key_provider::<SecioKeyPair>(None)
     }
 
-    pub fn start_with_custom_key_provider<K: KeyProvider>(&self, key_provider: Option<K>) {
+    pub fn start_with_custom_key_provider<K: KeyProvider>(
+        &self,
+        key_provider: Option<K>,
+    ) -> Result<()> {
         let config_path = self.matches.get_one::<String>("config_path").unwrap();
-        let path = Path::new(&config_path).parent().unwrap();
-        let mut config: Config = parse_file(config_path, false).unwrap();
+        let path = Path::new(&config_path)
+            .parent()
+            .ok_or(Error::GettingParent)?;
+        let mut config: Config = parse_file(config_path, false).map_err(Error::ParsingConfig)?;
 
         if let Some(ref mut f) = config.rocksdb.options_file {
             *f = path.join(&f)
@@ -58,47 +98,53 @@ impl AxonCli {
             self.matches.get_one::<String>("genesis_path").unwrap(),
             true,
         )
-        .unwrap();
+        .map_err(Error::ParsingGenesis)?;
 
-        self.check_version(&config);
+        self.check_version(&config)?;
 
         register_log(&config);
 
-        Axon::new(config, genesis).run(key_provider).unwrap();
+        Axon::new(config, genesis)
+            .run(key_provider)
+            .map_err(Error::Running)?;
+        Ok(())
     }
 
-    fn check_version(&self, config: &Config) {
-        if !config.data_path.exists() {
-            std::fs::create_dir_all(&config.data_path).unwrap();
-        }
-
+    fn check_version(&self, config: &Config) -> Result<()> {
+        // Won't panic because parent of data_path_for_version() is data_path.
         check_version(
             &config.data_path_for_version(),
             &self.version,
-            &latest_compatible_version(),
-        );
+            latest_compatible_version(),
+        )
     }
 }
 
-fn check_version(p: &Path, current: &Version, least_compatible: &Version) {
+/// # Panics
+///
+/// If p.parent() is None.
+fn check_version(p: &Path, current: &Version, least_compatible: Version) -> Result<()> {
     let ver_str = match std::fs::read_to_string(p) {
         Ok(x) => x,
         Err(e) if e.kind() == io::ErrorKind::NotFound => "".into(),
-        Err(e) => panic!("failed to read version: {e}"),
+        Err(e) => return Err(Error::ReadingVersion(e)),
     };
 
     if ver_str.is_empty() {
-        return atomic_write(p, current.to_string().as_bytes()).unwrap();
+        atomic_write(p, current.to_string().as_bytes()).map_err(Error::WritingVersion)?;
+        return Ok(());
     }
 
     let prev_version = Version::parse(&ver_str).unwrap();
-    if prev_version < *least_compatible {
-        panic!(
-            "The previous version {} is not compatible with the current version {}",
-            prev_version, current
-        );
+    if prev_version < least_compatible {
+        return Err(Error::CheckingVersion(Box::new(CheckingVersionError {
+            least_compatible,
+            data: prev_version,
+            current: current.clone(),
+        })));
     }
-    atomic_write(p, current.to_string().as_bytes()).unwrap();
+    atomic_write(p, current.to_string().as_bytes()).map_err(Error::WritingVersion)?;
+    Ok(())
 }
 
 /// Write content to p atomically. Create the parent directory if it doesn't
@@ -107,7 +153,7 @@ fn check_version(p: &Path, current: &Version, least_compatible: &Version) {
 /// # Panics
 ///
 /// if p.parent() is None.
-fn atomic_write(p: &Path, content: &[u8]) -> std::io::Result<()> {
+fn atomic_write(p: &Path, content: &[u8]) -> io::Result<()> {
     let parent = p.parent().unwrap();
 
     std::fs::create_dir_all(parent)?;
@@ -147,28 +193,39 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_check_version() {
+    fn test_check_version() -> Result<()> {
         let tmp = NamedTempFile::new().unwrap();
         let p = tmp.path();
         // We just want NamedTempFile to delete the file on drop. We want to
         // start with the file not exist.
         std::fs::remove_file(p).unwrap();
 
-        let least_compatible = "0.1.0-alpha.9".parse().unwrap();
+        let latest_compatible: Version = "0.1.0-alpha.9".parse().unwrap();
 
-        check_version(p, &"0.1.15".parse().unwrap(), &least_compatible);
+        check_version(p, &"0.1.15".parse().unwrap(), latest_compatible.clone())?;
         assert_eq!(std::fs::read_to_string(p).unwrap(), "0.1.15");
 
-        check_version(p, &"0.2.0".parse().unwrap(), &least_compatible);
+        check_version(p, &"0.2.0".parse().unwrap(), latest_compatible)?;
         assert_eq!(std::fs::read_to_string(p).unwrap(), "0.2.0");
+
+        Ok(())
     }
 
-    #[should_panic = "The previous version"]
     #[test]
-    fn test_check_version_failure() {
+    fn test_check_version_failure() -> Result<()> {
         let tmp = NamedTempFile::new().unwrap();
         let p = tmp.path();
-        check_version(p, &"0.1.0".parse().unwrap(), &"0.1.0".parse().unwrap());
-        check_version(p, &"0.2.0".parse().unwrap(), &"0.2.0".parse().unwrap());
+        check_version(p, &"0.1.0".parse().unwrap(), "0.1.0".parse().unwrap())?;
+        let err =
+            check_version(p, &"0.2.2".parse().unwrap(), "0.2.0".parse().unwrap()).unwrap_err();
+        match err {
+            Error::CheckingVersion(e) => assert_eq!(*e, CheckingVersionError {
+                current:          "0.2.2".parse().unwrap(),
+                least_compatible: "0.2.0".parse().unwrap(),
+                data:             "0.1.0".parse().unwrap(),
+            }),
+            e => panic!("unexpected error {e}"),
+        }
+        Ok(())
     }
 }
