@@ -7,9 +7,10 @@ use protocol::types::H256;
 use protocol::ProtocolResult;
 
 use crate::system_contract::{
-    ckb_light_client::ckb_light_client_abi, error::SystemScriptError, trie_db::RocksTrieDB,
-    CURRENT_HEADER_CELL_ROOT, HEADER_CELL_DB,
+    ckb_light_client::ckb_light_client_abi, error::SystemScriptError, CURRENT_HEADER_CELL_ROOT,
+    HEADER_CELL_DB,
 };
+use crate::{adapter::RocksTrieDB, MPTTrie};
 
 pub struct CkbLightClientStore {
     pub trie: MPTTrie<RocksTrieDB>,

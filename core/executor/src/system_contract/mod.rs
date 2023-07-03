@@ -1,6 +1,5 @@
 mod error;
 mod native_token;
-mod trie_db;
 mod utils;
 
 pub mod ckb_light_client;
@@ -27,8 +26,8 @@ use ckb_types::{packed, prelude::*};
 use protocol::types::{Bytes, Hasher, SignedTransaction, TxResp, H160, H256};
 use protocol::{ckb_blake2b_256, traits::ExecutorAdapter};
 
+use crate::adapter::RocksTrieDB;
 use crate::system_contract::image_cell::utils::always_success_script_deploy_cell;
-use crate::system_contract::trie_db::RocksTrieDB;
 use crate::system_contract::utils::generate_mpt_root_changes;
 
 pub const fn system_contract_address(addr: u8) -> H160 {

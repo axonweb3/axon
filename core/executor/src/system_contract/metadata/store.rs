@@ -7,8 +7,8 @@ use protocol::{codec::ProtocolCodec, ProtocolResult};
 use crate::system_contract::metadata::{
     segment::EpochSegment, CKB_RELATED_INFO_KEY, CURRENT_METADATA_ROOT, EPOCH_SEGMENT_KEY,
 };
-use crate::system_contract::{trie_db::RocksTrieDB, METADATA_DB};
-use crate::{system_contract::error::SystemScriptError, MPTTrie};
+use crate::system_contract::{error::SystemScriptError, METADATA_DB};
+use crate::{adapter::RocksTrieDB, MPTTrie};
 
 pub struct MetadataStore {
     pub trie: MPTTrie<RocksTrieDB>,
