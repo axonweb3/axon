@@ -309,7 +309,7 @@ task('isWhitelist', '').addParam('token').setAction(async (taskArgs, hre) => {
  * @type import('hardhat/config').HardhatUserConfig
  */
 module.exports = {
-  solidity: "0.8.4",
+  solidity: "0.8.20",
   networks: {
     axon: {
       url: process.env.AXON_URL|| "http://18.162.235.225:8000/",
