@@ -20,7 +20,7 @@ derive_more = "0.99"
 ethereum = { version = "0.14", features = ["with-codec", "with-serde"] }
 ethereum-types = { version = "0.14", features = ["arbitrary", "codec", "rlp", "serialize", "std"] }
 evm = { version = "0.37", features = ["with-serde"] }
-faster-hex = "0.6"
+faster-hex = "0.8"
 lazy_static = "1.4"
 ophelia = "0.3"
 ophelia-secp256k1 = "0.3"
