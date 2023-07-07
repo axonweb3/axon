@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use crate::MPTTrie;
 use ckb_types::packed;
 use ckb_types::prelude::Entity;
 use protocol::types::H256;

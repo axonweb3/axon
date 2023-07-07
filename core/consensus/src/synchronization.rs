@@ -83,6 +83,10 @@ impl<Adapter: SynchronizationAdapter> Synchronization for OverlordSynchronizatio
                 sync_status.last_number,
                 e
             );
+
+            self.update_status(ctx, sync_status_agent).await?;
+            SYNC_STATUS.write().finish();
+
             return Err(e);
         }
 
