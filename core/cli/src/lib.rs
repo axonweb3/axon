@@ -27,6 +27,8 @@ pub enum Error {
     GettingParent,
     #[error("parsing genesis: {0}")]
     ParsingGenesis(#[source] ParseError),
+    #[error("unknown subcommand: {0}")]
+    UnknownSubcommand(String),
 
     #[error(transparent)]
     Running(ProtocolError),
@@ -53,23 +55,27 @@ impl AxonCli {
     pub fn init(axon_version: Version, cli_version: &'static str) -> Self {
         let matches = Command::new("axon")
             .version(cli_version)
-            .arg(
-                Arg::new("config_path")
-                    .short('c')
-                    .long("config")
-                    .help("Axon config path")
-                    .required(true)
-                    .num_args(1),
-            )
-            .arg(
-                Arg::new("genesis_path")
-                    .short('g')
-                    .long("genesis")
-                    .help("Axon genesis path")
-                    .required(true)
-                    .num_args(1),
-            )
-            .subcommand(Command::new("run").about("Run axon process"));
+            .subcommand_required(true)
+            .subcommand(
+                Command::new("run")
+                    .about("Run axon process")
+                    .arg(
+                        Arg::new("config_path")
+                            .short('c')
+                            .long("config")
+                            .help("Axon config path")
+                            .required(true)
+                            .num_args(1),
+                    )
+                    .arg(
+                        Arg::new("genesis_path")
+                            .short('g')
+                            .long("genesis")
+                            .help("Axon genesis path")
+                            .required(true)
+                            .num_args(1),
+                    ),
+            );
 
         AxonCli {
             version: axon_version,
@@ -85,29 +91,37 @@ impl AxonCli {
         &self,
         key_provider: Option<K>,
     ) -> Result<()> {
-        let config_path = self.matches.get_one::<String>("config_path").unwrap();
-        let path = Path::new(&config_path)
-            .parent()
-            .ok_or(Error::GettingParent)?;
-        let mut config: Config = parse_file(config_path, false).map_err(Error::ParsingConfig)?;
+        if let Some((cmd, matches)) = self.matches.subcommand() {
+            match cmd {
+                "run" => {
+                    let config_path = matches.get_one::<String>("config_path").unwrap();
+                    let path = Path::new(&config_path)
+                        .parent()
+                        .ok_or(Error::GettingParent)?;
+                    let mut config: Config =
+                        parse_file(config_path, false).map_err(Error::ParsingConfig)?;
 
-        if let Some(ref mut f) = config.rocksdb.options_file {
-            *f = path.join(&f)
+                    if let Some(ref mut f) = config.rocksdb.options_file {
+                        *f = path.join(&f)
+                    }
+                    let genesis: RichBlock =
+                        parse_file(matches.get_one::<String>("genesis_path").unwrap(), true)
+                            .map_err(Error::ParsingGenesis)?;
+
+                    self.check_version(&config)?;
+
+                    register_log(&config);
+
+                    Axon::new(config, genesis)
+                        .run(key_provider)
+                        .map_err(Error::Running)
+                }
+                _ => Err(Error::UnknownSubcommand(cmd.to_owned())),
+            }
+        } else {
+            // Since `clap.subcommand_required(true)`.
+            unreachable!();
         }
-        let genesis: RichBlock = parse_file(
-            self.matches.get_one::<String>("genesis_path").unwrap(),
-            true,
-        )
-        .map_err(Error::ParsingGenesis)?;
-
-        self.check_version(&config)?;
-
-        register_log(&config);
-
-        Axon::new(config, genesis)
-            .run(key_provider)
-            .map_err(Error::Running)?;
-        Ok(())
     }
 
     fn check_version(&self, config: &Config) -> Result<()> {

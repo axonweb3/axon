@@ -23,7 +23,7 @@ jobs:
     - name: Start axon
       run: |
          cd ${{ github.workspace }}/axon
-         ./axon --config ${{ github.workspace }}/axon/config.toml --genesis ${{ github.workspace }}/axon/genesis_single_node.json > /tmp/log 2>&1 &
+         ./axon run --config ${{ github.workspace }}/axon/config.toml --genesis ${{ github.workspace }}/axon/genesis_single_node.json > /tmp/log 2>&1 &
          sleep 120
     - name: Check Axon Status
       run: |
