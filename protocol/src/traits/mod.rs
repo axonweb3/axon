@@ -22,5 +22,5 @@ pub use network::{
 };
 pub use storage::{
     CommonStorage, IntoIteratorByRef, Storage, StorageAdapter, StorageBatchModify, StorageCategory,
-    StorageIterator, StorageSchema,
+    StorageIterator, StorageSchema, VersionedStorage,
 };

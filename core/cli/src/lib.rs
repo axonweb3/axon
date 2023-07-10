@@ -75,6 +75,35 @@ impl AxonCli {
                             .required(true)
                             .num_args(1),
                     ),
+            )
+            .subcommand(
+                Command::new("migrate")
+                    .about(
+                        "Migrate the database into the latest version. \
+                        We strongly recommend that you backup the data directory before migration.",
+                    )
+                    .arg(
+                        Arg::new("config_path")
+                            .short('c')
+                            .long("config")
+                            .help("Axon config path")
+                            .required(true)
+                            .num_args(1),
+                    )
+                    .arg(
+                        Arg::new("genesis_path")
+                            .short('g')
+                            .long("genesis")
+                            .help("Axon genesis path")
+                            .required(true)
+                            .num_args(1),
+                    )
+                    .arg(
+                        Arg::new("force")
+                            .long("force")
+                            .action(clap::ArgAction::SetTrue)
+                            .help("Do migration without interactive prompt"),
+                    ),
             );
 
         AxonCli {
@@ -93,7 +122,7 @@ impl AxonCli {
     ) -> Result<()> {
         if let Some((cmd, matches)) = self.matches.subcommand() {
             match cmd {
-                "run" => {
+                "run" | "migrate" => {
                     let config_path = matches.get_one::<String>("config_path").unwrap();
                     let path = Path::new(&config_path)
                         .parent()
@@ -112,9 +141,14 @@ impl AxonCli {
 
                     register_log(&config);
 
-                    Axon::new(config, genesis)
-                        .run(key_provider)
-                        .map_err(Error::Running)
+                    let axon = Axon::new(config, genesis);
+
+                    if cmd == "run" {
+                        axon.run(key_provider).map_err(Error::Running)
+                    } else {
+                        let force = matches.get_flag("force");
+                        axon.migrate(key_provider, force).map_err(Error::Running)
+                    }
                 }
                 _ => Err(Error::UnknownSubcommand(cmd.to_owned())),
             }

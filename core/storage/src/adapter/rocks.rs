@@ -4,9 +4,12 @@ use std::path::Path;
 use std::sync::Arc;
 use std::{fs, io};
 
-use rocksdb::ops::{DeleteCF, GetCF, GetColumnFamilys, IterateCF, OpenCF, PutCF, WriteOps};
+use rocksdb::ops::{
+    DeleteCF, GetCF, GetColumnFamilys, GetPinned, IterateCF, Open, OpenCF, Put, PutCF, WriteOps,
+};
 use rocksdb::{
-    ColumnFamily, ColumnFamilyDescriptor, DBIterator, FullOptions, Options, WriteBatch, DB,
+    ColumnFamily, ColumnFamilyDescriptor, DBIterator, FullOptions, Options, ReadOnlyDB, WriteBatch,
+    DB,
 };
 
 use common_apm::metrics::storage::on_storage_put_cf;
@@ -15,13 +18,22 @@ use common_config_parser::types::ConfigRocksDB;
 use protocol::codec::{hex_encode, ProtocolCodec};
 use protocol::traits::{
     IntoIteratorByRef, StorageAdapter, StorageBatchModify, StorageCategory, StorageIterator,
-    StorageSchema,
+    StorageSchema, VersionedStorage,
 };
 use protocol::{types::Bytes, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
+
+use crate::ImplStorage;
+
+pub const MIGRATION_VERSION_KEY: &[u8] = b"db-version";
 
 #[derive(Debug)]
 pub struct RocksAdapter {
     db: Arc<DB>,
+}
+
+#[derive(Debug)]
+pub struct ReadOnlyRocksAdapter {
+    db: ReadOnlyDB,
 }
 
 impl RocksAdapter {
@@ -77,6 +89,87 @@ impl RocksAdapter {
 
     pub fn inner_db(&self) -> Arc<DB> {
         Arc::clone(&self.db)
+    }
+}
+
+impl ReadOnlyRocksAdapter {
+    /// Creates a new instance.
+    pub fn new<P: AsRef<Path>>(path: P) -> Result<Option<Self>, RocksAdapterError> {
+        let opts = Options::default();
+        ReadOnlyDB::open(&opts, &path).map_or_else(
+            |err| {
+                let err_str = err.as_ref();
+                if err_str.starts_with("IO error: No such file or directory") {
+                    Ok(None)
+                } else if err_str.starts_with("Corruption:") {
+                    Err(RocksAdapterError::other("DB is corrupted"))
+                } else {
+                    let errmsg = format!("failed to open the database since {err}");
+                    Err(RocksAdapterError::Other(errmsg))
+                }
+            },
+            |db| Ok(Some(Self { db })),
+        )
+    }
+}
+
+impl VersionedStorage for RocksAdapter {
+    type Error = RocksAdapterError;
+
+    fn version(&self) -> Result<Option<String>, Self::Error> {
+        self.db
+            .get_pinned(MIGRATION_VERSION_KEY)
+            .map_err(Into::into)
+            .and_then(|ver_opt| {
+                ver_opt
+                    .map(|ver| {
+                        String::from_utf8(ver.to_vec())
+                            .map_err(|_| Self::Error::other("failed to parse db version"))
+                    })
+                    .transpose()
+            })
+    }
+
+    fn set_version(&self, version: &str) -> Result<(), Self::Error> {
+        self.db
+            .put(MIGRATION_VERSION_KEY, version)
+            .map_err(Into::into)
+    }
+}
+
+impl VersionedStorage for ImplStorage<RocksAdapter> {
+    type Error = RocksAdapterError;
+
+    fn version(&self) -> Result<Option<String>, Self::Error> {
+        self.adapter.version()
+    }
+
+    fn set_version(&self, version: &str) -> Result<(), Self::Error> {
+        self.adapter.set_version(version)
+    }
+}
+
+impl VersionedStorage for ReadOnlyRocksAdapter {
+    type Error = RocksAdapterError;
+
+    fn version(&self) -> Result<Option<String>, Self::Error> {
+        self.db
+            .get_pinned(MIGRATION_VERSION_KEY)
+            .map_err(Into::into)
+            .and_then(|ver_opt| {
+                ver_opt
+                    .map(|ver| {
+                        String::from_utf8(ver.to_vec())
+                            .map_err(|_| Self::Error::other("failed to parse db version"))
+                    })
+                    .transpose()
+            })
+    }
+
+    fn set_version(&self, _version: &str) -> Result<(), Self::Error> {
+        Err(Self::Error::other(
+            "failed since trying to write a readonly db",
+        ))
     }
 }
 
@@ -267,6 +360,9 @@ pub enum RocksAdapterError {
 
     #[display(fmt = "Create DB path {}", _0)]
     CreateDB(io::Error),
+
+    #[display(fmt = "{}", _0)]
+    Other(String),
 }
 
 impl Error for RocksAdapterError {}
@@ -274,6 +370,13 @@ impl Error for RocksAdapterError {}
 impl From<RocksAdapterError> for ProtocolError {
     fn from(err: RocksAdapterError) -> ProtocolError {
         ProtocolError::new(ProtocolErrorKind::Storage, Box::new(err))
+    }
+}
+
+impl RocksAdapterError {
+    /// Builds an error with an error message.
+    pub fn other(errmsg: &str) -> Self {
+        Self::Other(errmsg.to_owned())
     }
 }
 

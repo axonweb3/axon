@@ -1591,6 +1591,7 @@ dependencies = [
  "encode_unicode",
  "lazy_static",
  "libc",
+ "unicode-width",
  "windows-sys 0.42.0",
 ]
 
@@ -1845,6 +1846,7 @@ dependencies = [
  "common-crypto",
  "common-logger",
  "common-memory-tracker",
+ "console 0.15.5",
  "core-api",
  "core-consensus",
  "core-executor",
@@ -1854,6 +1856,7 @@ dependencies = [
  "core-rpc-client",
  "core-storage",
  "futures",
+ "indicatif",
  "log",
  "rlp",
  "serde",

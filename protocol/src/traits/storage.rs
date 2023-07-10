@@ -24,6 +24,14 @@ pub trait StorageSchema {
     fn category() -> StorageCategory;
 }
 
+pub trait VersionedStorage {
+    type Error;
+    /// Fetches the version of current storage.
+    fn version(&self) -> Result<Option<String>, Self::Error>;
+    /// Sets the version of current storage.
+    fn set_version(&self, version: &str) -> Result<(), Self::Error>;
+}
+
 pub trait IntoIteratorByRef<S: StorageSchema> {
     fn ref_to_iter<'a, 'b: 'a>(&'b self) -> StorageIterator<'a, S>;
 }

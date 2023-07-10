@@ -1,6 +1,14 @@
 #![allow(clippy::uninlined_format_args, clippy::mutable_key_type)]
 
-use std::{collections::HashMap, panic::PanicInfo, path::PathBuf, sync::Arc, time::Duration};
+use std::{
+    cmp::Ordering,
+    collections::HashMap,
+    io::{self, IsTerminal as _, Write as _},
+    panic::PanicInfo,
+    path::PathBuf,
+    sync::Arc,
+    time::Duration,
+};
 
 use backtrace::Backtrace;
 #[cfg(all(
@@ -67,9 +75,17 @@ use core_mempool::{
 use core_network::{
     observe_listen_port_occupancy, NetworkConfig, NetworkService, PeerId, PeerIdExt, SecioError,
 };
-use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
+use core_storage::{
+    adapter::rocks::{ReadOnlyRocksAdapter, RocksAdapter},
+    ImplStorage,
+};
 
 pub use core_network::{KeyProvider, SecioKeyPair};
+
+mod migrate;
+mod migrations;
+
+use crate::migrate::Migrate;
 
 #[cfg(all(
     not(target_env = "msvc"),
@@ -112,8 +128,7 @@ impl Axon {
             .expect("new tokio runtime");
 
         rt.block_on(async move {
-            // TODO Introduce a read-only rocksdb handler for checks.
-            let storage = self.init_storage(false).await?;
+            let storage = self.try_open_storage().await?;
             if let Some(genesis) = self.try_load_genesis(&storage).await? {
                 log::info!("The Genesis block has been initialized.");
                 self.apply_genesis_after_checks(&genesis).await?;
@@ -126,6 +141,135 @@ impl Axon {
         rt.shutdown_timeout(std::time::Duration::from_secs(1));
 
         Ok(())
+    }
+
+    pub fn migrate<K: KeyProvider>(
+        self,
+        _key_provider: Option<K>,
+        force: bool,
+    ) -> ProtocolResult<()> {
+        let migrate = Migrate::new();
+
+        if let Some(readonly_adapter) = self.try_open_readonly_storage()? {
+            let status = migrate.check(&readonly_adapter)?;
+            if matches!(status, Ordering::Greater) {
+                eprintln!(
+                    "The database is created by a higher version executable binary, \n\
+                     so that the current executable binary couldn't open this database.\n\
+                     Please download the latest executable binary."
+                );
+                return Err(MainError::other("the executable binary is too old").into());
+            }
+
+            if matches!(status, Ordering::Equal) {
+                println!("No migrations are required.");
+                return Ok(());
+            }
+
+            if !force && migrate.require_confirm(&readonly_adapter)? {
+                if io::stdin().is_terminal() && io::stdout().is_terminal() {
+                    for (ver, note) in migrate.notes(&readonly_adapter)? {
+                        let message = format!(
+                            "\n*** Important Note for Migration \"{ver}\"\n\n{note}\n\n\
+                            If you have read all the previous note carefully, \n\
+                            please input YES, otherwise, the current process will exit.\n\n\
+                            > "
+                        );
+                        let input = prompt(&message);
+                        if input.trim().to_lowercase() != "yes" {
+                            eprintln!(
+                                "\nThe migration was declined since the user didn't confirm."
+                            );
+                            return Ok(());
+                        }
+                    }
+                    let input = prompt("\
+                       \n\
+                       Doing migration will take quite a long time before it could work again.\n\
+                       Another choice is to delete all data, then synchronize them again.\n\
+                       \n\
+                       Once the migration started, the data will be no longer compatible with all older versions executables,\n\
+                       so we strongly recommended you to backup the old data before migrating.\n\
+                       \nIf you want to migrate the data, please input YES, otherwise, the current process will exit.\n\
+                       \n> ",
+                    );
+                    if input.trim().to_lowercase() != "yes" {
+                        eprintln!("The migration was declined since the user didn't confirm.");
+                        return Ok(());
+                    }
+                } else {
+                    let errmsg = "the migration should be performed with interactive prompt";
+                    return Err(MainError::other(errmsg).into());
+                }
+            }
+        } else {
+            let errmsg = "no storage was found";
+            return Err(MainError::other(errmsg).into());
+        };
+
+        let config = self.config.clone();
+        let genesis = self.genesis.clone();
+        let rt = RuntimeBuilder::new_multi_thread()
+            .enable_all()
+            .build()
+            .expect("new tokio runtime");
+        rt.block_on(async move {
+            let storage = self.init_storage(false).await?;
+            migrate
+                .migrate(&storage, &config, &genesis)
+                .await
+                .map_err(Into::<ProtocolError>::into)
+        })?;
+        rt.shutdown_timeout(std::time::Duration::from_secs(1));
+
+        Ok(())
+    }
+
+    fn try_open_readonly_storage(&self) -> Result<Option<ReadOnlyRocksAdapter>, MainError> {
+        ReadOnlyRocksAdapter::new(self.config.data_path_for_block())
+            .map_err(|err| MainError::Other(err.to_string()))
+    }
+
+    async fn try_open_storage(&mut self) -> ProtocolResult<Arc<ImplStorage<RocksAdapter>>> {
+        let migrate = Migrate::new();
+
+        if let Some(readonly_adapter) = self.try_open_readonly_storage()? {
+            match migrate.check(&readonly_adapter)? {
+                Ordering::Greater => {
+                    eprintln!(
+                        "The database is created by a higher version executable binary, \n\
+                        so that the current executable binary couldn't open this database.\n\
+                        Please download the latest executable binary."
+                    );
+                    Err(MainError::other("the executable binary is too old").into())
+                }
+                Ordering::Equal => {
+                    let storage = self.init_storage(false).await?;
+                    Ok(storage)
+                }
+                Ordering::Less => {
+                    if migrate.require_confirm(&readonly_adapter)? {
+                        eprintln!(
+                            "Current executable binary wants to migrate the data into new format.\n\
+                            Use `migrate` sub command to migrate the data.\n\
+                            We strongly recommend that you backup the data directory before migration.",
+                        );
+                        Err(MainError::other("require migrations").into())
+                    } else {
+                        log::info!("process fast migrations ...");
+                        let storage = self.init_storage(false).await?;
+                        migrate
+                            .migrate(&storage, &self.config, &self.genesis)
+                            .await?;
+                        Ok(storage)
+                    }
+                }
+            }
+        } else {
+            let storage = self.init_storage(false).await?;
+            migrate.initialize_version(&storage)?;
+            Ok(storage)
+        }
     }
 
     async fn try_load_genesis(
@@ -947,6 +1091,13 @@ impl From<MainError> for ProtocolError {
     }
 }
 
+impl MainError {
+    /// Builds an error with an error message.
+    pub fn other(errmsg: &str) -> Self {
+        Self::Other(errmsg.to_owned())
+    }
+}
+
 #[derive(Clone)]
 enum KeyP<K: KeyProvider> {
     Custom(K),
@@ -1068,4 +1219,18 @@ where
         .await?;
 
     Ok(())
+}
+
+fn prompt(msg: &str) -> String {
+    let stdout = io::stdout();
+    let mut stdout = stdout.lock();
+    let stdin = io::stdin();
+
+    write!(stdout, "{msg}").unwrap();
+    stdout.flush().unwrap();
+
+    let mut input = String::new();
+    let _ = stdin.read_line(&mut input);
+
+    input
 }
