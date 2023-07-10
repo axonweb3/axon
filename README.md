@@ -34,7 +34,7 @@ Openness and mobility are the foundation of social development, so is blockchain
 
 ### Staking on Layer 1 CKB
 
-Axon supports a Proof-of-Stake (PoS) consensus mechanism and requires each Axon-based appchain to issue native Extensible User Defined Tokens (xUDTs), which are designed and customized by the app chain's development team and released on CKB. For simplicity, the xUDTs on Axon-based chains are referred to as Axon tokens (AT tokens) below. Holders of AT tokens can stake to become validators and/or delegate their tokens to other validators in exchange for rewards. Unlike other sidechains where staking takes place on Layer 2, Axon's staking is grounded on Layer 1 CKB. Validators and other participants stake their native AT tokens on CKB, which uses a Proof-of-Work (PoW) consensus mechanism. This unique staking design helps Axon-based appchains enjoy the highest degree of decentralization and security from Layer 1 while maintain their high performance and sovereignty as independent Layer 2 networks. 
+Axon supports a Proof-of-Stake (PoS) consensus mechanism and requires each Axon-based appchain to issue native Extensible User Defined Tokens (xUDTs), which are designed and customized by the app chain's development team and released on CKB. For simplicity, the xUDTs on Axon-based chains are referred to as Axon tokens (AT tokens) below. Holders of AT tokens can stake to become validators and/or delegate their tokens to other validators in exchange for rewards. Unlike other sidechains where staking takes place on Layer 2, Axon's staking is grounded on Layer 1 CKB. Validators and other participants stake their native AT tokens on CKB, which uses a Proof-of-Work (PoW) consensus mechanism. This unique staking design helps Axon-based appchains enjoy the highest degree of decentralization and security from Layer 1 while maintain their high performance and sovereignty as independent Layer 2 networks.
 
 ## Roadmap
 
@@ -52,7 +52,7 @@ Axon provides the compiled binary on the [release page](`https://github.com/axon
 # Clone from GitHub
 git clone https://github.com/axonweb3/axon.git && cd axon
 # Run release binary for single node
-cargo run --release -- -c devtools/chain/config.toml -g devtools/chain/genesis_single_node.json
+cargo run --release -- run -c devtools/chain/config.toml -g devtools/chain/genesis_single_node.json
 
 ```
 
@@ -81,7 +81,7 @@ The following ways are a great spot to ask questions about Axon:
 
 ## Socials
 
-All Axon related accounts are displayed via [linktree](https://linktr.ee/axonweb3). 
+All Axon related accounts are displayed via [linktree](https://linktr.ee/axonweb3).
 
 ## License
 
