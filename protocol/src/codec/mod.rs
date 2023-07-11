@@ -92,7 +92,7 @@ pub(crate) fn serialize_bytes<S>(val: &Bytes, s: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
-    faster_hex::withpfx_lowercase::serialize_str(val, s)
+    faster_hex::withpfx_lowercase::serialize(val, s)
 }
 
 pub(crate) fn serialize_uint<S, U>(val: &U, s: S) -> Result<S::Ok, S::Error>
