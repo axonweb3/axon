@@ -27,7 +27,7 @@ const GENESIS_HASH: &str = "0x69eca8420bb4b072d732db96260a656f0e10201c6841b215a8
 const GENESIS_STATE_ROOT: &str =
     "0x65f57a6a666e656de33ed68957e04b35b3fe1b35a90f6eafb6f283c907dc3d77";
 const GENESIS_RECEIPTS_ROOT: &str =
-    "0x0abcdb8fd7acc8c71f28a16c3095fdafca0171f371076650152b1c356a1bccad";
+    "0x8544b530238201f1620b139861a6841040b37f78f8bdae8736ef5cec474e979b";
 
 #[test]
 fn decode_genesis() {
