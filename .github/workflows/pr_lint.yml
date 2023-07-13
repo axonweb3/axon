@@ -2,9 +2,11 @@ name: PR Lint
 concurrency:
   group: Conventional PR-${{ github.ref }}
   cancel-in-progress: true
+
 on:
   pull_request:
     types: ['opened', 'edited', 'reopened', 'synchronize']
+  pull_request_target:
 jobs:
   WIP:
     runs-on: ubuntu-latest
@@ -32,6 +34,10 @@ jobs:
 
   Label:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      checks: write
     steps:
       - name: Add labels based on PR title
         uses: TDAK1509/set-label-based-on-pr-title@v1
