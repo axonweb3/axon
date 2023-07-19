@@ -8,8 +8,13 @@ on:
 jobs:
   test:
     name: from-comments
-    if: github.event.issue.pull_request && startsWith(github.event.comment.body, '/run-ci') &&  github.repository_owner == 'axonweb3'
+    if: github.event.issue.pull_request && startsWith(github.event.comment.body, '/run-ci') && github.repository_owner == 'axonweb3'
     runs-on: ubuntu-20.04
+    # When the permissions key is used, all unspecified permissions are set to no access, with the exception of the metadata scope, which always gets read access.
+    # See https://docs.github.com/en/actions/security-guides/automatic-token-authentication#modifying-the-permissions-for-the-github_token
+    permissions:
+      contents: read
+
     steps:
       - name: Query author repository permissions
         uses: octokit/request-action@v2.x
@@ -17,7 +22,7 @@ jobs:
         with:
           route: GET /repos/${{ github.repository }}/collaborators/${{ github.event.sender.login }}/permission
         env:
-          GITHUB_TOKEN: ${{ secrets.TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Generate axon-bot token
         id: generate_axon_bot_token
         uses: wow-actions/use-app-token@v2
