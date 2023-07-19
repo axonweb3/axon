@@ -1859,6 +1859,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
+ "tempfile",
  "tikv-jemalloc-ctl",
  "tikv-jemallocator",
  "toml 0.7.3",
