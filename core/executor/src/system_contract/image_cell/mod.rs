@@ -15,8 +15,8 @@ use protocol::ProtocolResult;
 
 use crate::system_contract::image_cell::store::ImageCellStore;
 use crate::system_contract::utils::{succeed_resp, update_states};
-use crate::system_contract::{system_contract_address, SystemContract, CURRENT_HEADER_CELL_ROOT};
-use crate::{exec_try, MPTTrie};
+use crate::system_contract::{system_contract_address, SystemContract};
+use crate::{exec_try, MPTTrie, CURRENT_HEADER_CELL_ROOT};
 
 static ALLOW_READ: AtomicBool = AtomicBool::new(false);
 
@@ -71,7 +71,7 @@ impl SystemContract for ImageCellContract {
 
 impl ImageCellContract {
     pub fn get_root(&self) -> H256 {
-        **CURRENT_HEADER_CELL_ROOT.load()
+        CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow())
     }
 
     pub fn get_cell(&self, key: &CellKey) -> ProtocolResult<Option<CellInfo>> {

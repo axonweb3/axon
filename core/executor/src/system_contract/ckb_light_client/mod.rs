@@ -10,10 +10,10 @@ use ethers::abi::AbiDecode;
 use protocol::types::{SignedTransaction, TxResp, H160, H256};
 use protocol::{traits::ExecutorAdapter, ProtocolResult};
 
-use crate::exec_try;
 use crate::system_contract::ckb_light_client::store::CkbLightClientStore;
 use crate::system_contract::utils::{succeed_resp, update_states};
-use crate::system_contract::{system_contract_address, SystemContract, CURRENT_HEADER_CELL_ROOT};
+use crate::system_contract::{system_contract_address, SystemContract};
+use crate::{exec_try, CURRENT_HEADER_CELL_ROOT};
 
 static ALLOW_READ: AtomicBool = AtomicBool::new(false);
 
@@ -72,7 +72,7 @@ impl SystemContract for CkbLightClientContract {
 
 impl CkbLightClientContract {
     pub fn get_root(&self) -> H256 {
-        **CURRENT_HEADER_CELL_ROOT.load()
+        CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow())
     }
 
     pub fn get_header_by_block_hash(

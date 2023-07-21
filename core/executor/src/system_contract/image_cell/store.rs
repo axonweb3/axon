@@ -8,8 +8,10 @@ use protocol::types::H256;
 use protocol::ProtocolResult;
 
 use crate::system_contract::image_cell::{image_cell_abi, MPTTrie};
-use crate::system_contract::{CURRENT_HEADER_CELL_ROOT, HEADER_CELL_DB};
-use crate::{adapter::RocksTrieDB, system_contract::error::SystemScriptError};
+use crate::system_contract::HEADER_CELL_DB;
+use crate::{
+    adapter::RocksTrieDB, system_contract::error::SystemScriptError, CURRENT_HEADER_CELL_ROOT,
+};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CellKey {
@@ -28,7 +30,7 @@ impl ImageCellStore {
             None => return Err(SystemScriptError::TrieDbNotInit.into()),
         };
 
-        let root = **CURRENT_HEADER_CELL_ROOT.load();
+        let root = CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow());
 
         let trie = if root == H256::default() {
             MPTTrie::new(Arc::clone(trie_db))
@@ -174,7 +176,7 @@ impl ImageCellStore {
     pub fn commit(&mut self) -> ProtocolResult<()> {
         match self.trie.commit() {
             Ok(new_root) => {
-                CURRENT_HEADER_CELL_ROOT.swap(Arc::new(new_root));
+                CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow_mut() = new_root);
                 Ok(())
             }
             Err(e) => Err(SystemScriptError::CommitError(e.to_string()).into()),

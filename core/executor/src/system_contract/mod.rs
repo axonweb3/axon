@@ -15,7 +15,6 @@ use std::path::Path;
 use std::sync::Arc;
 use std::sync::OnceLock;
 
-use arc_swap::ArcSwap;
 use ckb_traits::{CellDataProvider, HeaderProvider};
 use ckb_types::core::cell::{CellProvider, CellStatus};
 use ckb_types::core::{HeaderBuilder, HeaderView};
@@ -45,9 +44,7 @@ static METADATA_DB: OnceLock<Arc<RocksTrieDB>> = OnceLock::new();
 
 lazy_static::lazy_static! {
     pub static ref HEADER_CELL_ROOT_KEY: H256 = Hasher::digest("header_cell_mpt_root");
-    static ref CURRENT_HEADER_CELL_ROOT: ArcSwap<H256> = ArcSwap::from_pointee(H256::default());
-    static ref METADATA_ROOT_KEY: H256 = Hasher::digest("metadata_root");
-    static ref CURRENT_METADATA_ROOT: ArcSwap<H256> = ArcSwap::from_pointee(H256::default());
+    pub static ref METADATA_ROOT_KEY: H256 = Hasher::digest("metadata_root");
 }
 
 #[macro_export]
@@ -83,10 +80,8 @@ pub fn init<P: AsRef<Path>, Adapter: ExecutorAdapter>(
     adapter: &mut Adapter,
 ) {
     // Init metadata db
-    let current_metadata_root = adapter.storage(MetadataContract::ADDRESS, *METADATA_ROOT_KEY);
-    CURRENT_METADATA_ROOT.store(Arc::new(current_metadata_root));
-
     let metadata_db_path = path.as_ref().join("metadata");
+
     METADATA_DB.get_or_init(|| {
         Arc::new(
             RocksTrieDB::new(metadata_db_path, config.clone(), METADATA_DB_CACHE_SIZE)
@@ -115,10 +110,8 @@ pub fn init<P: AsRef<Path>, Adapter: ExecutorAdapter>(
             .save_cells(vec![always_success_script_deploy_cell()], 0)
             .unwrap();
         let changes = generate_mpt_root_changes(adapter, ImageCellContract::ADDRESS);
-        return adapter.apply(changes, vec![], false);
+        adapter.apply(changes, vec![], false);
     }
-
-    CURRENT_HEADER_CELL_ROOT.store(Arc::new(current_cell_root));
 }
 
 pub fn before_block_hook<Adapter: ExecutorAdapter>(adapter: &mut Adapter) {

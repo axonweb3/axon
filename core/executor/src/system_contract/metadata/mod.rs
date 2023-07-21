@@ -20,7 +20,7 @@ use crate::exec_try;
 use crate::system_contract::utils::{
     generate_mpt_root_changes, revert_resp, succeed_resp, update_states,
 };
-use crate::system_contract::{system_contract_address, SystemContract, CURRENT_METADATA_ROOT};
+use crate::system_contract::{system_contract_address, SystemContract};
 
 type Epoch = u64;
 

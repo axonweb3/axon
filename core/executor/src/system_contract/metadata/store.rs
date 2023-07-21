@@ -5,10 +5,10 @@ use protocol::types::{CkbRelatedInfo, Metadata, H160, H256};
 use protocol::{codec::ProtocolCodec, ProtocolResult};
 
 use crate::system_contract::metadata::{
-    segment::EpochSegment, CKB_RELATED_INFO_KEY, CURRENT_METADATA_ROOT, EPOCH_SEGMENT_KEY,
+    segment::EpochSegment, CKB_RELATED_INFO_KEY, EPOCH_SEGMENT_KEY,
 };
 use crate::system_contract::{error::SystemScriptError, METADATA_DB};
-use crate::{adapter::RocksTrieDB, MPTTrie};
+use crate::{adapter::RocksTrieDB, MPTTrie, CURRENT_METADATA_ROOT};
 
 pub struct MetadataStore {
     pub trie: MPTTrie<RocksTrieDB>,
@@ -21,7 +21,7 @@ impl MetadataStore {
             None => return Err(SystemScriptError::TrieDbNotInit.into()),
         };
 
-        let root = **CURRENT_METADATA_ROOT.load();
+        let root = CURRENT_METADATA_ROOT.with(|r| *r.borrow());
 
         let trie = if root == H256::default() {
             let mut m = MPTTrie::new(Arc::clone(trie_db));
@@ -83,7 +83,7 @@ impl MetadataStore {
         self.trie
             .insert(&metadata.epoch.to_be_bytes(), &metadata.encode()?)?;
         let new_root = self.trie.commit()?;
-        CURRENT_METADATA_ROOT.swap(Arc::new(new_root));
+        CURRENT_METADATA_ROOT.with(|r| *r.borrow_mut() = new_root);
 
         Ok(())
     }
@@ -105,7 +105,7 @@ impl MetadataStore {
         self.trie
             .insert(&metadata.epoch.to_be_bytes(), &metadata.encode()?)?;
         let new_root = self.trie.commit()?;
-        CURRENT_METADATA_ROOT.swap(Arc::new(new_root));
+        CURRENT_METADATA_ROOT.with(|r| *r.borrow_mut() = new_root);
 
         Ok(())
     }
