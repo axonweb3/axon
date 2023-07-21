@@ -1,5 +1,5 @@
 mod abi;
-mod handle;
+pub(crate) mod handle;
 mod segment;
 mod store;
 
@@ -16,11 +16,11 @@ use parking_lot::RwLock;
 use protocol::traits::ExecutorAdapter;
 use protocol::types::{Hasher, Metadata, SignedTransaction, TxResp, H160, H256};
 
-use crate::exec_try;
 use crate::system_contract::utils::{
     generate_mpt_root_changes, revert_resp, succeed_resp, update_states,
 };
 use crate::system_contract::{system_contract_address, SystemContract};
+use crate::{exec_try, CURRENT_METADATA_ROOT};
 
 type Epoch = u64;
 
@@ -48,9 +48,10 @@ impl SystemContract for MetadataContract {
         let tx_data = tx.data();
         let gas_limit = *tx.gas_limit();
         let block_number = adapter.block_number().as_u64();
+        let root = CURRENT_METADATA_ROOT.with(|r| *r.borrow());
 
         let mut store = exec_try!(
-            MetadataStore::new(),
+            MetadataStore::new(root),
             gas_limit,
             "[metadata] init metadata mpt"
         );
@@ -110,7 +111,8 @@ impl SystemContract for MetadataContract {
             return;
         }
 
-        if let Err(e) = MetadataStore::new()
+        let root = CURRENT_METADATA_ROOT.with(|r| *r.borrow());
+        if let Err(e) = MetadataStore::new(root)
             .unwrap()
             .update_propose_count(block_number.as_u64(), &adapter.origin())
         {

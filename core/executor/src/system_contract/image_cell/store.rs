@@ -24,13 +24,11 @@ pub struct ImageCellStore {
 }
 
 impl ImageCellStore {
-    pub fn new() -> ProtocolResult<Self> {
+    pub fn new(root: H256) -> ProtocolResult<Self> {
         let trie_db = match HEADER_CELL_DB.get() {
             Some(db) => db,
             None => return Err(SystemScriptError::TrieDbNotInit.into()),
         };
-
-        let root = CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow());
 
         let trie = if root == H256::default() {
             MPTTrie::new(Arc::clone(trie_db))

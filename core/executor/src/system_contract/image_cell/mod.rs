@@ -13,6 +13,7 @@ use protocol::traits::ExecutorAdapter;
 use protocol::types::{SignedTransaction, TxResp, H160, H256};
 use protocol::ProtocolResult;
 
+use crate::system_contract::ckb_light_client::BLOCK_PERIOD_UPDATED_HEADER_CELL_ROOT;
 use crate::system_contract::image_cell::store::ImageCellStore;
 use crate::system_contract::utils::{succeed_resp, update_states};
 use crate::system_contract::{system_contract_address, SystemContract};
@@ -36,8 +37,9 @@ impl SystemContract for ImageCellContract {
         let tx_data = tx.data();
         let gas_limit = *tx.gas_limit();
 
+        let root = CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow());
         let mut store = exec_try!(
-            ImageCellStore::new(),
+            ImageCellStore::new(root),
             gas_limit,
             "[image cell] init image cell mpt"
         );
@@ -69,24 +71,29 @@ impl SystemContract for ImageCellContract {
     }
 }
 
+/// These methods are provide for interoperation module to get CKB cells.
 impl ImageCellContract {
-    pub fn get_root(&self) -> H256 {
-        CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow())
+    pub(crate) fn get_root(&self) -> H256 {
+        **BLOCK_PERIOD_UPDATED_HEADER_CELL_ROOT.load()
     }
 
     pub fn get_cell(&self, key: &CellKey) -> ProtocolResult<Option<CellInfo>> {
-        ImageCellStore::new()?.get_cell(key)
+        ImageCellStore::new(self.get_root())?.get_cell(key)
     }
 
     pub fn allow_read(&self) -> bool {
         ALLOW_READ.load(Ordering::Relaxed)
     }
+}
 
-    pub fn save_cells(
+impl ImageCellContract {
+    /// This method is only use in init. It insert the always success script
+    /// deployed cell.
+    pub(super) fn save_cells(
         &self,
         cells: Vec<image_cell_abi::CellInfo>,
         created_number: u64,
     ) -> ProtocolResult<()> {
-        ImageCellStore::new()?.save_cells(cells, created_number)
+        ImageCellStore::new(self.get_root())?.save_cells(cells, created_number)
     }
 }

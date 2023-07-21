@@ -8,6 +8,7 @@ pub mod metadata;
 
 pub use crate::system_contract::ckb_light_client::CkbLightClientContract;
 pub use crate::system_contract::image_cell::ImageCellContract;
+use crate::system_contract::metadata::handle::BLOCK_PERIOD_METADATA_ROOT;
 pub use crate::system_contract::metadata::{check_ckb_related_info_exist, MetadataContract};
 pub use crate::system_contract::native_token::NativeTokenContract;
 
@@ -25,6 +26,7 @@ use protocol::types::{Bytes, Hasher, SignedTransaction, TxResp, H160, H256};
 use protocol::{ckb_blake2b_256, traits::ExecutorAdapter};
 
 use crate::adapter::RocksTrieDB;
+use crate::system_contract::ckb_light_client::BLOCK_PERIOD_UPDATED_HEADER_CELL_ROOT;
 use crate::system_contract::image_cell::utils::always_success_script_deploy_cell;
 use crate::system_contract::utils::generate_mpt_root_changes;
 
@@ -79,9 +81,12 @@ pub fn init<P: AsRef<Path>, Adapter: ExecutorAdapter>(
     config: ConfigRocksDB,
     adapter: &mut Adapter,
 ) {
-    // Init metadata db
-    let metadata_db_path = path.as_ref().join("metadata");
+    // Init metadata root for consensus and mempool module.
+    let current_metadata_root = adapter.storage(MetadataContract::ADDRESS, *METADATA_ROOT_KEY);
+    BLOCK_PERIOD_METADATA_ROOT.store(Arc::new(current_metadata_root));
 
+    // Init metadata db.
+    let metadata_db_path = path.as_ref().join("metadata");
     METADATA_DB.get_or_init(|| {
         Arc::new(
             RocksTrieDB::new(metadata_db_path, config.clone(), METADATA_DB_CACHE_SIZE)
@@ -89,7 +94,7 @@ pub fn init<P: AsRef<Path>, Adapter: ExecutorAdapter>(
         )
     });
 
-    // Init header cell db
+    // Init header cell db.
     let header_cell_db_path = path.as_ref().join("header_cell");
     HEADER_CELL_DB.get_or_init(|| {
         Arc::new(
@@ -110,8 +115,11 @@ pub fn init<P: AsRef<Path>, Adapter: ExecutorAdapter>(
             .save_cells(vec![always_success_script_deploy_cell()], 0)
             .unwrap();
         let changes = generate_mpt_root_changes(adapter, ImageCellContract::ADDRESS);
-        adapter.apply(changes, vec![], false);
+        return adapter.apply(changes, vec![], false);
     }
+
+    // Init CKB header and cell root for interoperation module.
+    BLOCK_PERIOD_UPDATED_HEADER_CELL_ROOT.store(Arc::new(current_cell_root));
 }
 
 pub fn before_block_hook<Adapter: ExecutorAdapter>(adapter: &mut Adapter) {

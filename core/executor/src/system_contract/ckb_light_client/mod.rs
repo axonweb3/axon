@@ -2,6 +2,7 @@ mod abi;
 mod store;
 
 pub use abi::ckb_light_client_abi;
+use arc_swap::ArcSwap;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -16,6 +17,11 @@ use crate::system_contract::{system_contract_address, SystemContract};
 use crate::{exec_try, CURRENT_HEADER_CELL_ROOT};
 
 static ALLOW_READ: AtomicBool = AtomicBool::new(false);
+
+lazy_static::lazy_static! {
+    pub(crate) static ref BLOCK_PERIOD_UPDATED_HEADER_CELL_ROOT: ArcSwap<H256>
+        = ArcSwap::from_pointee(H256::default());
+}
 
 #[derive(Default)]
 pub struct CkbLightClientContract;
@@ -33,8 +39,9 @@ impl SystemContract for CkbLightClientContract {
         let tx_data = tx.data();
         let gas_limit = *tx.gas_limit();
 
+        let root = CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow());
         let mut store = exec_try!(
-            CkbLightClientStore::new(),
+            CkbLightClientStore::new(root),
             gas_limit,
             "[ckb light client] init ckb light client mpt"
         );
@@ -70,21 +77,23 @@ impl SystemContract for CkbLightClientContract {
     }
 }
 
+/// These methods are provide for interoperation module to get CKB headers.
 impl CkbLightClientContract {
-    pub fn get_root(&self) -> H256 {
-        CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow())
+    // Use the block period update root to avoid some mistake.
+    pub(crate) fn get_root(&self) -> H256 {
+        **BLOCK_PERIOD_UPDATED_HEADER_CELL_ROOT.load()
     }
 
     pub fn get_header_by_block_hash(
         &self,
         block_hash: &H256,
     ) -> ProtocolResult<Option<ckb_light_client_abi::Header>> {
-        let store = CkbLightClientStore::new()?;
+        let store = CkbLightClientStore::new(self.get_root())?;
         store.get_header(&block_hash.0)
     }
 
     pub fn get_raw(&self, key: &[u8]) -> ProtocolResult<Option<Vec<u8>>> {
-        let store = CkbLightClientStore::new()?;
+        let store = CkbLightClientStore::new(self.get_root())?;
         let ret = store.trie.get(key)?.map(Into::into);
         Ok(ret)
     }

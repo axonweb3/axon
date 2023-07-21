@@ -10,6 +10,7 @@ mod tests;
 mod utils;
 
 pub use crate::adapter::{AxonExecutorAdapter, MPTTrie, RocksTrieDB};
+
 pub use crate::utils::{
     code_address, decode_revert_msg, logs_bloom, DefaultFeeAllocator, FeeInlet,
 };
@@ -17,6 +18,7 @@ pub use crate::utils::{
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::iter::FromIterator;
+use std::sync::Arc;
 
 use arc_swap::ArcSwap;
 use evm::executor::stack::{MemoryStackState, PrecompileFn, StackExecutor, StackSubstateMetadata};
@@ -33,7 +35,8 @@ use protocol::types::{
 
 use crate::precompiles::build_precompile_set;
 use crate::system_contract::{
-    after_block_hook, before_block_hook, system_contract_dispatch, CkbLightClientContract,
+    after_block_hook, before_block_hook, ckb_light_client::BLOCK_PERIOD_UPDATED_HEADER_CELL_ROOT,
+    metadata::handle::BLOCK_PERIOD_METADATA_ROOT, system_contract_dispatch, CkbLightClientContract,
     ImageCellContract, MetadataContract, NativeTokenContract, SystemContract, HEADER_CELL_ROOT_KEY,
     METADATA_ROOT_KEY,
 };
@@ -182,7 +185,7 @@ impl Executor for AxonExecutor {
         // commit changes by all txs included in this block only once
         let new_state_root = adapter.commit();
 
-        self.clear_local_system_contract_roots();
+        self.update_system_contract_roots_for_external_module();
 
         ExecResp {
             state_root:   new_state_root,
@@ -305,6 +308,9 @@ impl AxonExecutor {
         }
     }
 
+    /// The `exec()` function is run in `tokio::task::block_in_place()` and all
+    /// the read or write operations are in the scope of exec function. The
+    /// thread context is not switched during exec function.
     fn init_local_system_contract_roots<Adapter: ExecutorAdapter>(&self, adapter: &mut Adapter) {
         CURRENT_HEADER_CELL_ROOT.with(|root| {
             *root.borrow_mut() =
@@ -316,14 +322,15 @@ impl AxonExecutor {
         });
     }
 
-    fn clear_local_system_contract_roots(&self) {
-        CURRENT_HEADER_CELL_ROOT.with(|root| {
-            *root.borrow_mut() = H256::default();
-        });
+    /// The system contract roots are updated at the end of execute transactions
+    /// of a block.
+    fn update_system_contract_roots_for_external_module(&self) {
+        BLOCK_PERIOD_UPDATED_HEADER_CELL_ROOT.store(Arc::new(
+            CURRENT_HEADER_CELL_ROOT.with(|root| *root.borrow()),
+        ));
 
-        CURRENT_METADATA_ROOT.with(|root| {
-            *root.borrow_mut() = H256::default();
-        });
+        BLOCK_PERIOD_METADATA_ROOT
+            .store(Arc::new(CURRENT_METADATA_ROOT.with(|root| *root.borrow())));
     }
 
     #[cfg(test)]

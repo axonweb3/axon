@@ -15,13 +15,11 @@ pub struct MetadataStore {
 }
 
 impl MetadataStore {
-    pub fn new() -> ProtocolResult<Self> {
+    pub fn new(root: H256) -> ProtocolResult<Self> {
         let trie_db = match METADATA_DB.get() {
             Some(db) => db,
             None => return Err(SystemScriptError::TrieDbNotInit.into()),
         };
-
-        let root = CURRENT_METADATA_ROOT.with(|r| *r.borrow());
 
         let trie = if root == H256::default() {
             let mut m = MPTTrie::new(Arc::clone(trie_db));
