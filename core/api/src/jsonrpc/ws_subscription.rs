@@ -42,7 +42,7 @@ where
 
     let mut rpc = RpcModule::new(tx);
     rpc.register_subscription(
-        "eth_subscription",
+        "eth_subscribe",
         "eth_subscription",
         "eth_unsubscribe",
         |params, mut sink, ctx| match Type::try_from(params) {
