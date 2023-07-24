@@ -8,13 +8,11 @@ use parking_lot::RwLock;
 use common_apm::Instant;
 use common_apm_derive::trace_span;
 use core_executor::system_contract::metadata::MetadataHandle;
-use core_executor::{
-    AxonExecutor, AxonExecutorAdapter, METADATA_CONTRACT_ADDRESS, METADATA_ROOT_KEY,
-};
+use core_executor::{AxonExecutor, AxonExecutorAdapter};
 use core_network::{PeerId, PeerIdExt};
 use protocol::traits::{
-    Backend, CommonConsensusAdapter, ConsensusAdapter, Context, Executor, Gossip, MemPool,
-    MessageTarget, Network, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
+    CommonConsensusAdapter, ConsensusAdapter, Context, Executor, Gossip, MemPool, MessageTarget,
+    Network, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
 };
 use protocol::types::{
     BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Header, Hex, MerkleRoot, Metadata,
@@ -340,7 +338,7 @@ where
             Arc::clone(&self.storage),
             proposal.clone().into(),
         )?;
-        let root = backend.storage(METADATA_CONTRACT_ADDRESS, *METADATA_ROOT_KEY);
+        let root = backend.get_metadata_root();
         let metadata_handle = MetadataHandle::new(root);
 
         let verifier_list = metadata_handle
@@ -647,13 +645,14 @@ where
 
     async fn get_metadata_handle(&self, ctx: Context) -> ProtocolResult<MetadataHandle> {
         let current_state_root = self.storage.get_latest_block_header(ctx).await?.state_root;
-        let backend = AxonExecutorAdapter::from_root(
+        let root = AxonExecutorAdapter::from_root(
             current_state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
             Default::default(),
-        )?;
-        let root = backend.storage(METADATA_CONTRACT_ADDRESS, *METADATA_ROOT_KEY);
+        )?
+        .get_metadata_root();
+
         Ok(MetadataHandle::new(root))
     }
 }

@@ -1,11 +1,5 @@
 use std::sync::Arc;
 
-use core_executor::{
-    system_contract::metadata::MetadataHandle, AxonExecutor, AxonExecutorAdapter, MPTTrie,
-};
-use core_executor::{
-    HEADER_CELL_ROOT_KEY, IMAGE_CELL_CONTRACT_ADDRESS, METADATA_CONTRACT_ADDRESS, METADATA_ROOT_KEY,
-};
 use protocol::traits::{APIAdapter, Context, Executor, ExecutorAdapter, MemPool, Network, Storage};
 use protocol::types::{
     Account, BigEndianHash, Block, BlockNumber, Bytes, CkbRelatedInfo, ExecutorContext, Hash,
@@ -13,6 +7,10 @@ use protocol::types::{
     MAX_BLOCK_GAS_LIMIT, NIL_DATA, RLP_NULL, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, trie, ProtocolResult};
+
+use core_executor::{
+    system_contract::metadata::MetadataHandle, AxonExecutor, AxonExecutorAdapter, MPTTrie,
+};
 
 use crate::APIError;
 
@@ -257,34 +255,26 @@ where
     }
 
     async fn get_image_cell_root(&self, ctx: Context) -> ProtocolResult<H256> {
-        let state_root = self.storage.get_latest_block(ctx).await?.header.state_root;
-        let state_mpt_tree = MPTTrie::from_root(state_root, Arc::clone(&self.trie_db))?;
-        let raw_account = state_mpt_tree
-            .get(IMAGE_CELL_CONTRACT_ADDRESS.as_bytes())?
-            .ok_or_else(|| APIError::Adapter("Can't find this address".to_string()))?;
+        let state_root = self.storage.get_latest_block_header(ctx).await?.state_root;
 
-        let account = Account::decode(raw_account).unwrap();
-        let storage_mpt_tree = MPTTrie::from_root(account.storage_root, Arc::clone(&self.trie_db))?;
-
-        Ok(storage_mpt_tree
-            .get(HEADER_CELL_ROOT_KEY.as_bytes())?
-            .map(|r| H256::from_slice(&r))
-            .unwrap_or_default())
+        Ok(AxonExecutorAdapter::from_root(
+            state_root,
+            Arc::clone(&self.trie_db),
+            Arc::clone(&self.storage),
+            Default::default(),
+        )?
+        .get_image_cell_root())
     }
 
     async fn get_metadata_root(&self, ctx: Context) -> ProtocolResult<H256> {
-        let state_root = self.storage.get_latest_block(ctx).await?.header.state_root;
-        let state_mpt_tree = MPTTrie::from_root(state_root, Arc::clone(&self.trie_db))?;
-        let raw_account = state_mpt_tree
-            .get(METADATA_CONTRACT_ADDRESS.as_bytes())?
-            .ok_or_else(|| APIError::Adapter("Can't find this address".to_string()))?;
+        let state_root = self.storage.get_latest_block_header(ctx).await?.state_root;
 
-        let account = Account::decode(raw_account).unwrap();
-        let storage_mpt_tree = MPTTrie::from_root(account.storage_root, Arc::clone(&self.trie_db))?;
-
-        Ok(storage_mpt_tree
-            .get(METADATA_ROOT_KEY.as_bytes())?
-            .map(|r| H256::from_slice(&r))
-            .unwrap_or_default())
+        Ok(AxonExecutorAdapter::from_root(
+            state_root,
+            Arc::clone(&self.trie_db),
+            Arc::clone(&self.storage),
+            Default::default(),
+        )?
+        .get_metadata_root())
     }
 }

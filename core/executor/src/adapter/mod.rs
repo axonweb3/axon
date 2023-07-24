@@ -14,6 +14,10 @@ use protocol::types::{
 };
 use protocol::{codec::ProtocolCodec, trie, ProtocolResult};
 
+use crate::system_contract::{
+    HEADER_CELL_ROOT_KEY, IMAGE_CELL_CONTRACT_ADDRESS, METADATA_CONTRACT_ADDRESS, METADATA_ROOT_KEY,
+};
+
 const GET_BLOCK_HASH_NUMBER_RANGE: u64 = 256;
 
 macro_rules! blocking_async {
@@ -278,6 +282,14 @@ where
             storage,
             exec_ctx,
         })
+    }
+
+    pub fn get_metadata_root(&self) -> H256 {
+        self.storage(METADATA_CONTRACT_ADDRESS, *METADATA_ROOT_KEY)
+    }
+
+    pub fn get_image_cell_root(&self) -> H256 {
+        self.storage(IMAGE_CELL_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY)
     }
 
     fn apply<I: IntoIterator<Item = (H256, H256)>>(

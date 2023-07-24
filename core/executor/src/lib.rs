@@ -10,10 +10,7 @@ mod tests;
 mod utils;
 
 pub use crate::adapter::{AxonExecutorAdapter, MPTTrie, RocksTrieDB};
-pub use crate::system_contract::{
-    metadata::MetadataHandle, DataProvider, HEADER_CELL_ROOT_KEY, IMAGE_CELL_CONTRACT_ADDRESS,
-    METADATA_CONTRACT_ADDRESS, METADATA_ROOT_KEY,
-};
+pub use crate::system_contract::{metadata::MetadataHandle, DataProvider};
 pub use crate::utils::{
     code_address, decode_revert_msg, logs_bloom, DefaultFeeAllocator, FeeInlet,
 };
@@ -39,6 +36,8 @@ use crate::precompiles::build_precompile_set;
 use crate::system_contract::{
     after_block_hook, before_block_hook, system_contract_dispatch, CkbLightClientContract,
     ImageCellContract, MetadataContract, NativeTokenContract, SystemContract,
+    CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, HEADER_CELL_ROOT_KEY, METADATA_CONTRACT_ADDRESS,
+    METADATA_ROOT_KEY,
 };
 
 lazy_static::lazy_static! {
@@ -314,24 +313,13 @@ impl AxonExecutor {
     fn init_local_system_contract_roots<Adapter: ExecutorAdapter>(&self, adapter: &mut Adapter) {
         CURRENT_HEADER_CELL_ROOT.with(|root| {
             *root.borrow_mut() =
-                adapter.storage(CkbLightClientContract::ADDRESS, *HEADER_CELL_ROOT_KEY);
+                adapter.storage(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY);
         });
 
         CURRENT_METADATA_ROOT.with(|root| {
-            *root.borrow_mut() = adapter.storage(MetadataContract::ADDRESS, *METADATA_ROOT_KEY);
+            *root.borrow_mut() = adapter.storage(METADATA_CONTRACT_ADDRESS, *METADATA_ROOT_KEY);
         });
     }
-
-    // /// The system contract roots are updated at the end of execute transactions
-    // /// of a block.
-    // fn update_system_contract_roots_for_external_module(&self) {
-    //     BLOCK_PERIOD_UPDATED_HEADER_CELL_ROOT.store(Arc::new(
-    //         CURRENT_HEADER_CELL_ROOT.with(|root| *root.borrow()),
-    //     ));
-
-    //     BLOCK_PERIOD_METADATA_ROOT
-    //         .store(Arc::new(CURRENT_METADATA_ROOT.with(|root| *root.borrow())));
-    // }
 
     #[cfg(test)]
     fn test_exec<Adapter: ExecutorAdapter>(

@@ -26,10 +26,7 @@ use protocol::{
 
 use common_apm_derive::trace_span;
 use common_crypto::{Crypto, Secp256k1Recoverable};
-use core_executor::{
-    is_call_system_script, AxonExecutorAdapter, DataProvider, MetadataHandle, HEADER_CELL_ROOT_KEY,
-    IMAGE_CELL_CONTRACT_ADDRESS, METADATA_CONTRACT_ADDRESS, METADATA_ROOT_KEY,
-};
+use core_executor::{is_call_system_script, AxonExecutorAdapter, DataProvider, MetadataHandle};
 use core_interoperation::InteroperationImpl;
 
 use crate::adapter::message::{MsgPullTxs, END_GOSSIP_NEW_TXS, RPC_PULL_TXS};
@@ -187,8 +184,7 @@ where
     ) -> ProtocolResult<U256> {
         let addr = &stx.sender;
         let block = self.storage.get_latest_block(ctx.clone()).await?;
-        let backend = self.executor_backend(ctx).await?;
-        let root = backend.storage(METADATA_CONTRACT_ADDRESS, *METADATA_ROOT_KEY);
+        let root = self.executor_backend(ctx).await?.get_metadata_root();
 
         if MetadataHandle::new(root).is_validator(block.header.number + 1, *addr)? {
             return Ok(U256::zero());
@@ -289,8 +285,7 @@ where
             return Ok(());
         }
 
-        let backend = self.executor_backend(ctx).await?;
-        let root = backend.storage(IMAGE_CELL_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY);
+        let root = self.executor_backend(ctx).await?.get_image_cell_root();
 
         // Verify interoperation signature
         match signature.r[0] {
