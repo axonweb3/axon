@@ -259,7 +259,7 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
     let filter =
         r#impl::filter_module(Arc::clone(&adapter), config.web3.log_filter_max_block_range)
             .into_rpc();
-    let ckb_light_client_rpc = r#impl::CkbLightClientRpcImpl::default().into_rpc();
+    let ckb_light_client_rpc = r#impl::CkbLightClientRpcImpl::new(Arc::clone(&adapter)).into_rpc();
 
     rpc.merge(node_rpc).unwrap();
     rpc.merge(axon_rpc).unwrap();

@@ -13,19 +13,19 @@ use protocol::traits::ExecutorAdapter;
 use protocol::types::{SignedTransaction, TxResp, H160, H256};
 use protocol::ProtocolResult;
 
-use crate::system_contract::ckb_light_client::BLOCK_PERIOD_UPDATED_HEADER_CELL_ROOT;
 use crate::system_contract::image_cell::store::ImageCellStore;
 use crate::system_contract::utils::{succeed_resp, update_states};
 use crate::system_contract::{system_contract_address, SystemContract};
 use crate::{exec_try, MPTTrie, CURRENT_HEADER_CELL_ROOT};
 
+pub const IMAGE_CELL_CONTRACT_ADDRESS: H160 = system_contract_address(0x3);
 static ALLOW_READ: AtomicBool = AtomicBool::new(false);
 
 #[derive(Default)]
 pub struct ImageCellContract;
 
 impl SystemContract for ImageCellContract {
-    const ADDRESS: H160 = system_contract_address(0x3);
+    const ADDRESS: H160 = IMAGE_CELL_CONTRACT_ADDRESS;
 
     fn exec_<Adapter: ExecutorAdapter>(
         &self,
@@ -73,12 +73,8 @@ impl SystemContract for ImageCellContract {
 
 /// These methods are provide for interoperation module to get CKB cells.
 impl ImageCellContract {
-    pub(crate) fn get_root(&self) -> H256 {
-        **BLOCK_PERIOD_UPDATED_HEADER_CELL_ROOT.load()
-    }
-
-    pub fn get_cell(&self, key: &CellKey) -> ProtocolResult<Option<CellInfo>> {
-        ImageCellStore::new(self.get_root())?.get_cell(key)
+    pub fn get_cell(&self, root: H256, key: &CellKey) -> ProtocolResult<Option<CellInfo>> {
+        ImageCellStore::new(root)?.get_cell(key)
     }
 
     pub fn allow_read(&self) -> bool {
@@ -91,9 +87,10 @@ impl ImageCellContract {
     /// deployed cell.
     pub(super) fn save_cells(
         &self,
+        root: H256,
         cells: Vec<image_cell_abi::CellInfo>,
         created_number: u64,
     ) -> ProtocolResult<()> {
-        ImageCellStore::new(self.get_root())?.save_cells(cells, created_number)
+        ImageCellStore::new(root)?.save_cells(cells, created_number)
     }
 }

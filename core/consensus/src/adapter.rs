@@ -8,11 +8,13 @@ use parking_lot::RwLock;
 use common_apm::Instant;
 use common_apm_derive::trace_span;
 use core_executor::system_contract::metadata::MetadataHandle;
-use core_executor::{AxonExecutor, AxonExecutorAdapter};
+use core_executor::{
+    AxonExecutor, AxonExecutorAdapter, METADATA_CONTRACT_ADDRESS, METADATA_ROOT_KEY,
+};
 use core_network::{PeerId, PeerIdExt};
 use protocol::traits::{
-    CommonConsensusAdapter, ConsensusAdapter, Context, Executor, Gossip, MemPool, MessageTarget,
-    Network, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
+    Backend, CommonConsensusAdapter, ConsensusAdapter, Context, Executor, Gossip, MemPool,
+    MessageTarget, Network, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
 };
 use protocol::types::{
     BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Header, Hex, MerkleRoot, Metadata,
@@ -41,7 +43,6 @@ pub struct OverlordConsensusAdapter<
 
     storage:          Arc<S>,
     trie_db:          Arc<DB>,
-    metadata:         Arc<MetadataHandle>,
     overlord_handler: RwLock<Option<OverlordHandler<Proposal>>>,
     crypto:           Arc<OverlordCrypto>,
 }
@@ -339,9 +340,10 @@ where
             Arc::clone(&self.storage),
             proposal.clone().into(),
         )?;
+        let root = backend.storage(METADATA_CONTRACT_ADDRESS, *METADATA_ROOT_KEY);
+        let metadata_handle = MetadataHandle::new(root);
 
-        let verifier_list = self
-            .metadata
+        let verifier_list = metadata_handle
             .get_metadata_by_block_number(proposal.number)?
             .verifier_list;
 
@@ -357,15 +359,21 @@ where
     }
 
     async fn is_last_block_in_current_epoch(&self, block_number: u64) -> ProtocolResult<bool> {
-        self.metadata.is_last_block_in_current_epoch(block_number)
+        self.get_metadata_handle(Context::new())
+            .await?
+            .is_last_block_in_current_epoch(block_number)
     }
 
     async fn get_metadata_by_block_number(&self, block_number: u64) -> ProtocolResult<Metadata> {
-        self.metadata.get_metadata_by_block_number(block_number)
+        self.get_metadata_handle(Context::new())
+            .await?
+            .get_metadata_by_block_number(block_number)
     }
 
     async fn get_metadata_by_epoch(&self, epoch: u64) -> ProtocolResult<Metadata> {
-        self.metadata.get_metadata_by_epoch(epoch)
+        self.get_metadata_handle(Context::new())
+            .await?
+            .get_metadata_by_epoch(epoch)
     }
 
     #[trace_span(kind = "consensus.adapter")]
@@ -460,7 +468,8 @@ where
 
         // the auth_list for the target should comes from previous number
         let metadata = self
-            .metadata
+            .get_metadata_handle(ctx.clone())
+            .await?
             .get_metadata_by_block_number(block.header.number)?;
 
         if !metadata.version.contains(block.header.number) {
@@ -620,14 +629,12 @@ where
         mempool: Arc<M>,
         storage: Arc<S>,
         trie_db: Arc<DB>,
-        metadata: Arc<MetadataHandle>,
         crypto: Arc<OverlordCrypto>,
     ) -> ProtocolResult<Self> {
         Ok(OverlordConsensusAdapter {
             network,
             mempool,
             storage,
-            metadata,
             trie_db,
             overlord_handler: RwLock::new(None),
             crypto,
@@ -636,5 +643,17 @@ where
 
     pub fn set_overlord_handler(&self, handler: OverlordHandler<Proposal>) {
         *self.overlord_handler.write() = Some(handler)
+    }
+
+    async fn get_metadata_handle(&self, ctx: Context) -> ProtocolResult<MetadataHandle> {
+        let current_state_root = self.storage.get_latest_block_header(ctx).await?.state_root;
+        let backend = AxonExecutorAdapter::from_root(
+            current_state_root,
+            Arc::clone(&self.trie_db),
+            Arc::clone(&self.storage),
+            Default::default(),
+        )?;
+        let root = backend.storage(METADATA_CONTRACT_ADDRESS, *METADATA_ROOT_KEY);
+        Ok(MetadataHandle::new(root))
     }
 }

@@ -8,6 +8,7 @@ use protocol::types::{CellDep, OutPoint, SignatureR, SignatureS, Witness, H160, 
 use core_interoperation::{cycle_to_gas, gas_to_cycle, InteroperationImpl};
 
 use crate::precompiles::{axon_precompile_address, PrecompileContract};
+use crate::CURRENT_HEADER_CELL_ROOT;
 use crate::{err, system_contract::DataProvider};
 
 macro_rules! try_rlp {
@@ -38,7 +39,7 @@ impl PrecompileContract for CkbVM {
         if let Some(gas) = gas_limit {
             let res = InteroperationImpl::verify_by_ckb_vm(
                 Default::default(),
-                &DataProvider::default(),
+                &DataProvider::new(CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow())),
                 &InteroperationImpl::dummy_transaction(
                     SignatureR::new_by_ref(cell_deps, header_deps, inputs, Default::default()),
                     SignatureS::new(witnesses),

@@ -21,10 +21,7 @@ use protocol::types::{
     Block, Bytes, ExecResp, Hash, Hasher, Hex, Log, MerkleRoot, Metadata, Proof, Proposal, Receipt,
     SignedTransaction, ValidatorExtend, BASE_FEE_PER_GAS, MAX_BLOCK_GAS_LIMIT, RLP_NULL, U256,
 };
-use protocol::{
-    async_trait, lazy::CURRENT_STATE_ROOT, tokio::sync::Mutex as AsyncMutex, ProtocolError,
-    ProtocolResult,
-};
+use protocol::{async_trait, tokio::sync::Mutex as AsyncMutex, ProtocolError, ProtocolResult};
 
 use core_executor::logs_bloom;
 
@@ -639,7 +636,6 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             proof:           proof.clone(),
         };
 
-        CURRENT_STATE_ROOT.swap(Arc::new(resp.state_root));
         self.status.swap(new_status);
 
         // update timeout_gap of mempool

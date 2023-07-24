@@ -3,11 +3,14 @@ use std::sync::Arc;
 use core_executor::{
     system_contract::metadata::MetadataHandle, AxonExecutor, AxonExecutorAdapter, MPTTrie,
 };
+use core_executor::{
+    HEADER_CELL_ROOT_KEY, IMAGE_CELL_CONTRACT_ADDRESS, METADATA_CONTRACT_ADDRESS, METADATA_ROOT_KEY,
+};
 use protocol::traits::{APIAdapter, Context, Executor, ExecutorAdapter, MemPool, Network, Storage};
 use protocol::types::{
     Account, BigEndianHash, Block, BlockNumber, Bytes, CkbRelatedInfo, ExecutorContext, Hash,
-    Header, Metadata, Proposal, Receipt, SignedTransaction, TxResp, H160, MAX_BLOCK_GAS_LIMIT,
-    NIL_DATA, RLP_NULL, U256,
+    Header, Metadata, Proposal, Receipt, SignedTransaction, TxResp, H160, H256,
+    MAX_BLOCK_GAS_LIMIT, NIL_DATA, RLP_NULL, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, trie, ProtocolResult};
 
@@ -237,14 +240,51 @@ where
         block_number: Option<u64>,
     ) -> ProtocolResult<Metadata> {
         if let Some(num) = block_number {
-            return MetadataHandle::default().get_metadata_by_block_number(num);
+            return MetadataHandle::new(self.get_metadata_root(ctx).await?)
+                .get_metadata_by_block_number(num);
         }
 
-        let num = self.storage.get_latest_block_header(ctx).await?.number;
-        MetadataHandle::default().get_metadata_by_block_number(num)
+        let num = self
+            .storage
+            .get_latest_block_header(ctx.clone())
+            .await?
+            .number;
+        MetadataHandle::new(self.get_metadata_root(ctx).await?).get_metadata_by_block_number(num)
     }
 
-    async fn get_ckb_related_info(&self, _ctx: Context) -> ProtocolResult<CkbRelatedInfo> {
-        MetadataHandle::default().get_ckb_related_info()
+    async fn get_ckb_related_info(&self, ctx: Context) -> ProtocolResult<CkbRelatedInfo> {
+        MetadataHandle::new(self.get_metadata_root(ctx).await?).get_ckb_related_info()
+    }
+
+    async fn get_image_cell_root(&self, ctx: Context) -> ProtocolResult<H256> {
+        let state_root = self.storage.get_latest_block(ctx).await?.header.state_root;
+        let state_mpt_tree = MPTTrie::from_root(state_root, Arc::clone(&self.trie_db))?;
+        let raw_account = state_mpt_tree
+            .get(IMAGE_CELL_CONTRACT_ADDRESS.as_bytes())?
+            .ok_or_else(|| APIError::Adapter("Can't find this address".to_string()))?;
+
+        let account = Account::decode(raw_account).unwrap();
+        let storage_mpt_tree = MPTTrie::from_root(account.storage_root, Arc::clone(&self.trie_db))?;
+
+        Ok(storage_mpt_tree
+            .get(HEADER_CELL_ROOT_KEY.as_bytes())?
+            .map(|r| H256::from_slice(&r))
+            .unwrap_or_default())
+    }
+
+    async fn get_metadata_root(&self, ctx: Context) -> ProtocolResult<H256> {
+        let state_root = self.storage.get_latest_block(ctx).await?.header.state_root;
+        let state_mpt_tree = MPTTrie::from_root(state_root, Arc::clone(&self.trie_db))?;
+        let raw_account = state_mpt_tree
+            .get(METADATA_CONTRACT_ADDRESS.as_bytes())?
+            .ok_or_else(|| APIError::Adapter("Can't find this address".to_string()))?;
+
+        let account = Account::decode(raw_account).unwrap();
+        let storage_mpt_tree = MPTTrie::from_root(account.storage_root, Arc::clone(&self.trie_db))?;
+
+        Ok(storage_mpt_tree
+            .get(METADATA_ROOT_KEY.as_bytes())?
+            .map(|r| H256::from_slice(&r))
+            .unwrap_or_default())
     }
 }

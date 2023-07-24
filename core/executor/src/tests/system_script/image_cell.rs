@@ -41,11 +41,11 @@ fn test_update_first(backend: &mut MemoryBackend, executor: &ImageCellContract) 
     let r = exec(backend, executor, data.encode());
     assert!(r.exit_reason.is_succeed());
 
-    check_root(backend, executor);
     check_nonce(backend, 1);
 
+    let root = backend.storage(CkbLightClientContract::ADDRESS, *HEADER_CELL_ROOT_KEY);
     let cell_key = CellKey::new([7u8; 32], 0x0);
-    let get_cell = executor.get_cell(&cell_key).unwrap().unwrap();
+    let get_cell = executor.get_cell(root, &cell_key).unwrap().unwrap();
     check_cell(&get_cell, 0x1, None);
 }
 
@@ -64,11 +64,11 @@ fn test_update_second(backend: &mut MemoryBackend, executor: &ImageCellContract)
     let r = exec(backend, executor, data.encode());
     assert!(r.exit_reason.is_succeed());
 
-    check_root(backend, executor);
     check_nonce(backend, 2);
 
+    let root = backend.storage(CkbLightClientContract::ADDRESS, *HEADER_CELL_ROOT_KEY);
     let cell_key = CellKey::new([7u8; 32], 0x0);
-    let get_cell = executor.get_cell(&cell_key).unwrap().unwrap();
+    let get_cell = executor.get_cell(root, &cell_key).unwrap().unwrap();
     check_cell(&get_cell, 0x1, Some(0x2));
 }
 
@@ -86,10 +86,9 @@ fn test_rollback_first(backend: &mut MemoryBackend, executor: &ImageCellContract
     let r = exec(backend, executor, data.encode());
     assert!(r.exit_reason.is_succeed());
 
-    check_root(backend, executor);
-
+    let root = backend.storage(CkbLightClientContract::ADDRESS, *HEADER_CELL_ROOT_KEY);
     let cell_key = CellKey::new([7u8; 32], 0x0);
-    let get_cell = executor.get_cell(&cell_key).unwrap().unwrap();
+    let get_cell = executor.get_cell(root, &cell_key).unwrap().unwrap();
     check_cell(&get_cell, 0x1, None);
 }
 
@@ -107,10 +106,9 @@ fn test_rollback_second(backend: &mut MemoryBackend, executor: &ImageCellContrac
     let r = exec(backend, executor, data.encode());
     assert!(r.exit_reason.is_succeed());
 
-    check_root(backend, executor);
-
+    let root = backend.storage(CkbLightClientContract::ADDRESS, *HEADER_CELL_ROOT_KEY);
     let cell_key = CellKey::new([7u8; 32], 0x0);
-    let get_cell = executor.get_cell(&cell_key).unwrap();
+    let get_cell = executor.get_cell(root, &cell_key).unwrap();
     assert!(get_cell.is_none());
 }
 
@@ -129,14 +127,6 @@ fn exec(backend: &mut MemoryBackend, executor: &ImageCellContract, data: Vec<u8>
     let addr = H160::from_str("0xf000000000000000000000000000000000000000").unwrap();
     let tx = gen_tx(addr, ImageCellContract::ADDRESS, 1000, data);
     executor.exec_(backend, &tx)
-}
-
-fn check_root(backend: &MemoryBackend, executor: &ImageCellContract) {
-    let account = backend.state().get(&ImageCellContract::ADDRESS).unwrap();
-    assert_eq!(
-        &executor.get_root(),
-        account.storage.get(&HEADER_CELL_ROOT_KEY).unwrap(),
-    );
 }
 
 fn check_cell(get_cell: &CellInfo, created_number: u64, consumed_number: Option<u64>) {

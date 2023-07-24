@@ -20,14 +20,16 @@ use protocol::types::{
     SignatureR, SignatureS, SignedTransaction, H160, U256,
 };
 use protocol::{
-    async_trait, codec::ProtocolCodec, lazy::CURRENT_STATE_ROOT, tokio, trie, Display,
-    ProtocolError, ProtocolErrorKind, ProtocolResult,
+    async_trait, codec::ProtocolCodec, tokio, trie, Display, ProtocolError, ProtocolErrorKind,
+    ProtocolResult,
 };
 
 use common_apm_derive::trace_span;
 use common_crypto::{Crypto, Secp256k1Recoverable};
-use core_executor::system_contract::{metadata::MetadataHandle, DataProvider};
-use core_executor::{is_call_system_script, AxonExecutorAdapter};
+use core_executor::{
+    is_call_system_script, AxonExecutorAdapter, DataProvider, MetadataHandle, HEADER_CELL_ROOT_KEY,
+    IMAGE_CELL_CONTRACT_ADDRESS, METADATA_CONTRACT_ADDRESS, METADATA_ROOT_KEY,
+};
 use core_interoperation::InteroperationImpl;
 
 use crate::adapter::message::{MsgPullTxs, END_GOSSIP_NEW_TXS, RPC_PULL_TXS};
@@ -115,10 +117,9 @@ impl IntervalTxsBroadcaster {
 }
 
 pub struct DefaultMemPoolAdapter<C, N, S, DB, I> {
-    network:  N,
-    storage:  Arc<S>,
-    trie_db:  Arc<DB>,
-    metadata: Arc<MetadataHandle>,
+    network: N,
+    storage: Arc<S>,
+    trie_db: Arc<DB>,
 
     addr_nonce:  DashMap<H160, (U256, U256)>,
     gas_limit:   AtomicU64,
@@ -144,7 +145,6 @@ where
         network: N,
         storage: Arc<S>,
         trie_db: Arc<DB>,
-        metadata: Arc<MetadataHandle>,
         chain_id: u64,
         gas_limit: u64,
         max_tx_size: usize,
@@ -166,7 +166,6 @@ where
             network,
             storage,
             trie_db,
-            metadata,
 
             addr_nonce: DashMap::new(),
             gas_limit: AtomicU64::new(gas_limit),
@@ -188,8 +187,10 @@ where
     ) -> ProtocolResult<U256> {
         let addr = &stx.sender;
         let block = self.storage.get_latest_block(ctx.clone()).await?;
+        let backend = self.executor_backend(ctx).await?;
+        let root = backend.storage(METADATA_CONTRACT_ADDRESS, *METADATA_ROOT_KEY);
 
-        if self.metadata.is_validator(block.header.number + 1, *addr)? {
+        if MetadataHandle::new(root).is_validator(block.header.number + 1, *addr)? {
             return Ok(U256::zero());
         }
 
@@ -274,7 +275,7 @@ where
         Ok(())
     }
 
-    fn verify_signature(&self, stx: &SignedTransaction) -> ProtocolResult<()> {
+    async fn verify_signature(&self, ctx: Context, stx: &SignedTransaction) -> ProtocolResult<()> {
         let signature = stx.transaction.signature.clone().unwrap();
         if signature.is_eth_sig() {
             // Verify secp256k1 signature
@@ -288,6 +289,9 @@ where
             return Ok(());
         }
 
+        let backend = self.executor_backend(ctx).await?;
+        let root = backend.storage(IMAGE_CELL_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY);
+
         // Verify interoperation signature
         match signature.r[0] {
             0u8 => {
@@ -297,7 +301,7 @@ where
 
                 InteroperationImpl::call_ckb_vm(
                     Default::default(),
-                    &DataProvider::default(),
+                    &DataProvider::new(root),
                     r.cell_dep,
                     &[r.pub_key, signature.s],
                     u64::MAX,
@@ -318,7 +322,7 @@ where
 
                 InteroperationImpl::verify_by_ckb_vm(
                     Default::default(),
-                    &DataProvider::default(),
+                    &DataProvider::new(root),
                     &InteroperationImpl::dummy_transaction(
                         r.clone(),
                         s,
@@ -331,6 +335,16 @@ where
             }
         }
         Ok(())
+    }
+
+    async fn executor_backend(&self, ctx: Context) -> ProtocolResult<AxonExecutorAdapter<S, DB>> {
+        let current_state_root = self.storage.get_latest_block_header(ctx).await?.state_root;
+        AxonExecutorAdapter::from_root(
+            current_state_root,
+            Arc::clone(&self.trie_db),
+            Arc::clone(&self.storage),
+            Default::default(),
+        )
     }
 }
 
@@ -413,13 +427,7 @@ where
             }
         }
 
-        let backend = AxonExecutorAdapter::from_root(
-            **CURRENT_STATE_ROOT.load(),
-            Arc::clone(&self.trie_db),
-            Arc::clone(&self.storage),
-            Default::default(),
-        )?;
-
+        let backend = self.executor_backend(ctx).await?;
         let account = backend.basic(*addr);
         self.addr_nonce
             .insert(*addr, (account.nonce, account.balance));
@@ -456,8 +464,8 @@ where
         self.verify_chain_id(ctx.clone(), stx)?;
         self.verify_tx_size(ctx.clone(), stx)?;
         self.verify_gas_price(stx)?;
-        self.verify_gas_limit(ctx, stx)?;
-        self.verify_signature(stx)?;
+        self.verify_gas_limit(ctx.clone(), stx)?;
+        self.verify_signature(ctx, stx).await?;
 
         Ok(())
     }

@@ -2,15 +2,20 @@ mod error;
 mod native_token;
 mod utils;
 
-pub mod ckb_light_client;
-pub mod image_cell;
+pub(crate) mod ckb_light_client;
+pub(crate) mod image_cell;
 pub mod metadata;
 
-pub use crate::system_contract::ckb_light_client::CkbLightClientContract;
-pub use crate::system_contract::image_cell::ImageCellContract;
-use crate::system_contract::metadata::handle::BLOCK_PERIOD_METADATA_ROOT;
-pub use crate::system_contract::metadata::{check_ckb_related_info_exist, MetadataContract};
-pub use crate::system_contract::native_token::NativeTokenContract;
+pub use crate::system_contract::ckb_light_client::{
+    CkbLightClientContract, CKB_LIGHT_CLIENT_CONTRACT_ADDRESS,
+};
+pub use crate::system_contract::image_cell::{ImageCellContract, IMAGE_CELL_CONTRACT_ADDRESS};
+pub use crate::system_contract::metadata::{
+    check_ckb_related_info_exist, MetadataContract, METADATA_CONTRACT_ADDRESS,
+};
+pub use crate::system_contract::native_token::{
+    NativeTokenContract, NATIVE_TOKEN_CONTRACT_ADDRESS,
+};
 
 use std::path::Path;
 use std::sync::Arc;
@@ -26,7 +31,6 @@ use protocol::types::{Bytes, Hasher, SignedTransaction, TxResp, H160, H256};
 use protocol::{ckb_blake2b_256, traits::ExecutorAdapter};
 
 use crate::adapter::RocksTrieDB;
-use crate::system_contract::ckb_light_client::BLOCK_PERIOD_UPDATED_HEADER_CELL_ROOT;
 use crate::system_contract::image_cell::utils::always_success_script_deploy_cell;
 use crate::system_contract::utils::generate_mpt_root_changes;
 
@@ -80,10 +84,8 @@ pub fn init<P: AsRef<Path>, Adapter: ExecutorAdapter>(
     path: P,
     config: ConfigRocksDB,
     adapter: &mut Adapter,
-) {
-    // Init metadata root for consensus and mempool module.
+) -> (H256, H256) {
     let current_metadata_root = adapter.storage(MetadataContract::ADDRESS, *METADATA_ROOT_KEY);
-    BLOCK_PERIOD_METADATA_ROOT.store(Arc::new(current_metadata_root));
 
     // Init metadata db.
     let metadata_db_path = path.as_ref().join("metadata");
@@ -112,14 +114,13 @@ pub fn init<P: AsRef<Path>, Adapter: ExecutorAdapter>(
     if current_cell_root.is_zero() {
         // todo need refactoring
         ImageCellContract::default()
-            .save_cells(vec![always_success_script_deploy_cell()], 0)
+            .save_cells(H256::zero(), vec![always_success_script_deploy_cell()], 0)
             .unwrap();
         let changes = generate_mpt_root_changes(adapter, ImageCellContract::ADDRESS);
-        return adapter.apply(changes, vec![], false);
+        adapter.apply(changes, vec![], false);
     }
 
-    // Init CKB header and cell root for interoperation module.
-    BLOCK_PERIOD_UPDATED_HEADER_CELL_ROOT.store(Arc::new(current_cell_root));
+    (current_metadata_root, current_cell_root)
 }
 
 pub fn before_block_hook<Adapter: ExecutorAdapter>(adapter: &mut Adapter) {
@@ -156,13 +157,15 @@ pub fn system_contract_dispatch<Adapter: ExecutorAdapter>(
     None
 }
 
-#[derive(Default, Clone, Debug)]
-pub struct DataProvider;
+#[derive(Clone, Debug)]
+pub struct DataProvider {
+    root: H256,
+}
 
 impl CellProvider for DataProvider {
     fn cell(&self, out_point: &packed::OutPoint, _eager_load: bool) -> CellStatus {
         if let Some(c) = ImageCellContract::default()
-            .get_cell(&(out_point).into())
+            .get_cell(self.root, &(out_point).into())
             .ok()
             .flatten()
         {
@@ -176,7 +179,7 @@ impl CellProvider for DataProvider {
 impl CellDataProvider for DataProvider {
     fn get_cell_data(&self, out_point: &packed::OutPoint) -> Option<Bytes> {
         ImageCellContract::default()
-            .get_cell(&(out_point.into()))
+            .get_cell(self.root, &(out_point.into()))
             .ok()
             .flatten()
             .map(|info| info.cell_data)
@@ -197,7 +200,7 @@ impl HeaderProvider for DataProvider {
     fn get_header(&self, hash: &packed::Byte32) -> Option<HeaderView> {
         let block_hash = hash.unpack();
         CkbLightClientContract::default()
-            .get_header_by_block_hash(&H256(block_hash.0))
+            .get_header_by_block_hash(self.root, &H256(block_hash.0))
             .ok()
             .flatten()
             .map(|h| {
@@ -215,5 +218,11 @@ impl HeaderProvider for DataProvider {
                     .nonce(h.nonce.pack())
                     .build()
             })
+    }
+}
+
+impl DataProvider {
+    pub fn new(root: H256) -> Self {
+        DataProvider { root }
     }
 }

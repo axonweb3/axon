@@ -8,6 +8,7 @@ use protocol::types::{CellDep, H160, H256};
 use core_interoperation::{cycle_to_gas, gas_to_cycle, InteroperationImpl};
 
 use crate::precompiles::{axon_precompile_address, PrecompileContract};
+use crate::CURRENT_HEADER_CELL_ROOT;
 use crate::{err, system_contract::DataProvider};
 
 macro_rules! try_rlp {
@@ -33,7 +34,7 @@ impl PrecompileContract for CkbVM {
             let rlp = Rlp::new(input);
             let res = <InteroperationImpl as Interoperation>::call_ckb_vm(
                 Default::default(),
-                &DataProvider::default(),
+                &DataProvider::new(CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow())),
                 get_cell_dep(&rlp)?,
                 &try_rlp!(rlp, list_at, 3),
                 gas_to_cycle(gas),
