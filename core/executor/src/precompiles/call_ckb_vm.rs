@@ -1,21 +1,17 @@
+use ethers::contract::{EthAbiCodec, EthAbiType};
+use ethers::{abi::AbiDecode, core::types::Bytes as EthBytes};
 use evm::executor::stack::{PrecompileFailure, PrecompileOutput};
 use evm::{Context, ExitError, ExitSucceed};
-use rlp::Rlp;
 
 use protocol::traits::Interoperation;
-use protocol::types::{CellDep, H160, H256};
+use protocol::types::{Bytes, H160};
 
 use core_interoperation::{cycle_to_gas, gas_to_cycle, InteroperationImpl};
 
 use crate::precompiles::{axon_precompile_address, PrecompileContract};
 use crate::CURRENT_HEADER_CELL_ROOT;
+use crate::system_contract::image_cell::image_cell_abi::OutPoint;
 use crate::{err, system_contract::DataProvider};
-
-macro_rules! try_rlp {
-    ($rlp_: expr, $func: ident, $pos: expr) => {{
-        $rlp_.$func($pos).map_err(|e| err!(_, e.to_string()))?
-    }};
-}
 
 #[derive(Default, Clone)]
 pub struct CkbVM;
@@ -31,12 +27,12 @@ impl PrecompileContract for CkbVM {
         _is_static: bool,
     ) -> Result<(PrecompileOutput, u64), PrecompileFailure> {
         if let Some(gas) = gas_limit {
-            let rlp = Rlp::new(input);
+            let (cell_dep, args) = parse_input(input)?;
             let res = <InteroperationImpl as Interoperation>::call_ckb_vm(
                 Default::default(),
                 &DataProvider::new(CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow())),
-                get_cell_dep(&rlp)?,
-                &try_rlp!(rlp, list_at, 3),
+                cell_dep.into(),
+                &args,
                 gas_to_cycle(gas),
             )
             .map_err(|e| err!(_, e.to_string()))?;
@@ -58,14 +54,34 @@ impl PrecompileContract for CkbVM {
     }
 }
 
-fn get_cell_dep(rlp: &Rlp) -> Result<CellDep, PrecompileFailure> {
-    let tx_hash: H256 = try_rlp!(rlp, val_at, 0);
-    let index: u32 = try_rlp!(rlp, val_at, 1);
-    let dep_type: u8 = try_rlp!(rlp, val_at, 2);
+fn parse_input(input: &[u8]) -> Result<(CellDep, Vec<Bytes>), PrecompileFailure> {
+    let payload =
+        <CallCkbVmPayload as AbiDecode>::decode(input).map_err(|_| err!(_, "decode input"))?;
 
-    Ok(CellDep {
-        tx_hash,
-        index,
-        dep_type,
-    })
+    Ok((
+        payload.cell,
+        payload.inputs.into_iter().map(|i| i.0).collect(),
+    ))
+}
+
+#[derive(EthAbiType, EthAbiCodec, Default, Clone, Debug, PartialEq, Eq)]
+pub struct CallCkbVmPayload {
+    pub cell:   CellDep,
+    pub inputs: Vec<EthBytes>,
+}
+
+#[derive(EthAbiType, EthAbiCodec, Clone, Default, Debug, PartialEq, Eq)]
+pub struct CellDep {
+    pub out_point: OutPoint,
+    pub dep_type:  u8,
+}
+
+impl From<CellDep> for protocol::types::CellDep {
+    fn from(v: CellDep) -> Self {
+        Self {
+            tx_hash:  v.out_point.tx_hash.into(),
+            index:    v.out_point.index,
+            dep_type: v.dep_type,
+        }
+    }
 }
