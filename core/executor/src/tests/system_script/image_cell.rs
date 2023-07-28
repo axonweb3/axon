@@ -10,6 +10,7 @@ use protocol::types::{Backend, MemoryBackend, TxResp, H160, U256};
 use crate::system_contract::image_cell::{image_cell_abi, CellInfo, CellKey, ImageCellContract};
 use crate::system_contract::{init, CkbLightClientContract, SystemContract, HEADER_CELL_ROOT_KEY};
 use crate::tests::{gen_tx, gen_vicinity};
+use crate::{CURRENT_HEADER_CELL_ROOT, CURRENT_METADATA_ROOT};
 
 static ROCKSDB_PATH: &str = "./free-space/system-contract/image-cell";
 
@@ -18,7 +19,10 @@ pub fn test_write_functions() {
     let mut backend = MemoryBackend::new(&vicinity, BTreeMap::new());
 
     let executor = ImageCellContract::default();
-    init(ROCKSDB_PATH, ConfigRocksDB::default(), &mut backend);
+    let (m_root, h_root) = init(ROCKSDB_PATH, ConfigRocksDB::default(), &mut backend);
+
+    CURRENT_METADATA_ROOT.with(|r| *r.borrow_mut() = m_root);
+    CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow_mut() = h_root);
 
     test_update_first(&mut backend, &executor);
     test_update_second(&mut backend, &executor);

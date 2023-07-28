@@ -16,20 +16,23 @@ pub struct MetadataStore {
 
 impl MetadataStore {
     pub fn new(root: H256) -> ProtocolResult<Self> {
-        let trie_db = match METADATA_DB.get() {
-            Some(db) => db,
-            None => return Err(SystemScriptError::TrieDbNotInit.into()),
+        let trie_db = {
+            let lock = METADATA_DB.read().clone();
+            match lock {
+                Some(db) => db,
+                None => return Err(SystemScriptError::TrieDbNotInit.into()),
+            }
         };
 
         let trie = if root == H256::default() {
-            let mut m = MPTTrie::new(Arc::clone(trie_db));
+            let mut m = MPTTrie::new(Arc::clone(&trie_db));
             m.insert(
                 EPOCH_SEGMENT_KEY.as_bytes(),
                 &EpochSegment::new().as_bytes(),
             )?;
             m
         } else {
-            match MPTTrie::from_root(root, Arc::clone(trie_db)) {
+            match MPTTrie::from_root(root, Arc::clone(&trie_db)) {
                 Ok(m) => m,
                 Err(e) => return Err(SystemScriptError::RestoreMpt(e.to_string()).into()),
             }

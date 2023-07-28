@@ -15,15 +15,18 @@ pub struct CkbLightClientStore {
 
 impl CkbLightClientStore {
     pub fn new(root: H256) -> ProtocolResult<Self> {
-        let trie_db = match HEADER_CELL_DB.get() {
-            Some(db) => db,
-            None => return Err(SystemScriptError::TrieDbNotInit.into()),
+        let trie_db = {
+            let lock = HEADER_CELL_DB.read();
+            match lock.clone() {
+                Some(db) => db,
+                None => return Err(SystemScriptError::TrieDbNotInit.into()),
+            }
         };
 
         let trie = if root == H256::default() {
-            MPTTrie::new(Arc::clone(trie_db))
+            MPTTrie::new(Arc::clone(&trie_db))
         } else {
-            match MPTTrie::from_root(root, Arc::clone(trie_db)) {
+            match MPTTrie::from_root(root, Arc::clone(&trie_db)) {
                 Ok(m) => m,
                 Err(e) => return Err(SystemScriptError::RestoreMpt(e.to_string()).into()),
             }

@@ -19,12 +19,12 @@ pub use crate::system_contract::native_token::{
 
 use std::path::Path;
 use std::sync::Arc;
-use std::sync::OnceLock;
 
 use ckb_traits::{CellDataProvider, HeaderProvider};
 use ckb_types::core::cell::{CellProvider, CellStatus};
 use ckb_types::core::{HeaderBuilder, HeaderView};
 use ckb_types::{packed, prelude::*};
+use parking_lot::RwLock;
 
 use common_config_parser::types::ConfigRocksDB;
 use protocol::types::{Bytes, Hasher, SignedTransaction, TxResp, H160, H256};
@@ -43,14 +43,11 @@ pub const fn system_contract_address(addr: u8) -> H160 {
 const HEADER_CELL_DB_CACHE_SIZE: usize = 200;
 const METADATA_DB_CACHE_SIZE: usize = 10;
 
-/// System contract init section. It needs to initialize two databases, one for
-/// Metadata and one for CkbLightClient&ImageCell
-static HEADER_CELL_DB: OnceLock<Arc<RocksTrieDB>> = OnceLock::new();
-static METADATA_DB: OnceLock<Arc<RocksTrieDB>> = OnceLock::new();
-
 lazy_static::lazy_static! {
     pub static ref HEADER_CELL_ROOT_KEY: H256 = Hasher::digest("header_cell_mpt_root");
     pub static ref METADATA_ROOT_KEY: H256 = Hasher::digest("metadata_root");
+    pub(crate) static ref METADATA_DB: RwLock<Option<Arc<RocksTrieDB>>> = RwLock::new(None);
+    pub(crate) static ref HEADER_CELL_DB: RwLock<Option<Arc<RocksTrieDB>>> = RwLock::new(None);
 }
 
 #[macro_export]
@@ -80,6 +77,20 @@ pub trait SystemContract {
     fn after_block_hook<Adapter: ExecutorAdapter>(&self, _adapter: &mut Adapter) {}
 }
 
+pub fn swap_metadata_db(new_db: Arc<RocksTrieDB>) -> Arc<RocksTrieDB> {
+    METADATA_DB
+        .write()
+        .replace(new_db)
+        .unwrap_or_else(|| panic!("metadata db is not initialized"))
+}
+
+pub fn swap_header_cell_db(new_db: Arc<RocksTrieDB>) -> Arc<RocksTrieDB> {
+    HEADER_CELL_DB
+        .write()
+        .replace(new_db)
+        .unwrap_or_else(|| panic!("header cell db is not initialized"))
+}
+
 pub fn init<P: AsRef<Path>, Adapter: ExecutorAdapter>(
     path: P,
     config: ConfigRocksDB,
@@ -89,25 +100,22 @@ pub fn init<P: AsRef<Path>, Adapter: ExecutorAdapter>(
 
     // Init metadata db.
     let metadata_db_path = path.as_ref().join("metadata");
-    METADATA_DB.get_or_init(|| {
-        Arc::new(
+    {
+        let mut db = METADATA_DB.write();
+        db.replace(Arc::new(
             RocksTrieDB::new(metadata_db_path, config.clone(), METADATA_DB_CACHE_SIZE)
                 .expect("[system contract] metadata new rocksdb error"),
-        )
-    });
+        ));
+    }
 
-    // Init header cell db.
     let header_cell_db_path = path.as_ref().join("header_cell");
-    HEADER_CELL_DB.get_or_init(|| {
-        Arc::new(
-            RocksTrieDB::new(
-                header_cell_db_path,
-                config.clone(),
-                HEADER_CELL_DB_CACHE_SIZE,
-            )
-            .expect("[system contract] header&cell new rocksdb error"),
-        )
-    });
+    {
+        let mut db = HEADER_CELL_DB.write();
+        db.replace(Arc::new(
+            RocksTrieDB::new(header_cell_db_path, config, HEADER_CELL_DB_CACHE_SIZE)
+                .expect("[system contract] header&cell new rocksdb error"),
+        ));
+    }
 
     let current_cell_root = adapter.storage(CkbLightClientContract::ADDRESS, *HEADER_CELL_ROOT_KEY);
 
