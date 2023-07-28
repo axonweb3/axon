@@ -88,7 +88,7 @@ impl VerifyByCkbPayload {
     }
 
     pub fn header_deps(&self) -> Vec<H256> {
-        self.header_deps.iter().map(|h| h.into()).collect()
+        self.header_deps.iter().map(Into::into).collect()
     }
 
     pub fn inputs(&self) -> Vec<protocol::types::OutPoint> {
