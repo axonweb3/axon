@@ -519,9 +519,9 @@
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
 "@chainsafe/dappeteer@^5":
-  version "5.0.1"
-  resolved "https://registry.yarnpkg.com/@chainsafe/dappeteer/-/dappeteer-5.0.1.tgz#7274a2b70e60613704c9f3ea14227a51f360fcf0"
-  integrity sha512-A1j0l+/dhH5REqhBiSLsLuAKqExgonO9nKh+pUhJmTjhJtvXoxo+1vbNxE9URp2eIPOF2ndAgGfBhIzuPSGdHw==
+  version "5.2.0"
+  resolved "https://registry.yarnpkg.com/@chainsafe/dappeteer/-/dappeteer-5.2.0.tgz#4d13051fbcf3e0f0477642a92592bbad7035e656"
+  integrity sha512-JOJxhn47YDQobJf+i8L1ZXJguApF4iIngiixdJtGXVW8Q956WsHmf0bSR7Lxf0lJ2TvQ7B4s3b29g/FR6ycHpw==
   dependencies:
     "@metamask/providers" "^9.1.0"
     fs-extra "^11.1.0"
@@ -598,7 +598,7 @@
     "@ethereumjs/common" "^2.5.0"
     ethereumjs-util "^7.1.2"
 
-"@ethereumjs/tx@^4.2.0":
+"@ethereumjs/tx@^4.1.1":
   version "4.2.0"
   resolved "https://registry.yarnpkg.com/@ethereumjs/tx/-/tx-4.2.0.tgz#5988ae15daf5a3b3c815493bc6b495e76009e853"
   integrity sha512-1nc6VO4jtFd172BbSnTnDQVr9IYBFl1y4xPzZdtkrkKIncBCkdbgfdRV+MiTkJYAtTxvV12GRZLqBFT1PNK6Yw==
