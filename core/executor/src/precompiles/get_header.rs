@@ -5,7 +5,7 @@ use evm::{Context, ExitError, ExitSucceed};
 use protocol::types::{H160, H256};
 
 use crate::precompiles::{axon_precompile_address, PrecompileContract};
-use crate::{err, system_contract::CkbLightClientContract};
+use crate::{err, system_contract::CkbLightClientContract, CURRENT_HEADER_CELL_ROOT};
 
 #[derive(Default, Clone)]
 pub struct GetHeader;
@@ -30,8 +30,9 @@ impl PrecompileContract for GetHeader {
         let block_hash =
             H256(<[u8; 32] as AbiDecode>::decode(input).map_err(|_| err!(_, "decode input"))?);
 
+        let root = CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow());
         let raw = CkbLightClientContract::default()
-            .get_raw(&block_hash.0)
+            .get_raw(root, &block_hash.0)
             .map_err(|_| err!(_, "get header"))?;
 
         Ok((

@@ -10,10 +10,12 @@ mod tests;
 mod utils;
 
 pub use crate::adapter::{AxonExecutorAdapter, MPTTrie, RocksTrieDB};
+pub use crate::system_contract::{metadata::MetadataHandle, DataProvider};
 pub use crate::utils::{
     code_address, decode_revert_msg, logs_bloom, DefaultFeeAllocator, FeeInlet,
 };
 
+use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::iter::FromIterator;
 
@@ -26,17 +28,25 @@ use protocol::codec::ProtocolCodec;
 use protocol::traits::{Backend, Executor, ExecutorAdapter};
 use protocol::types::{
     data_gas_cost, Account, Config, ExecResp, Hasher, SignedTransaction, TransactionAction, TxResp,
-    ValidatorExtend, GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160, NIL_DATA, RLP_NULL, U256,
+    ValidatorExtend, GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160, H256, NIL_DATA, RLP_NULL,
+    U256,
 };
 
 use crate::precompiles::build_precompile_set;
 use crate::system_contract::{
     after_block_hook, before_block_hook, system_contract_dispatch, CkbLightClientContract,
     ImageCellContract, MetadataContract, NativeTokenContract, SystemContract,
+    CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, HEADER_CELL_ROOT_KEY, METADATA_CONTRACT_ADDRESS,
+    METADATA_ROOT_KEY,
 };
 
 lazy_static::lazy_static! {
     pub static ref FEE_ALLOCATOR: ArcSwap<Box<dyn FeeAllocate>> = ArcSwap::from_pointee(Box::new(DefaultFeeAllocator::default()));
+}
+
+thread_local! {
+    pub(crate) static CURRENT_HEADER_CELL_ROOT: RefCell<H256> = RefCell::new(H256::default());
+    pub(crate) static CURRENT_METADATA_ROOT: RefCell<H256> = RefCell::new(H256::default());
 }
 
 pub trait FeeAllocate: Sync + Send {
@@ -130,6 +140,8 @@ impl Executor for AxonExecutor {
         let precompiles = build_precompile_set();
         let config = Config::london();
 
+        self.init_local_system_contract_roots(adapter);
+
         // Execute system contracts before block hook.
         before_block_hook(adapter);
 
@@ -171,6 +183,8 @@ impl Executor for AxonExecutor {
 
         // commit changes by all txs included in this block only once
         let new_state_root = adapter.commit();
+
+        // self.update_system_contract_roots_for_external_module();
 
         ExecResp {
             state_root:   new_state_root,
@@ -291,6 +305,20 @@ impl AxonExecutor {
             code_address: code_addr,
             removed:      false,
         }
+    }
+
+    /// The `exec()` function is run in `tokio::task::block_in_place()` and all
+    /// the read or write operations are in the scope of exec function. The
+    /// thread context is not switched during exec function.
+    fn init_local_system_contract_roots<Adapter: ExecutorAdapter>(&self, adapter: &mut Adapter) {
+        CURRENT_HEADER_CELL_ROOT.with(|root| {
+            *root.borrow_mut() =
+                adapter.storage(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY);
+        });
+
+        CURRENT_METADATA_ROOT.with(|root| {
+            *root.borrow_mut() = adapter.storage(METADATA_CONTRACT_ADDRESS, *METADATA_ROOT_KEY);
+        });
     }
 
     #[cfg(test)]

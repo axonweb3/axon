@@ -1,5 +1,5 @@
 mod abi;
-mod handle;
+pub(crate) mod handle;
 mod segment;
 mod store;
 
@@ -16,14 +16,15 @@ use parking_lot::RwLock;
 use protocol::traits::ExecutorAdapter;
 use protocol::types::{Hasher, Metadata, SignedTransaction, TxResp, H160, H256};
 
-use crate::exec_try;
 use crate::system_contract::utils::{
     generate_mpt_root_changes, revert_resp, succeed_resp, update_states,
 };
-use crate::system_contract::{system_contract_address, SystemContract, CURRENT_METADATA_ROOT};
+use crate::system_contract::{system_contract_address, SystemContract};
+use crate::{exec_try, CURRENT_METADATA_ROOT};
 
 type Epoch = u64;
 
+pub const METADATA_CONTRACT_ADDRESS: H160 = system_contract_address(0x1);
 const METADATA_CACHE_SIZE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(10) };
 
 lazy_static::lazy_static! {
@@ -36,7 +37,7 @@ lazy_static::lazy_static! {
 pub struct MetadataContract;
 
 impl SystemContract for MetadataContract {
-    const ADDRESS: H160 = system_contract_address(0x1);
+    const ADDRESS: H160 = METADATA_CONTRACT_ADDRESS;
 
     fn exec_<Adapter: ExecutorAdapter>(
         &self,
@@ -48,15 +49,16 @@ impl SystemContract for MetadataContract {
         let tx_data = tx.data();
         let gas_limit = *tx.gas_limit();
         let block_number = adapter.block_number().as_u64();
+        let root = CURRENT_METADATA_ROOT.with(|r| *r.borrow());
 
         let mut store = exec_try!(
-            MetadataStore::new(),
+            MetadataStore::new(root),
             gas_limit,
             "[metadata] init metadata mpt"
         );
 
         if block_number != 0 {
-            let handle = MetadataHandle::default();
+            let handle = MetadataHandle::new(CURRENT_METADATA_ROOT.with(|r| *r.borrow()));
 
             if !exec_try!(
                 handle.is_validator(block_number, sender),
@@ -110,7 +112,8 @@ impl SystemContract for MetadataContract {
             return;
         }
 
-        if let Err(e) = MetadataStore::new()
+        let root = CURRENT_METADATA_ROOT.with(|r| *r.borrow());
+        if let Err(e) = MetadataStore::new(root)
             .unwrap()
             .update_propose_count(block_number.as_u64(), &adapter.origin())
         {
@@ -122,6 +125,6 @@ impl SystemContract for MetadataContract {
     }
 }
 
-pub fn check_ckb_related_info_exist() -> bool {
-    MetadataHandle::default().get_ckb_related_info().is_ok()
+pub fn check_ckb_related_info_exist(root: H256) -> bool {
+    MetadataHandle::new(root).get_ckb_related_info().is_ok()
 }

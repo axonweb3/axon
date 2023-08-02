@@ -15,16 +15,17 @@ use protocol::ProtocolResult;
 
 use crate::system_contract::image_cell::store::ImageCellStore;
 use crate::system_contract::utils::{succeed_resp, update_states};
-use crate::system_contract::{system_contract_address, SystemContract, CURRENT_HEADER_CELL_ROOT};
-use crate::{exec_try, MPTTrie};
+use crate::system_contract::{system_contract_address, SystemContract};
+use crate::{exec_try, MPTTrie, CURRENT_HEADER_CELL_ROOT};
 
+pub const IMAGE_CELL_CONTRACT_ADDRESS: H160 = system_contract_address(0x3);
 static ALLOW_READ: AtomicBool = AtomicBool::new(false);
 
 #[derive(Default)]
 pub struct ImageCellContract;
 
 impl SystemContract for ImageCellContract {
-    const ADDRESS: H160 = system_contract_address(0x3);
+    const ADDRESS: H160 = IMAGE_CELL_CONTRACT_ADDRESS;
 
     fn exec_<Adapter: ExecutorAdapter>(
         &self,
@@ -36,8 +37,9 @@ impl SystemContract for ImageCellContract {
         let tx_data = tx.data();
         let gas_limit = *tx.gas_limit();
 
+        let root = CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow());
         let mut store = exec_try!(
-            ImageCellStore::new(),
+            ImageCellStore::new(root),
             gas_limit,
             "[image cell] init image cell mpt"
         );
@@ -69,24 +71,26 @@ impl SystemContract for ImageCellContract {
     }
 }
 
+/// These methods are provide for interoperation module to get CKB cells.
 impl ImageCellContract {
-    pub fn get_root(&self) -> H256 {
-        **CURRENT_HEADER_CELL_ROOT.load()
-    }
-
-    pub fn get_cell(&self, key: &CellKey) -> ProtocolResult<Option<CellInfo>> {
-        ImageCellStore::new()?.get_cell(key)
+    pub fn get_cell(&self, root: H256, key: &CellKey) -> ProtocolResult<Option<CellInfo>> {
+        ImageCellStore::new(root)?.get_cell(key)
     }
 
     pub fn allow_read(&self) -> bool {
         ALLOW_READ.load(Ordering::Relaxed)
     }
+}
 
-    pub fn save_cells(
+impl ImageCellContract {
+    /// This method is only use in init. It insert the always success script
+    /// deployed cell.
+    pub(super) fn save_cells(
         &self,
+        root: H256,
         cells: Vec<image_cell_abi::CellInfo>,
         created_number: u64,
     ) -> ProtocolResult<()> {
-        ImageCellStore::new()?.save_cells(cells, created_number)
+        ImageCellStore::new(root)?.save_cells(cells, created_number)
     }
 }

@@ -1,6 +1,6 @@
 use crate::types::{
     Account, Block, BlockNumber, Bytes, CkbRelatedInfo, Hash, Header, Metadata, Proposal, Receipt,
-    SignedTransaction, TxResp, H160, U256,
+    SignedTransaction, TxResp, H160, H256, U256,
 };
 use crate::{async_trait, traits::Context, ProtocolResult};
 
@@ -99,4 +99,8 @@ pub trait APIAdapter: Send + Sync {
     ) -> ProtocolResult<Metadata>;
 
     async fn get_ckb_related_info(&self, ctx: Context) -> ProtocolResult<CkbRelatedInfo>;
+
+    async fn get_image_cell_root(&self, ctx: Context) -> ProtocolResult<H256>;
+
+    async fn get_metadata_root(&self, ctx: Context) -> ProtocolResult<H256>;
 }

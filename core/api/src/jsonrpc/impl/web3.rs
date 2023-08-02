@@ -190,6 +190,80 @@ impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
             reward,
         ))
     }
+
+    async fn extract_interoperation_tx_sender(
+        &self,
+        utx: &UnverifiedTransaction,
+        signature: &SignatureComponents,
+    ) -> RpcResult<H160> {
+        // Call CKB-VM mode
+        if signature.r[0] == 0 {
+            let r = rlp::decode::<CellDepWithPubKey>(&signature.r[1..])
+                .map_err(|e| Error::Custom(e.to_string()))?;
+
+            return Ok(Hasher::digest(&r.pub_key).into());
+        }
+
+        // Verify by CKB-VM mode
+        let r = SignatureR::decode(&signature.r).map_err(|e| Error::Custom(e.to_string()))?;
+        let s = SignatureS::decode(&signature.s).map_err(|e| Error::Custom(e.to_string()))?;
+        let address_source = r.address_source();
+
+        let ckb_tx_view =
+            InteroperationImpl::dummy_transaction(r.clone(), s, Some(utx.signature_hash(true).0));
+        let dummy_input = r.dummy_input();
+
+        let input = ckb_tx_view
+            .inputs()
+            .get(address_source.index as usize)
+            .ok_or(Error::Custom("Invalid address source".to_string()))?;
+
+        log::debug!("[mempool]: verify interoperation tx sender \ntx view \n{:?}\ndummy input\n {:?}\naddress source\n{:?}\n", ckb_tx_view, dummy_input, address_source);
+
+        // Dummy input mode
+        if is_dummy_out_point(&input.previous_output()) {
+            log::debug!("[mempool]: verify interoperation tx dummy input mode.");
+
+            if let Some(cell) = dummy_input {
+                if address_source.type_ == 1 && cell.type_script.is_none() {
+                    return Err(Error::Custom(
+                        "Invalid address source in dummy input mode".to_string(),
+                    ));
+                }
+
+                let script_hash = if address_source.type_ == 0 {
+                    cell.lock_script_hash()
+                } else {
+                    cell.type_script_hash().unwrap()
+                };
+
+                return Ok(Hasher::digest(script_hash).into());
+            }
+
+            return Err(Error::Custom("No dummy input cell".to_string()));
+        }
+
+        // Reality input mode
+        let root = self
+            .adapter
+            .get_image_cell_root(Context::new())
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+        match DataProvider::new(root).cell(&input.previous_output(), true) {
+            CellStatus::Live(cell) => {
+                let script_hash = if address_source.type_ == 0 {
+                    ckb_blake2b_256(cell.cell_output.lock().as_slice())
+                } else if let Some(type_script) = cell.cell_output.type_().to_opt() {
+                    ckb_blake2b_256(type_script.as_slice())
+                } else {
+                    return Err(Error::Custom("Invalid address source".to_string()));
+                };
+
+                Ok(Hasher::digest(script_hash).into())
+            }
+            _ => Err(Error::Custom("Cannot find input cell in ICSC".to_string())),
+        }
+    }
 }
 
 #[async_trait]
@@ -231,7 +305,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             if sig.is_eth_sig() {
                 None
             } else {
-                Some(extract_interoperation_tx_sender(&utx, sig)?)
+                Some(self.extract_interoperation_tx_sender(&utx, sig).await?)
             }
         } else {
             return Err(Error::Custom("The transaction is not signed".to_string()));
@@ -1159,73 +1233,5 @@ pub fn from_receipt_to_web3_log(
             };
             logs.push(web3_log);
         }
-    }
-}
-
-fn extract_interoperation_tx_sender(
-    utx: &UnverifiedTransaction,
-    signature: &SignatureComponents,
-) -> RpcResult<H160> {
-    // Call CKB-VM mode
-    if signature.r[0] == 0 {
-        let r = rlp::decode::<CellDepWithPubKey>(&signature.r[1..])
-            .map_err(|e| Error::Custom(e.to_string()))?;
-
-        return Ok(Hasher::digest(&r.pub_key).into());
-    }
-
-    // Verify by CKB-VM mode
-    let r = SignatureR::decode(&signature.r).map_err(|e| Error::Custom(e.to_string()))?;
-    let s = SignatureS::decode(&signature.s).map_err(|e| Error::Custom(e.to_string()))?;
-    let address_source = r.address_source();
-
-    let ckb_tx_view =
-        InteroperationImpl::dummy_transaction(r.clone(), s, Some(utx.signature_hash(true).0));
-    let dummy_input = r.dummy_input();
-
-    let input = ckb_tx_view
-        .inputs()
-        .get(address_source.index as usize)
-        .ok_or(Error::Custom("Invalid address source".to_string()))?;
-
-    log::debug!("[mempool]: verify interoperation tx sender \ntx view \n{:?}\ndummy input\n {:?}\naddress source\n{:?}\n", ckb_tx_view, dummy_input, address_source);
-
-    // Dummy input mode
-    if is_dummy_out_point(&input.previous_output()) {
-        log::debug!("[mempool]: verify interoperation tx dummy input mode.");
-
-        if let Some(cell) = dummy_input {
-            if address_source.type_ == 1 && cell.type_script.is_none() {
-                return Err(Error::Custom(
-                    "Invalid address source in dummy input mode".to_string(),
-                ));
-            }
-
-            let script_hash = if address_source.type_ == 0 {
-                cell.lock_script_hash()
-            } else {
-                cell.type_script_hash().unwrap()
-            };
-
-            return Ok(Hasher::digest(script_hash).into());
-        }
-
-        return Err(Error::Custom("No dummy input cell".to_string()));
-    }
-
-    // Reality input mode
-    match DataProvider.cell(&input.previous_output(), true) {
-        CellStatus::Live(cell) => {
-            let script_hash = if address_source.type_ == 0 {
-                ckb_blake2b_256(cell.cell_output.lock().as_slice())
-            } else if let Some(type_script) = cell.cell_output.type_().to_opt() {
-                ckb_blake2b_256(type_script.as_slice())
-            } else {
-                return Err(Error::Custom("Invalid address source".to_string()));
-            };
-
-            Ok(Hasher::digest(script_hash).into())
-        }
-        _ => Err(Error::Custom("Cannot find input cell in ICSC".to_string())),
     }
 }

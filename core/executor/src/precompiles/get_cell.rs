@@ -9,7 +9,7 @@ use protocol::types::{H160, H256};
 
 use crate::precompiles::{axon_precompile_address, PrecompileContract};
 use crate::system_contract::image_cell::{image_cell_abi, CellKey};
-use crate::{err, system_contract::image_cell::ImageCellContract};
+use crate::{err, system_contract::image_cell::ImageCellContract, CURRENT_HEADER_CELL_ROOT};
 
 #[derive(Default, Clone)]
 pub struct GetCell;
@@ -33,8 +33,9 @@ impl PrecompileContract for GetCell {
 
         let (tx_hash, index) = parse_input(input)?;
 
+        let root = CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow());
         let cell = ImageCellContract::default()
-            .get_cell(&CellKey { tx_hash, index })
+            .get_cell(root, &CellKey { tx_hash, index })
             .map_err(|_| err!(_, "get cell"))?
             .map(|c| Cell {
                 cell_output:     packed::CellOutput::new_unchecked(c.cell_output).into(),

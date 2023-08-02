@@ -60,11 +60,11 @@ fn test_update_first(backend: &mut MemoryBackend, executor: &CkbLightClientContr
     let r = exec(backend, executor, data.encode());
     assert!(r.exit_reason.is_succeed());
 
-    check_root(backend, executor);
     check_nonce(backend, 1);
 
+    let root = backend.storage(CkbLightClientContract::ADDRESS, *HEADER_CELL_ROOT_KEY);
     let queried_header = executor
-        .get_header_by_block_hash(&H256::default())
+        .get_header_by_block_hash(root, &H256::default())
         .unwrap()
         .unwrap();
 
@@ -80,11 +80,11 @@ fn test_update_second(backend: &mut MemoryBackend, executor: &CkbLightClientCont
     let r = exec(backend, executor, data.encode());
     assert!(r.exit_reason.is_succeed());
 
-    check_root(backend, executor);
     check_nonce(backend, 2);
 
+    let root = backend.storage(CkbLightClientContract::ADDRESS, *HEADER_CELL_ROOT_KEY);
     let queried_header = executor
-        .get_header_by_block_hash(&H256::from_slice(&header.block_hash))
+        .get_header_by_block_hash(root, &H256::from_slice(&header.block_hash))
         .unwrap()
         .unwrap();
 
@@ -99,10 +99,9 @@ fn test_roll_back_first(backend: &mut MemoryBackend, executor: &CkbLightClientCo
     let r = exec(backend, executor, data.encode());
     assert!(r.exit_reason.is_succeed());
 
-    check_root(backend, executor);
-
+    let root = backend.storage(CkbLightClientContract::ADDRESS, *HEADER_CELL_ROOT_KEY);
     let queried_header = executor
-        .get_header_by_block_hash(&H256::default())
+        .get_header_by_block_hash(root, &H256::default())
         .unwrap()
         .unwrap();
 
@@ -117,9 +116,10 @@ fn test_roll_back_second(backend: &mut MemoryBackend, executor: &CkbLightClientC
     let r = exec(backend, executor, data.encode());
     assert!(r.exit_reason.is_succeed());
 
-    check_root(backend, executor);
-
-    let queried_header = executor.get_header_by_block_hash(&H256::default()).unwrap();
+    let root = backend.storage(CkbLightClientContract::ADDRESS, *HEADER_CELL_ROOT_KEY);
+    let queried_header = executor
+        .get_header_by_block_hash(root, &H256::default())
+        .unwrap();
     assert!(queried_header.is_none());
 }
 
@@ -138,17 +138,6 @@ fn exec(backend: &mut MemoryBackend, executor: &CkbLightClientContract, data: Ve
     let addr = H160::from_str("0xf000000000000000000000000000000000000000").unwrap();
     let tx = gen_tx(addr, CkbLightClientContract::ADDRESS, 1000, data);
     executor.exec_(backend, &tx)
-}
-
-fn check_root(backend: &MemoryBackend, executor: &CkbLightClientContract) {
-    let account = backend
-        .state()
-        .get(&CkbLightClientContract::ADDRESS)
-        .unwrap();
-    assert_eq!(
-        &executor.get_root(),
-        account.storage.get(&HEADER_CELL_ROOT_KEY).unwrap(),
-    );
 }
 
 fn check_nonce(backend: &mut MemoryBackend, nonce: u64) {

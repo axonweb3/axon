@@ -5,33 +5,34 @@ use protocol::types::{CkbRelatedInfo, Metadata, H160, H256};
 use protocol::{codec::ProtocolCodec, ProtocolResult};
 
 use crate::system_contract::metadata::{
-    segment::EpochSegment, CKB_RELATED_INFO_KEY, CURRENT_METADATA_ROOT, EPOCH_SEGMENT_KEY,
+    segment::EpochSegment, CKB_RELATED_INFO_KEY, EPOCH_SEGMENT_KEY,
 };
 use crate::system_contract::{error::SystemScriptError, METADATA_DB};
-use crate::{adapter::RocksTrieDB, MPTTrie};
+use crate::{adapter::RocksTrieDB, MPTTrie, CURRENT_METADATA_ROOT};
 
 pub struct MetadataStore {
     pub trie: MPTTrie<RocksTrieDB>,
 }
 
 impl MetadataStore {
-    pub fn new() -> ProtocolResult<Self> {
-        let trie_db = match METADATA_DB.get() {
-            Some(db) => db,
-            None => return Err(SystemScriptError::TrieDbNotInit.into()),
+    pub fn new(root: H256) -> ProtocolResult<Self> {
+        let trie_db = {
+            let lock = METADATA_DB.read().clone();
+            match lock {
+                Some(db) => db,
+                None => return Err(SystemScriptError::TrieDbNotInit.into()),
+            }
         };
 
-        let root = **CURRENT_METADATA_ROOT.load();
-
         let trie = if root == H256::default() {
-            let mut m = MPTTrie::new(Arc::clone(trie_db));
+            let mut m = MPTTrie::new(Arc::clone(&trie_db));
             m.insert(
                 EPOCH_SEGMENT_KEY.as_bytes(),
                 &EpochSegment::new().as_bytes(),
             )?;
             m
         } else {
-            match MPTTrie::from_root(root, Arc::clone(trie_db)) {
+            match MPTTrie::from_root(root, Arc::clone(&trie_db)) {
                 Ok(m) => m,
                 Err(e) => return Err(SystemScriptError::RestoreMpt(e.to_string()).into()),
             }
@@ -83,7 +84,7 @@ impl MetadataStore {
         self.trie
             .insert(&metadata.epoch.to_be_bytes(), &metadata.encode()?)?;
         let new_root = self.trie.commit()?;
-        CURRENT_METADATA_ROOT.swap(Arc::new(new_root));
+        CURRENT_METADATA_ROOT.with(|r| *r.borrow_mut() = new_root);
 
         Ok(())
     }
@@ -105,7 +106,7 @@ impl MetadataStore {
         self.trie
             .insert(&metadata.epoch.to_be_bytes(), &metadata.encode()?)?;
         let new_root = self.trie.commit()?;
-        CURRENT_METADATA_ROOT.swap(Arc::new(new_root));
+        CURRENT_METADATA_ROOT.with(|r| *r.borrow_mut() = new_root);
 
         Ok(())
     }

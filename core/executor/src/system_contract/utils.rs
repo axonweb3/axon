@@ -6,8 +6,9 @@ use protocol::types::{
 
 use crate::system_contract::{
     CkbLightClientContract, ImageCellContract, MetadataContract, SystemContract,
-    CURRENT_HEADER_CELL_ROOT, CURRENT_METADATA_ROOT, HEADER_CELL_ROOT_KEY, METADATA_ROOT_KEY,
+    HEADER_CELL_ROOT_KEY, METADATA_ROOT_KEY,
 };
+use crate::{CURRENT_HEADER_CELL_ROOT, CURRENT_METADATA_ROOT};
 
 pub fn revert_resp(gas_limit: U256) -> TxResp {
     TxResp {
@@ -67,7 +68,8 @@ pub fn generate_mpt_root_changes<B: Backend + ApplyBackend>(
     if contract_address == CkbLightClientContract::ADDRESS
         || contract_address == ImageCellContract::ADDRESS
     {
-        let storage_changes = vec![(*HEADER_CELL_ROOT_KEY, **CURRENT_HEADER_CELL_ROOT.load())];
+        let current_header_cell_root = CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow());
+        let storage_changes = vec![(*HEADER_CELL_ROOT_KEY, current_header_cell_root)];
         vec![
             Apply::Modify {
                 address:       CkbLightClientContract::ADDRESS,
@@ -85,11 +87,12 @@ pub fn generate_mpt_root_changes<B: Backend + ApplyBackend>(
             },
         ]
     } else if contract_address == MetadataContract::ADDRESS {
+        let current_metadata_root = CURRENT_METADATA_ROOT.with(|r| *r.borrow());
         vec![Apply::Modify {
             address:       MetadataContract::ADDRESS,
             basic:         backend.basic(MetadataContract::ADDRESS),
             code:          None,
-            storage:       vec![(*METADATA_ROOT_KEY, **CURRENT_METADATA_ROOT.load())],
+            storage:       vec![(*METADATA_ROOT_KEY, current_metadata_root)],
             reset_storage: false,
         }]
     } else {

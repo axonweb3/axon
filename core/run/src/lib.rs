@@ -22,7 +22,7 @@ use common_crypto::{
 };
 
 use protocol::codec::{hex_decode, ProtocolCodec};
-use protocol::lazy::{CHAIN_ID, CURRENT_STATE_ROOT};
+use protocol::lazy::CHAIN_ID;
 #[cfg(unix)]
 use protocol::tokio::signal::unix as os_impl;
 use protocol::tokio::{
@@ -249,6 +249,8 @@ impl Axon {
         // Init Block db and get the current block
         let storage = self.init_storage();
         let current_block = storage.get_latest_block(Context::new()).await?;
+        let current_state_root = current_block.header.state_root;
+
         log::info!("At block number {}", current_block.header.number + 1);
 
         // Init network
@@ -266,30 +268,29 @@ impl Axon {
             .to_string();
         let txs_wal = Arc::new(SignedTxsWAL::new(txs_wal_path));
 
-        // Init system contract when the chain is not first initiated
-        if current_block.header.state_root != H256::default() {
+        // Init system contract
+        if current_block.header.number != 0 {
             self.init_system_contract(&trie_db, &current_block, &storage);
         }
-
-        // Init metadata handle which will be used in mempool
-        let metadata_handle = Arc::new(MetadataHandle::default());
 
         // Init mempool and recover signed transactions with the current block number
         let current_stxs = txs_wal.load_by_number(current_block.header.number + 1);
         log::info!("Recover {} txs from wal", current_stxs.len());
 
         let mempool = self
-            .init_mempool(
-                &trie_db,
-                &network_service.handle(),
-                &storage,
-                &metadata_handle,
-                &current_stxs,
-            )
+            .init_mempool(&trie_db, &network_service.handle(), &storage, &current_stxs)
             .await;
 
         // Get the validator list from current metadata for consensus initialization
-        let metadata = metadata_handle.get_metadata_by_block_number(current_block.header.number)?;
+        let metadata_root = AxonExecutorAdapter::from_root(
+            current_state_root,
+            Arc::clone(&trie_db),
+            Arc::clone(&storage),
+            Proposal::new_without_state_root(&self.genesis.block.header).into(),
+        )?
+        .get_metadata_root();
+        let metadata = MetadataHandle::new(metadata_root)
+            .get_metadata_by_block_number(current_block.header.number)?;
         let validators: Vec<Validator> = metadata
             .verifier_list
             .iter()
@@ -316,7 +317,6 @@ impl Axon {
             Arc::clone(&mempool),
             Arc::clone(&storage),
             Arc::clone(&trie_db),
-            Arc::clone(&metadata_handle),
             Arc::clone(&crypto),
         )?;
         let consensus_adapter = Arc::new(consensus_adapter);
@@ -441,7 +441,6 @@ impl Axon {
         trie_db: &Arc<DB>,
         network_service: &N,
         storage: &Arc<S>,
-        metadata_handle: &Arc<MetadataHandle>,
         signed_txs: &[SignedTransaction],
     ) -> Arc<MemPoolImpl<DefaultMemPoolAdapter<Secp256k1, N, S, DB, InteroperationImpl>>>
     where
@@ -453,7 +452,6 @@ impl Axon {
             network_service.clone(),
             Arc::clone(storage),
             Arc::clone(trie_db),
-            Arc::clone(metadata_handle),
             self.genesis.block.header.chain_id,
             self.genesis.block.header.gas_limit.as_u64(),
             self.config.mempool.pool_size as usize,
@@ -489,7 +487,7 @@ impl Axon {
         trie_db: &Arc<RocksTrieDB>,
         current_block: &Block,
         storage: &Arc<ImplStorage<RocksAdapter>>,
-    ) {
+    ) -> (H256, H256) {
         let path_system_contract = self.config.data_path_for_system_contract();
         let mut backend = AxonExecutorAdapter::from_root(
             current_block.header.state_root,
@@ -502,7 +500,7 @@ impl Axon {
             path_system_contract,
             self.config.rocksdb.clone(),
             &mut backend,
-        );
+        )
     }
 
     fn get_my_pubkey(&self, hex_privkey: Vec<u8>) -> Secp256k1PublicKey {
@@ -568,7 +566,6 @@ impl Axon {
             },
         };
 
-        CURRENT_STATE_ROOT.swap(Arc::new(current_consensus_status.last_state_root));
         CHAIN_ID.swap(Arc::new(header.chain_id));
 
         StatusAgent::new(current_consensus_status)

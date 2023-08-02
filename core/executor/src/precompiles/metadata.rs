@@ -4,7 +4,7 @@ use evm::{Context, ExitError, ExitSucceed};
 use protocol::types::H160;
 
 use crate::precompiles::{axon_precompile_address, PrecompileContract};
-use crate::{err, system_contract::metadata::MetadataHandle};
+use crate::{err, system_contract::metadata::MetadataHandle, CURRENT_METADATA_ROOT};
 
 const INPUT_LEN: usize = 1 + 8;
 
@@ -34,12 +34,13 @@ impl PrecompileContract for Metadata {
             }
 
             let (ty, number) = parse_input(input)?;
+            let root = CURRENT_METADATA_ROOT.with(|r| *r.borrow());
 
             let metadata = match ty {
-                0u8 => MetadataHandle::default()
+                0u8 => MetadataHandle::new(root)
                     .get_metadata_by_block_number(number)
                     .map_err(|e| err!(_, e.to_string()))?,
-                1u8 => MetadataHandle::default()
+                1u8 => MetadataHandle::new(root)
                     .get_metadata_by_epoch(number)
                     .map_err(|e| err!(_, e.to_string()))?,
                 _ => return err!("Invalid call type"),

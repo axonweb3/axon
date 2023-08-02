@@ -2,24 +2,29 @@ mod error;
 mod native_token;
 mod utils;
 
-pub mod ckb_light_client;
-pub mod image_cell;
+pub(crate) mod ckb_light_client;
+pub(crate) mod image_cell;
 pub mod metadata;
 
-pub use crate::system_contract::ckb_light_client::CkbLightClientContract;
-pub use crate::system_contract::image_cell::ImageCellContract;
-pub use crate::system_contract::metadata::{check_ckb_related_info_exist, MetadataContract};
-pub use crate::system_contract::native_token::NativeTokenContract;
+pub use crate::system_contract::ckb_light_client::{
+    CkbLightClientContract, CKB_LIGHT_CLIENT_CONTRACT_ADDRESS,
+};
+pub use crate::system_contract::image_cell::{ImageCellContract, IMAGE_CELL_CONTRACT_ADDRESS};
+pub use crate::system_contract::metadata::{
+    check_ckb_related_info_exist, MetadataContract, METADATA_CONTRACT_ADDRESS,
+};
+pub use crate::system_contract::native_token::{
+    NativeTokenContract, NATIVE_TOKEN_CONTRACT_ADDRESS,
+};
 
 use std::path::Path;
 use std::sync::Arc;
-use std::sync::OnceLock;
 
-use arc_swap::ArcSwap;
 use ckb_traits::{CellDataProvider, HeaderProvider};
 use ckb_types::core::cell::{CellProvider, CellStatus};
 use ckb_types::core::{HeaderBuilder, HeaderView};
 use ckb_types::{packed, prelude::*};
+use parking_lot::RwLock;
 
 use common_config_parser::types::ConfigRocksDB;
 use protocol::types::{Bytes, Hasher, SignedTransaction, TxResp, H160, H256};
@@ -38,16 +43,11 @@ pub const fn system_contract_address(addr: u8) -> H160 {
 const HEADER_CELL_DB_CACHE_SIZE: usize = 200;
 const METADATA_DB_CACHE_SIZE: usize = 10;
 
-/// System contract init section. It needs to initialize two databases, one for
-/// Metadata and one for CkbLightClient&ImageCell
-static HEADER_CELL_DB: OnceLock<Arc<RocksTrieDB>> = OnceLock::new();
-static METADATA_DB: OnceLock<Arc<RocksTrieDB>> = OnceLock::new();
-
 lazy_static::lazy_static! {
     pub static ref HEADER_CELL_ROOT_KEY: H256 = Hasher::digest("header_cell_mpt_root");
-    static ref CURRENT_HEADER_CELL_ROOT: ArcSwap<H256> = ArcSwap::from_pointee(H256::default());
-    static ref METADATA_ROOT_KEY: H256 = Hasher::digest("metadata_root");
-    static ref CURRENT_METADATA_ROOT: ArcSwap<H256> = ArcSwap::from_pointee(H256::default());
+    pub static ref METADATA_ROOT_KEY: H256 = Hasher::digest("metadata_root");
+    pub(crate) static ref METADATA_DB: RwLock<Option<Arc<RocksTrieDB>>> = RwLock::new(None);
+    pub(crate) static ref HEADER_CELL_DB: RwLock<Option<Arc<RocksTrieDB>>> = RwLock::new(None);
 }
 
 #[macro_export]
@@ -77,48 +77,58 @@ pub trait SystemContract {
     fn after_block_hook<Adapter: ExecutorAdapter>(&self, _adapter: &mut Adapter) {}
 }
 
+pub fn swap_metadata_db(new_db: Arc<RocksTrieDB>) -> Arc<RocksTrieDB> {
+    METADATA_DB
+        .write()
+        .replace(new_db)
+        .unwrap_or_else(|| panic!("metadata db is not initialized"))
+}
+
+pub fn swap_header_cell_db(new_db: Arc<RocksTrieDB>) -> Arc<RocksTrieDB> {
+    HEADER_CELL_DB
+        .write()
+        .replace(new_db)
+        .unwrap_or_else(|| panic!("header cell db is not initialized"))
+}
+
 pub fn init<P: AsRef<Path>, Adapter: ExecutorAdapter>(
     path: P,
     config: ConfigRocksDB,
     adapter: &mut Adapter,
-) {
-    // Init metadata db
+) -> (H256, H256) {
     let current_metadata_root = adapter.storage(MetadataContract::ADDRESS, *METADATA_ROOT_KEY);
-    CURRENT_METADATA_ROOT.store(Arc::new(current_metadata_root));
 
+    // Init metadata db.
     let metadata_db_path = path.as_ref().join("metadata");
-    METADATA_DB.get_or_init(|| {
-        Arc::new(
+    {
+        let mut db = METADATA_DB.write();
+        db.replace(Arc::new(
             RocksTrieDB::new(metadata_db_path, config.clone(), METADATA_DB_CACHE_SIZE)
                 .expect("[system contract] metadata new rocksdb error"),
-        )
-    });
+        ));
+    }
 
-    // Init header cell db
     let header_cell_db_path = path.as_ref().join("header_cell");
-    HEADER_CELL_DB.get_or_init(|| {
-        Arc::new(
-            RocksTrieDB::new(
-                header_cell_db_path,
-                config.clone(),
-                HEADER_CELL_DB_CACHE_SIZE,
-            )
-            .expect("[system contract] header&cell new rocksdb error"),
-        )
-    });
+    {
+        let mut db = HEADER_CELL_DB.write();
+        db.replace(Arc::new(
+            RocksTrieDB::new(header_cell_db_path, config, HEADER_CELL_DB_CACHE_SIZE)
+                .expect("[system contract] header&cell new rocksdb error"),
+        ));
+    }
 
     let current_cell_root = adapter.storage(CkbLightClientContract::ADDRESS, *HEADER_CELL_ROOT_KEY);
 
     if current_cell_root.is_zero() {
         // todo need refactoring
         ImageCellContract::default()
-            .save_cells(vec![always_success_script_deploy_cell()], 0)
+            .save_cells(H256::zero(), vec![always_success_script_deploy_cell()], 0)
             .unwrap();
         let changes = generate_mpt_root_changes(adapter, ImageCellContract::ADDRESS);
-        return adapter.apply(changes, vec![], false);
+        adapter.apply(changes, vec![], false);
     }
 
-    CURRENT_HEADER_CELL_ROOT.store(Arc::new(current_cell_root));
+    (current_metadata_root, current_cell_root)
 }
 
 pub fn before_block_hook<Adapter: ExecutorAdapter>(adapter: &mut Adapter) {
@@ -155,13 +165,15 @@ pub fn system_contract_dispatch<Adapter: ExecutorAdapter>(
     None
 }
 
-#[derive(Default, Clone, Debug)]
-pub struct DataProvider;
+#[derive(Clone, Debug)]
+pub struct DataProvider {
+    root: H256,
+}
 
 impl CellProvider for DataProvider {
     fn cell(&self, out_point: &packed::OutPoint, _eager_load: bool) -> CellStatus {
         if let Some(c) = ImageCellContract::default()
-            .get_cell(&(out_point).into())
+            .get_cell(self.root, &(out_point).into())
             .ok()
             .flatten()
         {
@@ -175,7 +187,7 @@ impl CellProvider for DataProvider {
 impl CellDataProvider for DataProvider {
     fn get_cell_data(&self, out_point: &packed::OutPoint) -> Option<Bytes> {
         ImageCellContract::default()
-            .get_cell(&(out_point.into()))
+            .get_cell(self.root, &(out_point.into()))
             .ok()
             .flatten()
             .map(|info| info.cell_data)
@@ -196,7 +208,7 @@ impl HeaderProvider for DataProvider {
     fn get_header(&self, hash: &packed::Byte32) -> Option<HeaderView> {
         let block_hash = hash.unpack();
         CkbLightClientContract::default()
-            .get_header_by_block_hash(&H256(block_hash.0))
+            .get_header_by_block_hash(self.root, &H256(block_hash.0))
             .ok()
             .flatten()
             .map(|h| {
@@ -214,5 +226,11 @@ impl HeaderProvider for DataProvider {
                     .nonce(h.nonce.pack())
                     .build()
             })
+    }
+}
+
+impl DataProvider {
+    pub fn new(root: H256) -> Self {
+        DataProvider { root }
     }
 }

@@ -10,18 +10,19 @@ use ethers::abi::AbiDecode;
 use protocol::types::{SignedTransaction, TxResp, H160, H256};
 use protocol::{traits::ExecutorAdapter, ProtocolResult};
 
-use crate::exec_try;
 use crate::system_contract::ckb_light_client::store::CkbLightClientStore;
 use crate::system_contract::utils::{succeed_resp, update_states};
-use crate::system_contract::{system_contract_address, SystemContract, CURRENT_HEADER_CELL_ROOT};
+use crate::system_contract::{system_contract_address, SystemContract};
+use crate::{exec_try, CURRENT_HEADER_CELL_ROOT};
 
+pub const CKB_LIGHT_CLIENT_CONTRACT_ADDRESS: H160 = system_contract_address(0x2);
 static ALLOW_READ: AtomicBool = AtomicBool::new(false);
 
 #[derive(Default)]
 pub struct CkbLightClientContract;
 
 impl SystemContract for CkbLightClientContract {
-    const ADDRESS: H160 = system_contract_address(0x2);
+    const ADDRESS: H160 = CKB_LIGHT_CLIENT_CONTRACT_ADDRESS;
 
     fn exec_<Adapter: ExecutorAdapter>(
         &self,
@@ -33,8 +34,9 @@ impl SystemContract for CkbLightClientContract {
         let tx_data = tx.data();
         let gas_limit = *tx.gas_limit();
 
+        let root = CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow());
         let mut store = exec_try!(
-            CkbLightClientStore::new(),
+            CkbLightClientStore::new(root),
             gas_limit,
             "[ckb light client] init ckb light client mpt"
         );
@@ -70,21 +72,19 @@ impl SystemContract for CkbLightClientContract {
     }
 }
 
+/// These methods are provide for interoperation module to get CKB headers.
 impl CkbLightClientContract {
-    pub fn get_root(&self) -> H256 {
-        **CURRENT_HEADER_CELL_ROOT.load()
-    }
-
     pub fn get_header_by_block_hash(
         &self,
+        root: H256,
         block_hash: &H256,
     ) -> ProtocolResult<Option<ckb_light_client_abi::Header>> {
-        let store = CkbLightClientStore::new()?;
+        let store = CkbLightClientStore::new(root)?;
         store.get_header(&block_hash.0)
     }
 
-    pub fn get_raw(&self, key: &[u8]) -> ProtocolResult<Option<Vec<u8>>> {
-        let store = CkbLightClientStore::new()?;
+    pub fn get_raw(&self, root: H256, key: &[u8]) -> ProtocolResult<Option<Vec<u8>>> {
+        let store = CkbLightClientStore::new(root)?;
         let ret = store.trie.get(key)?.map(Into::into);
         Ok(ret)
     }

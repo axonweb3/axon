@@ -1,16 +1,22 @@
-use protocol::types::{CkbRelatedInfo, Metadata, H160};
+use protocol::types::{CkbRelatedInfo, Metadata, H160, H256};
 use protocol::ProtocolResult;
 
 use crate::system_contract::metadata::MetadataStore;
 
 /// The MetadataHandle is used to expose apis that can be accessed from outside
 /// of the system contract.
-#[derive(Default)]
-pub struct MetadataHandle;
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MetadataHandle {
+    root: H256,
+}
 
 impl MetadataHandle {
+    pub fn new(root: H256) -> Self {
+        MetadataHandle { root }
+    }
+
     pub fn get_metadata_by_block_number(&self, block_number: u64) -> ProtocolResult<Metadata> {
-        let store = MetadataStore::new()?;
+        let store = MetadataStore::new(self.root)?;
 
         // Should retrieve the first metadata for the genesis block
         if block_number == 0 {
@@ -23,11 +29,11 @@ impl MetadataHandle {
     }
 
     pub fn get_metadata_by_epoch(&self, epoch: u64) -> ProtocolResult<Metadata> {
-        MetadataStore::new()?.get_metadata(epoch)
+        MetadataStore::new(self.root)?.get_metadata(epoch)
     }
 
     pub fn is_last_block_in_current_epoch(&self, block_number: u64) -> ProtocolResult<bool> {
-        let store = MetadataStore::new()?;
+        let store = MetadataStore::new(self.root)?;
         let segment = store.get_epoch_segment()?;
         let is_last_block = segment.is_last_block_in_epoch(block_number);
         Ok(is_last_block)
@@ -39,6 +45,6 @@ impl MetadataHandle {
     }
 
     pub fn get_ckb_related_info(&self) -> ProtocolResult<CkbRelatedInfo> {
-        MetadataStore::new()?.get_ckb_related_info()
+        MetadataStore::new(self.root)?.get_ckb_related_info()
     }
 }
