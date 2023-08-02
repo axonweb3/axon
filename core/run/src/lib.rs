@@ -249,6 +249,8 @@ impl Axon {
         // Init Block db and get the current block
         let storage = self.init_storage();
         let current_block = storage.get_latest_block(Context::new()).await?;
+        let current_state_root = current_block.header.state_root;
+
         log::info!("At block number {}", current_block.header.number + 1);
 
         // Init network
@@ -267,8 +269,9 @@ impl Axon {
         let txs_wal = Arc::new(SignedTxsWAL::new(txs_wal_path));
 
         // Init system contract
-        let (metadata_root, _header_cell_root) =
+        if current_block.header.number != 0 {
             self.init_system_contract(&trie_db, &current_block, &storage);
+        }
 
         // Init mempool and recover signed transactions with the current block number
         let current_stxs = txs_wal.load_by_number(current_block.header.number + 1);
@@ -279,6 +282,13 @@ impl Axon {
             .await;
 
         // Get the validator list from current metadata for consensus initialization
+        let metadata_root = AxonExecutorAdapter::from_root(
+            current_state_root,
+            Arc::clone(&trie_db),
+            Arc::clone(&storage),
+            Proposal::new_without_state_root(&self.genesis.block.header).into(),
+        )?
+        .get_metadata_root();
         let metadata = MetadataHandle::new(metadata_root)
             .get_metadata_by_block_number(current_block.header.number)?;
         let validators: Vec<Validator> = metadata
