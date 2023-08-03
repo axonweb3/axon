@@ -14,9 +14,9 @@ use crate::system_contract::image_cell::image_cell_abi::OutPoint;
 use crate::{err, system_contract::DataProvider};
 
 #[derive(Default, Clone)]
-pub struct CkbVM;
+pub struct CallCkbVM;
 
-impl PrecompileContract for CkbVM {
+impl PrecompileContract for CallCkbVM {
     const ADDRESS: H160 = axon_precompile_address(0x04);
     const MIN_GAS: u64 = 500;
 
