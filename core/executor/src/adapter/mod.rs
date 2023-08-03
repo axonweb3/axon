@@ -149,7 +149,7 @@ where
     fn exists(&self, address: H160) -> bool {
         self.trie
             .contains(&Bytes::from(address.as_bytes().to_vec()))
-            .unwrap_or_default()
+            .unwrap_or(false)
     }
 
     fn basic(&self, address: H160) -> Basic {

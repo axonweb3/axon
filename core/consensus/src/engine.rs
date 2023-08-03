@@ -73,7 +73,9 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         let txs_root = if !txs.hashes.is_empty() {
             TrieMerkle::from_iter(txs.hashes.iter().enumerate())
                 .root_hash()
-                .unwrap_or_default()
+                .unwrap_or_else(|err| {
+                    panic!("failed to calculate trie root hash for transactions since {err}")
+                })
         } else {
             RLP_NULL
         };
@@ -540,9 +542,15 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         proposal: &Proposal,
         signed_txs: &[SignedTransaction],
     ) -> ProtocolResult<()> {
-        let txs_root = TrieMerkle::from_iter(proposal.tx_hashes.iter().enumerate())
-            .root_hash()
-            .unwrap_or(RLP_NULL);
+        let txs_root = if proposal.tx_hashes.is_empty() {
+            RLP_NULL
+        } else {
+            TrieMerkle::from_iter(proposal.tx_hashes.iter().enumerate())
+                .root_hash()
+                .unwrap_or_else(|err| {
+                    panic!("failed to calculate trie root hash for proposals since {err}")
+                })
+        };
 
         let stxs_hash = Hasher::digest(rlp::encode_list(signed_txs));
 

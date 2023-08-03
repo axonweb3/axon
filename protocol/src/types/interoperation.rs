@@ -180,11 +180,7 @@ impl From<&CellWithData> for CellMeta {
 
 impl CellWithData {
     pub fn capacity(&self) -> u64 {
-        let capacity = self
-            .type_script
-            .as_ref()
-            .map(|s| s.len())
-            .unwrap_or_default()
+        let capacity = self.type_script.as_ref().map(|s| s.len()).unwrap_or(0)
             + self.lock_script.len()
             + self.data.len()
             + CAPACITY_BYTES_LEN;
