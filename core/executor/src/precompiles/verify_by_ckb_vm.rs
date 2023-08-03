@@ -8,9 +8,9 @@ use protocol::types::{SignatureR, SignatureS, H160, H256};
 
 use core_interoperation::{cycle_to_gas, gas_to_cycle, InteroperationImpl};
 
-use crate::err;
 use crate::precompiles::{axon_precompile_address, call_ckb_vm::CellDep, PrecompileContract};
 use crate::system_contract::{image_cell::image_cell_abi::OutPoint, DataProvider};
+use crate::{err, CURRENT_HEADER_CELL_ROOT};
 
 #[derive(Default, Clone)]
 pub struct CkbVM;

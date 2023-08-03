@@ -9,14 +9,13 @@ use protocol::types::{Bytes, H160};
 use core_interoperation::{cycle_to_gas, gas_to_cycle, InteroperationImpl};
 
 use crate::precompiles::{axon_precompile_address, PrecompileContract};
-use crate::CURRENT_HEADER_CELL_ROOT;
-use crate::system_contract::image_cell::image_cell_abi::OutPoint;
-use crate::{err, system_contract::DataProvider};
+use crate::system_contract::{image_cell::image_cell_abi::OutPoint, DataProvider};
+use crate::{err, CURRENT_HEADER_CELL_ROOT};
 
 #[derive(Default, Clone)]
-pub struct CkbVM;
+pub struct CallCkbVM;
 
-impl PrecompileContract for CkbVM {
+impl PrecompileContract for CallCkbVM {
     const ADDRESS: H160 = axon_precompile_address(0x04);
     const MIN_GAS: u64 = 500;
 
