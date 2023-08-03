@@ -102,7 +102,7 @@ fn get_data(data: &[u8], mut start: usize, size: usize) -> Result<Integer, Preco
             exit_status: ExitError::StackOverflow,
         })?;
 
-    padded.extend(std::iter::repeat(0).take(size - (end - start)));
+    padded.extend(std::iter::repeat(0).take(size - (end.saturating_sub(start))));
 
     Ok(Integer::from_digits(&padded, Order::MsfBe))
 }
