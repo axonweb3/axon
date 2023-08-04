@@ -86,6 +86,9 @@ pub struct Axon {
     state_root: MerkleRoot,
 }
 
+#[cfg(test)]
+mod tests;
+
 impl Axon {
     pub fn new(config: Config, genesis: RichBlock) -> Axon {
         Axon {
@@ -143,20 +146,21 @@ impl Axon {
         storage: &Arc<ImplStorage<RocksAdapter>>,
     ) -> ProtocolResult<()> {
         let trie_db = self.init_trie_db(false).await?;
-        let mut mpt = MPTTrie::new(Arc::clone(&trie_db));
-
-        insert_accounts(&mut mpt, &self.config.accounts).await?;
+        let state_root = {
+            let mut mpt = MPTTrie::new(Arc::clone(&trie_db));
+            insert_accounts(&mut mpt, &self.config.accounts).expect("insert accounts");
+            mpt.commit()?
+        };
 
         let path_metadata = self.config.data_path_for_system_contract();
         let resp = execute_transactions(
             &self.genesis,
-            &mut mpt,
+            state_root,
             &trie_db,
             storage,
             path_metadata,
             &self.config.rocksdb.clone(),
-        )
-        .await?;
+        )?;
 
         log::info!(
             "Execute the genesis distribute success, genesis state root {:?}, response {:?}",
@@ -197,20 +201,21 @@ impl Axon {
             )?;
             Arc::new(trie_db)
         };
-        let mut mpt = MPTTrie::new(Arc::clone(&trie_db));
-
-        insert_accounts(&mut mpt, &self.config.accounts).await?;
+        let state_root = {
+            let mut mpt = MPTTrie::new(Arc::clone(&trie_db));
+            insert_accounts(&mut mpt, &self.config.accounts).expect("insert accounts");
+            mpt.commit()?
+        };
 
         let path_metadata = tmp_dir.path().join("metadata");
         let resp = execute_transactions(
             &self.genesis,
-            &mut mpt,
+            state_root,
             &trie_db,
             &storage,
             path_metadata,
             &self.config.rocksdb.clone(),
-        )
-        .await?;
+        )?;
 
         self.apply_genesis_data(resp.state_root, resp.receipt_root)?;
 
@@ -995,7 +1000,7 @@ where
     }
 }
 
-async fn insert_accounts(
+fn insert_accounts(
     mpt: &mut MPTTrie<RocksTrieDB>,
     accounts: &[InitialAccount],
 ) -> ProtocolResult<()> {
@@ -1012,9 +1017,9 @@ async fn insert_accounts(
     Ok(())
 }
 
-async fn execute_transactions<S, DB>(
+fn execute_transactions<S, DB>(
     rich: &RichBlock,
-    mpt: &mut MPTTrie<RocksTrieDB>,
+    state_root: H256,
     trie_db: &Arc<DB>,
     storage: &Arc<S>,
     path_metadata: PathBuf,
@@ -1026,7 +1031,7 @@ where
 {
     let executor = AxonExecutor::default();
     let mut backend = AxonExecutorAdapter::from_root(
-        mpt.commit()?,
+        state_root,
         Arc::clone(trie_db),
         Arc::clone(storage),
         Proposal::new_without_state_root(&rich.block.header).into(),
@@ -1063,25 +1068,4 @@ where
         .await?;
 
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use protocol::codec::hex_decode;
-    use protocol::types::RichBlock;
-    use std::fs;
-
-    #[test]
-    fn decode_genesis() {
-        let raw = fs::read("../../devtools/chain/genesis_single_node.json").unwrap();
-        let genesis: RichBlock = serde_json::from_slice(&raw).unwrap();
-        println!("{:?}", genesis);
-    }
-
-    #[test]
-    fn decode_type_id() {
-        let type_id =
-            hex_decode("c0810210210c06ba233273e94d7fc89b00a705a07fdc0ae4c78e4036582ff336").unwrap();
-        println!("{:?}", type_id);
-    }
 }
