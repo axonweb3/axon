@@ -34,7 +34,7 @@ impl PrecompileContract for GetCell {
         let (tx_hash, index) = parse_input(input)?;
 
         let root = CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow());
-        let cell = ImageCellContract::default()
+        let cell_opt = ImageCellContract::default()
             .get_cell(root, &CellKey { tx_hash, index })
             .map_err(|_| err!(_, "get cell"))?
             .map(|c| Cell {
@@ -43,13 +43,16 @@ impl PrecompileContract for GetCell {
                 is_consumed:     c.consumed_number.is_some(),
                 created_number:  c.created_number,
                 consumed_number: c.consumed_number.unwrap_or_default(),
-            })
-            .unwrap_or_default();
+            });
+
+        if cell_opt.is_none() {
+            return err!("get cell return None");
+        }
 
         Ok((
             PrecompileOutput {
                 exit_status: ExitSucceed::Returned,
-                output:      cell.encode(),
+                output:      cell_opt.unwrap().encode(),
             },
             gas,
         ))
