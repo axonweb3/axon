@@ -4,7 +4,7 @@ pragma solidity ^0.8.9;
 import "./Types.sol";
 
 contract VerifyByCkb {
-    event VerifyByCkbErent(uint64);
+    event VerifyByCkbEvent(uint64);
     event NotGetCellEvent();
 
     uint64 ret;
@@ -27,7 +27,7 @@ contract VerifyByCkb {
 
         if (isSuccess) {
             ret = bytesToUint64(res);
-            emit VerifyByCkbErent(ret);
+            emit VerifyByCkbEvent(ret);
         } else {
             emit NotGetCellEvent();
         }
