@@ -31,9 +31,9 @@ struct Cell {
 }
 
 struct CellOutput {
-    uint64 capacity;
-    Script lock;
-    Script type_;
+    uint64   capacity;
+    Script   lock;
+    Script[] type_;
 }
 
 struct Script {
