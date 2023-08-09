@@ -42,7 +42,7 @@ impl PrecompileContract for GetCell {
                 cell_data:       c.cell_data.into(),
                 is_consumed:     c.consumed_number.is_some(),
                 created_number:  c.created_number,
-                consumed_number: c.consumed_number.unwrap_or_default(),
+                consumed_number: c.consumed_number.unwrap_or(0),
             })
             .unwrap_or_default();
 
