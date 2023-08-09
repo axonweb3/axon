@@ -2,7 +2,11 @@ use ckb_types::core::cell::{CellMeta, CellProvider, CellStatus, ResolvedTransact
 use ckb_types::core::{DepType, TransactionView};
 use ckb_types::{packed, prelude::*};
 
-use protocol::{lazy::DUMMY_INPUT_OUT_POINT, types::CellWithData, ProtocolResult};
+use protocol::{
+    lazy::{always_success_script_meta, DUMMY_INPUT_OUT_POINT},
+    types::CellWithData,
+    ProtocolResult,
+};
 
 use crate::InteroperationError;
 
@@ -36,6 +40,8 @@ pub fn resolve_transaction<CL: CellProvider>(
         }
     }
 
+    let always_success_meta = always_success_script_meta();
+
     for cell_dep in tx.cell_deps_iter() {
         if cell_dep.dep_type() == DepType::DepGroup.into() {
             let dep_group = resolve_cell(&cell_dep.out_point())?;
@@ -47,6 +53,8 @@ pub fn resolve_transaction<CL: CellProvider>(
                 resolved_cell_deps.push(resolve_cell(&sub_out_point)?);
             }
             resolved_dep_groups.push(dep_group);
+        } else if cell_dep.out_point() == always_success_meta.out_point {
+            resolved_cell_deps.push(always_success_meta.clone())
         } else {
             resolved_cell_deps.push(resolve_cell(&cell_dep.out_point())?);
         }
