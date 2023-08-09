@@ -25,7 +25,7 @@ const CONFIG_FILE: &str = "config.toml";
 
 const GENESIS_HASH: &str = "0x69eca8420bb4b072d732db96260a656f0e10201c6841b215a8ed107681e17d1c";
 const GENESIS_STATE_ROOT: &str =
-    "0x65f57a6a666e656de33ed68957e04b35b3fe1b35a90f6eafb6f283c907dc3d77";
+    "0x6658afef64740ee262818b09f9d5cd8a4779a5f843626c559b7e615b8e500ce1";
 const GENESIS_RECEIPTS_ROOT: &str =
     "0x0abcdb8fd7acc8c71f28a16c3095fdafca0171f371076650152b1c356a1bccad";
 
