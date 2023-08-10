@@ -7,24 +7,18 @@ use common_apm::Instant;
 use common_apm_derive::trace_span;
 use protocol::tokio::{sync::Mutex, time::sleep};
 use protocol::traits::{Context, Synchronization, SynchronizationAdapter};
-use protocol::types::{Block, Proof, Proposal, Receipt, SignedTransaction, U256};
+use protocol::types::{Block, Proof, Proposal, Receipt, RichBlock, SignedTransaction, U256};
 use protocol::{async_trait, ProtocolResult};
 
 use crate::status::{CurrentStatus, StatusAgent};
 use crate::util::digest_signed_transactions;
-use crate::{engine::generate_receipts_and_logs, ConsensusError};
+use crate::ConsensusError;
 
 const POLLING_BROADCAST: u64 = 2000;
 const ONCE_SYNC_BLOCK_LIMIT: u64 = 50;
 
 lazy_static::lazy_static! {
     pub static ref SYNC_STATUS: RwLock<SyncStatus> = RwLock::new(SyncStatus::default());
-}
-
-#[derive(Clone, Debug)]
-pub struct RichBlock {
-    pub block: Block,
-    pub txs:   Vec<SignedTransaction>,
 }
 
 pub struct OverlordSynchronization<Adapter: SynchronizationAdapter> {
@@ -346,13 +340,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             .into());
         }
 
-        let (receipts, _logs) = generate_receipts_and_logs(
-            block.header.number,
-            block_hash,
-            block.header.state_root,
-            &rich_block.txs,
-            &resp,
-        );
+        let (receipts, _logs) = rich_block.generate_receipts_and_logs(&resp);
 
         let metadata = self
             .adapter

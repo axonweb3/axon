@@ -18,12 +18,10 @@ use common_logger::{json, log};
 use common_merkle::TrieMerkle;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
-    Block, Bytes, ExecResp, Hash, Hasher, Hex, Log, MerkleRoot, Metadata, Proof, Proposal, Receipt,
-    SignedTransaction, ValidatorExtend, BASE_FEE_PER_GAS, MAX_BLOCK_GAS_LIMIT, RLP_NULL, U256,
+    Block, Bytes, ExecResp, Hash, Hasher, Hex, Metadata, Proof, Proposal, SignedTransaction,
+    ValidatorExtend, BASE_FEE_PER_GAS, MAX_BLOCK_GAS_LIMIT, RLP_NULL,
 };
 use protocol::{async_trait, tokio::sync::Mutex as AsyncMutex, ProtocolError, ProtocolResult};
-
-use core_executor::logs_bloom;
 
 use crate::message::{
     END_GOSSIP_AGGREGATED_VOTE, END_GOSSIP_SIGNED_CHOKE, END_GOSSIP_SIGNED_PROPOSAL,
@@ -591,13 +589,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         let block_number = block.header.number;
         let block_hash = block.hash();
 
-        let (receipts, _logs) = generate_receipts_and_logs(
-            block_number,
-            block_hash,
-            block.header.state_root,
-            &txs,
-            &resp,
-        );
+        let (receipts, _logs) = block.generate_receipts_and_logs(&txs, &resp);
 
         common_apm::metrics::consensus::ENGINE_ROUND_GAUGE.set(proof.round as i64);
 
@@ -744,43 +736,6 @@ fn validate_timestamp(
     }
 
     true
-}
-
-pub fn generate_receipts_and_logs(
-    block_number: u64,
-    block_hash: Hash,
-    state_root: MerkleRoot,
-    txs: &[SignedTransaction],
-    resp: &ExecResp,
-) -> (Vec<Receipt>, Vec<Vec<Log>>) {
-    let mut log_index = 0;
-    let receipts = txs
-        .iter()
-        .enumerate()
-        .zip(resp.tx_resp.iter())
-        .map(|((idx, tx), res)| {
-            let receipt = Receipt {
-                tx_hash: tx.transaction.hash,
-                block_number,
-                block_hash,
-                tx_index: idx as u32,
-                state_root,
-                used_gas: U256::from(res.gas_used),
-                logs_bloom: logs_bloom(res.logs.iter()),
-                logs: res.logs.clone(),
-                log_index,
-                code_address: res.code_address,
-                sender: tx.sender,
-                ret: res.exit_reason.clone(),
-                removed: res.removed,
-            };
-            log_index += res.logs.len() as u32;
-            receipt
-        })
-        .collect::<Vec<_>>();
-    let logs = receipts.iter().map(|r| r.logs.clone()).collect::<Vec<_>>();
-
-    (receipts, logs)
 }
 
 fn gauge_txs_len(proposal: &Proposal) {

@@ -5,8 +5,8 @@ use crate::codec::ProtocolCodec;
 #[cfg(feature = "hex-serialize")]
 use crate::codec::{serialize_bytes, serialize_uint};
 use crate::types::{
-    Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, MerkleRoot, SignedTransaction, H160, H64,
-    U256,
+    logs_bloom, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, Log, MerkleRoot, Receipt,
+    SignedTransaction, H160, H64, U256,
 };
 
 pub type BlockNumber = u64;
@@ -142,6 +142,40 @@ impl Block {
     pub fn hash(&self) -> Hash {
         self.header.hash()
     }
+
+    pub fn generate_receipts_and_logs(
+        &self,
+        txs: &[SignedTransaction],
+        resp: &ExecResp,
+    ) -> (Vec<Receipt>, Vec<Vec<Log>>) {
+        let mut log_index = 0;
+        let receipts = txs
+            .iter()
+            .enumerate()
+            .zip(resp.tx_resp.iter())
+            .map(|((idx, tx), res)| {
+                let receipt = Receipt {
+                    tx_hash: tx.transaction.hash,
+                    block_number: self.header.number,
+                    block_hash: self.hash(),
+                    tx_index: idx as u32,
+                    state_root: self.header.state_root,
+                    used_gas: U256::from(res.gas_used),
+                    logs_bloom: logs_bloom(res.logs.iter()),
+                    logs: res.logs.clone(),
+                    log_index,
+                    code_address: res.code_address,
+                    sender: tx.sender,
+                    ret: res.exit_reason.clone(),
+                    removed: res.removed,
+                };
+                log_index += res.logs.len() as u32;
+                receipt
+            })
+            .collect::<Vec<_>>();
+        let logs = receipts.iter().map(|r| r.logs.clone()).collect::<Vec<_>>();
+        (receipts, logs)
+    }
 }
 
 #[derive(
@@ -203,6 +237,12 @@ pub struct Proof {
 pub struct RichBlock {
     pub block: Block,
     pub txs:   Vec<SignedTransaction>,
+}
+
+impl RichBlock {
+    pub fn generate_receipts_and_logs(&self, resp: &ExecResp) -> (Vec<Receipt>, Vec<Vec<Log>>) {
+        self.block.generate_receipts_and_logs(&self.txs, resp)
+    }
 }
 
 #[cfg(test)]

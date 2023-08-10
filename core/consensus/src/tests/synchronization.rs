@@ -3,12 +3,12 @@ use std::sync::Arc;
 use protocol::{
     tokio::{self, sync::Mutex as AsyncMutex},
     traits::{Context, Synchronization},
-    types::{Block, Header},
+    types::{Block, Header, RichBlock},
 };
 
 use crate::{
     status::{CurrentStatus, StatusAgent},
-    synchronization::{OverlordSynchronization, RichBlock},
+    synchronization::OverlordSynchronization,
     tests::MockSyncAdapter,
     util::time_now,
 };

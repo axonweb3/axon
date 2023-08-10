@@ -173,7 +173,7 @@ impl Axon {
 
         log::info!("The genesis block is created {:?}", self.genesis.block);
 
-        save_block(storage, &self.genesis).await?;
+        save_block(storage, &self.genesis, &resp).await?;
 
         Ok(())
     }
@@ -1053,7 +1053,7 @@ where
     Ok(resp)
 }
 
-async fn save_block<S>(storage: &Arc<S>, rich: &RichBlock) -> ProtocolResult<()>
+async fn save_block<S>(storage: &Arc<S>, rich: &RichBlock, resp: &ExecResp) -> ProtocolResult<()>
 where
     S: Storage + 'static,
 {
@@ -1066,6 +1066,9 @@ where
     storage
         .insert_transactions(Context::new(), rich.block.header.number, rich.txs.clone())
         .await?;
-
+    let (receipts, _logs) = rich.generate_receipts_and_logs(resp);
+    storage
+        .insert_receipts(Context::new(), rich.block.header.number, receipts)
+        .await?;
     Ok(())
 }
