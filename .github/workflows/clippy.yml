@@ -5,6 +5,7 @@ on:
       - main
   pull_request:
     types: [ opened, synchronize, reopened ]
+  merge_group:
   workflow_dispatch:
     inputs:
       dispatch:
