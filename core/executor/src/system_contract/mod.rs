@@ -31,6 +31,8 @@ use protocol::types::{Bytes, Hasher, SignedTransaction, TxResp, H160, H256};
 use protocol::{ckb_blake2b_256, traits::ExecutorAdapter};
 
 use crate::adapter::RocksTrieDB;
+use crate::system_contract::image_cell::utils::always_success_script_deploy_cell;
+use crate::system_contract::utils::generate_mpt_root_changes;
 
 pub const fn system_contract_address(addr: u8) -> H160 {
     H160([
@@ -116,6 +118,15 @@ pub fn init<P: AsRef<Path>, Adapter: ExecutorAdapter>(
     }
 
     let current_cell_root = adapter.storage(CkbLightClientContract::ADDRESS, *HEADER_CELL_ROOT_KEY);
+
+    if current_cell_root.is_zero() {
+        // todo need refactoring
+        ImageCellContract::default()
+            .save_cells(H256::zero(), vec![always_success_script_deploy_cell()], 0)
+            .unwrap();
+        let changes = generate_mpt_root_changes(adapter, ImageCellContract::ADDRESS);
+        adapter.apply(changes, vec![], false);
+    }
 
     (current_metadata_root, current_cell_root)
 }
