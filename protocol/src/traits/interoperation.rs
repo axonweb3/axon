@@ -17,9 +17,9 @@ pub const SIGNATURE_HASH_CELL_OCCUPIED_CAPACITY: u64 = signature_hash_cell_bytes
 ///     args: 0x
 ///     hash_type: data
 /// data: signature hash(32 bytes)
-/// capacity: 0x277cf2a00
+/// capacity: 0x1ad274800
 /// ```
-/// So the occupied bytes is 32 + 32 + 1 + 32 + 1 + 8 = 106 bytes.
+/// So the occupied bytes is 32 + 32 + 8 = 72 bytes.
 const fn signature_hash_cell_bytes() -> u64 {
     32 + 32 + 8
 }
