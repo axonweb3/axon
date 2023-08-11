@@ -17,11 +17,11 @@ pub const SIGNATURE_HASH_CELL_OCCUPIED_CAPACITY: u64 = signature_hash_cell_bytes
 ///     args: 0x
 ///     hash_type: data
 /// data: signature hash(32 bytes)
-/// capacity: 0x1ad274800
+/// capacity: 1b31d2900
 /// ```
-/// So the occupied bytes is 32 + 32 + 8 = 72 bytes.
+/// So the occupied bytes is 32 + 32 + 1 + 8 = 73 bytes.
 const fn signature_hash_cell_bytes() -> u64 {
-    32 + 32 + 8
+    32 + 32 + 1 + 8
 }
 
 pub trait Interoperation: Sync + Send {
@@ -109,5 +109,22 @@ pub trait Interoperation: Sync + Send {
             )
             .output_data(signature_hash.pack())
             .build()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ckb_types::core::Capacity;
+
+    #[test]
+    fn test_const_signature_hash_cell_bytes() {
+        let data_capacity = Capacity::bytes(32).unwrap();
+        let actual = packed::CellOutputBuilder::default()
+            .build()
+            .occupied_capacity(data_capacity)
+            .unwrap()
+            .as_u64();
+        assert_eq!(SIGNATURE_HASH_CELL_OCCUPIED_CAPACITY, actual);
     }
 }
