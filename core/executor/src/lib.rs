@@ -158,7 +158,10 @@ impl Executor for AxonExecutor {
             gas += r.gas_used;
             fee = fee.checked_add(r.fee_cost).unwrap_or(U256::max_value());
 
-            hashes.push(Hasher::digest(&r.ret));
+            let logs_bloom = logs_bloom(r.logs.iter());
+            let receipt = tx.encode_receipt(&r, logs_bloom);
+
+            hashes.push(Hasher::digest(&receipt));
             res.push(r);
         }
 
@@ -354,7 +357,10 @@ impl AxonExecutor {
             gas += r.gas_used;
             fee = fee.checked_add(r.fee_cost).unwrap_or(U256::max_value());
 
-            hashes.push(Hasher::digest(&r.ret));
+            let logs_bloom = logs_bloom(r.logs.iter());
+            let receipt = tx.encode_receipt(&r, logs_bloom);
+
+            hashes.push(Hasher::digest(&receipt));
             res.push(r);
         }
 
