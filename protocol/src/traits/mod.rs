@@ -15,7 +15,7 @@ pub use consensus::{
 };
 pub use creep::{Cloneable, Context};
 pub use executor::{ApplyBackend, Backend, Executor, ExecutorAdapter};
-pub use interoperation::{Interoperation, ALWAYS_SUCCESS_CELL_OCCUPIED_CAPACITY, BYTE_SHANNONS};
+pub use interoperation::{Interoperation, BYTE_SHANNONS, SIGNATURE_HASH_CELL_OCCUPIED_CAPACITY};
 pub use mempool::{MemPool, MemPoolAdapter};
 pub use network::{
     Gossip, MessageCodec, MessageHandler, Network, PeerTag, PeerTrust, Priority, Rpc, TrustFeedback,

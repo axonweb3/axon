@@ -9,7 +9,6 @@ arc-swap = "1.6"
 async-trait = "0.1"
 bincode = "1.3"
 bytes = { version = "1.4", features = ["serde"] }
-ckb-always-success-script = "0.0.1"
 ckb-hash = "0.108"
 ckb-jsonrpc-types = "0.108"
 ckb-sdk = "2.5"

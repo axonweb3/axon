@@ -2,7 +2,7 @@ use ckb_types::{core::cell::CellMeta, packed, prelude::*};
 use rlp_derive::{RlpDecodable, RlpEncodable};
 use serde::{Deserialize, Serialize};
 
-use crate::traits::{ALWAYS_SUCCESS_CELL_OCCUPIED_CAPACITY, BYTE_SHANNONS};
+use crate::traits::{BYTE_SHANNONS, SIGNATURE_HASH_CELL_OCCUPIED_CAPACITY};
 use crate::types::{Bytes, TypesError, H256};
 use crate::{ckb_blake2b_256, codec::ProtocolCodec, lazy::DUMMY_INPUT_OUT_POINT, ProtocolResult};
 
@@ -161,7 +161,7 @@ pub struct CellWithData {
 impl From<&CellWithData> for CellMeta {
     fn from(cell: &CellWithData) -> Self {
         let necessary_capacity =
-            (ALWAYS_SUCCESS_CELL_OCCUPIED_CAPACITY + BYTE_SHANNONS).max(cell.capacity());
+            (SIGNATURE_HASH_CELL_OCCUPIED_CAPACITY + BYTE_SHANNONS).max(cell.capacity());
 
         CellMeta {
             cell_output:        packed::CellOutputBuilder::default()

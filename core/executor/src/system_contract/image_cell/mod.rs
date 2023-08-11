@@ -1,8 +1,6 @@
 mod abi;
 mod store;
 
-pub mod utils;
-
 pub use abi::image_cell_abi;
 pub use store::{CellInfo, CellKey};
 
@@ -79,18 +77,5 @@ impl ImageCellContract {
 
     pub fn allow_read(&self) -> bool {
         ALLOW_READ.load(Ordering::Relaxed)
-    }
-}
-
-impl ImageCellContract {
-    /// This method is only use in init. It insert the always success script
-    /// deployed cell.
-    pub(super) fn save_cells(
-        &self,
-        root: H256,
-        cells: Vec<image_cell_abi::CellInfo>,
-        created_number: u64,
-    ) -> ProtocolResult<()> {
-        ImageCellStore::new(root)?.save_cells(cells, created_number)
     }
 }

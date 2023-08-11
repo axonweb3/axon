@@ -2,29 +2,26 @@ use ckb_traits::{CellDataProvider, HeaderProvider};
 use ckb_types::core::{cell::CellProvider, Cycle, TransactionView};
 use ckb_types::{packed, prelude::*};
 
-use crate::lazy::{ALWAYS_SUCCESS_TYPE_SCRIPT, DUMMY_INPUT_OUT_POINT};
 use crate::types::{Bytes, CellDep, CellWithData, SignatureR, SignatureS, VMResp};
-use crate::{traits::Context, ProtocolResult};
+use crate::{lazy::DUMMY_INPUT_OUT_POINT, traits::Context, ProtocolResult};
 
 pub const BYTE_SHANNONS: u64 = 100_000_000;
-pub const ALWAYS_SUCCESS_CELL_OCCUPIED_CAPACITY: u64 = always_success_cell_bytes() * BYTE_SHANNONS;
+pub const SIGNATURE_HASH_CELL_OCCUPIED_CAPACITY: u64 = signature_hash_cell_bytes() * BYTE_SHANNONS;
 
 /// The always success cell structure:
 /// ```yml
 /// type:
-///     code_hash: ckb_blake2b_256(ALWAYS_SUCCESS)
-///     args: axon_transaction.sig_hash(with_chain_id)
-///     hash_type: data1
+///     Null
 /// lock:
 ///     code_hash: H256::zero()
 ///     args: 0x
 ///     hash_type: data
-/// data: 0x
-/// capacity: 0x277cf2a00  
+/// data: signature hash(32 bytes)
+/// capacity: 1b31d2900
 /// ```
-/// So the occupied bytes is 32 + 32 + 1 + 32 + 1 + 8 = 106 bytes.
-const fn always_success_cell_bytes() -> u64 {
-    32 + 32 + 1 + 32 + 1 + 8
+/// So the occupied bytes is 32 + 32 + 1 + 8 = 73 bytes.
+const fn signature_hash_cell_bytes() -> u64 {
+    32 + 32 + 1 + 8
 }
 
 pub trait Interoperation: Sync + Send {
@@ -93,42 +90,41 @@ pub trait Interoperation: Sync + Send {
                 }))
                 .output(
                     packed::CellOutputBuilder::default()
-                        .type_(
-                            Some(
-                                ALWAYS_SUCCESS_TYPE_SCRIPT
-                                    .clone()
-                                    .as_builder()
-                                    .args(signature_hash.pack())
-                                    .build(),
-                            )
-                            .pack(),
-                        )
-                        .capacity(ALWAYS_SUCCESS_CELL_OCCUPIED_CAPACITY.pack())
+                        .capacity(SIGNATURE_HASH_CELL_OCCUPIED_CAPACITY.pack())
                         .build(),
                 )
+                .output_data(signature_hash.pack())
                 .build();
         }
 
         let output_capacity = (r.dummy_input().unwrap().capacity() - BYTE_SHANNONS)
-            .max(ALWAYS_SUCCESS_CELL_OCCUPIED_CAPACITY);
+            .max(SIGNATURE_HASH_CELL_OCCUPIED_CAPACITY);
 
         tx_builder
             .input(packed::CellInput::new(DUMMY_INPUT_OUT_POINT.clone(), 0u64))
             .output(
                 packed::CellOutputBuilder::default()
-                    .type_(
-                        Some(
-                            ALWAYS_SUCCESS_TYPE_SCRIPT
-                                .clone()
-                                .as_builder()
-                                .args(signature_hash.pack())
-                                .build(),
-                        )
-                        .pack(),
-                    )
                     .capacity(output_capacity.pack())
                     .build(),
             )
+            .output_data(signature_hash.pack())
             .build()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ckb_types::core::Capacity;
+
+    #[test]
+    fn test_const_signature_hash_cell_bytes() {
+        let data_capacity = Capacity::bytes(32).unwrap();
+        let actual = packed::CellOutputBuilder::default()
+            .build()
+            .occupied_capacity(data_capacity)
+            .unwrap()
+            .as_u64();
+        assert_eq!(SIGNATURE_HASH_CELL_OCCUPIED_CAPACITY, actual);
     }
 }
