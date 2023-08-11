@@ -11,9 +11,7 @@ mod utils;
 
 pub use crate::adapter::{AxonExecutorAdapter, MPTTrie, RocksTrieDB};
 pub use crate::system_contract::{metadata::MetadataHandle, DataProvider};
-pub use crate::utils::{
-    code_address, decode_revert_msg, logs_bloom, DefaultFeeAllocator, FeeInlet,
-};
+pub use crate::utils::{code_address, decode_revert_msg, DefaultFeeAllocator, FeeInlet};
 
 use std::cell::RefCell;
 use std::collections::BTreeMap;
@@ -27,9 +25,9 @@ use common_merkle::TrieMerkle;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{Backend, Executor, ExecutorAdapter};
 use protocol::types::{
-    data_gas_cost, Account, Config, ExecResp, Hasher, SignedTransaction, TransactionAction, TxResp,
-    ValidatorExtend, GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160, H256, NIL_DATA, RLP_NULL,
-    U256,
+    data_gas_cost, logs_bloom, Account, Config, ExecResp, Hasher, SignedTransaction,
+    TransactionAction, TxResp, ValidatorExtend, GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160,
+    H256, NIL_DATA, RLP_NULL, U256,
 };
 
 use crate::precompiles::build_precompile_set;

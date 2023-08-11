@@ -3,7 +3,9 @@ pub use evm::{backend::Log, Config, ExitError, ExitFatal, ExitReason, ExitRevert
 
 use rlp_derive::{RlpDecodable, RlpEncodable};
 
-use crate::types::{Hash, Header, MerkleRoot, Proposal, H160, U256};
+use crate::types::{Bloom, Hash, Hasher, Header, MerkleRoot, Proposal, H160, U256};
+
+const BLOOM_BYTE_LENGTH: usize = 256;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ExecResp {
@@ -85,5 +87,28 @@ impl From<&Header> for ExecutorContext {
             block_base_fee_per_gas: h.base_fee_per_gas,
             logs:                   Vec::new(),
         }
+    }
+}
+
+pub fn logs_bloom<'a, I>(logs: I) -> Bloom
+where
+    I: Iterator<Item = &'a Log>,
+{
+    let mut bloom = Bloom::zero();
+
+    for log in logs {
+        m3_2048(&mut bloom, log.address.as_bytes());
+        for topic in log.topics.iter() {
+            m3_2048(&mut bloom, topic.as_bytes());
+        }
+    }
+    bloom
+}
+
+fn m3_2048(bloom: &mut Bloom, x: &[u8]) {
+    let hash = Hasher::digest(x).0;
+    for i in [0, 2, 4] {
+        let bit = (hash[i + 1] as usize + ((hash[i] as usize) << 8)) & 0x7FF;
+        bloom.0[BLOOM_BYTE_LENGTH - 1 - bit / 8] |= 1 << (bit % 8);
     }
 }
