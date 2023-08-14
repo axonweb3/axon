@@ -79,7 +79,8 @@ mod tests {
 
     use super::*;
 
-    #[test] fn test_version_codec() {
+    #[test]
+    fn test_version_codec() {
         let ver = BlockVersion::V0;
         let bytes = rlp::encode(&ver);
         assert_eq!(bytes, ver.rlp_bytes());

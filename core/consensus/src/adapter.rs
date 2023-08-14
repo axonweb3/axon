@@ -15,8 +15,9 @@ use protocol::traits::{
     Network, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
 };
 use protocol::types::{
-    BatchSignedTxs, Block, BlockNumber, Bytes, ExecResp, Hash, Header, Hex, MerkleRoot, Metadata,
-    PackedTxHashes, Proof, Proposal, Receipt, SignedTransaction, Validator, U256,
+    BatchSignedTxs, Block, BlockNumber, BlockVersion, Bytes, ExecResp, Hash, Header, Hex,
+    MerkleRoot, Metadata, PackedTxHashes, Proof, Proposal, Receipt, SignedTransaction, Validator,
+    U256,
 };
 use protocol::{async_trait, tokio::task, trie, ProtocolResult};
 
@@ -24,11 +25,10 @@ use crate::consensus::gen_overlord_status;
 use crate::message::{
     BROADCAST_HEIGHT, RPC_SYNC_PULL_BLOCK, RPC_SYNC_PULL_PROOF, RPC_SYNC_PULL_TXS,
 };
-use crate::types::PullTxsRequest;
 use crate::util::{convert_hex_to_bls_pubkeys, OverlordCrypto};
-use crate::BlockHeaderField::PreviousBlockHash;
+use crate::BlockHeaderField::{PreviousBlockHash, Version};
 use crate::BlockProofField::{BitMap, HashMismatch, HeightMismatch, Signature, WeightNotFound};
-use crate::{BlockProofField, ConsensusError};
+use crate::{types::PullTxsRequest, BlockProofField, ConsensusError};
 
 pub struct OverlordConsensusAdapter<
     M: MemPool,
@@ -408,6 +408,16 @@ where
                 );
                 e
             })?;
+
+        // Todo: refactor after the first hard fork occurs.
+        if previous_block.header.block_version != proposal.block_version {
+            log::error!(
+                "[consensus] verify_block_version, block.header.block_version: {:?}, correct version {:?}",
+                proposal.block_version,
+                BlockVersion::V0
+            );
+            return Err(ConsensusError::VerifyBlockHeader(proposal.number, Version).into());
+        }
 
         let previous_block_hash = previous_block.hash();
 

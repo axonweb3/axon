@@ -278,8 +278,8 @@ impl RichBlock {
 #[cfg(test)]
 mod tests {
     use crate::types::{
-        Block, Header, Hex, Metadata, MetadataVersion, ProposeCount, RichBlock, ValidatorExtend,
-        H160, BlockVersion
+        Block, BlockVersion, Header, Hex, Metadata, MetadataVersion, ProposeCount, RichBlock,
+        ValidatorExtend, H160,
     };
     use std::time::{SystemTime, UNIX_EPOCH};
 
