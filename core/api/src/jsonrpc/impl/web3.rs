@@ -1158,6 +1158,7 @@ fn next_block_base_fee_per_gas() -> U256 {
 
 fn mock_header_by_call_req(latest_header: Header, call_req: &Web3CallRequest) -> Header {
     Header {
+        block_version:            latest_header.block_version,
         prev_hash:                latest_header.prev_hash,
         proposer:                 latest_header.proposer,
         state_root:               latest_header.state_root,

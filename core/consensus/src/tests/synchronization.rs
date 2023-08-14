@@ -28,6 +28,7 @@ pub fn get_mock_rick_block() -> RichBlock {
         block: Block {
             tx_hashes: vec![],
             header:    Header {
+                block_version:            Default::default(),
                 prev_hash:                Default::default(),
                 proposer:                 Default::default(),
                 state_root:               Default::default(),

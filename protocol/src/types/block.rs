@@ -1,13 +1,13 @@
 use rlp_derive::{RlpDecodable, RlpEncodable};
 use serde::{Deserialize, Serialize};
 
-use crate::codec::ProtocolCodec;
 #[cfg(feature = "hex-serialize")]
 use crate::codec::{serialize_bytes, serialize_uint};
 use crate::types::{
     logs_bloom, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, Log, MerkleRoot, Receipt,
     SignedTransaction, H160, H64, U256,
 };
+use crate::{codec::ProtocolCodec, types::TypesError};
 
 pub type BlockNumber = u64;
 
@@ -19,8 +19,34 @@ pub const MAX_FEE_HISTORY: u64 = 1024;
 pub const MAX_RPC_GAS_CAP: u64 = 50_000_000;
 pub const BASE_FEE_PER_GAS: u64 = 0x539;
 
+#[derive(Serialize, Deserialize, Default, Copy, Clone, Debug, PartialEq, Eq)]
+pub enum BlockVersion {
+    #[default]
+    V0,
+}
+
+impl From<BlockVersion> for u8 {
+    fn from(value: BlockVersion) -> Self {
+        match value {
+            BlockVersion::V0 => 0,
+        }
+    }
+}
+
+impl TryFrom<u8> for BlockVersion {
+    type Error = TypesError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(BlockVersion::V0),
+            _ => Err(TypesError::InvalidBlockVersion(value)),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq)]
 pub struct Proposal {
+    pub block_version:            BlockVersion,
     pub prev_hash:                Hash,
     pub proposer:                 H160,
     pub prev_state_root:          MerkleRoot,
@@ -50,6 +76,7 @@ impl Proposal {
 
     pub fn new_with_state_root(h: &Header, state_root: MerkleRoot, hashes: Vec<Hash>) -> Self {
         Proposal {
+            block_version:            h.block_version,
             prev_hash:                h.prev_hash,
             proposer:                 h.proposer,
             prev_state_root:          state_root,
@@ -70,6 +97,7 @@ impl Proposal {
 
     pub fn new_without_state_root(h: &Header) -> Self {
         Proposal {
+            block_version:            h.block_version,
             prev_hash:                h.prev_hash,
             proposer:                 h.proposer,
             prev_state_root:          Default::default(),
@@ -110,6 +138,7 @@ impl Block {
             .map(|r| Bloom::from(BloomInput::Raw(rlp::encode_list(&r.logs).as_ref())))
             .collect::<Vec<_>>();
         let header = Header {
+            block_version:            proposal.block_version,
             prev_hash:                proposal.prev_hash,
             proposer:                 proposal.proposer,
             state_root:               exec_resp.state_root,
@@ -182,6 +211,7 @@ impl Block {
     RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq,
 )]
 pub struct Header {
+    pub block_version:            BlockVersion,
     pub prev_hash:                Hash,
     pub proposer:                 H160,
     pub state_root:               MerkleRoot,
@@ -249,7 +279,7 @@ impl RichBlock {
 mod tests {
     use crate::types::{
         Block, Header, Hex, Metadata, MetadataVersion, ProposeCount, RichBlock, ValidatorExtend,
-        H160,
+        H160, BlockVersion
     };
     use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -261,12 +291,23 @@ mod tests {
     }
 
     #[test]
+    fn test_invalid_version() {
+        assert_eq!(BlockVersion::try_from(0).unwrap(), BlockVersion::V0);
+
+        let ver = rand::random::<u8>();
+        if ver != 0 {
+            assert!(BlockVersion::try_from(ver).is_err());
+        }
+    }
+
+    #[test]
     fn print_genesis() {
         let genesis = RichBlock {
             txs:   vec![],
             block: Block {
                 tx_hashes: vec![],
                 header:    Header {
+                    block_version:            Default::default(),
                     prev_hash:                Default::default(),
                     proposer:                 Default::default(),
                     state_root:               Default::default(),

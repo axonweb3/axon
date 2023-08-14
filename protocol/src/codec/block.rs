@@ -3,12 +3,27 @@ use std::error::Error;
 use overlord::Codec;
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 
-use crate::types::{Bytes, Proposal, BASE_FEE_PER_GAS, MAX_BLOCK_GAS_LIMIT};
+use crate::types::{BlockVersion, Bytes, Proposal, BASE_FEE_PER_GAS, MAX_BLOCK_GAS_LIMIT};
 use crate::{codec::error::CodecError, lazy::CHAIN_ID, ProtocolError};
+
+impl Encodable for BlockVersion {
+    fn rlp_append(&self, s: &mut RlpStream) {
+        let ver: u8 = (*self).into();
+        s.begin_list(1).append(&ver);
+    }
+}
+
+impl Decodable for BlockVersion {
+    fn decode(r: &Rlp) -> Result<Self, DecoderError> {
+        let ver: u8 = r.val_at(0)?;
+        ver.try_into()
+            .map_err(|_| DecoderError::Custom("Invalid block version"))
+    }
+}
 
 impl Encodable for Proposal {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(10)
+        s.begin_list(11)
             .append(&self.prev_hash)
             .append(&self.proposer)
             .append(&self.prev_state_root)
@@ -25,21 +40,22 @@ impl Encodable for Proposal {
 impl Decodable for Proposal {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         Ok(Proposal {
-            prev_hash:                r.val_at(0)?,
-            proposer:                 r.val_at(1)?,
-            prev_state_root:          r.val_at(2)?,
-            transactions_root:        r.val_at(3)?,
-            signed_txs_hash:          r.val_at(4)?,
-            timestamp:                r.val_at(5)?,
-            number:                   r.val_at(6)?,
+            block_version:            r.val_at(0)?,
+            prev_hash:                r.val_at(1)?,
+            proposer:                 r.val_at(2)?,
+            prev_state_root:          r.val_at(3)?,
+            transactions_root:        r.val_at(4)?,
+            signed_txs_hash:          r.val_at(5)?,
+            timestamp:                r.val_at(6)?,
+            number:                   r.val_at(7)?,
             gas_limit:                MAX_BLOCK_GAS_LIMIT.into(),
             extra_data:               Default::default(),
             mixed_hash:               None,
             base_fee_per_gas:         BASE_FEE_PER_GAS.into(),
-            proof:                    r.val_at(7)?,
+            proof:                    r.val_at(8)?,
             chain_id:                 **CHAIN_ID.load(),
-            call_system_script_count: r.val_at(8)?,
-            tx_hashes:                r.list_at(9)?,
+            call_system_script_count: r.val_at(9)?,
+            tx_hashes:                r.list_at(10)?,
         })
     }
 }
@@ -62,6 +78,14 @@ mod tests {
     use crate::types::{Block, Header, Proof};
 
     use super::*;
+
+    #[test] fn test_version_codec() {
+        let ver = BlockVersion::V0;
+        let bytes = rlp::encode(&ver);
+        assert_eq!(bytes, ver.rlp_bytes());
+        let decode: BlockVersion = rlp::decode(bytes.as_ref()).unwrap();
+        assert_eq!(ver, decode);
+    }
 
     #[test]
     fn test_block_codec() {
