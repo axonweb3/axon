@@ -79,7 +79,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         };
 
         let proposal = Proposal {
-            block_version:            BlockVersion::V0,
+            version:                  BlockVersion::V0,
             prev_hash:                status.prev_hash,
             proposer:                 self.node_info.self_address.0,
             prev_state_root:          self.status.inner().last_state_root,

@@ -66,7 +66,7 @@ fn mock_receipt(hash: Hash) -> Receipt {
 fn mock_block(height: u64, _block_hash: Hash) -> Block {
     let _nonce = Hasher::digest(Bytes::from("XXXX"));
     let header = Header {
-        block_version:            Default::default(),
+        version:                  Default::default(),
         prev_hash:                Default::default(),
         proposer:                 Default::default(),
         state_root:               Default::default(),

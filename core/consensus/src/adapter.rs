@@ -410,10 +410,10 @@ where
             })?;
 
         // Todo: refactor after the first hard fork occurs.
-        if previous_block.header.block_version != proposal.block_version {
+        if previous_block.header.version != proposal.version {
             log::error!(
-                "[consensus] verify_block_version, block.header.block_version: {:?}, correct version {:?}",
-                proposal.block_version,
+                "[consensus] verify_version, block.header.version: {:?}, correct version {:?}",
+                proposal.version,
                 BlockVersion::V0
             );
             return Err(ConsensusError::VerifyBlockHeader(proposal.number, Version).into());

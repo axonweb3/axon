@@ -46,7 +46,7 @@ impl TryFrom<u8> for BlockVersion {
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq)]
 pub struct Proposal {
-    pub block_version:            BlockVersion,
+    pub version:                  BlockVersion,
     pub prev_hash:                Hash,
     pub proposer:                 H160,
     pub prev_state_root:          MerkleRoot,
@@ -76,7 +76,7 @@ impl Proposal {
 
     pub fn new_with_state_root(h: &Header, state_root: MerkleRoot, hashes: Vec<Hash>) -> Self {
         Proposal {
-            block_version:            h.block_version,
+            version:                  h.version,
             prev_hash:                h.prev_hash,
             proposer:                 h.proposer,
             prev_state_root:          state_root,
@@ -97,7 +97,7 @@ impl Proposal {
 
     pub fn new_without_state_root(h: &Header) -> Self {
         Proposal {
-            block_version:            h.block_version,
+            version:                  h.version,
             prev_hash:                h.prev_hash,
             proposer:                 h.proposer,
             prev_state_root:          Default::default(),
@@ -138,7 +138,7 @@ impl Block {
             .map(|r| Bloom::from(BloomInput::Raw(rlp::encode_list(&r.logs).as_ref())))
             .collect::<Vec<_>>();
         let header = Header {
-            block_version:            proposal.block_version,
+            version:                  proposal.version,
             prev_hash:                proposal.prev_hash,
             proposer:                 proposal.proposer,
             state_root:               exec_resp.state_root,
@@ -211,7 +211,7 @@ impl Block {
     RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq,
 )]
 pub struct Header {
-    pub block_version:            BlockVersion,
+    pub version:                  BlockVersion,
     pub prev_hash:                Hash,
     pub proposer:                 H160,
     pub state_root:               MerkleRoot,
@@ -307,7 +307,7 @@ mod tests {
             block: Block {
                 tx_hashes: vec![],
                 header:    Header {
-                    block_version:            Default::default(),
+                    version:                  Default::default(),
                     prev_hash:                Default::default(),
                     proposer:                 Default::default(),
                     state_root:               Default::default(),

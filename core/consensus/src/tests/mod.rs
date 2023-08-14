@@ -25,7 +25,7 @@ const _HEIGHT_TEN: u64 = 10;
 
 fn _mock_block_from_status(status: &CurrentStatus) -> Block {
     let block_header = Header {
-        block_version:            Default::default(),
+        version:                  Default::default(),
         chain_id:                 0,
         number:                   status.last_number + 1,
         prev_hash:                status.prev_hash,

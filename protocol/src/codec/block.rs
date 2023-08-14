@@ -24,6 +24,7 @@ impl Decodable for BlockVersion {
 impl Encodable for Proposal {
     fn rlp_append(&self, s: &mut RlpStream) {
         s.begin_list(11)
+            .append(&self.version)
             .append(&self.prev_hash)
             .append(&self.proposer)
             .append(&self.prev_state_root)
@@ -40,7 +41,7 @@ impl Encodable for Proposal {
 impl Decodable for Proposal {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         Ok(Proposal {
-            block_version:            r.val_at(0)?,
+            version:                  r.val_at(0)?,
             prev_hash:                r.val_at(1)?,
             proposer:                 r.val_at(2)?,
             prev_state_root:          r.val_at(3)?,
