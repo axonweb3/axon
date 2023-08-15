@@ -208,6 +208,9 @@ pub enum BlockHeaderField {
 
     #[display(fmt = "There is at least one validator's weight mismatch")]
     Weight,
+
+    #[display(fmt = "The block version")]
+    Version,
 }
 
 #[derive(Debug, Display)]

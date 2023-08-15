@@ -18,8 +18,8 @@ use common_logger::{json, log};
 use common_merkle::TrieMerkle;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
-    Block, Bytes, ExecResp, Hash, Hasher, Hex, Metadata, Proof, Proposal, SignedTransaction,
-    ValidatorExtend, BASE_FEE_PER_GAS, MAX_BLOCK_GAS_LIMIT, RLP_NULL,
+    Block, BlockVersion, Bytes, ExecResp, Hash, Hasher, Hex, Metadata, Proof, Proposal,
+    SignedTransaction, ValidatorExtend, BASE_FEE_PER_GAS, MAX_BLOCK_GAS_LIMIT, RLP_NULL,
 };
 use protocol::{async_trait, tokio::sync::Mutex as AsyncMutex, ProtocolError, ProtocolResult};
 
@@ -79,6 +79,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         };
 
         let proposal = Proposal {
+            version:                  BlockVersion::V0,
             prev_hash:                status.prev_hash,
             proposer:                 self.node_info.self_address.0,
             prev_state_root:          self.status.inner().last_state_root,

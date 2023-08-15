@@ -23,7 +23,7 @@ const DEV_CONFIG_DIR: &str = "../../devtools/chain";
 const GENESIS_FILE: &str = "genesis_single_node.json";
 const CONFIG_FILE: &str = "config.toml";
 
-const GENESIS_HASH: &str = "0x69eca8420bb4b072d732db96260a656f0e10201c6841b215a8ed107681e17d1c";
+const GENESIS_HASH: &str = "0x2cc987996d5d26d18cb76dceb85d9b46e4f05f11ff331247225d983ec7a7b78f";
 const GENESIS_STATE_ROOT: &str =
     "0x65f57a6a666e656de33ed68957e04b35b3fe1b35a90f6eafb6f283c907dc3d77";
 const GENESIS_RECEIPTS_ROOT: &str =
