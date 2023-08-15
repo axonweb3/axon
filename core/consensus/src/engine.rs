@@ -18,8 +18,8 @@ use common_logger::{json, log};
 use common_merkle::TrieMerkle;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
-    Block, BlockVersion, Bytes, ExecResp, Hash, Hasher, Hex, Metadata, Proof, Proposal,
-    SignedTransaction, ValidatorExtend, BASE_FEE_PER_GAS, MAX_BLOCK_GAS_LIMIT, RLP_NULL,
+    Block, BlockVersion, Bytes, ExecResp, Hash, Hex, Metadata, Proof, Proposal, SignedTransaction,
+    ValidatorExtend, BASE_FEE_PER_GAS, MAX_BLOCK_GAS_LIMIT, RLP_NULL,
 };
 use protocol::{async_trait, tokio::sync::Mutex as AsyncMutex, ProtocolError, ProtocolResult};
 
@@ -551,7 +551,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
                 })
         };
 
-        let stxs_hash = Hasher::digest(rlp::encode_list(signed_txs));
+        let stxs_hash = digest_signed_transactions(signed_txs);
 
         if stxs_hash != proposal.signed_txs_hash {
             return Err(ConsensusError::InvalidOrderSignedTransactionsHash {

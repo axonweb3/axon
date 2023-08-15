@@ -40,6 +40,8 @@ hex = "0.4"
 serde_json = "1.0"
 toml = "0.7"
 
+common-merkle = { path = "../common/merkle" }
+
 [features]
 default = ["hex-serialize"]
 hex-serialize = []

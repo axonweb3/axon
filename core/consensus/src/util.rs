@@ -11,11 +11,17 @@ use common_crypto::{
     BlsPrivateKey, BlsPublicKey, BlsSignature, BlsSignatureVerify, HashValue, PrivateKey, Signature,
 };
 use protocol::traits::Context;
-use protocol::types::{Address, Bytes, Hash, Hasher, Hex, MerkleRoot, SignedTransaction};
+use protocol::types::{
+    Address, Bytes, Hash, Hasher, Hex, MerkleRoot, SignedTransaction, RLP_EMPTY_LIST,
+};
 use protocol::{ProtocolError, ProtocolResult};
 
 pub fn digest_signed_transactions(stxs: &[SignedTransaction]) -> Hash {
-    Hasher::digest(rlp::encode_list(stxs))
+    if stxs.is_empty() {
+        RLP_EMPTY_LIST
+    } else {
+        Hasher::digest(rlp::encode_list(stxs))
+    }
 }
 
 pub fn time_now() -> u64 {
