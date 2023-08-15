@@ -80,5 +80,10 @@ jobs:
               exit 1
           fi
 
-      # TODO
-      # - name: archive log
+      - name: Archive logs
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: axon-single-node-logs
+          path: |
+            /tmp/single-axon-node.log
