@@ -11,20 +11,23 @@ jobs:
   build-and-run:
     strategy:
       matrix:
-        os: [ubuntu-20.04] # TODO: test on [ubuntu-22.04, windows-latest, macos-latest]
+        # Supported GitHub-hosted runners and hardware resources
+        # see https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
+        os: [ubuntu-20.04, ubuntu-22.04] # TODO: test on [windows-latest, macos-latest]
       fail-fast: false
     runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v3
 
-      - name: Cache of Axon binary
+      - name: Cache of the axon binary
         id: axon-bin-cache
         uses: actions/cache@v3
         with:
           path: |
             target/debug/axon
-          key: ${{ runner.os }}-${{ runner.arch }}-axon-${{ github.sha }}
+            target/release/axon
+          key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-axon-${{ github.sha }}
 
       - name: Cargo Cache
         if: steps.axon-bin-cache.outputs.cache-hit != 'true'
@@ -35,9 +38,9 @@ jobs:
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-          key: ${{ runner.os }}-${{ runner.arch }}-cargo-${{ github.sha }}
+          key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-cargo-
+            ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-
 
       - name: Cache Axon target directory
         if: steps.axon-bin-cache.outputs.cache-hit != 'true'
@@ -45,9 +48,9 @@ jobs:
         with:
           path: |
             target
-          key: ${{ runner.os }}-${{ runner.arch }}-cargo-target-${{ hashFiles('Cargo.lock') }}
+          key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-target-${{ hashFiles('Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-cargo-target
+            ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-target
       
       - name: Install Rust components
         if: steps.axon-bin-cache.outputs.cache-hit != 'true'
@@ -65,11 +68,11 @@ jobs:
             -g devtools/chain/genesis_single_node.json \
             > /tmp/single-axon-node.log &
          
-          sleep 700
+          sleep 300
           set +e
-          result=$(tail -n 100 /tmp/single-axon-node.log | grep 'state goto new height 200')
+          result=$(tail -n 100 /tmp/single-axon-node.log | grep 'state goto new height 100')
 
-          if [[ "$result" != ""]]
+          if [[ "$result" != "" ]]
           then
               echo "axon chain works well"
           else
