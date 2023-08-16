@@ -87,8 +87,6 @@ pub struct ConfigApi {
     pub maxconn:                u32,
     pub max_payload_size:       u32,
     pub enable_dump_profile:    Option<bool>,
-    #[serde(default)]
-    pub client_version:         String,
 }
 
 #[derive(Clone, Debug, Deserialize)]

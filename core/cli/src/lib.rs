@@ -3,10 +3,10 @@ use std::path::Path;
 
 use clap::{Arg, ArgMatches, Command};
 use protocol::ProtocolError;
-use semver::Version;
 use thiserror::Error;
 
 use common_config_parser::{parse_file, types::Config, ParseError};
+use common_version::Version;
 use core_run::{Axon, KeyProvider, SecioKeyPair};
 use protocol::types::RichBlock;
 
@@ -47,14 +47,20 @@ pub struct CheckingVersionError {
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 pub struct AxonCli {
-    version: Version,
-    matches: ArgMatches,
+    kernel_version:      Version,
+    application_version: Version,
+    matches:             ArgMatches,
 }
 
 impl AxonCli {
-    pub fn init(axon_version: Version, cli_version: &'static str) -> Self {
+    pub fn init(application_version: Version, kernel_version: Version) -> Self {
+        let mix_version = format!(
+            "{}-with-axon-kernel-{}",
+            application_version, kernel_version
+        );
+
         let matches = Command::new("axon")
-            .version(cli_version)
+            .version(mix_version)
             .subcommand_required(true)
             .subcommand(
                 Command::new("run")
@@ -78,7 +84,8 @@ impl AxonCli {
             );
 
         AxonCli {
-            version: axon_version,
+            kernel_version,
+            application_version,
             matches: matches.get_matches(),
         }
     }
@@ -112,7 +119,7 @@ impl AxonCli {
 
                     register_log(&config);
 
-                    Axon::new(config, genesis)
+                    Axon::new(self.application_version.to_string(), config, genesis)
                         .run(key_provider)
                         .map_err(Error::Running)
                 }
@@ -128,7 +135,7 @@ impl AxonCli {
         // Won't panic because parent of data_path_for_version() is data_path.
         check_version(
             &config.data_path_for_version(),
-            &self.version,
+            &self.kernel_version,
             latest_compatible_version(),
         )
     }
@@ -149,7 +156,7 @@ fn check_version(p: &Path, current: &Version, least_compatible: Version) -> Resu
         return Ok(());
     }
 
-    let prev_version = Version::parse(&ver_str).unwrap();
+    let prev_version = Version::new(&ver_str);
     if prev_version < least_compatible {
         return Err(Error::CheckingVersion(Box::new(CheckingVersionError {
             least_compatible,
@@ -184,7 +191,7 @@ fn atomic_write(p: &Path, content: &[u8]) -> io::Result<()> {
 }
 
 fn latest_compatible_version() -> Version {
-    Version::parse("0.1.0-alpha.9").unwrap()
+    Version::new("0.1.0-beta.1")
 }
 
 fn register_log(config: &Config) {
@@ -226,20 +233,19 @@ mod tests {
     }
 
     #[test]
-    fn test_check_version_failure() -> Result<()> {
+    fn test_check_version_failure() {
         let tmp = NamedTempFile::new().unwrap();
         let p = tmp.path();
-        check_version(p, &"0.1.0".parse().unwrap(), "0.1.0".parse().unwrap())?;
+        check_version(p, &"0.1.0".parse().unwrap(), "0.1.0".parse().unwrap()).unwrap();
         let err =
             check_version(p, &"0.2.2".parse().unwrap(), "0.2.0".parse().unwrap()).unwrap_err();
         match err {
             Error::CheckingVersion(e) => assert_eq!(*e, CheckingVersionError {
                 current:          "0.2.2".parse().unwrap(),
                 least_compatible: "0.2.0".parse().unwrap(),
-                data:             "0.1.0".parse().unwrap(),
+                data:             "0.1.0+unknown".parse().unwrap(),
             }),
             e => panic!("unexpected error {e}"),
         }
-        Ok(())
     }
 }
