@@ -34,6 +34,7 @@ members = [
     "core/api",
     "core/cli",
     "core/consensus",
+    "core/db",
     "core/executor",
     "core/mempool",
     "core/network",

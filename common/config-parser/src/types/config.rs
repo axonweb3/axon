@@ -43,24 +43,9 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn data_path_for_system_contract(&self) -> PathBuf {
+    pub fn data_path_for_rocksdb(&self) -> PathBuf {
         let mut path_state = self.data_path.clone();
         path_state.push("rocksdb");
-        path_state.push("system_contract");
-        path_state
-    }
-
-    pub fn data_path_for_state(&self) -> PathBuf {
-        let mut path_state = self.data_path.clone();
-        path_state.push("rocksdb");
-        path_state.push("state_data");
-        path_state
-    }
-
-    pub fn data_path_for_block(&self) -> PathBuf {
-        let mut path_state = self.data_path.clone();
-        path_state.push("rocksdb");
-        path_state.push("block_data");
         path_state
     }
 

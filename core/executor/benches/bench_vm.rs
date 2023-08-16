@@ -13,9 +13,7 @@ use protocol::{
     types::{Account, Address, ExecutorContext},
 };
 
-use crate::mock::{
-    init_account, mock_executor_context, mock_transactions, new_rocks_trie_db, new_storage,
-};
+use crate::mock::{init_account, mock_executor_context, mock_transactions, new_storage};
 use crate::revm_adapter::{revm_exec, RevmAdapter};
 
 trait BackendInit<S: Storage + 'static, DB: trie::DB + 'static> {
@@ -73,8 +71,7 @@ fn criterion_10000_txs(c: &mut Criterion) {
     let txs = mock_transactions(10000);
     // MacOS M1 Pro, 16GB: time: 20.098ms
     c.bench_function("revm 10000 tx", |b| {
-        let storage = new_storage();
-        let db = new_rocks_trie_db();
+        let (db, storage) = new_storage();
         let exec_ctx = mock_executor_context();
         let (account, addr) = init_account();
         let revm_adapter = RevmAdapter::init(storage, db, exec_ctx, account, addr);
@@ -86,8 +83,7 @@ fn criterion_10000_txs(c: &mut Criterion) {
     });
     // MacOS M1 Pro, 16GB: time:54.987ms
     c.bench_function("evm 10000 tx", |b| {
-        let storage = new_storage();
-        let db = new_rocks_trie_db();
+        let (db, storage) = new_storage();
         let exec_ctx = mock_executor_context();
         let (account, addr) = init_account();
         let mut axon_adapter = AxonExecutorApplyAdapter::init(storage, db, exec_ctx, account, addr);

@@ -4,7 +4,7 @@ use std::str::FromStr;
 use ckb_types::{bytes::Bytes, packed, prelude::*};
 use ethers::abi::AbiEncode;
 
-use common_config_parser::types::ConfigRocksDB;
+use core_db::RocksAdapter;
 use protocol::types::{Backend, MemoryBackend, TxResp, H160, U256};
 
 use crate::system_contract::image_cell::{
@@ -24,7 +24,10 @@ pub fn test_write_functions() {
     let mut backend = MemoryBackend::new(&vicinity, BTreeMap::new());
 
     let executor = ImageCellContract::default();
-    let (m_root, h_root) = init(ROCKSDB_PATH, ConfigRocksDB::default(), &mut backend);
+    let inner_db = RocksAdapter::new(ROCKSDB_PATH, Default::default())
+        .unwrap()
+        .inner_db();
+    let (m_root, h_root) = init(inner_db, &mut backend);
 
     CURRENT_METADATA_ROOT.with(|r| *r.borrow_mut() = m_root);
     CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow_mut() = h_root);

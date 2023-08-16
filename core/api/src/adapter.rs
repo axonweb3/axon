@@ -28,7 +28,7 @@ impl<M, S, DB, Net> DefaultAPIAdapter<M, S, DB, Net>
 where
     M: MemPool + 'static,
     S: ReadOnlyStorage + 'static,
-    DB: trie::DB + 'static,
+    DB: trie::DB + Send + Sync + 'static,
     Net: Network + 'static,
 {
     pub fn new(mempool: Arc<M>, storage: Arc<S>, trie_db: Arc<DB>, net: Arc<Net>) -> Self {
@@ -63,7 +63,7 @@ impl<M, S, DB, Net> APIAdapter for DefaultAPIAdapter<M, S, DB, Net>
 where
     M: MemPool + 'static,
     S: ReadOnlyStorage + 'static,
-    DB: trie::DB + 'static,
+    DB: trie::DB + Send + Sync + 'static,
     Net: Network + 'static,
 {
     async fn insert_signed_txs(

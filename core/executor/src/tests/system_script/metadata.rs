@@ -1,7 +1,8 @@
 use std::{collections::BTreeMap, str::FromStr};
 
-use common_config_parser::types::ConfigRocksDB;
 use ethers::abi::AbiEncode;
+
+use core_db::RocksAdapter;
 use protocol::types::{MemoryBackend, SignedTransaction, H160, U256};
 
 use crate::{
@@ -24,8 +25,10 @@ fn test_write_functions() {
     let mut backend = MemoryBackend::new(&vicinity, BTreeMap::new());
 
     let executor = MetadataContract::default();
-
-    init(ROCKSDB_PATH, ConfigRocksDB::default(), &mut backend);
+    let inner_db = RocksAdapter::new(ROCKSDB_PATH, Default::default())
+        .unwrap()
+        .inner_db();
+    init(inner_db, &mut backend);
 
     test_init(&mut backend, &executor);
 

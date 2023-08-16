@@ -14,6 +14,7 @@ common-apm = { path = "../../common/apm" }
 common-config-parser = { path = "../../common/config-parser" }
 common-crypto = { path = "../../common/crypto" }
 common-merkle = { path = "../../common/merkle" }
+core-db = { path = "../db" }
 core-interoperation = { path = "../interoperation" }
 ethers = "2.0"
 evm = { version = "0.37", features = ["tracing"] }

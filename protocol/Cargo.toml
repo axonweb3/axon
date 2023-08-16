@@ -24,13 +24,13 @@ lazy_static = "1.4"
 ophelia = "0.3"
 ophelia-secp256k1 = "0.3"
 overlord = "0.4"
-prost = "0.11"
 rand = "0.7"
 rlp = "0.5"
 rlp-derive = "0.1"
 serde = { version = "1.0", features = ["derive"] }
-tokio = { version = "1.31", features = ["full"] }
-trie = { package = "cita_trie", version = "4.0" }
+thiserror = "1.0"
+tokio = { version = "1.32", features = ["full"] }
+trie = { package = "cita_trie", git = "https://github.com/KaoImin/cita-trie.git", rev = "eea569c", version = "4.1" }
 
 common-crypto = { path = "../common/crypto" }
 common-hasher = { path = "../common/hasher" }

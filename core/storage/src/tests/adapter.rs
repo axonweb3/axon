@@ -1,9 +1,7 @@
+use core_db::{MemoryAdapter, RocksAdapter};
 use protocol::traits::{StorageAdapter, StorageBatchModify};
 
-use crate::adapter::memory::MemoryAdapter;
-use crate::adapter::rocks::RocksAdapter;
-use crate::tests::mock_signed_tx;
-use crate::{CommonHashKey, TransactionSchema};
+use crate::{tests::mock_signed_tx, CommonHashKey, TransactionSchema};
 
 #[test]
 fn test_adapter_insert() {

@@ -1,8 +1,4 @@
-use std::error::Error;
-use std::marker::PhantomData;
-use std::path::Path;
-use std::sync::Arc;
-use std::{fs, io};
+use std::{error::Error, fs, io, marker::PhantomData, path::Path, sync::Arc};
 
 use rocksdb::ops::{DeleteCF, GetCF, GetColumnFamilys, IterateCF, OpenCF, PutCF, WriteOps};
 use rocksdb::{
@@ -27,8 +23,9 @@ pub struct RocksAdapter {
 impl RocksAdapter {
     pub fn new<P: AsRef<Path>>(path: P, config: ConfigRocksDB) -> ProtocolResult<Self> {
         if !path.as_ref().is_dir() {
-            fs::create_dir_all(&path).map_err(RocksAdapterError::CreateDB)?;
+            fs::create_dir_all(&path).map_err(RocksDBError::CreateDB)?;
         }
+
         let categories = [
             map_category(StorageCategory::Block),
             map_category(StorageCategory::BlockHeader),
@@ -37,6 +34,9 @@ impl RocksAdapter {
             map_category(StorageCategory::Wal),
             map_category(StorageCategory::HashHeight),
             map_category(StorageCategory::Code),
+            map_category(StorageCategory::EvmState),
+            map_category(StorageCategory::MetadataState),
+            map_category(StorageCategory::CkbLightClientState),
         ];
 
         let (mut opts, cf_descriptors) = if let Some(ref file) = config.options_file {
@@ -45,12 +45,12 @@ impl RocksAdapter {
                 size => Some(size),
             };
 
-            let mut full_opts = FullOptions::load_from_file(file, cache_size, false)
-                .map_err(RocksAdapterError::from)?;
+            let mut full_opts =
+                FullOptions::load_from_file(file, cache_size, false).map_err(RocksDBError::from)?;
 
             full_opts
                 .complete_column_families(&categories, false)
-                .map_err(RocksAdapterError::from)?;
+                .map_err(RocksDBError::from)?;
             let FullOptions {
                 db_opts,
                 cf_descriptors,
@@ -69,8 +69,13 @@ impl RocksAdapter {
         opts.create_missing_column_families(true);
         opts.set_max_open_files(config.max_open_files);
 
-        let db = DB::open_cf_descriptors(&opts, path, cf_descriptors)
-            .map_err(RocksAdapterError::from)?;
+        // let tmp_db = DB::list_cf(&opts, path).map_err(RocksDBError::from)?;
+        // if tmp_db.len() != cf_descriptors.len() {
+        //     opts.create_missing_column_families(true);
+        // }
+
+        let db =
+            DB::open_cf_descriptors(&opts, path, cf_descriptors).map_err(RocksDBError::from)?;
 
         Ok(RocksAdapter { db: Arc::new(db) })
     }
@@ -81,12 +86,8 @@ impl RocksAdapter {
 }
 
 macro_rules! db {
-    ($db:expr, $op:ident, $column:expr, $key:expr) => {
-        $db.$op($column, $key).map_err(RocksAdapterError::from)
-    };
-    ($db:expr, $op:ident, $column:expr, $key:expr, $val:expr) => {
-        $db.$op($column, $key, $val)
-            .map_err(RocksAdapterError::from)
+    ($db:expr, $op:ident, $column:expr$ (, $args: expr)*) => {
+        $db.$op($column, $($args,)*).map_err(RocksDBError::from)
     };
 }
 
@@ -198,7 +199,7 @@ impl StorageAdapter for RocksAdapter {
         vals: Vec<StorageBatchModify<S>>,
     ) -> ProtocolResult<()> {
         if keys.len() != vals.len() {
-            return Err(RocksAdapterError::BatchLengthMismatch.into());
+            return Err(RocksDBError::BatchLengthMismatch.into());
         }
 
         let column = get_column::<S>(&self.db)?;
@@ -226,12 +227,12 @@ impl StorageAdapter for RocksAdapter {
                 }
                 None => batch.delete_cf(column, key),
             }
-            .map_err(RocksAdapterError::from)?;
+            .map_err(RocksDBError::from)?;
         }
 
         on_storage_put_cf(S::category(), inst.elapsed(), insert_size as f64);
 
-        self.db.write(&batch).map_err(RocksAdapterError::from)?;
+        self.db.write(&batch).map_err(RocksDBError::from)?;
         Ok(())
     }
 
@@ -252,7 +253,7 @@ impl StorageAdapter for RocksAdapter {
 }
 
 #[derive(Debug, Display, From)]
-pub enum RocksAdapterError {
+pub enum RocksDBError {
     #[display(fmt = "category {} not found", _0)]
     CategoryNotFound(&'static str),
 
@@ -269,14 +270,15 @@ pub enum RocksAdapterError {
     CreateDB(io::Error),
 }
 
-impl Error for RocksAdapterError {}
+impl Error for RocksDBError {}
 
-impl From<RocksAdapterError> for ProtocolError {
-    fn from(err: RocksAdapterError) -> ProtocolError {
-        ProtocolError::new(ProtocolErrorKind::Storage, Box::new(err))
+impl From<RocksDBError> for ProtocolError {
+    fn from(err: RocksDBError) -> ProtocolError {
+        ProtocolError::new(ProtocolErrorKind::DB, Box::new(err))
     }
 }
 
+// Todo: column family "c0" is reserved for store version
 const C_BLOCKS: &str = "c1";
 const C_BLOCK_HEADER: &str = "c2";
 const C_SIGNED_TRANSACTIONS: &str = "c3";
@@ -284,8 +286,11 @@ const C_RECEIPTS: &str = "c4";
 const C_WALS: &str = "c5";
 const C_HASH_HEIGHT_MAP: &str = "c6";
 const C_EVM_CODE_MAP: &str = "c7";
+const C_EVM_STATE: &str = "c8";
+const C_METADATA_STATE: &str = "c9";
+const C_CKB_LIGHT_CLIENT_STATE: &str = "c10";
 
-fn map_category(c: StorageCategory) -> &'static str {
+pub fn map_category(c: StorageCategory) -> &'static str {
     match c {
         StorageCategory::Block => C_BLOCKS,
         StorageCategory::BlockHeader => C_BLOCK_HEADER,
@@ -294,15 +299,18 @@ fn map_category(c: StorageCategory) -> &'static str {
         StorageCategory::Wal => C_WALS,
         StorageCategory::HashHeight => C_HASH_HEIGHT_MAP,
         StorageCategory::Code => C_EVM_CODE_MAP,
+        StorageCategory::EvmState => C_EVM_STATE,
+        StorageCategory::MetadataState => C_METADATA_STATE,
+        StorageCategory::CkbLightClientState => C_CKB_LIGHT_CLIENT_STATE,
     }
 }
 
-fn get_column<S: StorageSchema>(db: &DB) -> Result<&ColumnFamily, RocksAdapterError> {
+pub fn get_column<S: StorageSchema>(db: &DB) -> Result<&ColumnFamily, RocksDBError> {
     let category = map_category(S::category());
 
     let column = db
         .cf_handle(category)
-        .ok_or(RocksAdapterError::CategoryNotFound(category))?;
+        .ok_or(RocksDBError::CategoryNotFound(category))?;
 
     Ok(column)
 }

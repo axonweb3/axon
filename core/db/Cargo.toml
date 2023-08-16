@@ -1,27 +1,15 @@
 [package]
-edition = "2021"
-name = "core-storage"
+name = "core-db"
 version = "0.1.0"
+edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-arc-swap = "1.6"
-futures = "0.3"
-lazy_static = "1.4"
-log = "0.4"
-lru = "0.11"
 parking_lot = "0.12"
+rocksdb = { package = "ckb-rocksdb", version = "0.20" }
 
 common-apm = { path = "../../common/apm" }
 common-apm-derive = { path = "../../common/apm-derive" }
-core-db ={ path = "../../core/db" }
+common-config-parser = { path = "../../common/config-parser" }
 protocol = { path = "../../protocol", package = "axon-protocol" }
 
-[dev-dependencies]
-common-crypto = { path = "../../common/crypto" }
-criterion = "0.5"
-num-traits = "0.2"
-
-[[bench]]
-harness = false
-name = "bench"

@@ -37,12 +37,14 @@ impl RunArgs {
     ) -> Result<()> {
         let Self { config, spec } = self;
         let genesis = spec.genesis.build_rich_block();
+
         utils::check_version(
             &config.data_path_for_version(),
             &kernel_version,
             utils::latest_compatible_version(),
         )?;
         utils::register_log(&config);
+
         Axon::new(application_version.to_string(), config, spec, genesis)
             .run(key_provider)
             .map_err(Error::Running)

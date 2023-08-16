@@ -354,7 +354,7 @@ where
     C: Crypto + Send + Sync + 'static,
     N: Rpc + PeerTrust + Gossip + Clone + Unpin + 'static,
     S: ReadOnlyStorage + 'static,
-    DB: trie::DB + 'static,
+    DB: trie::DB + Send + Sync + 'static,
     I: Interoperation + 'static,
 {
     #[trace_span(kind = "mempool.adapter", logs = "{txs_len: tx_hashes.len()}")]

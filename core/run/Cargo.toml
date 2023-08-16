@@ -23,6 +23,7 @@ common-logger = { path = "../../common/logger" }
 common-memory-tracker = { path = "../../common/memory-tracker", optional = true }
 core-api = { path = "../../core/api" }
 core-consensus = { path = "../../core/consensus" }
+core-db = { path = "../../core/db" }
 core-executor = { path = "../../core/executor" }
 core-interoperation = { path = "../../core/interoperation" }
 core-mempool = { path = "../../core/mempool" }

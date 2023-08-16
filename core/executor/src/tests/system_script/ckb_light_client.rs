@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use ethers::abi::AbiEncode;
 
-use common_config_parser::types::ConfigRocksDB;
+use core_db::RocksAdapter;
 use protocol::types::{Backend, MemoryBackend, TxResp, H160, H256, U256};
 
 use crate::system_contract::ckb_light_client::{
@@ -22,7 +22,10 @@ pub fn test_write_functions() {
     let mut backend = MemoryBackend::new(&vicinity, BTreeMap::new());
 
     let executor = CkbLightClientContract::default();
-    init(ROCKSDB_PATH, ConfigRocksDB::default(), &mut backend);
+    let inner_db = RocksAdapter::new(ROCKSDB_PATH, Default::default())
+        .unwrap()
+        .inner_db();
+    init(inner_db, &mut backend);
 
     // need to refactor to be OO
     test_update_first(&mut backend, &executor);

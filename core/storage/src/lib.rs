@@ -1,6 +1,5 @@
 #![allow(clippy::mutable_key_type, clippy::uninlined_format_args)]
 
-pub mod adapter;
 mod cache;
 mod hash_key;
 mod schema;

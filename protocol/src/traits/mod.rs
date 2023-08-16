@@ -21,6 +21,6 @@ pub use network::{
     Gossip, MessageCodec, MessageHandler, Network, PeerTag, PeerTrust, Priority, Rpc, TrustFeedback,
 };
 pub use storage::{
-    IntoIteratorByRef, ReadOnlyStorage, Storage, StorageAdapter, StorageBatchModify,
-    StorageCategory, StorageIterator, StorageSchema,
+    IntoIteratorByRef, ReadOnlyStorage, StateStorageCategory, Storage, StorageAdapter,
+    StorageBatchModify, StorageCategory, StorageIterator, StorageSchema,
 };

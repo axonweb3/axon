@@ -13,13 +13,15 @@ use common_config_parser::types::{
     spec::{ChainSpec, ChainSpecValueParser},
     Config, ConfigValueParser,
 };
-use core_executor::{MPTTrie, RocksTrieDB};
-use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::{
     codec::hex_decode,
     tokio,
     types::{RichBlock, H256},
 };
+
+use core_db::RocksAdapter;
+use core_executor::{MPTTrie, RocksTrieDB};
+use core_storage::ImplStorage;
 
 use crate::{execute_transactions, insert_accounts};
 
@@ -131,26 +133,17 @@ async fn check_genesis_data<'a>(case: &TestCase<'a>) {
             "check hash of tx[{i}], cached: {tx_cached:#x}, calculated: {calculated:#x}",
         );
     }
+    let path_block = tmp_dir.path().join("block");
+    let rocks_adapter = Arc::new(
+        RocksAdapter::new(path_block, config.rocksdb.clone()).expect("temporary block storage"),
+    );
+    let inner_db = rocks_adapter.inner_db();
 
-    let storage = {
-        let path_block = tmp_dir.path().join("block");
-        let rocks_adapter = Arc::new(
-            RocksAdapter::new(path_block, config.rocksdb.clone()).expect("temporary block storage"),
-        );
-        let impl_storage = ImplStorage::new(rocks_adapter, config.rocksdb.cache_size);
-        Arc::new(impl_storage)
-    };
-
-    let trie_db = {
-        let path_state = tmp_dir.path().join("state");
-        let trie_db = RocksTrieDB::new(
-            path_state,
-            config.rocksdb.clone(),
-            config.executor.triedb_cache_size,
-        )
-        .expect("temporary trie db");
-        Arc::new(trie_db)
-    };
+    let storage = Arc::new(ImplStorage::new(rocks_adapter, config.rocksdb.cache_size));
+    let trie_db = Arc::new(RocksTrieDB::new_evm(
+        Arc::clone(&inner_db),
+        config.executor.triedb_cache_size,
+    ));
 
     let state_root = {
         let mut mpt = MPTTrie::new(Arc::clone(&trie_db));
@@ -158,14 +151,12 @@ async fn check_genesis_data<'a>(case: &TestCase<'a>) {
         mpt.commit().expect("mpt commit")
     };
 
-    let path_metadata = tmp_dir_path.join("metadata");
     let resp = execute_transactions(
         &genesis,
         state_root,
-        &trie_db,
+        inner_db,
         &storage,
-        path_metadata,
-        &config.rocksdb,
+        config.executor.triedb_cache_size,
     )
     .expect("execute transactions");
 

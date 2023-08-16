@@ -76,8 +76,11 @@ impl From<MPTTrieError> for ProtocolError {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::adapter::RocksTrieDB;
+
+    use core_db::RocksAdapter;
     use protocol::rand::random;
+
+    use crate::adapter::RocksTrieDB;
 
     fn rand_bytes(len: usize) -> Vec<u8> {
         (0..len).map(|_| random()).collect()
@@ -86,7 +89,9 @@ mod tests {
     #[test]
     fn test_mpt_cache() {
         let dir = tempfile::tempdir().unwrap();
-        let db = RocksTrieDB::new(dir.path(), Default::default(), 100).unwrap();
+        let inner_db =
+            Arc::new(RocksAdapter::new(dir.path(), Default::default()).unwrap()).inner_db();
+        let db = RocksTrieDB::new_evm(inner_db, 100);
         let mut mpt = MPTTrie::new(Arc::new(db));
 
         let key_1 = rand_bytes(5);

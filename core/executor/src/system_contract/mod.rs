@@ -17,7 +17,6 @@ pub use crate::system_contract::native_token::{
     NativeTokenContract, NATIVE_TOKEN_CONTRACT_ADDRESS,
 };
 
-use std::path::Path;
 use std::sync::Arc;
 
 use ckb_traits::{CellDataProvider, HeaderProvider};
@@ -26,14 +25,16 @@ use ckb_types::core::{HeaderBuilder, HeaderView};
 use ckb_types::{packed, prelude::*};
 use evm::backend::ApplyBackend;
 use parking_lot::RwLock;
+use rocksdb::DB;
 
-use common_config_parser::types::ConfigRocksDB;
 use protocol::types::{Bytes, Hasher, SignedTransaction, TxResp, H160, H256};
 use protocol::{ckb_blake2b_256, traits::ExecutorAdapter};
 
 use crate::adapter::RocksTrieDB;
-use crate::system_contract::utils::generate_mpt_root_changes;
-use crate::system_contract::{ckb_light_client::CkbHeaderReader, image_cell::ImageCellReader};
+use crate::system_contract::{
+    ckb_light_client::CkbHeaderReader, image_cell::ImageCellReader,
+    utils::generate_mpt_root_changes,
+};
 
 pub const fn system_contract_address(addr: u8) -> H160 {
     H160([
@@ -103,30 +104,27 @@ pub fn swap_header_cell_db(new_db: Arc<RocksTrieDB>) -> Arc<RocksTrieDB> {
         .unwrap_or_else(|| panic!("header cell db is not initialized"))
 }
 
-pub fn init<P: AsRef<Path>, Adapter: ExecutorAdapter + ApplyBackend>(
-    path: P,
-    config: ConfigRocksDB,
+pub fn init<Adapter: ExecutorAdapter + ApplyBackend>(
+    db: Arc<DB>,
     adapter: &mut Adapter,
 ) -> (H256, H256) {
     let current_metadata_root = adapter.storage(METADATA_CONTRACT_ADDRESS, *METADATA_ROOT_KEY);
 
     // Init metadata db.
-    let metadata_db_path = path.as_ref().join("metadata");
     {
-        let mut db = METADATA_DB.write();
-        db.replace(Arc::new(
-            RocksTrieDB::new(metadata_db_path, config.clone(), METADATA_DB_CACHE_SIZE)
-                .expect("[system contract] metadata new rocksdb error"),
-        ));
+        let mut _db = METADATA_DB.write();
+        _db.replace(Arc::new(RocksTrieDB::new_metadata(
+            Arc::clone(&db),
+            METADATA_DB_CACHE_SIZE,
+        )));
     }
 
-    let header_cell_db_path = path.as_ref().join("header_cell");
     {
-        let mut db = HEADER_CELL_DB.write();
-        db.replace(Arc::new(
-            RocksTrieDB::new(header_cell_db_path, config, HEADER_CELL_DB_CACHE_SIZE)
-                .expect("[system contract] header&cell new rocksdb error"),
-        ));
+        let mut _db = HEADER_CELL_DB.write();
+        _db.replace(Arc::new(RocksTrieDB::new_ckb_light_client(
+            db,
+            HEADER_CELL_DB_CACHE_SIZE,
+        )));
     }
 
     let current_cell_root =

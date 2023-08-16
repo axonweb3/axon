@@ -4,9 +4,6 @@ use common_crypto::{
     Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey, Signature,
     ToPublicKey, UncompressedPublicKey,
 };
-use core_executor::RocksTrieDB;
-use core_storage::adapter::rocks::RocksAdapter;
-use core_storage::ImplStorage;
 use protocol::{
     codec::hex_decode,
     types::{
@@ -16,23 +13,24 @@ use protocol::{
     },
 };
 
+use core_db::RocksAdapter;
+use core_executor::RocksTrieDB;
+use core_storage::ImplStorage;
+
 lazy_static::lazy_static! {
     static ref PRIVATE_KEY: Secp256k1RecoverablePrivateKey
         = Secp256k1RecoverablePrivateKey::try_from(hex_decode("95500289866f83502cc1fb894ef5e2b840ca5f867cc9e84ab32fb8872b5dd36c").unwrap().as_ref()).unwrap();
     static ref DISTRIBUTE_ADDRESS: Address = Address::from_hex("0x35e70c3f5a794a77efc2ec5ba964bffcc7fd2c0a").unwrap();
 }
 
-const STATE_PATH: &str = "../../free-space/rocks/state";
 const DATA_PATH: &str = "../../free-space/rocks/data";
 
-pub fn new_rocks_trie_db() -> RocksTrieDB {
-    RocksTrieDB::new(STATE_PATH, Default::default(), 1000).unwrap()
-}
+pub fn new_storage() -> (RocksTrieDB, ImplStorage<RocksAdapter>) {
+    let db = RocksAdapter::new(DATA_PATH, Default::default()).unwrap();
 
-pub fn new_storage() -> ImplStorage<RocksAdapter> {
-    ImplStorage::new(
-        Arc::new(RocksAdapter::new(DATA_PATH, Default::default()).unwrap()),
-        100,
+    (
+        RocksTrieDB::new_evm(db.inner_db(), 1000),
+        ImplStorage::new(Arc::new(db), 100),
     )
 }
 

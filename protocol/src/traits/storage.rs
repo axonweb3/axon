@@ -1,7 +1,7 @@
 use crate::types::{Block, Bytes, Hash, Header, Proof, Receipt, SignedTransaction, H256};
 use crate::{async_trait, codec::ProtocolCodec, traits::Context, Display, ProtocolResult};
 
-#[derive(Debug, Copy, Clone, Display)]
+#[derive(Copy, Clone, Display, Debug)]
 pub enum StorageCategory {
     Block,
     BlockHeader,
@@ -10,6 +10,26 @@ pub enum StorageCategory {
     Wal,
     HashHeight,
     Code,
+    EvmState,
+    MetadataState,
+    CkbLightClientState,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum StateStorageCategory {
+    EvmState,
+    MetadataState,
+    CkbLightClientState,
+}
+
+impl From<StateStorageCategory> for StorageCategory {
+    fn from(value: StateStorageCategory) -> Self {
+        match value {
+            StateStorageCategory::EvmState => StorageCategory::EvmState,
+            StateStorageCategory::MetadataState => StorageCategory::MetadataState,
+            StateStorageCategory::CkbLightClientState => StorageCategory::CkbLightClientState,
+        }
+    }
 }
 
 pub type StorageIterator<'a, S> = Box<
@@ -26,6 +46,10 @@ pub trait StorageSchema {
 
 pub trait IntoIteratorByRef<S: StorageSchema> {
     fn ref_to_iter<'a, 'b: 'a>(&'b self) -> StorageIterator<'a, S>;
+}
+
+pub trait TrieStorage: trie::DB {
+    fn category(&self) -> StateStorageCategory;
 }
 
 #[async_trait]
@@ -127,7 +151,7 @@ pub enum StorageBatchModify<S: StorageSchema> {
     Insert(<S as StorageSchema>::Value),
 }
 
-pub trait StorageAdapter: Send + Sync {
+pub trait StorageAdapter: Send + Sync + 'static {
     fn insert<S: StorageSchema>(
         &self,
         key: <S as StorageSchema>::Key,

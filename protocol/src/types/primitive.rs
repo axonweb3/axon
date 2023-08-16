@@ -52,6 +52,12 @@ impl AsRef<[u8]> for DBBytes {
     }
 }
 
+impl From<Vec<u8>> for DBBytes {
+    fn from(value: Vec<u8>) -> Self {
+        DBBytes(value.into())
+    }
+}
+
 pub struct Hasher;
 
 impl Hasher {

@@ -1,11 +1,8 @@
-mod apply;
-mod read_only;
-mod trie_db;
-mod wrapped_trie;
+mod backend;
+mod trie;
 
-pub use trie_db::RocksTrieDB;
-pub use wrapped_trie::MPTTrie;
-pub use {apply::AxonExecutorApplyAdapter, read_only::AxonExecutorReadOnlyAdapter};
+pub use backend::{apply::AxonExecutorApplyAdapter, read_only::AxonExecutorReadOnlyAdapter};
+pub use trie::{db::RocksTrieDB, wrapped::MPTTrie};
 
 #[macro_export]
 macro_rules! blocking_async {

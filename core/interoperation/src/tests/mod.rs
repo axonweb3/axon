@@ -1,14 +1,9 @@
 mod verify_in_mempool;
+
 use std::fs::File;
 use std::io::BufReader;
 use std::sync::Arc;
 
-use core_executor::adapter::{MPTTrie, RocksTrieDB};
-use core_executor::{
-    system_contract::system_contract_address, AxonExecutor, AxonExecutorApplyAdapter,
-};
-use core_rpc_client::RpcClient;
-use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{Context, Executor, Storage};
 use protocol::types::{
@@ -16,6 +11,14 @@ use protocol::types::{
     SignatureComponents, SignedTransaction, TransactionAction, UnsignedTransaction,
     UnverifiedTransaction, H256, NIL_DATA, RLP_NULL, U256,
 };
+
+use core_db::RocksAdapter;
+use core_executor::adapter::{MPTTrie, RocksTrieDB};
+use core_executor::{
+    system_contract::system_contract_address, AxonExecutor, AxonExecutorApplyAdapter,
+};
+use core_rpc_client::RpcClient;
+use core_storage::ImplStorage;
 
 const GENESIS_PATH: &str = "../../tests/data/genesis.json";
 
@@ -37,12 +40,9 @@ impl TestHandle {
             Default::default(),
         )
         .unwrap();
-        let trie_db = RocksTrieDB::new(
-            path.clone() + &salt.to_string() + "/trie",
-            Default::default(),
-            50,
-        )
-        .unwrap();
+        let inner_db = storage_adapter.inner_db();
+
+        let trie_db = RocksTrieDB::new_evm(Arc::clone(&inner_db), 100);
 
         let mut handle = TestHandle {
             storage:    Arc::new(ImplStorage::new(Arc::new(storage_adapter), 10)),
@@ -59,11 +59,7 @@ impl TestHandle {
         )
         .unwrap();
 
-        core_executor::system_contract::init(
-            path + &salt.to_string() + "/sc",
-            Default::default(),
-            &mut backend,
-        );
+        core_executor::system_contract::init(inner_db, &mut backend);
 
         handle
     }

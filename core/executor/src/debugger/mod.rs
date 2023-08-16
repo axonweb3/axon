@@ -18,7 +18,8 @@ use protocol::types::{
     MAX_BLOCK_GAS_LIMIT, NIL_DATA, RLP_NULL, U256,
 };
 
-use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
+use core_db::RocksAdapter;
+use core_storage::ImplStorage;
 
 use crate::adapter::{AxonExecutorApplyAdapter, MPTTrie};
 use crate::{AxonExecutor, RocksTrieDB};
@@ -44,7 +45,8 @@ impl EvmDebugger {
         let mut db_state_path = db_path.to_string();
         db_state_path.push_str("/state");
         let _ = std::fs::create_dir_all(&db_state_path);
-        let trie = Arc::new(RocksTrieDB::new(db_state_path, Default::default(), 1000).unwrap());
+        let inner_db = rocks_adapter.inner_db();
+        let trie = Arc::new(RocksTrieDB::new_evm(inner_db, 1000));
 
         let mut mpt = MPTTrie::new(Arc::clone(&trie));
 

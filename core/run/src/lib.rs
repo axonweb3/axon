@@ -1,6 +1,6 @@
 #![allow(clippy::uninlined_format_args, clippy::mutable_key_type)]
 
-use std::{collections::HashMap, panic::PanicInfo, path::PathBuf, sync::Arc, time::Duration};
+use std::{collections::HashMap, panic::PanicInfo, sync::Arc, time::Duration};
 
 use backtrace::Backtrace;
 #[cfg(all(
@@ -15,17 +15,14 @@ use {
 
 use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
 use common_apm::{server::run_prometheus_server, tracing::global_tracer_register};
-use common_config_parser::types::{
-    spec::{ChainSpec, InitialAccount},
-    Config, ConfigJaeger, ConfigPrometheus, ConfigRocksDB,
-};
+use common_config_parser::types::spec::{ChainSpec, InitialAccount};
+use common_config_parser::types::{Config, ConfigJaeger, ConfigPrometheus};
 use common_crypto::{
     BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey, Secp256k1PublicKey,
     ToPublicKey, UncompressedPublicKey,
 };
 
 use protocol::codec::{hex_decode, ProtocolCodec};
-use protocol::lazy::CHAIN_ID;
 #[cfg(unix)]
 use protocol::tokio::signal::unix as os_impl;
 use protocol::tokio::{
@@ -40,8 +37,8 @@ use protocol::types::{
     SignedTransaction, Validator, ValidatorExtend, H256, NIL_DATA, RLP_NULL,
 };
 use protocol::{
-    async_trait, trie::DB as TrieDB, Display, From, ProtocolError, ProtocolErrorKind,
-    ProtocolResult,
+    async_trait, lazy::CHAIN_ID, trie::DB as TrieDB, Display, From, ProtocolError,
+    ProtocolErrorKind, ProtocolResult,
 };
 
 use core_api::{jsonrpc::run_jsonrpc_server, DefaultAPIAdapter};
@@ -58,6 +55,7 @@ use core_consensus::{
     util::OverlordCrypto, ConsensusWal, DurationConfig, OverlordConsensus,
     OverlordConsensusAdapter, OverlordSynchronization, SignedTxsWAL,
 };
+use core_db::{RocksAdapter, RocksDB};
 use core_executor::system_contract::{self, metadata::MetadataHandle};
 use core_executor::{
     AxonExecutor, AxonExecutorApplyAdapter, AxonExecutorReadOnlyAdapter, MPTTrie, RocksTrieDB,
@@ -70,7 +68,7 @@ use core_mempool::{
 use core_network::{
     observe_listen_port_occupancy, NetworkConfig, NetworkService, PeerId, PeerIdExt, SecioError,
 };
-use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
+use core_storage::ImplStorage;
 
 pub use core_network::{KeyProvider, SecioKeyPair};
 
@@ -120,15 +118,15 @@ impl Axon {
 
         rt.block_on(async move {
             // TODO Introduce a read-only rocksdb handler for checks.
-            let storage = self.init_storage(false).await?;
+            let (storage, inner_db) = self.init_storage(false).await?;
             if let Some(genesis) = self.try_load_genesis(&storage).await? {
                 log::info!("The Genesis block has been initialized.");
                 self.apply_genesis_after_checks(&genesis).await?;
             } else {
-                self.create_genesis(&storage).await?;
+                self.create_genesis(Arc::clone(&inner_db), &storage).await?;
             }
-            drop(storage);
-            self.start(key_provider).await
+
+            self.start(key_provider, storage, inner_db).await
         })?;
         rt.shutdown_timeout(std::time::Duration::from_secs(1));
 
@@ -150,23 +148,22 @@ impl Axon {
 
     async fn create_genesis(
         &mut self,
+        inner_db: Arc<RocksDB>,
         storage: &Arc<ImplStorage<RocksAdapter>>,
     ) -> ProtocolResult<()> {
-        let trie_db = self.init_trie_db(false).await?;
+        let trie_db = self.init_evm_trie_db(Arc::clone(&inner_db));
         let state_root = {
             let mut mpt = MPTTrie::new(Arc::clone(&trie_db));
             insert_accounts(&mut mpt, &self.spec.accounts).expect("insert accounts");
             mpt.commit()?
         };
 
-        let path_metadata = self.config.data_path_for_system_contract();
         let resp = execute_transactions(
             &self.genesis,
             state_root,
-            &trie_db,
+            inner_db,
             storage,
-            path_metadata,
-            &self.config.rocksdb.clone(),
+            self.config.executor.triedb_cache_size,
         )?;
 
         log::info!(
@@ -187,54 +184,44 @@ impl Axon {
 
     async fn apply_genesis_after_checks(&mut self, loaded_genesis: &Block) -> ProtocolResult<()> {
         let tmp_dir = tempfile::tempdir().map_err(|err| {
-            let errmsg = format!("failed to create temporary directory since {err:?}");
-            MainError::Other(errmsg)
+            let err_msg = format!("failed to create temporary directory since {err:?}");
+            MainError::Other(err_msg)
         })?;
+        let path_block = tmp_dir.path().join("block");
+        let rocks_adapter = Arc::new(RocksAdapter::new(path_block, self.config.rocksdb.clone())?);
+        let inner_db = rocks_adapter.inner_db();
 
-        let storage = {
-            let path_block = tmp_dir.path().join("block");
-            let rocks_adapter =
-                Arc::new(RocksAdapter::new(path_block, self.config.rocksdb.clone())?);
-            let impl_storage = ImplStorage::new(rocks_adapter, self.config.rocksdb.cache_size);
-            Arc::new(impl_storage)
-        };
+        let storage = Arc::new(ImplStorage::new(
+            rocks_adapter,
+            self.config.rocksdb.cache_size,
+        ));
+        let trie_db = self.init_evm_trie_db(Arc::clone(&inner_db));
 
-        let trie_db = {
-            let path_state = tmp_dir.path().join("state");
-            let trie_db = RocksTrieDB::new(
-                path_state,
-                self.config.rocksdb.clone(),
-                self.config.executor.triedb_cache_size,
-            )?;
-            Arc::new(trie_db)
-        };
         let state_root = {
             let mut mpt = MPTTrie::new(Arc::clone(&trie_db));
             insert_accounts(&mut mpt, &self.spec.accounts).expect("insert accounts");
             mpt.commit()?
         };
 
-        let path_metadata = tmp_dir.path().join("metadata");
         let resp = execute_transactions(
             &self.genesis,
             state_root,
-            &trie_db,
+            inner_db,
             &storage,
-            path_metadata,
-            &self.config.rocksdb.clone(),
+            self.config.executor.triedb_cache_size,
         )?;
 
         self.apply_genesis_data(resp.state_root, resp.receipt_root)?;
 
         let user_provided_genesis = &self.genesis.block;
         if user_provided_genesis != loaded_genesis {
-            let errmsg = format!(
+            let err_msg = format!(
                 "The user provided genesis (hash: {:#x}) is NOT \
                 the same as the genesis in storage (hash: {:#x})",
                 user_provided_genesis.hash(),
                 loaded_genesis.hash()
             );
-            return Err(MainError::Other(errmsg).into());
+            return Err(MainError::Other(err_msg).into());
         }
 
         Ok(())
@@ -264,7 +251,12 @@ impl Axon {
         Ok(())
     }
 
-    pub async fn start<K: KeyProvider>(self, key_provider: Option<K>) -> ProtocolResult<()> {
+    pub async fn start<K: KeyProvider>(
+        self,
+        key_provider: Option<K>,
+        storage: Arc<ImplStorage<RocksAdapter>>,
+        inner_db: Arc<RocksDB>,
+    ) -> ProtocolResult<()> {
         // Start jaeger
         Self::run_jaeger(self.config.jaeger.clone());
 
@@ -282,7 +274,6 @@ impl Axon {
         observe_listen_port_occupancy(&[self.config.network.listening_address.clone()]).await?;
 
         // Init Block db and get the current block
-        let storage = self.init_storage(true).await?;
         let current_block = storage.get_latest_block(Context::new()).await?;
         let current_state_root = current_block.header.state_root;
 
@@ -292,7 +283,7 @@ impl Axon {
         let mut network_service = self.init_network_service(key_provider);
 
         // Init trie db
-        let trie_db = self.init_trie_db(true).await?;
+        let trie_db = self.init_evm_trie_db(Arc::clone(&inner_db));
 
         // Init full transactions wal
         let txs_wal_path = self
@@ -305,7 +296,7 @@ impl Axon {
 
         // Init system contract
         if current_block.header.number != 0 {
-            self.init_system_contract(&trie_db, &current_block, &storage);
+            self.init_system_contract(Arc::clone(&inner_db), &current_block, &storage);
         }
 
         // Init mempool and recover signed transactions with the current block number
@@ -413,9 +404,18 @@ impl Axon {
     async fn init_storage(
         &self,
         _run_service: bool,
-    ) -> ProtocolResult<Arc<ImplStorage<RocksAdapter>>> {
-        let path_block = self.config.data_path_for_block();
-        let rocks_adapter = Arc::new(RocksAdapter::new(path_block, self.config.rocksdb.clone())?);
+    ) -> ProtocolResult<(Arc<ImplStorage<RocksAdapter>>, Arc<RocksDB>)> {
+        let rocksdb_path = self.config.data_path_for_rocksdb();
+        let rocks_adapter = Arc::new(RocksAdapter::new(
+            rocksdb_path,
+            self.config.rocksdb.clone(),
+        )?);
+        let inner_db = rocks_adapter.inner_db();
+        let storage = Arc::new(ImplStorage::new(
+            rocks_adapter,
+            self.config.rocksdb.cache_size,
+        ));
+
         #[cfg(all(
             not(target_env = "msvc"),
             not(target_os = "macos"),
@@ -424,11 +424,11 @@ impl Axon {
         if _run_service {
             tokio::spawn(common_memory_tracker::track_db_process(
                 "blockdb",
-                rocks_adapter.inner_db(),
+                Arc::clone(&inner_db),
             ));
         }
-        let impl_storage = ImplStorage::new(rocks_adapter, self.config.rocksdb.cache_size);
-        Ok(Arc::new(impl_storage))
+
+        Ok((storage, inner_db))
     }
 
     fn init_network_service<K: KeyProvider>(
@@ -446,25 +446,11 @@ impl Axon {
         network_service
     }
 
-    async fn init_trie_db(&self, _run_service: bool) -> ProtocolResult<Arc<RocksTrieDB>> {
-        let path_state = self.config.data_path_for_state();
-        let trie_db = Arc::new(RocksTrieDB::new(
-            path_state,
-            self.config.rocksdb.clone(),
+    fn init_evm_trie_db(&self, inner_db: Arc<RocksDB>) -> Arc<RocksTrieDB> {
+        Arc::new(RocksTrieDB::new_evm(
+            inner_db,
             self.config.executor.triedb_cache_size,
-        )?);
-        #[cfg(all(
-            not(target_env = "msvc"),
-            not(target_os = "macos"),
-            feature = "jemalloc"
-        ))]
-        if _run_service {
-            tokio::spawn(common_memory_tracker::track_db_process(
-                "triedb",
-                trie_db.inner_db(),
-            ));
-        }
-        Ok(trie_db)
+        ))
     }
 
     async fn init_mempool<N, S, DB>(
@@ -477,7 +463,7 @@ impl Axon {
     where
         N: Rpc + PeerTrust + Gossip + Clone + Unpin + 'static,
         S: Storage + 'static,
-        DB: TrieDB + 'static,
+        DB: TrieDB + Send + Sync + 'static,
     {
         let mempool_adapter = DefaultMemPoolAdapter::<Secp256k1, _, _, _, InteroperationImpl>::new(
             network_service.clone(),
@@ -515,24 +501,19 @@ impl Axon {
 
     fn init_system_contract(
         &self,
-        trie_db: &Arc<RocksTrieDB>,
+        inner_db: Arc<RocksDB>,
         current_block: &Block,
         storage: &Arc<ImplStorage<RocksAdapter>>,
     ) -> (H256, H256) {
-        let path_system_contract = self.config.data_path_for_system_contract();
         let mut backend = AxonExecutorApplyAdapter::from_root(
             current_block.header.state_root,
-            Arc::clone(trie_db),
+            self.init_evm_trie_db(Arc::clone(&inner_db)),
             Arc::clone(storage),
             Proposal::new_without_state_root(&current_block.header).into(),
         )
         .unwrap();
 
-        system_contract::init(
-            path_system_contract,
-            self.config.rocksdb.clone(),
-            &mut backend,
-        )
+        system_contract::init(inner_db, &mut backend)
     }
 
     fn get_my_pubkey(&self, hex_privkey: Vec<u8>) -> Secp256k1PublicKey {
@@ -615,7 +596,7 @@ impl Axon {
         M: MemPool + 'static,
         N: Rpc + PeerTrust + Gossip + Network + 'static,
         S: Storage + 'static,
-        DB: TrieDB + 'static,
+        DB: TrieDB + Send + Sync + 'static,
     {
         let consensus_wal_path = self
             .config
@@ -811,7 +792,7 @@ impl Axon {
         M: MemPool,
         N: Rpc + PeerTrust + Gossip + Network + 'static,
         S: Storage,
-        DB: TrieDB,
+        DB: TrieDB + Send + Sync,
     {
         let timer_config = DurationConfig {
             propose_ratio:   metadata.propose_ratio,
@@ -1025,27 +1006,26 @@ fn insert_accounts(
     Ok(())
 }
 
-fn execute_transactions<S, DB>(
+fn execute_transactions<S>(
     rich: &RichBlock,
     state_root: H256,
-    trie_db: &Arc<DB>,
+    inner_db: Arc<RocksDB>,
     storage: &Arc<S>,
-    path_metadata: PathBuf,
-    rocksdb: &ConfigRocksDB,
+    cache_size: usize,
 ) -> ProtocolResult<ExecResp>
 where
     S: Storage + 'static,
-    DB: TrieDB + 'static,
 {
     let executor = AxonExecutor::default();
+    let trie_db = Arc::new(RocksTrieDB::new_evm(Arc::clone(&inner_db), cache_size));
     let mut backend = AxonExecutorApplyAdapter::from_root(
         state_root,
-        Arc::clone(trie_db),
+        trie_db,
         Arc::clone(storage),
         Proposal::new_without_state_root(&rich.block.header).into(),
     )?;
 
-    system_contract::init(path_metadata, rocksdb.clone(), &mut backend);
+    system_contract::init(inner_db, &mut backend);
 
     let resp = executor.exec(&mut backend, &rich.txs, &[]);
 

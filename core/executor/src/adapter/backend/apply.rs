@@ -165,9 +165,9 @@ where
         };
 
         let mut storage_trie = if storage_root == RLP_NULL {
-            MPTTrie::new(self.inner.db.clone())
+            MPTTrie::new(Arc::clone(&self.inner.db))
         } else {
-            MPTTrie::from_root(old_account.storage_root, self.inner.db.clone()).unwrap()
+            MPTTrie::from_root(old_account.storage_root, Arc::clone(&self.inner.db)).unwrap()
         };
 
         storage.into_iter().for_each(|(k, v)| {

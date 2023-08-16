@@ -4,7 +4,6 @@ use std::collections::BTreeMap;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use core_storage::adapter::memory::MemoryAdapter;
 use evm::backend::{MemoryAccount, MemoryVicinity};
 use evm::Config;
 
@@ -15,6 +14,7 @@ use protocol::types::{
 };
 use protocol::{codec::hex_decode, tokio, traits::Executor, trie::MemoryDB};
 
+use core_db::MemoryAdapter;
 use core_storage::ImplStorage;
 
 use crate::AxonExecutorApplyAdapter;

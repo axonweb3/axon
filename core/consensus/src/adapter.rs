@@ -51,7 +51,7 @@ where
     M: MemPool + 'static,
     N: Network + Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
-    DB: trie::DB + 'static,
+    DB: trie::DB + Send + Sync + 'static,
 {
     #[trace_span(kind = "consensus.adapter")]
     async fn get_txs_from_mempool(
@@ -128,7 +128,7 @@ where
     M: MemPool + 'static,
     N: Network + Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
-    DB: trie::DB + 'static,
+    DB: trie::DB + Send + Sync + 'static,
 {
     #[trace_span(kind = "consensus.adapter")]
     fn update_status(
@@ -229,7 +229,7 @@ where
     M: MemPool + 'static,
     N: Network + Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
-    DB: trie::DB + 'static,
+    DB: trie::DB + Send + Sync + 'static,
 {
     /// Save a block to the database.
     #[trace_span(kind = "consensus.adapter", logs = "{txs_len: block.tx_hashes.len()}")]
