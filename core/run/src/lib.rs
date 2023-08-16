@@ -16,7 +16,8 @@ use {
 use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
 use common_apm::{server::run_prometheus_server, tracing::global_tracer_register};
 use common_config_parser::types::{
-    Config, ConfigJaeger, ConfigPrometheus, ConfigRocksDB, InitialAccount,
+    spec::{ChainSpec, InitialAccount},
+    Config, ConfigJaeger, ConfigPrometheus, ConfigRocksDB,
 };
 use common_crypto::{
     BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey, Secp256k1PublicKey,
@@ -83,6 +84,7 @@ pub static JEMALLOC: Jemalloc = Jemalloc;
 pub struct Axon {
     version:    String,
     config:     Config,
+    spec:       ChainSpec,
     genesis:    RichBlock,
     state_root: MerkleRoot,
 }
@@ -91,10 +93,11 @@ pub struct Axon {
 mod tests;
 
 impl Axon {
-    pub fn new(version: String, config: Config, genesis: RichBlock) -> Axon {
+    pub fn new(version: String, config: Config, spec: ChainSpec, genesis: RichBlock) -> Axon {
         Axon {
             version,
             config,
+            spec,
             genesis,
             state_root: MerkleRoot::default(),
         }
@@ -150,7 +153,7 @@ impl Axon {
         let trie_db = self.init_trie_db(false).await?;
         let state_root = {
             let mut mpt = MPTTrie::new(Arc::clone(&trie_db));
-            insert_accounts(&mut mpt, &self.config.accounts).expect("insert accounts");
+            insert_accounts(&mut mpt, &self.spec.accounts).expect("insert accounts");
             mpt.commit()?
         };
 
@@ -205,7 +208,7 @@ impl Axon {
         };
         let state_root = {
             let mut mpt = MPTTrie::new(Arc::clone(&trie_db));
-            insert_accounts(&mut mpt, &self.config.accounts).expect("insert accounts");
+            insert_accounts(&mut mpt, &self.spec.accounts).expect("insert accounts");
             mpt.commit()?
         };
 

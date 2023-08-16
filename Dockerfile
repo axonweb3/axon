@@ -28,6 +28,4 @@ RUN set -eux; \
 COPY --from=builder /build/target/release/axon /app/axon
 COPY --from=builder /build/devtools /app/devtools
 
-CMD ./axon run -c=/app/devtools/chain/config.toml -g=/app/devtools/chain/genesis_single_node.json
-
-
+CMD ./axon run -c=/app/devtools/chain/config.toml -s=/app/devtools/chain/specs/single_node/chain-spec.toml

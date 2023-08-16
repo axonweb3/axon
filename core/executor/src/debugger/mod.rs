@@ -23,7 +23,7 @@ use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use crate::adapter::{AxonExecutorAdapter, MPTTrie};
 use crate::{AxonExecutor, RocksTrieDB};
 
-const GENESIS_PATH: &str = "../../devtools/chain/genesis_single_node.json";
+const GENESIS_PATH: &str = "../../tests/data/genesis.json";
 pub const CROSSCHAIN_CONTRACT_ADDRESS: H160 = H160([
     180, 132, 253, 72, 14, 89, 134, 33, 99, 143, 56, 15, 64, 70, 151, 205, 159, 88, 176, 248,
 ]);

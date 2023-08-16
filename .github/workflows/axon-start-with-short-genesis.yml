@@ -29,7 +29,8 @@ jobs:
           sudo rm -rf logs*
           sudo rm -rf devtools/chain/data*
           sed -i 's/image:.*$/image:  axonweb3\/axon:start-test/g' docker-compose.yml
-          cp ${{ github.workspace }}/devtools/chain/geneses/genesis_multi_nodes_short_epoch_len.json devtools/chain/genesis_multi_nodes.json
+          cp ${{ github.workspace }}/devtools/chain/specs/multi_nodes_short_epoch_len/chain-spec.toml           devtools/chain/specs/multi_nodes/chain-spec.toml
+          cp ${{ github.workspace }}/devtools/chain/specs/multi_nodes_short_epoch_len/genesis_transactions.json devtools/chain/specs/multi_nodes/genesis_transactions.json
           cp ${{ github.workspace }}/devtools/chain/k8s/node_1.toml devtools/chain/node_1.toml
           cp ${{ github.workspace }}/devtools/chain/k8s/node_2.toml devtools/chain/node_2.toml
           cp ${{ github.workspace }}/devtools/chain/k8s/node_3.toml devtools/chain/node_3.toml

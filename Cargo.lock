@@ -1841,6 +1841,7 @@ version = "0.1.0"
 dependencies = [
  "axon-protocol",
  "backtrace",
+ "clap 4.3.19",
  "common-apm",
  "common-apm-derive",
  "common-config-parser",

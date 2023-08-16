@@ -95,7 +95,7 @@ jobs:
         run: |
           cargo build
           rm -rf ./devtools/chain/data
-          ./target/debug/axon run --config devtools/chain/config.toml --genesis devtools/chain/genesis_single_node.json > /tmp/log 2>&1 &
+          ./target/debug/axon run --config devtools/chain/config.toml --chain-spec devtools/chain/specs/single_node/chain-spec.toml > /tmp/log 2>&1 &
 
       - name: Run prepare
         id: runtest

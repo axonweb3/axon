@@ -7,7 +7,12 @@ use std::{
     sync::Arc,
 };
 
-use common_config_parser::{parse_file, types::Config};
+use clap::{builder::TypedValueParser as _, Command};
+
+use common_config_parser::types::{
+    spec::{ChainSpec, ChainSpecValueParser},
+    Config, ConfigValueParser,
+};
 use core_executor::{MPTTrie, RocksTrieDB};
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::{
@@ -23,7 +28,7 @@ const DEV_CONFIG_DIR: &str = "../../devtools/chain";
 struct TestCase<'a> {
     chain_name:            &'a str,
     config_file:           &'a str,
-    genesis_file:          &'a str,
+    chain_spec_file:       &'a str,
     input_genesis_hash:    &'a str,
     genesis_state_root:    &'a str,
     genesis_receipts_root: &'a str,
@@ -33,7 +38,7 @@ const TESTCASES: &[TestCase] = &[
     TestCase {
         chain_name:            "single_node",
         config_file:           "config.toml",
-        genesis_file:          "genesis_single_node.json",
+        chain_spec_file:       "specs/single_node/chain-spec.toml",
         input_genesis_hash:    "0x2cc987996d5d26d18cb76dceb85d9b46e4f05f11ff331247225d983ec7a7b78f",
         genesis_state_root:    "0x65f57a6a666e656de33ed68957e04b35b3fe1b35a90f6eafb6f283c907dc3d77",
         genesis_receipts_root: "0x8544b530238201f1620b139861a6841040b37f78f8bdae8736ef5cec474e979b",
@@ -41,7 +46,7 @@ const TESTCASES: &[TestCase] = &[
     TestCase {
         chain_name:            "multi_nodes",
         config_file:           "nodes/node_1.toml",
-        genesis_file:          "nodes/genesis_multi_nodes.json",
+        chain_spec_file:       "specs/multi_nodes/chain-spec.toml",
         input_genesis_hash:    "0xcb35c763bcfc5c68e2b4435d9eec7753190384b3af032c7a951f413d05db04c1",
         genesis_state_root:    "0x7b288320399a1b1f2d6b1483b473e0067a7ff8358f927bb2a09ce6f463eb0208",
         genesis_receipts_root: "0x8544b530238201f1620b139861a6841040b37f78f8bdae8736ef5cec474e979b",
@@ -49,7 +54,7 @@ const TESTCASES: &[TestCase] = &[
     TestCase {
         chain_name:            "multi_nodes_short_epoch_len",
         config_file:           "nodes/node_1.toml",
-        genesis_file:          "geneses/genesis_multi_nodes_short_epoch_len.json",
+        chain_spec_file:       "specs/multi_nodes_short_epoch_len/chain-spec.toml",
         input_genesis_hash:    "0x2cc987996d5d26d18cb76dceb85d9b46e4f05f11ff331247225d983ec7a7b78f",
         genesis_state_root:    "0x815c8fa8d46aac47f789611a21abb8e43e69b04425c80f9b2c425d5a2575d32c",
         genesis_receipts_root: "0x8544b530238201f1620b139861a6841040b37f78f8bdae8736ef5cec474e979b",
@@ -58,7 +63,7 @@ const TESTCASES: &[TestCase] = &[
 
 #[test]
 fn decode_genesis() {
-    let raw = fs::read("../../devtools/chain/genesis_single_node.json").unwrap();
+    let raw = fs::read("../../tests/data/genesis.json").unwrap();
     assert!(serde_json::from_slice::<RichBlock>(&raw).is_ok());
 }
 
@@ -81,6 +86,7 @@ async fn check_genesis_data<'a>(case: &TestCase<'a>) {
         panic!("failed to create temporary directory since {err:?}");
     });
     let tmp_dir_path = tmp_dir.path();
+    let command = Command::new("dummy-command");
 
     copy_dir(dev_config_dir, tmp_dir_path).expect("configs copied");
     let current_dir = current_dir().expect("get current directory");
@@ -88,12 +94,17 @@ async fn check_genesis_data<'a>(case: &TestCase<'a>) {
 
     let config: Config = {
         let config_path = tmp_dir_path.join(case.config_file);
-        parse_file(config_path, false).expect("parse config file")
+        ConfigValueParser
+            .parse_ref(&command, None, config_path.as_os_str())
+            .expect("parse config file")
     };
-    let genesis: RichBlock = {
-        let genesis_path = tmp_dir_path.join(case.genesis_file);
-        parse_file(genesis_path, true).expect("parse genesis file")
+    let chain_spec: ChainSpec = {
+        let chain_spec_path = tmp_dir_path.join(case.chain_spec_file);
+        ChainSpecValueParser
+            .parse_ref(&command, None, chain_spec_path.as_os_str())
+            .expect("parse chain-spec file")
     };
+    let genesis = chain_spec.genesis.build_rich_block();
 
     check_hashes(
         case.chain_name,
@@ -143,7 +154,7 @@ async fn check_genesis_data<'a>(case: &TestCase<'a>) {
 
     let state_root = {
         let mut mpt = MPTTrie::new(Arc::clone(&trie_db));
-        insert_accounts(&mut mpt, &config.accounts).expect("insert accounts");
+        insert_accounts(&mut mpt, &chain_spec.accounts).expect("insert accounts");
         mpt.commit().expect("mpt commit")
     };
 

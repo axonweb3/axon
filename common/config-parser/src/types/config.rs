@@ -1,12 +1,10 @@
-use std::{
-    collections::HashMap, ffi::OsStr, io, marker::PhantomData, net::SocketAddr, path::PathBuf,
-};
+use std::{collections::HashMap, ffi::OsStr, io, net::SocketAddr, path::PathBuf};
 
 use clap::builder::{StringValueParser, TypedValueParser, ValueParserFactory};
-use serde::{de, Deserialize};
+use serde::Deserialize;
 use tentacle_multiaddr::MultiAddr;
 
-use protocol::types::{Hex, H160, U256};
+use protocol::types::{Hex, H160};
 
 use crate::parse_file;
 
@@ -15,14 +13,16 @@ pub const DEFAULT_BROADCAST_TXS_INTERVAL: u64 = 200; // milliseconds
 pub const DEFAULT_SYNC_TXS_CHUNK_SIZE: usize = 5000;
 pub const DEFAULT_CACHE_SIZE: usize = 100;
 
+/// The configuration for Axon clients.
+///
+/// All configurations can be modified, and the chain won't be affected by their
+/// changes.
 #[derive(Clone, Debug, Deserialize)]
 pub struct Config {
     // crypto
     pub privkey:   Privkey,
     // db config
     pub data_path: PathBuf,
-
-    pub accounts: Vec<InitialAccount>,
 
     pub rpc:        ConfigApi,
     pub web3:       ConfigWeb3,
@@ -124,47 +124,12 @@ impl TypedValueParser for ConfigValueParser {
             })
             .map_err(|err| {
                 let kind = clap::error::ErrorKind::InvalidValue;
-                let msg = format!("failed to parse file {} since {err}", file_path.display());
+                let msg = format!(
+                    "failed to parse config file {} since {err}",
+                    file_path.display()
+                );
                 clap::Error::raw(kind, msg)
             })
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct JsonValueParser<T: de::DeserializeOwned + 'static + Clone + Send + Sync>(PhantomData<T>);
-
-impl<T> Default for JsonValueParser<T>
-where
-    T: de::DeserializeOwned + 'static + Clone + Send + Sync,
-{
-    fn default() -> Self {
-        Self(PhantomData)
-    }
-}
-
-impl<T> TypedValueParser for JsonValueParser<T>
-where
-    T: de::DeserializeOwned + 'static + Clone + Send + Sync,
-{
-    type Value = T;
-
-    fn parse_ref(
-        &self,
-        cmd: &clap::Command,
-        arg: Option<&clap::Arg>,
-        value: &OsStr,
-    ) -> Result<Self::Value, clap::Error> {
-        let file_path = StringValueParser::new()
-            .parse_ref(cmd, arg, value)
-            .map(PathBuf::from)?;
-        parse_file(&file_path, true).map_err(|err| {
-            let kind = clap::error::ErrorKind::InvalidValue;
-            let msg = format!(
-                "failed to parse JSON file {} since {err}",
-                file_path.display()
-            );
-            clap::Error::raw(kind, msg)
-        })
     }
 }
 
@@ -299,12 +264,6 @@ pub struct ConfigJaeger {
 #[derive(Clone, Debug, Deserialize)]
 pub struct ConfigPrometheus {
     pub listening_address: Option<SocketAddr>,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-pub struct InitialAccount {
-    pub address: H160,
-    pub balance: U256,
 }
 
 fn default_max_gas_cap() -> u64 {
