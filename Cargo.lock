@@ -1488,6 +1488,7 @@ name = "common-config-parser"
 version = "0.2.1"
 dependencies = [
  "axon-protocol",
+ "clap 4.3.19",
  "reqwest",
  "serde",
  "serde_json",

@@ -1,11 +1,14 @@
-use std::collections::HashMap;
-use std::net::SocketAddr;
-use std::path::PathBuf;
+use std::{
+    collections::HashMap, ffi::OsStr, io, marker::PhantomData, net::SocketAddr, path::PathBuf,
+};
 
-use serde::Deserialize;
+use clap::builder::{StringValueParser, TypedValueParser, ValueParserFactory};
+use serde::{de, Deserialize};
 use tentacle_multiaddr::MultiAddr;
 
 use protocol::types::{Hex, H160, U256};
+
+use crate::parse_file;
 
 pub const DEFAULT_BROADCAST_TXS_SIZE: usize = 200;
 pub const DEFAULT_BROADCAST_TXS_INTERVAL: u64 = 200; // milliseconds
@@ -77,6 +80,91 @@ impl Config {
         let mut path_state = self.data_path.clone();
         path_state.push("axon.ver");
         path_state
+    }
+}
+
+impl ValueParserFactory for Config {
+    type Parser = ConfigValueParser;
+
+    fn value_parser() -> Self::Parser {
+        ConfigValueParser
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct ConfigValueParser;
+
+impl TypedValueParser for ConfigValueParser {
+    type Value = Config;
+
+    fn parse_ref(
+        &self,
+        cmd: &clap::Command,
+        arg: Option<&clap::Arg>,
+        value: &OsStr,
+    ) -> Result<Self::Value, clap::Error> {
+        let file_path = StringValueParser::new()
+            .parse_ref(cmd, arg, value)
+            .map(PathBuf::from)?;
+        let dir_path = file_path.parent().ok_or_else(|| {
+            let err = {
+                let kind = io::ErrorKind::Other;
+                let msg = format!("no parent directory of {}", file_path.display());
+                io::Error::new(kind, msg)
+            };
+            let kind = clap::error::ErrorKind::InvalidValue;
+            clap::Error::raw(kind, err)
+        })?;
+        parse_file(&file_path, false)
+            .map(|mut config: Self::Value| {
+                if let Some(ref mut f) = config.rocksdb.options_file {
+                    *f = dir_path.join(&f)
+                }
+                config
+            })
+            .map_err(|err| {
+                let kind = clap::error::ErrorKind::InvalidValue;
+                let msg = format!("failed to parse file {} since {err}", file_path.display());
+                clap::Error::raw(kind, msg)
+            })
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct JsonValueParser<T: de::DeserializeOwned + 'static + Clone + Send + Sync>(PhantomData<T>);
+
+impl<T> Default for JsonValueParser<T>
+where
+    T: de::DeserializeOwned + 'static + Clone + Send + Sync,
+{
+    fn default() -> Self {
+        Self(PhantomData)
+    }
+}
+
+impl<T> TypedValueParser for JsonValueParser<T>
+where
+    T: de::DeserializeOwned + 'static + Clone + Send + Sync,
+{
+    type Value = T;
+
+    fn parse_ref(
+        &self,
+        cmd: &clap::Command,
+        arg: Option<&clap::Arg>,
+        value: &OsStr,
+    ) -> Result<Self::Value, clap::Error> {
+        let file_path = StringValueParser::new()
+            .parse_ref(cmd, arg, value)
+            .map(PathBuf::from)?;
+        parse_file(&file_path, true).map_err(|err| {
+            let kind = clap::error::ErrorKind::InvalidValue;
+            let msg = format!(
+                "failed to parse JSON file {} since {err}",
+                file_path.display()
+            );
+            clap::Error::raw(kind, msg)
+        })
     }
 }
 
