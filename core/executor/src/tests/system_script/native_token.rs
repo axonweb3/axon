@@ -3,7 +3,7 @@ use std::{collections::BTreeMap, str::FromStr};
 use protocol::types::{MemoryAccount, MemoryBackend, H160, U256};
 
 use crate::{
-    system_contract::{NativeTokenContract, SystemContract},
+    system_contract::{NativeTokenContract, SystemContract, NATIVE_TOKEN_CONTRACT_ADDRESS},
     tests::{gen_tx, gen_vicinity},
 };
 
@@ -20,7 +20,7 @@ fn test_issue_token() {
     let executor = NativeTokenContract::default();
     let addr = H160::from_str("0xf000000000000000000000000000000000000000").unwrap();
     let data = mock_data(0, addr);
-    let tx = gen_tx(addr, NativeTokenContract::ADDRESS, 1000, data);
+    let tx = gen_tx(addr, NATIVE_TOKEN_CONTRACT_ADDRESS, 1000, data);
 
     let r = executor.exec_(&mut backend, &tx);
     assert!(r.exit_reason.is_succeed());
@@ -45,7 +45,7 @@ fn test_burn_token() {
     let mut backend = MemoryBackend::new(&vicinity, state);
     let executor = NativeTokenContract::default();
     let data = mock_data(1, addr);
-    let tx = gen_tx(addr, NativeTokenContract::ADDRESS, 1000, data);
+    let tx = gen_tx(addr, NATIVE_TOKEN_CONTRACT_ADDRESS, 1000, data);
 
     let r = executor.exec_(&mut backend, &tx);
     assert!(r.exit_reason.is_succeed());
@@ -70,7 +70,7 @@ fn test_burn_token_failed() {
     let mut backend = MemoryBackend::new(&vicinity, state);
     let executor = NativeTokenContract::default();
     let data = mock_data(1, addr);
-    let tx = gen_tx(addr, NativeTokenContract::ADDRESS, 1000, data);
+    let tx = gen_tx(addr, NATIVE_TOKEN_CONTRACT_ADDRESS, 1000, data);
 
     let r = executor.exec_(&mut backend, &tx);
     assert!(r.exit_reason.is_revert());

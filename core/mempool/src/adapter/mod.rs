@@ -12,7 +12,7 @@ use log::{debug, error};
 use parking_lot::Mutex;
 
 use protocol::traits::{
-    Context, Gossip, Interoperation, MemPoolAdapter, PeerTrust, Priority, Rpc, Storage,
+    Context, Gossip, Interoperation, MemPoolAdapter, PeerTrust, Priority, ReadOnlyStorage, Rpc,
     TrustFeedback,
 };
 use protocol::types::{
@@ -26,7 +26,9 @@ use protocol::{
 
 use common_apm_derive::trace_span;
 use common_crypto::{Crypto, Secp256k1Recoverable};
-use core_executor::{is_call_system_script, AxonExecutorAdapter, DataProvider, MetadataHandle};
+use core_executor::{
+    is_call_system_script, AxonExecutorReadOnlyAdapter, DataProvider, MetadataHandle,
+};
 use core_interoperation::InteroperationImpl;
 
 use crate::adapter::message::{MsgPullTxs, END_GOSSIP_NEW_TXS, RPC_PULL_TXS};
@@ -134,7 +136,7 @@ impl<C, N, S, DB, I> DefaultMemPoolAdapter<C, N, S, DB, I>
 where
     C: Crypto,
     N: Rpc + PeerTrust + Gossip + Clone + Unpin + 'static,
-    S: Storage + 'static,
+    S: ReadOnlyStorage + 'static,
     DB: trie::DB + 'static,
     I: Interoperation + 'static,
 {
@@ -332,9 +334,12 @@ where
         Ok(())
     }
 
-    async fn executor_backend(&self, ctx: Context) -> ProtocolResult<AxonExecutorAdapter<S, DB>> {
+    async fn executor_backend(
+        &self,
+        ctx: Context,
+    ) -> ProtocolResult<AxonExecutorReadOnlyAdapter<S, DB>> {
         let current_state_root = self.storage.get_latest_block_header(ctx).await?.state_root;
-        AxonExecutorAdapter::from_root(
+        AxonExecutorReadOnlyAdapter::from_root(
             current_state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
@@ -348,7 +353,7 @@ impl<C, N, S, DB, I> MemPoolAdapter for DefaultMemPoolAdapter<C, N, S, DB, I>
 where
     C: Crypto + Send + Sync + 'static,
     N: Rpc + PeerTrust + Gossip + Clone + Unpin + 'static,
-    S: Storage + 'static,
+    S: ReadOnlyStorage + 'static,
     DB: trie::DB + 'static,
     I: Interoperation + 'static,
 {

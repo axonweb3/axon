@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use protocol::traits::{APIAdapter, Context, Executor, ExecutorAdapter, MemPool, Network, Storage};
+use protocol::traits::{
+    APIAdapter, Context, Executor, ExecutorReadOnlyAdapter, MemPool, Network, ReadOnlyStorage,
+};
 use protocol::types::{
     Account, BigEndianHash, Block, BlockNumber, Bytes, CkbRelatedInfo, ExecutorContext, Hash,
     Header, Metadata, Proposal, Receipt, SignedTransaction, TxResp, H160, H256,
@@ -9,7 +11,7 @@ use protocol::types::{
 use protocol::{async_trait, codec::ProtocolCodec, trie, ProtocolResult};
 
 use core_executor::{
-    system_contract::metadata::MetadataHandle, AxonExecutor, AxonExecutorAdapter, MPTTrie,
+    system_contract::metadata::MetadataHandle, AxonExecutor, AxonExecutorReadOnlyAdapter, MPTTrie,
 };
 
 use crate::APIError;
@@ -25,7 +27,7 @@ pub struct DefaultAPIAdapter<M, S, DB, Net> {
 impl<M, S, DB, Net> DefaultAPIAdapter<M, S, DB, Net>
 where
     M: MemPool + 'static,
-    S: Storage + 'static,
+    S: ReadOnlyStorage + 'static,
     DB: trie::DB + 'static,
     Net: Network + 'static,
 {
@@ -41,13 +43,13 @@ where
     pub async fn evm_backend(
         &self,
         number: Option<BlockNumber>,
-    ) -> ProtocolResult<AxonExecutorAdapter<S, DB>> {
+    ) -> ProtocolResult<AxonExecutorReadOnlyAdapter<S, DB>> {
         let block = self
             .get_block_by_number(Context::new(), number)
             .await?
             .ok_or_else(|| APIError::Adapter(format!("Cannot get {:?} block", number)))?;
 
-        AxonExecutorAdapter::from_root(
+        AxonExecutorReadOnlyAdapter::from_root(
             block.header.state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
@@ -60,7 +62,7 @@ where
 impl<M, S, DB, Net> APIAdapter for DefaultAPIAdapter<M, S, DB, Net>
 where
     M: MemPool + 'static,
-    S: Storage + 'static,
+    S: ReadOnlyStorage + 'static,
     DB: trie::DB + 'static,
     Net: Network + 'static,
 {
@@ -188,7 +190,7 @@ where
         exec_ctx.origin = from.unwrap_or_default();
         exec_ctx.gas_price = gas_price.unwrap_or_else(U256::one);
 
-        let backend = AxonExecutorAdapter::from_root(
+        let backend = AxonExecutorReadOnlyAdapter::from_root(
             state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
@@ -257,7 +259,7 @@ where
     async fn get_image_cell_root(&self, ctx: Context) -> ProtocolResult<H256> {
         let state_root = self.storage.get_latest_block_header(ctx).await?.state_root;
 
-        Ok(AxonExecutorAdapter::from_root(
+        Ok(AxonExecutorReadOnlyAdapter::from_root(
             state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
@@ -269,7 +271,7 @@ where
     async fn get_metadata_root(&self, ctx: Context) -> ProtocolResult<H256> {
         let state_root = self.storage.get_latest_block_header(ctx).await?.state_root;
 
-        Ok(AxonExecutorAdapter::from_root(
+        Ok(AxonExecutorReadOnlyAdapter::from_root(
             state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),

@@ -7,7 +7,7 @@ use common_crypto::{
     Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey, Signature,
     ToPublicKey, UncompressedPublicKey,
 };
-use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB};
+use core_executor::{AxonExecutor, AxonExecutorApplyAdapter, MPTTrie, RocksTrieDB};
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::codec::{hex_decode, ProtocolCodec};
 use protocol::traits::Executor;
@@ -60,8 +60,8 @@ impl BenchAdapter {
         mpt.commit().unwrap()
     }
 
-    fn init_backend(&self) -> AxonExecutorAdapter<ImplStorage<RocksAdapter>, RocksTrieDB> {
-        AxonExecutorAdapter::from_root(
+    fn init_backend(&self) -> AxonExecutorApplyAdapter<ImplStorage<RocksAdapter>, RocksTrieDB> {
+        AxonExecutorApplyAdapter::from_root(
             self.init_mpt(),
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
@@ -74,7 +74,6 @@ impl BenchAdapter {
                 gas_price:              85u64.into(),
                 block_gas_limit:        100_000_000_000u64.into(),
                 block_base_fee_per_gas: Default::default(),
-                logs:                   vec![],
             },
         )
         .unwrap()

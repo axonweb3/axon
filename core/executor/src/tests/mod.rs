@@ -17,10 +17,10 @@ use protocol::{codec::hex_decode, tokio, traits::Executor, trie::MemoryDB};
 
 use core_storage::ImplStorage;
 
-use crate::AxonExecutorAdapter;
+use crate::AxonExecutorApplyAdapter;
 use crate::{precompiles::build_precompile_set, AxonExecutor as EvmExecutor, AxonExecutor};
 
-fn exec_adapter() -> AxonExecutorAdapter<ImplStorage<MemoryAdapter>, MemoryDB> {
+fn exec_adapter() -> AxonExecutorApplyAdapter<ImplStorage<MemoryAdapter>, MemoryDB> {
     let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()), 20);
     let ctx = ExecutorContext {
         block_gas_limit: u32::MAX.into(),
@@ -28,7 +28,7 @@ fn exec_adapter() -> AxonExecutorAdapter<ImplStorage<MemoryAdapter>, MemoryDB> {
         ..Default::default()
     };
 
-    AxonExecutorAdapter::new(Arc::new(MemoryDB::new(false)), Arc::new(storage), ctx).unwrap()
+    AxonExecutorApplyAdapter::new(Arc::new(MemoryDB::new(false)), Arc::new(storage), ctx).unwrap()
 }
 
 fn gen_vicinity() -> MemoryVicinity {

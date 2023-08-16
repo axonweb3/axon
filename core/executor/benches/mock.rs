@@ -56,7 +56,6 @@ pub fn mock_executor_context() -> ExecutorContext {
         gas_price:              85u64.into(),
         block_gas_limit:        100_000_000_000u64.into(),
         block_base_fee_per_gas: Default::default(),
-        logs:                   vec![],
     }
 }
 

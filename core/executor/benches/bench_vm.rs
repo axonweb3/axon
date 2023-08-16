@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use criterion::{criterion_group, criterion_main, Criterion};
 
-use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie};
+use core_executor::{AxonExecutor, AxonExecutorApplyAdapter, MPTTrie};
 use protocol::{
     codec::ProtocolCodec,
     traits::{Executor, Storage},
@@ -46,7 +46,7 @@ where
     }
 }
 
-impl<S, DB> BackendInit<S, DB> for AxonExecutorAdapter<S, DB>
+impl<S, DB> BackendInit<S, DB> for AxonExecutorApplyAdapter<S, DB>
 where
     S: Storage + 'static,
     DB: trie::DB + 'static,
@@ -65,7 +65,7 @@ where
             .unwrap();
 
         let state_root = mpt.commit().unwrap();
-        AxonExecutorAdapter::from_root(state_root, db, Arc::new(storage), exec_ctx).unwrap()
+        AxonExecutorApplyAdapter::from_root(state_root, db, Arc::new(storage), exec_ctx).unwrap()
     }
 }
 
@@ -90,7 +90,7 @@ fn criterion_10000_txs(c: &mut Criterion) {
         let db = new_rocks_trie_db();
         let exec_ctx = mock_executor_context();
         let (account, addr) = init_account();
-        let mut axon_adapter = AxonExecutorAdapter::init(storage, db, exec_ctx, account, addr);
+        let mut axon_adapter = AxonExecutorApplyAdapter::init(storage, db, exec_ctx, account, addr);
         let executor = AxonExecutor::default();
         b.iter(|| {
             executor.exec(&mut axon_adapter, &txs, &[]);

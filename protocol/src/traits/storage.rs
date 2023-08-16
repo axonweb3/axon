@@ -29,32 +29,14 @@ pub trait IntoIteratorByRef<S: StorageSchema> {
 }
 
 #[async_trait]
-pub trait CommonStorage: Send + Sync {
-    async fn insert_block(&self, ctx: Context, block: Block) -> ProtocolResult<()>;
-
+pub trait ReadOnlyStorage: Sync + Send {
     async fn get_block(&self, ctx: Context, height: u64) -> ProtocolResult<Option<Block>>;
 
     async fn get_block_header(&self, ctx: Context, height: u64) -> ProtocolResult<Option<Header>>;
 
-    async fn set_block(&self, _ctx: Context, block: Block) -> ProtocolResult<()>;
-
-    async fn remove_block(&self, ctx: Context, height: u64) -> ProtocolResult<()>;
-
     async fn get_latest_block(&self, ctx: Context) -> ProtocolResult<Block>;
 
-    async fn set_latest_block(&self, ctx: Context, block: Block) -> ProtocolResult<()>;
-
     async fn get_latest_block_header(&self, ctx: Context) -> ProtocolResult<Header>;
-}
-
-#[async_trait]
-pub trait Storage: CommonStorage {
-    async fn insert_transactions(
-        &self,
-        ctx: Context,
-        block_height: u64,
-        signed_txs: Vec<SignedTransaction>,
-    ) -> ProtocolResult<()>;
 
     async fn get_block_by_hash(
         &self,
@@ -81,21 +63,6 @@ pub trait Storage: CommonStorage {
         hash: &Hash,
     ) -> ProtocolResult<Option<SignedTransaction>>;
 
-    async fn insert_receipts(
-        &self,
-        ctx: Context,
-        block_height: u64,
-        receipts: Vec<Receipt>,
-    ) -> ProtocolResult<()>;
-
-    async fn insert_code(
-        &self,
-        ctx: Context,
-        code_address: H256,
-        code_hash: Hash,
-        code: Bytes,
-    ) -> ProtocolResult<()>;
-
     async fn get_code_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>>;
 
     async fn get_code_by_address(
@@ -117,9 +84,42 @@ pub trait Storage: CommonStorage {
         hashes: &[Hash],
     ) -> ProtocolResult<Vec<Option<Receipt>>>;
 
-    async fn update_latest_proof(&self, ctx: Context, proof: Proof) -> ProtocolResult<()>;
-
     async fn get_latest_proof(&self, ctx: Context) -> ProtocolResult<Proof>;
+}
+
+#[async_trait]
+pub trait Storage: ReadOnlyStorage {
+    async fn insert_block(&self, ctx: Context, block: Block) -> ProtocolResult<()>;
+
+    async fn set_block(&self, ctx: Context, block: Block) -> ProtocolResult<()>;
+
+    async fn remove_block(&self, ctx: Context, height: u64) -> ProtocolResult<()>;
+
+    async fn set_latest_block(&self, ctx: Context, block: Block) -> ProtocolResult<()>;
+
+    async fn insert_transactions(
+        &self,
+        ctx: Context,
+        block_height: u64,
+        signed_txs: Vec<SignedTransaction>,
+    ) -> ProtocolResult<()>;
+
+    async fn insert_receipts(
+        &self,
+        ctx: Context,
+        block_height: u64,
+        receipts: Vec<Receipt>,
+    ) -> ProtocolResult<()>;
+
+    async fn insert_code(
+        &self,
+        ctx: Context,
+        code_address: H256,
+        code_hash: Hash,
+        code: Bytes,
+    ) -> ProtocolResult<()>;
+
+    async fn update_latest_proof(&self, ctx: Context, proof: Proof) -> ProtocolResult<()>;
 }
 
 pub enum StorageBatchModify<S: StorageSchema> {

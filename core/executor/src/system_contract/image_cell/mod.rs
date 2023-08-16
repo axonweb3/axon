@@ -4,32 +4,30 @@ mod store;
 pub use abi::image_cell_abi;
 pub use store::{CellInfo, CellKey};
 
-use ethers::abi::AbiDecode;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use protocol::traits::ExecutorAdapter;
+use ethers::abi::AbiDecode;
+
+use protocol::traits::{ApplyBackend, ExecutorAdapter};
 use protocol::types::{SignedTransaction, TxResp, H160, H256};
 use protocol::ProtocolResult;
 
 use crate::system_contract::image_cell::store::ImageCellStore;
 use crate::system_contract::utils::{succeed_resp, update_states};
 use crate::system_contract::{system_contract_address, SystemContract};
-use crate::{exec_try, MPTTrie, CURRENT_HEADER_CELL_ROOT};
+use crate::{exec_try, system_contract_struct, MPTTrie, CURRENT_HEADER_CELL_ROOT};
 
 pub const IMAGE_CELL_CONTRACT_ADDRESS: H160 = system_contract_address(0x3);
 static ALLOW_READ: AtomicBool = AtomicBool::new(false);
 
-#[derive(Default)]
-pub struct ImageCellContract;
+system_contract_struct!(ImageCellContract);
 
-impl SystemContract for ImageCellContract {
+impl<Adapter: ExecutorAdapter + ApplyBackend> SystemContract<Adapter>
+    for ImageCellContract<Adapter>
+{
     const ADDRESS: H160 = IMAGE_CELL_CONTRACT_ADDRESS;
 
-    fn exec_<Adapter: ExecutorAdapter>(
-        &self,
-        adapter: &mut Adapter,
-        tx: &SignedTransaction,
-    ) -> TxResp {
+    fn exec_(&self, adapter: &mut Adapter, tx: &SignedTransaction) -> TxResp {
         let sender = tx.sender;
         let tx = &tx.transaction.unsigned;
         let tx_data = tx.data();
@@ -69,12 +67,16 @@ impl SystemContract for ImageCellContract {
     }
 }
 
+#[derive(Default)]
+pub(crate) struct ImageCellReader;
+
 /// These methods are provide for interoperation module to get CKB cells.
-impl ImageCellContract {
+impl ImageCellReader {
     pub fn get_cell(&self, root: H256, key: &CellKey) -> ProtocolResult<Option<CellInfo>> {
         ImageCellStore::new(root)?.get_cell(key)
     }
 
+    #[cfg(test)]
     pub fn allow_read(&self) -> bool {
         ALLOW_READ.load(Ordering::Relaxed)
     }

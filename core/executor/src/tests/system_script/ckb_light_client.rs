@@ -6,8 +6,13 @@ use ethers::abi::AbiEncode;
 use common_config_parser::types::ConfigRocksDB;
 use protocol::types::{Backend, MemoryBackend, TxResp, H160, H256, U256};
 
-use crate::system_contract::ckb_light_client::{ckb_light_client_abi, CkbLightClientContract};
-use crate::system_contract::{init, ImageCellContract, SystemContract, HEADER_CELL_ROOT_KEY};
+use crate::system_contract::ckb_light_client::{
+    ckb_light_client_abi, CkbHeaderReader, CkbLightClientContract,
+};
+use crate::system_contract::{
+    init, SystemContract, CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, HEADER_CELL_ROOT_KEY,
+    IMAGE_CELL_CONTRACT_ADDRESS,
+};
 use crate::tests::{gen_tx, gen_vicinity};
 
 static ROCKSDB_PATH: &str = "./free-space/system-contract/ckb-light-client";
@@ -51,7 +56,10 @@ fn prepare_header_2() -> ckb_light_client_abi::Header {
     }
 }
 
-fn test_update_first(backend: &mut MemoryBackend, executor: &CkbLightClientContract) {
+fn test_update_first<'a>(
+    backend: &mut MemoryBackend<'a>,
+    executor: &CkbLightClientContract<MemoryBackend<'a>>,
+) {
     let header = prepare_header_1();
     let data = ckb_light_client_abi::UpdateCall {
         headers: vec![header.clone()],
@@ -62,8 +70,8 @@ fn test_update_first(backend: &mut MemoryBackend, executor: &CkbLightClientContr
 
     check_nonce(backend, 1);
 
-    let root = backend.storage(CkbLightClientContract::ADDRESS, *HEADER_CELL_ROOT_KEY);
-    let queried_header = executor
+    let root = backend.storage(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY);
+    let queried_header = CkbHeaderReader::default()
         .get_header_by_block_hash(root, &H256::default())
         .unwrap()
         .unwrap();
@@ -71,7 +79,10 @@ fn test_update_first(backend: &mut MemoryBackend, executor: &CkbLightClientContr
     assert_eq!(queried_header, header);
 }
 
-fn test_update_second(backend: &mut MemoryBackend, executor: &CkbLightClientContract) {
+fn test_update_second<'a>(
+    backend: &mut MemoryBackend<'a>,
+    executor: &CkbLightClientContract<MemoryBackend<'a>>,
+) {
     let header = prepare_header_2();
     let data = ckb_light_client_abi::UpdateCall {
         headers: vec![header.clone()],
@@ -82,8 +93,8 @@ fn test_update_second(backend: &mut MemoryBackend, executor: &CkbLightClientCont
 
     check_nonce(backend, 2);
 
-    let root = backend.storage(CkbLightClientContract::ADDRESS, *HEADER_CELL_ROOT_KEY);
-    let queried_header = executor
+    let root = backend.storage(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY);
+    let queried_header = CkbHeaderReader::default()
         .get_header_by_block_hash(root, &H256::from_slice(&header.block_hash))
         .unwrap()
         .unwrap();
@@ -91,7 +102,10 @@ fn test_update_second(backend: &mut MemoryBackend, executor: &CkbLightClientCont
     assert_eq!(queried_header, header);
 }
 
-fn test_roll_back_first(backend: &mut MemoryBackend, executor: &CkbLightClientContract) {
+fn test_roll_back_first<'a>(
+    backend: &mut MemoryBackend<'a>,
+    executor: &CkbLightClientContract<MemoryBackend<'a>>,
+) {
     let data = ckb_light_client_abi::RollbackCall {
         block_hashes: vec![prepare_header_2().block_hash],
     };
@@ -99,8 +113,8 @@ fn test_roll_back_first(backend: &mut MemoryBackend, executor: &CkbLightClientCo
     let r = exec(backend, executor, data.encode());
     assert!(r.exit_reason.is_succeed());
 
-    let root = backend.storage(CkbLightClientContract::ADDRESS, *HEADER_CELL_ROOT_KEY);
-    let queried_header = executor
+    let root = backend.storage(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY);
+    let queried_header = CkbHeaderReader::default()
         .get_header_by_block_hash(root, &H256::default())
         .unwrap()
         .unwrap();
@@ -108,7 +122,10 @@ fn test_roll_back_first(backend: &mut MemoryBackend, executor: &CkbLightClientCo
     assert_eq!(queried_header, prepare_header_1());
 }
 
-fn test_roll_back_second(backend: &mut MemoryBackend, executor: &CkbLightClientContract) {
+fn test_roll_back_second<'a>(
+    backend: &mut MemoryBackend<'a>,
+    executor: &CkbLightClientContract<MemoryBackend<'a>>,
+) {
     let data = ckb_light_client_abi::RollbackCall {
         block_hashes: vec![prepare_header_1().block_hash],
     };
@@ -116,37 +133,45 @@ fn test_roll_back_second(backend: &mut MemoryBackend, executor: &CkbLightClientC
     let r = exec(backend, executor, data.encode());
     assert!(r.exit_reason.is_succeed());
 
-    let root = backend.storage(CkbLightClientContract::ADDRESS, *HEADER_CELL_ROOT_KEY);
-    let queried_header = executor
+    let root = backend.storage(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY);
+    let queried_header = CkbHeaderReader::default()
         .get_header_by_block_hash(root, &H256::default())
         .unwrap();
     assert!(queried_header.is_none());
 }
 
-fn test_set_state(backend: &mut MemoryBackend, executor: &CkbLightClientContract) {
+fn test_set_state<'a>(
+    backend: &mut MemoryBackend<'a>,
+    executor: &CkbLightClientContract<MemoryBackend<'a>>,
+) {
     let data = ckb_light_client_abi::SetStateCall { allow_read: true };
+    let querier = CkbHeaderReader::default();
 
-    assert!(!executor.allow_read());
+    assert!(!querier.allow_read());
 
     let r = exec(backend, executor, data.encode());
     assert!(r.exit_reason.is_succeed());
 
-    assert!(executor.allow_read());
+    assert!(querier.allow_read());
 }
 
-fn exec(backend: &mut MemoryBackend, executor: &CkbLightClientContract, data: Vec<u8>) -> TxResp {
+fn exec<'a>(
+    backend: &mut MemoryBackend<'a>,
+    executor: &CkbLightClientContract<MemoryBackend<'a>>,
+    data: Vec<u8>,
+) -> TxResp {
     let addr = H160::from_str("0xf000000000000000000000000000000000000000").unwrap();
-    let tx = gen_tx(addr, CkbLightClientContract::ADDRESS, 1000, data);
+    let tx = gen_tx(addr, CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, 1000, data);
     executor.exec_(backend, &tx)
 }
 
-fn check_nonce(backend: &mut MemoryBackend, nonce: u64) {
+fn check_nonce(backend: &mut MemoryBackend<'_>, nonce: u64) {
     assert_eq!(
-        backend.basic(CkbLightClientContract::ADDRESS).nonce,
+        backend.basic(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS).nonce,
         U256::zero()
     );
     assert_eq!(
-        backend.basic(ImageCellContract::ADDRESS).nonce,
+        backend.basic(IMAGE_CELL_CONTRACT_ADDRESS).nonce,
         U256::zero()
     );
     assert_eq!(

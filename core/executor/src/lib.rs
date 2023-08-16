@@ -9,7 +9,9 @@ pub mod system_contract;
 mod tests;
 mod utils;
 
-pub use crate::adapter::{AxonExecutorAdapter, MPTTrie, RocksTrieDB};
+pub use crate::adapter::{
+    AxonExecutorApplyAdapter, AxonExecutorReadOnlyAdapter, MPTTrie, RocksTrieDB,
+};
 pub use crate::system_contract::{metadata::MetadataHandle, DataProvider};
 pub use crate::utils::{code_address, decode_revert_msg, DefaultFeeAllocator, FeeInlet};
 
@@ -22,20 +24,18 @@ use evm::executor::stack::{MemoryStackState, PrecompileFn, StackExecutor, StackS
 use evm::CreateScheme;
 
 use common_merkle::TrieMerkle;
-use protocol::codec::ProtocolCodec;
 use protocol::traits::{Backend, Executor, ExecutorAdapter};
 use protocol::types::{
-    data_gas_cost, logs_bloom, Account, Config, ExecResp, Hasher, SignedTransaction,
-    TransactionAction, TxResp, ValidatorExtend, GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160,
-    H256, NIL_DATA, RLP_NULL, U256,
+    data_gas_cost, logs_bloom, Config, ExecResp, Hasher, SignedTransaction, TransactionAction,
+    TxResp, ValidatorExtend, GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160, H256, RLP_NULL,
+    U256,
 };
 
 use crate::precompiles::build_precompile_set;
 use crate::system_contract::{
-    after_block_hook, before_block_hook, system_contract_dispatch, CkbLightClientContract,
-    ImageCellContract, MetadataContract, NativeTokenContract, SystemContract,
-    CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, HEADER_CELL_ROOT_KEY, METADATA_CONTRACT_ADDRESS,
-    METADATA_ROOT_KEY,
+    after_block_hook, before_block_hook, system_contract_dispatch,
+    CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, HEADER_CELL_ROOT_KEY, IMAGE_CELL_CONTRACT_ADDRESS,
+    METADATA_CONTRACT_ADDRESS, METADATA_ROOT_KEY, NATIVE_TOKEN_CONTRACT_ADDRESS,
 };
 
 lazy_static::lazy_static! {
@@ -152,7 +152,7 @@ impl Executor for AxonExecutor {
             let mut r = system_contract_dispatch(adapter, tx)
                 .unwrap_or_else(|| Self::evm_exec(adapter, &config, &precompiles, tx));
 
-            r.logs = adapter.get_logs();
+            r.logs = adapter.take_logs();
             gas += r.gas_used;
             fee = fee.checked_add(r.fee_cost).unwrap_or(U256::max_value());
 
@@ -202,18 +202,6 @@ impl Executor for AxonExecutor {
             receipt_root,
             gas_used: gas,
             tx_resp: res,
-        }
-    }
-
-    fn get_account<Adapter: ExecutorAdapter>(&self, backend: &Adapter, address: &H160) -> Account {
-        match backend.get(address.as_bytes()) {
-            Some(bytes) => Account::decode(bytes).unwrap(),
-            None => Account {
-                nonce:        Default::default(),
-                balance:      Default::default(),
-                storage_root: RLP_NULL,
-                code_hash:    NIL_DATA,
-            },
         }
     }
 }
@@ -354,7 +342,7 @@ impl AxonExecutor {
             let mut r = system_contract_dispatch(adapter, tx)
                 .unwrap_or_else(|| Self::evm_exec(adapter, &config, &precompiles, tx));
 
-            r.logs = adapter.get_logs();
+            r.logs = adapter.take_logs();
             gas += r.gas_used;
             fee = fee.checked_add(r.fee_cost).unwrap_or(U256::max_value());
 
@@ -405,10 +393,10 @@ impl AxonExecutor {
 
 pub fn is_call_system_script(action: &TransactionAction) -> bool {
     let system_contracts = vec![
-        NativeTokenContract::ADDRESS,
-        MetadataContract::ADDRESS,
-        CkbLightClientContract::ADDRESS,
-        ImageCellContract::ADDRESS,
+        NATIVE_TOKEN_CONTRACT_ADDRESS,
+        METADATA_CONTRACT_ADDRESS,
+        CKB_LIGHT_CLIENT_CONTRACT_ADDRESS,
+        IMAGE_CELL_CONTRACT_ADDRESS,
     ];
 
     match action {

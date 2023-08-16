@@ -4,11 +4,13 @@ use std::io::BufReader;
 use std::sync::Arc;
 
 use core_executor::adapter::{MPTTrie, RocksTrieDB};
-use core_executor::{system_contract::system_contract_address, AxonExecutor, AxonExecutorAdapter};
+use core_executor::{
+    system_contract::system_contract_address, AxonExecutor, AxonExecutorApplyAdapter,
+};
 use core_rpc_client::RpcClient;
 use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::codec::ProtocolCodec;
-use protocol::traits::{CommonStorage, Context, Executor, Storage};
+use protocol::traits::{Context, Executor, Storage};
 use protocol::types::{
     Account, Address, Bytes, Eip1559Transaction, ExecResp, Proposal, Public, RichBlock,
     SignatureComponents, SignedTransaction, TransactionAction, UnsignedTransaction,
@@ -49,7 +51,7 @@ impl TestHandle {
         };
         handle.load_genesis().await;
 
-        let mut backend = AxonExecutorAdapter::from_root(
+        let mut backend = AxonExecutorApplyAdapter::from_root(
             handle.state_root,
             Arc::clone(&handle.trie_db),
             Arc::clone(&handle.storage),
@@ -87,7 +89,7 @@ impl TestHandle {
         .unwrap();
 
         let executor = AxonExecutor::default();
-        let mut backend = AxonExecutorAdapter::from_root(
+        let mut backend = AxonExecutorApplyAdapter::from_root(
             mpt.commit().unwrap(),
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
@@ -117,7 +119,7 @@ impl TestHandle {
     }
 
     pub fn exec(&mut self, txs: Vec<SignedTransaction>) -> ExecResp {
-        let mut backend = AxonExecutorAdapter::from_root(
+        let mut backend = AxonExecutorApplyAdapter::from_root(
             self.state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),

@@ -7,8 +7,13 @@ use ethers::abi::AbiEncode;
 use common_config_parser::types::ConfigRocksDB;
 use protocol::types::{Backend, MemoryBackend, TxResp, H160, U256};
 
-use crate::system_contract::image_cell::{image_cell_abi, CellInfo, CellKey, ImageCellContract};
-use crate::system_contract::{init, CkbLightClientContract, SystemContract, HEADER_CELL_ROOT_KEY};
+use crate::system_contract::image_cell::{
+    image_cell_abi, CellInfo, CellKey, ImageCellContract, ImageCellReader,
+};
+use crate::system_contract::{
+    init, SystemContract, CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, HEADER_CELL_ROOT_KEY,
+    IMAGE_CELL_CONTRACT_ADDRESS,
+};
 use crate::tests::{gen_tx, gen_vicinity};
 use crate::{CURRENT_HEADER_CELL_ROOT, CURRENT_METADATA_ROOT};
 
@@ -33,7 +38,10 @@ pub fn test_write_functions() {
     test_set_state(&mut backend, &executor);
 }
 
-fn test_update_first(backend: &mut MemoryBackend, executor: &ImageCellContract) {
+fn test_update_first<'a>(
+    backend: &mut MemoryBackend<'a>,
+    executor: &ImageCellContract<MemoryBackend<'a>>,
+) {
     let data = image_cell_abi::UpdateCall {
         blocks: vec![image_cell_abi::BlockUpdate {
             block_number: 0x1,
@@ -47,13 +55,19 @@ fn test_update_first(backend: &mut MemoryBackend, executor: &ImageCellContract) 
 
     check_nonce(backend, 1);
 
-    let root = backend.storage(CkbLightClientContract::ADDRESS, *HEADER_CELL_ROOT_KEY);
+    let root = backend.storage(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY);
     let cell_key = CellKey::new([7u8; 32], 0x0);
-    let get_cell = executor.get_cell(root, &cell_key).unwrap().unwrap();
+    let get_cell = ImageCellReader::default()
+        .get_cell(root, &cell_key)
+        .unwrap()
+        .unwrap();
     check_cell(&get_cell, 0x1, None);
 }
 
-fn test_update_second(backend: &mut MemoryBackend, executor: &ImageCellContract) {
+fn test_update_second<'a>(
+    backend: &mut MemoryBackend<'a>,
+    executor: &ImageCellContract<MemoryBackend<'a>>,
+) {
     let data = image_cell_abi::UpdateCall {
         blocks: vec![image_cell_abi::BlockUpdate {
             block_number: 0x2,
@@ -70,13 +84,19 @@ fn test_update_second(backend: &mut MemoryBackend, executor: &ImageCellContract)
 
     check_nonce(backend, 2);
 
-    let root = backend.storage(CkbLightClientContract::ADDRESS, *HEADER_CELL_ROOT_KEY);
+    let root = backend.storage(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY);
     let cell_key = CellKey::new([7u8; 32], 0x0);
-    let get_cell = executor.get_cell(root, &cell_key).unwrap().unwrap();
+    let get_cell = ImageCellReader::default()
+        .get_cell(root, &cell_key)
+        .unwrap()
+        .unwrap();
     check_cell(&get_cell, 0x1, Some(0x2));
 }
 
-fn test_rollback_first(backend: &mut MemoryBackend, executor: &ImageCellContract) {
+fn test_rollback_first<'a>(
+    backend: &mut MemoryBackend<'a>,
+    executor: &ImageCellContract<MemoryBackend<'a>>,
+) {
     let data = image_cell_abi::RollbackCall {
         blocks: vec![image_cell_abi::BlockRollBlack {
             tx_inputs:  vec![image_cell_abi::OutPoint {
@@ -90,13 +110,19 @@ fn test_rollback_first(backend: &mut MemoryBackend, executor: &ImageCellContract
     let r = exec(backend, executor, data.encode());
     assert!(r.exit_reason.is_succeed());
 
-    let root = backend.storage(CkbLightClientContract::ADDRESS, *HEADER_CELL_ROOT_KEY);
+    let root = backend.storage(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY);
     let cell_key = CellKey::new([7u8; 32], 0x0);
-    let get_cell = executor.get_cell(root, &cell_key).unwrap().unwrap();
+    let get_cell = ImageCellReader::default()
+        .get_cell(root, &cell_key)
+        .unwrap()
+        .unwrap();
     check_cell(&get_cell, 0x1, None);
 }
 
-fn test_rollback_second(backend: &mut MemoryBackend, executor: &ImageCellContract) {
+fn test_rollback_second<'a>(
+    backend: &mut MemoryBackend<'a>,
+    executor: &ImageCellContract<MemoryBackend<'a>>,
+) {
     let data = image_cell_abi::RollbackCall {
         blocks: vec![image_cell_abi::BlockRollBlack {
             tx_inputs:  vec![],
@@ -110,26 +136,35 @@ fn test_rollback_second(backend: &mut MemoryBackend, executor: &ImageCellContrac
     let r = exec(backend, executor, data.encode());
     assert!(r.exit_reason.is_succeed());
 
-    let root = backend.storage(CkbLightClientContract::ADDRESS, *HEADER_CELL_ROOT_KEY);
+    let querier = ImageCellReader::default();
+    let root = backend.storage(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY);
     let cell_key = CellKey::new([7u8; 32], 0x0);
-    let get_cell = executor.get_cell(root, &cell_key).unwrap();
+    let get_cell = querier.get_cell(root, &cell_key).unwrap();
     assert!(get_cell.is_none());
 }
 
-fn test_set_state(backend: &mut MemoryBackend, executor: &ImageCellContract) {
+fn test_set_state<'a>(
+    backend: &mut MemoryBackend<'a>,
+    executor: &ImageCellContract<MemoryBackend<'a>>,
+) {
     let data = image_cell_abi::SetStateCall { allow_read: true };
+    let querier = ImageCellReader::default();
 
-    assert!(!executor.allow_read());
+    assert!(!querier.allow_read());
 
     let r = exec(backend, executor, data.encode());
     assert!(r.exit_reason.is_succeed());
 
-    assert!(executor.allow_read());
+    assert!(querier.allow_read());
 }
 
-fn exec(backend: &mut MemoryBackend, executor: &ImageCellContract, data: Vec<u8>) -> TxResp {
+fn exec<'a>(
+    backend: &mut MemoryBackend<'a>,
+    executor: &ImageCellContract<MemoryBackend<'a>>,
+    data: Vec<u8>,
+) -> TxResp {
     let addr = H160::from_str("0xf000000000000000000000000000000000000000").unwrap();
-    let tx = gen_tx(addr, ImageCellContract::ADDRESS, 1000, data);
+    let tx = gen_tx(addr, IMAGE_CELL_CONTRACT_ADDRESS, 1000, data);
     executor.exec_(backend, &tx)
 }
 
@@ -203,13 +238,13 @@ fn prepare_outputs() -> Vec<image_cell_abi::CellInfo> {
     }]
 }
 
-fn check_nonce(backend: &mut MemoryBackend, nonce: u64) {
+fn check_nonce(backend: &mut MemoryBackend<'_>, nonce: u64) {
     assert_eq!(
-        backend.basic(CkbLightClientContract::ADDRESS).nonce,
+        backend.basic(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS).nonce,
         U256::zero()
     );
     assert_eq!(
-        backend.basic(ImageCellContract::ADDRESS).nonce,
+        backend.basic(IMAGE_CELL_CONTRACT_ADDRESS).nonce,
         U256::zero()
     );
     assert_eq!(

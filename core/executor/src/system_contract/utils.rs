@@ -5,8 +5,8 @@ use protocol::types::{
 };
 
 use crate::system_contract::{
-    CkbLightClientContract, ImageCellContract, MetadataContract, SystemContract,
-    HEADER_CELL_ROOT_KEY, METADATA_ROOT_KEY,
+    CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, HEADER_CELL_ROOT_KEY, IMAGE_CELL_CONTRACT_ADDRESS,
+    METADATA_CONTRACT_ADDRESS, METADATA_ROOT_KEY,
 };
 use crate::{CURRENT_HEADER_CELL_ROOT, CURRENT_METADATA_ROOT};
 
@@ -65,32 +65,32 @@ pub fn generate_mpt_root_changes<B: Backend + ApplyBackend>(
     backend: &mut B,
     contract_address: H160,
 ) -> Vec<Apply<Vec<(H256, H256)>>> {
-    if contract_address == CkbLightClientContract::ADDRESS
-        || contract_address == ImageCellContract::ADDRESS
+    if contract_address == CKB_LIGHT_CLIENT_CONTRACT_ADDRESS
+        || contract_address == IMAGE_CELL_CONTRACT_ADDRESS
     {
         let current_header_cell_root = CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow());
         let storage_changes = vec![(*HEADER_CELL_ROOT_KEY, current_header_cell_root)];
         vec![
             Apply::Modify {
-                address:       CkbLightClientContract::ADDRESS,
-                basic:         backend.basic(CkbLightClientContract::ADDRESS),
+                address:       CKB_LIGHT_CLIENT_CONTRACT_ADDRESS,
+                basic:         backend.basic(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS),
                 code:          None,
                 storage:       storage_changes.clone(),
                 reset_storage: false,
             },
             Apply::Modify {
-                address:       ImageCellContract::ADDRESS,
-                basic:         backend.basic(ImageCellContract::ADDRESS),
+                address:       IMAGE_CELL_CONTRACT_ADDRESS,
+                basic:         backend.basic(IMAGE_CELL_CONTRACT_ADDRESS),
                 code:          None,
                 storage:       storage_changes,
                 reset_storage: false,
             },
         ]
-    } else if contract_address == MetadataContract::ADDRESS {
+    } else if contract_address == METADATA_CONTRACT_ADDRESS {
         let current_metadata_root = CURRENT_METADATA_ROOT.with(|r| *r.borrow());
         vec![Apply::Modify {
-            address:       MetadataContract::ADDRESS,
-            basic:         backend.basic(MetadataContract::ADDRESS),
+            address:       METADATA_CONTRACT_ADDRESS,
+            basic:         backend.basic(METADATA_CONTRACT_ADDRESS),
             code:          None,
             storage:       vec![(*METADATA_ROOT_KEY, current_metadata_root)],
             reset_storage: false,

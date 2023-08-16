@@ -32,7 +32,7 @@ use protocol::tokio::{
     self, runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep,
 };
 use protocol::traits::{
-    CommonStorage, Consensus, Context, Executor, Gossip, MemPool, Network, NodeInfo, PeerTrust,
+    Consensus, Context, Executor, Gossip, MemPool, Network, NodeInfo, PeerTrust, ReadOnlyStorage,
     Rpc, Storage, SynchronizationAdapter,
 };
 use protocol::types::{
@@ -59,7 +59,9 @@ use core_consensus::{
     OverlordConsensusAdapter, OverlordSynchronization, SignedTxsWAL,
 };
 use core_executor::system_contract::{self, metadata::MetadataHandle};
-use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB};
+use core_executor::{
+    AxonExecutor, AxonExecutorApplyAdapter, AxonExecutorReadOnlyAdapter, MPTTrie, RocksTrieDB,
+};
 use core_interoperation::InteroperationImpl;
 use core_mempool::{
     DefaultMemPoolAdapter, MemPoolImpl, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
@@ -315,7 +317,7 @@ impl Axon {
             .await;
 
         // Get the validator list from current metadata for consensus initialization
-        let metadata_root = AxonExecutorAdapter::from_root(
+        let metadata_root = AxonExecutorReadOnlyAdapter::from_root(
             current_state_root,
             Arc::clone(&trie_db),
             Arc::clone(&storage),
@@ -518,13 +520,14 @@ impl Axon {
         storage: &Arc<ImplStorage<RocksAdapter>>,
     ) -> (H256, H256) {
         let path_system_contract = self.config.data_path_for_system_contract();
-        let mut backend = AxonExecutorAdapter::from_root(
+        let mut backend = AxonExecutorApplyAdapter::from_root(
             current_block.header.state_root,
             Arc::clone(trie_db),
             Arc::clone(storage),
             Proposal::new_without_state_root(&current_block.header).into(),
         )
         .unwrap();
+
         system_contract::init(
             path_system_contract,
             self.config.rocksdb.clone(),
@@ -1035,7 +1038,7 @@ where
     DB: TrieDB + 'static,
 {
     let executor = AxonExecutor::default();
-    let mut backend = AxonExecutorAdapter::from_root(
+    let mut backend = AxonExecutorApplyAdapter::from_root(
         state_root,
         Arc::clone(trie_db),
         Arc::clone(storage),
