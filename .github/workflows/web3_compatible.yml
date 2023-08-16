@@ -14,13 +14,20 @@ on:
         required: true
 
 jobs:
+  # Build Axon and cache the binary
+  build-axon:
+    uses: ./.github/workflows/build.yml
+
   dispatch-web3-compatible:
+    needs: build-axon
     strategy:
-      fail-fast: false
       matrix:
-        net: ["axon"]
+        # Supported GitHub-hosted runners and hardware resources
+        # see https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
+        os: [ubuntu-22.04]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
     if: contains(github.event_name, 'workflow_dispatch')
-    runs-on: ubuntu-latest
     outputs:
       output-sha: ${{ steps.escape_multiple_lines_test_inputs.outputs.result }}
     steps:
@@ -91,9 +98,15 @@ jobs:
           key: ${{ runner.os }}-node_modules-${{ hashFiles('/home/runner/work/**/package-lock.json', '/home/runner/work/**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-node_modules-
+      - name: Cache of the axon binary
+        uses: actions/cache@v3
+        with:
+          path: |
+            target/debug/axon
+            target/release/axon
+          key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-axon-${{ github.sha }}
       - name: Deploy Local Network of Axon
         run: |
-          cargo build
           rm -rf ./devtools/chain/data
           ./target/debug/axon run --config devtools/chain/config.toml --genesis devtools/chain/genesis_single_node.json > /tmp/log 2>&1 &
       - name: Run Test
@@ -111,6 +124,7 @@ jobs:
         with:
           name: jfoa-build-reports-${{ runner.os }}
           path: axon-test/mochawesome-report/
+
   finally:
     name: Finally
     needs: [ dispatch-web3-compatible ]
@@ -141,14 +155,17 @@ jobs:
             })
 
   web3-compatible:
+    needs: build-axon
     strategy:
-      fail-fast: false
       matrix:
-        net: ["axon"]
+        # Supported GitHub-hosted runners and hardware resources
+        # see https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
+        os: [ubuntu-22.04]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
     if: |
       (contains(fromJson('["dependabot[bot]" ]'), github.actor) && github.event_name == 'pull_request') ||
       (contains(github.event_name, 'push') && github.ref == 'refs/heads/main' )
-    runs-on: ubuntu-latest
     steps:
       - name: Git checkout
         uses: actions/checkout@v3
@@ -172,9 +189,15 @@ jobs:
           key: ${{ runner.os }}-node_modules-${{ hashFiles('/home/runner/work/**/package-lock.json', '/home/runner/work/**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-node_modules-
+      - name: Cache of the axon binary
+        uses: actions/cache@v3
+        with:
+          path: |
+            target/debug/axon
+            target/release/axon
+          key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-axon-${{ github.sha }}
       - name: Deploy Local Network of Axon
         run: |
-          cargo build
           rm -rf ./devtools/chain/data
           ./target/debug/axon run --config devtools/chain/config.toml --genesis devtools/chain/genesis_single_node.json > /tmp/log 2>&1 &
       - name: Run Test

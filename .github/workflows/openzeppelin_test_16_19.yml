@@ -12,12 +12,19 @@ on:
         required: true
 
 jobs:
+  # Build Axon and cache the binary
+  build-axon:
+    uses: ./.github/workflows/build.yml
+
   openzeppelin-contracts-1:
+    needs: build-axon
     strategy:
-      fail-fast: false
       matrix:
-        net: ["axon"]
-    runs-on: ubuntu-latest
+        # Supported GitHub-hosted runners and hardware resources
+        # see https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
+        os: [ubuntu-22.04]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
     outputs:
       output-sha: ${{ steps.escape_multiple_lines_test_inputs.outputs.result }}
     steps:
@@ -90,9 +97,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node_modules-
 
+      - name: Cache of the axon binary
+        uses: actions/cache@v3
+        with:
+          path: |
+            target/debug/axon
+            target/release/axon
+          key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-axon-${{ github.sha }}
+
       - name: Deploy Local Network of Axon
         run: |
-          cargo build
           rm -rf ./devtools/chain/data
           ./target/debug/axon run --config devtools/chain/config.toml --genesis devtools/chain/genesis_single_node.json > /tmp/log 2>&1 &
 
@@ -133,6 +147,7 @@ jobs:
         with:
           name: jfoa-build-reports-${{ runner.os }}
           path: openzeppelin-contracts/mochawesome-report/
+
   finally:
     name: Finally
     needs: [ openzeppelin-contracts-1 ]
