@@ -30,9 +30,17 @@ pub const NIL_DATA: H256 = H256([
     0xe5, 0x00, 0xb6, 0x53, 0xca, 0x82, 0x27, 0x3b, 0x7b, 0xfa, 0xd8, 0x04, 0x5d, 0x85, 0xa4, 0x70,
 ]);
 
+// Same value as `hash(rlp(null))`.
+// Also be same value as the `root_hash` of an empty `TrieMerkle`.
 pub const RLP_NULL: H256 = H256([
     0x56, 0xe8, 0x1f, 0x17, 0x1b, 0xcc, 0x55, 0xa6, 0xff, 0x83, 0x45, 0xe6, 0x92, 0xc0, 0xf8, 0x6e,
     0x5b, 0x48, 0xe0, 0x1b, 0x99, 0x6c, 0xad, 0xc0, 0x01, 0x62, 0x2f, 0xb5, 0xe3, 0x63, 0xb4, 0x21,
+]);
+
+// Same value as `hash(rlp([]))`.
+pub const RLP_EMPTY_LIST: H256 = H256([
+    0x1d, 0xcc, 0x4d, 0xe8, 0xde, 0xc7, 0x5d, 0x7a, 0xab, 0x85, 0xb5, 0x67, 0xb6, 0xcc, 0xd4, 0x1a,
+    0xd3, 0x12, 0x45, 0x1b, 0x94, 0x8a, 0x74, 0x13, 0xf0, 0xa1, 0x42, 0xfd, 0x40, 0xd4, 0x93, 0x47,
 ]);
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -481,6 +489,8 @@ mod tests {
     use super::*;
     use std::fs;
 
+    use common_merkle::TrieMerkle;
+
     #[test]
     fn test_eip55() {
         let addr = "0x35e70c3f5a794a77efc2ec5ba964bffcc7fd2c0a";
@@ -510,10 +520,30 @@ mod tests {
     }
 
     #[test]
-    fn test_hash_empty() {
+    fn test_default_values() {
         let bytes = Hex::empty();
         let hash = Hasher::digest(bytes.as_bytes());
         assert_eq!(hash, NIL_DATA);
+
+        let h256_default = H256::default();
+        assert!(h256_default.is_zero());
+
+        let null_data: &[u8] = &[];
+        let rlp_null_data = rlp::encode(&null_data);
+        assert_eq!(&rlp_null_data, &rlp::NULL_RLP[..]);
+
+        let empty_list: Vec<u8> = vec![];
+        let rlp_empty_list = rlp::encode_list(&empty_list);
+        assert_eq!(&rlp_empty_list, &rlp::EMPTY_LIST_RLP[..]);
+
+        let hash = Hasher::digest(rlp::NULL_RLP);
+        assert_eq!(hash, RLP_NULL);
+
+        let hash = Hasher::digest(rlp::EMPTY_LIST_RLP);
+        assert_eq!(hash, RLP_EMPTY_LIST);
+
+        let root = TrieMerkle::default().root_hash().unwrap();
+        assert_eq!(root, RLP_NULL);
     }
 
     #[test]

@@ -315,6 +315,7 @@ dependencies = [
  "ckb-types",
  "common-crypto",
  "common-hasher",
+ "common-merkle",
  "creep",
  "derive_more",
  "ethereum",
