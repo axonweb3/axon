@@ -1,6 +1,6 @@
 use std::{
     convert::AsRef,
-    env::set_current_dir,
+    env::{current_dir, set_current_dir},
     fs, io,
     path::{Path, PathBuf},
     str::FromStr,
@@ -20,14 +20,41 @@ use crate::{execute_transactions, insert_accounts};
 
 const DEV_CONFIG_DIR: &str = "../../devtools/chain";
 
-const GENESIS_FILE: &str = "genesis_single_node.json";
-const CONFIG_FILE: &str = "config.toml";
+struct TestCase<'a> {
+    chain_name:            &'a str,
+    config_file:           &'a str,
+    genesis_file:          &'a str,
+    input_genesis_hash:    &'a str,
+    genesis_state_root:    &'a str,
+    genesis_receipts_root: &'a str,
+}
 
-const GENESIS_HASH: &str = "0x2cc987996d5d26d18cb76dceb85d9b46e4f05f11ff331247225d983ec7a7b78f";
-const GENESIS_STATE_ROOT: &str =
-    "0x65f57a6a666e656de33ed68957e04b35b3fe1b35a90f6eafb6f283c907dc3d77";
-const GENESIS_RECEIPTS_ROOT: &str =
-    "0x8544b530238201f1620b139861a6841040b37f78f8bdae8736ef5cec474e979b";
+const TESTCASES: &[TestCase] = &[
+    TestCase {
+        chain_name:            "single_node",
+        config_file:           "config.toml",
+        genesis_file:          "genesis_single_node.json",
+        input_genesis_hash:    "0x2cc987996d5d26d18cb76dceb85d9b46e4f05f11ff331247225d983ec7a7b78f",
+        genesis_state_root:    "0x65f57a6a666e656de33ed68957e04b35b3fe1b35a90f6eafb6f283c907dc3d77",
+        genesis_receipts_root: "0x8544b530238201f1620b139861a6841040b37f78f8bdae8736ef5cec474e979b",
+    },
+    TestCase {
+        chain_name:            "multi_nodes",
+        config_file:           "nodes/node_1.toml",
+        genesis_file:          "nodes/genesis_multi_nodes.json",
+        input_genesis_hash:    "0xcb35c763bcfc5c68e2b4435d9eec7753190384b3af032c7a951f413d05db04c1",
+        genesis_state_root:    "0x7b288320399a1b1f2d6b1483b473e0067a7ff8358f927bb2a09ce6f463eb0208",
+        genesis_receipts_root: "0x8544b530238201f1620b139861a6841040b37f78f8bdae8736ef5cec474e979b",
+    },
+    TestCase {
+        chain_name:            "multi_nodes_short_epoch_len",
+        config_file:           "nodes/node_1.toml",
+        genesis_file:          "geneses/genesis_multi_nodes_short_epoch_len.json",
+        input_genesis_hash:    "0x2cc987996d5d26d18cb76dceb85d9b46e4f05f11ff331247225d983ec7a7b78f",
+        genesis_state_root:    "0x815c8fa8d46aac47f789611a21abb8e43e69b04425c80f9b2c425d5a2575d32c",
+        genesis_receipts_root: "0x8544b530238201f1620b139861a6841040b37f78f8bdae8736ef5cec474e979b",
+    },
+];
 
 #[test]
 fn decode_genesis() {
@@ -42,7 +69,13 @@ fn decode_type_id() {
 }
 
 #[tokio::test(flavor = "multi_thread")]
-async fn genesis_hash_for_dev_chain() {
+async fn genesis_data_for_dev_chain() {
+    for case in TESTCASES {
+        check_genesis_data(case).await;
+    }
+}
+
+async fn check_genesis_data<'a>(case: &TestCase<'a>) {
     let dev_config_dir = PathBuf::from_str(DEV_CONFIG_DIR).expect("read dev config dir");
     let tmp_dir = tempfile::tempdir().unwrap_or_else(|err| {
         panic!("failed to create temporary directory since {err:?}");
@@ -50,23 +83,43 @@ async fn genesis_hash_for_dev_chain() {
     let tmp_dir_path = tmp_dir.path();
 
     copy_dir(dev_config_dir, tmp_dir_path).expect("configs copied");
+    let current_dir = current_dir().expect("get current directory");
     set_current_dir(tmp_dir_path).expect("change work directory");
 
     let config: Config = {
-        let config_path = tmp_dir_path.join(CONFIG_FILE);
+        let config_path = tmp_dir_path.join(case.config_file);
         parse_file(config_path, false).expect("parse config file")
     };
     let genesis: RichBlock = {
-        let genesis_path = tmp_dir_path.join(GENESIS_FILE);
+        let genesis_path = tmp_dir_path.join(case.genesis_file);
         parse_file(genesis_path, true).expect("parse genesis file")
     };
 
-    let expected_genesis_hash = H256::from_str(GENESIS_HASH).expect("expected genesis hash");
     check_hashes(
-        "genesis hash",
-        expected_genesis_hash,
+        case.chain_name,
+        "input genesis hash",
+        case.input_genesis_hash,
         genesis.block.header.hash(),
     );
+
+    for (i, (block_cached, tx)) in genesis
+        .block
+        .tx_hashes
+        .iter()
+        .zip(genesis.txs.iter())
+        .enumerate()
+    {
+        let tx_cached = tx.transaction.hash;
+        assert_eq!(
+            *block_cached, tx_cached,
+            "check hash of tx[{i}], in-block: {block_cached:#x}, tx-cached: {tx_cached:#x}",
+        );
+        let calculated = tx.transaction.clone().calc_hash().hash;
+        assert_eq!(
+            tx_cached, calculated,
+            "check hash of tx[{i}], cached: {tx_cached:#x}, calculated: {calculated:#x}",
+        );
+    }
 
     let storage = {
         let path_block = tmp_dir.path().join("block");
@@ -105,21 +158,28 @@ async fn genesis_hash_for_dev_chain() {
     )
     .expect("execute transactions");
 
-    let expected_state_root = H256::from_str(GENESIS_STATE_ROOT).expect("expected genesis hash");
-    check_hashes("genesis state root", expected_state_root, resp.state_root);
-    let expected_receipts_root =
-        H256::from_str(GENESIS_RECEIPTS_ROOT).expect("expected genesis hash");
     check_hashes(
+        case.chain_name,
+        "genesis state root",
+        case.genesis_state_root,
+        resp.state_root,
+    );
+    check_hashes(
+        case.chain_name,
         "genesis receipts root",
-        expected_receipts_root,
+        case.genesis_receipts_root,
         resp.receipt_root,
     );
+
+    set_current_dir(current_dir).expect("change back to original work directory");
 }
 
-fn check_hashes(name: &str, expected: H256, actual: H256) {
+fn check_hashes(chain: &str, name: &str, expected_str: &str, actual: H256) {
+    let expected = H256::from_str(expected_str)
+        .unwrap_or_else(|err| panic!("failed to parse hash {name} of chain {chain} since {err}"));
     assert_eq!(
         expected, actual,
-        "{name} of dev chain is changed, expect {expected:#x}, but got {actual:#x}",
+        "hash {name} of chain {chain} is changed, expect {expected:#x}, but got {actual:#x}",
     );
 }
 
