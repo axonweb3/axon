@@ -122,9 +122,6 @@ pub trait Storage: CommonStorage {
     async fn get_latest_proof(&self, ctx: Context) -> ProtocolResult<Proof>;
 }
 
-#[async_trait]
-pub trait MaintenanceStorage: CommonStorage {}
-
 pub enum StorageBatchModify<S: StorageSchema> {
     Remove,
     Insert(<S as StorageSchema>::Value),
