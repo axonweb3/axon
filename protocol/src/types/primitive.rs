@@ -326,16 +326,25 @@ impl MetadataVersion {
     RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq,
 )]
 pub struct Metadata {
-    pub version:         MetadataVersion,
+    pub version:          MetadataVersion,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
-    pub epoch:           u64,
+    pub epoch:            u64,
+    pub verifier_list:    Vec<ValidatorExtend>,
+    #[serde(skip_deserializing)]
+    pub propose_counter:  Vec<ProposeCount>,
+    pub consensus_config: ConsensusConfig,
+}
+
+#[derive(
+    RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq,
+)]
+pub struct ConsensusConfig {
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub gas_limit:       u64,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub gas_price:       u64,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub interval:        u64,
-    pub verifier_list:   Vec<ValidatorExtend>,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub propose_ratio:   u64,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
@@ -348,17 +357,15 @@ pub struct Metadata {
     pub tx_num_limit:    u64,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub max_tx_size:     u64,
-    #[serde(skip_deserializing)]
-    pub propose_counter: Vec<ProposeCount>,
 }
 
 impl From<Metadata> for DurationConfig {
     fn from(m: Metadata) -> Self {
         DurationConfig {
-            propose_ratio:   m.propose_ratio,
-            prevote_ratio:   m.prevote_ratio,
-            precommit_ratio: m.precommit_ratio,
-            brake_ratio:     m.brake_ratio,
+            propose_ratio:   m.consensus_config.propose_ratio,
+            prevote_ratio:   m.consensus_config.prevote_ratio,
+            precommit_ratio: m.consensus_config.precommit_ratio,
+            brake_ratio:     m.consensus_config.brake_ratio,
         }
     }
 }

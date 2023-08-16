@@ -211,7 +211,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         if current_number == status.last_number {
             return Ok(Status {
                 height:         current_number + 1,
-                interval:       Some(metadata.interval),
+                interval:       Some(metadata.consensus_config.interval),
                 authority_list: convert_to_overlord_authority(&metadata.verifier_list),
                 timer_config:   Some(metadata.into()),
             });
@@ -287,7 +287,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         let epoch = metadata.epoch;
         let status = Status {
             height:         next_block_number,
-            interval:       Some(metadata.interval),
+            interval:       Some(metadata.consensus_config.interval),
             authority_list: convert_to_overlord_authority(&metadata.verifier_list),
             timer_config:   Some(metadata.into()),
         };

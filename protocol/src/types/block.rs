@@ -269,8 +269,8 @@ impl RichBlock {
 #[cfg(test)]
 mod tests {
     use crate::types::{
-        Block, BlockVersion, Header, Hex, Metadata, MetadataVersion, ProposeCount, RichBlock,
-        ValidatorExtend, H160,
+        Block, BlockVersion, ConsensusConfig, Header, Hex, Metadata, MetadataVersion, ProposeCount,
+        RichBlock, ValidatorExtend, H160,
     };
     use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -327,15 +327,6 @@ mod tests {
         let metadata = Metadata {
             version: MetadataVersion::new(0, 1000000000),
             epoch: 0,
-            gas_limit: 4294967295,
-            gas_price: 1,
-            interval: 3000,
-            propose_ratio: 15,
-            prevote_ratio: 10,
-            precommit_ratio: 10,
-            brake_ratio: 10,
-            tx_num_limit: 20000,
-            max_tx_size: 1024,
             verifier_list: vec![ValidatorExtend {
                 bls_pub_key: Hex::from_string("0x04102947214862a503c73904deb5818298a186d68c7907bb609583192a7de6331493835e5b8281f4d9ee705537c0e765580e06f86ddce5867812fceb42eecefd209f0eddd0389d6b7b0100f00fb119ef9ab23826c6ea09aadcc76fa6cea6a32724".to_string()).unwrap(),
                 pub_key: Hex::from_string("0x02ef0cb0d7bc6c18b4bea1f5908d9106522b35ab3c399369605d4242525bda7e60".to_string()).unwrap(),
@@ -347,6 +338,17 @@ mod tests {
                 address: H160::default(),
                 count: 0,
             }],
+            consensus_config: ConsensusConfig {
+                gas_limit: 4294967295,
+                gas_price: 1,
+                interval: 3000,
+                propose_ratio: 15,
+                prevote_ratio: 10,
+                precommit_ratio: 10,
+                brake_ratio: 10,
+                tx_num_limit: 20000,
+                max_tx_size: 1024,
+            }
         };
 
         println!("{}", serde_json::to_string(&metadata).unwrap());
