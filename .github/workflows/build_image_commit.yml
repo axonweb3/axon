@@ -1,10 +1,8 @@
-name: Build docker image
+name: Build docker image commit
 on:
   push:
     branches:
       - build-images
-    tags:
-      - '*'      
   workflow_dispatch:
     inputs:
       commit_sha:
@@ -23,9 +21,11 @@ jobs:
         run: |
           if [ ${{ github.event_name }} == 'push' ]; then
             export tag_name=`echo ${{ github.ref }} | awk -F '/' '{print $3}'`
+            echo ${{ github.ref }} | awk -F '/' '{print $3}' 
           fi
           if [ ${{ github.event_name }} == 'workflow_dispatch' ]; then
             export tag_name=${{ github.event.inputs.dispatch }}
+            echo $tag_name
           fi
           echo "tag_name=$tag_name" >> $GITHUB_OUTPUT
 
