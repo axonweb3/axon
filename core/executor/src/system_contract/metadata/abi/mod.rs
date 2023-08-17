@@ -15,17 +15,7 @@ impl From<metadata_abi::Metadata> for Metadata {
             epoch:            value.epoch,
             verifier_list:    value.verifier_list.into_iter().map(Into::into).collect(),
             propose_counter:  value.propose_counter.into_iter().map(Into::into).collect(),
-            consensus_config: ConsensusConfig {
-                gas_limit:       value.gas_limit,
-                gas_price:       value.gas_price,
-                interval:        value.interval,
-                propose_ratio:   value.propose_ratio,
-                prevote_ratio:   value.prevote_ratio,
-                precommit_ratio: value.precommit_ratio,
-                brake_ratio:     value.brake_ratio,
-                tx_num_limit:    value.tx_num_limit,
-                max_tx_size:     value.max_tx_size,
-            },
+            consensus_config: value.consensus_config.into(),
         }
     }
 }
@@ -33,19 +23,43 @@ impl From<metadata_abi::Metadata> for Metadata {
 impl From<Metadata> for metadata_abi::Metadata {
     fn from(value: Metadata) -> Self {
         metadata_abi::Metadata {
-            version:         value.version.into(),
-            epoch:           value.epoch,
-            gas_limit:       value.consensus_config.gas_limit,
-            gas_price:       value.consensus_config.gas_price,
-            interval:        value.consensus_config.interval,
-            verifier_list:   value.verifier_list.into_iter().map(Into::into).collect(),
-            propose_ratio:   value.consensus_config.propose_ratio,
-            prevote_ratio:   value.consensus_config.prevote_ratio,
-            precommit_ratio: value.consensus_config.precommit_ratio,
-            brake_ratio:     value.consensus_config.brake_ratio,
-            tx_num_limit:    value.consensus_config.tx_num_limit,
-            max_tx_size:     value.consensus_config.max_tx_size,
-            propose_counter: value.propose_counter.into_iter().map(Into::into).collect(),
+            version:          value.version.into(),
+            epoch:            value.epoch,
+            verifier_list:    value.verifier_list.into_iter().map(Into::into).collect(),
+            propose_counter:  value.propose_counter.into_iter().map(Into::into).collect(),
+            consensus_config: value.consensus_config.into(),
+        }
+    }
+}
+
+impl From<ConsensusConfig> for metadata_abi::ConsensusConfig {
+    fn from(value: ConsensusConfig) -> Self {
+        metadata_abi::ConsensusConfig {
+            propose_ratio:   value.propose_ratio,
+            prevote_ratio:   value.prevote_ratio,
+            precommit_ratio: value.precommit_ratio,
+            brake_ratio:     value.brake_ratio,
+            tx_num_limit:    value.tx_num_limit,
+            max_tx_size:     value.max_tx_size,
+            gas_limit:       value.gas_limit,
+            gas_price:       value.gas_price,
+            interval:        value.interval,
+        }
+    }
+}
+
+impl From<metadata_abi::ConsensusConfig> for ConsensusConfig {
+    fn from(value: metadata_abi::ConsensusConfig) -> Self {
+        ConsensusConfig {
+            propose_ratio:   value.propose_ratio,
+            prevote_ratio:   value.prevote_ratio,
+            precommit_ratio: value.precommit_ratio,
+            brake_ratio:     value.brake_ratio,
+            tx_num_limit:    value.tx_num_limit,
+            max_tx_size:     value.max_tx_size,
+            gas_limit:       value.gas_limit,
+            gas_price:       value.gas_price,
+            interval:        value.interval,
         }
     }
 }

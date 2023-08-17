@@ -9,7 +9,7 @@ use crate::{
     system_contract::{
         init,
         metadata::{
-            metadata_abi::{self, Metadata, MetadataVersion, ValidatorExtend},
+            metadata_abi::{self, ConsensusConfig, Metadata, MetadataVersion, ValidatorExtend},
             MetadataContract,
         },
         SystemContract, METADATA_CONTRACT_ADDRESS,
@@ -140,22 +140,24 @@ fn prepare_tx_5(addr: &H160) -> SignedTransaction {
 
 fn prepare_metadata() -> Metadata {
     Metadata {
-        version:         MetadataVersion {
+        version:          MetadataVersion {
             start: 1u64,
             end:   100u64,
         },
-        epoch:           0,
-        gas_limit:       1u64,
-        gas_price:       0u64,
-        interval:        0u64,
-        verifier_list:   vec![prepare_validator()],
-        propose_ratio:   1u64,
-        prevote_ratio:   1u64,
-        precommit_ratio: 1u64,
-        brake_ratio:     1u64,
-        tx_num_limit:    1u64,
-        max_tx_size:     1u64,
-        propose_counter: vec![],
+        epoch:            0,
+        verifier_list:    vec![prepare_validator()],
+        propose_counter:  vec![],
+        consensus_config: ConsensusConfig {
+            gas_limit:       1u64,
+            gas_price:       0u64,
+            interval:        0u64,
+            propose_ratio:   1u64,
+            prevote_ratio:   1u64,
+            precommit_ratio: 1u64,
+            brake_ratio:     1u64,
+            tx_num_limit:    1u64,
+            max_tx_size:     1u64,
+        },
     }
 }
 

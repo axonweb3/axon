@@ -91,6 +91,13 @@ impl<Adapter: ExecutorAdapter + ApplyBackend> SystemContract<Adapter>
                     "[metadata] set ckb related info"
                 );
             }
+            metadata_abi::MetadataContractCalls::UpdateConsensusConfig(c) => {
+                exec_try!(
+                    store.update_consensus_config(c.config),
+                    gas_limit,
+                    "[metadata] update consensus config"
+                );
+            }
             // TODO: Metadata doesn't accept all abi calls so far.
             _ => {
                 log::error!("[metadata] invalid tx data");
