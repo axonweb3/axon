@@ -1,8 +1,8 @@
 name: Build docker image
 on:
-  # push:
-  #   branches:
-  #     - main
+  push:
+    tags:
+      - '*'
   workflow_dispatch:
     inputs:
       dispatch:
