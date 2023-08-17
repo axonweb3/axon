@@ -29,7 +29,8 @@ pub struct Config {
     pub network:    ConfigNetwork,
     pub mempool:    ConfigMempool,
     pub executor:   ConfigExecutor,
-    pub consensus:  ConfigConsensus,
+    #[serde(rename = "synchronization")]
+    pub sync:       ConfigSynchronization,
     #[serde(default)]
     pub logger:     ConfigLogger,
     #[serde(default)]
@@ -38,8 +39,7 @@ pub struct Config {
     pub prometheus: Option<ConfigPrometheus>,
 
     #[serde(default)]
-    pub ibc_contract_address:  H160,
-    pub wckb_contract_address: H160,
+    pub ibc_contract_address: H160,
 }
 
 impl Config {
@@ -210,7 +210,7 @@ fn default_sync_txs_chunk_size() -> usize {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct ConfigConsensus {
+pub struct ConfigSynchronization {
     #[serde(default = "default_sync_txs_chunk_size")]
     pub sync_txs_chunk_size: usize,
 }
@@ -236,7 +236,6 @@ pub struct ConfigMempool {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct ConfigExecutor {
-    pub light:             bool,
     pub triedb_cache_size: usize,
 }
 
