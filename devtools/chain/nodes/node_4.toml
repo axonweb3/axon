@@ -4,9 +4,6 @@ privkey = "0x69ff51f4c22f30615f68b88efa740f8f1b9169e88842b83d189748d06f1a948e"
 # db config
 data_path = "./devtools/chain/data/node_4"
 
-crosschain_contract_address = "0xb9dc8bde1db42410d304b5e78c2ff843134e15e0"
-wckb_contract_address = "0xa13763691970d9373d4fab7cc323d7ba06fa9986"
-
 [[accounts]]
 address = "0xa0ee7a142d267c1f36714e4a8f75612f20a79720"
 balance = "04ee2d6d415b85acef8100000000"
@@ -61,7 +58,7 @@ log_filter_max_block_range = 25000
 listening_address = "/ip4/127.0.0.1/tcp/10004"
 rpc_timeout = 10
 
-[consensus]
+[synchronization]
 sync_txs_chunk_size = 5000
 
 [[network.bootstraps]]
@@ -83,7 +80,6 @@ broadcast_txs_size = 200
 broadcast_txs_interval = 200
 
 [executor]
-light = false
 triedb_cache_size = 500
 
 [logger]

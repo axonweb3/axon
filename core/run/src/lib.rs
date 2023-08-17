@@ -361,7 +361,7 @@ impl Axon {
         consensus_adapter.set_overlord_handler(overlord_consensus.get_overlord_handler());
 
         let synchronization = Arc::new(OverlordSynchronization::<_>::new(
-            self.config.consensus.sync_txs_chunk_size,
+            self.config.sync.sync_txs_chunk_size,
             consensus_adapter,
             status_agent.clone(),
             lock,
