@@ -20,7 +20,7 @@ jobs:
         with:
           ref: ${{ github.event.inputs.commit_sha || github.sha }}
       - name: Get Short Commit Hash
-        run: echo "::set-output name=SHORT_COMMIT::$(echo ${{ github.sha }} | cut -c1-8)"      
+        run: echo "::set-output name=SHORT_COMMIT::${GITHUB_SHA::8}"      
       - name: Login to Github resgistry
         uses: docker/login-action@v1
         with:
@@ -38,5 +38,5 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64
           push: true
-          tags: ghcr.io/simon-tl/axon:amd64-${{ steps.short_commit.outputs.SHORT_COMMIT }}
+          tags: ghcr.io/simon-tl/axon:amd64-${{ steps.short_commit.outputs.SHORT_COMMIT  }}
           
