@@ -186,6 +186,11 @@ where
         res.unwrap_or_default().to_vec()
     }
 
+    // ### Notes
+    //
+    // - If a MPT tree is empty, the root should be `RLP_NULL`.
+    // - In this function, when returns `H256::default()`, that means the tree is
+    //   not initialized.
     fn storage(&self, address: H160, index: H256) -> H256 {
         if let Ok(raw) = self.trie.get(address.as_bytes()) {
             if raw.is_none() {
@@ -326,11 +331,15 @@ where
             let _ = storage_trie.insert(k.as_bytes(), v.as_bytes());
         });
 
+        let storage_root = storage_trie
+            .commit()
+            .unwrap_or_else(|err| panic!("failed to update the trie storage since {err}"));
+
         let mut new_account = Account {
-            nonce:        basic.nonce,
-            balance:      basic.balance,
-            code_hash:    old_account.code_hash,
-            storage_root: storage_trie.commit().unwrap_or(RLP_NULL),
+            nonce: basic.nonce,
+            balance: basic.balance,
+            code_hash: old_account.code_hash,
+            storage_root,
         };
 
         if let Some(c) = code {

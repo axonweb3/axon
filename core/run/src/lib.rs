@@ -81,6 +81,7 @@ pub static JEMALLOC: Jemalloc = Jemalloc;
 
 #[derive(Debug)]
 pub struct Axon {
+    version:    String,
     config:     Config,
     genesis:    RichBlock,
     state_root: MerkleRoot,
@@ -90,8 +91,9 @@ pub struct Axon {
 mod tests;
 
 impl Axon {
-    pub fn new(config: Config, genesis: RichBlock) -> Axon {
+    pub fn new(version: String, config: Config, genesis: RichBlock) -> Axon {
         Axon {
+            version,
             config,
             genesis,
             state_root: MerkleRoot::default(),
@@ -359,7 +361,7 @@ impl Axon {
         consensus_adapter.set_overlord_handler(overlord_consensus.get_overlord_handler());
 
         let synchronization = Arc::new(OverlordSynchronization::<_>::new(
-            self.config.consensus.sync_txs_chunk_size,
+            self.config.sync.sync_txs_chunk_size,
             consensus_adapter,
             status_agent.clone(),
             lock,
@@ -386,7 +388,7 @@ impl Axon {
             Arc::clone(&trie_db),
             Arc::new(network_handle),
         ));
-        let _handles = run_jsonrpc_server(self.config.clone(), api_adapter).await?;
+        let _handles = run_jsonrpc_server(self.version, self.config.clone(), api_adapter).await?;
 
         // Run sync
         tokio::spawn(async move {

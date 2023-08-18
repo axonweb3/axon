@@ -12,12 +12,8 @@ updates:
       time: "03:00"
       timezone: Asia/Shanghai
     ignore:
-    - dependency-name: creep
-      versions:
-      - 0.3.x
-    - dependency-name: rand
-      versions:
-      - 0.8.x
+      - dependency-name: creep
+      - dependency-name: rand
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -25,18 +21,3 @@ updates:
       interval: daily
       time: "03:00"
       timezone: Asia/Shanghai
-
-  - package-ecosystem: "npm"
-    directory: "/tests/e2e"
-    schedule:
-      interval: monthly
-
-  - package-ecosystem: "npm"
-    directory: "/builtin-contract/crosschain"
-    schedule:
-      interval: monthly
-
-  - package-ecosystem: "npm"
-    directory: "/builtin-contract/metadata"
-    schedule:
-      interval: monthly

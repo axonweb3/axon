@@ -81,6 +81,9 @@ pub enum TypesError {
 
     #[display(fmt = "Missing interoperation sender")]
     MissingInteroperationSender,
+
+    #[display(fmt = "InvalidBlockVersion {:?}", _0)]
+    InvalidBlockVersion(u8),
 }
 
 impl Error for TypesError {}

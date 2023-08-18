@@ -17,10 +17,10 @@ pub struct NodeRpcImpl {
 }
 
 impl NodeRpcImpl {
-    pub fn new(version: &str, path: PathBuf) -> Self {
+    pub fn new(ver: String, path: PathBuf) -> Self {
         NodeRpcImpl {
-            version: version.to_string(),
-            pprof:   Arc::new(AtomicBool::default()),
+            version: ver,
+            pprof:   Arc::new(AtomicBool::new(false)),
             _path:   path.join("api"),
         }
     }
