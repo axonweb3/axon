@@ -241,6 +241,7 @@ pub trait CkbLightClientRpc {
 }
 
 pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
+    version: String,
     config: Config,
     adapter: Arc<Adapter>,
 ) -> ProtocolResult<(Option<ServerHandle>, Option<ServerHandle>)> {
@@ -253,8 +254,7 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
     )
     .into_rpc();
 
-    let node_rpc =
-        r#impl::NodeRpcImpl::new(&config.rpc.client_version, config.data_path).into_rpc();
+    let node_rpc = r#impl::NodeRpcImpl::new(version, config.data_path).into_rpc();
     let axon_rpc = r#impl::AxonRpcImpl::new(Arc::clone(&adapter)).into_rpc();
     let filter =
         r#impl::filter_module(Arc::clone(&adapter), config.web3.log_filter_max_block_range)

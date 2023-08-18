@@ -132,6 +132,7 @@ impl TestHandle {
 
 fn mock_proposal() -> Proposal {
     Proposal {
+        version:                  Default::default(),
         prev_hash:                Default::default(),
         proposer:                 Default::default(),
         prev_state_root:          Default::default(),

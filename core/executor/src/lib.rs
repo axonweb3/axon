@@ -187,12 +187,15 @@ impl Executor for AxonExecutor {
 
         // self.update_system_contract_roots_for_external_module();
 
-        // TODO When fixes receipt_root, set to RLP_NULL when empty
-        let receipt_root = TrieMerkle::from_iter(hashes.iter().enumerate())
-            .root_hash()
-            .unwrap_or_else(|err| {
-                panic!("failed to calculate trie root hash for receipts since {err}")
-            });
+        let receipt_root = if hashes.is_empty() {
+            RLP_NULL
+        } else {
+            TrieMerkle::from_iter(hashes.iter().enumerate())
+                .root_hash()
+                .unwrap_or_else(|err| {
+                    panic!("failed to calculate trie root hash for receipts since {err}")
+                })
+        };
 
         ExecResp {
             state_root: new_state_root,
@@ -381,11 +384,15 @@ impl AxonExecutor {
         // commit changes by all txs included in this block only once
         let new_state_root = adapter.commit();
 
-        let receipt_root = TrieMerkle::from_iter(hashes.iter().enumerate())
-            .root_hash()
-            .unwrap_or_else(|err| {
-                panic!("failed to calculate trie root hash for receipts since {err}")
-            });
+        let receipt_root = if hashes.is_empty() {
+            RLP_NULL
+        } else {
+            TrieMerkle::from_iter(hashes.iter().enumerate())
+                .root_hash()
+                .unwrap_or_else(|err| {
+                    panic!("failed to calculate trie root hash for receipts since {err}")
+                })
+        };
 
         ExecResp {
             state_root: new_state_root,

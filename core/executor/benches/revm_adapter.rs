@@ -331,12 +331,20 @@ where
         tx_outputs.push(resp);
     });
 
-    ExecResp {
-        state_root:   evm.db().unwrap().trie.commit().unwrap(),
-        receipt_root: TrieMerkle::from_iter(hashes.iter().enumerate())
+    let receipt_root = if hashes.is_empty() {
+        RLP_NULL
+    } else {
+        TrieMerkle::from_iter(hashes.iter().enumerate())
             .root_hash()
-            .unwrap_or_default(),
-        gas_used:     total_gas_used,
-        tx_resp:      tx_outputs,
+            .unwrap_or_else(|err| {
+                panic!("failed to calculate trie root hash for receipts since {err}")
+            })
+    };
+
+    ExecResp {
+        state_root: evm.db().unwrap().trie.commit().unwrap(),
+        receipt_root,
+        gas_used: total_gas_used,
+        tx_resp: tx_outputs,
     }
 }

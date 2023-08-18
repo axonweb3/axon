@@ -4,11 +4,13 @@ version = "0.1.0-beta.5"
 authors = ["Nervos Dev <dev@nervos.org>"]
 edition = "2021"
 repository = "https://github.com/axonweb3/axon"
+build = "build.rs"
 
 [dependencies]
-clap = { version = "4.2", features = ["cargo"] }
+clap = { version = "4.3", features = ["cargo"] }
 
 # byzantine = { path = "./byzantine" }
+common-version = { path = "./common/version" }
 core-api = { path = "./core/api" }
 core-cli = { path = "./core/cli" }
 core-consensus = { path = "./core/consensus" }
@@ -28,6 +30,7 @@ members = [
     "common/memory-tracker",
     "common/merkle",
     "common/pubsub",
+    "common/version",
     "core/api",
     "core/cli",
     "core/consensus",
@@ -60,6 +63,13 @@ inherits = "release"
 debug = true
 overflow-checks = true
 opt-level = 3
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "axon"
+path = "src/main.rs"
 
 [[example]]
 name = "custom_chain"
