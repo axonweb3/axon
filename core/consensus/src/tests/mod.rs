@@ -39,10 +39,7 @@ fn _mock_block_from_status(status: &CurrentStatus) -> Block {
         proposer:                 _mock_address().0,
         proof:                    _mock_proof(status.last_number),
         log_bloom:                Default::default(),
-        difficulty:               Default::default(),
         extra_data:               Default::default(),
-        mixed_hash:               Default::default(),
-        nonce:                    Default::default(),
         base_fee_per_gas:         Default::default(),
         call_system_script_count: 0,
     };

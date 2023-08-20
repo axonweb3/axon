@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::codec::{serialize_bytes, serialize_uint};
 use crate::types::{
     logs_bloom, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, Log, MerkleRoot, Receipt,
-    SignedTransaction, H160, H64, U256,
+    SignedTransaction, H160, U256,
 };
 use crate::{codec::ProtocolCodec, types::TypesError};
 
@@ -59,7 +59,6 @@ pub struct Proposal {
     pub gas_limit:                U256,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_bytes"))]
     pub extra_data:               Bytes,
-    pub mixed_hash:               Option<Hash>,
     pub base_fee_per_gas:         U256,
     pub proof:                    Proof,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
@@ -86,7 +85,6 @@ impl Proposal {
             number:                   h.number,
             gas_limit:                h.gas_limit,
             extra_data:               h.extra_data.clone(),
-            mixed_hash:               h.mixed_hash,
             base_fee_per_gas:         h.base_fee_per_gas,
             proof:                    h.proof.clone(),
             chain_id:                 h.chain_id,
@@ -107,7 +105,6 @@ impl Proposal {
             number:                   h.number,
             gas_limit:                h.gas_limit,
             extra_data:               h.extra_data.clone(),
-            mixed_hash:               h.mixed_hash,
             base_fee_per_gas:         h.base_fee_per_gas,
             proof:                    h.proof.clone(),
             chain_id:                 h.chain_id,
@@ -148,14 +145,11 @@ impl Block {
             log_bloom:                Bloom::from(BloomInput::Raw(
                 rlp::encode_list(&logs).as_ref(),
             )),
-            difficulty:               U256::one(),
             timestamp:                proposal.timestamp,
             number:                   proposal.number,
             gas_used:                 exec_resp.gas_used.into(),
             gas_limit:                proposal.gas_limit,
             extra_data:               proposal.extra_data,
-            mixed_hash:               proposal.mixed_hash,
-            nonce:                    Default::default(),
             base_fee_per_gas:         proposal.base_fee_per_gas,
             proof:                    proposal.proof,
             call_system_script_count: proposal.call_system_script_count,
@@ -219,7 +213,6 @@ pub struct Header {
     pub signed_txs_hash:          Hash,
     pub receipts_root:            MerkleRoot,
     pub log_bloom:                Bloom,
-    pub difficulty:               U256,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub timestamp:                u64,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
@@ -228,8 +221,6 @@ pub struct Header {
     pub gas_limit:                U256,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_bytes"))]
     pub extra_data:               Bytes,
-    pub mixed_hash:               Option<Hash>,
-    pub nonce:                    H64,
     pub base_fee_per_gas:         U256,
     pub proof:                    Proof,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
@@ -315,14 +306,11 @@ mod tests {
                     signed_txs_hash:          Default::default(),
                     receipts_root:            Default::default(),
                     log_bloom:                Default::default(),
-                    difficulty:               Default::default(),
                     timestamp:                time_now(),
                     number:                   0,
                     gas_used:                 Default::default(),
                     gas_limit:                Default::default(),
                     extra_data:               Default::default(),
-                    mixed_hash:               Default::default(),
-                    nonce:                    Default::default(),
                     base_fee_per_gas:         Default::default(),
                     proof:                    Default::default(),
                     call_system_script_count: 0,

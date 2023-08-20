@@ -89,7 +89,6 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             number:                   next_number,
             gas_limit:                MAX_BLOCK_GAS_LIMIT.into(),
             extra_data:               Default::default(),
-            mixed_hash:               None,
             base_fee_per_gas:         BASE_FEE_PER_GAS.into(),
             proof:                    status.proof,
             chain_id:                 self.node_info.chain_id,
