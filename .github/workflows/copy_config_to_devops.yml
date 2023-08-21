@@ -4,8 +4,8 @@ on:
     branches:
       - main
     paths:
-    - 'devtools/chain/genesis_multi_nodes.json'
     - 'devtools/chain/default.db-options'
+    - 'devtools/chain/specs/multi_nodes'
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,13 +21,13 @@ jobs:
           path: ${{ github.workspace}}/axon-devops
       - name: apply config toml config_toml.patch
         run: |
-          # copy default.db-options & genesis_multi_nodes.json to axon-devops always
+          # copy default.db-options & specs/multi_nodes to axon-devops always
           cp ${{ github.workspace}}/devtools/chain/default.db-options ${{ github.workspace}}/axon-devops/deploy/templates
           cp ${{ github.workspace}}/devtools/chain/default.db-options ${{ github.workspace}}/axon-devops/docker-deploy/devtools/chain
           cp ${{ github.workspace}}/devtools/chain/default.db-options ${{ github.workspace}}/axon-devops/k8s-deploy/k8s/axon/axon-config
-          cp ${{ github.workspace}}/devtools/chain/nodes/genesis_multi_nodes.json ${{ github.workspace}}/axon-devops/deploy/templates/genesis.json
-          cp ${{ github.workspace}}/devtools/chain/nodes/genesis_multi_nodes.json ${{ github.workspace}}/axon-devops/docker-deploy/devtools/chain/genesis.json
-          cp ${{ github.workspace}}/devtools/chain/nodes/genesis_multi_nodes.json ${{ github.workspace}}/axon-devops/k8s-deploy/k8s/axon/axon-config/genesis.json
+          cp -r ${{ github.workspace}}/devtools/chain/nodes/specs/multi_nodes ${{ github.workspace}}/axon-devops/deploy/templates/specs
+          cp -r ${{ github.workspace}}/devtools/chain/nodes/specs/multi_nodes ${{ github.workspace}}/axon-devops/docker-deploy/devtools/chain/specs
+          cp -r ${{ github.workspace}}/devtools/chain/nodes/specs/multi_nodes ${{ github.workspace}}/axon-devops/k8s-deploy/k8s/axon/axon-config/specs
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
         with:

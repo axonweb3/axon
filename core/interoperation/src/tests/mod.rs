@@ -15,7 +15,7 @@ use protocol::types::{
     UnverifiedTransaction, H256, NIL_DATA, RLP_NULL, U256,
 };
 
-const GENESIS_PATH: &str = "../../devtools/chain/genesis_single_node.json";
+const GENESIS_PATH: &str = "../../tests/data/genesis.json";
 
 lazy_static::lazy_static! {
     pub static ref RPC: RpcClient = init_rpc_client();

@@ -88,14 +88,14 @@ pub fn hex_decode(src: &str) -> ProtocolResult<Vec<u8>> {
     Ok(ret)
 }
 
-pub(crate) fn serialize_bytes<S>(val: &Bytes, s: S) -> Result<S::Ok, S::Error>
+pub fn serialize_bytes<S>(val: &Bytes, s: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
 {
     faster_hex::withpfx_lowercase::serialize(val, s)
 }
 
-pub(crate) fn serialize_uint<S, U>(val: &U, s: S) -> Result<S::Ok, S::Error>
+pub fn serialize_uint<S, U>(val: &U, s: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
     U: Into<U256> + Copy,
