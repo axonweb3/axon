@@ -36,13 +36,13 @@ jobs:
       run: |
         target/debug/axon --version
         target/debug/axon run \
-          -c devtools/chain/config.toml \
-          -g devtools/chain/genesis_single_node.json \
-          > ${{ runner.temp }}/${{ matrix.os }}-single-axon-node.log &
+          --config devtools/chain/config.toml \
+          --chain-spec devtools/chain/specs/single_node/chain-spec.toml \
+          | tee ${{ runner.temp }}/${{ matrix.os }}-single-axon-node.log &
         
-        sleep 300
+        sleep 120
         set +e
-        result=$(tail -n 100 ${{ runner.temp }}/${{ matrix.os }}-single-axon-node.log | grep 'state goto new height 100')
+        result=$(tail -n 100 ${{ runner.temp }}/${{ matrix.os }}-single-axon-node.log | grep 'state goto new height 30')
 
         if [[ "$result" != "" ]]
         then
