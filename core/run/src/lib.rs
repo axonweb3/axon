@@ -774,13 +774,12 @@ impl Axon {
     }
 
     fn run_prometheus_server(config: Option<ConfigPrometheus>) {
-        let prometheus_listening_address = match config {
-            Some(prometheus_config) => prometheus_config.listening_address.unwrap(),
-            None => std::net::SocketAddr::from(([0, 0, 0, 0], 8100)),
+        if let Some(prometheus_config) = config {
+            if let Some(prometheus_listening_address) = prometheus_config.listening_address {
+                tokio::spawn(run_prometheus_server(prometheus_listening_address));
+                log::info!("prometheus started");
+            }
         };
-        tokio::spawn(run_prometheus_server(prometheus_listening_address));
-
-        log::info!("prometheus started");
     }
 
     fn run_overlord_consensus<M, N, S, DB>(
