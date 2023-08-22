@@ -103,7 +103,6 @@ impl EvmDebugger {
             block_coinbase:         H160::random(),
             block_timestamp:        time_now().into(),
             chain_id:               5u64.into(),
-            difficulty:             U256::one(),
             origin:                 H160::random(),
             gas_price:              1u64.into(),
             block_gas_limit:        4294967295000u64.into(),

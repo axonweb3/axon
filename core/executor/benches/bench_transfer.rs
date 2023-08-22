@@ -70,7 +70,6 @@ impl BenchAdapter {
                 block_coinbase:         DISTRIBUTE_ADDRESS.0,
                 block_timestamp:        time_now().into(),
                 chain_id:               U256::one(),
-                difficulty:             U256::one(),
                 origin:                 DISTRIBUTE_ADDRESS.0,
                 gas_price:              85u64.into(),
                 block_gas_limit:        100_000_000_000u64.into(),
