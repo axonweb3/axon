@@ -6,8 +6,8 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use protocol::codec::ProtocolCodec;
 use protocol::types::{
-    AccessList, Block, Bloom, Bytes, Hash, Header, Hex, Public, Receipt, SignedTransaction, H160,
-    H256, H64, MAX_PRIORITY_FEE_PER_GAS, U256, U64,
+    AccessList, Block, Bloom, Bytes, Hash, Header, Hex, Public, Receipt, SignedTransaction,
+    UnsignedTransaction, H160, H256, H64, MAX_PRIORITY_FEE_PER_GAS, U256, U64,
 };
 
 pub const EMPTY_UNCLE_HASH: H256 = H256([
@@ -97,13 +97,19 @@ impl From<SignedTransaction> for Web3Transaction {
             )
         };
 
+        let gas_limit = match stx.transaction.unsigned {
+            UnsignedTransaction::Legacy(ref inner) => inner.gas_limit,
+            UnsignedTransaction::Eip1559(ref inner) => inner.gas_limit,
+            UnsignedTransaction::Eip2930(ref inner) => inner.gas_limit,
+        };
+
         Web3Transaction {
             type_:                    Some(stx.type_().into()),
             block_number:             None,
             block_hash:               None,
             raw:                      Hex::encode(stx.transaction.encode().unwrap()),
             public_key:               stx.public,
-            gas:                      U256::zero(),
+            gas:                      gas_limit,
             gas_price:                stx.transaction.unsigned.gas_price(),
             max_fee_per_gas:          if is_eip1559 {
                 Some(U256::from(MAX_PRIORITY_FEE_PER_GAS))
