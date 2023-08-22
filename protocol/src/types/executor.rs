@@ -52,7 +52,6 @@ pub struct ExecutorContext {
     pub gas_price:              U256,
     pub block_gas_limit:        U256,
     pub block_base_fee_per_gas: U256,
-    pub logs:                   Vec<Log>,
 }
 
 impl From<Proposal> for ExecutorContext {
@@ -66,7 +65,6 @@ impl From<Proposal> for ExecutorContext {
             gas_price:              U256::one(),
             block_gas_limit:        h.gas_limit,
             block_base_fee_per_gas: h.base_fee_per_gas,
-            logs:                   Vec::new(),
         }
     }
 }
@@ -82,7 +80,6 @@ impl From<&Header> for ExecutorContext {
             gas_price:              U256::one(),
             block_gas_limit:        h.gas_limit,
             block_base_fee_per_gas: h.base_fee_per_gas,
-            logs:                   Vec::new(),
         }
     }
 }

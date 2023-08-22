@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
-use protocol::traits::{CommonStorage, Context, Storage};
+use protocol::traits::{Context, ReadOnlyStorage, Storage};
 use protocol::types::Hasher;
 
-use crate::adapter::memory::MemoryAdapter;
+use core_db::MemoryAdapter;
+
 use crate::tests::{get_random_bytes, mock_block, mock_proof, mock_receipt, mock_signed_tx};
 use crate::ImplStorage;
 

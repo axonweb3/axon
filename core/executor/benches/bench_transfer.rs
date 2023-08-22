@@ -7,8 +7,6 @@ use common_crypto::{
     Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey, Signature,
     ToPublicKey, UncompressedPublicKey,
 };
-use core_executor::{AxonExecutor, AxonExecutorAdapter, MPTTrie, RocksTrieDB};
-use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
 use protocol::codec::{hex_decode, ProtocolCodec};
 use protocol::traits::Executor;
 use protocol::types::{
@@ -17,13 +15,16 @@ use protocol::types::{
     RLP_NULL, U256,
 };
 
+use core_db::RocksAdapter;
+use core_executor::{AxonExecutor, AxonExecutorApplyAdapter, MPTTrie, RocksTrieDB};
+use core_storage::ImplStorage;
+
 lazy_static::lazy_static! {
     static ref PRIVATE_KEY: Secp256k1RecoverablePrivateKey
         = Secp256k1RecoverablePrivateKey::try_from(hex_decode("95500289866f83502cc1fb894ef5e2b840ca5f867cc9e84ab32fb8872b5dd36c").unwrap().as_ref()).unwrap();
     static ref DISTRIBUTE_ADDRESS: Address = Address::from_hex("0x35e70c3f5a794a77efc2ec5ba964bffcc7fd2c0a").unwrap();
 }
 
-const STATE_PATH: &str = "../../free-space/rocks/state";
 const DATA_PATH: &str = "../../free-space/rocks/data";
 
 struct BenchAdapter {
@@ -33,12 +34,11 @@ struct BenchAdapter {
 
 impl BenchAdapter {
     fn new() -> Self {
+        let db = RocksAdapter::new(DATA_PATH, Default::default()).unwrap();
+
         BenchAdapter {
-            trie_db: Arc::new(RocksTrieDB::new(STATE_PATH, Default::default(), 1000).unwrap()),
-            storage: Arc::new(ImplStorage::new(
-                Arc::new(RocksAdapter::new(DATA_PATH, Default::default()).unwrap()),
-                100,
-            )),
+            trie_db: Arc::new(RocksTrieDB::new_evm(db.inner_db(), 1000)),
+            storage: Arc::new(ImplStorage::new(Arc::new(db), 100)),
         }
     }
 
@@ -60,8 +60,8 @@ impl BenchAdapter {
         mpt.commit().unwrap()
     }
 
-    fn init_backend(&self) -> AxonExecutorAdapter<ImplStorage<RocksAdapter>, RocksTrieDB> {
-        AxonExecutorAdapter::from_root(
+    fn init_backend(&self) -> AxonExecutorApplyAdapter<ImplStorage<RocksAdapter>, RocksTrieDB> {
+        AxonExecutorApplyAdapter::from_root(
             self.init_mpt(),
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
@@ -74,7 +74,6 @@ impl BenchAdapter {
                 gas_price:              85u64.into(),
                 block_gas_limit:        100_000_000_000u64.into(),
                 block_base_fee_per_gas: Default::default(),
-                logs:                   vec![],
             },
         )
         .unwrap()

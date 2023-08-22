@@ -8,7 +8,7 @@ use parking_lot::RwLock;
 use common_apm::Instant;
 use common_apm_derive::trace_span;
 use core_executor::system_contract::metadata::MetadataHandle;
-use core_executor::{AxonExecutor, AxonExecutorAdapter};
+use core_executor::{AxonExecutor, AxonExecutorApplyAdapter, AxonExecutorReadOnlyAdapter};
 use core_network::{PeerId, PeerIdExt};
 use protocol::traits::{
     CommonConsensusAdapter, ConsensusAdapter, Context, Executor, Gossip, MemPool, MessageTarget,
@@ -51,7 +51,7 @@ where
     M: MemPool + 'static,
     N: Network + Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
-    DB: trie::DB + 'static,
+    DB: trie::DB + Send + Sync + 'static,
 {
     #[trace_span(kind = "consensus.adapter")]
     async fn get_txs_from_mempool(
@@ -128,7 +128,7 @@ where
     M: MemPool + 'static,
     N: Network + Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
-    DB: trie::DB + 'static,
+    DB: trie::DB + Send + Sync + 'static,
 {
     #[trace_span(kind = "consensus.adapter")]
     fn update_status(
@@ -229,7 +229,7 @@ where
     M: MemPool + 'static,
     N: Network + Rpc + PeerTrust + Gossip + 'static,
     S: Storage + 'static,
-    DB: trie::DB + 'static,
+    DB: trie::DB + Send + Sync + 'static,
 {
     /// Save a block to the database.
     #[trace_span(kind = "consensus.adapter", logs = "{txs_len: block.tx_hashes.len()}")]
@@ -332,7 +332,7 @@ where
         proposal: &Proposal,
         signed_txs: &[SignedTransaction],
     ) -> ProtocolResult<ExecResp> {
-        let mut backend = AxonExecutorAdapter::from_root(
+        let mut backend = AxonExecutorApplyAdapter::from_root(
             last_state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),
@@ -655,7 +655,7 @@ where
 
     async fn get_metadata_handle(&self, ctx: Context) -> ProtocolResult<MetadataHandle> {
         let current_state_root = self.storage.get_latest_block_header(ctx).await?.state_root;
-        let root = AxonExecutorAdapter::from_root(
+        let root = AxonExecutorReadOnlyAdapter::from_root(
             current_state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),

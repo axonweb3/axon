@@ -17,21 +17,24 @@ pub use crate::system_contract::native_token::{
     NativeTokenContract, NATIVE_TOKEN_CONTRACT_ADDRESS,
 };
 
-use std::path::Path;
 use std::sync::Arc;
 
 use ckb_traits::{CellDataProvider, HeaderProvider};
 use ckb_types::core::cell::{CellProvider, CellStatus};
 use ckb_types::core::{HeaderBuilder, HeaderView};
 use ckb_types::{packed, prelude::*};
+use evm::backend::ApplyBackend;
 use parking_lot::RwLock;
+use rocksdb::DB;
 
-use common_config_parser::types::ConfigRocksDB;
 use protocol::types::{Bytes, Hasher, SignedTransaction, TxResp, H160, H256};
 use protocol::{ckb_blake2b_256, traits::ExecutorAdapter};
 
 use crate::adapter::RocksTrieDB;
-use crate::system_contract::utils::generate_mpt_root_changes;
+use crate::system_contract::{
+    ckb_light_client::CkbHeaderReader, image_cell::ImageCellReader,
+    utils::generate_mpt_root_changes,
+};
 
 pub const fn system_contract_address(addr: u8) -> H160 {
     H160([
@@ -62,18 +65,29 @@ macro_rules! exec_try {
     };
 }
 
-pub trait SystemContract {
+#[macro_export]
+macro_rules! system_contract_struct {
+    ($name: ident) => {
+        pub struct $name<Adapter: ExecutorAdapter + ApplyBackend>(
+            std::marker::PhantomData<Adapter>,
+        );
+
+        impl<Adapter: ExecutorAdapter + ApplyBackend> Default for $name<Adapter> {
+            fn default() -> Self {
+                Self(std::marker::PhantomData)
+            }
+        }
+    };
+}
+
+pub trait SystemContract<Adapter: ExecutorAdapter + ApplyBackend> {
     const ADDRESS: H160;
 
-    fn exec_<Adapter: ExecutorAdapter>(
-        &self,
-        adapter: &mut Adapter,
-        tx: &SignedTransaction,
-    ) -> TxResp;
+    fn exec_(&self, adapter: &mut Adapter, tx: &SignedTransaction) -> TxResp;
 
-    fn before_block_hook<Adapter: ExecutorAdapter>(&self, _adapter: &mut Adapter) {}
+    fn before_block_hook(&self, _adapter: &mut Adapter) {}
 
-    fn after_block_hook<Adapter: ExecutorAdapter>(&self, _adapter: &mut Adapter) {}
+    fn after_block_hook(&self, _adapter: &mut Adapter) {}
 }
 
 pub fn swap_metadata_db(new_db: Arc<RocksTrieDB>) -> Arc<RocksTrieDB> {
@@ -90,72 +104,71 @@ pub fn swap_header_cell_db(new_db: Arc<RocksTrieDB>) -> Arc<RocksTrieDB> {
         .unwrap_or_else(|| panic!("header cell db is not initialized"))
 }
 
-pub fn init<P: AsRef<Path>, Adapter: ExecutorAdapter>(
-    path: P,
-    config: ConfigRocksDB,
+pub fn init<Adapter: ExecutorAdapter + ApplyBackend>(
+    db: Arc<DB>,
     adapter: &mut Adapter,
 ) -> (H256, H256) {
-    let current_metadata_root = adapter.storage(MetadataContract::ADDRESS, *METADATA_ROOT_KEY);
+    let current_metadata_root = adapter.storage(METADATA_CONTRACT_ADDRESS, *METADATA_ROOT_KEY);
 
     // Init metadata db.
-    let metadata_db_path = path.as_ref().join("metadata");
     {
-        let mut db = METADATA_DB.write();
-        db.replace(Arc::new(
-            RocksTrieDB::new(metadata_db_path, config.clone(), METADATA_DB_CACHE_SIZE)
-                .expect("[system contract] metadata new rocksdb error"),
-        ));
+        let mut _db = METADATA_DB.write();
+        _db.replace(Arc::new(RocksTrieDB::new_metadata(
+            Arc::clone(&db),
+            METADATA_DB_CACHE_SIZE,
+        )));
     }
 
-    let header_cell_db_path = path.as_ref().join("header_cell");
     {
-        let mut db = HEADER_CELL_DB.write();
-        db.replace(Arc::new(
-            RocksTrieDB::new(header_cell_db_path, config, HEADER_CELL_DB_CACHE_SIZE)
-                .expect("[system contract] header&cell new rocksdb error"),
-        ));
+        let mut _db = HEADER_CELL_DB.write();
+        _db.replace(Arc::new(RocksTrieDB::new_ckb_light_client(
+            db,
+            HEADER_CELL_DB_CACHE_SIZE,
+        )));
     }
 
-    let current_cell_root = adapter.storage(CkbLightClientContract::ADDRESS, *HEADER_CELL_ROOT_KEY);
+    let current_cell_root =
+        adapter.storage(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY);
 
     if current_cell_root.is_zero() {
-        let changes = generate_mpt_root_changes(adapter, ImageCellContract::ADDRESS);
+        let changes = generate_mpt_root_changes(adapter, IMAGE_CELL_CONTRACT_ADDRESS);
         adapter.apply(changes, vec![], false);
     }
     (current_metadata_root, current_cell_root)
 }
 
-pub fn before_block_hook<Adapter: ExecutorAdapter>(adapter: &mut Adapter) {
+pub fn before_block_hook<Adapter: ExecutorAdapter + ApplyBackend>(adapter: &mut Adapter) {
     NativeTokenContract::default().before_block_hook(adapter);
     MetadataContract::default().before_block_hook(adapter);
     CkbLightClientContract::default().before_block_hook(adapter);
     ImageCellContract::default().before_block_hook(adapter);
 }
 
-pub fn after_block_hook<Adapter: ExecutorAdapter>(adapter: &mut Adapter) {
+pub fn after_block_hook<Adapter: ExecutorAdapter + ApplyBackend>(adapter: &mut Adapter) {
     NativeTokenContract::default().after_block_hook(adapter);
     MetadataContract::default().after_block_hook(adapter);
     CkbLightClientContract::default().after_block_hook(adapter);
     ImageCellContract::default().after_block_hook(adapter);
 }
 
-pub fn system_contract_dispatch<Adapter: ExecutorAdapter>(
+pub fn system_contract_dispatch<Adapter: ExecutorAdapter + ApplyBackend>(
     adapter: &mut Adapter,
     tx: &SignedTransaction,
 ) -> Option<TxResp> {
     if let Some(addr) = tx.get_to() {
         log::debug!("execute addr {:}", addr);
 
-        if addr == NativeTokenContract::ADDRESS {
+        if addr == NATIVE_TOKEN_CONTRACT_ADDRESS {
             return Some(NativeTokenContract::default().exec_(adapter, tx));
-        } else if addr == MetadataContract::ADDRESS {
+        } else if addr == METADATA_CONTRACT_ADDRESS {
             return Some(MetadataContract::default().exec_(adapter, tx));
-        } else if addr == CkbLightClientContract::ADDRESS {
+        } else if addr == CKB_LIGHT_CLIENT_CONTRACT_ADDRESS {
             return Some(CkbLightClientContract::default().exec_(adapter, tx));
-        } else if addr == ImageCellContract::ADDRESS {
+        } else if addr == IMAGE_CELL_CONTRACT_ADDRESS {
             return Some(ImageCellContract::default().exec_(adapter, tx));
         }
     }
+
     None
 }
 
@@ -166,7 +179,7 @@ pub struct DataProvider {
 
 impl CellProvider for DataProvider {
     fn cell(&self, out_point: &packed::OutPoint, _eager_load: bool) -> CellStatus {
-        if let Some(c) = ImageCellContract::default()
+        if let Some(c) = ImageCellReader::default()
             .get_cell(self.root, &(out_point).into())
             .ok()
             .flatten()
@@ -180,7 +193,7 @@ impl CellProvider for DataProvider {
 
 impl CellDataProvider for DataProvider {
     fn get_cell_data(&self, out_point: &packed::OutPoint) -> Option<Bytes> {
-        ImageCellContract::default()
+        ImageCellReader::default()
             .get_cell(self.root, &(out_point.into()))
             .ok()
             .flatten()
@@ -201,7 +214,7 @@ impl CellDataProvider for DataProvider {
 impl HeaderProvider for DataProvider {
     fn get_header(&self, hash: &packed::Byte32) -> Option<HeaderView> {
         let block_hash = hash.unpack();
-        CkbLightClientContract::default()
+        CkbHeaderReader::default()
             .get_header_by_block_hash(self.root, &H256(block_hash.0))
             .ok()
             .flatten()

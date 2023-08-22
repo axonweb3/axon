@@ -1,18 +1,20 @@
-use protocol::traits::{ApplyBackend, Backend};
+use protocol::traits::{ApplyBackend, ExecutorAdapter};
 use protocol::types::{Apply, Basic, SignedTransaction, TxResp, H160, U256};
 
 use crate::system_contract::utils::{revert_resp, succeed_resp};
 use crate::system_contract::{system_contract_address, SystemContract};
+use crate::system_contract_struct;
 
 pub const NATIVE_TOKEN_CONTRACT_ADDRESS: H160 = system_contract_address(0x0);
 
-#[derive(Default)]
-pub struct NativeTokenContract;
+system_contract_struct!(NativeTokenContract);
 
-impl SystemContract for NativeTokenContract {
+impl<Adapter: ExecutorAdapter + ApplyBackend> SystemContract<Adapter>
+    for NativeTokenContract<Adapter>
+{
     const ADDRESS: H160 = NATIVE_TOKEN_CONTRACT_ADDRESS;
 
-    fn exec_<B: Backend + ApplyBackend>(&self, backend: &mut B, tx: &SignedTransaction) -> TxResp {
+    fn exec_(&self, backend: &mut Adapter, tx: &SignedTransaction) -> TxResp {
         let tx = &tx.transaction.unsigned;
         let tx_data = tx.data();
         let tx_value = *tx.value();

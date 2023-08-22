@@ -109,6 +109,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "allocator-api2"
+version = "0.2.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0942ffc6dcaadf03badf6e6a2d0228460359d5e34b57ccdc720b7382dfbd5ec5"
+
+[[package]]
 name = "android_system_properties"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -327,12 +333,12 @@ dependencies = [
  "ophelia",
  "ophelia-secp256k1",
  "overlord",
- "prost",
  "rand 0.7.3",
  "rlp",
  "rlp-derive",
  "serde",
  "serde_json",
+ "thiserror",
  "tokio",
  "toml 0.7.3",
 ]
@@ -867,9 +873,8 @@ dependencies = [
 
 [[package]]
 name = "cita_trie"
-version = "4.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "afe7baab47f510f52ca8dc9c0eb9082020c627c7f22285bea30edc3511f7ee29"
+version = "4.2.0"
+source = "git+https://github.com/KaoImin/cita-trie.git?rev=eea569c#eea569c06780d0b38b5c03d6a6cb37b7ac4ea7af"
 dependencies = [
  "hasher",
  "parking_lot 0.12.1",
@@ -1687,6 +1692,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "core-db"
+version = "0.1.0"
+dependencies = [
+ "axon-protocol",
+ "ckb-rocksdb",
+ "common-apm",
+ "common-apm-derive",
+ "common-config-parser",
+ "parking_lot 0.12.1",
+]
+
+[[package]]
 name = "core-executor"
 version = "0.1.0"
 dependencies = [
@@ -1702,6 +1719,7 @@ dependencies = [
  "common-config-parser",
  "common-crypto",
  "common-merkle",
+ "core-db",
  "core-interoperation",
  "core-rpc-client",
  "core-storage",
@@ -1761,6 +1779,7 @@ dependencies = [
  "ckb-traits",
  "ckb-types",
  "ckb-vm",
+ "core-db",
  "core-executor",
  "core-rpc-client",
  "core-storage",
@@ -1815,7 +1834,7 @@ dependencies = [
  "serde",
  "serde_json",
  "snap",
- "socket2",
+ "socket2 0.4.9",
  "tentacle",
  "tokio-util",
 ]
@@ -1850,6 +1869,7 @@ dependencies = [
  "common-memory-tracker",
  "core-api",
  "core-consensus",
+ "core-db",
  "core-executor",
  "core-interoperation",
  "core-mempool",
@@ -1874,16 +1894,15 @@ version = "0.1.0"
 dependencies = [
  "arc-swap",
  "axon-protocol",
- "ckb-rocksdb",
  "common-apm",
  "common-apm-derive",
- "common-config-parser",
  "common-crypto",
+ "core-db",
  "criterion",
  "futures",
  "lazy_static",
  "log",
- "lru 0.10.0",
+ "lru 0.11.0",
  "num-traits",
  "parking_lot 0.12.1",
 ]
@@ -3361,6 +3380,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "hashbrown"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c6201b9ff9fd90a5a3bac2e56a830d0caa509576f0e503818ee82c181b3437a"
+dependencies = [
+ "ahash 0.8.3",
+ "allocator-api2",
+]
+
+[[package]]
 name = "hasher"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3518,7 +3547,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project-lite",
- "socket2",
+ "socket2 0.4.9",
  "tokio",
  "tower-service",
  "tracing",
@@ -3949,9 +3978,9 @@ checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 
 [[package]]
 name = "libc"
-version = "0.2.144"
+version = "0.2.147"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b00cc1c228a6782d0f076e7b232802e0c5689d41bb5df366f2a6b6621cfdfe1"
+checksum = "b4668fb0ea861c1df094127ac5f1da3409a82116a4ba74fca2e58ef927159bb3"
 
 [[package]]
 name = "libloading"
@@ -4055,6 +4084,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "03f1160296536f10c833a82dca22267d5486734230d47bf00bf435885814ba1e"
 dependencies = [
  "hashbrown 0.13.2",
+]
+
+[[package]]
+name = "lru"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eedb2bdbad7e0634f83989bf596f497b070130daaa398ab22d84c39e266deec5"
+dependencies = [
+ "hashbrown 0.14.0",
 ]
 
 [[package]]
@@ -4915,9 +4953,9 @@ dependencies = [
 
 [[package]]
 name = "pin-project-lite"
-version = "0.2.9"
+version = "0.2.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0a7ae3ac2f1173085d398531c705756c94a4c56843785df85a60c1a0afac116"
+checksum = "12cc1b0bf1727a77a54b6654e7b5f1af8604923edc8b81885f8ec92f9e3f0a05"
 
 [[package]]
 name = "pin-utils"
@@ -6156,6 +6194,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "socket2"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2538b18701741680e0322a2302176d3253a35388e2e62f172f64f4f16605f877"
+dependencies = [
+ "libc",
+ "windows-sys 0.48.0",
+]
+
+[[package]]
 name = "soketto"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6421,7 +6469,7 @@ dependencies = [
  "once_cell",
  "parking_lot 0.12.1",
  "rand 0.8.5",
- "socket2",
+ "socket2 0.4.9",
  "tentacle-multiaddr",
  "tentacle-secio",
  "thiserror",
@@ -6663,11 +6711,11 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.28.1"
+version = "1.32.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0aa32867d44e6f2ce3385e89dceb990188b8bb0fb25b0cf576647a6f98ac5105"
+checksum = "17ed6077ed6cd6c74735e21f37eb16dc3935f96878b1fe961074089cc80893f9"
 dependencies = [
- "autocfg",
+ "backtrace",
  "bytes",
  "libc",
  "mio",
@@ -6675,7 +6723,7 @@ dependencies = [
  "parking_lot 0.12.1",
  "pin-project-lite",
  "signal-hook-registry",
- "socket2",
+ "socket2 0.5.3",
  "tokio-macros",
  "windows-sys 0.48.0",
 ]

@@ -1,7 +1,8 @@
 use std::{collections::BTreeMap, str::FromStr};
 
-use common_config_parser::types::ConfigRocksDB;
 use ethers::abi::AbiEncode;
+
+use core_db::RocksAdapter;
 use protocol::types::{MemoryBackend, SignedTransaction, H160, U256};
 
 use crate::{
@@ -11,7 +12,7 @@ use crate::{
             metadata_abi::{self, Metadata, MetadataVersion, ValidatorExtend},
             MetadataContract,
         },
-        SystemContract,
+        SystemContract, METADATA_CONTRACT_ADDRESS,
     },
     tests::{gen_tx, gen_vicinity},
 };
@@ -24,8 +25,10 @@ fn test_write_functions() {
     let mut backend = MemoryBackend::new(&vicinity, BTreeMap::new());
 
     let executor = MetadataContract::default();
-
-    init(ROCKSDB_PATH, ConfigRocksDB::default(), &mut backend);
+    let inner_db = RocksAdapter::new(ROCKSDB_PATH, Default::default())
+        .unwrap()
+        .inner_db();
+    init(inner_db, &mut backend);
 
     test_init(&mut backend, &executor);
 
@@ -37,14 +40,17 @@ fn test_write_functions() {
     test_validator(&mut backend, &executor);
 }
 
-fn test_init(backend: &mut MemoryBackend, executor: &MetadataContract) {
+fn test_init<'a>(backend: &mut MemoryBackend<'a>, executor: &MetadataContract<MemoryBackend<'a>>) {
     let addr = H160::from_str("0xf000000000000000000000000000000000000000").unwrap();
     let tx = prepare_tx_1(&addr);
     let r = executor.exec_(backend, &tx);
     assert!(r.exit_reason.is_succeed());
 }
 
-fn test_second(backend: &mut MemoryBackend, executor: &MetadataContract) {
+fn test_second<'a>(
+    backend: &mut MemoryBackend<'a>,
+    executor: &MetadataContract<MemoryBackend<'a>>,
+) {
     let addr = H160::from_str("0xf000000000000000000000000000000000000000").unwrap();
 
     // this transaction will fail because the epoch is not incremental
@@ -69,7 +75,10 @@ fn test_second(backend: &mut MemoryBackend, executor: &MetadataContract) {
     assert!(r.exit_reason.is_revert());
 }
 
-fn test_validator(backend: &mut MemoryBackend, executor: &MetadataContract) {
+fn test_validator<'a>(
+    backend: &mut MemoryBackend<'a>,
+    executor: &MetadataContract<MemoryBackend<'a>>,
+) {
     let addr = H160::from_str("0x0000000000000000000000000000000000000000").unwrap();
 
     // this transaction will fail because the sender is not in validator list
@@ -83,7 +92,7 @@ fn prepare_tx_1(addr: &H160) -> SignedTransaction {
         metadata: prepare_metadata(),
     };
 
-    gen_tx(*addr, MetadataContract::ADDRESS, 1000, data.encode())
+    gen_tx(*addr, METADATA_CONTRACT_ADDRESS, 1000, data.encode())
 }
 
 fn prepare_tx_2(addr: &H160) -> SignedTransaction {
@@ -93,7 +102,7 @@ fn prepare_tx_2(addr: &H160) -> SignedTransaction {
     data.metadata.version.start = 101;
     data.metadata.version.end = 200;
 
-    gen_tx(*addr, MetadataContract::ADDRESS, 1000, data.encode())
+    gen_tx(*addr, METADATA_CONTRACT_ADDRESS, 1000, data.encode())
 }
 
 fn prepare_tx_3(add: &H160) -> SignedTransaction {
@@ -104,7 +113,7 @@ fn prepare_tx_3(add: &H160) -> SignedTransaction {
     data.metadata.version.start = 1;
     data.metadata.version.end = 100;
 
-    gen_tx(*add, MetadataContract::ADDRESS, 1000, data.encode())
+    gen_tx(*add, METADATA_CONTRACT_ADDRESS, 1000, data.encode())
 }
 
 fn prepare_tx_4(addr: &H160) -> SignedTransaction {
@@ -115,7 +124,7 @@ fn prepare_tx_4(addr: &H160) -> SignedTransaction {
     data.metadata.version.start = 101;
     data.metadata.version.end = 200;
 
-    gen_tx(*addr, MetadataContract::ADDRESS, 1000, data.encode())
+    gen_tx(*addr, METADATA_CONTRACT_ADDRESS, 1000, data.encode())
 }
 
 fn prepare_tx_5(addr: &H160) -> SignedTransaction {
@@ -126,7 +135,7 @@ fn prepare_tx_5(addr: &H160) -> SignedTransaction {
     data.metadata.version.start = 201;
     data.metadata.version.end = 300;
 
-    gen_tx(*addr, MetadataContract::ADDRESS, 1000, data.encode())
+    gen_tx(*addr, METADATA_CONTRACT_ADDRESS, 1000, data.encode())
 }
 
 fn prepare_metadata() -> Metadata {

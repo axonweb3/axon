@@ -5,7 +5,6 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use common_crypto::{
     Crypto, PrivateKey, Secp256k1Recoverable, Secp256k1RecoverablePrivateKey, Signature,
 };
-use core_storage::ImplStorage;
 use protocol::rand::{random, rngs::OsRng};
 use protocol::traits::{Context, Storage};
 use protocol::types::{
@@ -13,7 +12,8 @@ use protocol::types::{
     SignedTransaction, TransactionAction, UnsignedTransaction, UnverifiedTransaction,
 };
 
-use core_storage::adapter::memory::MemoryAdapter;
+use core_db::MemoryAdapter;
+use core_storage::ImplStorage;
 
 macro_rules! exec {
     ($func: expr) => {

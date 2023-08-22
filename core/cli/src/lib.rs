@@ -1,14 +1,14 @@
-use clap::{CommandFactory as _, FromArgMatches as _, Parser, Subcommand};
-
-use common_version::Version;
-use core_run::{KeyProvider, SecioKeyPair};
-
 mod args;
 mod error;
 pub(crate) mod utils;
 
 pub use args::run::RunArgs;
 pub use error::{CheckingVersionError, Error, Result};
+
+use clap::{CommandFactory as _, FromArgMatches as _, Parser, Subcommand};
+
+use common_version::Version;
+use core_run::{KeyProvider, SecioKeyPair};
 
 #[derive(Parser, Debug)]
 #[command(name = "axon")]

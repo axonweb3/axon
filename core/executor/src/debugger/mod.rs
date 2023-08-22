@@ -18,9 +18,10 @@ use protocol::types::{
     MAX_BLOCK_GAS_LIMIT, NIL_DATA, RLP_NULL, U256,
 };
 
-use core_storage::{adapter::rocks::RocksAdapter, ImplStorage};
+use core_db::RocksAdapter;
+use core_storage::ImplStorage;
 
-use crate::adapter::{AxonExecutorAdapter, MPTTrie};
+use crate::adapter::{AxonExecutorApplyAdapter, MPTTrie};
 use crate::{AxonExecutor, RocksTrieDB};
 
 const GENESIS_PATH: &str = "../../tests/data/genesis.json";
@@ -44,7 +45,8 @@ impl EvmDebugger {
         let mut db_state_path = db_path.to_string();
         db_state_path.push_str("/state");
         let _ = std::fs::create_dir_all(&db_state_path);
-        let trie = Arc::new(RocksTrieDB::new(db_state_path, Default::default(), 1000).unwrap());
+        let inner_db = rocks_adapter.inner_db();
+        let trie = Arc::new(RocksTrieDB::new_evm(inner_db, 1000));
 
         let mut mpt = MPTTrie::new(Arc::clone(&trie));
 
@@ -97,7 +99,10 @@ impl EvmDebugger {
         evm.call(&backend, MAX_BLOCK_GAS_LIMIT, from, to, value, data)
     }
 
-    fn backend(&self, number: u64) -> AxonExecutorAdapter<ImplStorage<RocksAdapter>, RocksTrieDB> {
+    fn backend(
+        &self,
+        number: u64,
+    ) -> AxonExecutorApplyAdapter<ImplStorage<RocksAdapter>, RocksTrieDB> {
         let exec_ctx = ExecutorContext {
             block_number:           number.into(),
             block_coinbase:         H160::random(),
@@ -107,10 +112,9 @@ impl EvmDebugger {
             gas_price:              1u64.into(),
             block_gas_limit:        4294967295000u64.into(),
             block_base_fee_per_gas: 1337u64.into(),
-            logs:                   vec![],
         };
 
-        AxonExecutorAdapter::from_root(
+        AxonExecutorApplyAdapter::from_root(
             self.state_root,
             Arc::clone(&self.trie_db),
             Arc::clone(&self.storage),

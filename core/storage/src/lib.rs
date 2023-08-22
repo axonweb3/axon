@@ -1,6 +1,5 @@
 #![allow(clippy::mutable_key_type, clippy::uninlined_format_args)]
 
-pub mod adapter;
 mod cache;
 mod hash_key;
 mod schema;
@@ -19,7 +18,7 @@ use common_apm::Instant;
 use common_apm_derive::trace_span;
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{
-    CommonStorage, Context, Storage, StorageAdapter, StorageBatchModify, StorageCategory,
+    Context, ReadOnlyStorage, Storage, StorageAdapter, StorageBatchModify, StorageCategory,
     StorageSchema,
 };
 use protocol::types::{
@@ -179,16 +178,7 @@ impl<Adapter: StorageAdapter> ImplStorage<Adapter> {
 }
 
 #[async_trait]
-impl<Adapter: StorageAdapter> CommonStorage for ImplStorage<Adapter> {
-    #[trace_span(kind = "storage")]
-    async fn insert_block(&self, ctx: Context, block: Block) -> ProtocolResult<()> {
-        self.set_block(ctx.clone(), block.clone()).await?;
-
-        self.set_latest_block(ctx, block).await?;
-
-        Ok(())
-    }
-
+impl<Adapter: StorageAdapter> ReadOnlyStorage for ImplStorage<Adapter> {
     async fn get_block(&self, _ctx: Context, height: u64) -> ProtocolResult<Option<Block>> {
         get_cache!(self, &height, blocks);
         let ret = self.adapter.get::<BlockSchema>(BlockKey::new(height))?;
@@ -209,22 +199,6 @@ impl<Adapter: StorageAdapter> CommonStorage for ImplStorage<Adapter> {
         Ok(self.get_block(ctx, height).await?.map(|b| b.header))
     }
 
-    async fn set_block(&self, _ctx: Context, block: Block) -> ProtocolResult<()> {
-        self.adapter
-            .insert::<BlockSchema>(BlockKey::new(block.header.number), block.clone())?;
-        self.adapter.insert::<BlockHeaderSchema>(
-            BlockKey::new(block.header.number),
-            block.header.clone(),
-        )?;
-        self.adapter
-            .insert::<BlockHashNumberSchema>(block.hash(), block.header.number)?;
-        Ok(())
-    }
-
-    async fn remove_block(&self, _ctx: Context, height: u64) -> ProtocolResult<()> {
-        self.adapter.remove::<BlockSchema>(BlockKey::new(height))
-    }
-
     async fn get_latest_block(&self, _ctx: Context) -> ProtocolResult<Block> {
         if let Some(block) = self.latest_block.load().as_ref().clone() {
             Ok(block)
@@ -232,15 +206,6 @@ impl<Adapter: StorageAdapter> CommonStorage for ImplStorage<Adapter> {
             let block = ensure_get!(self, *LATEST_BLOCK_KEY, LatestBlockSchema);
             Ok(block)
         }
-    }
-
-    async fn set_latest_block(&self, _ctx: Context, block: Block) -> ProtocolResult<()> {
-        self.adapter
-            .insert::<LatestBlockSchema>(*LATEST_BLOCK_KEY, block.clone())?;
-
-        self.latest_block.store(Arc::new(Some(block)));
-
-        Ok(())
     }
 
     async fn get_latest_block_header(&self, _ctx: Context) -> ProtocolResult<Header> {
@@ -257,21 +222,6 @@ impl<Adapter: StorageAdapter> CommonStorage for ImplStorage<Adapter> {
             Ok(block.header)
         }
     }
-}
-
-#[async_trait]
-impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
-    #[trace_span(kind = "storage")]
-    async fn insert_transactions(
-        &self,
-        ctx: Context,
-        block_height: u64,
-        signed_txs: Vec<SignedTransaction>,
-    ) -> ProtocolResult<()> {
-        self.batch_insert_stxs(signed_txs, block_height).await?;
-
-        Ok(())
-    }
 
     async fn get_block_by_hash(
         &self,
@@ -287,7 +237,7 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
 
     async fn get_block_number_by_hash(
         &self,
-        _: Context,
+        _ctx: Context,
         block_hash: &Hash,
     ) -> ProtocolResult<Option<u64>> {
         self.get_block_number_by_hash(block_hash).await
@@ -374,18 +324,6 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         Ok(hashes.iter().map(|h| found.remove(h)).collect::<Vec<_>>())
     }
 
-    async fn insert_code(
-        &self,
-        _ctx: Context,
-        code_address: H256,
-        code_hash: Hash,
-        code: Bytes,
-    ) -> ProtocolResult<()> {
-        self.adapter.insert::<EvmCodeSchema>(code_hash, code)?;
-        self.adapter
-            .insert::<EvmCodeAddressSchema>(code_address, code_hash)
-    }
-
     async fn get_code_by_hash(&self, _ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>> {
         get_cache!(self, hash, codes);
         let ret = self.adapter.get::<EvmCodeSchema>(*hash)?;
@@ -425,18 +363,6 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         } else {
             Ok(None)
         }
-    }
-
-    #[trace_span(kind = "storage")]
-    async fn insert_receipts(
-        &self,
-        ctx: Context,
-        block_height: u64,
-        receipts: Vec<Receipt>,
-    ) -> ProtocolResult<()> {
-        self.batch_insert_receipts(receipts, block_height).await?;
-
-        Ok(())
     }
 
     async fn get_receipt_by_hash(
@@ -540,15 +466,6 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         Ok(hashes.iter().map(|h| found.remove(h)).collect::<Vec<_>>())
     }
 
-    async fn update_latest_proof(&self, _ctx: Context, proof: Proof) -> ProtocolResult<()> {
-        self.adapter
-            .insert::<LatestProofSchema>(*LATEST_PROOF_KEY, proof.clone())?;
-
-        self.latest_proof.store(Arc::new(Some(proof)));
-
-        Ok(())
-    }
-
     async fn get_latest_proof(&self, _ctx: Context) -> ProtocolResult<Proof> {
         if let Some(proof) = self.latest_proof.load().as_ref().clone() {
             Ok(proof)
@@ -556,6 +473,86 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
             let proof = ensure_get!(self, *LATEST_PROOF_KEY, LatestProofSchema);
             Ok(proof)
         }
+    }
+}
+
+#[async_trait]
+impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
+    async fn insert_block(&self, ctx: Context, block: Block) -> ProtocolResult<()> {
+        self.set_block(ctx.clone(), block.clone()).await?;
+
+        self.set_latest_block(ctx, block).await?;
+
+        Ok(())
+    }
+
+    async fn set_block(&self, _ctx: Context, block: Block) -> ProtocolResult<()> {
+        self.adapter
+            .insert::<BlockSchema>(BlockKey::new(block.header.number), block.clone())?;
+        self.adapter.insert::<BlockHeaderSchema>(
+            BlockKey::new(block.header.number),
+            block.header.clone(),
+        )?;
+        self.adapter
+            .insert::<BlockHashNumberSchema>(block.hash(), block.header.number)?;
+        Ok(())
+    }
+
+    async fn remove_block(&self, _ctx: Context, height: u64) -> ProtocolResult<()> {
+        self.adapter.remove::<BlockSchema>(BlockKey::new(height))
+    }
+
+    async fn set_latest_block(&self, _ctx: Context, block: Block) -> ProtocolResult<()> {
+        self.adapter
+            .insert::<LatestBlockSchema>(*LATEST_BLOCK_KEY, block.clone())?;
+
+        self.latest_block.store(Arc::new(Some(block)));
+
+        Ok(())
+    }
+
+    async fn insert_transactions(
+        &self,
+        _ctx: Context,
+        block_height: u64,
+        signed_txs: Vec<SignedTransaction>,
+    ) -> ProtocolResult<()> {
+        self.batch_insert_stxs(signed_txs, block_height).await?;
+
+        Ok(())
+    }
+
+    async fn insert_code(
+        &self,
+        _ctx: Context,
+        code_address: H256,
+        code_hash: Hash,
+        code: Bytes,
+    ) -> ProtocolResult<()> {
+        self.adapter.insert::<EvmCodeSchema>(code_hash, code)?;
+        self.adapter
+            .insert::<EvmCodeAddressSchema>(code_address, code_hash)
+    }
+
+    #[trace_span(kind = "storage")]
+    async fn insert_receipts(
+        &self,
+        ctx: Context,
+        block_height: u64,
+        receipts: Vec<Receipt>,
+    ) -> ProtocolResult<()> {
+        self.batch_insert_receipts(receipts, block_height).await?;
+
+        Ok(())
+    }
+
+    async fn update_latest_proof(&self, _ctx: Context, proof: Proof) -> ProtocolResult<()> {
+        self.adapter
+            .insert::<LatestProofSchema>(*LATEST_PROOF_KEY, proof.clone())?;
+
+        self.latest_proof.store(Arc::new(Some(proof)));
+
+        Ok(())
     }
 }
 

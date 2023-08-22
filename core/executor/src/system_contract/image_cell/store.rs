@@ -202,6 +202,7 @@ impl CellKey {
         CellKey { tx_hash, index }
     }
 
+    #[allow(dead_code)]
     pub fn decode(input: &[u8]) -> ProtocolResult<Self> {
         if input.len() != Self::ENCODED_LEN {
             return Err(SystemScriptError::DataLengthMismatch {

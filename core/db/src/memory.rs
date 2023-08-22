@@ -1,16 +1,15 @@
 use std::collections::{hash_map, HashMap};
-use std::error::Error;
-use std::marker::PhantomData;
-use std::sync::Arc;
+use std::{error::Error, marker::PhantomData, sync::Arc};
 
 use parking_lot::RwLock;
 
-use protocol::codec::ProtocolCodec;
 use protocol::traits::{
     IntoIteratorByRef, StorageAdapter, StorageBatchModify, StorageIterator, StorageSchema,
 };
-use protocol::types::Bytes;
-use protocol::{Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult};
+use protocol::{
+    codec::ProtocolCodec, types::Bytes, Display, From, ProtocolError, ProtocolErrorKind,
+    ProtocolResult,
+};
 
 type Category = HashMap<Vec<u8>, Vec<u8>>;
 
@@ -29,9 +28,7 @@ impl MemoryAdapter {
 
 impl Default for MemoryAdapter {
     fn default() -> Self {
-        MemoryAdapter {
-            db: Arc::new(RwLock::new(HashMap::new())),
-        }
+        Self::new()
     }
 }
 
@@ -155,7 +152,7 @@ impl StorageAdapter for MemoryAdapter {
         vals: Vec<StorageBatchModify<S>>,
     ) -> ProtocolResult<()> {
         if keys.len() != vals.len() {
-            return Err(MemoryAdapterError::BatchLengthMismatch.into());
+            return Err(MemoryDBError::BatchLengthMismatch.into());
         }
 
         let mut pairs: Vec<(Bytes, Option<Bytes>)> = Vec::with_capacity(keys.len());
@@ -205,15 +202,15 @@ impl StorageAdapter for MemoryAdapter {
 }
 
 #[derive(Debug, Display, From)]
-pub enum MemoryAdapterError {
+pub enum MemoryDBError {
     #[display(fmt = "batch length do not match")]
     BatchLengthMismatch,
 }
 
-impl Error for MemoryAdapterError {}
+impl Error for MemoryDBError {}
 
-impl From<MemoryAdapterError> for ProtocolError {
-    fn from(err: MemoryAdapterError) -> ProtocolError {
-        ProtocolError::new(ProtocolErrorKind::Storage, Box::new(err))
+impl From<MemoryDBError> for ProtocolError {
+    fn from(err: MemoryDBError) -> ProtocolError {
+        ProtocolError::new(ProtocolErrorKind::DB, Box::new(err))
     }
 }

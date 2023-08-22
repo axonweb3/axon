@@ -13,14 +13,14 @@ use ethers::abi::AbiDecode;
 use lru::LruCache;
 use parking_lot::RwLock;
 
-use protocol::traits::ExecutorAdapter;
+use protocol::traits::{ApplyBackend, ExecutorAdapter};
 use protocol::types::{Hasher, Metadata, SignedTransaction, TxResp, H160, H256};
 
 use crate::system_contract::utils::{
     generate_mpt_root_changes, revert_resp, succeed_resp, update_states,
 };
 use crate::system_contract::{system_contract_address, SystemContract};
-use crate::{exec_try, CURRENT_METADATA_ROOT};
+use crate::{exec_try, system_contract_struct, CURRENT_METADATA_ROOT};
 
 type Epoch = u64;
 
@@ -33,17 +33,14 @@ lazy_static::lazy_static! {
     static ref METADATA_CACHE: RwLock<LruCache<Epoch, Metadata>> =  RwLock::new(LruCache::new(METADATA_CACHE_SIZE));
 }
 
-#[derive(Default)]
-pub struct MetadataContract;
+system_contract_struct!(MetadataContract);
 
-impl SystemContract for MetadataContract {
+impl<Adapter: ExecutorAdapter + ApplyBackend> SystemContract<Adapter>
+    for MetadataContract<Adapter>
+{
     const ADDRESS: H160 = METADATA_CONTRACT_ADDRESS;
 
-    fn exec_<Adapter: ExecutorAdapter>(
-        &self,
-        adapter: &mut Adapter,
-        tx: &SignedTransaction,
-    ) -> TxResp {
+    fn exec_(&self, adapter: &mut Adapter, tx: &SignedTransaction) -> TxResp {
         let sender = tx.sender;
         let tx = &tx.transaction.unsigned;
         let tx_data = tx.data();
@@ -106,7 +103,7 @@ impl SystemContract for MetadataContract {
         succeed_resp(gas_limit)
     }
 
-    fn after_block_hook<Adapter: ExecutorAdapter>(&self, adapter: &mut Adapter) {
+    fn after_block_hook(&self, adapter: &mut Adapter) {
         let block_number = adapter.block_number();
         if block_number.is_zero() {
             return;
