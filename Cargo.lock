@@ -326,6 +326,7 @@ dependencies = [
  "derive_more",
  "ethereum",
  "ethereum-types 0.14.1",
+ "ethers-core",
  "evm",
  "faster-hex 0.8.0",
  "hex",

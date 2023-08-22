@@ -3,7 +3,10 @@ use std::{ffi::OsStr, io, path::PathBuf};
 use clap::builder::{StringValueParser, TypedValueParser, ValueParserFactory};
 use serde::Deserialize;
 
-use protocol::types::{Block, Bytes, Header, RichBlock, SignedTransaction, H160, U256};
+use protocol::{
+    codec::deserialize_address,
+    types::{Block, Bytes, Header, RichBlock, SignedTransaction, H160, U256},
+};
 
 use crate::parse_file;
 
@@ -39,6 +42,7 @@ pub struct Params {}
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct InitialAccount {
+    #[serde(deserialize_with = "deserialize_address")]
     pub address: H160,
     pub balance: U256,
 }

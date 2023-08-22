@@ -6,10 +6,11 @@ pub mod transaction;
 
 pub use transaction::truncate_slice;
 
+use ethers_core::utils::parse_checksummed;
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
-use serde::Serializer;
+use serde::{Deserialize as _, Deserializer, Serializer};
 
-use crate::types::{Address, Bytes, DBBytes, Hex, TypesError, U256};
+use crate::types::{Address, Bytes, DBBytes, Hex, TypesError, H160, U256};
 use crate::ProtocolResult;
 
 static CHARS: &[u8] = b"0123456789abcdef";
@@ -112,6 +113,17 @@ where
     } else {
         s.serialize_str(to_hex_raw(&mut slice, bytes, true))
     }
+}
+
+pub fn deserialize_address<'de, D>(deserializer: D) -> Result<H160, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    parse_checksummed(&s, None).map_err(|err| {
+        let msg = format!("failed to parse the mixed-case checksum address \"{s}\", since {err}.");
+        serde::de::Error::custom(msg)
+    })
 }
 
 fn to_hex_raw<'a>(v: &'a mut [u8], bytes: &[u8], skip_leading_zero: bool) -> &'a str {
