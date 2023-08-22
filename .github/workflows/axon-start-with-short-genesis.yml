@@ -1,59 +1,121 @@
 name: Axon start test
+
 on:
   push:
-    branches:
-      - main
+  pull_request:
   merge_group:
+  workflow_dispatch:
+
 jobs:
-  build:
-    runs-on: [self-hosted,spark]
+  # Build Axon and cache the binary
+  build-axon:
+    uses: ./.github/workflows/build.yml
+
+  # Start a single Axon node
+  single-node:
+    needs: build-axon
+    strategy:
+      matrix:
+        # Supported GitHub-hosted runners and hardware resources
+        # see https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
+        os: [ubuntu-20.04, ubuntu-22.04] # TODO: test on [windows-latest, macos-latest]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
     steps:
-      - name: Git checkout
-        uses: actions/checkout@v3
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
-      - name: Build docker image
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          file: ./Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: axonweb3/axon:start-test
-      - name: axon start test
-        run: |
-          cd ${{ github.workspace }}/../docker-deploy
-          sudo rm -rf logs*
-          sudo rm -rf devtools/chain/data*
-          sed -i 's/image:.*$/image:  axonweb3\/axon:start-test/g' docker-compose.yml
-          cp ${{ github.workspace }}/devtools/chain/specs/multi_nodes_short_epoch_len/chain-spec.toml           devtools/chain/specs/multi_nodes/chain-spec.toml
-          cp ${{ github.workspace }}/devtools/chain/specs/multi_nodes_short_epoch_len/genesis_transactions.json devtools/chain/specs/multi_nodes/genesis_transactions.json
-          cp ${{ github.workspace }}/devtools/chain/k8s/node_1.toml devtools/chain/node_1.toml
-          cp ${{ github.workspace }}/devtools/chain/k8s/node_2.toml devtools/chain/node_2.toml
-          cp ${{ github.workspace }}/devtools/chain/k8s/node_3.toml devtools/chain/node_3.toml
-          cp ${{ github.workspace }}/devtools/chain/k8s/node_4.toml devtools/chain/node_4.toml
-          docker-compose up -d
-          docker-compose ps -a
-          sleep 700
-          set +e
-          result_axon1=$(tail -n 100 logs1/axon.log | grep 'state goto new height 200')
-          result_axon2=$(tail -n 100 logs2/axon.log | grep 'state goto new height 200')
-          result_axon3=$(tail -n 100 logs3/axon.log | grep 'state goto new height 200')
-          result_axon4=$(tail -n 100 logs4/axon.log | grep 'state goto new height 200')
+    - uses: actions/checkout@v3
+    - name: Cache of the axon binary
+      id: axon-bin-cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          target/debug/axon
+          target/release/axon
+        key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-axon-${{ github.sha }}
 
-          docker-compose down
-          if [[ "$result_axon1" != ""  ||  $result_axon2 != ""  ||  $result_axon3 != ""   ||  $result_axon4 != "" ]]
-          then
-              echo "axon chain works well"
-          else
-              echo "axon chain has some issues, please have a check"
-              exit 1
-          fi
+    - name: Start a single Axon node
+      env:
+        LOG_FILE: ${{ runner.temp }}/${{ matrix.os }}-single-axon-node.log
+      run: |
+        target/debug/axon --version | tee ${{ env.LOG_FILE }}
+        target/debug/axon run \
+          --config devtools/chain/config.toml \
+          --chain-spec devtools/chain/specs/single_node/chain-spec.toml \
+          | tee ${{ env.LOG_FILE }} &
 
+        sleep 10
 
+        npx zx <<'EOF'
+        import { waitXBlocksPassed } from './devtools/ci/scripts/helper.js'
+        await waitXBlocksPassed('http://127.0.0.1:8000', 2);
+        EOF
+      timeout-minutes: 1
+    - name: Archive logs
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: single-axon-node-logs
+        path: |
+          ${{ runner.temp }}/${{ matrix.os }}-single-axon-node.log
 
+  multi-nodes:
+    needs: build-axon
+    strategy:
+      matrix:
+        # Supported GitHub-hosted runners and hardware resources
+        # see https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
+        os: [ubuntu-20.04] # TODO: test on [ubuntu-22.04, windows-latest, macos-latest]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: Cache of the axon binary
+      id: axon-bin-cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          target/debug/axon
+          target/release/axon
+        key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-axon-${{ github.sha }}
 
+    - name: Start multiple Axon nodes
+      env:
+        LOG_PATH: ${{ runner.temp }}/${{ matrix.os }}/multi-axon-nodes
+      run: |
+        mkdir -p ${{ env.LOG_PATH }}
 
+        target/debug/axon --version
+        target/debug/axon run \
+          --config devtools/chain/nodes/node_1.toml \
+          --chain-spec devtools/chain/specs/multi_nodes_short_epoch_len/chain-spec.toml \
+          > ${{ env.LOG_PATH }}/node_1.log &
+        target/debug/axon run \
+          --config devtools/chain/nodes/node_2.toml \
+          --chain-spec devtools/chain/specs/multi_nodes_short_epoch_len/chain-spec.toml \
+          > ${{ env.LOG_PATH }}/node_2.log &
+        target/debug/axon run \
+          --config devtools/chain/nodes/node_3.toml \
+          --chain-spec devtools/chain/specs/multi_nodes_short_epoch_len/chain-spec.toml \
+          > ${{ env.LOG_PATH }}/node_3.log &
+        target/debug/axon run \
+          --config devtools/chain/nodes/node_4.toml \
+          --chain-spec devtools/chain/specs/multi_nodes_short_epoch_len/chain-spec.toml \
+          > ${{ env.LOG_PATH }}/node_4.log &
+
+        npx zx <<'EOF'
+        import { waitXBlocksPassed } from './devtools/ci/scripts/helper.js'
+        await Promise.all([
+          waitXBlocksPassed('http://127.0.0.1:8001', 4),
+          waitXBlocksPassed('http://127.0.0.1:8002', 4),
+          waitXBlocksPassed('http://127.0.0.1:8003', 4),
+          waitXBlocksPassed('http://127.0.0.1:8004', 4),
+        ])
+        EOF
+      timeout-minutes: 1
+
+    - name: Archive logs
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: multi-axon-nodes-logs
+        path: |
+          ${{ runner.temp }}/${{ matrix.os }}/multi-axon-nodes/
