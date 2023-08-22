@@ -51,7 +51,6 @@ impl Decodable for Proposal {
             number:                   r.val_at(7)?,
             gas_limit:                MAX_BLOCK_GAS_LIMIT.into(),
             extra_data:               Default::default(),
-            mixed_hash:               None,
             base_fee_per_gas:         BASE_FEE_PER_GAS.into(),
             proof:                    r.val_at(8)?,
             chain_id:                 **CHAIN_ID.load(),

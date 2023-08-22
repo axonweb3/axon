@@ -9,7 +9,7 @@ use protocol::traits::{APIAdapter, Context, Interoperation};
 use protocol::types::{
     Block, BlockNumber, Bytes, CellDepWithPubKey, Hash, Hasher, Header, Hex, Proposal, Receipt,
     SignatureComponents, SignatureR, SignatureS, SignedTransaction, TxResp, UnverifiedTransaction,
-    BASE_FEE_PER_GAS, H160, H256, H64, MAX_FEE_HISTORY, MAX_RPC_GAS_CAP, MIN_TRANSACTION_GAS_LIMIT,
+    BASE_FEE_PER_GAS, H160, H256, MAX_FEE_HISTORY, MAX_RPC_GAS_CAP, MIN_TRANSACTION_GAS_LIMIT,
     U256,
 };
 use protocol::{
@@ -1166,7 +1166,6 @@ fn mock_header_by_call_req(latest_header: Header, call_req: &Web3CallRequest) ->
         signed_txs_hash:          Default::default(),
         receipts_root:            Default::default(),
         log_bloom:                Default::default(),
-        difficulty:               latest_header.difficulty,
         timestamp:                latest_header.timestamp,
         number:                   latest_header.number,
         gas_used:                 latest_header.gas_used,
@@ -1176,12 +1175,6 @@ fn mock_header_by_call_req(latest_header: Header, call_req: &Web3CallRequest) ->
             latest_header.gas_limit
         },
         extra_data:               Default::default(),
-        mixed_hash:               None,
-        nonce:                    if let Some(nonce) = call_req.nonce {
-            H64::from_low_u64_le(nonce.as_u64())
-        } else {
-            latest_header.nonce
-        },
         base_fee_per_gas:         if let Some(base_fee) = call_req.max_fee_per_gas {
             base_fee
         } else {
