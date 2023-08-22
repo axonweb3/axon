@@ -91,7 +91,7 @@ where
     }
 
     fn block_difficulty(&self) -> U256 {
-        self.exec_ctx.difficulty
+        U256::one()
     }
 
     fn block_gas_limit(&self) -> U256 {
