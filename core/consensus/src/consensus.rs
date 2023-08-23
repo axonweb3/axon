@@ -133,11 +133,11 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
                     Context::new(),
                     OverlordMsg::RichStatus(gen_overlord_status(
                         status.last_number + 1,
-                        metadata.interval,
-                        metadata.propose_ratio,
-                        metadata.prevote_ratio,
-                        metadata.precommit_ratio,
-                        metadata.brake_ratio,
+                        metadata.consensus_config.interval,
+                        metadata.consensus_config.propose_ratio,
+                        metadata.consensus_config.prevote_ratio,
+                        metadata.consensus_config.precommit_ratio,
+                        metadata.consensus_config.brake_ratio,
                         metadata.verifier_list.into_iter().map(Into::into).collect(),
                     )),
                 )

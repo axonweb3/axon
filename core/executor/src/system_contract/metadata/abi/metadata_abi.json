@@ -26,21 +26,6 @@
             "type": "uint64"
           },
           {
-            "internalType": "uint64",
-            "name": "gas_limit",
-            "type": "uint64"
-          },
-          {
-            "internalType": "uint64",
-            "name": "gas_price",
-            "type": "uint64"
-          },
-          {
-            "internalType": "uint64",
-            "name": "interval",
-            "type": "uint64"
-          },
-          {
             "components": [
               {
                 "internalType": "bytes",
@@ -73,36 +58,6 @@
             "type": "tuple[]"
           },
           {
-            "internalType": "uint64",
-            "name": "propose_ratio",
-            "type": "uint64"
-          },
-          {
-            "internalType": "uint64",
-            "name": "prevote_ratio",
-            "type": "uint64"
-          },
-          {
-            "internalType": "uint64",
-            "name": "precommit_ratio",
-            "type": "uint64"
-          },
-          {
-            "internalType": "uint64",
-            "name": "brake_ratio",
-            "type": "uint64"
-          },
-          {
-            "internalType": "uint64",
-            "name": "tx_num_limit",
-            "type": "uint64"
-          },
-          {
-            "internalType": "uint64",
-            "name": "max_tx_size",
-            "type": "uint64"
-          },
-          {
             "components": [
               {
                 "internalType": "address",
@@ -115,9 +70,61 @@
                 "type": "uint64"
               }
             ],
-            "internalType": "struct MetadataManager.ProposeCount",
+            "internalType": "struct MetadataManager.ProposeCount[]",
             "name": "propose_counter",
             "type": "tuple[]"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint64",
+                "name": "propose_ratio",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "prevote_ratio",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "precommit_ratio",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "brake_ratio",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "tx_num_limit",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "max_tx_size",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "gas_limit",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "gas_price",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "interval",
+                "type": "uint64"
+              }
+            ],
+            "internalType": "struct MetadataManager.ConsensusConfig",
+            "name": "consensus_config",
+            "type": "tuple"
           }
         ],
         "internalType": "struct MetadataManager.Metadata",
@@ -165,21 +172,6 @@
             "type": "uint64"
           },
           {
-            "internalType": "uint64",
-            "name": "gas_limit",
-            "type": "uint64"
-          },
-          {
-            "internalType": "uint64",
-            "name": "gas_price",
-            "type": "uint64"
-          },
-          {
-            "internalType": "uint64",
-            "name": "interval",
-            "type": "uint64"
-          },
-          {
             "components": [
               {
                 "internalType": "bytes",
@@ -212,6 +204,88 @@
             "type": "tuple[]"
           },
           {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "address_",
+                "type": "address"
+              },
+              {
+                "internalType": "uint64",
+                "name": "count",
+                "type": "uint64"
+              }
+            ],
+            "internalType": "struct MetadataManager.ProposeCount[]",
+            "name": "propose_counter",
+            "type": "tuple[]"
+          },
+          {
+            "components": [
+              {
+                "internalType": "uint64",
+                "name": "propose_ratio",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "prevote_ratio",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "precommit_ratio",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "brake_ratio",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "tx_num_limit",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "max_tx_size",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "gas_limit",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "gas_price",
+                "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "interval",
+                "type": "uint64"
+              }
+            ],
+            "internalType": "struct MetadataManager.ConsensusConfig",
+            "name": "consensus_config",
+            "type": "tuple"
+          }
+        ],
+        "internalType": "struct MetadataManager.Metadata",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
             "internalType": "uint64",
             "name": "propose_ratio",
             "type": "uint64"
@@ -242,29 +316,29 @@
             "type": "uint64"
           },
           {
-            "components": [
-              {
-                "internalType": "address",
-                "name": "address_",
-                "type": "address"
-              },
-              {
-                "internalType": "uint64",
-                "name": "count",
-                "type": "uint64"
-              }
-            ],
-            "internalType": "struct MetadataManager.ProposeCount",
-            "name": "propose_counter",
-            "type": "tuple[]"
+            "internalType": "uint64",
+            "name": "gas_limit",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "gas_price",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "interval",
+            "type": "uint64"
           }
         ],
-        "internalType": "struct MetadataManager.Metadata",
-        "name": "",
+        "internalType": "struct MetadataManager.ConsensusConfig",
+        "name": "config",
         "type": "tuple"
       }
     ],
-    "stateMutability": "view",
+    "name": "updateConsensusConfig",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

@@ -5,7 +5,7 @@ pragma solidity >=0.7.0;
 // import "hardhat/console.sol";
 
 contract MetadataManager {
-    uint64 constant U64_MAX = 2**64 - 1;
+    uint64 constant U64_MAX = 2 ** 64 - 1;
 
     struct MetadataVersion {
         uint64 start;
@@ -23,17 +23,26 @@ contract MetadataManager {
     struct Metadata {
         MetadataVersion version;
         uint64 epoch;
-        uint64 gas_limit;
-        uint64 gas_price;
-        uint64 interval;
         ValidatorExtend[] verifier_list;
+        ProposeCount[] propose_counter;
+        ConsensusConfig consensus_config;
+    }
+
+    struct ProposeCount {
+        address address_;
+        uint64 count;
+    }
+
+    struct ConsensusConfig {
         uint64 propose_ratio;
         uint64 prevote_ratio;
         uint64 precommit_ratio;
         uint64 brake_ratio;
         uint64 tx_num_limit;
         uint64 max_tx_size;
-        bytes32 last_checkpoint_block_hash;
+        uint64 gas_limit;
+        uint64 gas_price;
+        uint64 interval;
     }
 
     // to store all metadata with epoch as key
@@ -72,26 +81,58 @@ contract MetadataManager {
         Metadata storage target = metadata_set[epoch];
         target.version = metadata.version;
         target.epoch = metadata.epoch;
-        target.gas_limit = metadata.gas_limit;
-        target.gas_price = metadata.gas_price;
-        target.interval = metadata.interval;
-        target.propose_ratio = metadata.propose_ratio;
-        target.prevote_ratio = metadata.prevote_ratio;
-        target.precommit_ratio = metadata.precommit_ratio;
-        target.brake_ratio = metadata.brake_ratio;
-        target.tx_num_limit = metadata.tx_num_limit;
-        target.max_tx_size = metadata.max_tx_size;
-        target.last_checkpoint_block_hash = metadata.last_checkpoint_block_hash;
+        target.consensus_config.gas_limit = metadata.consensus_config.gas_limit;
+        target.consensus_config.gas_price = metadata.consensus_config.gas_price;
+        target.consensus_config.interval = metadata.consensus_config.interval;
+        target.consensus_config.propose_ratio = metadata
+            .consensus_config
+            .propose_ratio;
+        target.consensus_config.prevote_ratio = metadata
+            .consensus_config
+            .prevote_ratio;
+        target.consensus_config.precommit_ratio = metadata
+            .consensus_config
+            .precommit_ratio;
+        target.consensus_config.brake_ratio = metadata
+            .consensus_config
+            .brake_ratio;
+        target.consensus_config.tx_num_limit = metadata
+            .consensus_config
+            .tx_num_limit;
+        target.consensus_config.max_tx_size = metadata
+            .consensus_config
+            .max_tx_size;
+        for (uint256 i = 0; i < metadata.propose_counter.length; i++) {
+            target.propose_counter.push(metadata.propose_counter[i]);
+        }
         for (uint256 i = 0; i < metadata.verifier_list.length; i++) {
             target.verifier_list.push(metadata.verifier_list[i]);
         }
         highest_epoch = epoch;
     }
 
+    // update current consensus_config
+    function updateConsensusConfig(ConsensusConfig memory config) public {
+        Metadata memory highest_metadata = metadata_set[highest_epoch];
+
+        bool find_sender = false;
+        for (uint256 i = 0; i < highest_metadata.verifier_list.length; i++) {
+            if (highest_metadata.verifier_list[i].address_ == msg.sender) {
+                find_sender = true;
+                break;
+            }
+        }
+        require(find_sender, "fatal/verifier_list has no sender");
+        highest_metadata.consensus_config = config;
+    }
+
     // get metadata from `metadata_set` by epoch
     function getMetadata(uint64 epoch) public view returns (Metadata memory) {
         Metadata memory metadata = metadata_set[epoch];
-        require(metadata.gas_limit != 0, "fatal/non-indexed epoch");
+        require(
+            metadata.consensus_config.gas_limit != 0,
+            "fatal/non-indexed epoch"
+        );
         return metadata;
     }
 

@@ -331,8 +331,8 @@ impl Axon {
         mempool.set_args(
             Context::new(),
             current_block.header.state_root,
-            metadata.gas_limit,
-            metadata.max_tx_size,
+            metadata.consensus_config.gas_limit,
+            metadata.consensus_config.max_tx_size,
         );
 
         // Init overlord consensus and synchronization
@@ -569,8 +569,8 @@ impl Axon {
         let current_consensus_status = CurrentStatus {
             prev_hash:       block.hash(),
             last_number:     header.number,
-            max_tx_size:     metadata.max_tx_size.into(),
-            tx_num_limit:    metadata.tx_num_limit,
+            max_tx_size:     metadata.consensus_config.max_tx_size.into(),
+            tx_num_limit:    metadata.consensus_config.tx_num_limit,
             proof:           latest_proof,
             last_state_root: if header.number == 0 {
                 self.state_root
@@ -794,17 +794,17 @@ impl Axon {
         DB: TrieDB + Send + Sync,
     {
         let timer_config = DurationConfig {
-            propose_ratio:   metadata.propose_ratio,
-            prevote_ratio:   metadata.prevote_ratio,
-            precommit_ratio: metadata.precommit_ratio,
-            brake_ratio:     metadata.brake_ratio,
+            propose_ratio:   metadata.consensus_config.propose_ratio,
+            prevote_ratio:   metadata.consensus_config.prevote_ratio,
+            precommit_ratio: metadata.consensus_config.precommit_ratio,
+            brake_ratio:     metadata.consensus_config.brake_ratio,
         };
 
         tokio::spawn(async move {
             if let Err(e) = overlord_consensus
                 .run(
                     current_block.header.number,
-                    metadata.interval,
+                    metadata.consensus_config.interval,
                     validators,
                     Some(timer_config),
                 )

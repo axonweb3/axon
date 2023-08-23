@@ -10,6 +10,8 @@ use crate::system_contract::metadata::{
 use crate::system_contract::{error::SystemScriptError, METADATA_DB};
 use crate::{adapter::RocksTrieDB, MPTTrie, CURRENT_METADATA_ROOT};
 
+use super::metadata_abi::ConsensusConfig;
+
 pub struct MetadataStore {
     pub trie: MPTTrie<RocksTrieDB>,
 }
@@ -135,6 +137,19 @@ impl MetadataStore {
             .get(CKB_RELATED_INFO_KEY.as_bytes())?
             .ok_or_else(|| SystemScriptError::NoneCkbRelatedInfo)?;
         CkbRelatedInfo::decode(raw)
+    }
+
+    pub fn update_consensus_config(&mut self, config: ConsensusConfig) -> ProtocolResult<()> {
+        let epoch_segment = self.get_epoch_segment()?;
+        let latest_epoch = epoch_segment.get_latest_epoch_number();
+        let mut metadata = self.get_metadata(latest_epoch)?;
+
+        metadata.consensus_config = config.into();
+        self.trie
+            .insert(&metadata.epoch.to_be_bytes(), &metadata.encode()?)?;
+        let new_root = self.trie.commit()?;
+        CURRENT_METADATA_ROOT.with(|r| *r.borrow_mut() = new_root);
+        Ok(())
     }
 
     fn get_epoch_by_block_number(&self, block_number: u64) -> ProtocolResult<u64> {

@@ -350,8 +350,8 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             prev_hash:       block.hash(),
             last_number:     block.header.number,
             last_state_root: resp.state_root,
-            tx_num_limit:    metadata.tx_num_limit,
-            max_tx_size:     metadata.max_tx_size.into(),
+            tx_num_limit:    metadata.consensus_config.tx_num_limit,
+            max_tx_size:     metadata.consensus_config.max_tx_size.into(),
             proof:           proof.clone(),
         };
 
@@ -484,6 +484,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
                 self.adapter
                     .get_metadata_by_block_number(current_number)
                     .await?
+                    .consensus_config
                     .interval,
             ))
             .await;
@@ -512,11 +513,11 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
         self.adapter.update_status(
             ctx,
             sync_status.last_number,
-            metadata.interval,
-            metadata.propose_ratio,
-            metadata.prevote_ratio,
-            metadata.precommit_ratio,
-            metadata.brake_ratio,
+            metadata.consensus_config.interval,
+            metadata.consensus_config.propose_ratio,
+            metadata.consensus_config.prevote_ratio,
+            metadata.consensus_config.precommit_ratio,
+            metadata.consensus_config.brake_ratio,
             metadata.verifier_list.into_iter().map(Into::into).collect(),
         )?;
 
