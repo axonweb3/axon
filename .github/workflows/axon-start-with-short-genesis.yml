@@ -49,8 +49,9 @@ jobs:
         await waitXBlocksPassed('http://127.0.0.1:8000', 2);
         EOF
       timeout-minutes: 1
+
     - name: Archive logs
-      if: always()
+      if: failure()
       uses: actions/upload-artifact@v3
       with:
         name: single-axon-node-logs
@@ -113,7 +114,7 @@ jobs:
       timeout-minutes: 1
 
     - name: Archive logs
-      if: always()
+      if: failure()
       uses: actions/upload-artifact@v3
       with:
         name: multi-axon-nodes-logs
