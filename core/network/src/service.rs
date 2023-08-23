@@ -348,10 +348,6 @@ where
         self.config.secio_keypair.peer_id()
     }
 
-    pub fn set_chain_id(&self, chain_id: String) {
-        self.peer_mgr_handle.set_chain_id(chain_id);
-    }
-
     /// Dial just feeler protocol
     pub async fn dial_feeler(&mut self, addr: Multiaddr) {
         let peer_id = extract_peer_id(&addr).unwrap();

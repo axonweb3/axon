@@ -61,6 +61,9 @@ pub struct NetworkConfig {
 
     // rpc
     pub rpc_timeout: Duration,
+
+    // consensus
+    pub chain_id: u64,
 }
 
 impl NetworkConfig {
@@ -88,24 +91,32 @@ impl NetworkConfig {
             ping_timeout:  Duration::from_secs(DEFAULT_PING_TIMEOUT),
 
             rpc_timeout: Duration::from_secs(DEFAULT_RPC_TIMEOUT),
+
+            chain_id: Default::default(),
         }
     }
 
-    pub fn from_config(config: &Config) -> ProtocolResult<Self> {
-        let mut network_config = Self::new()
+    pub fn from_config(config: &Config, chain_id: u64) -> ProtocolResult<Self> {
+        Self::new()
             .peer_store_dir(config.data_path.clone().join("peer_store"))
             .ping_interval(config.network.ping_interval)
             .max_frame_length(config.network.max_frame_length)
             .send_buffer_size(config.network.send_buffer_size)
             .recv_buffer_size(config.network.recv_buffer_size)
-            .bootstraps(config.network.bootstraps.clone().unwrap_or_default().iter().map(|addr| addr.multi_address.clone()).collect())
-            // .allowlist(allowlist)?
+            .bootstraps(
+                config
+                    .network
+                    .bootstraps
+                    .clone()
+                    .unwrap_or_default()
+                    .iter()
+                    .map(|addr| addr.multi_address.clone())
+                    .collect(),
+            )
             .listen_addr(config.network.listening_address.clone())
-            .secio_keypair(&config.privkey.as_string_trim0x());
-
-        network_config = network_config.max_connections(config.network.max_connected_peers)?;
-
-        Ok(network_config)
+            .secio_keypair(&config.privkey.as_string_trim0x())
+            .chain_id(chain_id)
+            .max_connections(config.network.max_connected_peers)
     }
 
     pub fn max_connections(mut self, max: Option<usize>) -> ProtocolResult<Self> {
@@ -178,6 +189,11 @@ impl NetworkConfig {
 
     pub fn peer_store_dir(mut self, path: PathBuf) -> Self {
         self.peer_store_path = path;
+        self
+    }
+
+    pub fn chain_id(mut self, chain_id: u64) -> Self {
+        self.chain_id = chain_id;
         self
     }
 }

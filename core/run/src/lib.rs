@@ -435,15 +435,14 @@ impl Axon {
         &self,
         key_provider: Option<K>,
     ) -> NetworkService<KeyP<K>> {
-        let network_config = NetworkConfig::from_config(&self.config).unwrap();
+        let network_config =
+            NetworkConfig::from_config(&self.config, self.genesis.block.header.chain_id).unwrap();
 
         let key = key_provider
             .map(KeyP::Custom)
             .unwrap_or(KeyP::Default(network_config.secio_keypair.clone()));
 
-        let network_service = NetworkService::new(network_config, key);
-        network_service.set_chain_id(self.genesis.block.header.chain_id.to_string());
-        network_service
+        NetworkService::new(network_config, key)
     }
 
     fn init_evm_trie_db(&self, inner_db: Arc<RocksDB>) -> Arc<RocksTrieDB> {
