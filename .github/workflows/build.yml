@@ -1,9 +1,6 @@
 name: Build Axon Binary
 
 on:
-  push:
-  pull_request:
-  merge_group:
   workflow_dispatch:
   # Rather than copying and pasting from one workflow to another, you can make workflows reusable.
   # See https://docs.github.com/en/actions/using-workflows/reusing-workflows

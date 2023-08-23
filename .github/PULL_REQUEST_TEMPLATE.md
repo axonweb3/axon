@@ -32,7 +32,6 @@ You could link a pull request to an issue by using a supported keyword in the pu
 
 **CI Switch**
 
-- [ ] Cargo Clippy
 - [ ] Coverage Test
 - [ ] E2E Tests
 - [ ] Code Format
