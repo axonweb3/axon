@@ -44,5 +44,3 @@ jobs:
 
     - name: Run cargo-clippy in Makefile
       run: make clippy && git diff --exit-code Cargo.lock
-
-    - run: ls -lh target
