@@ -10,11 +10,12 @@ use crate::{
         init,
         metadata::{
             metadata_abi::{self, ConsensusConfig, Metadata, MetadataVersion, ValidatorExtend},
-            MetadataContract,
+            MetadataContract, MetadataStore,
         },
         SystemContract, METADATA_CONTRACT_ADDRESS,
     },
     tests::{gen_tx, gen_vicinity},
+    CURRENT_METADATA_ROOT,
 };
 
 static ROCKSDB_PATH: &str = "./free-space/system-contract/metadata";
@@ -38,6 +39,8 @@ fn test_write_functions() {
 
     test_second(&mut backend, &executor);
     test_validator(&mut backend, &executor);
+
+    test_update_consensus_config(&mut backend, &executor);
 }
 
 fn test_init<'a>(backend: &mut MemoryBackend<'a>, executor: &MetadataContract<MemoryBackend<'a>>) {
@@ -136,6 +139,39 @@ fn prepare_tx_5(addr: &H160) -> SignedTransaction {
     data.metadata.version.end = 300;
 
     gen_tx(*addr, METADATA_CONTRACT_ADDRESS, 1000, data.encode())
+}
+
+fn prepare_tx_with_consensus_config(addr: &H160, interval: u64) -> SignedTransaction {
+    let data = metadata_abi::UpdateConsensusConfigCall {
+        config: {
+            let mut config = prepare_metadata().consensus_config;
+            config.interval = interval;
+            config
+        },
+    };
+
+    gen_tx(*addr, METADATA_CONTRACT_ADDRESS, 1000, data.encode())
+}
+
+// change consensus interval test
+fn test_update_consensus_config<'a>(
+    backend: &mut MemoryBackend<'a>,
+    executor: &MetadataContract<MemoryBackend<'a>>,
+) {
+    let interval = 10;
+    let addr = H160::from_str("0xf000000000000000000000000000000000000000").unwrap();
+    let tx = prepare_tx_with_consensus_config(&addr, interval);
+
+    let r = executor.exec_(backend, &tx);
+    assert!(r.exit_reason.is_succeed());
+
+    let root = CURRENT_METADATA_ROOT.with(|r| *r.borrow());
+
+    let store = MetadataStore::new(root).unwrap();
+
+    let current_config = store.get_metadata(1).unwrap().consensus_config;
+
+    assert_eq!(current_config.interval, interval)
 }
 
 fn prepare_metadata() -> Metadata {
