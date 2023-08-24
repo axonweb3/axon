@@ -62,4 +62,13 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
+      - name: Check versions of the binaries in ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+        if: ${{ github.event_name != 'pull_request' }}
+        env:
+          IMAGE: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+        run: |
+          docker run --rm ${{ env.IMAGE }} /app/axon --version
+
     # TODO: test the image
+
+    
