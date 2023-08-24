@@ -1,10 +1,10 @@
 name: Release
+
 on:
   push:
     tags:
       - v*.*.*
-    # branches:
-    #   - "main"
+
 jobs:
   version:
     runs-on: ubuntu-20.04
@@ -110,6 +110,7 @@ jobs:
         with:
           name: axon_${{ needs.version.outputs.tag }}_${{ matrix.job.REL_PKG }}
           path: axon_${{ needs.version.outputs.tag }}_${{ matrix.job.REL_PKG }}
+
   Upload-release-files:
     runs-on: ubuntu-20.04
     strategy:
@@ -137,6 +138,7 @@ jobs:
           asset_name: axon_${{ needs.version.outputs.tag }}_${{ matrix.REL_PKG }}
           asset_path: ${{ github.workspace }}/axon_${{ needs.version.outputs.tag }}_${{ matrix.REL_PKG }}
           asset_content_type: application/octet-stream
+
   force-push:
     runs-on: ubuntu-20.04
     needs:
@@ -148,7 +150,6 @@ jobs:
         run: |
           git tag v${{ needs.version.outputs.major }} ${{ needs.version.outputs.tag }} -f
           git push origin refs/tags/v${{ needs.version.outputs.major }} -f
-
 
   trigger-somking-test:
     runs-on: ubuntu-20.04

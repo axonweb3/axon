@@ -1,4 +1,5 @@
 name: Build docker image
+
 on:
   push:
     tags:
@@ -9,6 +10,7 @@ on:
         type: string
         description: "The tag name for docker images"
         required: true
+
 jobs:
   output_tag_name:
     runs-on: ubuntu-latest
@@ -82,6 +84,3 @@ jobs:
           JOB_ID: "build-arm64-image-${{ github.repository_owner }}-${{ steps.date.outputs.date }}-in-10h"
         run: |
          ./devtools/ci/build-arm64.sh clean
-
-
-

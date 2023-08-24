@@ -1,4 +1,4 @@
-FROM rust:1.69 as builder
+FROM rust:1.70 as builder
 
 WORKDIR /build
 COPY . .
@@ -14,6 +14,7 @@ RUN set -eux; \
 
 RUN cd /build && cargo build --release
 
+# TODO: update the parent image
 FROM debian:bookworm-20211011-slim
 WORKDIR /app
 
