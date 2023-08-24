@@ -45,6 +45,15 @@ contract MetadataManager {
         uint64 interval;
     }
 
+    struct CkbRelatedInfo {
+        bytes32 metadata_type_id;
+        bytes32 checkpoint_type_id;
+        bytes32 xudt_args;
+        bytes32 stake_smt_type_id;
+        bytes32 delegate_smt_type_id;
+        bytes32 reward_smt_type_id;
+    }
+
     // to store all metadata with epoch as key
     mapping(uint64 => Metadata) metadata_set;
 
@@ -112,7 +121,7 @@ contract MetadataManager {
     }
 
     // update current consensus_config
-    function updateConsensusConfig(ConsensusConfig memory config) public {
+    function updateConsensusConfig(ConsensusConfig memory config) public view {
         Metadata memory highest_metadata = metadata_set[highest_epoch];
 
         bool find_sender = false;
@@ -136,45 +145,7 @@ contract MetadataManager {
         return metadata;
     }
 
-    function verifierList() external view returns (address[] memory, uint256) {
-        uint256 length = metadata_set[highest_epoch].verifier_list.length;
-        address[] memory verifiers = new address[](length);
-
-        for (uint256 i = 0; i < length; ++i) {
-            verifiers[i] = metadata_set[highest_epoch]
-                .verifier_list[i]
-                .address_;
-        }
-
-        return (verifiers, highest_epoch);
-    }
-
-    function isProposer(address verifier) external view returns (bool) {
-        ValidatorExtend memory proposer;
-
-        uint256 length = metadata_set[highest_epoch].verifier_list.length;
-        for (uint256 i = 0; i < length; ++i) {
-            if (
-                metadata_set[highest_epoch].verifier_list[i].propose_weight >
-                proposer.propose_weight
-            ) {
-                proposer = metadata_set[highest_epoch].verifier_list[i];
-            }
-        }
-
-        return verifier == proposer.address_;
-    }
-
-    function isVerifier(address relayer) external view returns (bool) {
-        uint256 length = metadata_set[highest_epoch].verifier_list.length;
-        for (uint256 i = 0; i < length; ++i) {
-            if (
-                metadata_set[highest_epoch].verifier_list[i].address_ == relayer
-            ) {
-                return true;
-            }
-        }
-
-        return false;
-    }
+    function setCkbRelatedInfo(
+        CkbRelatedInfo memory ckbRelatedInfo
+    ) public view {}
 }
