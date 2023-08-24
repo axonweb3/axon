@@ -35,7 +35,6 @@ You could link a pull request to an issue by using a supported keyword in the pu
 - [ ] Coverage Test
 - [ ] E2E Tests
 - [ ] Code Format
-- [ ] Unit Tests
 - [ ] Web3 Compatible Tests
 - [ ] OCT 1-5 And 12-15
 - [ ] OCT 6-10
