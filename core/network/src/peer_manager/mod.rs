@@ -1,4 +1,4 @@
-use parking_lot::{Mutex, RwLock};
+use parking_lot::RwLock;
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
@@ -21,7 +21,7 @@ pub struct PeerManager {
     online:           RwLock<Online>,
     peer_store:       RwLock<PeerStore>,
     bootstraps:       HashMap<PeerId, Multiaddr>,
-    chain_id:         Mutex<String>,
+    chain_id:         String,
     pub public_addrs: RwLock<HashSet<Multiaddr>>,
     config:           Arc<NetworkConfig>,
 
@@ -46,7 +46,7 @@ impl PeerManager {
             peer_store: RwLock::new(PeerStore::load_from_dir_or_default(
                 config.peer_store_path.clone(),
             )),
-            chain_id: Mutex::new(String::new()),
+            chain_id: config.chain_id.to_string(),
             bootstraps,
             public_addrs: RwLock::new(HashSet::new()),
             config,
@@ -180,12 +180,8 @@ impl PeerManager {
         }
     }
 
-    pub fn set_chain_id(&self, chain_id: String) {
-        *self.chain_id.lock() = chain_id;
-    }
-
     pub fn chain_id(&self) -> String {
-        self.chain_id.lock().clone()
+        self.chain_id.clone()
     }
 
     pub fn local_peer_id(&self) -> PeerId {
