@@ -36,7 +36,6 @@ jobs:
         key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: |
           ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-test
-          ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo
 
     - name: Run Rust unit-test
       run: make test
