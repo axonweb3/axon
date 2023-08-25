@@ -13,7 +13,7 @@ on:
 
 jobs:
   output_tag_name:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       tag_name: ${{ steps.output.outputs.tag_name }}
     steps:
@@ -29,7 +29,7 @@ jobs:
           echo "tag_name=$tag_name" >> $GITHUB_OUTPUT
 
   build-amd64-image:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: output_tag_name
     steps:
       - name: Git checkout
@@ -55,7 +55,7 @@ jobs:
           tags: axonweb3/axon:amd64-${{ needs.output_tag_name.outputs.tag_name }}
 
   build-arm64-image:
-    runs-on: [self-hosted,build]
+    runs-on: [self-hosted, build]
     needs: output_tag_name
     env:
       AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
