@@ -121,7 +121,7 @@ fn get_metadata(config_path: String) -> (Metadata, Metadata) {
         .map(|file_name| {
             let config: Config = parse_file(file_name, false).unwrap();
             let priv_key = config.privkey;
-            get_ve(priv_key.inner(), propose_weight, vote_weight)
+            get_ve(Hex::encode(priv_key.as_ref()), propose_weight, vote_weight)
         })
         .collect::<Vec<_>>();
 

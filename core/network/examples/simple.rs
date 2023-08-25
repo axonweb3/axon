@@ -2,9 +2,7 @@
 
 use core_network::{NetworkConfig, NetworkService, NetworkServiceHandle};
 use protocol::{
-    async_trait,
-    codec::hex_encode,
-    tokio,
+    async_trait, tokio,
     traits::{Context, Gossip, MessageHandler, Priority, Rpc, TrustFeedback},
     types::Bytes,
     ProtocolError,
@@ -71,9 +69,8 @@ impl MessageHandler for Checkout {
 async fn main() {
     env_logger::init();
 
-    let bt_seckey_bytes = "8".repeat(32);
-    let bt_seckey = hex_encode(&bt_seckey_bytes);
-    let bt_keypair = SecioKeyPair::secp256k1_raw_key(bt_seckey_bytes).expect("keypair");
+    let bt_seckey = [8u8; 32];
+    let bt_keypair = SecioKeyPair::secp256k1_raw_key(bt_seckey).expect("keypair");
     let peer_id = bt_keypair.peer_id().to_base58();
 
     if std::env::args().nth(1) == Some("server".to_string()) {
@@ -81,7 +78,8 @@ async fn main() {
 
         let bt_conf = NetworkConfig::new()
             .listen_addr("/ip4/127.0.0.1/tcp/1337".parse().unwrap())
-            .secio_keypair(&bt_seckey);
+            .secio_keypair(&bt_seckey)
+            .unwrap();
         let mut bootstrap = NetworkService::new(bt_conf, bt_keypair);
         let handle = bootstrap.handle();
 

@@ -332,7 +332,6 @@ dependencies = [
  "hex",
  "lazy_static",
  "ophelia",
- "ophelia-secp256k1",
  "overlord",
  "rand 0.7.3",
  "rlp",
@@ -342,6 +341,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "toml 0.7.3",
+ "zeroize",
 ]
 
 [[package]]

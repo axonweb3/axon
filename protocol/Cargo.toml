@@ -23,7 +23,6 @@ evm = { version = "0.37", features = ["with-serde"] }
 faster-hex = "0.8"
 lazy_static = "1.4"
 ophelia = "0.3"
-ophelia-secp256k1 = "0.3"
 overlord = "0.4"
 rand = "0.7"
 rlp = "0.5"
@@ -32,6 +31,7 @@ serde = { version = "1.0", features = ["derive"] }
 thiserror = "1.0"
 tokio = { version = "1.32", features = ["full"] }
 trie = { package = "cita_trie", git = "https://github.com/KaoImin/cita-trie.git", rev = "eea569c", version = "4.1" }
+zeroize = "1.6.0"
 
 common-crypto = { path = "../common/crypto" }
 common-hasher = { path = "../common/hasher" }

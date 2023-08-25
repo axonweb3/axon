@@ -10,7 +10,7 @@ use ethers_core::utils::parse_checksummed;
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 use serde::{Deserialize as _, Deserializer, Serializer};
 
-use crate::types::{Address, Bytes, DBBytes, Hex, TypesError, H160, U256};
+use crate::types::{Address, Bytes, DBBytes, Hex, Key256Bits, TypesError, H160, U256};
 use crate::ProtocolResult;
 
 static CHARS: &[u8] = b"0123456789abcdef";
@@ -112,6 +112,35 @@ where
         s.serialize_str("0x0")
     } else {
         s.serialize_str(to_hex_raw(&mut slice, bytes, true))
+    }
+}
+
+pub fn deserialize_256bits_key<'de, D>(deserializer: D) -> Result<Key256Bits, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    const LEN: usize = 66;
+    let s = String::deserialize(deserializer)?;
+    if s.starts_with("0x") || s.starts_with("0X") {
+        if s.len() == LEN {
+            let slice = &s.as_bytes()[2..];
+            let mut v = [0u8; 32];
+            faster_hex::hex_decode(slice, &mut v)
+                .map(|_| Key256Bits::from(v))
+                .map_err(|err| {
+                    let msg = format!("failed to parse the 256 bits key since {err}.");
+                    serde::de::Error::custom(msg)
+                })
+        } else {
+            let msg = format!(
+                "failed to parse the 256 bits key since its length is {} but expect {LEN}.",
+                s.len()
+            );
+            Err(serde::de::Error::custom(msg))
+        }
+    } else {
+        let msg = "failed to parse the 256 bits key since it's not 0x-prefixed.";
+        Err(serde::de::Error::custom(msg))
     }
 }
 

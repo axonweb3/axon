@@ -13,6 +13,7 @@ use protocol::{
 
 use common_apm::tracing::{AxonTracer, Tag};
 use common_apm_derive::trace_span;
+use common_crypto::PublicKey as _;
 
 use crate::wal::{ConsensusWal, SignedTxsWAL};
 use crate::{
@@ -124,7 +125,12 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
             .await
             .unwrap();
 
-        let overlord = Overlord::new(node_info.self_pub_key, Arc::clone(&engine), crypto, engine);
+        let overlord = Overlord::new(
+            node_info.self_pub_key.to_bytes(),
+            Arc::clone(&engine),
+            crypto,
+            engine,
+        );
         let overlord_handler = overlord.get_handler();
 
         if status.last_number == 0 {
