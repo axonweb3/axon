@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  axon:
+    # TODO: update this image to ghcr.io/axonweb3/axon:dev
+    image: ghcr.io/flouse/axon:dev
+    ports:
+    - 8000:8000
+    - 127.0.0.1:8100:8100
+    volumes:
+    - ./config.toml:/app/config.toml
+    - ./default.db-options:/app/default.db-options
+    - ./specs/single_node/:/app/single_node_spec/
+    networks:
+    - axon-net
+    restart: unless-stopped
+    command: |
+      /app/axon run --config=/app/config.toml --chain-spec=/app/single_node_spec/chain-spec.toml
+
+  explorer:
+    container_name: blockscan
+    # TODO: update blockscan image
+    # Dockerfile: https://github.com/Simon-Tl/blockscan/blob/a60dd45ca8577f97683f89c8a372508a84b74e24/docker/Dockerfile#L56
+    image: ghcr.io/simon-tl/blockscan:latest
+    depends_on:
+    - axon
+    - explorer-db
+    env_file:
+    - ./blockscan-explorer.env
+    ports:
+    - 4020
+    networks:
+    - axon-net
+    restart: unless-stopped
+    command: bash -c "bin/blockscout eval \"Elixir.Explorer.ReleaseTasks.create_and_migrate()\" && bin/blockscout start"
+
+  explorer-db:
+    container_name: postgres
+    image: postgres:15.2
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-b%rnGL8ps}
+      POSTGRES_USER: ${POSTGRES_USER:-blockscan}
+    expose:
+    - 5432
+    networks:
+    - axon-net
+    restart: unless-stopped
+    command: postgres -c 'max_connections=250'
+
+networks:
+  axon-net:
