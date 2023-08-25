@@ -6,6 +6,7 @@ use std::sync::Arc;
 
 use protocol::codec::ProtocolCodec;
 use protocol::traits::{Context, Executor, Storage};
+use protocol::trie::Trie as _;
 use protocol::types::{
     Account, Address, Bytes, Eip1559Transaction, ExecResp, Proposal, Public, RichBlock,
     SignatureComponents, SignedTransaction, TransactionAction, UnsignedTransaction,
@@ -79,8 +80,8 @@ impl TestHandle {
         let mut mpt = MPTTrie::new(Arc::clone(&self.trie_db));
 
         mpt.insert(
-            distribute_address.as_slice(),
-            distribute_account.encode().unwrap().as_ref(),
+            distribute_address.as_slice().to_vec(),
+            distribute_account.encode().unwrap().to_vec(),
         )
         .unwrap();
 

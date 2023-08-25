@@ -6,6 +6,7 @@ use protocol::traits::{
     ApplyBackend, Backend, Context, ExecutorAdapter, ExecutorReadOnlyAdapter, ReadOnlyStorage,
     Storage,
 };
+use protocol::trie::Trie;
 use protocol::types::{
     Account, Bytes, ExecutorContext, Hasher, Log, MerkleRoot, H160, H256, NIL_DATA, RLP_NULL, U256,
 };
@@ -130,7 +131,10 @@ where
     fn save_account(&mut self, address: &H160, account: &Account) {
         self.inner
             .trie
-            .insert(address.as_bytes(), &account.encode().unwrap())
+            .insert(
+                address.as_bytes().to_vec(),
+                account.encode().unwrap().to_vec(),
+            )
             .unwrap();
     }
 }
@@ -171,7 +175,7 @@ where
         };
 
         storage.into_iter().for_each(|(k, v)| {
-            let _ = storage_trie.insert(k.as_bytes(), v.as_bytes());
+            let _ = storage_trie.insert(k.as_bytes().to_vec(), v.as_bytes().to_vec());
         });
 
         let storage_root = storage_trie
@@ -207,7 +211,7 @@ where
         {
             self.inner
                 .trie
-                .insert(address.as_bytes(), bytes.as_ref())
+                .insert(address.as_bytes().to_vec(), bytes.to_vec())
                 .unwrap();
         }
 

@@ -3,9 +3,7 @@ use std::sync::Arc;
 use ckb_types::{bytes::Bytes, core::cell::CellMeta, packed, prelude::*};
 use rlp::{RlpDecodable, RlpEncodable};
 
-use protocol::ckb_blake2b_256;
-use protocol::types::H256;
-use protocol::ProtocolResult;
+use protocol::{ckb_blake2b_256, codec::hex_encode, trie::Trie as _, types::H256, ProtocolResult};
 
 use crate::system_contract::image_cell::{image_cell_abi, MPTTrie};
 use crate::system_contract::HEADER_CELL_DB;
@@ -164,14 +162,24 @@ impl ImageCellStore {
 
     pub fn insert_cell(&mut self, key: &CellKey, cell: &CellInfo) -> ProtocolResult<()> {
         self.trie
-            .insert(&key.encode(), &rlp::encode(cell))
+            .insert(key.encode().to_vec(), rlp::encode(cell).to_vec())
             .map_err(|e| SystemScriptError::InsertCell(e.to_string()).into())
     }
 
-    pub fn remove_cell(&mut self, key: &CellKey) -> ProtocolResult<()> {
+    pub fn remove_cell(&mut self, cell_key: &CellKey) -> ProtocolResult<()> {
+        let key = cell_key.encode();
         self.trie
-            .remove(&key.encode())
-            .map_err(|e| SystemScriptError::RemoveCell(e.to_string()).into())
+            .remove(&key)
+            .map_err(|e| SystemScriptError::RemoveCell(e.to_string()))
+            .and_then(|removed| {
+                if removed {
+                    Ok(())
+                } else {
+                    let content = format!("remove cell {} failed", hex_encode(&key));
+                    Err(SystemScriptError::RemoveCell(content))
+                }
+            })
+            .map_err(Into::into)
     }
 
     pub fn commit(&mut self) -> ProtocolResult<()> {

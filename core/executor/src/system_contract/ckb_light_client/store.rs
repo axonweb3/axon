@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use ethers::abi::{AbiDecode, AbiEncode};
 
-use protocol::{types::H256, ProtocolResult};
+use protocol::trie::Trie as _;
+use protocol::{codec::hex_encode, types::H256, ProtocolResult};
 
 use crate::system_contract::{
     ckb_light_client::ckb_light_client_abi, error::SystemScriptError, HEADER_CELL_DB,
@@ -71,14 +72,23 @@ impl CkbLightClientStore {
 
     fn save_header(&mut self, header: &ckb_light_client_abi::Header) -> ProtocolResult<()> {
         self.trie
-            .insert(&header.block_hash, &header.clone().encode())
+            .insert(header.block_hash.to_vec(), header.clone().encode().to_vec())
             .map_err(|e| SystemScriptError::InsertHeader(e.to_string()).into())
     }
 
     fn remove_header(&mut self, block_hash: &[u8]) -> ProtocolResult<()> {
         self.trie
             .remove(block_hash)
-            .map_err(|e| SystemScriptError::RemoveHeader(e.to_string()).into())
+            .map_err(|e| SystemScriptError::RemoveHeader(e.to_string()))
+            .and_then(|removed| {
+                if removed {
+                    Ok(())
+                } else {
+                    let content = format!("remove header {} failed", hex_encode(block_hash));
+                    Err(SystemScriptError::RemoveHeader(content))
+                }
+            })
+            .map_err(Into::into)
     }
 
     pub fn commit(&mut self) -> ProtocolResult<()> {

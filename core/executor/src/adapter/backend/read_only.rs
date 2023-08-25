@@ -3,6 +3,7 @@ use std::sync::Arc;
 use evm::backend::Basic;
 
 use protocol::traits::{Backend, Context, ExecutorReadOnlyAdapter, ReadOnlyStorage};
+use protocol::trie::Trie as _;
 use protocol::types::{
     Account, Bytes, ExecutorContext, MerkleRoot, H160, H256, NIL_DATA, RLP_NULL, U256,
 };
@@ -32,7 +33,7 @@ where
     }
 
     fn get(&self, key: &[u8]) -> Option<Bytes> {
-        self.trie.get(key).ok().flatten()
+        self.trie.get(key).ok().flatten().map(Into::into)
     }
 
     fn get_account(&self, address: &H160) -> Account {

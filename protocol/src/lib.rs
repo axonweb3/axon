@@ -65,6 +65,15 @@ impl From<ProtocolError> for String {
     }
 }
 
+impl From<trie::TrieError> for ProtocolError {
+    fn from(error: trie::TrieError) -> Self {
+        ProtocolError {
+            kind:  ProtocolErrorKind::DB,
+            error: Box::new(error),
+        }
+    }
+}
+
 impl Error for ProtocolError {}
 
 pub type ProtocolResult<T> = Result<T, ProtocolError>;

@@ -3,12 +3,45 @@ use std::sync::Arc;
 use hasher::HasherKeccak;
 
 use protocol::trie::{PatriciaTrie, Trie, TrieError, DB as TrieDB};
-use protocol::types::{Bytes, MerkleRoot};
-use protocol::{
-    codec::hex_encode, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
-};
+use protocol::types::MerkleRoot;
+use protocol::ProtocolResult;
 
 pub struct MPTTrie<DB: TrieDB>(PatriciaTrie<DB, HasherKeccak>);
+
+impl<DB: TrieDB> Trie<DB, HasherKeccak> for MPTTrie<DB> {
+    fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, TrieError> {
+        self.0.get(key)
+    }
+
+    fn contains(&self, key: &[u8]) -> Result<bool, TrieError> {
+        self.0.contains(key)
+    }
+
+    fn insert(&mut self, key: Vec<u8>, value: Vec<u8>) -> Result<(), TrieError> {
+        self.0.insert(key, value)
+    }
+
+    fn remove(&mut self, key: &[u8]) -> Result<bool, TrieError> {
+        self.0.remove(key)
+    }
+
+    fn root(&mut self) -> Result<Vec<u8>, TrieError> {
+        self.0.root()
+    }
+
+    fn get_proof(&self, key: &[u8]) -> Result<Vec<Vec<u8>>, TrieError> {
+        self.0.get_proof(key)
+    }
+
+    fn verify_proof(
+        &self,
+        root_hash: &[u8],
+        key: &[u8],
+        proof: Vec<Vec<u8>>,
+    ) -> Result<Option<Vec<u8>>, TrieError> {
+        self.0.verify_proof(root_hash, key, proof)
+    }
+}
 
 impl<DB: TrieDB> MPTTrie<DB> {
     pub fn new(db: Arc<DB>) -> Self {
@@ -16,60 +49,18 @@ impl<DB: TrieDB> MPTTrie<DB> {
     }
 
     pub fn from_root(root: MerkleRoot, db: Arc<DB>) -> ProtocolResult<Self> {
-        Ok(MPTTrie(
-            PatriciaTrie::from(db, Arc::new(HasherKeccak::new()), root.as_bytes())
-                .map_err(MPTTrieError::from)?,
-        ))
-    }
-
-    pub fn get(&self, key: &[u8]) -> ProtocolResult<Option<Bytes>> {
-        Ok(self
-            .0
-            .get(key)
-            .map_err(MPTTrieError::from)?
-            .map(Bytes::from))
-    }
-
-    pub fn contains(&self, key: &[u8]) -> ProtocolResult<bool> {
-        Ok(self.0.contains(key).map_err(MPTTrieError::from)?)
-    }
-
-    pub fn insert(&mut self, key: &[u8], value: &[u8]) -> ProtocolResult<()> {
-        self.0
-            .insert(key.to_vec(), value.to_vec())
-            .map_err(MPTTrieError::from)?;
-        Ok(())
-    }
-
-    pub fn remove(&mut self, key: &[u8]) -> ProtocolResult<()> {
-        if self.0.remove(key).map_err(MPTTrieError::from)? {
-            Ok(())
-        } else {
-            Err(MPTTrieError::RemoveFailed(hex_encode(key)).into())
-        }
+        Ok(MPTTrie(PatriciaTrie::from(
+            db,
+            Arc::new(HasherKeccak::new()),
+            root.as_bytes(),
+        )?))
     }
 
     pub fn commit(&mut self) -> ProtocolResult<MerkleRoot> {
-        Ok(MerkleRoot::from_slice(
-            &self.0.root().map_err(MPTTrieError::from)?,
-        ))
-    }
-}
-
-#[derive(Debug, Display, From)]
-pub enum MPTTrieError {
-    #[display(fmt = "Trie {:?}", _0)]
-    Trie(TrieError),
-
-    #[display(fmt = "Remove {:?} failed", _0)]
-    RemoveFailed(String),
-}
-
-impl std::error::Error for MPTTrieError {}
-
-impl From<MPTTrieError> for ProtocolError {
-    fn from(err: MPTTrieError) -> ProtocolError {
-        ProtocolError::new(ProtocolErrorKind::Executor, Box::new(err))
+        self.0
+            .root()
+            .map(|r| MerkleRoot::from_slice(&r))
+            .map_err(Into::into)
     }
 }
 
@@ -99,12 +90,12 @@ mod tests {
         let key_2 = rand_bytes(10);
         let val_2 = rand_bytes(20);
 
-        mpt.insert(&key_1, &val_1).unwrap();
-        mpt.insert(&key_2, &val_2).unwrap();
+        mpt.insert(key_1.clone(), val_1.clone()).unwrap();
+        mpt.insert(key_2.clone(), val_2.clone()).unwrap();
         mpt.commit().unwrap();
 
-        assert_eq!(mpt.get(&key_1).unwrap(), Some(Bytes::from(val_1)));
-        assert_eq!(mpt.get(&key_2).unwrap(), Some(Bytes::from(val_2)));
+        assert_eq!(mpt.get(&key_1).unwrap(), Some(val_1));
+        assert_eq!(mpt.get(&key_2).unwrap(), Some(val_2));
         assert!(mpt.remove(&key_1).is_ok());
         assert!(mpt.get(&key_1).unwrap().is_none());
 
