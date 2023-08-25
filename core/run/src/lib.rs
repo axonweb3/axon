@@ -17,10 +17,7 @@ use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
 use common_apm::{server::run_prometheus_server, tracing::global_tracer_register};
 use common_config_parser::types::spec::{ChainSpec, InitialAccount};
 use common_config_parser::types::{Config, ConfigJaeger, ConfigPrometheus};
-use common_crypto::{
-    BlsPrivateKey, BlsPublicKey, PublicKey, Secp256k1, Secp256k1PrivateKey, Secp256k1PublicKey,
-    ToPublicKey, UncompressedPublicKey,
-};
+use common_crypto::{BlsPrivateKey, BlsPublicKey, Secp256k1, Secp256k1PrivateKey, ToPublicKey};
 
 use protocol::codec::{hex_decode, ProtocolCodec};
 #[cfg(unix)]
@@ -33,8 +30,8 @@ use protocol::traits::{
     Rpc, Storage, SynchronizationAdapter,
 };
 use protocol::types::{
-    Account, Address, Block, ExecResp, MerkleRoot, Metadata, Proposal, RichBlock,
-    SignedTransaction, Validator, ValidatorExtend, H256, NIL_DATA, RLP_NULL,
+    Account, Block, ExecResp, MerkleRoot, Metadata, Proposal, RichBlock, SignedTransaction,
+    Validator, ValidatorExtend, H256, NIL_DATA, RLP_NULL,
 };
 use protocol::{
     async_trait, lazy::CHAIN_ID, trie::DB as TrieDB, Display, From, ProtocolError,
@@ -515,28 +512,9 @@ impl Axon {
         system_contract::init(inner_db, &mut backend)
     }
 
-    fn get_my_pubkey(&self, hex_privkey: Vec<u8>) -> Secp256k1PublicKey {
-        let my_privkey = Secp256k1PrivateKey::try_from(hex_privkey.as_ref())
-            .map_err(MainError::Crypto)
-            .unwrap();
-
-        my_privkey.pub_key()
-    }
-
-    fn get_my_address(&self, hex_privkey: Vec<u8>) -> Address {
-        let my_pubkey = self.get_my_pubkey(hex_privkey);
-
-        Address::from_pubkey_bytes(my_pubkey.to_uncompressed_bytes()).unwrap()
-    }
-
-    fn get_my_hex_privkey(&self) -> Vec<u8> {
-        hex_decode(&self.config.privkey.as_string_trim0x()).unwrap()
-    }
-
     fn init_crypto(&self, validators: &[ValidatorExtend]) -> Arc<OverlordCrypto> {
         // self private key
-        let hex_privkey = self.get_my_hex_privkey();
-        let bls_priv_key = BlsPrivateKey::try_from(hex_privkey.as_ref())
+        let bls_priv_key = BlsPrivateKey::try_from(self.config.privkey.as_ref())
             .map_err(MainError::Crypto)
             .unwrap();
 
@@ -605,12 +583,10 @@ impl Axon {
             .to_string();
         let consensus_wal = Arc::new(ConsensusWal::new(consensus_wal_path));
 
-        let hex_privkey = self.get_my_hex_privkey();
-        let node_info = NodeInfo {
-            chain_id:     self.genesis.block.header.chain_id,
-            self_address: self.get_my_address(hex_privkey.clone()),
-            self_pub_key: self.get_my_pubkey(hex_privkey).to_bytes(),
-        };
+        let my_privkey = Secp256k1PrivateKey::try_from(self.config.privkey.as_ref())
+            .map_err(MainError::Crypto)
+            .unwrap();
+        let node_info = NodeInfo::new(self.genesis.block.header.chain_id, my_privkey.pub_key());
 
         Arc::new(
             OverlordConsensus::new(

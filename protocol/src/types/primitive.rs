@@ -5,13 +5,14 @@ pub use ethereum_types::{
     BigEndianHash, Bloom, Public, Secret, Signature, H128, H160, H256, H512, H520, H64, U128, U256,
     U512, U64,
 };
+use zeroize::Zeroizing;
 
 use ophelia::{PublicKey, UncompressedPublicKey};
-use ophelia_secp256k1::Secp256k1PublicKey;
 use overlord::DurationConfig;
 use rlp_derive::{RlpDecodable, RlpEncodable};
 use serde::{de, Deserialize, Serialize};
 
+use common_crypto::Secp256k1PublicKey;
 use common_hasher::keccak256;
 
 use crate::codec::{hex_decode, hex_encode, serialize_uint};
@@ -174,6 +175,8 @@ impl<'de> Deserialize<'de> for Hex {
     }
 }
 
+pub type Key256Bits = Zeroizing<[u8; 32]>;
+
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct Address(pub H160);
 
@@ -248,6 +251,11 @@ impl Address {
         };
 
         Ok(Self::from_hash(hash))
+    }
+
+    pub fn from_pubkey(pubkey: &Secp256k1PublicKey) -> Self {
+        let hash = Hasher::digest(&(pubkey.to_uncompressed_bytes())[1..]);
+        Self::from_hash(hash)
     }
 
     pub fn from_hash(hash: Hash) -> Self {

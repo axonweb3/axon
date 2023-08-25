@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use common_crypto::Secp256k1PublicKey;
+
 use crate::types::{
     Address, Block, BlockNumber, Bytes, ExecResp, Hash, Header, Hex, MerkleRoot, Metadata,
     PackedTxHashes, Proof, Proposal, Receipt, SignedTransaction, Validator, U256,
@@ -15,8 +17,19 @@ pub enum MessageTarget {
 #[derive(Debug, Clone)]
 pub struct NodeInfo {
     pub chain_id:     u64,
-    pub self_pub_key: Bytes,
+    pub self_pub_key: Secp256k1PublicKey,
     pub self_address: Address,
+}
+
+impl NodeInfo {
+    pub fn new(chain_id: u64, pubkey: Secp256k1PublicKey) -> Self {
+        let address = Address::from_pubkey(&pubkey);
+        Self {
+            chain_id,
+            self_pub_key: pubkey,
+            self_address: address,
+        }
+    }
 }
 
 #[async_trait]
