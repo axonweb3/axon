@@ -34,7 +34,7 @@ use protocol::types::{
     Account, Block, ExecResp, MerkleRoot, Metadata, Proposal, RichBlock, SignedTransaction,
     Validator, ValidatorExtend, H256, NIL_DATA, RLP_NULL,
 };
-use protocol::{async_trait, lazy::CHAIN_ID, trie::DB as TrieDB, ProtocolResult};
+use protocol::{lazy::CHAIN_ID, trie::DB as TrieDB, ProtocolResult};
 
 use core_api::{jsonrpc::run_jsonrpc_server, DefaultAPIAdapter};
 use core_consensus::message::{
@@ -61,7 +61,7 @@ use core_mempool::{
     RPC_PULL_TXS, RPC_RESP_PULL_TXS, RPC_RESP_PULL_TXS_SYNC,
 };
 use core_network::{
-    observe_listen_port_occupancy, NetworkConfig, NetworkService, PeerId, PeerIdExt, SecioError,
+    observe_listen_port_occupancy, NetworkConfig, NetworkService, PeerId, PeerIdExt,
 };
 use core_storage::ImplStorage;
 
@@ -76,11 +76,13 @@ pub use core_network::{KeyProvider, SecioKeyPair};
 pub static JEMALLOC: Jemalloc = Jemalloc;
 
 mod error;
+mod key_provider;
 
 #[cfg(test)]
 mod tests;
 
 pub use error::MainError;
+use key_provider::KeyP;
 
 #[derive(Debug)]
 pub struct Axon {
@@ -831,59 +833,6 @@ impl Axon {
             .name()
             .write(name)
             .expect("Should succeed to dump profile")
-    }
-}
-
-#[derive(Clone)]
-enum KeyP<K: KeyProvider> {
-    Custom(K),
-    Default(SecioKeyPair),
-}
-#[async_trait]
-impl<K> KeyProvider for KeyP<K>
-where
-    K: KeyProvider,
-{
-    type Error = SecioError;
-
-    async fn sign_ecdsa_async<T: AsRef<[u8]> + Send>(
-        &self,
-        message: T,
-    ) -> Result<Vec<u8>, Self::Error> {
-        match self {
-            KeyP::Custom(k) => k.sign_ecdsa_async(message).await.map_err(Into::into),
-            KeyP::Default(k) => k.sign_ecdsa_async(message).await,
-        }
-    }
-
-    /// Constructs a signature for `msg` using the secret key `sk`
-    fn sign_ecdsa<T: AsRef<[u8]>>(&self, message: T) -> Result<Vec<u8>, Self::Error> {
-        match self {
-            KeyP::Custom(k) => k.sign_ecdsa(message).map_err(Into::into),
-            KeyP::Default(k) => k.sign_ecdsa(message),
-        }
-    }
-
-    /// Creates a new public key from the [`KeyProvider`].
-    fn pubkey(&self) -> Vec<u8> {
-        match self {
-            KeyP::Custom(k) => k.pubkey(),
-            KeyP::Default(k) => k.pubkey(),
-        }
-    }
-
-    /// Checks that `sig` is a valid ECDSA signature for `msg` using the
-    /// pubkey.
-    fn verify_ecdsa<P, T, F>(&self, pubkey: P, message: T, signature: F) -> bool
-    where
-        P: AsRef<[u8]>,
-        T: AsRef<[u8]>,
-        F: AsRef<[u8]>,
-    {
-        match self {
-            KeyP::Custom(k) => k.verify_ecdsa(pubkey, message, signature),
-            KeyP::Default(k) => k.verify_ecdsa(pubkey, message, signature),
-        }
     }
 }
 
