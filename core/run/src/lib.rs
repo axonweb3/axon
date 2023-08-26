@@ -12,8 +12,7 @@ use protocol::tokio::{
     self, runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep,
 };
 use protocol::traits::{
-    Consensus, Context, Executor, Gossip, MemPool, Network, NodeInfo, PeerTrust, ReadOnlyStorage,
-    Rpc, Storage, SynchronizationAdapter,
+    Context, Executor, Gossip, MemPool, Network, NodeInfo, PeerTrust, ReadOnlyStorage, Rpc, Storage,
 };
 use protocol::trie::Trie;
 use protocol::types::{
@@ -23,14 +22,6 @@ use protocol::types::{
 use protocol::{lazy::CHAIN_ID, trie::DB as TrieDB, ProtocolResult};
 
 use core_api::{jsonrpc::run_jsonrpc_server, DefaultAPIAdapter};
-use core_consensus::message::{
-    ChokeMessageHandler, ProposalMessageHandler, PullBlockRpcHandler, PullProofRpcHandler,
-    PullTxsRpcHandler, QCMessageHandler, RemoteHeightMessageHandler, VoteMessageHandler,
-    BROADCAST_HEIGHT, END_GOSSIP_AGGREGATED_VOTE, END_GOSSIP_SIGNED_CHOKE,
-    END_GOSSIP_SIGNED_PROPOSAL, END_GOSSIP_SIGNED_VOTE, RPC_RESP_SYNC_PULL_BLOCK,
-    RPC_RESP_SYNC_PULL_PROOF, RPC_RESP_SYNC_PULL_TXS, RPC_SYNC_PULL_BLOCK, RPC_SYNC_PULL_PROOF,
-    RPC_SYNC_PULL_TXS,
-};
 use core_consensus::status::{CurrentStatus, StatusAgent};
 use core_consensus::{
     util::OverlordCrypto, ConsensusWal, DurationConfig, OverlordConsensus,
@@ -42,13 +33,8 @@ use core_executor::{
     AxonExecutor, AxonExecutorApplyAdapter, AxonExecutorReadOnlyAdapter, MPTTrie, RocksTrieDB,
 };
 use core_interoperation::InteroperationImpl;
-use core_mempool::{
-    DefaultMemPoolAdapter, MemPoolImpl, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS,
-    RPC_PULL_TXS, RPC_RESP_PULL_TXS, RPC_RESP_PULL_TXS_SYNC,
-};
-use core_network::{
-    observe_listen_port_occupancy, NetworkConfig, NetworkService, PeerId, PeerIdExt,
-};
+use core_mempool::{DefaultMemPoolAdapter, MemPoolImpl};
+use core_network::{observe_listen_port_occupancy, NetworkConfig, NetworkService};
 use core_storage::ImplStorage;
 
 pub use core_network::{KeyProvider, SecioKeyPair};
@@ -60,7 +46,7 @@ mod key_provider;
 #[cfg(test)]
 mod tests;
 
-use components::extensions::ExtensionConfig as _;
+use components::{extensions::ExtensionConfig as _, network::NetworkServiceExt as _};
 pub use error::MainError;
 use key_provider::KeyP;
 
@@ -333,14 +319,14 @@ impl Axon {
             lock,
         ));
 
-        self.tag_consensus(&network_service, &metadata.verifier_list);
+        network_service.tag_consensus(&metadata.verifier_list)?;
 
         // register endpoints to network service
-        self.register_mempool_endpoint(&mut network_service, &mempool);
-        self.register_consensus_endpoint(&mut network_service, &overlord_consensus);
-        self.register_synchronization_endpoint(&mut network_service, &synchronization);
-        self.register_storage_endpoint(&mut network_service, &storage);
-        self.register_rpc(&mut network_service);
+        network_service.register_mempool_endpoint(&mempool)?;
+        network_service.register_consensus_endpoint(&overlord_consensus)?;
+        network_service.register_synchronization_endpoint(&synchronization)?;
+        network_service.register_storage_endpoint(&storage)?;
+        network_service.register_rpc()?;
 
         let network_handle = network_service.handle();
 
@@ -520,133 +506,6 @@ impl Axon {
             )
             .await,
         )
-    }
-
-    fn tag_consensus<K: KeyProvider>(
-        &self,
-        network_service: &NetworkService<K>,
-        validators: &[ValidatorExtend],
-    ) {
-        let peer_ids = validators
-            .iter()
-            .map(|v| PeerId::from_pubkey_bytes(v.pub_key.as_bytes()).map(PeerIdExt::into_bytes_ext))
-            .collect::<Result<Vec<_>, _>>()
-            .unwrap();
-
-        network_service
-            .handle()
-            .tag_consensus(Context::new(), peer_ids)
-            .unwrap();
-    }
-
-    fn register_mempool_endpoint<K: KeyProvider>(
-        &self,
-        network_service: &mut NetworkService<K>,
-        mempool: &Arc<impl MemPool + 'static>,
-    ) {
-        // register broadcast new transaction
-        network_service
-            .register_endpoint_handler(END_GOSSIP_NEW_TXS, NewTxsHandler::new(Arc::clone(mempool)))
-            .unwrap();
-
-        // register pull txs from other node
-        network_service
-            .register_endpoint_handler(
-                RPC_PULL_TXS,
-                PullTxsHandler::new(Arc::new(network_service.handle()), Arc::clone(mempool)),
-            )
-            .unwrap();
-    }
-
-    fn register_consensus_endpoint<K: KeyProvider>(
-        &self,
-        network_service: &mut NetworkService<K>,
-        overlord_consensus: &Arc<impl Consensus + 'static>,
-    ) {
-        // register consensus
-        network_service
-            .register_endpoint_handler(
-                END_GOSSIP_SIGNED_PROPOSAL,
-                ProposalMessageHandler::new(Arc::clone(overlord_consensus)),
-            )
-            .unwrap();
-        network_service
-            .register_endpoint_handler(
-                END_GOSSIP_AGGREGATED_VOTE,
-                QCMessageHandler::new(Arc::clone(overlord_consensus)),
-            )
-            .unwrap();
-        network_service
-            .register_endpoint_handler(
-                END_GOSSIP_SIGNED_VOTE,
-                VoteMessageHandler::new(Arc::clone(overlord_consensus)),
-            )
-            .unwrap();
-        network_service
-            .register_endpoint_handler(
-                END_GOSSIP_SIGNED_CHOKE,
-                ChokeMessageHandler::new(Arc::clone(overlord_consensus)),
-            )
-            .unwrap();
-    }
-
-    fn register_synchronization_endpoint<K: KeyProvider>(
-        &self,
-        network_service: &mut NetworkService<K>,
-        synchronization: &Arc<OverlordSynchronization<impl SynchronizationAdapter + 'static>>,
-    ) {
-        network_service
-            .register_endpoint_handler(
-                BROADCAST_HEIGHT,
-                RemoteHeightMessageHandler::new(Arc::clone(synchronization)),
-            )
-            .unwrap();
-    }
-
-    fn register_storage_endpoint<K: KeyProvider>(
-        &self,
-        network_service: &mut NetworkService<K>,
-        storage: &Arc<ImplStorage<RocksAdapter>>,
-    ) {
-        // register storage
-        network_service
-            .register_endpoint_handler(
-                RPC_SYNC_PULL_BLOCK,
-                PullBlockRpcHandler::new(Arc::new(network_service.handle()), Arc::clone(storage)),
-            )
-            .unwrap();
-
-        network_service
-            .register_endpoint_handler(
-                RPC_SYNC_PULL_PROOF,
-                PullProofRpcHandler::new(Arc::new(network_service.handle()), Arc::clone(storage)),
-            )
-            .unwrap();
-
-        network_service
-            .register_endpoint_handler(
-                RPC_SYNC_PULL_TXS,
-                PullTxsRpcHandler::new(Arc::new(network_service.handle()), Arc::clone(storage)),
-            )
-            .unwrap();
-    }
-
-    fn register_rpc<K: KeyProvider>(&self, network_service: &mut NetworkService<K>) {
-        network_service
-            .register_rpc_response(RPC_RESP_PULL_TXS)
-            .unwrap();
-        network_service
-            .register_rpc_response(RPC_RESP_PULL_TXS_SYNC)
-            .unwrap();
-        network_service
-            .register_rpc_response(RPC_RESP_SYNC_PULL_BLOCK)
-            .unwrap();
-        network_service
-            .register_rpc_response(RPC_RESP_SYNC_PULL_PROOF)
-            .unwrap();
-        network_service
-            .register_rpc_response(RPC_RESP_SYNC_PULL_TXS)
-            .unwrap();
     }
 
     fn run_overlord_consensus<M, N, S, DB>(
