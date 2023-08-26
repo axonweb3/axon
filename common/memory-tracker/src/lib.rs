@@ -4,7 +4,7 @@ use std::{sync::Arc, time::Duration};
 
 use jemalloc_ctl::{epoch, stats};
 use log::error;
-use rocksdb::ops::{GetColumnFamilys, GetProperty, GetPropertyCF};
+pub use rocksdb::ops::{GetColumnFamilys, GetProperty, GetPropertyCF};
 
 use protocol::tokio;
 

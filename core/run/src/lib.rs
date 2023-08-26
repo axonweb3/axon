@@ -3,15 +3,6 @@
 use std::{collections::HashMap, panic::PanicInfo, path::Path, sync::Arc, time::Duration};
 
 use backtrace::Backtrace;
-#[cfg(all(
-    not(target_env = "msvc"),
-    not(target_os = "macos"),
-    feature = "jemalloc"
-))]
-use {
-    jemalloc_ctl::{Access, AsName},
-    jemallocator::Jemalloc,
-};
 
 use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
 use common_apm::{server::run_prometheus_server, tracing::global_tracer_register};
@@ -67,14 +58,7 @@ use core_storage::ImplStorage;
 
 pub use core_network::{KeyProvider, SecioKeyPair};
 
-#[cfg(all(
-    not(target_env = "msvc"),
-    not(target_os = "macos"),
-    feature = "jemalloc"
-))]
-#[global_allocator]
-pub static JEMALLOC: Jemalloc = Jemalloc;
-
+mod components;
 mod error;
 mod key_provider;
 
@@ -105,12 +89,7 @@ impl Axon {
     }
 
     pub fn run<K: KeyProvider>(mut self, key_provider: Option<K>) -> ProtocolResult<()> {
-        #[cfg(all(
-            not(target_env = "msvc"),
-            not(target_os = "macos"),
-            feature = "jemalloc"
-        ))]
-        Self::set_profile(true);
+        components::profiling::start();
 
         let rt = RuntimeBuilder::new_multi_thread()
             .enable_all()
@@ -256,22 +235,8 @@ impl Axon {
         // Start prometheus http server
         Self::run_prometheus_server(self.config.prometheus.clone());
 
-        #[cfg(all(
-            not(target_env = "msvc"),
-            not(target_os = "macos"),
-            feature = "jemalloc"
-        ))]
-        tokio::spawn(common_memory_tracker::track_db_process(
-            "blockdb",
-            Arc::clone(&inner_db),
-        ));
-
-        #[cfg(all(
-            not(target_env = "msvc"),
-            not(target_os = "macos"),
-            feature = "jemalloc"
-        ))]
-        tokio::spawn(common_memory_tracker::track_current_process());
+        components::profiling::track_db_process("blockdb", &inner_db);
+        components::profiling::track_current_process();
 
         log::info!("node starts");
 
@@ -406,6 +371,8 @@ impl Axon {
         Self::run_overlord_consensus(metadata, validators, current_block, overlord_consensus);
 
         Self::set_ctrl_c_handle().await;
+
+        components::profiling::stop();
 
         Ok(())
     }
@@ -776,16 +743,6 @@ impl Axon {
             _ = ctrl_c_handler => { log::info!("ctrl + c is pressed, quit.") },
             _ = panic_receiver.recv() => { log::info!("child thread panic, quit.") },
         };
-
-        #[cfg(all(
-            not(target_env = "msvc"),
-            not(target_os = "macos"),
-            feature = "jemalloc"
-        ))]
-        {
-            Self::set_profile(false);
-            Self::dump_profile();
-        }
     }
 
     fn panic_log(info: &PanicInfo) {
@@ -808,31 +765,6 @@ impl Axon {
             location.line(),
             backtrace,
         );
-    }
-
-    #[cfg(all(
-        not(target_env = "msvc"),
-        not(target_os = "macos"),
-        feature = "jemalloc"
-    ))]
-    fn set_profile(is_active: bool) {
-        let _ = b"prof.active\0"
-            .name()
-            .write(is_active)
-            .map_err(|e| panic!("Set jemalloc profile error {:?}", e));
-    }
-
-    #[cfg(all(
-        not(target_env = "msvc"),
-        not(target_os = "macos"),
-        feature = "jemalloc"
-    ))]
-    fn dump_profile() {
-        let name = b"profile.out\0".as_ref();
-        b"prof.dump\0"
-            .name()
-            .write(name)
-            .expect("Should succeed to dump profile")
     }
 }
 
