@@ -3,9 +3,8 @@
 use std::{collections::HashMap, path::Path, sync::Arc, time::Duration};
 
 use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
-use common_apm::{server::run_prometheus_server, tracing::global_tracer_register};
 use common_config_parser::types::spec::{ChainSpec, InitialAccount};
-use common_config_parser::types::{Config, ConfigJaeger, ConfigPrometheus, ConfigRocksDB};
+use common_config_parser::types::{Config, ConfigRocksDB};
 use common_crypto::{BlsPrivateKey, BlsPublicKey, Secp256k1, Secp256k1PrivateKey, ToPublicKey};
 
 use protocol::codec::{hex_decode, ProtocolCodec};
@@ -61,6 +60,7 @@ mod key_provider;
 #[cfg(test)]
 mod tests;
 
+use components::extensions::ExtensionConfig as _;
 pub use error::MainError;
 use key_provider::KeyP;
 
@@ -226,10 +226,10 @@ impl Axon {
         inner_db: Arc<RocksDB>,
     ) -> ProtocolResult<()> {
         // Start jaeger
-        Self::run_jaeger(self.config.jaeger.clone());
+        self.config.jaeger.start_if_possible();
 
         // Start prometheus http server
-        Self::run_prometheus_server(self.config.prometheus.clone());
+        self.config.prometheus.start_if_possible();
 
         components::profiling::track_db_process("blockdb", &inner_db);
         components::profiling::track_current_process();
@@ -647,34 +647,6 @@ impl Axon {
         network_service
             .register_rpc_response(RPC_RESP_SYNC_PULL_TXS)
             .unwrap();
-    }
-
-    fn run_jaeger(config: Option<ConfigJaeger>) {
-        if let Some(jaeger_config) = config {
-            let service_name = match jaeger_config.service_name {
-                Some(name) => name,
-                None => "axon".to_string(),
-            };
-
-            let tracing_address = match jaeger_config.tracing_address {
-                Some(address) => address,
-                None => std::net::SocketAddr::from(([0, 0, 0, 0], 6831)),
-            };
-
-            let tracing_batch_size = jaeger_config.tracing_batch_size.unwrap_or(50);
-
-            global_tracer_register(&service_name, tracing_address, tracing_batch_size);
-            log::info!("jaeger started");
-        };
-    }
-
-    fn run_prometheus_server(config: Option<ConfigPrometheus>) {
-        if let Some(prometheus_config) = config {
-            if let Some(prometheus_listening_address) = prometheus_config.listening_address {
-                tokio::spawn(run_prometheus_server(prometheus_listening_address));
-                log::info!("prometheus started");
-            }
-        };
     }
 
     fn run_overlord_consensus<M, N, S, DB>(
