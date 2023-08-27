@@ -39,7 +39,7 @@ This crate uses `log4rs` to init the logger, but you don't need to add dependenc
 
 ## Metrics
 
-Metrics is an independent logger, it `metrics` is `true`, the metrics will be logged to `{log_path}/metrics.log`.
+Metrics is an independent logger, if `metrics` is `true`, the metrics will be logged to `{log_path}/metrics.log`.
 
 ```
 {"time":"2019-12-01T22:02:49.035084+08:00","message":"{\"height\":7943,\"name\":\"save_block\",\"ordered_tx_num\":0}","module_path":"common_logger","file":"common/logger/src/lib.rs","line":83,"level":"TRACE","target":"metrics","thread":"tokio-runtime-worker-3","thread_id":123145445486592,"mdc":{}}
@@ -54,7 +54,7 @@ common_logger::metrics("save_block", common_logger::object! {
 });
 ```
 
-This signature of the function is showed below. The `JsonValue` is a `enum` from [`json crate`](https://docs.rs/json/0.12.0/json/enum.JsonValue.html).
+This signature of the function is shown below. The `JsonValue` is an `enum` from [`json crate`](https://docs.rs/json/0.12.0/json/enum.JsonValue.html).
 
 ```rust
 pub fn metrics(name: &str, mut content: JsonValue)
@@ -62,7 +62,7 @@ pub fn metrics(name: &str, mut content: JsonValue)
 
 ## Structured Event Log With TraceId Included
 
-Structured event log api provide a convenient way to log structured json data. It's signature is provided as below:
+Structured event log api provides a convenient way to log structured json data. Its signature is provided as below:
 
 ```rust
 pub fn log(level: Level, module: &str, event: &str, ctx: &Context, mut msg: JsonValue)
@@ -71,7 +71,7 @@ pub fn log(level: Level, module: &str, event: &str, ctx: &Context, mut msg: Json
 `module` should be your component name, `event` is just event name, better begin with 4 chars with 4 digits
 to identify this event. `Context` is used to extract trace id. `msg` is `JsonValue` which is same as `metrics`.
 
-Useage example:
+Usage example:
 
 ```rust
 common_logger::log(Level::Info, "network", "netw0001", &ctx, common_logger::json!({"music", "beautiful world"; "movie", "fury"}));
