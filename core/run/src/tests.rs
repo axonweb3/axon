@@ -4,7 +4,6 @@ use std::{
     fs, io,
     path::{Path, PathBuf},
     str::FromStr,
-    sync::Arc,
 };
 
 use clap::{builder::TypedValueParser as _, Command};
@@ -19,11 +18,7 @@ use protocol::{
     types::{RichBlock, H256},
 };
 
-use core_db::RocksAdapter;
-use core_executor::{MPTTrie, RocksTrieDB};
-use core_storage::ImplStorage;
-
-use crate::{execute_transactions, insert_accounts};
+use crate::{execute_transactions, init_storage};
 
 const DEV_CONFIG_DIR: &str = "../../devtools/chain";
 
@@ -134,29 +129,20 @@ async fn check_genesis_data<'a>(case: &TestCase<'a>) {
         );
     }
     let path_block = tmp_dir.path().join("block");
-    let rocks_adapter = Arc::new(
-        RocksAdapter::new(path_block, config.rocksdb.clone()).expect("temporary block storage"),
-    );
-    let inner_db = rocks_adapter.inner_db();
-
-    let storage = Arc::new(ImplStorage::new(rocks_adapter, config.rocksdb.cache_size));
-    let trie_db = Arc::new(RocksTrieDB::new_evm(
-        Arc::clone(&inner_db),
+    let (storage, trie_db, inner_db) = init_storage(
+        &config.rocksdb,
+        path_block,
         config.executor.triedb_cache_size,
-    ));
-
-    let state_root = {
-        let mut mpt = MPTTrie::new(Arc::clone(&trie_db));
-        insert_accounts(&mut mpt, &chain_spec.accounts).expect("insert accounts");
-        mpt.commit().expect("mpt commit")
-    };
+    )
+    .await
+    .expect("initialize storage");
 
     let resp = execute_transactions(
         &genesis,
-        state_root,
-        inner_db,
         &storage,
-        config.executor.triedb_cache_size,
+        &trie_db,
+        &inner_db,
+        &chain_spec.accounts,
     )
     .expect("execute transactions");
 
