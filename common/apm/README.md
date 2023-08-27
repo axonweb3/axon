@@ -1,4 +1,4 @@
-# Metrics documentation for promethues
+# Metrics documentation for prometheus
 All current metrics and usage
 ## API
 
