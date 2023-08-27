@@ -329,6 +329,7 @@ dependencies = [
  "ethers-core",
  "evm",
  "faster-hex 0.8.0",
+ "hasher",
  "hex",
  "lazy_static",
  "ophelia",

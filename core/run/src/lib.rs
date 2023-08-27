@@ -1,23 +1,22 @@
 #![allow(clippy::uninlined_format_args, clippy::mutable_key_type)]
 
-use std::{collections::HashMap, path::Path, sync::Arc, time::Duration};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
 use common_config_parser::types::spec::{ChainSpec, InitialAccount};
-use common_config_parser::types::{Config, ConfigRocksDB};
+use common_config_parser::types::Config;
 use common_crypto::{BlsPrivateKey, BlsPublicKey, Secp256k1, Secp256k1PrivateKey, ToPublicKey};
 
-use protocol::codec::{hex_decode, ProtocolCodec};
+use protocol::codec::hex_decode;
 use protocol::tokio::{
     self, runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep,
 };
 use protocol::traits::{
     Context, Executor, Gossip, MemPool, Network, NodeInfo, PeerTrust, ReadOnlyStorage, Rpc, Storage,
 };
-use protocol::trie::Trie;
 use protocol::types::{
-    Account, Block, ExecResp, MerkleRoot, Metadata, Proposal, RichBlock, SignedTransaction,
-    Validator, ValidatorExtend, H256, NIL_DATA, RLP_NULL,
+    Block, ExecResp, MerkleRoot, Metadata, Proposal, RichBlock, SignedTransaction, Validator,
+    ValidatorExtend, H256,
 };
 use protocol::{lazy::CHAIN_ID, trie::DB as TrieDB, ProtocolResult};
 
@@ -46,7 +45,11 @@ mod key_provider;
 #[cfg(test)]
 mod tests;
 
-use components::{extensions::ExtensionConfig as _, network::NetworkServiceExt as _};
+use components::{
+    extensions::ExtensionConfig as _,
+    network::NetworkServiceExt as _,
+    storage::{init_storage, StorageExt as _, TrieExt as _},
+};
 pub use error::MainError;
 use key_provider::KeyP;
 
@@ -83,9 +86,8 @@ impl Axon {
                 &self.config.rocksdb,
                 self.config.data_path_for_rocksdb(),
                 self.config.executor.triedb_cache_size,
-            )
-            .await?;
-            if let Some(genesis) = self.try_load_genesis(&storage).await? {
+            )?;
+            if let Some(genesis) = storage.try_load_genesis().await? {
                 log::info!("The Genesis block has been initialized.");
                 self.apply_genesis_after_checks(&genesis).await?;
             } else {
@@ -97,19 +99,6 @@ impl Axon {
         rt.shutdown_timeout(std::time::Duration::from_secs(1));
 
         Ok(())
-    }
-
-    async fn try_load_genesis(
-        &self,
-        storage: &Arc<ImplStorage<RocksAdapter>>,
-    ) -> ProtocolResult<Option<Block>> {
-        storage.get_block(Context::new(), 0).await.or_else(|e| {
-            if e.to_string().contains("GetNone") {
-                Ok(None)
-            } else {
-                Err(e)
-            }
-        })
     }
 
     async fn create_genesis(
@@ -137,7 +126,7 @@ impl Axon {
 
         log::info!("The genesis block is created {:?}", self.genesis.block);
 
-        save_block(storage, &self.genesis, &resp).await?;
+        storage.save_block(&self.genesis, &resp).await?;
 
         Ok(())
     }
@@ -153,8 +142,7 @@ impl Axon {
             &self.config.rocksdb,
             path_block,
             self.config.executor.triedb_cache_size,
-        )
-        .await?;
+        )?;
 
         let resp = execute_transactions(
             &self.genesis,
@@ -542,39 +530,6 @@ impl Axon {
     }
 }
 
-async fn init_storage<P: AsRef<Path>>(
-    config: &ConfigRocksDB,
-    rocksdb_path: P,
-    triedb_cache_size: usize,
-) -> ProtocolResult<(
-    Arc<ImplStorage<RocksAdapter>>,
-    Arc<RocksTrieDB>,
-    Arc<RocksDB>,
-)> {
-    let adapter = Arc::new(RocksAdapter::new(rocksdb_path, config.clone())?);
-    let inner_db = adapter.inner_db();
-    let trie_db = Arc::new(RocksTrieDB::new_evm(adapter.inner_db(), triedb_cache_size));
-    let storage = Arc::new(ImplStorage::new(adapter, config.cache_size));
-    Ok((storage, trie_db, inner_db))
-}
-
-fn insert_accounts<DB>(mpt: &mut MPTTrie<DB>, accounts: &[InitialAccount]) -> ProtocolResult<()>
-where
-    DB: TrieDB,
-{
-    for account in accounts {
-        let raw_account = Account {
-            nonce:        0u64.into(),
-            balance:      account.balance,
-            storage_root: RLP_NULL,
-            code_hash:    NIL_DATA,
-        }
-        .encode()?;
-        mpt.insert(account.address.as_bytes().to_vec(), raw_account.to_vec())?;
-    }
-    Ok(())
-}
-
 fn execute_transactions<S>(
     rich: &RichBlock,
     storage: &Arc<S>,
@@ -585,11 +540,9 @@ fn execute_transactions<S>(
 where
     S: Storage + 'static,
 {
-    let state_root = {
-        let mut mpt = MPTTrie::new(Arc::clone(trie_db));
-        insert_accounts(&mut mpt, accounts).expect("insert accounts");
-        mpt.commit()?
-    };
+    let state_root = MPTTrie::new(Arc::clone(&trie_db))
+        .insert_accounts(accounts)?
+        .commit()?;
     let executor = AxonExecutor::default();
     let mut backend = AxonExecutorApplyAdapter::from_root(
         state_root,
@@ -612,24 +565,4 @@ where
     });
 
     Ok(resp)
-}
-
-async fn save_block<S>(storage: &Arc<S>, rich: &RichBlock, resp: &ExecResp) -> ProtocolResult<()>
-where
-    S: Storage + 'static,
-{
-    storage
-        .update_latest_proof(Context::new(), rich.block.header.proof.clone())
-        .await?;
-    storage
-        .insert_block(Context::new(), rich.block.clone())
-        .await?;
-    storage
-        .insert_transactions(Context::new(), rich.block.header.number, rich.txs.clone())
-        .await?;
-    let (receipts, _logs) = rich.generate_receipts_and_logs(resp);
-    storage
-        .insert_receipts(Context::new(), rich.block.header.number, receipts)
-        .await?;
-    Ok(())
 }

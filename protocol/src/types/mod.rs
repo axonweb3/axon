@@ -7,7 +7,7 @@ pub use ckb_client::*;
 pub use evm::{backend::*, ExitError, ExitRevert, ExitSucceed};
 pub use executor::{
     logs_bloom, AccessList, AccessListItem, Account, Config, ExecResp, ExecutorContext, ExitReason,
-    TxResp,
+    HasherKeccak, TxResp,
 };
 pub use interoperation::*;
 pub use primitive::*;

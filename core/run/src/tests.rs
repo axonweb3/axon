@@ -134,7 +134,6 @@ async fn check_genesis_data<'a>(case: &TestCase<'a>) {
         path_block,
         config.executor.triedb_cache_size,
     )
-    .await
     .expect("initialize storage");
 
     let resp = execute_transactions(
