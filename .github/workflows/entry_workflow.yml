@@ -1,19 +1,22 @@
-name: From Issue Comments
+name: Trigger tests by `/run-ci` comment
+
 on:
   issue_comment:
     types: [created]
   pull_request:
-     types: [opened, synchronize]
+    types: [opened, synchronize]
 
 jobs:
-  test:
+  run-ci:
     name: from-comments
-    if: github.event.issue.pull_request && startsWith(github.event.comment.body, '/run-ci') && github.repository_owner == 'axonweb3'
+    if: github.event.issue.pull_request && startsWith(github.event.comment.body, '/run-ci')
     runs-on: ubuntu-22.04
     # When the permissions key is used, all unspecified permissions are set to no access, with the exception of the metadata scope, which always gets read access.
     # See https://docs.github.com/en/actions/security-guides/automatic-token-authentication#modifying-the-permissions-for-the-github_token
     permissions:
       contents: read
+      actions: write
+      pull-requests: write
 
     steps:
       - name: Query author repository permissions
@@ -23,19 +26,13 @@ jobs:
           route: GET /repos/${{ github.repository }}/collaborators/${{ github.event.sender.login }}/permission
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Generate axon-bot token
-        id: generate_axon_bot_token
-        uses: wow-actions/use-app-token@v2
-        with:
-          app_id: ${{ secrets.AXON_BOT_APP_ID }}
-          private_key: ${{ secrets.AXON_BOT_PRIVATE_KEY }}
-      - uses: actions/checkout@v3
-      - name: Dispatch ci if user does have correct permission
+
+      # The `actions:write` permission is required in this step.
+      - name: Dispatch CIs if the user does have correct permission
         if: contains('admin write', fromJson(steps.user_permission.outputs.data).permission)
         id: dispatch
         uses: actions/github-script@v6
         with:
-          github-token: ${{ steps.generate_axon_bot_token.outputs.BOT_TOKEN }}
           script: |
             const dispatch = {
               comment_body: `${{ github.event.comment.body }}`,
@@ -59,38 +56,6 @@ jobs:
             let check_list=`
             \### CI test list:
             `;
-            // check Code Format exist or not
-            const fmt_match = pr.data.body.includes("[x] Code Format");
-            if (fmt_match) {
-              const resp = await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: "fmt.yml",
-              ref: "main",
-              inputs: {
-                dispatch: jsonDispatch,
-              }
-              });
-              core.info(`${JSON.stringify(resp, null, 2)}`);
-              check_list=`${check_list}\n - Code Format`;
-              }
-
-            // check Cargo Clippy exist or not
-            const clippy_match = pr.data.body.includes("[x] Cargo Clippy");
-            if (clippy_match) {
-             const resp =  await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: "clippy.yml",
-              ref: "main",
-              inputs: {
-                dispatch: jsonDispatch,
-              }
-              });
-              core.info(`${JSON.stringify(resp, null, 2)}`);
-              check_list=`${check_list}\n - Cargo Clippy`;
-              }
-
             // check Chaos CI exist or not
             const chaos_match = pr.data.body.includes("[x] Chaos CI");
             if (chaos_match) {
@@ -196,21 +161,6 @@ jobs:
               core.info(`${JSON.stringify(resp, null, 2)}`);
               check_list=`${check_list}\n - OCT 16-19`;
               }
-            // check Unit Tests exist or not
-            const unit_match = pr.data.body.includes("[x] Unit Tests");
-            if (unit_match) {
-             const resp =  await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: "unit_test.yml",
-              ref: "main",
-              inputs: {
-                dispatch: jsonDispatch,
-              }
-              });
-              core.info(`${JSON.stringify(resp, null, 2)}`);
-              check_list=`${check_list}\n - Unit Tests`;
-              }
             // check v3 Core Tests exist or not
             const v3_match = pr.data.body.includes("[x] v3 Core Tests");
             if (v3_match) {
@@ -242,17 +192,20 @@ jobs:
               check_list=`${check_list}\n - Web3 Compatible Tests`;
               };
               return check_list
+
       - name: Escape check list
         id: escape_multiple_lines_test_inputs
         run: |
           echo ${{ steps.dispatch.outputs.result}}
           inputs=${{ steps.dispatch.outputs.result}}
           echo "result=$inputs" >> $GITHUB_OUTPUT
+
+      # https://docs.github.com/en/rest/issues/comments?apiVersion=2022-11-28#create-an-issue-comment
+      # The `pull-requests: write` permission is required in the step.
       - name: Post a coment about component information to PR
         id: post_workflow_run_comment
         uses: actions/github-script@v6
         with:
-          github-token: ${{ steps.generate_axon_bot_token.outputs.BOT_TOKEN }}
           script: |
             console.log(`${{ steps.escape_multiple_lines_test_inputs.outputs.result }}`);
             const dispatch = {
@@ -273,7 +226,7 @@ jobs:
             integrationTestInfo = `${integrationTestInfo}`;
             integrationTestInfo = `${integrationTestInfo}\n ${{ steps.escape_multiple_lines_test_inputs.outputs.result }}\n ### Please check ci test results later.`;
             console.log(integrationTestInfo);
-                        const comment = await github.rest.issues.createComment({
+            const comment = await github.rest.issues.createComment({
               issue_number: dispatch.issue.number,
               owner: dispatch.repo.owner,
               repo: dispatch.repo.repo,
