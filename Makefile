@@ -1,4 +1,4 @@
-ERBOSE := $(if ${CI},--verbose,)
+VERBOSE := $(if ${CI},--verbose,)
 
 COMMIT := $(shell git rev-parse --short HEAD)
 
