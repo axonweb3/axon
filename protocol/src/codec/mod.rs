@@ -4,15 +4,13 @@ pub mod executor;
 pub mod receipt;
 pub mod transaction;
 
-use std::str::FromStr;
-
 pub use transaction::truncate_slice;
 
 use ethers_core::utils::parse_checksummed;
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 use serde::{Deserialize as _, Deserializer, Serializer};
 
-use crate::types::{Address, Bytes, DBBytes, Hex, Key256Bits, TypesError, H160, HEX_PREFIX, U256};
+use crate::types::{Address, Bytes, DBBytes, Hex, Key256Bits, TypesError, H160, U256};
 use crate::ProtocolResult;
 
 static CHARS: &[u8] = b"0123456789abcdef";
@@ -59,15 +57,14 @@ impl Decodable for Address {
 
 impl Encodable for Hex {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(1).append(&self.as_string_trim0x());
+        s.begin_list(1).append(&self.as_ref());
     }
 }
 
 impl Decodable for Hex {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
-        let s: String = r.val_at(0)?;
-        let s = HEX_PREFIX.to_string() + &s;
-        Hex::from_str(s.as_str()).map_err(|_| DecoderError::Custom("hex check"))
+        let b: Vec<u8> = r.val_at(0)?;
+        Ok(Hex::encode(b))
     }
 }
 
@@ -212,7 +209,9 @@ mod tests {
     #[test]
     fn test_hex_rlp() {
         let origin = Hex::random();
-        let raw = rlp::encode(&origin);
-        assert_eq!(rlp::decode::<Hex>(&raw).unwrap(), origin)
+        let raw = origin.rlp_bytes();
+        let decode = <Hex as Decodable>::decode(&Rlp::new(raw.as_ref())).unwrap();
+
+        assert_eq!(origin, decode);
     }
 }
