@@ -8,12 +8,12 @@ This PR ...
 
 No Breaking Change
 
+**PR relation**:
+- Ref #
+
 <!--
 **Special notes for your reviewer**:
 NIL
-
-**PR relation**:
-- Ref #
 
 **Which issue(s) this PR fixes**:
 You could link a pull request to an issue by using a supported keyword in the pull request's description or in a commit message.
@@ -32,7 +32,6 @@ You could link a pull request to an issue by using a supported keyword in the pu
 
 **CI Switch**
 
-- [ ] Coverage Test
 - [ ] E2E Tests
 - [ ] Code Format
 - [ ] Web3 Compatible Tests
@@ -58,5 +57,6 @@ You could link a pull request to an issue by using a supported keyword in the pu
 <!--
 #### Deprecated CIs
 - [ ] Chaos CI
+- [ ] Coverage Test
 -->
 </details>
