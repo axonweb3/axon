@@ -34,10 +34,7 @@ use protocol::types::{
     Account, Block, ExecResp, MerkleRoot, Metadata, Proposal, RichBlock, SignedTransaction,
     Validator, ValidatorExtend, H256, NIL_DATA, RLP_NULL,
 };
-use protocol::{
-    async_trait, lazy::CHAIN_ID, trie::DB as TrieDB, Display, From, ProtocolError,
-    ProtocolErrorKind, ProtocolResult,
-};
+use protocol::{async_trait, lazy::CHAIN_ID, trie::DB as TrieDB, ProtocolResult};
 
 use core_api::{jsonrpc::run_jsonrpc_server, DefaultAPIAdapter};
 use core_consensus::message::{
@@ -78,6 +75,13 @@ pub use core_network::{KeyProvider, SecioKeyPair};
 #[global_allocator]
 pub static JEMALLOC: Jemalloc = Jemalloc;
 
+mod error;
+
+#[cfg(test)]
+mod tests;
+
+pub use error::MainError;
+
 #[derive(Debug)]
 pub struct Axon {
     version:    String,
@@ -86,9 +90,6 @@ pub struct Axon {
     genesis:    RichBlock,
     state_root: MerkleRoot,
 }
-
-#[cfg(test)]
-mod tests;
 
 impl Axon {
     pub fn new(version: String, config: Config, spec: ChainSpec, genesis: RichBlock) -> Axon {
@@ -830,38 +831,6 @@ impl Axon {
             .name()
             .write(name)
             .expect("Should succeed to dump profile")
-    }
-}
-
-#[derive(Debug, Display, From)]
-pub enum MainError {
-    #[display(fmt = "The axon configuration read failed {:?}", _0)]
-    ConfigParse(common_config_parser::ParseError),
-
-    #[display(fmt = "{:?}", _0)]
-    Io(std::io::Error),
-
-    #[display(fmt = "Toml fails to parse genesis {:?}", _0)]
-    GenesisTomlDe(toml::de::Error),
-
-    #[display(fmt = "crypto error {:?}", _0)]
-    Crypto(common_crypto::Error),
-
-    #[display(fmt = "{:?}", _0)]
-    Utf8(std::string::FromUtf8Error),
-
-    #[display(fmt = "{:?}", _0)]
-    JSONParse(serde_json::error::Error),
-
-    #[display(fmt = "other error {:?}", _0)]
-    Other(String),
-}
-
-impl std::error::Error for MainError {}
-
-impl From<MainError> for ProtocolError {
-    fn from(error: MainError) -> ProtocolError {
-        ProtocolError::new(ProtocolErrorKind::Main, Box::new(error))
     }
 }
 
