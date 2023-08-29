@@ -12,7 +12,7 @@ use ethers_core::utils::parse_checksummed;
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 use serde::{Deserialize as _, Deserializer, Serializer};
 
-use crate::types::{Address, Bytes, DBBytes, Hex, Key256Bits, TypesError, H160, U256, HEX_PREFIX};
+use crate::types::{Address, Bytes, DBBytes, Hex, Key256Bits, TypesError, H160, HEX_PREFIX, U256};
 use crate::ProtocolResult;
 
 static CHARS: &[u8] = b"0123456789abcdef";
