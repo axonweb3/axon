@@ -24,7 +24,7 @@ pub type Hash = H256;
 pub type MerkleRoot = Hash;
 
 const ADDRESS_LEN: usize = 20;
-const HEX_PREFIX: &str = "0x";
+pub(crate) const HEX_PREFIX: &str = "0x";
 
 pub const NIL_DATA: H256 = H256([
     0xc5, 0xd2, 0x46, 0x01, 0x86, 0xf7, 0x23, 0x3c, 0x92, 0x7e, 0x7d, 0xb2, 0xdc, 0xc7, 0x03, 0xc0,
@@ -489,7 +489,7 @@ mod tests {
         let res = Hex::from_str("0x").unwrap();
         assert!(res.is_empty());
 
-        assert!(Hex::from_str("123456").is_ok());
+        assert!(Hex::from_str("123456").is_err());
         assert!(Hex::from_str("0x123f").is_ok());
     }
 

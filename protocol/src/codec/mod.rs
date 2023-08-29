@@ -12,7 +12,7 @@ use ethers_core::utils::parse_checksummed;
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 use serde::{Deserialize as _, Deserializer, Serializer};
 
-use crate::types::{Address, Bytes, DBBytes, Hex, Key256Bits, TypesError, H160, U256};
+use crate::types::{Address, Bytes, DBBytes, Hex, Key256Bits, TypesError, H160, U256, HEX_PREFIX};
 use crate::ProtocolResult;
 
 static CHARS: &[u8] = b"0123456789abcdef";
@@ -59,13 +59,14 @@ impl Decodable for Address {
 
 impl Encodable for Hex {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(1).append(&self.as_string());
+        s.begin_list(1).append(&self.as_string_trim0x());
     }
 }
 
 impl Decodable for Hex {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         let s: String = r.val_at(0)?;
+        let s = HEX_PREFIX.to_string() + &s;
         Hex::from_str(s.as_str()).map_err(|_| DecoderError::Custom("hex check"))
     }
 }
