@@ -113,6 +113,7 @@ impl EvmDebugger {
             gas_price:              1u64.into(),
             block_gas_limit:        4294967295000u64.into(),
             block_base_fee_per_gas: 1337u64.into(),
+            extra_data:             Default::default(),
         };
 
         AxonExecutorApplyAdapter::from_root(

@@ -12,7 +12,7 @@ use jsonrpsee::{core::Error, proc_macros::rpc};
 use common_config_parser::types::Config;
 use protocol::traits::APIAdapter;
 use protocol::types::{
-    Block, CkbRelatedInfo, Hash, Hex, Metadata, Proof, Proposal, H160, H256, U256,
+    Block, CkbRelatedInfo, HardforkInfo, Hash, Hex, Metadata, Proof, Proposal, H160, H256, U256,
 };
 use protocol::ProtocolResult;
 
@@ -225,6 +225,9 @@ pub trait AxonRpc {
 
     #[method(name = "axon_getCkbRelatedInfo")]
     async fn get_ckb_related_info(&self) -> RpcResult<CkbRelatedInfo>;
+
+    #[method(name = "axon_getHardforkInfo")]
+    async fn hardfork_info(&self) -> RpcResult<HardforkInfo>;
 }
 
 #[rpc(server)]

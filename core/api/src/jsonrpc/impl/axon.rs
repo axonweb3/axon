@@ -4,7 +4,7 @@ use jsonrpsee::core::Error;
 
 use protocol::async_trait;
 use protocol::traits::{APIAdapter, Context};
-use protocol::types::{Block, CkbRelatedInfo, Metadata, Proof, Proposal, U256};
+use protocol::types::{Block, CkbRelatedInfo, HardforkInfo, Metadata, Proof, Proposal, U256};
 
 use crate::jsonrpc::web3_types::BlockId;
 use crate::jsonrpc::{AxonRpcServer, RpcResult};
@@ -94,6 +94,15 @@ impl<Adapter: APIAdapter + 'static> AxonRpcServer for AxonRpcImpl<Adapter> {
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
+        Ok(ret)
+    }
+
+    async fn hardfork_info(&self) -> RpcResult<HardforkInfo> {
+        let ret = self
+            .adapter
+            .hardfork_info(Context::new())
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
         Ok(ret)
     }
 }

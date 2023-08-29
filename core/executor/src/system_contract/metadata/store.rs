@@ -2,11 +2,11 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use protocol::trie::Trie as _;
-use protocol::types::{CkbRelatedInfo, Metadata, H160, H256};
+use protocol::types::{CkbRelatedInfo, HardforkInfo, HardforkInfoInner, Metadata, H160, H256};
 use protocol::{codec::ProtocolCodec, ProtocolResult};
 
 use crate::system_contract::metadata::{
-    segment::EpochSegment, CKB_RELATED_INFO_KEY, EPOCH_SEGMENT_KEY,
+    segment::EpochSegment, CKB_RELATED_INFO_KEY, EPOCH_SEGMENT_KEY, HARDFORK_KEY,
 };
 use crate::system_contract::{error::SystemScriptError, METADATA_DB};
 use crate::{adapter::RocksTrieDB, MPTTrie, CURRENT_METADATA_ROOT};
@@ -167,5 +167,58 @@ impl MetadataStore {
 
     fn get_epoch_by_block_number(&self, block_number: u64) -> ProtocolResult<u64> {
         self.get_epoch_segment()?.get_epoch_number(block_number)
+    }
+
+    pub fn set_hardfork_info(&mut self, block_number: u64, info: H256) -> ProtocolResult<()> {
+        let current_info = {
+            match self.trie.get(HARDFORK_KEY.as_bytes())? {
+                Some(data) => {
+                    let mut hardfork_info = HardforkInfo::decode(data)?;
+
+                    hardfork_info.push(HardforkInfoInner {
+                        block_number,
+                        flags: info,
+                    });
+                    hardfork_info
+                }
+                None => HardforkInfo {
+                    inner: vec![HardforkInfoInner {
+                        block_number,
+                        flags: info,
+                    }],
+                },
+            }
+        };
+        self.trie.insert(
+            HARDFORK_KEY.as_bytes().to_vec(),
+            current_info.encode()?.to_vec(),
+        )?;
+        let new_root = self.trie.commit()?;
+        CURRENT_METADATA_ROOT.with(|r| *r.borrow_mut() = new_root);
+        Ok(())
+    }
+
+    pub fn hardfork_info(&self, target_number: u64) -> ProtocolResult<H256> {
+        match self.trie.get(HARDFORK_KEY.as_bytes())? {
+            Some(data) => {
+                let hardfork_info = HardforkInfo::decode(data)?;
+
+                for k in hardfork_info.inner.iter().rev() {
+                    if k.block_number > target_number {
+                        continue;
+                    }
+                    return Ok(k.flags);
+                }
+                Ok(H256::zero())
+            }
+            None => Ok(H256::zero()),
+        }
+    }
+
+    pub fn hardfork_infos(&self) -> ProtocolResult<HardforkInfo> {
+        match self.trie.get(HARDFORK_KEY.as_bytes())? {
+            Some(data) => HardforkInfo::decode(data),
+            None => Ok(HardforkInfo::default()),
+        }
     }
 }
