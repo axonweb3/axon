@@ -4,7 +4,10 @@ use clap::builder::{StringValueParser, TypedValueParser, ValueParserFactory};
 use serde::Deserialize;
 use tentacle_multiaddr::MultiAddr;
 
-use protocol::types::{Hex, H160};
+use protocol::{
+    codec::deserialize_256bits_key,
+    types::{Key256Bits, H160},
+};
 
 use crate::parse_file;
 
@@ -20,7 +23,8 @@ pub const DEFAULT_CACHE_SIZE: usize = 100;
 #[derive(Clone, Debug, Deserialize)]
 pub struct Config {
     // crypto
-    pub privkey:   Privkey,
+    #[serde(deserialize_with = "deserialize_256bits_key")]
+    pub privkey:   Key256Bits,
     // db config
     pub data_path: PathBuf,
 
@@ -257,77 +261,4 @@ fn default_max_gas_cap() -> u64 {
 
 fn default_log_filter_max_block_range() -> u64 {
     10_000
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Privkey(Hex);
-
-impl Privkey {
-    pub fn as_string_trim0x(&self) -> String {
-        self.0.as_string_trim0x()
-    }
-
-    pub fn inner(self) -> Hex {
-        self.0
-    }
-}
-
-impl serde::Serialize for Privkey {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::ser::Serializer,
-    {
-        self.0.serialize(serializer)
-    }
-}
-
-impl<'de> serde::Deserialize<'de> for Privkey {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::de::Deserializer<'de>,
-    {
-        struct PVisitor;
-
-        impl<'de> serde::de::Visitor<'de> for PVisitor {
-            type Value = Privkey;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("Expect a hex string")
-            }
-
-            fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                match Hex::from_string(v.clone()) {
-                    Ok(v) => Ok(Privkey(v)),
-                    Err(_) => {
-                        let key = std::env::var(v)
-                            .map_err(|e| serde::de::Error::custom(e.to_string()))?;
-                        Hex::from_string(key)
-                            .map(Privkey)
-                            .map_err(|e| serde::de::Error::custom(e.to_string()))
-                    }
-                }
-            }
-
-            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                match Hex::from_string(v.to_string()) {
-                    Ok(v) => Ok(Privkey(v)),
-                    Err(_) => {
-                        let key = std::env::var(v)
-                            .map_err(|e| serde::de::Error::custom(e.to_string()))?;
-                        Hex::from_string(key)
-                            .map(Privkey)
-                            .map_err(|e| serde::de::Error::custom(e.to_string()))
-                    }
-                }
-            }
-        }
-
-        deserializer.deserialize_string(PVisitor)
-    }
 }

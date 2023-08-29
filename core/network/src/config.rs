@@ -10,7 +10,7 @@ use tentacle::{
 };
 
 use common_config_parser::types::Config;
-use protocol::{codec::hex_decode, ProtocolResult};
+use protocol::{ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 use crate::error::NetworkError;
 
@@ -114,7 +114,7 @@ impl NetworkConfig {
                     .collect(),
             )
             .listen_addr(config.network.listening_address.clone())
-            .secio_keypair(&config.privkey.as_string_trim0x())
+            .secio_keypair(config.privkey.as_ref())?
             .chain_id(chain_id)
             .max_connections(config.network.max_connected_peers)
     }
@@ -163,14 +163,11 @@ impl NetworkConfig {
         self
     }
 
-    pub fn secio_keypair(mut self, sk_hex: &str) -> Self {
-        let skp = hex_decode(sk_hex)
-            .map(SecioKeyPair::secp256k1_raw_key)
-            .unwrap()
-            .unwrap();
+    pub fn secio_keypair(mut self, sk_hex: &[u8]) -> ProtocolResult<Self> {
+        let skp = SecioKeyPair::secp256k1_raw_key(sk_hex)
+            .map_err(|err| ProtocolError::new(ProtocolErrorKind::Network, Box::new(err)))?;
         self.secio_keypair = skp;
-
-        self
+        Ok(self)
     }
 
     pub fn ping_interval(mut self, interval: Option<u64>) -> Self {
