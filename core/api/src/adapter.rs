@@ -3,6 +3,7 @@ use std::sync::Arc;
 use protocol::traits::{
     APIAdapter, Context, Executor, ExecutorReadOnlyAdapter, MemPool, Network, ReadOnlyStorage,
 };
+use protocol::trie::Trie as _;
 use protocol::types::{
     Account, BigEndianHash, Block, BlockNumber, Bytes, CkbRelatedInfo, ExecutorContext, Hash,
     Header, Metadata, Proposal, Receipt, SignedTransaction, TxResp, H160, H256,
@@ -231,6 +232,7 @@ where
         let hash: Hash = BigEndianHash::from_uint(&position);
         storage_mpt_tree
             .get(hash.as_bytes())?
+            .map(Into::into)
             .ok_or_else(|| APIError::Adapter("Can't find this position".to_string()).into())
     }
 

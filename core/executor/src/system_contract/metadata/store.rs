@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+use protocol::trie::Trie as _;
 use protocol::types::{CkbRelatedInfo, Metadata, H160, H256};
 use protocol::{codec::ProtocolCodec, ProtocolResult};
 
@@ -29,8 +30,8 @@ impl MetadataStore {
         let trie = if root == H256::default() {
             let mut m = MPTTrie::new(Arc::clone(&trie_db));
             m.insert(
-                EPOCH_SEGMENT_KEY.as_bytes(),
-                &EpochSegment::new().as_bytes(),
+                EPOCH_SEGMENT_KEY.as_bytes().to_vec(),
+                EpochSegment::new().as_bytes(),
             )?;
             m
         } else {
@@ -45,7 +46,11 @@ impl MetadataStore {
 
     pub fn set_ckb_related_info(&mut self, info: &CkbRelatedInfo) -> ProtocolResult<()> {
         self.trie
-            .insert(CKB_RELATED_INFO_KEY.as_bytes(), &info.encode()?)
+            .insert(
+                CKB_RELATED_INFO_KEY.as_bytes().to_vec(),
+                info.encode()?.to_vec(),
+            )
+            .map_err(Into::into)
     }
 
     pub fn append_metadata(&mut self, metadata: &Metadata) -> ProtocolResult<()> {
@@ -81,10 +86,14 @@ impl MetadataStore {
 
         epoch_segment.append_endpoint(metadata.version.end)?;
 
-        self.trie
-            .insert(EPOCH_SEGMENT_KEY.as_bytes(), &epoch_segment.as_bytes())?;
-        self.trie
-            .insert(&metadata.epoch.to_be_bytes(), &metadata.encode()?)?;
+        self.trie.insert(
+            EPOCH_SEGMENT_KEY.as_bytes().to_vec(),
+            epoch_segment.as_bytes(),
+        )?;
+        self.trie.insert(
+            metadata.epoch.to_be_bytes().to_vec(),
+            metadata.encode()?.to_vec(),
+        )?;
         let new_root = self.trie.commit()?;
         CURRENT_METADATA_ROOT.with(|r| *r.borrow_mut() = new_root);
 
@@ -105,8 +114,10 @@ impl MetadataStore {
             counter.increase();
         }
 
-        self.trie
-            .insert(&metadata.epoch.to_be_bytes(), &metadata.encode()?)?;
+        self.trie.insert(
+            metadata.epoch.to_be_bytes().to_vec(),
+            metadata.encode()?.to_vec(),
+        )?;
         let new_root = self.trie.commit()?;
         CURRENT_METADATA_ROOT.with(|r| *r.borrow_mut() = new_root);
 
@@ -145,8 +156,10 @@ impl MetadataStore {
         let mut metadata = self.get_metadata(latest_epoch)?;
 
         metadata.consensus_config = config.into();
-        self.trie
-            .insert(&metadata.epoch.to_be_bytes(), &metadata.encode()?)?;
+        self.trie.insert(
+            metadata.epoch.to_be_bytes().to_vec(),
+            metadata.encode()?.to_vec(),
+        )?;
         let new_root = self.trie.commit()?;
         CURRENT_METADATA_ROOT.with(|r| *r.borrow_mut() = new_root);
         Ok(())

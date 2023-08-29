@@ -7,6 +7,7 @@ use revm::{AccountInfo, Bytecode, Database, DatabaseCommit};
 use common_merkle::TrieMerkle;
 use core_executor::{code_address, MPTTrie};
 use protocol::traits::{Context, Storage};
+use protocol::trie::Trie as _;
 use protocol::types::{
     Account, Address, Bytes, ExecResp, ExecutorContext, Hasher, SignedTransaction,
     TransactionAction, TxResp, H160, H256, NIL_DATA, RLP_NULL, U256,
@@ -140,8 +141,10 @@ where
                 MPTTrie::from_root(storage_root, Arc::clone(&self.db)).unwrap()
             };
             change.storage.into_iter().for_each(|(k, v)| {
-                let _ =
-                    storage_trie.insert(u256_to_u8_slice(&k), u256_to_u8_slice(&v.present_value()));
+                let _ = storage_trie.insert(
+                    u256_to_u8_slice(&k).to_vec(),
+                    u256_to_u8_slice(&v.present_value()).to_vec(),
+                );
             });
 
             let code_hash = if let Some(code) = change.info.code {
@@ -171,7 +174,7 @@ where
 
             let account_bytes = new_account.encode().unwrap();
             self.trie
-                .insert(addr.as_bytes(), account_bytes.as_ref())
+                .insert(addr.as_bytes().to_vec(), account_bytes.to_vec())
                 .unwrap();
         });
     }
@@ -187,8 +190,8 @@ where
         let distribute_account = account;
 
         mpt.insert(
-            addr.as_slice(),
-            distribute_account.encode().unwrap().as_ref(),
+            addr.as_slice().to_vec(),
+            distribute_account.encode().unwrap().to_vec(),
         )
         .unwrap();
 

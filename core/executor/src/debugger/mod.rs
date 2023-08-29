@@ -12,6 +12,7 @@ use common_config_parser::parse_file;
 use common_crypto::{PrivateKey, Secp256k1RecoverablePrivateKey, Signature};
 use protocol::codec::{hex_decode, ProtocolCodec};
 use protocol::traits::{Backend, Executor};
+use protocol::trie::Trie as _;
 use protocol::types::{
     Account, Eip1559Transaction, ExecResp, ExecutorContext, Hash, Hasher, RichBlock,
     SignedTransaction, TxResp, UnsignedTransaction, UnverifiedTransaction, H160, H256,
@@ -59,8 +60,8 @@ impl EvmDebugger {
             };
 
             mpt.insert(
-                distribute_address.as_bytes(),
-                distribute_account.encode().unwrap().as_ref(),
+                distribute_address.as_bytes().to_vec(),
+                distribute_account.encode().unwrap().to_vec(),
             )
             .unwrap();
         }

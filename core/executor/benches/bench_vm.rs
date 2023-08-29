@@ -9,7 +9,7 @@ use core_executor::{AxonExecutor, AxonExecutorApplyAdapter, MPTTrie};
 use protocol::{
     codec::ProtocolCodec,
     traits::{Executor, Storage},
-    trie,
+    trie::{self, Trie as _},
     types::{Account, Address, ExecutorContext},
 };
 
@@ -59,8 +59,11 @@ where
         let db = Arc::new(db);
         let mut mpt = MPTTrie::new(Arc::clone(&db));
 
-        mpt.insert(addr.as_slice(), init_account.encode().unwrap().as_ref())
-            .unwrap();
+        mpt.insert(
+            addr.as_slice().to_vec(),
+            init_account.encode().unwrap().to_vec(),
+        )
+        .unwrap();
 
         let state_root = mpt.commit().unwrap();
         AxonExecutorApplyAdapter::from_root(state_root, db, Arc::new(storage), exec_ctx).unwrap()

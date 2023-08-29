@@ -9,6 +9,7 @@ use common_crypto::{
 };
 use protocol::codec::{hex_decode, ProtocolCodec};
 use protocol::traits::Executor;
+use protocol::trie::Trie as _;
 use protocol::types::{
     public_to_address, Account, Address, Eip1559Transaction, ExecutorContext, Hash, Public,
     SignedTransaction, TransactionAction, UnsignedTransaction, UnverifiedTransaction, NIL_DATA,
@@ -52,8 +53,8 @@ impl BenchAdapter {
         };
 
         mpt.insert(
-            DISTRIBUTE_ADDRESS.as_slice(),
-            distribute_account.encode().unwrap().as_ref(),
+            DISTRIBUTE_ADDRESS.as_slice().to_vec(),
+            distribute_account.encode().unwrap().to_vec(),
         )
         .unwrap();
 

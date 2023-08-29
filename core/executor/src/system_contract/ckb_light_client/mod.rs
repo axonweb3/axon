@@ -8,6 +8,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use ethers::abi::AbiDecode;
 
 use protocol::traits::{ApplyBackend, ExecutorAdapter};
+use protocol::trie::Trie as _;
 use protocol::types::{SignedTransaction, TxResp, H160, H256};
 use protocol::ProtocolResult;
 
