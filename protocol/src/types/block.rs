@@ -272,7 +272,10 @@ mod tests {
         Block, BlockVersion, ConsensusConfig, Header, Hex, Metadata, MetadataVersion, ProposeCount,
         RichBlock, ValidatorExtend, H160,
     };
-    use std::time::{SystemTime, UNIX_EPOCH};
+    use std::{
+        str::FromStr,
+        time::{SystemTime, UNIX_EPOCH},
+    };
 
     pub fn time_now() -> u64 {
         SystemTime::now()
@@ -328,8 +331,8 @@ mod tests {
             version: MetadataVersion::new(0, 1000000000),
             epoch: 0,
             verifier_list: vec![ValidatorExtend {
-                bls_pub_key: Hex::from_string("0x04102947214862a503c73904deb5818298a186d68c7907bb609583192a7de6331493835e5b8281f4d9ee705537c0e765580e06f86ddce5867812fceb42eecefd209f0eddd0389d6b7b0100f00fb119ef9ab23826c6ea09aadcc76fa6cea6a32724".to_string()).unwrap(),
-                pub_key: Hex::from_string("0x02ef0cb0d7bc6c18b4bea1f5908d9106522b35ab3c399369605d4242525bda7e60".to_string()).unwrap(),
+                bls_pub_key: Hex::from_str("0x04102947214862a503c73904deb5818298a186d68c7907bb609583192a7de6331493835e5b8281f4d9ee705537c0e765580e06f86ddce5867812fceb42eecefd209f0eddd0389d6b7b0100f00fb119ef9ab23826c6ea09aadcc76fa6cea6a32724").unwrap(),
+                pub_key: Hex::from_str("0x02ef0cb0d7bc6c18b4bea1f5908d9106522b35ab3c399369605d4242525bda7e60").unwrap(),
                 address: H160::default(),
                 propose_weight: 1,
                 vote_weight: 1,

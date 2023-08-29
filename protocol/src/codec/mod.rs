@@ -4,13 +4,15 @@ pub mod executor;
 pub mod receipt;
 pub mod transaction;
 
+use std::str::FromStr;
+
 pub use transaction::truncate_slice;
 
 use ethers_core::utils::parse_checksummed;
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 use serde::{Deserialize as _, Deserializer, Serializer};
 
-use crate::types::{Address, Bytes, DBBytes, Hex, Key256Bits, TypesError, H160, U256};
+use crate::types::{Address, Bytes, DBBytes, Hex, Key256Bits, TypesError, H160, U256, HEX_PREFIX};
 use crate::ProtocolResult;
 
 static CHARS: &[u8] = b"0123456789abcdef";
@@ -63,7 +65,9 @@ impl Encodable for Hex {
 
 impl Decodable for Hex {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
-        Hex::from_string(r.val_at(0)?).map_err(|_| DecoderError::Custom("hex check"))
+        let s: String = r.val_at(0)?;
+        let s = HEX_PREFIX.to_string() + &s;
+        Hex::from_str(s.as_str()).map_err(|_| DecoderError::Custom("hex check"))
     }
 }
 
@@ -188,7 +192,7 @@ mod tests {
     impl Hex {
         fn random() -> Self {
             let data = (0..128).map(|_| random()).collect::<Vec<u8>>();
-            Self::from_string(hex_encode(data)).unwrap()
+            Hex::encode(data)
         }
     }
 

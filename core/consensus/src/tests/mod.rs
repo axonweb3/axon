@@ -90,10 +90,7 @@ fn _get_random_bytes(len: usize) -> Bytes {
 }
 
 fn _mock_pub_key() -> Hex {
-    Hex::from_string(
-        "0x026c184a9016f6f71a234c86b141621f38b68c78602ab06768db4d83682c616004".to_owned(),
-    )
-    .unwrap()
+    Hex::from_str("0x026c184a9016f6f71a234c86b141621f38b68c78602ab06768db4d83682c616004").unwrap()
 }
 
 fn _mock_validators(len: usize) -> Vec<Validator> {

@@ -1,30 +1,30 @@
-use std::cmp::Ordering;
-use std::{fmt, str::FromStr};
-
 pub use ethereum_types::{
     BigEndianHash, Bloom, Public, Secret, Signature, H128, H160, H256, H512, H520, H64, U128, U256,
     U512, U64,
 };
 use zeroize::Zeroizing;
 
+use std::cmp::Ordering;
+use std::{fmt, str::FromStr};
+
+use faster_hex::withpfx_lowercase;
 use ophelia::{PublicKey, UncompressedPublicKey};
 use overlord::DurationConfig;
 use rlp_derive::{RlpDecodable, RlpEncodable};
-use serde::{de, Deserialize, Serialize};
+use serde::{de, ser, Deserialize, Serialize};
 
 use common_crypto::Secp256k1PublicKey;
 use common_hasher::keccak256;
 
-use crate::codec::{hex_decode, hex_encode, serialize_uint};
-use crate::types::{BlockNumber, Bytes, TypesError};
+use crate::codec::{deserialize_address, hex_decode, hex_encode, serialize_uint};
+use crate::types::{BlockNumber, Bytes, BytesMut, TypesError};
 use crate::{ProtocolError, ProtocolResult};
 
 pub type Hash = H256;
 pub type MerkleRoot = Hash;
 
 const ADDRESS_LEN: usize = 20;
-const HEX_PREFIX: &str = "0x";
-const HEX_PREFIX_UPPER: &str = "0X";
+pub(crate) const HEX_PREFIX: &str = "0x";
 
 pub const NIL_DATA: H256 = H256([
     0xc5, 0xd2, 0x46, 0x01, 0x86, 0xf7, 0x23, 0x3c, 0x92, 0x7e, 0x7d, 0xb2, 0xdc, 0xc7, 0x03, 0xc0,
@@ -72,97 +72,78 @@ impl Hasher {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Hex(String);
+pub struct Hex(Bytes);
 
 impl Hex {
     pub fn empty() -> Self {
-        Hex(String::from(HEX_PREFIX))
+        Hex(Bytes::default())
     }
 
     pub fn is_empty(&self) -> bool {
-        self.0.len() == 2
+        self.0.is_empty()
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
     }
 
     pub fn encode<T: AsRef<[u8]>>(src: T) -> Self {
-        let mut s = HEX_PREFIX.to_string();
-        s.push_str(&hex_encode(src));
-        Hex(s)
-    }
-
-    pub fn decode(s: String) -> ProtocolResult<Bytes> {
-        let s = if Self::is_prefixed(s.as_str()) {
-            &s[2..]
-        } else {
-            s.as_str()
-        };
-
-        Ok(Bytes::from(hex_decode(s)?))
-    }
-
-    pub fn from_string(s: String) -> ProtocolResult<Self> {
-        let s = if Self::is_prefixed(s.as_str()) {
-            s
-        } else {
-            HEX_PREFIX.to_string() + &s
-        };
-
-        let _ = hex_decode(&s[2..])?;
-        Ok(Hex(s))
+        Hex(BytesMut::from(src.as_ref()).freeze())
     }
 
     pub fn as_string(&self) -> String {
-        self.0.to_owned()
+        HEX_PREFIX.to_string() + &hex_encode(self.0.as_ref())
     }
 
     pub fn as_string_trim0x(&self) -> String {
-        (self.0[2..]).to_owned()
+        hex_encode(self.0.as_ref())
     }
 
     pub fn as_bytes(&self) -> Bytes {
-        Bytes::from(hex_decode(&self.0[2..]).expect("impossible, already checked in from_string"))
+        self.0.clone()
     }
 
     fn is_prefixed(s: &str) -> bool {
-        s.starts_with(HEX_PREFIX) || s.starts_with(HEX_PREFIX_UPPER)
+        s.starts_with(HEX_PREFIX)
     }
 }
 
 impl Default for Hex {
     fn default() -> Self {
-        Hex(String::from("0x0000000000000000"))
+        Hex(vec![0u8; 8].into())
+    }
+}
+
+impl AsRef<[u8]> for Hex {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl FromStr for Hex {
+    type Err = ProtocolError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if !Self::is_prefixed(s) {
+            return Err(TypesError::HexPrefix.into());
+        }
+
+        Ok(Hex(hex_decode(&s[2..])?.into()))
+    }
+}
+
+impl From<Hex> for Bytes {
+    fn from(bytes: Hex) -> Self {
+        bytes.0
     }
 }
 
 impl Serialize for Hex {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::ser::Serializer,
+        S: ser::Serializer,
     {
-        serializer.serialize_str(&self.0)
-    }
-}
-
-struct HexVisitor;
-
-impl<'de> de::Visitor<'de> for HexVisitor {
-    type Value = Hex;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("Expect a hex string")
-    }
-
-    fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Hex::from_string(v).map_err(|e| de::Error::custom(e.to_string()))
-    }
-
-    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-    where
-        E: de::Error,
-    {
-        Hex::from_string(v.to_owned()).map_err(|e| de::Error::custom(e.to_string()))
+        withpfx_lowercase::serialize(&self.0, serializer)
     }
 }
 
@@ -171,7 +152,7 @@ impl<'de> Deserialize<'de> for Hex {
     where
         D: de::Deserializer<'de>,
     {
-        deserializer.deserialize_string(HexVisitor)
+        Ok(Hex(withpfx_lowercase::deserialize(deserializer)?))
     }
 }
 
@@ -197,42 +178,18 @@ impl Serialize for Address {
     where
         S: serde::ser::Serializer,
     {
-        serializer.serialize_bytes(self.0.as_bytes())
+        serializer.serialize_str(&self.eip55())
     }
 }
 
-// struct AddressVisitor;
-
-// impl<'de> de::Visitor<'de> for AddressVisitor {
-//     type Value = Address;
-
-//     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-//         formatter.write_str("Expect a bech32 string")
-//     }
-
-//     fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
-//     where
-//         E: de::Error,
-//     {
-//         Address::from_str(&v).map_err(|e| de::Error::custom(e.to_string()))
-//     }
-
-//     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-//     where
-//         E: de::Error,
-//     {
-//         Address::from_str(&v).map_err(|e| de::Error::custom(e.to_string()))
-//     }
-// }
-
-// impl<'de> Deserialize<'de> for Address {
-//     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-//     where
-//         D: de::Deserializer<'de>,
-//     {
-//         deserializer.deserialize_string(AddressVisitor)
-//     }
-// }
+impl<'de> Deserialize<'de> for Address {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        Ok(Address(deserialize_address(deserializer)?))
+    }
+}
 
 impl Address {
     pub fn from_pubkey_bytes<B: AsRef<[u8]>>(bytes: B) -> ProtocolResult<Self> {
@@ -529,20 +486,21 @@ mod tests {
 
     #[test]
     fn test_hex_decode() {
-        let hex = String::from("0x");
-        let res = Hex::from_string(hex.clone()).unwrap();
+        let res = Hex::from_str("0x").unwrap();
         assert!(res.is_empty());
 
-        let res = Hex::decode(hex).unwrap();
-        assert!(res.is_empty());
+        assert!(Hex::from_str("123456").is_err());
+        assert!(Hex::from_str("0x123f").is_ok());
+    }
 
-        let hex = String::from("123456");
-        let _ = Hex::from_string(hex.clone()).unwrap();
-        let _ = Hex::decode(hex).unwrap();
-
-        let hex = String::from("0x123f");
-        let _ = Hex::from_string(hex.clone()).unwrap();
-        let _ = Hex::decode(hex).unwrap();
+    #[test]
+    fn test_hex_codec() {
+        let data = H256::random();
+        let hex = Hex::encode(data.0);
+        assert_eq!(
+            serde_json::to_string(&hex).unwrap(),
+            serde_json::to_string(&data).unwrap()
+        );
     }
 
     #[test]

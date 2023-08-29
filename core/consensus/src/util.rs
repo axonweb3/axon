@@ -189,6 +189,8 @@ pub fn convert_hex_to_bls_pubkeys(hex: Hex) -> ProtocolResult<BlsPublicKey> {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use super::*;
     use protocol::codec::hex_decode;
 
@@ -253,8 +255,6 @@ mod tests {
     #[test]
     fn test_convert_from_hex() {
         let hex_str = "0xa694f4e48a5a173b61731998f8f1204342dc5c8eb1e32cdae37415c20d11ae035ddac4a39f105e9c2d4d3691024d385d";
-        assert!(
-            convert_hex_to_bls_pubkeys(Hex::from_string(String::from(hex_str)).unwrap()).is_ok()
-        );
+        assert!(convert_hex_to_bls_pubkeys(Hex::from_str(hex_str).unwrap()).is_ok());
     }
 }
