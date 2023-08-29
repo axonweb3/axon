@@ -37,7 +37,7 @@ body:
       label: OS
       description: |
         examples:
-          - **OS**: Ubuntu 20.04
+          - **OS**: ubuntu-22.04
     validations:
       required: true
   - type: input

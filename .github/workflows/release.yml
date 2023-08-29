@@ -7,7 +7,7 @@ on:
 
 jobs:
   version:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     outputs:
       tag: ${{ steps.version.outputs.tag }}
       major: ${{ steps.version.outputs.major }}
@@ -46,7 +46,7 @@ jobs:
             target: aarch64-apple-darwin
             use-cross: false
             REL_PKG: aarch64-apple-darwin.zip
-          - os: ubuntu-20.04
+          - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             use-cross: false
             REL_PKG: x86_64-unknown-linux-gnu.tar.gz
@@ -112,7 +112,7 @@ jobs:
           path: axon_${{ needs.version.outputs.tag }}_${{ matrix.job.REL_PKG }}
 
   Upload-release-files:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         include:
@@ -140,7 +140,7 @@ jobs:
           asset_content_type: application/octet-stream
 
   force-push:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs:
       - version
       - Upload-release-files
@@ -152,7 +152,7 @@ jobs:
           git push origin refs/tags/v${{ needs.version.outputs.major }} -f
 
   trigger-somking-test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs:
       - version
       - package
@@ -172,7 +172,7 @@ jobs:
           inputs: '{ "axon_linux_release_tag": "${{ needs.version.outputs.tag }}" }'
 
   trigger-build-docker-image:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     needs:
       - version
     steps:
