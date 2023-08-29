@@ -2,8 +2,6 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-use jsonrpsee::core::Error;
-
 use core_consensus::SYNC_STATUS;
 use protocol::lazy::CHAIN_ID;
 use protocol::types::{Hash, Hasher, Hex, H160, H256, U256};
@@ -116,9 +114,7 @@ impl AxonNodeRpcServer for NodeRpcImpl {
     }
 
     fn sha3(&self, data: Hex) -> RpcResult<Hash> {
-        let decode_data =
-            Hex::decode(data.as_string()).map_err(|e| Error::Custom(e.to_string()))?;
-        Ok(Hasher::digest(decode_data.as_ref()))
+        Ok(Hasher::digest(data.as_ref()))
     }
 }
 

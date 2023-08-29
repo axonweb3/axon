@@ -4,6 +4,8 @@ pub mod executor;
 pub mod receipt;
 pub mod transaction;
 
+use std::str::FromStr;
+
 pub use transaction::truncate_slice;
 
 use ethers_core::utils::parse_checksummed;
@@ -57,13 +59,14 @@ impl Decodable for Address {
 
 impl Encodable for Hex {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(1).append(&self.as_string_trim0x());
+        s.begin_list(1).append(&self.as_string());
     }
 }
 
 impl Decodable for Hex {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
-        Hex::from_string(r.val_at(0)?).map_err(|_| DecoderError::Custom("hex check"))
+        let s: String = r.val_at(0)?;
+        Hex::from_str(s.as_str()).map_err(|_| DecoderError::Custom("hex check"))
     }
 }
 
@@ -188,7 +191,7 @@ mod tests {
     impl Hex {
         fn random() -> Self {
             let data = (0..128).map(|_| random()).collect::<Vec<u8>>();
-            Self::from_string(hex_encode(data)).unwrap()
+            Hex::encode(data)
         }
     }
 

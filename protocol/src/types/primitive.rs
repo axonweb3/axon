@@ -7,7 +7,6 @@ use zeroize::Zeroizing;
 use std::cmp::Ordering;
 use std::{fmt, str::FromStr};
 
-use bytes::BytesMut;
 use faster_hex::withpfx_lowercase;
 use ophelia::{PublicKey, UncompressedPublicKey};
 use overlord::DurationConfig;
@@ -18,7 +17,7 @@ use common_crypto::Secp256k1PublicKey;
 use common_hasher::keccak256;
 
 use crate::codec::{deserialize_address, hex_decode, hex_encode, serialize_uint};
-use crate::types::{BlockNumber, Bytes, TypesError};
+use crate::types::{BlockNumber, Bytes, BytesMut, TypesError};
 use crate::{ProtocolError, ProtocolResult};
 
 pub type Hash = H256;
@@ -26,7 +25,6 @@ pub type MerkleRoot = Hash;
 
 const ADDRESS_LEN: usize = 20;
 const HEX_PREFIX: &str = "0x";
-const HEX_PREFIX_UPPER: &str = "0X";
 
 pub const NIL_DATA: H256 = H256([
     0xc5, 0xd2, 0x46, 0x01, 0x86, 0xf7, 0x23, 0x3c, 0x92, 0x7e, 0x7d, 0xb2, 0xdc, 0xc7, 0x03, 0xc0,
@@ -85,28 +83,12 @@ impl Hex {
         self.0.is_empty()
     }
 
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
     pub fn encode<T: AsRef<[u8]>>(src: T) -> Self {
         Hex(BytesMut::from(src.as_ref()).freeze())
-    }
-
-    pub fn decode(s: String) -> ProtocolResult<Bytes> {
-        let s = if Self::is_prefixed(s.as_str()) {
-            &s[2..]
-        } else {
-            s.as_str()
-        };
-
-        Ok(Bytes::from(hex_decode(s)?))
-    }
-
-    pub fn from_string(s: String) -> ProtocolResult<Self> {
-        let s = if Self::is_prefixed(s.as_str()) {
-            s
-        } else {
-            HEX_PREFIX.to_string() + &s
-        };
-
-        Ok(Hex(hex_decode(&s[2..])?.into()))
     }
 
     pub fn as_string(&self) -> String {
@@ -122,13 +104,37 @@ impl Hex {
     }
 
     fn is_prefixed(s: &str) -> bool {
-        s.starts_with(HEX_PREFIX) || s.starts_with(HEX_PREFIX_UPPER)
+        s.starts_with(HEX_PREFIX)
     }
 }
 
 impl Default for Hex {
     fn default() -> Self {
         Hex(vec![0u8; 8].into())
+    }
+}
+
+impl AsRef<[u8]> for Hex {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl FromStr for Hex {
+    type Err = ProtocolError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if !Self::is_prefixed(s) {
+            return Err(TypesError::HexPrefix.into());
+        }
+
+        Ok(Hex(hex_decode(&s[2..])?.into()))
+    }
+}
+
+impl From<Hex> for Bytes {
+    fn from(bytes: Hex) -> Self {
+        bytes.0
     }
 }
 
@@ -480,20 +486,11 @@ mod tests {
 
     #[test]
     fn test_hex_decode() {
-        let hex = String::from("0x");
-        let res = Hex::from_string(hex.clone()).unwrap();
+        let res = Hex::from_str("0x").unwrap();
         assert!(res.is_empty());
 
-        let res = Hex::decode(hex).unwrap();
-        assert!(res.is_empty());
-
-        let hex = String::from("123456");
-        let _ = Hex::from_string(hex.clone()).unwrap();
-        let _ = Hex::decode(hex).unwrap();
-
-        let hex = String::from("0x123f");
-        let _ = Hex::from_string(hex.clone()).unwrap();
-        let _ = Hex::decode(hex).unwrap();
+        assert!(Hex::from_str("123456").is_ok());
+        assert!(Hex::from_str("0x123f").is_ok());
     }
 
     #[test]
