@@ -44,7 +44,6 @@ members = [
     "devtools/abi-generator",
     "devtools/genesis-generator",
     "devtools/keypair",
-
     "protocol",
 ]
 

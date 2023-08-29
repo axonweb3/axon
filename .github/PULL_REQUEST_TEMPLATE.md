@@ -37,7 +37,6 @@ See also:
 **CI Switch**
 
 - [ ] E2E Tests
-- [ ] Code Format
 - [ ] Web3 Compatible Tests
 - [ ] OCT 1-5 And 12-15
 - [ ] OCT 6-10
