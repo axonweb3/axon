@@ -18,8 +18,12 @@ NIL
 **Which issue(s) this PR fixes**:
 You could link a pull request to an issue by using a supported keyword in the pull request's description or in a commit message.
 
-- Usage: `Fixes #<issue number>`, or `Fixes (paste link of issue)`.
-  see [Linking a pull request to an issue using a keyword](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword) or [Manually linking a pull request to an issue using the pull request sidebar](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#manually-linking-a-pull-request-or-branch-to-an-issue-using-the-issue-sidebar)
+Usage: `Fixes #<issue number>`, or `Fixes (paste link of issue)`.
+
+See also:
+* [Linking a pull request to an issue using a keyword](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword)
+
+* [Manually linking a pull request to an issue using the pull request sidebar](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#manually-linking-a-pull-request-or-branch-to-an-issue-using-the-issue-sidebar)
 
 -->
 
