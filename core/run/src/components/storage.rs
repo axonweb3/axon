@@ -13,20 +13,40 @@ use protocol::{
     ProtocolResult,
 };
 
-pub(crate) fn init_storage<P: AsRef<Path>>(
-    config: &ConfigRocksDB,
-    rocksdb_path: P,
-    triedb_cache_size: usize,
-) -> ProtocolResult<(
-    Arc<ImplStorage<RocksAdapter>>,
-    Arc<RocksTrieDB>,
-    Arc<RocksDB>,
-)> {
-    let adapter = Arc::new(RocksAdapter::new(rocksdb_path, config.clone())?);
-    let inner_db = adapter.inner_db();
-    let trie_db = Arc::new(RocksTrieDB::new_evm(adapter.inner_db(), triedb_cache_size));
-    let storage = Arc::new(ImplStorage::new(adapter, config.cache_size));
-    Ok((storage, trie_db, inner_db))
+pub(crate) struct DatabaseGroup {
+    storage:  Arc<ImplStorage<RocksAdapter>>,
+    trie_db:  Arc<RocksTrieDB>,
+    inner_db: Arc<RocksDB>,
+}
+
+impl DatabaseGroup {
+    pub(crate) fn new<P: AsRef<Path>>(
+        config: &ConfigRocksDB,
+        rocksdb_path: P,
+        triedb_cache_size: usize,
+    ) -> ProtocolResult<Self> {
+        let adapter = Arc::new(RocksAdapter::new(rocksdb_path, config.clone())?);
+        let inner_db = adapter.inner_db();
+        let trie_db = Arc::new(RocksTrieDB::new_evm(adapter.inner_db(), triedb_cache_size));
+        let storage = Arc::new(ImplStorage::new(adapter, config.cache_size));
+        Ok(Self {
+            storage,
+            trie_db,
+            inner_db,
+        })
+    }
+
+    pub(crate) fn storage(&self) -> Arc<ImplStorage<RocksAdapter>> {
+        Arc::clone(&self.storage)
+    }
+
+    pub(crate) fn trie_db(&self) -> Arc<RocksTrieDB> {
+        Arc::clone(&self.trie_db)
+    }
+
+    pub(crate) fn inner_db(&self) -> Arc<RocksDB> {
+        Arc::clone(&self.inner_db)
+    }
 }
 
 #[async_trait]
