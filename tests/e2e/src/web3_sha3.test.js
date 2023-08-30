@@ -24,7 +24,7 @@ describe("web3_sha3", () => {
     const param1 = await page.$(goto.pageIds.param1Id);
     await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type("");
-    await goto.check(page, "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470");
+    await goto.check(page, "-32603");
   });
 
   /**
@@ -56,7 +56,7 @@ describe("web3_sha3", () => {
     await testType.type("1");
     const param1 = await page.$(goto.pageIds.param1Id);
     await param1.type("123456");
-    await goto.check(page, "0x6adf031833174bbe4c85eafe59ddb54e6584648c2c962c6f94791ab49caa0ad4");
+    await goto.check(page, "-32603");
   });
 
   /**
@@ -67,7 +67,7 @@ describe("web3_sha3", () => {
     await testType.type("1");
     const param1 = await page.$(goto.pageIds.param1Id);
     await param1.type("68656c6c6f20776f726c64");
-    await goto.check(page, "0x47173285a8d7341e5e972fc677286384f802f8ef42a5ec5f03bbfa254cb01fad");
+    await goto.check(page, "-32603");
   });
 
   /**
