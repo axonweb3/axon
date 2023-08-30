@@ -6,10 +6,10 @@ import erc20 from "./ERC20.json";
 const basePath = "./src/test_data_temp_file";
 const option = { timeout: 1000 * 30 };
 const web3 = new Web3(
-  new Web3.providers.HttpProvider(Config.getIns().axonRpc.url, option)
+  new Web3.providers.HttpProvider(Config.getIns().axonRpc.url, option),
 );
 const accountFrom = web3.eth.accounts.privateKeyToAccount(
-  Config.getIns().hexPrivateKey
+  Config.getIns().hexPrivateKey,
 );
 const transactionInfo = {
   contractAddress: "",
@@ -27,6 +27,7 @@ const filterIds = {
   filter_id_2: "",
   filter_id_3: "",
 };
+const hexPrefix = "0x";
 const createTestDataMange = {
   async savejson(filePath, data) {
     const dataStr = JSON.stringify(data, null, 4);
@@ -66,10 +67,8 @@ const createTestDataMange = {
     transactionInfo.transactionIndex = receipt.transactionIndex;
     transactionInfo.accountAddress = accountFrom.address;
     transactionInfo.hexBlockNumber = `0x${receipt.blockNumber.toString(16)}`;
-    transactionInfo.topic1 =
-      "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0";
-    transactionInfo.topic2 =
-      "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
+    transactionInfo.topic1 = "0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0";
+    transactionInfo.topic2 = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
     await this.savejson(`${basePath}/testData_1.json`, transactionInfo);
   },
   async writeFilterIds(filterIdIndex, id) {
@@ -115,6 +114,7 @@ const createTestDataMange = {
       fs.mkdirSync(`${basePath}/`);
     }
   },
+
   async sendRawTestTx() {
     const toAddress = Config.getIns().acount2;
     const nonce = (await web3.eth.getTransactionCount(accountFrom.address)) + 1;
@@ -126,17 +126,18 @@ const createTestDataMange = {
       value: web3.utils.toHex(web3.utils.toWei("1", "ether")),
     };
     // eslint-disable-next-line global-require
-    const  { Common }  = require('@ethereumjs/common');
-    const {Transaction} = require('@ethereumjs/tx');
-    const common = Common.custom({ chainId: web3.utils.toHex(Config.getIns().axonRpc.chainId)});
-    const tx = Transaction.fromTxData(txObject, {common});
-    const privateKey = Buffer.from(Config.getIns().hexPrivateKey.substring(2), 'hex');
+    const { Common } = require("@ethereumjs/common");
+    const { Transaction } = require("@ethereumjs/tx");
+    const common = Common.custom({ chainId: web3.utils.toHex(Config.getIns().axonRpc.chainId) });
+    const tx = Transaction.fromTxData(txObject, { common });
+    const privateKey = Buffer.from(Config.getIns().hexPrivateKey.substring(2), "hex");
     const signedTx = tx.sign(privateKey);
     const serializedTx = signedTx.serialize();
-    return serializedTx.toString("hex");
+    return hexPrefix + serializedTx.toString("hex");
   },
+
   async sendPreEip155RawTestTx() {
-    const toAddress = Config.getIns().acount2;
+    const toAddress = Config.getIns().aount2;
     const nonce = (await web3.eth.getTransactionCount(accountFrom.address)) + 1;
     const txObject = {
       nonce: web3.utils.toHex(nonce),
@@ -146,14 +147,14 @@ const createTestDataMange = {
       value: web3.utils.toHex(web3.utils.toWei("1", "ether")),
     };
     // eslint-disable-next-line global-require
-    const  { Chain, Common, Hardfork }  = require('@ethereumjs/common');
-    const {Transaction} = require('@ethereumjs/tx');
-    const common = new Common({chain: Chain.Mainnet, hardfork: Hardfork.TangerineWhistle});
-    const tx = Transaction.fromTxData(txObject,{common});
-    const privateKey = Buffer.from(Config.getIns().hexPrivateKey.substring(2), 'hex');
+    const { Chain, Common, Hardfork } = require("@ethereumjs/common");
+    const { Transaction } = require("@ethereumjs/tx");
+    const common = new Common({ chain: Chain.Mainnet, hardfork: Hardfork.TangerineWhistle });
+    const tx = Transaction.fromTxData(txObject, { common });
+    const privateKey = Buffer.from(Config.getIns().hexPrivateKey.substring(2), "hex");
     const signedTx = tx.sign(privateKey);
     const serializedTx = signedTx.serialize();
-    return serializedTx.toString("hex");
+    return hexPrefix + serializedTx.toString("hex");
   },
 };
 export default createTestDataMange;
