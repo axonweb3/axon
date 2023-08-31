@@ -18,7 +18,7 @@ jobs:
         os: [ubuntu-22.04]
       fail-fast: false
     runs-on: ${{ matrix.os }}
-    env: 
+    env:
       IS_DISPATCH: ${{ github.event_name == 'workflow_dispatch' }}
       IS_REGRESSION: ${{ github.event.inputs.dispatch == 'regression' }}
 
@@ -66,10 +66,13 @@ jobs:
       - name: Deploy Local Network of Axon
         run: |
           rm -rf ./devtools/chain/data
-          ./target/debug/axon run \
+          ./target/debug/axon init \
             --config devtools/chain/config.toml \
             --chain-spec devtools/chain/specs/single_node/chain-spec.toml \
-            > /tmp/log 2>&1 &
+            > /tmp/log 2>&1
+          ./target/debug/axon run \
+            --config devtools/chain/config.toml \
+            >> /tmp/log 2>&1 &
 
       - name: Checkout gpBlockchain/axon-test
         uses: actions/checkout@v3

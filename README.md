@@ -52,7 +52,8 @@ Axon provides the compiled binary on the [release page](`https://github.com/axon
 # Clone from GitHub
 git clone https://github.com/axonweb3/axon.git && cd axon
 # Run release binary for single node
-cargo run --release -- run -c devtools/chain/config.toml -s devtools/chain/specs/single_node/chain-spec.toml
+cargo run --release -- init -c devtools/chain/config.toml -s devtools/chain/specs/single_node/chain-spec.toml
+cargo run --release -- run  -c devtools/chain/config.toml
 
 ```
 
