@@ -10,7 +10,9 @@ contract GetCell {
     Cell cell;
 
     function testGetCell(bytes32 txHash, uint32 index) public {
-        (bool isSuccess, bytes memory res) = address(0x0103).staticcall(abi.encode(OutPoint(txHash, index)));
+        (bool isSuccess, bytes memory res) = address(0x0103).staticcall(
+            abi.encode(OutPoint(txHash, index))
+        );
 
         if (isSuccess) {
             cell = abi.decode(res, (Cell));

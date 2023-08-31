@@ -31,14 +31,18 @@ impl PrecompileContract for GetHeader {
             H256(<[u8; 32] as AbiDecode>::decode(input).map_err(|_| err!(_, "decode input"))?);
 
         let root = CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow());
-        let raw = CkbHeaderReader::default()
+        let header_opt = CkbHeaderReader::default()
             .get_raw(root, &block_hash.0)
             .map_err(|_| err!(_, "get header"))?;
+
+        if header_opt.is_none() {
+            return err!("get header return None");
+        }
 
         Ok((
             PrecompileOutput {
                 exit_status: ExitSucceed::Returned,
-                output:      raw.unwrap_or_default(),
+                output:      header_opt.unwrap(),
             },
             gas,
         ))
