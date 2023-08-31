@@ -11,8 +11,6 @@ jobs:
     name: run-ci-from-pr-comment
     # PullRequestEvent: https://docs.github.com/en/rest/overview/github-event-types?apiVersion=2022-11-28#pullrequestevent
     if: github.event.issue.pull_request && startsWith(github.event.comment.body, '/run-ci')
-    env:
-      PR_NUMBER: ${{ github.event.issue.number }}
     runs-on: ubuntu-22.04
     # When the permissions key is used, all unspecified permissions are set to no access, with the exception of the metadata scope, which always gets read access.
     # See https://docs.github.com/en/actions/security-guides/automatic-token-authentication#modifying-the-permissions-for-the-github_token
