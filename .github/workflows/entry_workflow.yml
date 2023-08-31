@@ -8,8 +8,11 @@ on:
 
 jobs:
   run-ci:
-    name: from-comments
+    name: run-ci-from-pr-comment
+    # PullRequestEvent: https://docs.github.com/en/rest/overview/github-event-types?apiVersion=2022-11-28#pullrequestevent
     if: github.event.issue.pull_request && startsWith(github.event.comment.body, '/run-ci')
+    env:
+      PR_NUMBER: ${{ github.event.issue.number }}
     runs-on: ubuntu-22.04
     # When the permissions key is used, all unspecified permissions are set to no access, with the exception of the metadata scope, which always gets read access.
     # See https://docs.github.com/en/actions/security-guides/automatic-token-authentication#modifying-the-permissions-for-the-github_token
@@ -53,24 +56,11 @@ jobs:
                repo: context.repo.repo,
                pull_number: context.issue.number,
             });
+
             let check_list=`
             \### CI test list:
             `;
-            // check Chaos CI exist or not
-            const chaos_match = pr.data.body.includes("[x] Chaos CI");
-            if (chaos_match) {
-             const resp =  await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: "chaos.yml",
-              ref: "main",
-              inputs: {
-                dispatch: jsonDispatch,
-              }
-              });
-              core.info(`${JSON.stringify(resp, null, 2)}`);
-              check_list=`${check_list}\n - Chaos CI`;
-              }
+
             // check Coverage Test exist or not
             const coverage_match = pr.data.body.includes("[x] Coverage Test");
             if (coverage_match) {
@@ -78,7 +68,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: "coverage.yml",
-              ref: "main",
+              ref: `main`,
               inputs: {
                 dispatch: jsonDispatch,
               }
@@ -86,6 +76,7 @@ jobs:
               core.info(`${JSON.stringify(resp, null, 2)}`);
               check_list=`${check_list}\n - Coverage Test`;
               }
+
             // check E2E Tests exist or not
             const e2e_match = pr.data.body.includes("[x] E2E Tests");
             if (e2e_match) {
@@ -93,7 +84,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: "e2e_test.yml",
-              ref: "main",
+              ref: `main`,
               inputs: {
                 dispatch: jsonDispatch,
               }
@@ -108,7 +99,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: "openzeppelin_test_1_5_and_12_15.yml",
-              ref: "main",
+              ref: `main`,
               inputs: {
                 dispatch: jsonDispatch,
               }
@@ -123,7 +114,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: "openzeppelin_test_6_10.yml",
-              ref: "main",
+              ref: `main`,
               inputs: {
                 dispatch: jsonDispatch,
               }
@@ -138,7 +129,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: "openzeppelin_test_11.yml",
-              ref: "main",
+              ref: `main`,
               inputs: {
                 dispatch: jsonDispatch,
               }
@@ -153,7 +144,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: "openzeppelin_test_16_19.yml",
-              ref: "main",
+              ref: `main`,
               inputs: {
                 dispatch: jsonDispatch,
               }
@@ -168,7 +159,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: "v3_core_test.yml",
-              ref: "main",
+              ref: `main`,
               inputs: {
                 dispatch: jsonDispatch,
               }
@@ -183,7 +174,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: "web3_compatible.yml",
-              ref: "main",
+              ref: `main`,
               inputs: {
                 dispatch: jsonDispatch,
               }
@@ -203,6 +194,7 @@ jobs:
       # https://docs.github.com/en/rest/issues/comments?apiVersion=2022-11-28#create-an-issue-comment
       # The `pull-requests: write` permission is required in the step.
       - name: Post a coment about component information to PR
+        if: contains('admin write', fromJson(steps.user_permission.outputs.data).permission)
         id: post_workflow_run_comment
         uses: actions/github-script@v6
         with:
