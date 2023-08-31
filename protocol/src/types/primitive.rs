@@ -429,6 +429,37 @@ pub struct CkbRelatedInfo {
     pub reward_smt_type_id:   H256,
 }
 
+#[derive(
+    RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Default,
+)]
+pub struct HardforkInfo {
+    pub inner: Vec<HardforkInfoInner>,
+}
+
+impl HardforkInfo {
+    pub fn push(&mut self, mut other: HardforkInfoInner) {
+        if let Some(i) = self.inner.last_mut() {
+            other.flags |= i.flags;
+            if other.flags == i.flags || other.block_number < i.block_number {
+                return;
+            }
+            if i.block_number == other.block_number {
+                i.flags = other.flags;
+            } else {
+                self.inner.push(other);
+            }
+        } else {
+            self.inner.push(other);
+        }
+    }
+}
+
+#[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub struct HardforkInfoInner {
+    pub block_number: BlockNumber,
+    pub flags:        H256,
+}
+
 fn ensure_len(real: usize, expect: usize) -> ProtocolResult<()> {
     if real != expect {
         Err(TypesError::LengthMismatch { expect, real }.into())
@@ -558,5 +589,103 @@ mod tests {
 
         (1..=100).for_each(|n| assert!(version_0.contains(n)));
         (101..=200).for_each(|n| assert!(version_1.contains(n)));
+    }
+
+    #[test]
+    fn test_hardfork_info() {
+        let mut a = HardforkInfo::default();
+
+        a.push(HardforkInfoInner {
+            block_number: 1,
+            flags:        {
+                let mut a = [0; 32];
+                a[0] = 0b1;
+                H256::from(a)
+            },
+        });
+        assert_eq!(a.inner.last().unwrap(), &HardforkInfoInner {
+            block_number: 1,
+            flags:        {
+                let mut a = [0; 32];
+                a[0] = 0b1;
+                H256::from(a)
+            },
+        });
+
+        // Multiple hardforks activated at the same height can be merged
+        a.push(HardforkInfoInner {
+            block_number: 1,
+            flags:        {
+                let mut a = [0; 32];
+                a[0] = 0b10;
+                H256::from(a)
+            },
+        });
+        assert_eq!(a.inner.last().unwrap(), &HardforkInfoInner {
+            block_number: 1,
+            flags:        {
+                let mut a = [0; 32];
+                a[0] = 0b11;
+                H256::from(a)
+            },
+        });
+        assert_eq!(a.inner.len(), 1);
+
+        // Repeat activations will be discarded
+        a.push(HardforkInfoInner {
+            block_number: 20,
+            flags:        {
+                let mut a = [0; 32];
+                a[0] = 0b10;
+                H256::from(a)
+            },
+        });
+        assert_eq!(a.inner.last().unwrap(), &HardforkInfoInner {
+            block_number: 1,
+            flags:        {
+                let mut a = [0; 32];
+                a[0] = 0b11;
+                H256::from(a)
+            },
+        });
+        assert_eq!(a.inner.len(), 1);
+
+        // normal insertion
+        a.push(HardforkInfoInner {
+            block_number: 30,
+            flags:        {
+                let mut a = [0; 32];
+                a[0] = 0b1000;
+                H256::from(a)
+            },
+        });
+        assert_eq!(a.inner.last().unwrap(), &HardforkInfoInner {
+            block_number: 30,
+            flags:        {
+                let mut a = [0; 32];
+                a[0] = 0b1011;
+                H256::from(a)
+            },
+        });
+        assert_eq!(a.inner.len(), 2);
+
+        // The insertion height is lower than the known height and will be rejected
+        a.push(HardforkInfoInner {
+            block_number: 20,
+            flags:        {
+                let mut a = [0; 32];
+                a[0] = 0b0100;
+                H256::from(a)
+            },
+        });
+        assert_eq!(a.inner.last().unwrap(), &HardforkInfoInner {
+            block_number: 30,
+            flags:        {
+                let mut a = [0; 32];
+                a[0] = 0b1011;
+                H256::from(a)
+            },
+        });
+        assert_eq!(a.inner.len(), 2);
     }
 }

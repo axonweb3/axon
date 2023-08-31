@@ -4,6 +4,7 @@ pub use evm::{backend::Log, Config, ExitError, ExitFatal, ExitReason, ExitRevert
 use rlp_derive::{RlpDecodable, RlpEncodable};
 
 use crate::types::{Bloom, Hash, Hasher, Header, MerkleRoot, Proposal, H160, U256};
+use bytes::Bytes;
 
 const BLOOM_BYTE_LENGTH: usize = 256;
 
@@ -52,6 +53,7 @@ pub struct ExecutorContext {
     pub gas_price:              U256,
     pub block_gas_limit:        U256,
     pub block_base_fee_per_gas: U256,
+    pub extra_data:             Bytes,
 }
 
 impl From<Proposal> for ExecutorContext {
@@ -65,6 +67,7 @@ impl From<Proposal> for ExecutorContext {
             gas_price:              U256::one(),
             block_gas_limit:        h.gas_limit,
             block_base_fee_per_gas: h.base_fee_per_gas,
+            extra_data:             h.extra_data,
         }
     }
 }
@@ -80,6 +83,7 @@ impl From<&Header> for ExecutorContext {
             gas_price:              U256::one(),
             block_gas_limit:        h.gas_limit,
             block_base_fee_per_gas: h.base_fee_per_gas,
+            extra_data:             h.extra_data.clone(),
         }
     }
 }

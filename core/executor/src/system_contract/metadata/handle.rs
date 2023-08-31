@@ -1,4 +1,4 @@
-use protocol::types::{CkbRelatedInfo, Metadata, H160, H256};
+use protocol::types::{CkbRelatedInfo, HardforkInfo, Metadata, H160, H256};
 use protocol::ProtocolResult;
 
 use crate::system_contract::metadata::MetadataStore;
@@ -46,5 +46,9 @@ impl MetadataHandle {
 
     pub fn get_ckb_related_info(&self) -> ProtocolResult<CkbRelatedInfo> {
         MetadataStore::new(self.root)?.get_ckb_related_info()
+    }
+
+    pub fn hardfork_infos(&self) -> ProtocolResult<HardforkInfo> {
+        MetadataStore::new(self.root)?.hardfork_infos()
     }
 }

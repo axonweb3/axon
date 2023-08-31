@@ -7,14 +7,16 @@ pub use abi::metadata_abi;
 pub use handle::MetadataHandle;
 pub use store::MetadataStore;
 
-use std::num::NonZeroUsize;
+use std::{num::NonZeroUsize, sync::Arc};
 
+use arc_swap::ArcSwap;
 use ethers::abi::AbiDecode;
 use lru::LruCache;
 use parking_lot::RwLock;
 
+use protocol::codec::ProtocolCodec;
 use protocol::traits::{ApplyBackend, ExecutorAdapter};
-use protocol::types::{Hasher, Metadata, SignedTransaction, TxResp, H160, H256};
+use protocol::types::{HardforkInfoInner, Hasher, Metadata, SignedTransaction, TxResp, H160, H256};
 
 use crate::system_contract::utils::{
     generate_mpt_root_changes, revert_resp, succeed_resp, update_states,
@@ -30,6 +32,8 @@ const METADATA_CACHE_SIZE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(1
 lazy_static::lazy_static! {
     static ref EPOCH_SEGMENT_KEY: H256 = Hasher::digest("epoch_segment");
     static ref CKB_RELATED_INFO_KEY: H256 = Hasher::digest("ckb_related_info");
+    static ref HARDFORK_KEY: H256 = Hasher::digest("hardfork");
+    static ref HARDFORK_INFO: ArcSwap<H256> = ArcSwap::new(Arc::new(H256::zero()));
     static ref METADATA_CACHE: RwLock<LruCache<Epoch, Metadata>> =  RwLock::new(LruCache::new(METADATA_CACHE_SIZE));
 }
 
@@ -117,10 +121,20 @@ impl<Adapter: ExecutorAdapter + ApplyBackend> SystemContract<Adapter>
         }
 
         let root = CURRENT_METADATA_ROOT.with(|r| *r.borrow());
-        if let Err(e) = MetadataStore::new(root)
-            .unwrap()
-            .update_propose_count(block_number.as_u64(), &adapter.origin())
-        {
+
+        let mut store = MetadataStore::new(root).unwrap();
+
+        if let Ok(data) = HardforkInfoInner::decode(adapter.get_ctx().extra_data) {
+            store
+                .set_hardfork_info(data.block_number, data.flags)
+                .expect("set new hardfork info fail")
+        }
+
+        let hardfork = store.hardfork_info(block_number.as_u64()).unwrap();
+
+        HARDFORK_INFO.swap(Arc::new(hardfork));
+
+        if let Err(e) = store.update_propose_count(block_number.as_u64(), &adapter.origin()) {
             panic!("Update propose count at {:?} failed: {:?}", block_number, e)
         }
 
