@@ -132,6 +132,7 @@ async fn check_genesis_data<'a>(case: &TestCase<'a>) {
     let db_group = DatabaseGroup::new(
         &config.rocksdb,
         path_block,
+        true,
         config.executor.triedb_cache_size,
     )
     .expect("initialize databases");

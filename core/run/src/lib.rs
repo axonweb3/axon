@@ -4,7 +4,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
 use common_config_parser::types::spec::{ChainSpec, InitialAccount};
-use common_config_parser::types::{Config, ConfigMempool, ConfigRocksDB};
+use common_config_parser::types::{Config, ConfigMempool};
 use common_crypto::{BlsPrivateKey, BlsPublicKey, Secp256k1, Secp256k1PrivateKey, ToPublicKey};
 
 use protocol::tokio::{
@@ -48,71 +48,65 @@ use components::{
 pub use error::MainError;
 use key_provider::KeyP;
 
-#[derive(Debug)]
-pub struct Axon {
-    version: String,
-    config:  Config,
-    spec:    ChainSpec,
-    genesis: RichBlock,
+pub fn init(config: Config, spec: ChainSpec, genesis: RichBlock) -> ProtocolResult<()> {
+    let path_rocksdb = config.data_path_for_rocksdb();
+    if path_rocksdb.exists() {
+        let msg = format!("Data directory {} already exists.", path_rocksdb.display());
+        return Err(MainError::Other(msg).into());
+    }
+
+    let rt = RuntimeBuilder::new_multi_thread()
+        .enable_all()
+        .build()
+        .expect("new tokio runtime");
+
+    rt.block_on(async move {
+        log::info!("Load databases.");
+        let db_group = DatabaseGroup::new(
+            &config.rocksdb,
+            path_rocksdb,
+            true,
+            config.executor.triedb_cache_size,
+        )?;
+        log::info!("Initialize genesis block.");
+        execute_genesis(genesis, spec, &db_group).await
+    })?;
+
+    Ok(())
 }
 
-impl Axon {
-    pub fn new(version: String, config: Config, spec: ChainSpec, genesis: RichBlock) -> Axon {
-        Axon {
-            version,
-            config,
-            spec,
-            genesis,
-        }
+pub fn run<K: KeyProvider>(
+    version: String,
+    config: Config,
+    key_provider: Option<K>,
+) -> ProtocolResult<()> {
+    let path_rocksdb = config.data_path_for_rocksdb();
+    if !path_rocksdb.exists() {
+        let msg = format!(
+            "Data directory {} doesn't exist, please initialize it before run.",
+            path_rocksdb.display()
+        );
+        return Err(MainError::Other(msg).into());
     }
+    let rt = RuntimeBuilder::new_multi_thread()
+        .enable_all()
+        .build()
+        .expect("new tokio runtime");
 
-    pub fn run<K: KeyProvider>(self, key_provider: Option<K>) -> ProtocolResult<()> {
-        let Self {
-            version,
-            config,
-            spec,
-            genesis,
-        } = self;
+    rt.block_on(async move {
+        log::info!("Load databases.");
+        let db_group = DatabaseGroup::new(
+            &config.rocksdb,
+            path_rocksdb,
+            false,
+            config.executor.triedb_cache_size,
+        )?;
+        log::info!("Start all services.");
+        start(version, config, key_provider, &db_group).await
+    })?;
+    rt.shutdown_timeout(std::time::Duration::from_secs(1));
 
-        let rt = RuntimeBuilder::new_multi_thread()
-            .enable_all()
-            .build()
-            .expect("new tokio runtime");
-
-        rt.block_on(async move {
-            let db_group = DatabaseGroup::new(
-                &config.rocksdb,
-                config.data_path_for_rocksdb(),
-                config.executor.triedb_cache_size,
-            )?;
-            if let Some(loaded_genesis) = db_group.storage().try_load_genesis().await? {
-                log::info!("Check genesis block.");
-                let genesis = execute_genesis_temporarily(
-                    genesis,
-                    spec,
-                    &config.rocksdb,
-                    config.executor.triedb_cache_size,
-                )
-                .await?;
-                if genesis.block != loaded_genesis {
-                    let err_msg = format!(
-                        "The user provided genesis (hash: {:#x}) is NOT \
-                        the same as the genesis in storage (hash: {:#x})",
-                        genesis.block.hash(),
-                        loaded_genesis.hash()
-                    );
-                    return Err(MainError::Other(err_msg).into());
-                }
-            } else {
-                log::info!("Initialize genesis block.");
-                let _genesis = execute_genesis(genesis, spec, &db_group).await?;
-            }
-            start(version, config, key_provider, &db_group).await
-        })?;
-        rt.shutdown_timeout(std::time::Duration::from_secs(1));
-
-        Ok(())
-    }
+    Ok(())
 }
 
 async fn start<K: KeyProvider>(
@@ -164,16 +158,14 @@ async fn start<K: KeyProvider>(
     let txs_wal = Arc::new(SignedTxsWAL::new(txs_wal_path));
 
     // Init system contract
-    if current_block.header.number != 0 {
-        let mut backend = AxonExecutorApplyAdapter::from_root(
-            current_block.header.state_root,
-            Arc::clone(&trie_db),
-            Arc::clone(&storage),
-            Proposal::new_without_state_root(&current_block.header).into(),
-        )?;
+    let mut backend = AxonExecutorApplyAdapter::from_root(
+        current_block.header.state_root,
+        Arc::clone(&trie_db),
+        Arc::clone(&storage),
+        Proposal::new_without_state_root(&current_block.header).into(),
+    )?;
 
-        system_contract::init(inner_db, &mut backend);
-    }
+    system_contract::init(inner_db, &mut backend);
 
     // Init mempool and recover signed transactions with the current block number
     let current_stxs = txs_wal.load_by_number(current_block.header.number + 1);
@@ -447,31 +439,6 @@ async fn execute_genesis(
         .storage()
         .save_block(&partial_genesis, &resp)
         .await?;
-
-    Ok(partial_genesis)
-}
-
-async fn execute_genesis_temporarily(
-    mut partial_genesis: RichBlock,
-    spec: ChainSpec,
-    config: &ConfigRocksDB,
-    triedb_cache_size: usize,
-) -> ProtocolResult<RichBlock> {
-    let tmp_dir = tempfile::tempdir().map_err(|err| {
-        let err_msg = format!("failed to create temporary directory since {err:?}");
-        MainError::Other(err_msg)
-    })?;
-    let path_block = tmp_dir.path().join("block");
-
-    let db_group = DatabaseGroup::new(config, path_block, triedb_cache_size)?;
-
-    let resp = execute_transactions(&partial_genesis, &db_group, &spec.accounts)?;
-
-    partial_genesis.block.header.state_root = resp.state_root;
-    partial_genesis.block.header.receipts_root = resp.receipt_root;
-
-    log::info!("The genesis block is executed {:?}", partial_genesis.block);
-    log::info!("Response for genesis is {:?}", resp);
 
     Ok(partial_genesis)
 }

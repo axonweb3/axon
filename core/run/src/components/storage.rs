@@ -23,9 +23,15 @@ impl DatabaseGroup {
     pub(crate) fn new<P: AsRef<Path>>(
         config: &ConfigRocksDB,
         rocksdb_path: P,
+        is_first_run: bool,
         triedb_cache_size: usize,
     ) -> ProtocolResult<Self> {
-        let adapter = Arc::new(RocksAdapter::new(rocksdb_path, config.clone())?);
+        let adapter_inner = if is_first_run {
+            RocksAdapter::new(rocksdb_path, config.clone())
+        } else {
+            RocksAdapter::open(rocksdb_path, config.clone())
+        }?;
+        let adapter = Arc::new(adapter_inner);
         let inner_db = adapter.inner_db();
         let trie_db = Arc::new(RocksTrieDB::new_evm(adapter.inner_db(), triedb_cache_size));
         let storage = Arc::new(ImplStorage::new(adapter, config.cache_size));
