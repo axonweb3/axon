@@ -2,7 +2,8 @@ use std::{error::Error, fs, io, marker::PhantomData, path::Path, sync::Arc};
 
 use rocksdb::ops::{DeleteCF, GetCF, GetColumnFamilys, IterateCF, OpenCF, PutCF, WriteOps};
 use rocksdb::{
-    ColumnFamily, ColumnFamilyDescriptor, DBIterator, FullOptions, Options, WriteBatch, DB,
+    ColumnFamily, ColumnFamilyDescriptor, DBIterator, FullOptions, Options, WriteBatch,
+    WriteOptions, DB,
 };
 
 use common_apm::metrics::storage::on_storage_put_cf;
@@ -232,7 +233,11 @@ impl StorageAdapter for RocksAdapter {
 
         on_storage_put_cf(S::category(), inst.elapsed(), insert_size as f64);
 
-        self.db.write(&batch).map_err(RocksDBError::from)?;
+        let mut opt = WriteOptions::default();
+        opt.set_sync(true);
+        self.db
+            .write_opt(&batch, &opt)
+            .map_err(RocksDBError::from)?;
         Ok(())
     }
 
