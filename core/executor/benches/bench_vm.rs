@@ -90,9 +90,9 @@ fn criterion_10000_txs(c: &mut Criterion) {
         let exec_ctx = mock_executor_context();
         let (account, addr) = init_account();
         let mut axon_adapter = AxonExecutorApplyAdapter::init(storage, db, exec_ctx, account, addr);
-        let executor = AxonExecutor::default();
+
         b.iter(|| {
-            executor.exec(&mut axon_adapter, &txs, &[]);
+            AxonExecutor.exec(&mut axon_adapter, &txs, &[]);
         })
     });
 }

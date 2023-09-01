@@ -1,5 +1,3 @@
-#![allow(clippy::uninlined_format_args)]
-
 pub mod types;
 use serde::de;
 

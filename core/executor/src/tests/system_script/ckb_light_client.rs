@@ -74,7 +74,7 @@ fn test_update_first<'a>(
     check_nonce(backend, 1);
 
     let root = backend.storage(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY);
-    let queried_header = CkbHeaderReader::default()
+    let queried_header = CkbHeaderReader
         .get_header_by_block_hash(root, &H256::default())
         .unwrap()
         .unwrap();
@@ -97,7 +97,7 @@ fn test_update_second<'a>(
     check_nonce(backend, 2);
 
     let root = backend.storage(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY);
-    let queried_header = CkbHeaderReader::default()
+    let queried_header = CkbHeaderReader
         .get_header_by_block_hash(root, &H256::from_slice(&header.block_hash))
         .unwrap()
         .unwrap();
@@ -117,7 +117,7 @@ fn test_roll_back_first<'a>(
     assert!(r.exit_reason.is_succeed());
 
     let root = backend.storage(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY);
-    let queried_header = CkbHeaderReader::default()
+    let queried_header = CkbHeaderReader
         .get_header_by_block_hash(root, &H256::default())
         .unwrap()
         .unwrap();
@@ -137,7 +137,7 @@ fn test_roll_back_second<'a>(
     assert!(r.exit_reason.is_succeed());
 
     let root = backend.storage(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY);
-    let queried_header = CkbHeaderReader::default()
+    let queried_header = CkbHeaderReader
         .get_header_by_block_hash(root, &H256::default())
         .unwrap();
     assert!(queried_header.is_none());
@@ -148,7 +148,7 @@ fn test_set_state<'a>(
     executor: &CkbLightClientContract<MemoryBackend<'a>>,
 ) {
     let data = ckb_light_client_abi::SetStateCall { allow_read: true };
-    let querier = CkbHeaderReader::default();
+    let querier = CkbHeaderReader;
 
     assert!(!querier.allow_read());
 

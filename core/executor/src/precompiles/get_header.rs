@@ -31,7 +31,7 @@ impl PrecompileContract for GetHeader {
             H256(<[u8; 32] as AbiDecode>::decode(input).map_err(|_| err!(_, "decode input"))?);
 
         let root = CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow());
-        let header_opt = CkbHeaderReader::default()
+        let header_opt = CkbHeaderReader
             .get_raw(root, &block_hash.0)
             .map_err(|_| err!(_, "get header"))?;
 

@@ -639,7 +639,7 @@ mod tests {
             M: MessageCodec,
             P: AsRef<[Bytes]> + Send + 'a,
         {
-            unreachable!()
+            Ok(())
         }
     }
 

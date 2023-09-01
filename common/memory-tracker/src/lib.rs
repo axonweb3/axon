@@ -1,5 +1,3 @@
-#![allow(clippy::uninlined_format_args)]
-
 use std::{sync::Arc, time::Duration};
 
 use jemalloc_ctl::{epoch, stats};

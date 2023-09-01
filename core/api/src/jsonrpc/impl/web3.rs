@@ -656,7 +656,6 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             })
             .unwrap_or_default();
 
-        #[allow(clippy::large_enum_variant)]
         enum BlockPosition {
             Hash(H256),
             Num(BlockNumber),

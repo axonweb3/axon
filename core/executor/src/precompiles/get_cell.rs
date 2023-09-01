@@ -34,7 +34,7 @@ impl PrecompileContract for GetCell {
         let (tx_hash, index) = parse_input(input)?;
 
         let root = CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow());
-        let cell_opt = ImageCellReader::default()
+        let cell_opt = ImageCellReader
             .get_cell(root, &CellKey { tx_hash, index })
             .map_err(|_| err!(_, "get cell"))?
             .map(|c| Cell {

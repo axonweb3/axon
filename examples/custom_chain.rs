@@ -1,3 +1,5 @@
+#![allow(clippy::diverging_sub_expression)]
+
 use axon::{async_trait, FeeAllocate, FeeInlet, KeyProvider, ValidatorExtend, H160, U256};
 
 #[derive(Default, Clone, Debug)]
@@ -49,7 +51,7 @@ impl KeyProvider for CustomKey {
 }
 
 fn main() {
-    let result = axon::run(CustomFeeAllocator::default(), CustomKey::default(), "0.1.0");
+    let result = axon::run(CustomFeeAllocator, CustomKey, "0.1.0");
     if let Err(e) = result {
         eprintln!("Error {e}");
         std::process::exit(1);

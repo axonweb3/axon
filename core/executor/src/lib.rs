@@ -1,5 +1,3 @@
-#![allow(clippy::uninlined_format_args, clippy::box_default)]
-
 pub mod adapter;
 #[cfg(test)]
 mod debugger;
@@ -39,7 +37,7 @@ use crate::system_contract::{
 };
 
 lazy_static::lazy_static! {
-    pub static ref FEE_ALLOCATOR: ArcSwap<Box<dyn FeeAllocate>> = ArcSwap::from_pointee(Box::new(DefaultFeeAllocator::default()));
+    pub static ref FEE_ALLOCATOR: ArcSwap<Box<dyn FeeAllocate>> = ArcSwap::from_pointee(Box::new(DefaultFeeAllocator));
 }
 
 thread_local! {
@@ -392,7 +390,7 @@ impl AxonExecutor {
 }
 
 pub fn is_call_system_script(action: &TransactionAction) -> bool {
-    let system_contracts = vec![
+    let system_contracts = [
         NATIVE_TOKEN_CONTRACT_ADDRESS,
         METADATA_CONTRACT_ADDRESS,
         CKB_LIGHT_CLIENT_CONTRACT_ADDRESS,

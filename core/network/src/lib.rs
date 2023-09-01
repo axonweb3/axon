@@ -1,4 +1,4 @@
-#![allow(clippy::uninlined_format_args, dead_code)]
+#![allow(dead_code)]
 
 mod common;
 mod compress;

@@ -185,8 +185,7 @@ async fn test_simplestorage() {
     assert_eq!(r.remain_gas, 68719455672);
 
     // let's call SimpleStorage.get() by call
-    let executor = AxonExecutor::default();
-    let r = executor.call(
+    let r = AxonExecutor.call(
         &adapter,
         u64::MAX,
         None,

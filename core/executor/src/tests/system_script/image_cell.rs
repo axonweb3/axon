@@ -60,10 +60,7 @@ fn test_update_first<'a>(
 
     let root = backend.storage(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY);
     let cell_key = CellKey::new([7u8; 32], 0x0);
-    let get_cell = ImageCellReader::default()
-        .get_cell(root, &cell_key)
-        .unwrap()
-        .unwrap();
+    let get_cell = ImageCellReader.get_cell(root, &cell_key).unwrap().unwrap();
     check_cell(&get_cell, 0x1, None);
 }
 
@@ -89,10 +86,7 @@ fn test_update_second<'a>(
 
     let root = backend.storage(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY);
     let cell_key = CellKey::new([7u8; 32], 0x0);
-    let get_cell = ImageCellReader::default()
-        .get_cell(root, &cell_key)
-        .unwrap()
-        .unwrap();
+    let get_cell = ImageCellReader.get_cell(root, &cell_key).unwrap().unwrap();
     check_cell(&get_cell, 0x1, Some(0x2));
 }
 
@@ -115,10 +109,7 @@ fn test_rollback_first<'a>(
 
     let root = backend.storage(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY);
     let cell_key = CellKey::new([7u8; 32], 0x0);
-    let get_cell = ImageCellReader::default()
-        .get_cell(root, &cell_key)
-        .unwrap()
-        .unwrap();
+    let get_cell = ImageCellReader.get_cell(root, &cell_key).unwrap().unwrap();
     check_cell(&get_cell, 0x1, None);
 }
 
@@ -139,10 +130,9 @@ fn test_rollback_second<'a>(
     let r = exec(backend, executor, data.encode());
     assert!(r.exit_reason.is_succeed());
 
-    let querier = ImageCellReader::default();
     let root = backend.storage(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY);
     let cell_key = CellKey::new([7u8; 32], 0x0);
-    let get_cell = querier.get_cell(root, &cell_key).unwrap();
+    let get_cell = ImageCellReader.get_cell(root, &cell_key).unwrap();
     assert!(get_cell.is_none());
 }
 
@@ -151,7 +141,7 @@ fn test_set_state<'a>(
     executor: &ImageCellContract<MemoryBackend<'a>>,
 ) {
     let data = image_cell_abi::SetStateCall { allow_read: true };
-    let querier = ImageCellReader::default();
+    let querier = ImageCellReader;
 
     assert!(!querier.allow_read());
 
