@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    types: [ opened, synchronize, reopened ]
   merge_group:
   workflow_dispatch:
     inputs:
@@ -46,7 +44,7 @@ jobs:
                 repo: dispatch.repo.repo,
                 pull_number: dispatch.issue.number,
               });
-              return pullRequest.merge_commit_sha;
+              return pullRequest.head.sha;
             }
             return `${{ github.ref }}`;
           result-encoding: string
