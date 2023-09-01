@@ -46,7 +46,7 @@ jobs:
               });
               return pullRequest.head.sha;
             }
-            return `${{ github.ref }}`;
+            return `${{ github.sha }}`;
           result-encoding: string
 
       - name: Checkout Axon ${{ steps.axon_git_ref.outputs.result}}
