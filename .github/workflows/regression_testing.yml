@@ -16,7 +16,6 @@ jobs:
         with:
           workflow: Code Format
           token: ${{ secrets.GITHUB_TOKEN }}
-          inputs: '{ "dispatch": "regression" }'
 
   invoke-E2E-test:
     if: github.repository_owner == 'axonweb3'
