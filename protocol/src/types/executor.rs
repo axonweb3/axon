@@ -1,5 +1,6 @@
 pub use ethereum::{AccessList, AccessListItem, Account};
 pub use evm::{backend::Log, Config, ExitError, ExitFatal, ExitReason, ExitRevert, ExitSucceed};
+pub use hasher::HasherKeccak;
 
 use rlp_derive::{RlpDecodable, RlpEncodable};
 

@@ -21,6 +21,7 @@ ethereum-types = { version = "0.14", features = ["arbitrary", "codec", "rlp", "s
 ethers-core = "2.0"
 evm = { version = "0.37", features = ["with-serde"] }
 faster-hex = "0.8"
+hasher = "0.1"
 lazy_static = "1.4"
 ophelia = "0.3"
 overlord = "0.4"

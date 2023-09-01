@@ -18,7 +18,7 @@ use protocol::{
     types::{RichBlock, H256},
 };
 
-use crate::{execute_transactions, init_storage};
+use crate::{execute_transactions, DatabaseGroup};
 
 const DEV_CONFIG_DIR: &str = "../../devtools/chain";
 
@@ -129,22 +129,15 @@ async fn check_genesis_data<'a>(case: &TestCase<'a>) {
         );
     }
     let path_block = tmp_dir.path().join("block");
-    let (storage, trie_db, inner_db) = init_storage(
+    let db_group = DatabaseGroup::new(
         &config.rocksdb,
         path_block,
         config.executor.triedb_cache_size,
     )
-    .await
-    .expect("initialize storage");
+    .expect("initialize databases");
 
-    let resp = execute_transactions(
-        &genesis,
-        &storage,
-        &trie_db,
-        &inner_db,
-        &chain_spec.accounts,
-    )
-    .expect("execute transactions");
+    let resp = execute_transactions(&genesis, &db_group, &chain_spec.accounts)
+        .expect("execute transactions");
 
     check_hashes(
         case.chain_name,
