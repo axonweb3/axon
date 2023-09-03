@@ -502,7 +502,6 @@ pub fn checksum(address: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
 
     use common_merkle::TrieMerkle;
 
@@ -574,21 +573,6 @@ mod tests {
 
         let root = TrieMerkle::default().root_hash().unwrap();
         assert_eq!(root, RLP_NULL);
-    }
-
-    #[test]
-    fn test_metadata_json_serialize() {
-        let metadata: Metadata = serde_json::from_slice(
-            &fs::read("../devtools/genesis-generator/metadata.json").unwrap(),
-        )
-        .unwrap();
-        let json = serde_json::to_value(metadata).unwrap();
-
-        println!("{:?}", json.to_string());
-
-        assert!(json.get("version").unwrap().is_object());
-        assert!(json.get("epoch").unwrap().is_string());
-        assert!(json.get("propose_counter").unwrap().is_array());
     }
 
     #[test]

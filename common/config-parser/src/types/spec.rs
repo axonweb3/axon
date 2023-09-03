@@ -1,11 +1,21 @@
-use std::{ffi::OsStr, io, path::PathBuf};
+use std::{
+    ffi::OsStr,
+    fmt,
+    fs::File,
+    io::{self, Read as _},
+    path::PathBuf,
+};
 
-use clap::builder::{StringValueParser, TypedValueParser, ValueParserFactory};
+use clap::{
+    builder::{StringValueParser, TypedValueParser, ValueParserFactory},
+    Args,
+};
 use serde::Deserialize;
 
+use common_crypto::Secp256k1RecoverablePrivateKey;
 use protocol::{
-    codec::deserialize_address,
-    types::{Block, Bytes, Header, RichBlock, SignedTransaction, H160, U256},
+    codec::{decode_256bits_key, deserialize_address},
+    types::{Block, Bytes, Header, Key256Bits, Metadata, RichBlock, SignedTransaction, H160, U256},
 };
 
 use crate::parse_file;
@@ -21,7 +31,7 @@ pub struct ChainSpec {
     ///
     /// All parameters are not allowed to be modified after the chain
     /// initialized.
-    pub params:   Params,
+    pub params:   Metadata,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -38,13 +48,30 @@ pub struct Genesis {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-pub struct Params {}
-
-#[derive(Clone, Debug, Deserialize)]
 pub struct InitialAccount {
     #[serde(deserialize_with = "deserialize_address")]
     pub address: H160,
     pub balance: U256,
+}
+
+#[derive(Args)]
+#[group(required = true, multiple = false)]
+pub struct PrivateKey {
+    #[arg(
+        short = 'k',
+        long = "key",
+        value_name = "PRIVATE_KEY",
+        help = "The private key which is used to generate transactions in genesis block,",
+        value_parser = PrivateKeyDataValueParser,
+    )]
+    from_cli:  Option<Key256Bits>,
+    #[arg(
+        long = "key-file",
+        value_name = "PRIVATE_KEY_FILE",
+        help = "File path of the private key to generate transactions in genesis block,",
+        value_parser = PrivateKeyFileValueParser,
+    )]
+    from_file: Option<Key256Bits>,
 }
 
 impl ValueParserFactory for ChainSpec {
@@ -104,6 +131,107 @@ impl TypedValueParser for ChainSpecValueParser {
                     spec.genesis.txs = txs;
                 }
                 Ok(spec)
+            })
+    }
+}
+
+impl fmt::Debug for PrivateKey {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.from_cli.is_some() {
+            write!(
+                f,
+                "**** a hidden 256 bits secret key (from hex string) ****"
+            )
+        } else {
+            write!(f, "**** a hidden 256 bits secret key (from filepath) ****")
+        }
+    }
+}
+
+impl PrivateKey {
+    pub fn data(self) -> Result<Secp256k1RecoverablePrivateKey, String> {
+        let Self {
+            from_cli,
+            from_file,
+        } = self;
+        match (from_cli, from_file) {
+            (Some(data), None) | (None, Some(data)) => {
+                Secp256k1RecoverablePrivateKey::try_from(data.as_ref())
+                    .map_err(|err| err.to_string())
+            }
+            _ => {
+                let msg = "failed to parse the private key";
+                Err(msg.to_owned())
+            }
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct PrivateKeyDataValueParser;
+
+impl TypedValueParser for PrivateKeyDataValueParser {
+    type Value = Key256Bits;
+
+    fn parse_ref(
+        &self,
+        cmd: &clap::Command,
+        arg: Option<&clap::Arg>,
+        value: &OsStr,
+    ) -> Result<Self::Value, clap::Error> {
+        StringValueParser::new()
+            .parse_ref(cmd, arg, value)
+            .and_then(|s| {
+                decode_256bits_key(&s).map_err(|err| {
+                    let kind = clap::error::ErrorKind::InvalidValue;
+                    let msg = format!("failed to parse private key since {err}",);
+                    clap::Error::raw(kind, msg)
+                })
+            })
+    }
+}
+
+#[derive(Clone)]
+pub struct PrivateKeyFileValueParser;
+
+impl TypedValueParser for PrivateKeyFileValueParser {
+    type Value = Key256Bits;
+
+    fn parse_ref(
+        &self,
+        cmd: &clap::Command,
+        arg: Option<&clap::Arg>,
+        value: &OsStr,
+    ) -> Result<Self::Value, clap::Error> {
+        StringValueParser::new()
+            .parse_ref(cmd, arg, value)
+            .map(PathBuf::from)
+            .and_then(|p| {
+                File::open(p)
+                    .and_then(|mut f| {
+                        let mut buffer = Vec::new();
+                        f.read_to_end(&mut buffer).map(|_| buffer)
+                    })
+                    .map_err(|err| {
+                        let kind = clap::error::ErrorKind::InvalidValue;
+                        let msg = format!("failed to parse private key file since {err}",);
+                        clap::Error::raw(kind, msg)
+                    })
+            })
+            .and_then(|bytes| {
+                const LEN: usize = 32;
+                if bytes.len() == LEN {
+                    let mut v = [0u8; 32];
+                    v.copy_from_slice(&bytes);
+                    Ok(Self::Value::from(v))
+                } else {
+                    let kind = clap::error::ErrorKind::InvalidValue;
+                    let msg = format!(
+                        "failed to parse private key file since its length is {} but expect {LEN}.",
+                        bytes.len()
+                    );
+                    Err(clap::Error::raw(kind, msg))
+                }
             })
     }
 }

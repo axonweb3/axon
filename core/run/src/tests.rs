@@ -9,16 +9,17 @@ use std::{
 use clap::{builder::TypedValueParser as _, Command};
 
 use common_config_parser::types::{
-    spec::{ChainSpec, ChainSpecValueParser},
+    spec::{ChainSpec, ChainSpecValueParser, PrivateKeyFileValueParser},
     Config, ConfigValueParser,
 };
+use common_crypto::Secp256k1RecoverablePrivateKey;
 use protocol::{
     codec::hex_decode,
     tokio,
     types::{RichBlock, H256},
 };
 
-use crate::{execute_transactions, DatabaseGroup};
+use crate::{components::chain_spec::ChainSpecExt as _, execute_transactions, DatabaseGroup};
 
 const DEV_CONFIG_DIR: &str = "../../devtools/chain";
 
@@ -26,6 +27,7 @@ struct TestCase<'a> {
     chain_name:            &'a str,
     config_file:           &'a str,
     chain_spec_file:       &'a str,
+    key_file:              &'a str,
     input_genesis_hash:    &'a str,
     genesis_state_root:    &'a str,
     genesis_receipts_root: &'a str,
@@ -36,6 +38,7 @@ const TESTCASES: &[TestCase] = &[
         chain_name:            "single_node",
         config_file:           "config.toml",
         chain_spec_file:       "specs/single_node/chain-spec.toml",
+        key_file:              "debug.key",
         input_genesis_hash:    "0x2043f690fc6e086c6940a083072a82dee16c18a4c4afaf6f4e1c7a585fae2543",
         genesis_state_root:    "0x601bd874d41eb9adb32021ee3ab934e0481065c58abfe7e757e33fb01be18dd5",
         genesis_receipts_root: "0x8544b530238201f1620b139861a6841040b37f78f8bdae8736ef5cec474e979b",
@@ -44,6 +47,7 @@ const TESTCASES: &[TestCase] = &[
         chain_name:            "multi_nodes",
         config_file:           "nodes/node_1.toml",
         chain_spec_file:       "specs/multi_nodes/chain-spec.toml",
+        key_file:              "debug.key",
         input_genesis_hash:    "0x5e5c47725bb1face59965a326b1d69e1ada1892da2e2f53c4520ed5da3d88d59",
         genesis_state_root:    "0xc36f75519a047fec6a34c7be5dfca783a40eafa0d7418ad7b3ba99ad9c2dc655",
         genesis_receipts_root: "0x8544b530238201f1620b139861a6841040b37f78f8bdae8736ef5cec474e979b",
@@ -52,6 +56,7 @@ const TESTCASES: &[TestCase] = &[
         chain_name:            "multi_nodes_short_epoch_len",
         config_file:           "nodes/node_1.toml",
         chain_spec_file:       "specs/multi_nodes_short_epoch_len/chain-spec.toml",
+        key_file:              "debug.key",
         input_genesis_hash:    "0x2043f690fc6e086c6940a083072a82dee16c18a4c4afaf6f4e1c7a585fae2543",
         genesis_state_root:    "0x42886558baab8a3c310d5a8313398e5f353cc4f8192838b578c857a329e9bb65",
         genesis_receipts_root: "0x8544b530238201f1620b139861a6841040b37f78f8bdae8736ef5cec474e979b",
@@ -101,7 +106,14 @@ async fn check_genesis_data<'a>(case: &TestCase<'a>) {
             .parse_ref(&command, None, chain_spec_path.as_os_str())
             .expect("parse chain-spec file")
     };
-    let genesis = chain_spec.genesis.build_rich_block();
+    let key: Secp256k1RecoverablePrivateKey = {
+        let key_file_path = tmp_dir_path.join(case.key_file);
+        let key_data = PrivateKeyFileValueParser
+            .parse_ref(&command, None, key_file_path.as_os_str())
+            .expect("parse key file");
+        Secp256k1RecoverablePrivateKey::try_from(key_data.as_ref()).expect("load key data")
+    };
+    let genesis = chain_spec.generate_genesis_block(key);
 
     check_hashes(
         case.chain_name,

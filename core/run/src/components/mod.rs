@@ -1,3 +1,4 @@
+pub(crate) mod chain_spec;
 pub(crate) mod extensions;
 pub(crate) mod network;
 pub(crate) mod storage;
