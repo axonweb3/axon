@@ -24,7 +24,10 @@ pub const DEFAULT_CACHE_SIZE: usize = 100;
 pub struct Config {
     // crypto
     #[serde(deserialize_with = "deserialize_256bits_key")]
-    pub privkey:   Key256Bits,
+    pub net_privkey: Key256Bits,
+    #[serde(deserialize_with = "deserialize_256bits_key")]
+    pub bls_privkey: Key256Bits,
+
     // db config
     pub data_path: PathBuf,
 

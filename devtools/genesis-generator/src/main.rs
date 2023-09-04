@@ -120,7 +120,7 @@ fn get_metadata(config_path: String) -> (Metadata, Metadata) {
         .iter()
         .map(|file_name| {
             let config: Config = parse_file(file_name, false).unwrap();
-            let priv_key = config.privkey;
+            let priv_key = config.bls_privkey;
             get_ve(Hex::encode(priv_key.as_ref()), propose_weight, vote_weight)
         })
         .collect::<Vec<_>>();

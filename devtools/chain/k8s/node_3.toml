@@ -1,5 +1,6 @@
 # crypto
-privkey = "0x51ce21643b911347c5d5c85c323d9d5421810dc89f46b688720b2715f5e8e936"
+net_privkey = "0x4d9ff772f801b4d927260ca3b3432b6add343daabd98570033cbb16e95918498"
+bls_privkey = "0x51ce21643b911347c5d5c85c323d9d5421810dc89f46b688720b2715f5e8e936"
 
 # db config
 data_path = "./devtools/chain/data3"
@@ -23,16 +24,16 @@ rpc_timeout = 10
 sync_txs_chunk_size = 5000
 
 [[network.bootstraps]]
-multi_address = "/dns4/axon1/tcp/8001/p2p/QmNk6bBwkLPuqnsrtxpp819XLZY3ymgjs3p1nKtxBVgqxj"
+multi_address = "/dns4/axon1/tcp/8001/p2p/QmY5oSuqWmbTV6k7fmQgWuXU4ui2avDEhnobr2KHBHkkWA"
 
 [[network.bootstraps]]
-multi_address = "/dns4/axon2/tcp/8001/p2p/QmaHBJqULbLGDn7Td196goNebH6XMTMMu2sKNNP2DiX9S2"
+multi_address = "/dns4/axon2/tcp/8001/p2p/QmUu16gPSw4QjR6D6rcZ48jFzEudoHKV52r2AfTRM1MNN7"
 
 [[network.bootstraps]]
-multi_address = "/dns4/axon3/tcp/8001/p2p/QmQLufVVmBuHKoYhdDCqUFYVtLYs1quryoaA1mkQYQdWkn"
+multi_address = "/dns4/axon3/tcp/8001/p2p/QmWZvKC6Cy2Uu8qQ1asCXyn9TA8cD1NXpYGtfPitXYhCsa"
 
 [[network.bootstraps]]
-multi_address = "/dns4/axon4/tcp/8001/p2p/QmXoSkz4zkHHiFZqmDZQ4gFYtJ72uqtp4m6FX373X4VkRq"
+multi_address = "/dns4/axon4/tcp/8001/p2p/QmUG47QnBXC9tvESroV2NngTE6rbHsM1167GxPJexxPYyM"
 
 [mempool]
 timeout_gap = 20
