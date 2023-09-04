@@ -33,7 +33,7 @@ jobs:
     needs: output_tag_name
     steps:
       - name: Git checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.ref || 'main' }}
       - name: Login to Docker Hub
@@ -70,7 +70,7 @@ jobs:
         run: |
           echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
       - name: Git checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.ref || 'build-arm64-image' }}
       - name: arm64 docker image build

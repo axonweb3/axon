@@ -47,7 +47,7 @@ jobs:
           result-encoding: string
 
       - name: Checkout Axon ${{ steps.axon_git_ref.outputs.result}}
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ steps.axon_git_ref.outputs.result}}
 
@@ -72,7 +72,7 @@ jobs:
             > /tmp/log 2>&1 &
 
       - name: Checkout gpBlockchain/axon-test
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: gpBlockchain/axon-test
           path: axon-test

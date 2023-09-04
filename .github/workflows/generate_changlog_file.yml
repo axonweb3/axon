@@ -9,7 +9,7 @@ jobs:
     outputs:
       changelog: ${{ steps.changelog.outputs.changelog }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: "✏️ Generate release changelog"
       id: changelog
       uses: liya2017/auto-generator-changelog@main
@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: generate-changelog
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with: 
         ref: main
     - run: |

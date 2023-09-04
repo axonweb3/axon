@@ -72,10 +72,10 @@ jobs:
           inputs="${inputs//'\r'/'%0D'}"
           echo "result=$inputs" >> $GITHUB_OUTPUT
       - name: Git checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ steps.escape_multiple_lines_test_inputs.outputs.result || 'main'}}
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           repository: gpBlockchain/openzeppelin-contracts
           ref: compatibillity-axon
