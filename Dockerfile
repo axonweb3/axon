@@ -14,8 +14,8 @@ RUN set -eux; \
 
 RUN cd /build && cargo build --release
 
-# TODO: update the parent image
-FROM debian:bookworm-20211011-slim
+
+FROM debian:bookworm-20230612-slim
 WORKDIR /app
 
 RUN set -eux; \
