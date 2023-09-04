@@ -81,7 +81,7 @@ jobs:
           path: v3-core
       - uses: actions/setup-node@v3
         with:
-          node-version: 16.x
+          node-version: 20.x
 
       - id: yarn-cache
         run: echo "dir=$(yarn cache dir)" >> $GITHUB_OUTPUT
