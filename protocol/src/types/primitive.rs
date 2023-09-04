@@ -152,7 +152,8 @@ impl<'de> Deserialize<'de> for Hex {
     where
         D: de::Deserializer<'de>,
     {
-        Ok(Hex(withpfx_lowercase::deserialize(deserializer)?))
+        String::deserialize(deserializer)
+            .and_then(|s| Hex::from_str(&s).map_err(serde::de::Error::custom))
     }
 }
 
@@ -532,6 +533,20 @@ mod tests {
             serde_json::to_string(&hex).unwrap(),
             serde_json::to_string(&data).unwrap()
         );
+    }
+
+    #[test]
+    fn test_hex_serde_deserialize() {
+        #[derive(Deserialize)]
+        struct Params {
+            key: Hex,
+        }
+        let test_params: &str = r#"
+            key = "0x1234"
+        "#;
+        let params: Params = toml::from_str(test_params).unwrap();
+        let expected = Hex::from_str("0x1234").unwrap();
+        assert_eq!(params.key, expected);
     }
 
     #[test]
