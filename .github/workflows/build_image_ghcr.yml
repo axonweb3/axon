@@ -91,24 +91,33 @@ jobs:
         working-directory: devtools/chain
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout devtools/chain
+      uses: actions/checkout@v4
+      with:
+        sparse-checkout: |
+          devtools/chain
+          devtools/ci/scripts/helper.js
 
-    - name: Modify Axon image
+    - name: Modify the Axon image of in devtools/chain/docker-compose.yml
       env:
         AXON_IMAGE: "${{ needs.build-amd64-image-to-ghcr.outputs.image_name }}:${{ needs.build-amd64-image-to-ghcr.outputs.image_tag }}"
-      uses: mikefarah/yq@v4
+      uses: mikefarah/yq@v4.35.1
       with:
-        cmd: |
-          echo "Update the image of Axon"
-          yq -i '.services.axon.image = "${{ env.AXON_IMAGE }}"' ./docker-compose.yml
-          echo "====== devtools/chain/docker-compose.yml ======"
-          cat docker-compose.yml
+        cmd: yq -i '.services.axon.image = "${{ env.AXON_IMAGE }}"' 'devtools/chain/docker-compose.yml'
+
+    - name: Review devtools/chain/docker-compose.yml
+      run: |
+        echo "====== devtools/chain/docker-compose.yml ======\n"
+        cat docker-compose.yml
+        echo "===============================================\n"
 
     - name: Run docker compose up and a simple test
       run: |
         docker-compose up -d
         docker-compose ps
         docker-compose logs --tail 6
+
+        echo "TODO: health_check" && sleep 6
 
         npx zx <<'EOF'
         import { waitXBlocksPassed } from '../ci/scripts/helper.js'
