@@ -18,14 +18,10 @@ RUN cd /build && cargo build --release
 FROM debian:bookworm-20230612-slim
 WORKDIR /app
 
-RUN set -eux; \
-    apt-get update; \
-    apt-get install -y --no-install-recommends \
-        libssl-dev \
-        libc6-dev \
-        ca-certificates; \
-     rm -rf /var/lib/apt/lists/*
-
+COPY --from=builder \
+  /usr/lib/x86_64-linux-gnu/libssl.so.* \
+  /usr/lib/x86_64-linux-gnu/libcrypto.so.* \
+  /usr/lib/x86_64-linux-gnu/
 COPY --from=builder /build/target/release/axon /app/axon
 COPY --from=builder /build/devtools /app/devtools
 
