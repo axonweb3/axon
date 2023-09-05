@@ -37,10 +37,13 @@ jobs:
         LOG_FILE: ${{ runner.temp }}/${{ matrix.os }}-single-axon-node.log
       run: |
         target/debug/axon --version | tee ${{ env.LOG_FILE }}
-        target/debug/axon run \
+        target/debug/axon init \
           --config devtools/chain/config.toml \
           --chain-spec devtools/chain/specs/single_node/chain-spec.toml \
-          | tee ${{ env.LOG_FILE }} &
+          | tee -a ${{ env.LOG_FILE }}
+        target/debug/axon run \
+          --config devtools/chain/config.toml \
+          | tee -a ${{ env.LOG_FILE }} &
 
         sleep 10
 
@@ -85,22 +88,36 @@ jobs:
         mkdir -p ${{ env.LOG_PATH }}
 
         target/debug/axon --version
-        target/debug/axon run \
+
+        target/debug/axon init \
           --config devtools/chain/nodes/node_1.toml \
           --chain-spec devtools/chain/specs/multi_nodes_short_epoch_len/chain-spec.toml \
-          > ${{ env.LOG_PATH }}/node_1.log &
-        target/debug/axon run \
+          > ${{ env.LOG_PATH }}/node_1.log
+        target/debug/axon init \
           --config devtools/chain/nodes/node_2.toml \
           --chain-spec devtools/chain/specs/multi_nodes_short_epoch_len/chain-spec.toml \
-          > ${{ env.LOG_PATH }}/node_2.log &
-        target/debug/axon run \
+          > ${{ env.LOG_PATH }}/node_2.log
+        target/debug/axon init \
           --config devtools/chain/nodes/node_3.toml \
           --chain-spec devtools/chain/specs/multi_nodes_short_epoch_len/chain-spec.toml \
-          > ${{ env.LOG_PATH }}/node_3.log &
-        target/debug/axon run \
+          > ${{ env.LOG_PATH }}/node_3.log
+        target/debug/axon init \
           --config devtools/chain/nodes/node_4.toml \
           --chain-spec devtools/chain/specs/multi_nodes_short_epoch_len/chain-spec.toml \
-          > ${{ env.LOG_PATH }}/node_4.log &
+          > ${{ env.LOG_PATH }}/node_4.log
+
+        target/debug/axon run \
+          --config devtools/chain/nodes/node_1.toml \
+          >> ${{ env.LOG_PATH }}/node_1.log &
+        target/debug/axon run \
+          --config devtools/chain/nodes/node_2.toml \
+          >> ${{ env.LOG_PATH }}/node_2.log &
+        target/debug/axon run \
+          --config devtools/chain/nodes/node_3.toml \
+          >> ${{ env.LOG_PATH }}/node_3.log &
+        target/debug/axon run \
+          --config devtools/chain/nodes/node_4.toml \
+          >> ${{ env.LOG_PATH }}/node_4.log &
 
         npx zx <<'EOF'
         import { waitXBlocksPassed } from './devtools/ci/scripts/helper.js'

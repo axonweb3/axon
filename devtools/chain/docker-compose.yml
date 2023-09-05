@@ -15,7 +15,8 @@ services:
     - axon-net
     restart: unless-stopped
     command: |
-      /app/axon run --config=/app/config.toml --chain-spec=/app/single_node_spec/chain-spec.toml
+      /app/axon init --config=/app/config.toml --chain-spec=/app/single_node_spec/chain-spec.toml
+      /app/axon run  --config=/app/config.toml
 
   explorer:
     container_name: blockscan

@@ -22,8 +22,22 @@ pub struct RocksAdapter {
 }
 
 impl RocksAdapter {
+    /// Create a new RocksDB or load an already existed RocksDB.
     pub fn new<P: AsRef<Path>>(path: P, config: ConfigRocksDB) -> ProtocolResult<Self> {
-        if !path.as_ref().is_dir() {
+        Self::open_internal(path, config, true)
+    }
+
+    /// Open an already existed RocksDB, or return error if it doesn't exist.
+    pub fn open<P: AsRef<Path>>(path: P, config: ConfigRocksDB) -> ProtocolResult<Self> {
+        Self::open_internal(path, config, false)
+    }
+
+    fn open_internal<P: AsRef<Path>>(
+        path: P,
+        config: ConfigRocksDB,
+        allow_missing: bool,
+    ) -> ProtocolResult<Self> {
+        if allow_missing && !path.as_ref().is_dir() {
             fs::create_dir_all(&path).map_err(RocksDBError::CreateDB)?;
         }
 
@@ -66,14 +80,11 @@ impl RocksAdapter {
             (opts, cf_descriptors)
         };
 
-        opts.create_if_missing(true);
+        if allow_missing {
+            opts.create_if_missing(true);
+        }
         opts.create_missing_column_families(true);
         opts.set_max_open_files(config.max_open_files);
-
-        // let tmp_db = DB::list_cf(&opts, path).map_err(RocksDBError::from)?;
-        // if tmp_db.len() != cf_descriptors.len() {
-        //     opts.create_missing_column_families(true);
-        // }
 
         let db =
             DB::open_cf_descriptors(&opts, path, cf_descriptors).map_err(RocksDBError::from)?;

@@ -2,7 +2,7 @@ mod args;
 mod error;
 pub(crate) mod utils;
 
-pub use args::run::RunArgs;
+pub use args::{init::InitArgs, run::RunArgs};
 pub use error::{CheckingVersionError, Error, Result};
 
 use clap::{CommandFactory as _, FromArgMatches as _, Parser, Subcommand};
@@ -19,6 +19,7 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Commands {
+    Init(InitArgs),
     Run(RunArgs),
 }
 
@@ -57,6 +58,7 @@ impl AxonCli {
             inner: cli,
         } = self;
         match cli.command {
+            Commands::Init(args) => args.execute(kernel_version),
             Commands::Run(args) => args.execute(application_version, kernel_version, key_provider),
         }
     }
