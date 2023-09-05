@@ -1,10 +1,13 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    sync::{Arc, RwLock},
+};
 
 use common_crypto::Secp256k1PublicKey;
 
 use crate::types::{
-    Address, Block, BlockNumber, Bytes, ExecResp, Hash, Header, Hex, MerkleRoot, Metadata,
-    PackedTxHashes, Proof, Proposal, Receipt, SignedTransaction, Validator, U256,
+    Address, Block, BlockNumber, Bytes, ExecResp, HardforkInfoInner, Hash, Header, Hex, MerkleRoot,
+    Metadata, PackedTxHashes, Proof, Proposal, Receipt, SignedTransaction, Validator, U256,
 };
 use crate::{async_trait, traits::Context, ProtocolResult};
 
@@ -16,9 +19,10 @@ pub enum MessageTarget {
 
 #[derive(Debug, Clone)]
 pub struct NodeInfo {
-    pub chain_id:     u64,
-    pub self_pub_key: Secp256k1PublicKey,
-    pub self_address: Address,
+    pub chain_id:           u64,
+    pub self_pub_key:       Secp256k1PublicKey,
+    pub self_address:       Address,
+    pub hardfork_proposals: Arc<RwLock<Option<HardforkInfoInner>>>,
 }
 
 impl NodeInfo {
@@ -28,6 +32,7 @@ impl NodeInfo {
             chain_id,
             self_pub_key: pubkey,
             self_address: address,
+            hardfork_proposals: Default::default(),
         }
     }
 }

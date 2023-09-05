@@ -183,6 +183,9 @@ pub enum ConsensusError {
 
     #[display(fmt = "Build trie merkle tree error {}", _0)]
     BuildMerkle(String),
+
+    #[display(fmt = "Proposal hardfork info don't match")]
+    HardforkDontMatch,
 }
 
 #[derive(Debug, Display)]
