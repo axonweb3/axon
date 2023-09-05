@@ -47,7 +47,7 @@ pub enum ProtocolErrorKind {
 
 // refer to https://github.com/rust-lang/rust/blob/a17951c4f80eb5208030f91fdb4ae93919fa6b12/src/libstd/io/error.rs#L73
 #[derive(Debug, Constructor, Display)]
-#[display(fmt = "[ProtocolError] Kind: {:?} Error: {:?}", kind, error)]
+#[display(fmt = "[ProtocolError] Kind: {:?}, Error: {}", kind, error)]
 pub struct ProtocolError {
     kind:  ProtocolErrorKind,
     error: Box<dyn Error + Send>,
