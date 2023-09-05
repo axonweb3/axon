@@ -11,7 +11,7 @@ jobs:
    Smoking-test:
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Download&Unzip
       run: |
         tag="${{ github.event.inputs.axon_linux_release_tag }}"

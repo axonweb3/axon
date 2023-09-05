@@ -22,7 +22,7 @@ jobs:
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Cache of the axon binary
       id: axon-bin-cache
       uses: actions/cache@v3
@@ -68,7 +68,7 @@ jobs:
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Cache of the axon binary
       id: axon-bin-cache
       uses: actions/cache@v3

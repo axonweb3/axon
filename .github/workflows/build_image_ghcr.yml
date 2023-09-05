@@ -22,7 +22,7 @@ jobs:
       packages: write
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         ref: ${{ github.event.inputs.commit_sha || '' }}
 
@@ -91,7 +91,7 @@ jobs:
         working-directory: devtools/chain
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Modify Axon image
       env:
