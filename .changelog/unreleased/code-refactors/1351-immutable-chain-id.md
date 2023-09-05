@@ -1,0 +1,1 @@
+- Make chain id immutable ([\#1351](https://github.com/axonweb3/axon/pull/1351))

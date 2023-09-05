@@ -1,0 +1,1 @@
+- Fix `eth_subscribe` method name ([\#1281](https://github.com/axonweb3/axon/pull/1281))

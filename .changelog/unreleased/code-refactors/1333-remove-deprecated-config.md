@@ -1,0 +1,1 @@
+- Remove deprecated config ([\#1333](https://github.com/axonweb3/axon/pull/1333))

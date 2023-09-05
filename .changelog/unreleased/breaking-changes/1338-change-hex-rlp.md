@@ -1,0 +1,1 @@
+- Change the rlp codec of `Hex` ([\#1338](https://github.com/axonweb3/axon/pull/1338))
