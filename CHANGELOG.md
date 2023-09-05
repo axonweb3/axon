@@ -10,11 +10,11 @@
   ([\#1316](https://github.com/axonweb3/axon/pull/1316))
 - Add `version` field to block header and proposal
   ([\#1319](https://github.com/axonweb3/axon/pull/1319))
-- Change the rlp codec of `Hex` ([\#1338](https://github.com/axonweb3/axon/pull/1338))
 - Read-write separation and merge RocksDB instance
   ([\#1338](https://github.com/axonweb3/axon/pull/1338))
 - Remove useless fields in `Header`
   ([\#1339](https://github.com/axonweb3/axon/pull/1339))
+- Change the rlp codec of `Hex` ([\#1382](https://github.com/axonweb3/axon/pull/1382))
 
 ### BUG FIXES
 
@@ -87,5 +87,3 @@
 
 - Reduce memory cost in `modexp` precompile contract
   ([\#1300](https://github.com/axonweb3/axon/pull/1300))
-
-Changelogs before 0.2.0 can be found [here](./CHANGELOG_OLD.md).
