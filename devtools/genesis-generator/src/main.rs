@@ -94,7 +94,7 @@ fn build_axon_txs(
 
 // get metadata key from config.toml
 fn get_metadata(config_path: String) -> (Metadata, Metadata) {
-    let entries = fs::read_dir(config_path)
+    let mut entries = fs::read_dir(config_path)
         .unwrap()
         .filter_map(|res| {
             res.ok().and_then(|e| {
@@ -107,6 +107,11 @@ fn get_metadata(config_path: String) -> (Metadata, Metadata) {
             })
         })
         .collect::<Vec<_>>();
+    entries.sort_by_key(|p| {
+        p.file_name()
+            .and_then(|o| o.to_str().map(|s| s.to_owned()))
+            .unwrap()
+    });
     let input_path = "metadata.json";
     let mut metadata: Metadata =
         serde_json::from_slice(&std::fs::read(input_path).unwrap()).unwrap();

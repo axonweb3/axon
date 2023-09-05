@@ -1,7 +1,7 @@
 {
 	"version": {
 		"start": 1,
-		"end": 100000000
+		"end": 100
 	},
 	"epoch": 0,
     "verifier_list": [
