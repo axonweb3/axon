@@ -62,13 +62,4 @@ impl MetadataHandle {
         HARDFORK_INFO.swap(Arc::new(hardfork));
         Ok(())
     }
-
-    // this function use to init an axon chain with genesis block
-    pub fn set_current_hardfork_info(&self, info: H256) -> ProtocolResult<()> {
-        let mut store = MetadataStore::new(self.root)?;
-
-        store.set_hardfork_info(0, info)?;
-
-        Ok(())
-    }
 }

@@ -4,11 +4,14 @@
 
 [genesis]
 timestamp = 1679656015
-extra_data = []
 base_fee_per_gas = "0x539"
 chain_id = 2022
 # A JSON file which includes all transactions in the genesis block.
 transactions = "genesis_transactions.json"
+
+[genesis.extra_data]
+block_number = 0
+hardforks = []
 
 #
 # Accounts since the genesis block.

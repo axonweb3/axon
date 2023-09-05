@@ -16,6 +16,7 @@ use common_apm_derive::trace_span;
 use common_crypto::BlsPublicKey;
 use common_logger::{json, log};
 use common_merkle::TrieMerkle;
+use core_executor::MetadataHandle;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
     Block, BlockVersion, Bytes, ExecResp, Hash, Hex, Metadata, Proof, Proposal, SignedTransaction,
@@ -81,6 +82,22 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             RLP_NULL
         };
 
+        let extra_data_hardfork = {
+            let mut hardfork = self.node_info.hardfork_proposals.write().unwrap();
+            match &*hardfork {
+                Some(v) => {
+                    // remove invalid proposal
+                    if v.block_number <= next_number {
+                        hardfork.take();
+                        Default::default()
+                    } else {
+                        v.encode().unwrap()
+                    }
+                }
+                None => Default::default(),
+            }
+        };
+
         let proposal = Proposal {
             version:                  BlockVersion::V0,
             prev_hash:                status.prev_hash,
@@ -91,15 +108,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             timestamp:                time_now(),
             number:                   next_number,
             gas_limit:                MAX_BLOCK_GAS_LIMIT.into(),
-            extra_data:               {
-                self.node_info
-                    .hardfork_proposals
-                    .read()
-                    .unwrap()
-                    .as_ref()
-                    .map(|v| v.encode().unwrap())
-                    .unwrap_or_default()
-            },
+            extra_data:               extra_data_hardfork,
             base_fee_per_gas:         BASE_FEE_PER_GAS.into(),
             proof:                    status.proof,
             chain_id:                 self.node_info.chain_id,
@@ -633,12 +642,22 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         // Save the block
         self.adapter.save_block(ctx.clone(), block.clone()).await?;
 
-        if let Ok(data) = HardforkInfoInner::decode(&block.header.extra_data) {
+        let root = self
+            .adapter
+            .get_metadata_root(
+                block.header.state_root,
+                &Proposal::new_without_state_root(&block.header),
+            )
+            .await?;
+        let handle = MetadataHandle::new(root);
+        let hardforks = handle.hardfork_infos()?;
+
+        if let Some(data) = hardforks.inner.last() {
             let mut self_proposal = self.node_info.hardfork_proposals.write().unwrap();
 
             if self_proposal
                 .as_ref()
-                .map(|v| v == &data)
+                .map(|v| data.flags & v.flags == v.flags)
                 .unwrap_or_default()
             {
                 // remove self hardfork proposal

@@ -116,10 +116,6 @@ impl<Adapter: ExecutorAdapter + ApplyBackend> SystemContract<Adapter>
 
     fn after_block_hook(&self, adapter: &mut Adapter) {
         let block_number = adapter.block_number();
-        if block_number.is_zero() {
-            return;
-        }
-
         let root = CURRENT_METADATA_ROOT.with(|r| *r.borrow());
 
         let mut store = MetadataStore::new(root).unwrap();
@@ -133,6 +129,10 @@ impl<Adapter: ExecutorAdapter + ApplyBackend> SystemContract<Adapter>
         let hardfork = store.hardfork_info(block_number.as_u64()).unwrap();
 
         HARDFORK_INFO.swap(Arc::new(hardfork));
+
+        if block_number.is_zero() {
+            return;
+        }
 
         if let Err(e) = store.update_propose_count(block_number.as_u64(), &adapter.origin()) {
             panic!("Update propose count at {:?} failed: {:?}", block_number, e)

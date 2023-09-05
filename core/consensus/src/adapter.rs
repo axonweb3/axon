@@ -374,6 +374,20 @@ where
             .get_metadata_by_epoch(epoch)
     }
 
+    async fn get_metadata_root(
+        &self,
+        state_root: Hash,
+        proposal: &Proposal,
+    ) -> ProtocolResult<Hash> {
+        let backend = AxonExecutorApplyAdapter::from_root(
+            state_root,
+            Arc::clone(&self.trie_db),
+            Arc::clone(&self.storage),
+            proposal.clone().into(),
+        )?;
+        Ok(backend.get_metadata_root())
+    }
+
     #[trace_span(kind = "consensus.adapter")]
     async fn broadcast_number(&self, ctx: Context, number: u64) -> ProtocolResult<()> {
         self.network

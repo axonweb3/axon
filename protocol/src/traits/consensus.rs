@@ -156,6 +156,12 @@ pub trait CommonConsensusAdapter: Send + Sync {
 
     async fn get_metadata_by_epoch(&self, epoch: u64) -> ProtocolResult<Metadata>;
 
+    async fn get_metadata_root(
+        &self,
+        state_root: Hash,
+        proposal: &Proposal,
+    ) -> ProtocolResult<Hash>;
+
     async fn broadcast_number(&self, ctx: Context, height: u64) -> ProtocolResult<()>;
 
     fn set_args(&self, context: Context, state_root: MerkleRoot, gas_limit: u64, max_tx_size: u64);
