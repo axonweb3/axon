@@ -1,10 +1,12 @@
 #!/bin/sh
 
-DATA_DIR="/app/devtools/chain/data"
-CONFIG_FILE="/app/devtools/chain/config.toml"
-CHAIN_SPEC_FILE="/app/devtools/chain/specs/single_node/chain-spec.toml"
+BASE_DIR="/app/devtools/chain"
+DATA_DIR="${BASE_DIR}/data"
+CONFIG_FILE="${BASE_DIR}/config.toml"
+CHAIN_SPEC_FILE="${BASE_DIR}/specs/single_node/chain-spec.toml"
+KEY_FILE="${BASE_DIR}/debug.key"
 
 if [ ! -e "${DATA_DIR}" ]; then
-    /app/axon init -c=${CONFIG_FILE} -s=${CHAIN_SPEC_FILE}
+    /app/axon init --config "${CONFIG_FILE}" --chain-spec "${CHAIN_SPEC_FILE}" --key-file "${KEY_FILE}"
 fi
-/app/axon run -c=${CONFIG_FILE}
+/app/axon run --config "${CONFIG_FILE}"

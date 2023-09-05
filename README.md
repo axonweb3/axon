@@ -3,7 +3,7 @@
     <img src="./docs/assets/logo/axon-01.png" width="450">
   </a>
   <p align="center">
-	<a href="https://github.com/axonweb3/axon/releases"><img src="https://img.shields.io/github/v/release/axonweb3/axon?sort=semver"></a>
+    <a href="https://github.com/axonweb3/axon/releases"><img src="https://img.shields.io/github/v/release/axonweb3/axon?sort=semver"></a>
     <a href = "https://hub.docker.com/r/axonweb3/axon/tags"><img src = "https://img.shields.io/docker/pulls/axonweb3/axon"></a>
     <a href="https://github.com/axonweb3/axon/blob/main/LICENSE"><img src="https://img.shields.io/badge/License-MIT-green.svg"></a>
     <a href="https://github.com/axonweb3/axon"><img src="https://github.com/axonweb3/axon/actions/workflows/web3_compatible.yml/badge.svg?branch=main"></a>
@@ -52,8 +52,12 @@ Axon provides the compiled binary on the [release page](`https://github.com/axon
 # Clone from GitHub
 git clone https://github.com/axonweb3/axon.git && cd axon
 # Run release binary for single node
-cargo run --release -- init -c devtools/chain/config.toml -s devtools/chain/specs/single_node/chain-spec.toml
-cargo run --release -- run  -c devtools/chain/config.toml
+cargo build --release
+target/release/axon init \
+    --config devtools/chain/config.toml \
+    --chain-spec devtools/chain/specs/single_node/chain-spec.toml \
+    --key-file devtools/chain/debug.key
+target/release/axon run --config devtools/chain/config.toml
 
 ```
 
