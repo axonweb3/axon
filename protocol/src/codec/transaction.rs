@@ -362,58 +362,13 @@ impl Decodable for SignedTransaction {
 mod tests {
     use super::*;
 
-    use rand::random;
-
     use common_crypto::secp256k1_recover;
 
     use crate::codec::hex_decode;
     use crate::types::{
         AddressSource, Bytes, CKBTxMockByRefAndOneInput, CellDep, CellWithData, Public, Script,
-        SignatureR, SignatureS, TransactionAction, Witness, H160, H256, U256,
+        SignatureR, SignatureS, Witness, H160, H256, U256,
     };
-
-    fn rand_bytes(len: usize) -> Bytes {
-        Bytes::from((0..len).map(|_| random::<u8>()).collect::<Vec<_>>())
-    }
-
-    fn mock_eip1559_transaction() -> Eip1559Transaction {
-        Eip1559Transaction {
-            nonce:                    U256::one(),
-            gas_limit:                U256::one(),
-            max_priority_fee_per_gas: U256::one(),
-            gas_price:                U256::one(),
-            action:                   TransactionAction::Create,
-            value:                    U256::one(),
-            data:                     rand_bytes(32).to_vec().into(),
-            access_list:              vec![],
-        }
-    }
-
-    fn mock_sig_component() -> SignatureComponents {
-        SignatureComponents {
-            standard_v: 4,
-            r:          Bytes::default(),
-            s:          Bytes::default(),
-        }
-    }
-
-    fn mock_unverified_tx() -> UnverifiedTransaction {
-        UnverifiedTransaction {
-            unsigned:  UnsignedTransaction::Eip1559(mock_eip1559_transaction()),
-            chain_id:  Some(random::<u64>()),
-            hash:      H256::default(),
-            signature: Some(mock_sig_component()),
-        }
-        .calc_hash()
-    }
-
-    fn mock_signed_tx() -> SignedTransaction {
-        SignedTransaction {
-            transaction: mock_unverified_tx(),
-            sender:      H160::default(),
-            public:      None,
-        }
-    }
 
     #[test]
     fn test_legacy_decode() {

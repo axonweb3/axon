@@ -17,7 +17,6 @@ pub const EMPTY_UNCLE_HASH: H256 = H256([
 
 use core_consensus::SyncStatus as InnerSyncStatus;
 
-#[allow(clippy::large_enum_variant)]
 #[derive(Deserialize, Clone, Debug, PartialEq, Eq)]
 pub enum RichTransactionOrHash {
     Hash(Hash),

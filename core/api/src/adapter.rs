@@ -201,7 +201,7 @@ where
             .map(|gas| gas.as_u64())
             .unwrap_or(MAX_BLOCK_GAS_LIMIT);
 
-        Ok(AxonExecutor::default().call(&backend, gas_limit, from, to, value, data))
+        Ok(AxonExecutor.call(&backend, gas_limit, from, to, value, data))
     }
 
     async fn get_code_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>> {

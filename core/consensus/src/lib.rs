@@ -1,10 +1,3 @@
-#![allow(
-    clippy::uninlined_format_args,
-    clippy::type_complexity,
-    clippy::suspicious_else_formatting,
-    clippy::mutable_key_type
-)]
-
 pub mod adapter;
 pub mod consensus;
 pub mod engine;

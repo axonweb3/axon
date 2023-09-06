@@ -1,5 +1,3 @@
-#![allow(clippy::uninlined_format_args, clippy::mutable_key_type)]
-
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
@@ -452,7 +450,6 @@ fn execute_transactions(
         .insert_accounts(accounts)
         .expect("insert accounts")
         .commit()?;
-    let executor = AxonExecutor::default();
     let mut backend = AxonExecutorApplyAdapter::from_root(
         state_root,
         db_group.trie_db(),
@@ -462,7 +459,7 @@ fn execute_transactions(
 
     system_contract::init(db_group.inner_db(), &mut backend);
 
-    let resp = executor.exec(&mut backend, &rich.txs, &[]);
+    let resp = AxonExecutor.exec(&mut backend, &rich.txs, &[]);
 
     resp.tx_resp.iter().enumerate().for_each(|(i, r)| {
         if !r.exit_reason.is_succeed() {

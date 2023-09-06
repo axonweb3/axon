@@ -1,8 +1,7 @@
 pub use rustracing::{log::LogField, tag::Tag};
 pub use rustracing_jaeger::span::SpanContext;
 
-use std::net::SocketAddr;
-use std::sync::Arc;
+use std::{mem, net::SocketAddr, sync::Arc};
 
 use arc_swap::ArcSwap;
 use beef::lean::Cow;
@@ -123,7 +122,7 @@ pub fn global_tracer_register(service_name: &str, udp_addr: SocketAddr, batch_si
                 batch_spans.push(finished_span);
 
                 if batch_spans.len() >= batch_size {
-                    let enough_spans = batch_spans.drain(..).collect::<Vec<_>>();
+                    let enough_spans = mem::take(&mut batch_spans);
                     if let Err(err) = reporter.report(&enough_spans) {
                         log::warn!("jaeger report {:?}", err);
                     }

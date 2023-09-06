@@ -347,7 +347,7 @@ where
 
         Ok(task::block_in_place(|| {
             let time = Instant::now();
-            let res = AxonExecutor::default().exec(&mut backend, signed_txs, &verifier_list);
+            let res = AxonExecutor.exec(&mut backend, signed_txs, &verifier_list);
             common_apm::metrics::consensus::CONSENSUS_TIME_HISTOGRAM_VEC_STATIC
                 .exec
                 .observe(common_apm::metrics::duration_to_sec(time.elapsed()));

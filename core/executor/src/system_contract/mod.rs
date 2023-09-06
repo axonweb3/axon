@@ -179,7 +179,7 @@ pub struct DataProvider {
 
 impl CellProvider for DataProvider {
     fn cell(&self, out_point: &packed::OutPoint, _eager_load: bool) -> CellStatus {
-        if let Some(c) = ImageCellReader::default()
+        if let Some(c) = ImageCellReader
             .get_cell(self.root, &(out_point).into())
             .ok()
             .flatten()
@@ -193,7 +193,7 @@ impl CellProvider for DataProvider {
 
 impl CellDataProvider for DataProvider {
     fn get_cell_data(&self, out_point: &packed::OutPoint) -> Option<Bytes> {
-        ImageCellReader::default()
+        ImageCellReader
             .get_cell(self.root, &(out_point.into()))
             .ok()
             .flatten()
@@ -214,7 +214,7 @@ impl CellDataProvider for DataProvider {
 impl HeaderProvider for DataProvider {
     fn get_header(&self, hash: &packed::Byte32) -> Option<HeaderView> {
         let block_hash = hash.unpack();
-        CkbHeaderReader::default()
+        CkbHeaderReader
             .get_header_by_block_hash(self.root, &H256(block_hash.0))
             .ok()
             .flatten()

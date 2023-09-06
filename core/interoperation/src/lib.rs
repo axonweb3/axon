@@ -1,5 +1,3 @@
-#![allow(clippy::uninlined_format_args)]
-
 #[cfg(test)]
 #[allow(dead_code)]
 mod tests;

@@ -133,31 +133,28 @@ fn mock_txs(number: u64) -> Vec<SignedTransaction> {
 
 fn criterion_100_txs(c: &mut Criterion) {
     let txs = mock_txs(100);
-    let executor = AxonExecutor::default();
     let mut backend = BenchAdapter::new().init_backend();
 
     c.bench_function("transfer 100", |b| {
-        b.iter(|| executor.exec(&mut backend, &txs, &[]))
+        b.iter(|| AxonExecutor.exec(&mut backend, &txs, &[]))
     });
 }
 
 fn criterion_1000_txs(c: &mut Criterion) {
     let txs = mock_txs(1000);
-    let executor = AxonExecutor::default();
     let mut backend = BenchAdapter::new().init_backend();
 
     c.bench_function("transfer 1000", |b| {
-        b.iter(|| executor.exec(&mut backend, &txs, &[]))
+        b.iter(|| AxonExecutor.exec(&mut backend, &txs, &[]))
     });
 }
 
 fn criterion_10000_txs(c: &mut Criterion) {
     let txs = mock_txs(10000);
-    let executor = AxonExecutor::default();
     let mut backend = BenchAdapter::new().init_backend();
 
     c.bench_function("transfer 10000", |b| {
-        b.iter(|| executor.exec(&mut backend, &txs, &[]))
+        b.iter(|| AxonExecutor.exec(&mut backend, &txs, &[]))
     });
 }
 

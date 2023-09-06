@@ -80,8 +80,7 @@ impl EvmDebugger {
 
     pub fn exec(&mut self, number: u64, txs: Vec<SignedTransaction>) -> ExecResp {
         let mut backend = self.backend(number);
-        let evm = AxonExecutor::default();
-        let res = evm.test_exec(&mut backend, &txs, &[]);
+        let res = AxonExecutor.test_exec(&mut backend, &txs, &[]);
         self.state_root = res.state_root;
         res
     }
@@ -96,8 +95,7 @@ impl EvmDebugger {
         data: Vec<u8>,
     ) -> TxResp {
         let backend = self.backend(number);
-        let evm = AxonExecutor::default();
-        evm.call(&backend, MAX_BLOCK_GAS_LIMIT, from, to, value, data)
+        AxonExecutor.call(&backend, MAX_BLOCK_GAS_LIMIT, from, to, value, data)
     }
 
     fn backend(

@@ -89,7 +89,6 @@ struct ScriptGroup {
 }
 
 impl ScriptGroup {
-    #[allow(clippy::identity_op)]
     fn group_witnesses(&self, witnesses: &packed::BytesVec) -> Vec<Bytes> {
         let mut group_witnesses = Vec::with_capacity(self.action.other_indexes_in_group.len() + 1);
         group_witnesses.push(self.original_witness.clone());
