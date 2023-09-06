@@ -2,21 +2,16 @@ version: '3.8'
 
 services:
   axon:
-    # TODO: update this image to ghcr.io/axonweb3/axon:dev
-    image: ghcr.io/flouse/axon:dev
+    image: ghcr.io/axonweb3/axon:dev
     ports:
     - 8000:8000
     - 127.0.0.1:8100:8100
     volumes:
-    - ./config.toml:/app/config.toml
-    - ./default.db-options:/app/default.db-options
-    - ./specs/single_node/:/app/single_node_spec/
+    - ./:/app/devtools/chain
     networks:
     - axon-net
     restart: unless-stopped
-    command: |
-      /app/axon init --config=/app/config.toml --chain-spec=/app/single_node_spec/chain-spec.toml
-      /app/axon run  --config=/app/config.toml
+    # CMD: see https://github.com/axonweb3/axon/blob/b89083/devtools/docker/docker-entrypoint.sh
 
   explorer:
     container_name: blockscan
