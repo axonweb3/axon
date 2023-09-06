@@ -107,19 +107,6 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           inputs: '{ "dispatch": "regression" }'
 
-  invoke-chaos-test:
-    if: github.repository_owner == 'axonweb3'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Invoke OCT 16-19 test
-        id: invoke-chaos-test
-        uses: aurelien-baudet/workflow-dispatch@v2
-        with:
-          workflow:  OCT 16-19
-          wait-for-completion-timeout: 2h
-          token: ${{ secrets.GITHUB_TOKEN }}
-          inputs: '{ "dispatch": "regression" }'
-
   output-result:
     runs-on: ubuntu-latest
     needs: [invoke-fmt-test,invoke-E2E-test,invoke-v3-core-test,invoke-web3-compatible-test,invoke-openzeppelin-test-1-5-and-12-15-test,invoke-OCT-6-10-test,invoke-OCT-11-test,invoke-OCT-16-19-test,invoke-chaos-test]
