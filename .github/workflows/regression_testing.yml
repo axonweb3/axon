@@ -109,7 +109,7 @@ jobs:
 
   output-result:
     runs-on: ubuntu-latest
-    needs: [invoke-fmt-test,invoke-E2E-test,invoke-v3-core-test,invoke-web3-compatible-test,invoke-openzeppelin-test-1-5-and-12-15-test,invoke-OCT-6-10-test,invoke-OCT-11-test,invoke-OCT-16-19-test,invoke-chaos-test]
+    needs: [invoke-fmt-test,invoke-E2E-test,invoke-v3-core-test,invoke-web3-compatible-test,invoke-openzeppelin-test-1-5-and-12-15-test,invoke-OCT-6-10-test,invoke-OCT-11-test,invoke-OCT-16-19-test]
     if: github.repository_owner == 'axonweb3' && always()
     steps:
     - name: send message
