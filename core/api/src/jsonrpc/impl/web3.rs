@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::time::Duration;
 
 use ckb_types::core::cell::{CellProvider, CellStatus};
 use ckb_types::prelude::Entity;
@@ -13,7 +14,8 @@ use protocol::types::{
     U256,
 };
 use protocol::{
-    async_trait, ckb_blake2b_256, codec::ProtocolCodec, lazy::PROTOCOL_VERSION, ProtocolResult,
+    async_trait, ckb_blake2b_256, codec::ProtocolCodec, lazy::PROTOCOL_VERSION, tokio::time,
+    ProtocolResult,
 };
 
 use core_executor::system_contract::DataProvider;
@@ -606,29 +608,32 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
 
     #[metrics_rpc("eth_getTransactionReceipt")]
     async fn get_transaction_receipt(&self, hash: H256) -> RpcResult<Option<Web3Receipt>> {
+        let ctx = Context::new();
         let res = self
             .adapter
-            .get_transaction_by_hash(Context::new(), hash)
+            .get_transaction_by_hash(ctx.clone(), hash)
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
         if let Some(stx) = res {
             if let Some(receipt) = self
                 .adapter
-                .get_receipt_by_tx_hash(Context::new(), hash)
+                .get_receipt_by_tx_hash(ctx.clone(), hash)
                 .await
                 .map_err(|e| Error::Custom(e.to_string()))?
             {
-                Ok(Some(Web3Receipt::new(receipt, stx)))
-            } else {
-                Err(Error::Custom(format!(
-                    "can not get receipt by hash {:?}",
-                    hash
-                )))
+                return Ok(Some(Web3Receipt::new(receipt, stx)));
             }
-        } else {
-            Ok(None)
         }
+
+        if self.adapter.mempool_contains_tx(ctx, &hash).await {
+            return Ok(None);
+        }
+
+        Err(Error::Custom(format!(
+            "Can not get receipt by hash {:?}",
+            hash
+        )))
     }
 
     #[metrics_rpc("net_peerCount")]

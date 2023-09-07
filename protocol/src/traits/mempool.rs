@@ -5,6 +5,8 @@ use crate::{async_trait, traits::Context, ProtocolResult};
 pub trait MemPool: Send + Sync {
     async fn insert(&self, ctx: Context, tx: SignedTransaction) -> ProtocolResult<()>;
 
+    async fn contains(&self, ctx: Context, tx_hash: &Hash) -> bool;
+
     async fn package(
         &self,
         ctx: Context,

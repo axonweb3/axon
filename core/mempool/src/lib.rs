@@ -198,6 +198,10 @@ where
         self.insert_tx(ctx, tx, is_call_system_script).await
     }
 
+    async fn contains(&self, _ctx: Context, tx_hash: &Hash) -> bool {
+        self.pool.contains(tx_hash)
+    }
+
     async fn package(
         &self,
         _ctx: Context,
