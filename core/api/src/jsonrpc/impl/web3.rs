@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use std::time::Duration;
 
 use ckb_types::core::cell::{CellProvider, CellStatus};
 use ckb_types::prelude::Entity;
@@ -14,8 +13,7 @@ use protocol::types::{
     U256,
 };
 use protocol::{
-    async_trait, ckb_blake2b_256, codec::ProtocolCodec, lazy::PROTOCOL_VERSION, tokio::time,
-    ProtocolResult,
+    async_trait, ckb_blake2b_256, codec::ProtocolCodec, lazy::PROTOCOL_VERSION, ProtocolResult,
 };
 
 use core_executor::system_contract::DataProvider;
