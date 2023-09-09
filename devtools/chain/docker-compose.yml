@@ -22,7 +22,7 @@ services:
     env_file:
     - ./blockscan-explorer.env
     ports:
-    - 4020
+    - 4020:4020
     networks:
     - axon-net
     restart: unless-stopped
