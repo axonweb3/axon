@@ -3,7 +3,10 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
 use common_config_parser::types::spec::{ChainSpec, InitialAccount};
 use common_config_parser::types::{Config, ConfigMempool};
-use common_crypto::{BlsPrivateKey, BlsPublicKey, Secp256k1, Secp256k1PrivateKey, ToPublicKey};
+use common_crypto::{
+    BlsPrivateKey, BlsPublicKey, Secp256k1, Secp256k1PrivateKey, Secp256k1RecoverablePrivateKey,
+    ToPublicKey,
+};
 
 use protocol::tokio::{
     self, runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep,
@@ -31,7 +34,7 @@ use core_network::{observe_listen_port_occupancy, NetworkConfig, NetworkService}
 
 pub use core_network::{KeyProvider, SecioKeyPair};
 
-mod components;
+pub(crate) mod components;
 mod error;
 mod key_provider;
 
@@ -39,6 +42,7 @@ mod key_provider;
 mod tests;
 
 use components::{
+    chain_spec::ChainSpecExt as _,
     extensions::ExtensionConfig as _,
     network::NetworkServiceExt as _,
     storage::{DatabaseGroup, StorageExt as _, TrieExt as _},
@@ -46,7 +50,13 @@ use components::{
 pub use error::MainError;
 use key_provider::KeyP;
 
-pub fn init(config: Config, spec: ChainSpec, genesis: RichBlock) -> ProtocolResult<()> {
+pub fn init(
+    config: Config,
+    spec: ChainSpec,
+    key: Secp256k1RecoverablePrivateKey,
+) -> ProtocolResult<()> {
+    let genesis = spec.generate_genesis_block(key);
+
     let path_rocksdb = config.data_path_for_rocksdb();
     if path_rocksdb.exists() {
         let msg = format!("Data directory {} already exists.", path_rocksdb.display());
@@ -67,7 +77,7 @@ pub fn init(config: Config, spec: ChainSpec, genesis: RichBlock) -> ProtocolResu
             config.executor.triedb_cache_size,
         )?;
         log::info!("Initialize genesis block.");
-        execute_genesis(genesis, spec, &db_group).await
+        execute_genesis(genesis, &spec, &db_group).await
     })?;
 
     Ok(())
@@ -422,7 +432,7 @@ fn run_overlord_consensus<M, N, S, DB>(
 
 async fn execute_genesis(
     mut partial_genesis: RichBlock,
-    spec: ChainSpec,
+    spec: &ChainSpec,
     db_group: &DatabaseGroup,
 ) -> ProtocolResult<RichBlock> {
     let resp = execute_transactions(&partial_genesis, db_group, &spec.accounts)?;

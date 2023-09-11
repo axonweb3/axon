@@ -18,6 +18,9 @@ pub enum Error {
 
     #[error(transparent)]
     Running(ProtocolError),
+
+    #[error("internal error: {0}")]
+    Internal(String),
 }
 
 #[non_exhaustive]

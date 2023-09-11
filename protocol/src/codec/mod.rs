@@ -116,33 +116,34 @@ where
     }
 }
 
-pub fn deserialize_256bits_key<'de, D>(deserializer: D) -> Result<Key256Bits, D::Error>
-where
-    D: Deserializer<'de>,
-{
+pub fn decode_256bits_key(s: &str) -> Result<Key256Bits, String> {
     const LEN: usize = 66;
-    let s = String::deserialize(deserializer)?;
     if s.starts_with("0x") || s.starts_with("0X") {
         if s.len() == LEN {
             let slice = &s.as_bytes()[2..];
             let mut v = [0u8; 32];
             faster_hex::hex_decode(slice, &mut v)
                 .map(|_| Key256Bits::from(v))
-                .map_err(|err| {
-                    let msg = format!("failed to parse the 256 bits key since {err}.");
-                    serde::de::Error::custom(msg)
-                })
+                .map_err(|err| format!("failed to parse the 256 bits key since {err}."))
         } else {
-            let msg = format!(
+            let err = format!(
                 "failed to parse the 256 bits key since its length is {} but expect {LEN}.",
                 s.len()
             );
-            Err(serde::de::Error::custom(msg))
+            Err(err)
         }
     } else {
-        let msg = "failed to parse the 256 bits key since it's not 0x-prefixed.";
-        Err(serde::de::Error::custom(msg))
+        let err = "failed to parse the 256 bits key since it's not 0x-prefixed.";
+        Err(err.to_owned())
     }
+}
+
+pub fn deserialize_256bits_key<'de, D>(deserializer: D) -> Result<Key256Bits, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    String::deserialize(deserializer)
+        .and_then(|s| decode_256bits_key(&s).map_err(serde::de::Error::custom))
 }
 
 pub fn deserialize_address<'de, D>(deserializer: D) -> Result<H160, D::Error>

@@ -1,6 +1,9 @@
 use clap::Parser;
 
-use common_config_parser::types::{spec::ChainSpec, Config};
+use common_config_parser::types::{
+    spec::{ChainSpec, PrivateKey},
+    Config,
+};
 use common_version::Version;
 
 use crate::{
@@ -25,12 +28,16 @@ pub struct InitArgs {
         help = "File path of chain spec."
     )]
     pub spec:   ChainSpec,
+
+    #[command(flatten)]
+    pub key: PrivateKey,
 }
 
 impl InitArgs {
     pub(crate) fn execute(self, kernel_version: Version) -> Result<()> {
-        let Self { config, spec } = self;
-        let genesis = spec.genesis.build_rich_block();
+        let Self { config, spec, key } = self;
+
+        let key_data = key.data().map_err(Error::Internal)?;
 
         utils::check_version(
             &config.data_path_for_version(),
@@ -39,6 +46,6 @@ impl InitArgs {
         )?;
         utils::register_log(&config);
 
-        core_run::init(config, spec, genesis).map_err(Error::Running)
+        core_run::init(config, spec, key_data).map_err(Error::Running)
     }
 }
