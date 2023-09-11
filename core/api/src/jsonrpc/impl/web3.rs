@@ -606,29 +606,25 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
 
     #[metrics_rpc("eth_getTransactionReceipt")]
     async fn get_transaction_receipt(&self, hash: H256) -> RpcResult<Option<Web3Receipt>> {
+        let ctx = Context::new();
         let res = self
             .adapter
-            .get_transaction_by_hash(Context::new(), hash)
+            .get_transaction_by_hash(ctx.clone(), hash)
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
 
         if let Some(stx) = res {
             if let Some(receipt) = self
                 .adapter
-                .get_receipt_by_tx_hash(Context::new(), hash)
+                .get_receipt_by_tx_hash(ctx, hash)
                 .await
                 .map_err(|e| Error::Custom(e.to_string()))?
             {
-                Ok(Some(Web3Receipt::new(receipt, stx)))
-            } else {
-                Err(Error::Custom(format!(
-                    "can not get receipt by hash {:?}",
-                    hash
-                )))
+                return Ok(Some(Web3Receipt::new(receipt, stx)));
             }
-        } else {
-            Ok(None)
         }
+
+        Ok(None)
     }
 
     #[metrics_rpc("net_peerCount")]

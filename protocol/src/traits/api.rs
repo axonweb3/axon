@@ -12,6 +12,8 @@ pub trait APIAdapter: Send + Sync {
         signed_tx: SignedTransaction,
     ) -> ProtocolResult<()>;
 
+    async fn mempool_contains_tx(&self, ctx: Context, tx_hash: &Hash) -> bool;
+
     async fn get_block_by_number(
         &self,
         ctx: Context,

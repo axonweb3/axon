@@ -75,6 +75,10 @@ where
         self.mempool.insert(ctx, signed_tx).await
     }
 
+    async fn mempool_contains_tx(&self, ctx: Context, tx_hash: &Hash) -> bool {
+        self.mempool.contains(ctx, tx_hash).await
+    }
+
     async fn get_block_by_number(
         &self,
         ctx: Context,
