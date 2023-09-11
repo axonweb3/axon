@@ -2,31 +2,16 @@ VERBOSE := $(if ${CI},--verbose,)
 
 COMMIT := $(shell git rev-parse --short HEAD)
 
-ifneq ("$(wildcard /usr/lib/librocksdb.so)","")
-	SYS_LIB_DIR := /usr/lib
-else ifneq ("$(wildcard /usr/lib64/librocksdb.so)","")
-	SYS_LIB_DIR := /usr/lib64
-else
-	USE_SYS_ROCKSDB :=
-endif
-
-USE_SYS_ROCKSDB :=
-SYS_ROCKSDB := $(if ${USE_SYS_ROCKSDB},ROCKSDB_LIB_DIR=${SYS_LIB_DIR},)
-
-CARGO := env ${SYS_ROCKSDB} cargo
+CARGO := cargo
 
 test:
-	${CARGO} test ${VERBOSE} --all -- --skip trust_metric --nocapture
+	${CARGO} test ${VERBOSE} --all -- --nocapture
 
 doc:
 	cargo doc --all --no-deps
 
 doc-deps:
 	cargo doc --all
-
-# generate GraphQL API documentation
-doc-api:
-	bash docs/build/gql_api.sh
 
 check:
 	${CARGO} check ${VERBOSE} --all
@@ -77,22 +62,8 @@ e2e-test:
 	pkill -2 axon
 	pkill -2 http-server
 
-e2e-test-ci:
-	cargo build
-	rm -rf ./devtools/chain/data
-	./target/debug/axon init \
-		--config     devtools/chain/config.toml \
-		--chain-spec devtools/chain/specs/single_node/chain-spec.toml \
-		--key-file   devtools/chain/debug.key \
-		> /tmp/log 2>&1
-	./target/debug/axon run  \
-		--config     devtools/chain/config.toml \
-		>> /tmp/log 2>&1 &
-	cd tests/e2e && yarn
-	cd tests/e2e/src && yarn exec http-server &
-	cd tests/e2e && yarn exec wait-on -t 5000 tcp:8000 && yarn exec wait-on -t 5000 tcp:8080 && HEADLESS=true yarn test
-	pkill -2 axon
-	pkill -2 http-server
+e2e-test-ci: HEADLESS=true
+e2e-test-ci: e2e-test
 
 e2e-test-via-docker:
 	docker-compose -f tests/e2e/docker-compose-e2e-test.yaml up --exit-code-from e2e-test --force-recreate
