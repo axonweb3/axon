@@ -820,7 +820,6 @@
         ],
         "standard_v": 1
       },
-      "chain_id": 2022,
       "hash": "0xfd9462ed9f6ddd606a479b03dcf8cf7c49bc5e2698d03f0f6763530ebbf7e9df"
     },
     "sender": "0x8ab0cf264df99d83525e9e11c7e4db01558ae1b1",
@@ -901,7 +900,6 @@
         ],
         "standard_v": 1
       },
-      "chain_id": 2022,
       "hash": "0x2cd0b78d15fc341a64fbab4567be8d91e99077e7ab5ff5eba8dd43df1044e9bf"
     },
     "sender": "0x8ab0cf264df99d83525e9e11c7e4db01558ae1b1",
@@ -983,7 +981,6 @@
         ],
         "standard_v": 0
       },
-      "chain_id": 2022,
       "hash": "0x4c92c2ce594bc05a523a77be31b4fbb9619fb9fd73c9415fe8f9efe97c7968df"
     },
     "sender": "0x8ab0cf264df99d83525e9e11c7e4db01558ae1b1",
