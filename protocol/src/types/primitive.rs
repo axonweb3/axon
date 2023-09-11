@@ -152,8 +152,7 @@ impl<'de> Deserialize<'de> for Hex {
     where
         D: de::Deserializer<'de>,
     {
-        String::deserialize(deserializer)
-            .and_then(|s| Hex::from_str(&s).map_err(serde::de::Error::custom))
+        Ok(Hex(withpfx_lowercase::deserialize(deserializer)?))
     }
 }
 
