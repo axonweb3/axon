@@ -16,12 +16,16 @@ use common_apm_derive::trace_span;
 use common_crypto::BlsPublicKey;
 use common_logger::{json, log};
 use common_merkle::TrieMerkle;
+use core_executor::MetadataHandle;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
     Block, BlockVersion, Bytes, ExecResp, Hash, Hex, Metadata, Proof, Proposal, SignedTransaction,
     ValidatorExtend, BASE_FEE_PER_GAS, MAX_BLOCK_GAS_LIMIT, RLP_NULL,
 };
-use protocol::{async_trait, tokio::sync::Mutex as AsyncMutex, ProtocolError, ProtocolResult};
+use protocol::{
+    async_trait, codec::ProtocolCodec, tokio::sync::Mutex as AsyncMutex, types::HardforkInfoInner,
+    ProtocolError, ProtocolResult,
+};
 
 use crate::message::{
     END_GOSSIP_AGGREGATED_VOTE, END_GOSSIP_SIGNED_CHOKE, END_GOSSIP_SIGNED_PROPOSAL,
@@ -78,6 +82,22 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             RLP_NULL
         };
 
+        let extra_data_hardfork = {
+            let mut hardfork = self.node_info.hardfork_proposals.write().unwrap();
+            match &*hardfork {
+                Some(v) => {
+                    // remove invalid proposal
+                    if v.block_number <= next_number {
+                        hardfork.take();
+                        Default::default()
+                    } else {
+                        v.encode().unwrap()
+                    }
+                }
+                None => Default::default(),
+            }
+        };
+
         let proposal = Proposal {
             version:                  BlockVersion::V0,
             prev_hash:                status.prev_hash,
@@ -88,7 +108,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             timestamp:                time_now(),
             number:                   next_number,
             gas_limit:                MAX_BLOCK_GAS_LIMIT.into(),
-            extra_data:               Default::default(),
+            extra_data:               extra_data_hardfork,
             base_fee_per_gas:         BASE_FEE_PER_GAS.into(),
             proof:                    status.proof,
             chain_id:                 self.node_info.chain_id,
@@ -133,6 +153,20 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
                 actual: proposal.proof.number,
             })
             .into());
+        }
+
+        if let Ok(data) = HardforkInfoInner::decode(&proposal.extra_data) {
+            if !self
+                .node_info
+                .hardfork_proposals
+                .read()
+                .unwrap()
+                .as_ref()
+                .map(|v| &data == v)
+                .unwrap_or_default()
+            {
+                return Err(ProtocolError::from(ConsensusError::HardforkDontMatch).into());
+            }
         }
 
         let tx_hashes = proposal.tx_hashes.clone();
@@ -607,6 +641,29 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
 
         // Save the block
         self.adapter.save_block(ctx.clone(), block.clone()).await?;
+
+        let root = self
+            .adapter
+            .get_metadata_root(
+                block.header.state_root,
+                &Proposal::new_without_state_root(&block.header),
+            )
+            .await?;
+        let handle = MetadataHandle::new(root);
+        let hardforks = handle.hardfork_infos()?;
+
+        if let Some(data) = hardforks.inner.last() {
+            let mut self_proposal = self.node_info.hardfork_proposals.write().unwrap();
+
+            if self_proposal
+                .as_ref()
+                .map(|v| data.flags & v.flags == v.flags)
+                .unwrap_or_default()
+            {
+                // remove self hardfork proposal
+                self_proposal.take();
+            }
+        }
 
         if self
             .adapter

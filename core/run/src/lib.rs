@@ -197,8 +197,10 @@ async fn start<K: KeyProvider>(
         Proposal::new_without_state_root(&current_block.header).into(),
     )?
     .get_metadata_root();
-    let metadata = MetadataHandle::new(metadata_root)
-        .get_metadata_by_block_number(current_block.header.number)?;
+
+    let metadata_handle = MetadataHandle::new(metadata_root);
+    metadata_handle.init_hardfork(current_block.header.number)?;
+    let metadata = metadata_handle.get_metadata_by_block_number(current_block.header.number)?;
     let validators: Vec<Validator> = metadata
         .verifier_list
         .iter()

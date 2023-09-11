@@ -289,6 +289,14 @@ impl CommonConsensusAdapter for MockSyncAdapter {
         Ok(Metadata::default())
     }
 
+    async fn get_metadata_root(
+        &self,
+        state_root: Hash,
+        proposal: &Proposal,
+    ) -> ProtocolResult<Hash> {
+        Ok(H256::zero())
+    }
+
     async fn broadcast_number(&self, ctx: Context, height: u64) -> ProtocolResult<()> {
         Ok(())
     }

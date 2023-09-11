@@ -1,7 +1,9 @@
 use protocol::types::{CkbRelatedInfo, HardforkInfo, Metadata, H160, H256};
 use protocol::ProtocolResult;
 
-use crate::system_contract::metadata::MetadataStore;
+use std::sync::Arc;
+
+use crate::system_contract::metadata::{MetadataStore, HARDFORK_INFO};
 
 /// The MetadataHandle is used to expose apis that can be accessed from outside
 /// of the system contract.
@@ -50,5 +52,14 @@ impl MetadataHandle {
 
     pub fn hardfork_infos(&self) -> ProtocolResult<HardforkInfo> {
         MetadataStore::new(self.root)?.hardfork_infos()
+    }
+
+    pub fn init_hardfork(&self, block_number: u64) -> ProtocolResult<()> {
+        let hardfork = MetadataStore::new(self.root)?
+            .hardfork_info(block_number)
+            .unwrap();
+
+        HARDFORK_INFO.swap(Arc::new(hardfork));
+        Ok(())
     }
 }

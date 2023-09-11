@@ -14,8 +14,11 @@ use serde::Deserialize;
 
 use common_crypto::Secp256k1RecoverablePrivateKey;
 use protocol::{
-    codec::{decode_256bits_key, deserialize_address},
-    types::{Block, Bytes, Header, Key256Bits, Metadata, RichBlock, SignedTransaction, H160, U256},
+    codec::{decode_256bits_key, deserialize_address, ProtocolCodec},
+    types::{
+        Block, HardforkInfoInner, Header, Key256Bits, Metadata, RichBlock, SignedTransaction, H160,
+        H256, U256,
+    },
 };
 
 use crate::parse_file;
@@ -37,7 +40,7 @@ pub struct ChainSpec {
 #[derive(Clone, Debug, Deserialize)]
 pub struct Genesis {
     pub timestamp:        u64,
-    pub extra_data:       Bytes,
+    pub extra_data:       HarforkInput,
     pub base_fee_per_gas: U256,
     pub chain_id:         u64,
 
@@ -256,10 +259,40 @@ impl Genesis {
     pub fn build_header(&self) -> Header {
         Header {
             timestamp: self.timestamp,
-            extra_data: self.extra_data.clone(),
+            // todo: if Hardforkinput is empty, it must change to latest hardfork info to init
+            // genesis
+            extra_data: Into::<HardforkInfoInner>::into(self.extra_data.clone())
+                .encode()
+                .unwrap(),
             base_fee_per_gas: self.base_fee_per_gas,
             chain_id: self.chain_id,
             ..Default::default()
         }
     }
+}
+
+#[derive(Clone, Debug, Deserialize)]
+pub struct HarforkInput {
+    block_number: u64,
+    hardforks:    Vec<HardforkType>,
+}
+
+impl From<HarforkInput> for HardforkInfoInner {
+    fn from(value: HarforkInput) -> Self {
+        let flags = {
+            let r = value.hardforks.into_iter().fold(0, |acc, s| acc | s as u64);
+
+            H256::from_low_u64_be(r.to_be())
+        };
+
+        HardforkInfoInner {
+            block_number: value.block_number,
+            flags,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Copy)]
+enum HardforkType {
+    None = 0b0,
 }
