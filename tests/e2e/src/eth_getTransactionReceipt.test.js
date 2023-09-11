@@ -26,7 +26,7 @@ describe("eth_getTransactionReceipt", () => {
     const param1 = await page.$(goto.pageIds.param1Id);
     await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type("0x18de99824561e6022e3b66797be8dd9f4d0310bceb15dec0e9e3fb18bebd2692");
-    await goto.check(page, "null");
+    await goto.check(page, "-32001");
   });
   /**
    * param1: none
