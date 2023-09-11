@@ -616,7 +616,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
         if let Some(stx) = res {
             if let Some(receipt) = self
                 .adapter
-                .get_receipt_by_tx_hash(ctx.clone(), hash)
+                .get_receipt_by_tx_hash(ctx, hash)
                 .await
                 .map_err(|e| Error::Custom(e.to_string()))?
             {
@@ -624,14 +624,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             }
         }
 
-        if self.adapter.mempool_contains_tx(ctx, &hash).await {
-            return Ok(None);
-        }
-
-        Err(Error::Custom(format!(
-            "Can not get receipt by hash {:?}",
-            hash
-        )))
+        Ok(None)
     }
 
     #[metrics_rpc("net_peerCount")]
