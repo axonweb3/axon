@@ -15,8 +15,8 @@ use protocol::traits::{
     Context, Executor, Gossip, MemPool, Network, NodeInfo, PeerTrust, ReadOnlyStorage, Rpc, Storage,
 };
 use protocol::types::{
-    Block, ExecResp, Header, Metadata, Proposal, RichBlock, SignedTransaction, Validator,
-    ValidatorExtend,
+    Block, ExecResp, HardforkInfoInner, Header, Metadata, Proposal, RichBlock, SignedTransaction,
+    Validator, ValidatorExtend, H256,
 };
 use protocol::{lazy::CHAIN_ID, trie::DB as TrieDB, ProtocolResult};
 
@@ -200,6 +200,7 @@ async fn start<K: KeyProvider>(
 
     let metadata_handle = MetadataHandle::new(metadata_root);
     metadata_handle.init_hardfork(current_block.header.number)?;
+
     let metadata = metadata_handle.get_metadata_by_block_number(current_block.header.number)?;
     let validators: Vec<Validator> = metadata
         .verifier_list
@@ -232,10 +233,17 @@ async fn start<K: KeyProvider>(
     let consensus_adapter = Arc::new(consensus_adapter);
     let status_agent = get_status_agent(&storage, &current_block, &metadata).await?;
 
+    let hardfork_info = storage.hardfork_proposal(Default::default()).await?;
     let overlord_consensus = {
         let consensus_wal_path = config.data_path_for_consensus_wal();
         let node_info = Secp256k1PrivateKey::try_from(config.privkey.as_ref())
-            .map(|privkey| NodeInfo::new(current_block.header.chain_id, privkey.pub_key()))
+            .map(|privkey| {
+                NodeInfo::new(
+                    current_block.header.chain_id,
+                    privkey.pub_key(),
+                    hardfork_info,
+                )
+            })
             .map_err(MainError::Crypto)?;
         let overlord_consensus = OverlordConsensus::new(
             status_agent.clone(),
@@ -483,4 +491,93 @@ fn execute_transactions(
     });
 
     Ok(resp)
+}
+
+pub fn set_hardfork_info(
+    config: Config,
+    hardfork_info: Option<HardforkInfoInner>,
+) -> ProtocolResult<()> {
+    let path_rocksdb = config.data_path_for_rocksdb();
+    if !path_rocksdb.exists() {
+        let msg = format!(
+            "Data directory {} doesn't exist, please initialize it before run.",
+            path_rocksdb.display()
+        );
+        return Err(MainError::Other(msg).into());
+    }
+
+    let rt = RuntimeBuilder::new_multi_thread()
+        .enable_all()
+        .build()
+        .expect("new tokio runtime");
+
+    rt.block_on(async move {
+        log::info!("Load databases.");
+        let db_group = DatabaseGroup::new(
+            &config.rocksdb,
+            path_rocksdb,
+            false,
+            config.executor.triedb_cache_size,
+        )?;
+
+        let storage = db_group.storage();
+        let trie_db = db_group.trie_db();
+        let inner_db = db_group.inner_db();
+
+        let current_block = storage.get_latest_block(Context::new()).await?;
+        let current_state_root = current_block.header.state_root;
+
+        // Init system contract
+        let mut backend = AxonExecutorApplyAdapter::from_root(
+            current_block.header.state_root,
+            Arc::clone(&trie_db),
+            Arc::clone(&storage),
+            Proposal::new_without_state_root(&current_block.header).into(),
+        )?;
+
+        system_contract::init(inner_db, &mut backend);
+
+        let metadata_root = AxonExecutorReadOnlyAdapter::from_root(
+            current_state_root,
+            Arc::clone(&trie_db),
+            Arc::clone(&storage),
+            Proposal::new_without_state_root(&current_block.header).into(),
+        )?
+        .get_metadata_root();
+
+        let metadata_handle = MetadataHandle::new(metadata_root);
+        metadata_handle.init_hardfork(current_block.header.number)?;
+        if let Some(proposed_info) = hardfork_info {
+            if current_block.header.number >= proposed_info.block_number {
+                return Err::<(), protocol::ProtocolError>(
+                    MainError::Other(format!(
+                        "Hardfork start block number {} less than current number {}",
+                        proposed_info.block_number, current_block.header.number
+                    ))
+                    .into(),
+                );
+            }
+
+            if proposed_info.flags == H256::zero() {
+                return Ok(());
+            }
+
+            let hardforks = metadata_handle.hardfork_infos()?;
+
+            if let Some(current_info) = hardforks.inner.last() {
+                // if hardfork is already activated, return
+                if current_info.flags & proposed_info.flags == proposed_info.flags {
+                    log::info!("this feature has been actived");
+                    return Ok(());
+                }
+            }
+
+            storage
+                .set_hardfork_proposal(Default::default(), proposed_info)
+                .await?;
+        }
+        Ok(())
+    })?;
+
+    Ok(())
 }

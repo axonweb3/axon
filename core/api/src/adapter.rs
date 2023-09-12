@@ -6,8 +6,8 @@ use protocol::traits::{
 use protocol::trie::Trie as _;
 use protocol::types::{
     Account, BigEndianHash, Block, BlockNumber, Bytes, CkbRelatedInfo, ExecutorContext,
-    HardforkInfo, Hash, Header, Metadata, Proposal, Receipt, SignedTransaction, TxResp, H160, H256,
-    MAX_BLOCK_GAS_LIMIT, NIL_DATA, RLP_NULL, U256,
+    HardforkInfo, HardforkInfoInner, Hash, Header, Metadata, Proposal, Receipt, SignedTransaction,
+    TxResp, H160, H256, MAX_BLOCK_GAS_LIMIT, NIL_DATA, RLP_NULL, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, trie, ProtocolResult};
 
@@ -288,5 +288,9 @@ where
 
     async fn hardfork_info(&self, ctx: Context) -> ProtocolResult<HardforkInfo> {
         MetadataHandle::new(self.get_metadata_root(ctx).await?).hardfork_infos()
+    }
+
+    async fn hardfork_proposal(&self, ctx: Context) -> ProtocolResult<Option<HardforkInfoInner>> {
+        self.storage.hardfork_proposal(ctx).await
     }
 }

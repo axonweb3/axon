@@ -11,6 +11,8 @@ reqwest = "0.11"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 stringreader = "0.1"
+strum = "0.25"
+strum_macros = "0.25"
 tentacle-multiaddr = "0.3"
 toml = "0.7"
 

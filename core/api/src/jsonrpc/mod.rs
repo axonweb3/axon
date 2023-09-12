@@ -3,22 +3,22 @@ mod r#impl;
 mod web3_types;
 mod ws_subscription;
 
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use ckb_jsonrpc_types::{CellInfo, HeaderView as CkbHeaderView, OutPoint};
 use jsonrpsee::server::{ServerBuilder, ServerHandle};
 use jsonrpsee::{core::Error, proc_macros::rpc};
 
-use common_config_parser::types::Config;
+use common_config_parser::types::{spec::HardforkName, Config};
 use protocol::traits::APIAdapter;
 use protocol::types::{
-    Block, CkbRelatedInfo, HardforkInfo, Hash, Hex, Metadata, Proof, Proposal, H160, H256, U256,
+    Block, CkbRelatedInfo, Hash, Hex, Metadata, Proof, Proposal, H160, H256, U256,
 };
 use protocol::ProtocolResult;
 
 use crate::jsonrpc::web3_types::{
-    BlockId, FilterChanges, RawLoggerFilter, Web3Block, Web3CallRequest, Web3FeeHistory,
-    Web3Filter, Web3Log, Web3Receipt, Web3SyncStatus, Web3Transaction,
+    BlockId, FilterChanges, HardforkStatus, RawLoggerFilter, Web3Block, Web3CallRequest,
+    Web3FeeHistory, Web3Filter, Web3Log, Web3Receipt, Web3SyncStatus, Web3Transaction,
 };
 use crate::jsonrpc::ws_subscription::{ws_subscription_module, HexIdProvider};
 use crate::APIError;
@@ -227,7 +227,7 @@ pub trait AxonRpc {
     async fn get_ckb_related_info(&self) -> RpcResult<CkbRelatedInfo>;
 
     #[method(name = "axon_getHardforkInfo")]
-    async fn hardfork_info(&self) -> RpcResult<HardforkInfo>;
+    async fn hardfork_infos(&self) -> RpcResult<HashMap<HardforkName, HardforkStatus>>;
 }
 
 #[rpc(server)]

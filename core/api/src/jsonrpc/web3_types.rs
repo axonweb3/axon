@@ -875,6 +875,14 @@ pub struct RawLoggerFilter {
     pub topics:     Option<Vec<MultiNestType<Hash>>>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub enum HardforkStatus {
+    Proposed,
+    Enabled,
+    Activated,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1,12 +1,14 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use jsonrpsee::core::Error;
+use strum::IntoEnumIterator;
 
+use common_config_parser::types::spec::HardforkName;
 use protocol::async_trait;
 use protocol::traits::{APIAdapter, Context};
-use protocol::types::{Block, CkbRelatedInfo, HardforkInfo, Metadata, Proof, Proposal, U256};
+use protocol::types::{Block, CkbRelatedInfo, Metadata, Proof, Proposal, H256, U256};
 
-use crate::jsonrpc::web3_types::BlockId;
+use crate::jsonrpc::web3_types::{BlockId, HardforkStatus};
 use crate::jsonrpc::{AxonRpcServer, RpcResult};
 
 pub struct AxonRpcImpl<Adapter> {
@@ -97,12 +99,46 @@ impl<Adapter: APIAdapter + 'static> AxonRpcServer for AxonRpcImpl<Adapter> {
         Ok(ret)
     }
 
-    async fn hardfork_info(&self) -> RpcResult<HardforkInfo> {
-        let ret = self
+    async fn hardfork_infos(&self) -> RpcResult<HashMap<HardforkName, HardforkStatus>> {
+        let actived = self
             .adapter
             .hardfork_info(Context::new())
             .await
             .map_err(|e| Error::Custom(e.to_string()))?;
-        Ok(ret)
+
+        let proposal = self
+            .adapter
+            .hardfork_proposal(Context::new())
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?;
+        let actived_latest = actived.inner.last();
+
+        let current_number = self
+            .adapter
+            .get_block_header_by_number(Default::default(), None)
+            .await
+            .map_err(|e| Error::Custom(e.to_string()))?
+            .unwrap()
+            .number;
+
+        let mut hardfork_infos = HashMap::new();
+        for hardfork_name in HardforkName::iter() {
+            if let Some(p) = proposal.as_ref() {
+                if p.flags & H256::from_low_u64_be((hardfork_name as u64).to_be()) != H256::zero() {
+                    hardfork_infos.insert(hardfork_name, HardforkStatus::Proposed);
+                }
+            }
+            if let Some(a) = actived_latest {
+                if a.flags & H256::from_low_u64_be((hardfork_name as u64).to_be()) != H256::zero() {
+                    if a.block_number <= current_number {
+                        hardfork_infos.insert(hardfork_name, HardforkStatus::Enabled);
+                    } else {
+                        hardfork_infos.insert(hardfork_name, HardforkStatus::Activated);
+                    }
+                }
+            }
+        }
+
+        Ok(hardfork_infos)
     }
 }
