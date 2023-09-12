@@ -58,7 +58,10 @@ pub struct Proposal {
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub number:                   BlockNumber,
     pub gas_limit:                U256,
-    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "withpfx_lowercase::serialize"))]
+    #[cfg_attr(
+        feature = "hex-serialize",
+        serde(serialize_with = "withpfx_lowercase::serialize")
+    )]
     pub extra_data:               Bytes,
     pub base_fee_per_gas:         U256,
     pub proof:                    Proof,
@@ -220,7 +223,10 @@ pub struct Header {
     pub number:                   BlockNumber,
     pub gas_used:                 U256,
     pub gas_limit:                U256,
-    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "withpfx_lowercase::serialize"))]
+    #[cfg_attr(
+        feature = "hex-serialize",
+        serde(serialize_with = "withpfx_lowercase::serialize")
+    )]
     pub extra_data:               Bytes,
     pub base_fee_per_gas:         U256,
     pub proof:                    Proof,
@@ -249,9 +255,15 @@ pub struct Proof {
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub round:      u64,
     pub block_hash: Hash,
-    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "withpfx_lowercase::serialize"))]
+    #[cfg_attr(
+        feature = "hex-serialize",
+        serde(serialize_with = "withpfx_lowercase::serialize")
+    )]
     pub signature:  Bytes,
-    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "withpfx_lowercase::serialize"))]
+    #[cfg_attr(
+        feature = "hex-serialize",
+        serde(serialize_with = "withpfx_lowercase::serialize")
+    )]
     pub bitmap:     Bytes,
 }
 
