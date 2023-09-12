@@ -5,7 +5,8 @@
 [genesis]
 timestamp = 1679656015
 base_fee_per_gas = "0x539"
-chain_id = 2022
+# The default chain id is the hexadecimal of ASCII string "Axon".
+chain_id = 0x41786f6e
 # A JSON file which includes all transactions in the genesis block.
 transactions = "genesis_transactions.json"
 
