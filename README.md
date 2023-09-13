@@ -26,7 +26,7 @@ Axon is a high-performance Layer 2 framework with native cross-chain function. 
 
 ### Developer-Friendly Design
 
-Axon is compatible with [Ethereum](https://ethereum.org) so that all of the develop utilities can be used on it directly. And the [Axon CLI](https://github.com/axonweb3/axon-cli) provides an all-in-one client which includes initialization, DevOps, cross-chain request and so on. Seeing is believing, there is a [15 minutes tutorial](https://docs.axonweb3.io/getting-started/for-dapp-devs/zero_to_axon_with_axon_cli) that will lead you to build your own chain and deploy your application.
+Axon is compatible with [Ethereum](https://ethereum.org) so that all of the develop utilities can be used on it directly. Seeing is believing, there is a [15 minutes tutorial](https://docs.axonweb3.io/getting-started/for-dapp-devs/zero_to_axon_with_axon_cli) that will lead you to build your own chain and deploy your application.
 
 ### Native Cross-Chain Communication
 
@@ -69,8 +69,6 @@ Apart from the framework, Axon has:
 
 - [Axon Faucet](https://github.com/axonweb3/axon-faucet): the faucet for the Axon-based chains.
 - [Axon Explorer](https://github.com/Magickbase/blockscan): a blockchain explorer for the Axon-based chains.
-
-All the toolchains above can be dictated by **[Axon CLI](https://github.com/axonweb3/axon-cli), an exquisite and deft command line interface**. You can use Axon CLI to do anything related to Axon.
 
 ## Contributing
 
