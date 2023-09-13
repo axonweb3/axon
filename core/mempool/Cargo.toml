@@ -7,7 +7,7 @@ edition = "2021"
 [dependencies]
 ckb-types = "0.108"
 crossbeam-queue = "0.3"
-dashmap = { version = "5.4", features = ["rayon"] }
+dashmap = { version = "5.5", features = ["rayon"] }
 futures = { version = "0.3", features = [ "async-await" ] }
 log = "0.4"
 parking_lot = "0.12"
