@@ -26,7 +26,7 @@ Axon is a high-performance Layer 2 framework with native cross-chain function. 
 
 ### Developer-Friendly Design
 
-Axon is compatible with [Ethereum](https://ethereum.org) so that all of the develop utilities can be used on it directly. And the [Axon CLI](https://github.com/axonweb3/axon-cli) provides an all-in-one client which includes initialization, DevOps, cross-chain request and so on. Seeing is believing, there is a [15 minutes tutorial](https://docs.axonweb3.io/getting-started/for-dapp-devs/zero_to_axon_with_axon_cli) that will lead you to build your own chain and deploy your application.
+Axon is compatible with [Ethereum](https://ethereum.org) so that all of the develop utilities can be used on it directly. Seeing is believing, there is a [15 minutes tutorial](https://docs.axonweb3.io/getting-started/for-dapp-devs/zero_to_axon_with_axon_cli) that will lead you to build your own chain and deploy your application.
 
 ### Native Cross-Chain Communication
 
@@ -44,24 +44,32 @@ Most of the infrastructure has been done and some substantial features to be dev
 2. Design a cross-chain protocol for EVM-based chains.
 3. Compatible with more cross-chain protocols in the future.
 
-## Install
 
-Axon provides the compiled binary on the [release page](`https://github.com/axonweb3/axon/release`), and if you want to build from source code, please make sure that [rust](https://www.rust-lang.org/), [clang](http://clang.org/), [openssl](https://www.openssl.org/), [m4](https://www.gnu.org/software/m4/) have already been installed. Then execute the following command:
+## Getting Started
 
+You could build Axon from source code, or use a [docker image](https://github.com/axonweb3/axon/pkgs/container/axon) to run an Axon node.
+
+### Compile from Source
+If you perfer to build Axon from source code, please make sure that [rust](https://www.rust-lang.org/), [clang](http://clang.org/), [openssl](https://www.openssl.org/), [m4](https://www.gnu.org/software/m4/) have already been installed. Then execute the following commands:v
 ```bash
-# Clone from GitHub
-git clone https://github.com/axonweb3/axon.git && cd axon
-# Run release binary for single node
+# Clone the Axon repository from GitHub
+git clone --depth=1 https://github.com/axonweb3/axon.git && cd axon
+# Build Axon in release mode
 cargo build --release
+# Initialize the chain
 target/release/axon init \
-    --config devtools/chain/config.toml \
+    --config     devtools/chain/config.toml \
     --chain-spec devtools/chain/specs/single_node/chain-spec.toml \
-    --key-file devtools/chain/debug.key
+    --key-file   devtools/chain/debug.key
+# Start a single Axon node
 target/release/axon run --config devtools/chain/config.toml
-
 ```
 
-For multiple nodes, first create toml files for each node and run different nodes in separate terminals or dockers. The metadata in the Genesis transactions should be updated to include all nodes' credentials. Read the [docs](https://docs.axonweb3.io/) and follow the [tutorials](https://docs.axonweb3.io/getting-started/for-dapp-devs/zero_to_axon_with_axon_cli).
+### Working with Docker
+While compiling from source can take about 20 minutes, if you want a quick start, a [docker-compose](devtools/chain/docker-compose.yml) file is provided, see [quick-start.md](devtools/chain/quick-start.md).
+
+### Multiple nodes
+For running multiple nodes, first create toml files for each node and run different nodes in separate terminals or docker containers. The metadata in the genesis transactions should be updated to include all nodes' credentials. Here is [a simple Example](https://github.com/axonweb3/axon/blob/d835d64a7df7c10dcc5c2febcbc6c63bfa850810/.github/workflows/axon-start-with-short-genesis.yml#L85-L116).
 
 ## Toolchains
 
@@ -69,9 +77,6 @@ Apart from the framework, Axon has:
 
 - [Axon Faucet](https://github.com/axonweb3/axon-faucet): the faucet for the Axon-based chains.
 - [Axon Explorer](https://github.com/Magickbase/blockscan): a blockchain explorer for the Axon-based chains.
-- [Axon DevOps](https://github.com/axonweb3/axon-devops): includes several utilities, such as monitor, benchmark tool and so on.
-
-All the toolchains above can be dictated by **[Axon CLI](https://github.com/axonweb3/axon-cli), an exquisite and deft command line interface**. You can use Axon CLI to do anything related to Axon.
 
 ## Contributing
 

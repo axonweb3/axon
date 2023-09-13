@@ -38,6 +38,7 @@ jobs:
       # permits this job to add a label to pull request
       pull-requests: write
     runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.fork == false
     steps:
       - name: Add labels based on PR title
         uses: TDAK1509/set-label-based-on-pr-title@v1
