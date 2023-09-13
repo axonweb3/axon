@@ -69,7 +69,6 @@ Apart from the framework, Axon has:
 
 - [Axon Faucet](https://github.com/axonweb3/axon-faucet): the faucet for the Axon-based chains.
 - [Axon Explorer](https://github.com/Magickbase/blockscan): a blockchain explorer for the Axon-based chains.
-- [Axon DevOps](https://github.com/axonweb3/axon-devops): includes several utilities, such as monitor, benchmark tool and so on.
 
 All the toolchains above can be dictated by **[Axon CLI](https://github.com/axonweb3/axon-cli), an exquisite and deft command line interface**. You can use Axon CLI to do anything related to Axon.
 
