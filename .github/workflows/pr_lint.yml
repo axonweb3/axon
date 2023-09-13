@@ -1,10 +1,13 @@
 name: PR Lint
+
 concurrency:
   group: Conventional PR-${{ github.ref }}
   cancel-in-progress: true
+
 on:
   pull_request:
     types: ['opened', 'edited', 'reopened', 'synchronize']
+
 jobs:
   WIP:
     runs-on: ubuntu-latest
@@ -31,6 +34,9 @@ jobs:
           access_token: ${{ secrets.GITHUB_TOKEN }}
 
   Label:
+    permissions:
+      # permits this job to add a label to pull request
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
       - name: Add labels based on PR title
