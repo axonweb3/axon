@@ -77,7 +77,7 @@ jobs:
           args: "--avoid-cfg-tarpaulin -p core-executor -p core-mempool -p core-storage -p core-metadata -- --test-threads 1"
 
       - name: upload to codecov.io
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           token: ${{secrets.CODECOV_TOKEN}}
 
