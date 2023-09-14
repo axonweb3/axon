@@ -9,6 +9,7 @@ RUN set -eux; \
         cmake \
         clang \
         llvm \
+        jq \
         gcc; \
     rm -rf /var/lib/apt/lists/*
 
