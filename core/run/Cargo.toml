@@ -37,7 +37,7 @@ jemalloc-ctl = { version = "0.5", package = "tikv-jemalloc-ctl", optional = true
 jemallocator = { version = "0.5", features = ["profiling", "stats", "unprefixed_malloc_on_supported_platforms"], package = "tikv-jemallocator", optional = true }
 
 [dev-dependencies]
-clap = "4.3"
+clap = "4.4"
 tempfile = "3.6"
 
 [features]

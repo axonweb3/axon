@@ -84,6 +84,8 @@ impl From<SignedTransaction> for Web3Transaction {
     fn from(stx: SignedTransaction) -> Web3Transaction {
         let signature = stx.transaction.signature.clone().unwrap_or_default();
         let is_eip1559 = stx.transaction.unsigned.is_eip1559();
+
+        let sig_v = signature.add_chain_replay_protection(stx.transaction.chain_id);
         let (sig_r, sig_s) = if signature.is_eth_sig() {
             (
                 Either::Left(U256::from(&signature.r[..])),
@@ -130,7 +132,7 @@ impl From<SignedTransaction> for Web3Transaction {
             access_list:              Some(stx.transaction.unsigned.access_list()),
             chain_id:                 stx.transaction.chain_id.map(|id| id.into()),
             standard_v:               None,
-            v:                        signature.standard_v.into(),
+            v:                        sig_v.into(),
             r:                        sig_r,
             s:                        sig_s,
         }
@@ -142,6 +144,8 @@ impl From<(SignedTransaction, Receipt)> for Web3Transaction {
         let (stx, receipt) = stx_receipt;
         let signature = stx.transaction.signature.clone().unwrap_or_default();
         let is_eip1559 = stx.transaction.unsigned.is_eip1559();
+
+        let sig_v = signature.add_chain_replay_protection(stx.transaction.chain_id);
         let (sig_r, sig_s) = if signature.is_eth_sig() {
             (
                 Either::Left(U256::from(&signature.r[..])),
@@ -182,7 +186,7 @@ impl From<(SignedTransaction, Receipt)> for Web3Transaction {
             access_list:              Some(stx.transaction.unsigned.access_list()),
             chain_id:                 stx.transaction.chain_id.map(|id| id.into()),
             standard_v:               None,
-            v:                        signature.standard_v.into(),
+            v:                        sig_v.into(),
             r:                        sig_r,
             s:                        sig_s,
         }
@@ -900,8 +904,10 @@ mod tests {
         // https://etherscan.io/getRawTx?tx=0x07c7388b03ab8403deeaefc551efbc632f8531f04dc9993a274dbba9bbb98cbf
         let tx = Hex::from_str("0x02f902f801728405f5e1008509898edcf78302ffb8943fc91a3afd70395cd496c647d5a6cc9d4b2b7fad8802c68af0bb140000b902843593564c000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000006480c64700000000000000000000000000000000000000000000000000000000000000020b080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000002c68af0bb1400000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000002c68af0bb1400000000000000000000000000000000000000000004a715ce36374beaa635218d9700000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000c3681a720605bd6f8fe9a2fabff6a7cdecdc605dc080a0d253ee687ab2d9734a5073d64a0ba26bc3bc1cf4582005137bba05ef88616ea89e8ba79925267b17403fdf3ab47641b4aa52322dc385429cc92a7003c5d7c2").unwrap();
         let tx = UnverifiedTransaction::decode(tx).unwrap();
+        println!("{:?}", tx);
         let tx = SignedTransaction::from_unverified(tx, None).unwrap();
         let tx_json = serde_json::to_value(Web3Transaction::from(tx)).unwrap();
+
         assert_eq!(
             tx_json["r"],
             "0xd253ee687ab2d9734a5073d64a0ba26bc3bc1cf4582005137bba05ef88616ea8"
@@ -910,5 +916,6 @@ mod tests {
             tx_json["s"],
             "0x8ba79925267b17403fdf3ab47641b4aa52322dc385429cc92a7003c5d7c2"
         );
+        assert_eq!(tx_json["v"], "0x25");
     }
 }
