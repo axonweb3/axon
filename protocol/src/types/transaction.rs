@@ -298,10 +298,6 @@ pub struct UnverifiedTransaction {
 }
 
 impl UnverifiedTransaction {
-    pub fn contains_chain_id(&self) -> bool {
-        self.chain_id.is_some()
-    }
-
     pub fn calc_hash(mut self) -> Self {
         debug_assert!(self.signature.is_some());
         let hash = self.get_hash();
@@ -477,7 +473,7 @@ impl SignedTransaction {
     }
 
     pub fn is_eip155(&self) -> bool {
-        self.transaction.contains_chain_id()
+        self.transaction.chain_id.is_some()
     }
 
     /// Encode a transaction receipt into bytes.
