@@ -472,6 +472,10 @@ impl SignedTransaction {
         self.transaction.unsigned.to()
     }
 
+    pub fn is_eip155(&self) -> bool {
+        self.transaction.chain_id.is_some()
+    }
+
     /// Encode a transaction receipt into bytes.
     ///
     /// According to [`EIP-2718`]:

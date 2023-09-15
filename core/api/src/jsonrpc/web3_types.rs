@@ -84,6 +84,8 @@ impl From<SignedTransaction> for Web3Transaction {
     fn from(stx: SignedTransaction) -> Web3Transaction {
         let signature = stx.transaction.signature.clone().unwrap_or_default();
         let is_eip1559 = stx.transaction.unsigned.is_eip1559();
+
+        let sig_v = signature.add_chain_replay_protection(stx.transaction.chain_id);
         let (sig_r, sig_s) = if signature.is_eth_sig() {
             (
                 Either::Left(U256::from(&signature.r[..])),
@@ -130,7 +132,7 @@ impl From<SignedTransaction> for Web3Transaction {
             access_list:              Some(stx.transaction.unsigned.access_list()),
             chain_id:                 stx.transaction.chain_id.map(|id| id.into()),
             standard_v:               None,
-            v:                        signature.standard_v.into(),
+            v:                        sig_v.into(),
             r:                        sig_r,
             s:                        sig_s,
         }
@@ -142,6 +144,8 @@ impl From<(SignedTransaction, Receipt)> for Web3Transaction {
         let (stx, receipt) = stx_receipt;
         let signature = stx.transaction.signature.clone().unwrap_or_default();
         let is_eip1559 = stx.transaction.unsigned.is_eip1559();
+
+        let sig_v = signature.add_chain_replay_protection(stx.transaction.chain_id);
         let (sig_r, sig_s) = if signature.is_eth_sig() {
             (
                 Either::Left(U256::from(&signature.r[..])),
@@ -182,7 +186,7 @@ impl From<(SignedTransaction, Receipt)> for Web3Transaction {
             access_list:              Some(stx.transaction.unsigned.access_list()),
             chain_id:                 stx.transaction.chain_id.map(|id| id.into()),
             standard_v:               None,
-            v:                        signature.standard_v.into(),
+            v:                        sig_v.into(),
             r:                        sig_r,
             s:                        sig_s,
         }
@@ -902,6 +906,7 @@ mod tests {
         let tx = UnverifiedTransaction::decode(tx).unwrap();
         let tx = SignedTransaction::from_unverified(tx, None).unwrap();
         let tx_json = serde_json::to_value(Web3Transaction::from(tx)).unwrap();
+
         assert_eq!(
             tx_json["r"],
             "0xd253ee687ab2d9734a5073d64a0ba26bc3bc1cf4582005137bba05ef88616ea8"
@@ -910,5 +915,6 @@ mod tests {
             tx_json["s"],
             "0x8ba79925267b17403fdf3ab47641b4aa52322dc385429cc92a7003c5d7c2"
         );
+        assert_eq!(tx_json["v"], "0x25");
     }
 }

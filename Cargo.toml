@@ -7,7 +7,7 @@ repository = "https://github.com/axonweb3/axon"
 build = "build.rs"
 
 [dependencies]
-clap = { version = "4.3", features = ["cargo"] }
+clap = { version = "4.4", features = ["cargo"] }
 
 # byzantine = { path = "./byzantine" }
 common-version = { path = "./common/version" }
