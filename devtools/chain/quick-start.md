@@ -50,7 +50,7 @@ curl --location --request POST 'http://127.0.0.1:8000' \
 }'
 
 # Result: a JSON response containing the chain ID of the Axon devnet.
-{"jsonrpc":"2.0","result":"0x7e6","id":42}
+{"jsonrpc":"2.0","result":"0x41786f6e","id":42}
 ```
 
 ### Access [Blockscan](http://127.0.0.1:4020)
