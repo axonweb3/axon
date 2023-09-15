@@ -6,9 +6,6 @@ block_number() {
     echo $block
 }
 
-
-
-
 block_stats() {
     current_block=$(block_number)
     start_time=$(date +%s)
