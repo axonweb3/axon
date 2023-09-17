@@ -90,6 +90,7 @@ jobs:
               core.info(`${JSON.stringify(resp, null, 2)}`);
               check_list=`${check_list}\n - E2E Tests`;
               }
+
             // check OCT 1-5 And 12-15 exist or not
             const OCT_match = pr.data.body.includes("[x] OCT 1-5 And 12-15");
             if (OCT_match) {
