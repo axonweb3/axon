@@ -7,9 +7,9 @@
   },
   "dependencies": {
     "@chainsafe/dappeteer": "^5",
-    "@ethereumjs/tx": "^4.2.0",
     "@ethereumjs/common": "^3.1.1",
-    "puppeteer": "^20.7.4",
+    "@ethereumjs/tx": "^4.2.0",
+    "puppeteer": "^21.2.1",
     "web3": "^1.8.2",
     "xhr2": "^0.2.1"
   },
