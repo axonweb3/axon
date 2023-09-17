@@ -64,6 +64,11 @@ jobs:
           target/
         key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
+    - uses: lyricwulf/abc@v1
+      with:
+        # https://www.gnu.org/software/m4/
+        linux: m4
+
     - uses: actions/setup-node@v3
       with:
         node-version: "18"
@@ -84,6 +89,8 @@ jobs:
         key: ${{ runner.os }}-node_modules-${{ hashFiles('**/package-lock.json', '**/yarn.lock') }}
         restore-keys: |
           ${{ runner.os }}-node_modules-
+
+
 
     - name: E2E Tests Linting in tests/e2e
       run: make e2e-test-lint
