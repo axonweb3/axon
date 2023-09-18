@@ -7,7 +7,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use ckb_jsonrpc_types::{CellInfo, HeaderView as CkbHeaderView, OutPoint};
 use jsonrpsee::server::{ServerBuilder, ServerHandle};
-use jsonrpsee::{core::Error, proc_macros::rpc};
+use jsonrpsee::{core::RpcResult, proc_macros::rpc};
 
 use common_config_parser::types::{spec::HardforkName, Config};
 use protocol::traits::APIAdapter;
@@ -24,8 +24,6 @@ use crate::jsonrpc::ws_subscription::{ws_subscription_module, HexIdProvider};
 use crate::APIError;
 
 use self::web3_types::BlockCount;
-
-type RpcResult<T> = Result<T, Error>;
 
 #[rpc(server)]
 pub trait Web3Rpc {
@@ -279,11 +277,7 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
             .await
             .map_err(|e| APIError::HttpServer(e.to_string()))?;
 
-        ret.0 = Some(
-            server
-                .start(rpc.clone())
-                .map_err(|e| APIError::HttpServer(e.to_string()))?,
-        );
+        ret.0 = Some(server.start(rpc.clone()));
     }
 
     if let Some(addr) = config.rpc.ws_listening_address {
@@ -299,11 +293,7 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
 
         rpc.merge(ws_subscription_module(adapter).await).unwrap();
 
-        ret.1 = Some(
-            server
-                .start(rpc)
-                .map_err(|e| APIError::WebSocketServer(e.to_string()))?,
-        )
+        ret.1 = Some(server.start(rpc))
     }
 
     Ok(ret)

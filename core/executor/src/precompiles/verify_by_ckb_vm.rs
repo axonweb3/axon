@@ -30,7 +30,7 @@ impl PrecompileContract for CkbVM {
         if let Some(gas) = gas_limit {
             let res = InteroperationImpl::verify_by_ckb_vm(
                 Default::default(),
-                &DataProvider::new(CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow())),
+                DataProvider::new(CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow())),
                 &InteroperationImpl::dummy_transaction(
                     SignatureR::new_by_ref(
                         payload.cell_deps(),

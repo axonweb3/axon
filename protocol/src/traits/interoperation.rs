@@ -1,4 +1,4 @@
-use ckb_traits::{CellDataProvider, HeaderProvider};
+use ckb_traits::{CellDataProvider, ExtensionProvider, HeaderProvider};
 use ckb_types::core::{cell::CellProvider, Cycle, TransactionView};
 use ckb_types::{packed, prelude::*};
 
@@ -24,6 +24,11 @@ const fn signature_hash_cell_bytes() -> u64 {
     32 + 32 + 1 + 8
 }
 
+pub trait CkbDataProvider:
+    Clone + CellDataProvider + CellProvider + HeaderProvider + ExtensionProvider
+{
+}
+
 pub trait Interoperation: Sync + Send {
     fn call_ckb_vm<DL: CellDataProvider>(
         ctx: Context,
@@ -33,9 +38,9 @@ pub trait Interoperation: Sync + Send {
         max_cycles: u64,
     ) -> ProtocolResult<VMResp>;
 
-    fn verify_by_ckb_vm<DL: CellProvider + CellDataProvider + HeaderProvider>(
+    fn verify_by_ckb_vm<DL: CkbDataProvider + Sync + Send + 'static>(
         ctx: Context,
-        data_loader: &DL,
+        data_loader: DL,
         mocked_tx: &TransactionView,
         dummy_input: Option<CellWithData>,
         max_cycles: u64,

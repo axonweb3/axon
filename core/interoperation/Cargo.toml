@@ -7,10 +7,11 @@ edition = "2021"
 
 [dependencies]
 arc-swap = "1.5"
-ckb-error = "0.108"
-ckb-script = "0.108"
-ckb-traits = "0.108"
-ckb-types = "0.108"
+ckb-chain-spec = "0.111"
+ckb-error = "0.111"
+ckb-script = "0.111"
+ckb-traits = "0.111"
+ckb-types = "0.111"
 ckb-vm = { version = "0.22.2", features = ["asm"] }
 lazy_static = "1.4"
 log = "0.4"
@@ -20,7 +21,7 @@ protocol = { path = "../../protocol", package = "axon-protocol", default-feature
 [dev-dependencies]
 cardano-serialization-lib = "7.0"
 cardano-message-signing = { git = "https://github.com/ashuralyk/message-signing", branch = "rust" }
-ckb-jsonrpc-types = "0.108"
+ckb-jsonrpc-types = "0.111"
 ed25519-dalek = "1.0"
 ethers-core = "2.0"
 serde_json = "1.0"

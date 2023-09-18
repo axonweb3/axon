@@ -19,7 +19,7 @@ pub use crate::system_contract::native_token::{
 
 use std::sync::Arc;
 
-use ckb_traits::{CellDataProvider, HeaderProvider};
+use ckb_traits::{CellDataProvider, ExtensionProvider, HeaderProvider};
 use ckb_types::core::cell::{CellProvider, CellStatus};
 use ckb_types::core::{HeaderBuilder, HeaderView};
 use ckb_types::{packed, prelude::*};
@@ -27,8 +27,9 @@ use evm::backend::ApplyBackend;
 use parking_lot::RwLock;
 use rocksdb::DB;
 
+use protocol::ckb_blake2b_256;
+use protocol::traits::{CkbDataProvider, ExecutorAdapter};
 use protocol::types::{Bytes, Hasher, SignedTransaction, TxResp, H160, H256};
-use protocol::{ckb_blake2b_256, traits::ExecutorAdapter};
 
 use crate::adapter::RocksTrieDB;
 use crate::system_contract::{
@@ -235,6 +236,19 @@ impl HeaderProvider for DataProvider {
             })
     }
 }
+
+impl ExtensionProvider for DataProvider {
+    fn get_block_extension(&self, hash: &packed::Byte32) -> Option<packed::Bytes> {
+        let block_hash = hash.unpack();
+        CkbHeaderReader
+            .get_header_by_block_hash(self.root, &H256(block_hash.0))
+            .ok()
+            .flatten()
+            .map(|h| h.extension.pack())
+    }
+}
+
+impl CkbDataProvider for DataProvider {}
 
 impl DataProvider {
     pub fn new(root: H256) -> Self {

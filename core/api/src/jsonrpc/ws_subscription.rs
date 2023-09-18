@@ -1,5 +1,4 @@
 use std::{
-    io,
     sync::{
         atomic::{AtomicU64, Ordering},
         Arc,
@@ -7,23 +6,18 @@ use std::{
     time::Duration,
 };
 
-use jsonrpsee::{
-    core::Error,
-    server::{IdProvider, RpcModule, SubscriptionSink},
-    types::{error::CallError, params::Params, SubscriptionId},
+use jsonrpsee::server::{
+    IdProvider, IntoSubscriptionCloseResponse, PendingSubscriptionSink, RpcModule,
+    SubscriptionMessage, SubscriptionSink,
 };
+use jsonrpsee::types::{error::ErrorCode, params::Params, ErrorObjectOwned, SubscriptionId};
 use serde::{Deserialize, Serialize};
 
 use core_consensus::SYNC_STATUS;
-use protocol::{
-    tokio::{
-        self, select,
-        sync::mpsc::{channel, Receiver, Sender},
-        time::interval,
-    },
-    traits::{APIAdapter, Context},
-    types::{BigEndianHash, Hash, Hex, H160, H256, U256},
-};
+use protocol::tokio::sync::mpsc::{channel, Receiver, Sender};
+use protocol::tokio::{self, select, time::interval};
+use protocol::traits::{APIAdapter, Context};
+use protocol::types::{BigEndianHash, Hash, Hex, H160, H256, U256};
 
 use crate::jsonrpc::{
     r#impl::from_receipt_to_web3_log,
@@ -45,25 +39,34 @@ where
         "eth_subscribe",
         "eth_subscription",
         "eth_unsubscribe",
-        |params, mut sink, ctx| match Type::try_from(params) {
-            Ok(typ) => {
-                sink.accept()?;
-                let raw_hub = RawHub { typ, sink };
-
-                tokio::spawn(async move {
-                    let _ignore = ctx.send(raw_hub).await;
-                });
-                Ok(())
-            }
-            Err(e) => {
-                let e: Error = e.into();
-                let _ = sink.reject(e);
-                Ok(())
-            }
-        },
+        subscription_callback,
     )
     .unwrap();
     rpc
+}
+
+async fn subscription_callback(
+    params: Params<'static>,
+    sink: PendingSubscriptionSink,
+    ctx: Arc<Sender<RawHub>>,
+) -> impl IntoSubscriptionCloseResponse {
+    match Type::try_from(params) {
+        Ok(type_) => {
+            let raw_hub = RawHub {
+                typ:  type_,
+                sink: sink.accept().await?,
+            };
+
+            tokio::spawn(async move {
+                let _ignore = ctx.send(raw_hub).await;
+            });
+            Ok(())
+        }
+        Err(e) => {
+            sink.reject(e).await;
+            Ok(())
+        }
+    }
 }
 
 pub struct Subscription<Adapter> {
@@ -128,24 +131,29 @@ where
                 log_vec.push((block.header.number, block.tx_hashes));
 
                 let web3_header = Web3Header::from(block.header);
+                let msg = SubscriptionMessage::from_json(&web3_header).unwrap();
+
                 for hub in self.header_hubs.iter_mut() {
-                    let _ignore = hub.sink.send(&web3_header);
+                    let _ignore = hub.sink.send(msg.clone());
                 }
             }
 
             let latest_web3_header = Web3Header::from(latest_block.header);
+            let msg = SubscriptionMessage::from_json(&latest_web3_header).unwrap();
+
             for hub in self.header_hubs.iter_mut() {
-                let _ignore = hub.sink.send(&latest_web3_header);
+                let _ignore = hub.sink.send(msg.clone());
             }
         }
 
         // Send all sync status
         if !self.sync_hubs.is_empty() {
             let web3_sync_state: Web3SyncStatus = { SYNC_STATUS.read().clone().into() };
+            let msg = SubscriptionMessage::from_json(&web3_sync_state).unwrap();
 
             for hub in self.sync_hubs.iter_mut() {
                 // unbound sender can ignore it's return
-                let _ignore = hub.sink.send(&web3_sync_state);
+                let _ignore = hub.sink.send(msg.clone());
             }
         }
 
@@ -188,8 +196,9 @@ where
                         );
 
                         for log in logs.drain(..) {
+                            let msg = SubscriptionMessage::from_json(&log).unwrap();
                             // unbound sender can ignore it's return
-                            let _ignore = hub.sink.send(&log);
+                            let _ignore = hub.sink.send(msg);
                         }
                     }
                     index += log_len;
@@ -236,7 +245,7 @@ enum Type {
 }
 
 impl<'a> TryFrom<Params<'a>> for Type {
-    type Error = CallError;
+    type Error = ErrorObjectOwned;
 
     fn try_from(value: Params<'a>) -> Result<Self, Self::Error> {
         let mut iter = value.sequence();
@@ -250,10 +259,7 @@ impl<'a> TryFrom<Params<'a>> for Type {
                 let filter: RawLoggerFilter = iter.next()?;
                 Ok(Type::Logs(filter.into()))
             }
-            _ => Err(CallError::from_std_error(io::Error::new(
-                io::ErrorKind::InvalidData,
-                format!("invalid method: {}", method),
-            ))),
+            _ => Err(ErrorCode::MethodNotFound.into()),
         }
     }
 }

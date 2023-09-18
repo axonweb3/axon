@@ -9,15 +9,21 @@ arc-swap = "1.6"
 async-trait = "0.1"
 bincode = "1.3"
 bytes = { version = "1.5", features = ["serde"] }
-ckb-hash = "0.108"
-ckb-jsonrpc-types = "0.108"
-ckb-sdk = "2.5"
-ckb-traits = "0.108"
-ckb-types = "0.108"
+ckb-hash = "0.111"
+ckb-jsonrpc-types = "0.111"
+ckb-sdk = "3.0"
+ckb-traits = "0.111"
+ckb-types = "0.111"
 creep = "0.2"
 derive_more = "0.99"
 ethereum = { version = "0.14", features = ["with-codec", "with-serde"] }
-ethereum-types = { version = "0.14", features = ["arbitrary", "codec", "rlp", "serialize", "std"] }
+ethereum-types = { version = "0.14", features = [
+    "arbitrary",
+    "codec",
+    "rlp",
+    "serialize",
+    "std",
+] }
 ethers-core = "2.0"
 evm = { version = "0.37", features = ["with-serde"] }
 faster-hex = "0.8"
