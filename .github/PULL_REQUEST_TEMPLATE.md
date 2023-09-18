@@ -36,7 +36,6 @@ See also:
 
 **CI Switch**
 
-- [ ] E2E Tests
 - [ ] Web3 Compatible Tests
 - [ ] OCT 1-5 And 12-15
 - [ ] OCT 6-10
@@ -48,11 +47,6 @@ See also:
 
 | CI Name                                   | Description                                                               |
 | ----------------------------------------- | ------------------------------------------------------------------------- |
-| *Chaos CI*                                | Test the liveness and robustness of Axon under terrible network condition |
-| *Cargo Clippy*                            | Run `cargo clippy --all --all-targets --all-features`                     |
-| *Coverage Test*                           | Get the unit test coverage report                                         |
-| *E2E Test*                                | Run end-to-end test to check interfaces                                   |
-| *Code Format*                             | Run `cargo +nightly fmt --all -- --check` and `cargo sort -gwc`           |
 | *Web3 Compatible Test*                    | Test the Web3 compatibility of Axon                                       |
 | *v3 Core Test*                            | Run the compatibility tests provided by Uniswap V3                        |
 | *OCT 1-5 \| 6-10 \| 11 \| 12-15 \| 16-19* | Run the compatibility tests provided by OpenZeppelin                      |
@@ -60,6 +54,8 @@ See also:
 <!--
 #### Deprecated CIs
 - [ ] Chaos CI
+| *Chaos CI*                                | Test the liveness and robustness of Axon under terrible network condition |
 - [ ] Coverage Test
+| *Coverage Test*                           | Get the unit test coverage report                                         |
 -->
 </details>

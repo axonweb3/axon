@@ -1,16 +1,16 @@
 name: E2E Tests
 
 on:
-  # TODO: With cache, `make e2e-test-ci` only takes only 7 minutes.
   push:
+  pull_request:
   merge_group:
-  workflow_dispatch:
-    inputs:
-      # used by regression_testing.yml and entry_workflow.yml
-      dispatch:
-        type: string
-        description: "'regression' or the JSON of a PR's context"
-        required: false
+
+# Ensure that only a single job or workflow using the same concurrency group will run at a time.
+# see https://docs.github.com/en/actions/using-jobs/using-concurrency#example-only-cancel-in-progress-jobs-or-runs-for-the-current-workflow
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  # only needs to test the group's latest commit
+  cancel-in-progress: true
 
 jobs:
   e2e-test:
@@ -21,39 +21,9 @@ jobs:
         os: [ubuntu-22.04]
       fail-fast: false
     runs-on: ${{ matrix.os }}
-    env:
-      IS_DISPATCH: ${{ github.event_name == 'workflow_dispatch' }}
-      IS_REGRESSION: ${{ github.event.inputs.dispatch == 'regression' }}
-
-    # When the permissions key is used, all unspecified permissions are set to no access, with the
-    # exception of the metadata scope, which always gets read access.
-    # See https://docs.github.com/en/actions/security-guides/automatic-token-authentication#modifying-the-permissions-for-the-github_token
-    permissions:
-      statuses: write
 
     steps:
-      - name: Get the git ref of Axon
-        uses: actions/github-script@v6
-        id: axon_git_ref
-        with:
-          script: |
-            if (`${{ env.IS_DISPATCH }}` == 'true' && `${{ env.IS_REGRESSION }}` == 'false' && `${{ github.event.inputs.dispatch }}`) {
-              const dispatch = JSON.parse(`${{ github.event.inputs.dispatch }}`);
-              const prNum = dispatch.issue.number;
-              const { data: pullRequest } = await github.rest.pulls.get({
-                owner: dispatch.repo.owner,
-                repo: dispatch.repo.repo,
-                pull_number: dispatch.issue.number,
-              });
-              return pullRequest.head.sha;
-            }
-            return `${{ github.sha }}`;
-          result-encoding: string
-
-      - name: Checkout Axon ${{ steps.axon_git_ref.outputs.result}}
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ steps.axon_git_ref.outputs.result}}
+      - uses: actions/checkout@v4
 
       - name: Cache of Cargo
         uses: actions/cache@v3
@@ -68,7 +38,6 @@ jobs:
           restore-keys: |
             ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-build
             ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo
-      # TODO: remove ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo key
 
       - uses: lyricwulf/abc@v1
         with:
@@ -98,28 +67,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node_modules-
 
-      # Only enable tmate while debugging
-      # - name: Setup tmate session
-      #   # if: ${{ failure() }}
-      #   uses: mxschmitt/action-tmate@v3
-      #   timeout-minutes: 30
-
       - name: E2E Tests Linting in tests/e2e
         run: make e2e-test-lint
       - name: E2E Tests in tests/e2e
         run: make e2e-test-ci
-
-      # The `statuses: write` permission is required in this step.
-      - name: Update the commit Status
-        if: always() && env.IS_DISPATCH == 'true' && env.IS_REGRESSION == 'false'
-        uses: actions/github-script@v6
-        with:
-          script: |
-            github.rest.repos.createCommitStatus({
-              state: '${{ job.status }}',
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              context: '${{ github.workflow }}',
-              sha: '${{ steps.axon_git_ref.outputs.result}}',
-              target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-            })
