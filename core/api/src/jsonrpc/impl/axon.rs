@@ -150,6 +150,7 @@ impl<Adapter: APIAdapter + 'static> AxonRpcServer for AxonRpcImpl<Adapter> {
     }
 }
 
+/// Returns (enabled_flags, determined_flags) in target block height
 fn enabled_and_determined(iter: &[HardforkInfoInner], current_number: u64) -> (H256, H256) {
     if iter.len() < 2 {
         match iter.last() {
