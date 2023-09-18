@@ -879,8 +879,8 @@ pub struct RawLoggerFilter {
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub enum HardforkStatus {
     Proposed,
+    Determined,
     Enabled,
-    Activated,
 }
 
 #[cfg(test)]
