@@ -637,6 +637,10 @@ where
         }
         Ok(())
     }
+
+    async fn remove_hardfork_proposal(&self, ctx: Context) -> ProtocolResult<()> {
+        self.storage.remove_hardfork_proposal(ctx).await
+    }
 }
 
 impl<M, N, S, DB> OverlordConsensusAdapter<M, N, S, DB>

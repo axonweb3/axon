@@ -26,13 +26,17 @@ pub struct NodeInfo {
 }
 
 impl NodeInfo {
-    pub fn new(chain_id: u64, pubkey: Secp256k1PublicKey) -> Self {
+    pub fn new(
+        chain_id: u64,
+        pubkey: Secp256k1PublicKey,
+        hardfork_info: Option<HardforkInfoInner>,
+    ) -> Self {
         let address = Address::from_pubkey(&pubkey);
         Self {
             chain_id,
             self_pub_key: pubkey,
             self_address: address,
-            hardfork_proposals: Default::default(),
+            hardfork_proposals: Arc::new(RwLock::new(hardfork_info)),
         }
     }
 }
@@ -188,6 +192,8 @@ pub trait CommonConsensusAdapter: Send + Sync {
         weight_map: HashMap<Bytes, u32>,
         signed_voters: Vec<Bytes>,
     ) -> ProtocolResult<()>;
+
+    async fn remove_hardfork_proposal(&self, _ctx: Context) -> ProtocolResult<()>;
 }
 
 #[async_trait]

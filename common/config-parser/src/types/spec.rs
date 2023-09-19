@@ -10,7 +10,7 @@ use clap::{
     builder::{StringValueParser, TypedValueParser, ValueParserFactory},
     Args,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use common_crypto::Secp256k1RecoverablePrivateKey;
 use protocol::{
@@ -40,7 +40,7 @@ pub struct ChainSpec {
 #[derive(Clone, Debug, Deserialize)]
 pub struct Genesis {
     pub timestamp:        u64,
-    pub extra_data:       HarforkInput,
+    pub extra_data:       HardforkInput,
     pub base_fee_per_gas: U256,
     pub chain_id:         u64,
 
@@ -261,9 +261,13 @@ impl Genesis {
             timestamp: self.timestamp,
             // todo: if Hardforkinput is empty, it must change to latest hardfork info to init
             // genesis
-            extra_data: Into::<HardforkInfoInner>::into(self.extra_data.clone())
-                .encode()
-                .unwrap(),
+            extra_data: if self.extra_data.block_number != 0 {
+                Default::default()
+            } else {
+                Into::<HardforkInfoInner>::into(self.extra_data.clone())
+                    .encode()
+                    .unwrap()
+            },
             base_fee_per_gas: self.base_fee_per_gas,
             chain_id: self.chain_id,
             ..Default::default()
@@ -271,14 +275,23 @@ impl Genesis {
     }
 }
 
-#[derive(Clone, Debug, Deserialize)]
-pub struct HarforkInput {
-    block_number: u64,
-    hardforks:    Vec<HardforkType>,
+use clap::ValueEnum;
+use strum_macros::EnumIter;
+
+#[derive(Clone, Debug, Deserialize, Args)]
+pub struct HardforkInput {
+    #[arg(
+        long = "hardfork-start-number",
+        required = false,
+        requires = "hardforks"
+    )]
+    pub block_number: u64,
+    #[arg(long = "feature", requires = "block_number")]
+    pub hardforks:    Vec<HardforkName>,
 }
 
-impl From<HarforkInput> for HardforkInfoInner {
-    fn from(value: HarforkInput) -> Self {
+impl From<HardforkInput> for HardforkInfoInner {
+    fn from(value: HardforkInput) -> Self {
         let flags = {
             let r = value.hardforks.into_iter().fold(0, |acc, s| acc | s as u64);
 
@@ -292,7 +305,7 @@ impl From<HarforkInput> for HardforkInfoInner {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Copy)]
-enum HardforkType {
+#[derive(Clone, Debug, Serialize, Deserialize, Copy, ValueEnum, EnumIter, PartialEq, Eq, Hash)]
+pub enum HardforkName {
     None = 0b0,
 }

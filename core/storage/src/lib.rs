@@ -20,12 +20,13 @@ use protocol::traits::{
     StorageSchema,
 };
 use protocol::types::{
-    Block, BlockNumber, Bytes, DBBytes, Hash, Hasher, Header, Proof, Receipt, SignedTransaction,
-    H256,
+    Block, BlockNumber, Bytes, DBBytes, HardforkInfoInner, Hash, Hasher, Header, Proof, Receipt,
+    SignedTransaction, H256,
 };
 use protocol::{
     async_trait, tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
 };
+use schema::HardforkSchema;
 
 use crate::cache::StorageCache;
 use crate::hash_key::{BlockKey, CommonHashKey, CommonPrefix};
@@ -42,6 +43,7 @@ lazy_static::lazy_static! {
     pub static ref LATEST_PROOF_KEY: Hash = Hasher::digest(Bytes::from("latest_proof"));
     pub static ref OVERLORD_WAL_KEY: Hash = Hasher::digest(Bytes::from("overlord_wal"));
     pub static ref MONITOR_CKB_NUMBER_KEY: Hash = Hasher::digest(Bytes::from("monitor_ckb_number"));
+    pub static ref HAEDFORK_PROPOSAL: Hash = Hasher::digest(Bytes::from("hardfork_proposal"));
 }
 
 macro_rules! get_cache {
@@ -472,6 +474,10 @@ impl<Adapter: StorageAdapter> ReadOnlyStorage for ImplStorage<Adapter> {
             Ok(proof)
         }
     }
+
+    async fn hardfork_proposal(&self, _ctx: Context) -> ProtocolResult<Option<HardforkInfoInner>> {
+        get!(self, *HAEDFORK_PROPOSAL, HardforkSchema)
+    }
 }
 
 #[async_trait]
@@ -551,6 +557,20 @@ impl<Adapter: StorageAdapter> Storage for ImplStorage<Adapter> {
         self.latest_proof.store(Arc::new(Some(proof)));
 
         Ok(())
+    }
+
+    async fn set_hardfork_proposal(
+        &self,
+        _ctx: Context,
+        hardfork: HardforkInfoInner,
+    ) -> ProtocolResult<()> {
+        self.adapter
+            .insert::<HardforkSchema>(*HAEDFORK_PROPOSAL, hardfork)?;
+        Ok(())
+    }
+
+    async fn remove_hardfork_proposal(&self, _ctx: Context) -> ProtocolResult<()> {
+        self.adapter.remove::<HardforkSchema>(*HAEDFORK_PROPOSAL)
     }
 }
 

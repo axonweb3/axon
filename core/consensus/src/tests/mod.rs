@@ -336,4 +336,8 @@ impl CommonConsensusAdapter for MockSyncAdapter {
     ) -> ProtocolResult<()> {
         Ok(())
     }
+
+    async fn remove_hardfork_proposal(&self, _ctx: Context) -> ProtocolResult<()> {
+        Ok(())
+    }
 }

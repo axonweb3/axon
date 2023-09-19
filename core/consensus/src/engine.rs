@@ -82,13 +82,15 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             RLP_NULL
         };
 
+        let mut remove = false;
         let extra_data_hardfork = {
             let mut hardfork = self.node_info.hardfork_proposals.write().unwrap();
             match &*hardfork {
                 Some(v) => {
-                    // remove invalid proposal
+                    // remove invalid proposal if the proposed block height is passed
                     if v.block_number <= next_number {
                         hardfork.take();
+                        remove = true;
                         Default::default()
                     } else {
                         v.encode().unwrap()
@@ -97,6 +99,10 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
                 None => Default::default(),
             }
         };
+
+        if remove {
+            self.adapter.remove_hardfork_proposal(ctx.clone()).await?;
+        }
 
         let proposal = Proposal {
             version:                  BlockVersion::V0,
@@ -652,6 +658,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         let handle = MetadataHandle::new(root);
         let hardforks = handle.hardfork_infos()?;
 
+        let mut remove = false;
         if let Some(data) = hardforks.inner.last() {
             let mut self_proposal = self.node_info.hardfork_proposals.write().unwrap();
 
@@ -662,7 +669,12 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             {
                 // remove self hardfork proposal
                 self_proposal.take();
+                remove = true;
             }
+        }
+
+        if remove {
+            self.adapter.remove_hardfork_proposal(ctx.clone()).await?;
         }
 
         if self

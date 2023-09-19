@@ -52,6 +52,7 @@ impl RocksAdapter {
             map_category(StorageCategory::EvmState),
             map_category(StorageCategory::MetadataState),
             map_category(StorageCategory::CkbLightClientState),
+            map_category(StorageCategory::Version),
         ];
 
         let (mut opts, cf_descriptors) = if let Some(ref file) = config.options_file {
@@ -294,7 +295,8 @@ impl From<RocksDBError> for ProtocolError {
     }
 }
 
-// Todo: column family "c0" is reserved for store version
+// column family "c0" is reserved for store version
+const C_VERSION: &str = "c0";
 const C_BLOCKS: &str = "c1";
 const C_BLOCK_HEADER: &str = "c2";
 const C_SIGNED_TRANSACTIONS: &str = "c3";
@@ -318,6 +320,7 @@ pub fn map_category(c: StorageCategory) -> &'static str {
         StorageCategory::EvmState => C_EVM_STATE,
         StorageCategory::MetadataState => C_METADATA_STATE,
         StorageCategory::CkbLightClientState => C_CKB_LIGHT_CLIENT_STATE,
+        StorageCategory::Version => C_VERSION,
     }
 }
 

@@ -1,4 +1,6 @@
-use crate::types::{Block, Bytes, Hash, Header, Proof, Receipt, SignedTransaction, H256};
+use crate::types::{
+    Block, Bytes, HardforkInfoInner, Hash, Header, Proof, Receipt, SignedTransaction, H256,
+};
 use crate::{async_trait, codec::ProtocolCodec, traits::Context, Display, ProtocolResult};
 
 #[derive(Copy, Clone, Display, Debug)]
@@ -13,6 +15,7 @@ pub enum StorageCategory {
     EvmState,
     MetadataState,
     CkbLightClientState,
+    Version,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -109,6 +112,8 @@ pub trait ReadOnlyStorage: Sync + Send {
     ) -> ProtocolResult<Vec<Option<Receipt>>>;
 
     async fn get_latest_proof(&self, ctx: Context) -> ProtocolResult<Proof>;
+
+    async fn hardfork_proposal(&self, _ctx: Context) -> ProtocolResult<Option<HardforkInfoInner>>;
 }
 
 #[async_trait]
@@ -144,6 +149,14 @@ pub trait Storage: ReadOnlyStorage {
     ) -> ProtocolResult<()>;
 
     async fn update_latest_proof(&self, ctx: Context, proof: Proof) -> ProtocolResult<()>;
+
+    async fn set_hardfork_proposal(
+        &self,
+        _ctx: Context,
+        hardfork: HardforkInfoInner,
+    ) -> ProtocolResult<()>;
+
+    async fn remove_hardfork_proposal(&self, _ctx: Context) -> ProtocolResult<()>;
 }
 
 pub enum StorageBatchModify<S: StorageSchema> {
