@@ -106,19 +106,19 @@ impl<Adapter: APIAdapter + 'static> AxonRpcServer for AxonRpcImpl<Adapter> {
             .adapter
             .hardfork_info(Context::new())
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         let proposal = self
             .adapter
             .hardfork_proposal(Context::new())
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         let current_number = self
             .adapter
             .get_block_header_by_number(Default::default(), None)
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?
+            .map_err(|e| RpcError::Internal(e.to_string()))?
             .unwrap()
             .number;
 

@@ -26,13 +26,12 @@ use protocol::types::{
 use protocol::{
     async_trait, tokio, Display, From, ProtocolError, ProtocolErrorKind, ProtocolResult,
 };
-use schema::HardforkSchema;
 
 use crate::cache::StorageCache;
 use crate::hash_key::{BlockKey, CommonHashKey, CommonPrefix};
 use crate::schema::{
     BlockHashNumberSchema, BlockHeaderSchema, BlockSchema, EvmCodeAddressSchema, EvmCodeSchema,
-    LatestBlockSchema, LatestProofSchema, ReceiptBytesSchema, ReceiptSchema,
+    HardforkSchema, LatestBlockSchema, LatestProofSchema, ReceiptBytesSchema, ReceiptSchema,
     TransactionBytesSchema, TransactionSchema, TxHashNumberSchema,
 };
 

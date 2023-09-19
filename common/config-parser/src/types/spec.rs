@@ -8,9 +8,10 @@ use std::{
 
 use clap::{
     builder::{StringValueParser, TypedValueParser, ValueParserFactory},
-    Args,
+    Args, ValueEnum,
 };
 use serde::{Deserialize, Serialize};
+use strum_macros::EnumIter;
 
 use common_crypto::Secp256k1RecoverablePrivateKey;
 use protocol::{
@@ -274,9 +275,6 @@ impl Genesis {
         }
     }
 }
-
-use clap::ValueEnum;
-use strum_macros::EnumIter;
 
 #[derive(Clone, Debug, Deserialize, Args)]
 pub struct HardforkInput {

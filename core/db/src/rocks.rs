@@ -295,7 +295,6 @@ impl From<RocksDBError> for ProtocolError {
     }
 }
 
-// column family "c0" is reserved for store version
 const C_VERSION: &str = "c0";
 const C_BLOCKS: &str = "c1";
 const C_BLOCK_HEADER: &str = "c2";

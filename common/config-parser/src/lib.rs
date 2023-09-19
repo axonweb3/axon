@@ -1,11 +1,7 @@
 pub mod types;
 use serde::de;
 
-use std::error;
-use std::fmt;
-use std::fs;
-use std::io;
-use std::path::Path;
+use std::{error, fmt, fs, io, path::Path};
 
 /// Parse a config from reader.
 pub fn parse_reader<R: io::Read, T: de::DeserializeOwned>(r: &mut R) -> Result<T, ParseError> {
