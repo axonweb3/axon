@@ -12,7 +12,7 @@ ckb-error = "0.111"
 ckb-script = "0.111"
 ckb-traits = "0.111"
 ckb-types = "0.111"
-ckb-vm = { version = "0.22.2", features = ["asm"] }
+ckb-vm = { version = "=0.24.6", features = ["asm"] }
 lazy_static = "1.4"
 log = "0.4"
 

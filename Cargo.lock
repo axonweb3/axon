@@ -1145,7 +1145,7 @@ dependencies = [
  "ckb-logger",
  "ckb-traits",
  "ckb-types",
- "ckb-vm 0.24.6",
+ "ckb-vm",
  "faster-hex 0.6.1",
  "serde",
 ]
@@ -1254,24 +1254,6 @@ dependencies = [
 
 [[package]]
 name = "ckb-vm"
-version = "0.22.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1223acc8054ce96f91c5d99d4942898d0bdadd618c3b14f1acd3e67212991d8e"
-dependencies = [
- "byteorder",
- "bytes",
- "cc",
- "ckb-vm-definitions 0.22.2",
- "derive_more",
- "goblin 0.2.3",
- "goblin 0.4.0",
- "rand 0.7.3",
- "scroll",
- "serde",
-]
-
-[[package]]
-name = "ckb-vm"
 version = "0.24.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0cc004a826b9bc9319ffae0b8415690e1b5f1482266d55fbd43843aa40ddcd63"
@@ -1279,7 +1261,7 @@ dependencies = [
  "byteorder",
  "bytes",
  "cc",
- "ckb-vm-definitions 0.24.6",
+ "ckb-vm-definitions",
  "derive_more",
  "goblin 0.2.3",
  "goblin 0.4.0",
@@ -1287,12 +1269,6 @@ dependencies = [
  "scroll",
  "serde",
 ]
-
-[[package]]
-name = "ckb-vm-definitions"
-version = "0.22.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4af800ae2b6c54b70efa398dab015a09a52eeac2dd1ac3ad32c9bbe224974225"
 
 [[package]]
 name = "ckb-vm-definitions"
@@ -1825,7 +1801,7 @@ dependencies = [
  "ckb-script",
  "ckb-traits",
  "ckb-types",
- "ckb-vm 0.22.2",
+ "ckb-vm",
  "core-db",
  "core-executor",
  "core-rpc-client",

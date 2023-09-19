@@ -9,7 +9,7 @@ use ckb_chain_spec::consensus::Consensus;
 use ckb_script::{TransactionScriptsVerifier, TxVerifyEnv};
 use ckb_traits::CellDataProvider;
 use ckb_types::core::{Cycle, HeaderBuilder, TransactionView};
-use ckb_types::{h256, packed, prelude::Pack, H256};
+use ckb_types::{packed, prelude::Pack};
 use ckb_vm::machine::{asm::AsmCoreMachine, DefaultMachineBuilder, SupportMachine, VERSION1};
 use ckb_vm::{Error as VMError, ISA_B, ISA_IMC, ISA_MOP};
 
@@ -26,8 +26,6 @@ const GAS_TO_CYCLE_COEF: u64 = 6_000;
 // which is CKB2023 disabled.
 const CKB2023_DISABLED_NUMBER: u64 = 10_976_708;
 const CKB2023_DISABLED_EPOCH: u64 = 0x53c007f0020c8;
-const CKB2023_DISABLED_PARENT_HASH: H256 =
-    h256!("0xeed08d487af4723238ef82b4e4388e2ad2dc8dc28e4e759f5d891eeab79ff3ff");
 
 pub const fn gas_to_cycle(gas: u64) -> u64 {
     gas * GAS_TO_CYCLE_COEF
@@ -98,16 +96,15 @@ impl Interoperation for InteroperationImpl {
         // syscalls3 are enabled. Due to only the hardfork field in consensus and the
         // epoch field in tx_env is used, the provided arguments only need to fill these
         // fields correctly.
-        let (ckb_spec, ckb2023_disabled_env) = {
-            let consensus = Arc::new(Consensus::default());
-            let header = HeaderBuilder::default()
-                .number(CKB2023_DISABLED_NUMBER.pack())
-                .epoch(CKB2023_DISABLED_EPOCH.pack())
-                .parent_hash(CKB2023_DISABLED_PARENT_HASH.pack())
-                .build();
-            let tx_env = Arc::new(TxVerifyEnv::new_commit(&header));
-            (consensus, tx_env)
-        };
+        let (ckb_spec, ckb2023_disabled_env) = (
+            Arc::new(Consensus::default()),
+            Arc::new(TxVerifyEnv::new_commit(
+                &HeaderBuilder::default()
+                    .number(CKB2023_DISABLED_NUMBER.pack())
+                    .epoch(CKB2023_DISABLED_EPOCH.pack())
+                    .build(),
+            )),
+        );
 
         TransactionScriptsVerifier::new(rtx, data_loader, ckb_spec, ckb2023_disabled_env)
             .verify(max_cycles)
