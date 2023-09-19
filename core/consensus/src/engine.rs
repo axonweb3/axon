@@ -87,7 +87,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             let mut hardfork = self.node_info.hardfork_proposals.write().unwrap();
             match &*hardfork {
                 Some(v) => {
-                    // remove invalid proposal
+                    // remove invalid proposal if the proposed block height is passed
                     if v.block_number <= next_number {
                         hardfork.take();
                         remove = true;
