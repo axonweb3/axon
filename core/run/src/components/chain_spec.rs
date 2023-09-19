@@ -29,12 +29,13 @@ impl ChainSpecExt for ChainSpec {
         let data_1 = encode_metadata(metadata_1);
 
         let mut genesis = self.genesis.build_rich_block();
+
         for (idx, tx) in genesis.txs.iter_mut().enumerate() {
             let mut utx = tx.transaction.unsigned.clone();
 
-            if idx == 1 {
+            if idx == 0 {
                 utx.set_data(data_0.clone().into());
-            } else if idx == 2 {
+            } else {
                 utx.set_data(data_1.clone().into())
             }
 

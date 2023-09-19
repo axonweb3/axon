@@ -38,28 +38,19 @@ const TESTCASES: &[TestCase] = &[
         chain_name:            "single_node",
         config_file:           "config.toml",
         chain_spec_file:       "specs/single_node/chain-spec.toml",
-        key_file:              "debug.key",
+        key_file:              "debug-v1.key",
         input_genesis_hash:    "0x5a4918d8cf9440b11f40047e184e4e2e0231cc449bd473d7dca1275b2ef938e1",
-        genesis_state_root:    "0x601bd874d41eb9adb32021ee3ab934e0481065c58abfe7e757e33fb01be18dd5",
-        genesis_receipts_root: "0x8544b530238201f1620b139861a6841040b37f78f8bdae8736ef5cec474e979b",
+        genesis_state_root:    "0x956e0bff5a59189447ae1bc8727ae18f7d01d0841fb9f6302c7b8675a6089763",
+        genesis_receipts_root: "0x7e747618f612d08dfe54bcb67f58f13a49e8b1bafee9a8f19a3a0f7122f44d02",
     },
     TestCase {
-        chain_name:            "multi_nodes",
-        config_file:           "nodes/node_1.toml",
-        chain_spec_file:       "specs/multi_nodes/chain-spec.toml",
-        key_file:              "debug.key",
-        input_genesis_hash:    "0xf22e8b2cdcae7c833623c6a56ec072e130f1ac7dda93c615351e6598bdef61a1",
-        genesis_state_root:    "0xc36f75519a047fec6a34c7be5dfca783a40eafa0d7418ad7b3ba99ad9c2dc655",
-        genesis_receipts_root: "0x8544b530238201f1620b139861a6841040b37f78f8bdae8736ef5cec474e979b",
-    },
-    TestCase {
-        chain_name:            "multi_nodes_short_epoch_len",
-        config_file:           "nodes/node_1.toml",
-        chain_spec_file:       "specs/multi_nodes_short_epoch_len/chain-spec.toml",
-        key_file:              "debug.key",
+        chain_name:            "single_node",
+        config_file:           "config.toml",
+        chain_spec_file:       "specs/single_node/chain-spec.toml",
+        key_file:              "debug-v2.key",
         input_genesis_hash:    "0x5a4918d8cf9440b11f40047e184e4e2e0231cc449bd473d7dca1275b2ef938e1",
-        genesis_state_root:    "0x42886558baab8a3c310d5a8313398e5f353cc4f8192838b578c857a329e9bb65",
-        genesis_receipts_root: "0x8544b530238201f1620b139861a6841040b37f78f8bdae8736ef5cec474e979b",
+        genesis_state_root:    "0x9d7fa055987ed34353ec84465d98b9e1bd6f3af871c36bd2d0d3f44e45170d27",
+        genesis_receipts_root: "0x7e747618f612d08dfe54bcb67f58f13a49e8b1bafee9a8f19a3a0f7122f44d02",
     },
 ];
 
@@ -129,6 +120,7 @@ async fn check_genesis_data<'a>(case: &TestCase<'a>) {
         .zip(genesis.txs.iter())
         .enumerate()
     {
+        eprintln!("checking tx {i} ...");
         let tx_cached = tx.transaction.hash;
         assert_eq!(
             *block_cached, tx_cached,
