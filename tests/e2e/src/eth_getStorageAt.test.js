@@ -92,7 +92,7 @@ describe("eth_getStorageAt", () => {
     await param1.type(testDataInfo.contractAddress);
     await param2.type("0x02");
     await param3.type("0xffffffffff");
-    await goto.check(page, "Can't find this block");
+    await goto.check(page, "Cannot find the block");
   });
 
   /**

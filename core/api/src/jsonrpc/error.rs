@@ -23,7 +23,7 @@ pub enum RpcError {
     GasPriceIsZero,
     #[display(fmt = "Gas price is too large")]
     GasPriceIsTooLarge,
-    #[display(fmt = "Gas limit is too low")]
+    #[display(fmt = "Gas limit is less than 21000")]
     GasLimitIsTooLow,
     #[display(fmt = "Gas limit is too large")]
     GasLimitIsTooLarge,
@@ -45,7 +45,7 @@ pub enum RpcError {
     InvalidNewestBlock(BlockId),
     #[display(fmt = "Invalid position {}", _0)]
     InvalidPosition(u64),
-    #[display(fmt = "Cannot find block")]
+    #[display(fmt = "Cannot find the block")]
     CannotFindBlock,
     #[display(fmt = "Invalid reward percentiles {} {}", _0, _1)]
     InvalidRewardPercentiles(f64, f64),
