@@ -219,6 +219,9 @@ pub struct Header {
     pub number:                   BlockNumber,
     pub gas_used:                 U256,
     pub gas_limit:                U256,
+    /// Extra data for the block header
+    /// The first index of extra_data is used to store hardfork information:
+    /// `HardforkInfoInner`
     pub extra_data:               Vec<ExtraData>,
     pub base_fee_per_gas:         U256,
     pub proof:                    Proof,
