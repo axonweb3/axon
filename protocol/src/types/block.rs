@@ -58,11 +58,7 @@ pub struct Proposal {
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub number:                   BlockNumber,
     pub gas_limit:                U256,
-    #[cfg_attr(
-        feature = "hex-serialize",
-        serde(serialize_with = "withpfx_lowercase::serialize")
-    )]
-    pub extra_data:               Bytes,
+    pub extra_data:               Vec<ExtraData>,
     pub base_fee_per_gas:         U256,
     pub proof:                    Proof,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
@@ -223,11 +219,7 @@ pub struct Header {
     pub number:                   BlockNumber,
     pub gas_used:                 U256,
     pub gas_limit:                U256,
-    #[cfg_attr(
-        feature = "hex-serialize",
-        serde(serialize_with = "withpfx_lowercase::serialize")
-    )]
-    pub extra_data:               Bytes,
+    pub extra_data:               Vec<ExtraData>,
     pub base_fee_per_gas:         U256,
     pub proof:                    Proof,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
@@ -244,6 +236,17 @@ impl Header {
     pub fn hash(&self) -> Hash {
         Hasher::digest(&self.encode().unwrap())
     }
+}
+
+#[derive(
+    RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq,
+)]
+pub struct ExtraData {
+    #[cfg_attr(
+        feature = "hex-serialize",
+        serde(serialize_with = "withpfx_lowercase::serialize")
+    )]
+    pub inner: Bytes,
 }
 
 #[derive(

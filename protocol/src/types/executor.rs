@@ -4,8 +4,7 @@ pub use hasher::HasherKeccak;
 
 use rlp_derive::{RlpDecodable, RlpEncodable};
 
-use crate::types::{Bloom, Hash, Hasher, Header, MerkleRoot, Proposal, H160, U256};
-use bytes::Bytes;
+use crate::types::{Bloom, ExtraData, Hash, Hasher, Header, MerkleRoot, Proposal, H160, U256};
 
 const BLOOM_BYTE_LENGTH: usize = 256;
 
@@ -54,7 +53,7 @@ pub struct ExecutorContext {
     pub gas_price:              U256,
     pub block_gas_limit:        U256,
     pub block_base_fee_per_gas: U256,
-    pub extra_data:             Bytes,
+    pub extra_data:             Vec<ExtraData>,
 }
 
 impl From<Proposal> for ExecutorContext {

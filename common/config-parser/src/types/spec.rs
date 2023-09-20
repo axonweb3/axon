@@ -16,8 +16,8 @@ use common_crypto::Secp256k1RecoverablePrivateKey;
 use protocol::{
     codec::{decode_256bits_key, deserialize_address, ProtocolCodec},
     types::{
-        Block, HardforkInfoInner, Header, Key256Bits, Metadata, RichBlock, SignedTransaction, H160,
-        H256, U256,
+        Block, ExtraData, HardforkInfoInner, Header, Key256Bits, Metadata, RichBlock,
+        SignedTransaction, H160, H256, U256,
     },
 };
 
@@ -40,7 +40,7 @@ pub struct ChainSpec {
 #[derive(Clone, Debug, Deserialize)]
 pub struct Genesis {
     pub timestamp:        u64,
-    pub extra_data:       HardforkInput,
+    pub hardforks:        Vec<HardforkName>,
     pub base_fee_per_gas: U256,
     pub chain_id:         u64,
 
@@ -261,12 +261,15 @@ impl Genesis {
             timestamp: self.timestamp,
             // todo: if Hardforkinput is empty, it must change to latest hardfork info to init
             // genesis
-            extra_data: if self.extra_data.block_number != 0 {
-                Default::default()
-            } else {
-                Into::<HardforkInfoInner>::into(self.extra_data.clone())
+            extra_data: {
+                vec![ExtraData {
+                    inner: Into::<HardforkInfoInner>::into(HardforkInput {
+                        hardforks:    self.hardforks.clone(),
+                        block_number: 0,
+                    })
                     .encode()
-                    .unwrap()
+                    .unwrap(),
+                }]
             },
             base_fee_per_gas: self.base_fee_per_gas,
             chain_id: self.chain_id,

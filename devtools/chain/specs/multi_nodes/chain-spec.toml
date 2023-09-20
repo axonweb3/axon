@@ -9,9 +9,6 @@ base_fee_per_gas = "0x539"
 chain_id = 0x41786f6e
 # A JSON file which includes all transactions in the genesis block.
 transactions = "genesis_transactions.json"
-
-[genesis.extra_data]
-block_number = 0
 hardforks = []
 
 #

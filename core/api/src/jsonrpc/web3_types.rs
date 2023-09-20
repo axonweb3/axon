@@ -300,7 +300,7 @@ pub struct Web3Block {
     pub number:            U256,
     pub gas_used:          U256,
     pub gas_limit:         U256,
-    pub extra_data:        Hex,
+    pub extra_data:        Vec<Hex>,
     pub logs_bloom:        Option<Bloom>,
     pub timestamp:         U256,
     pub difficulty:        U256,
@@ -331,7 +331,12 @@ impl From<Block> for Web3Block {
             total_difficulty:  Some(b.header.number.into()),
             seal_fields:       vec![],
             base_fee_per_gas:  b.header.base_fee_per_gas,
-            extra_data:        Hex::encode(&b.header.extra_data),
+            extra_data:        b
+                .header
+                .extra_data
+                .iter()
+                .map(|i| Hex::encode(&i.inner.encode().unwrap()))
+                .collect(),
             size:              Some(b.header.size().into()),
             gas_limit:         b.header.gas_limit,
             gas_used:          b.header.gas_used,
@@ -821,7 +826,7 @@ pub struct FeeHistoryEmpty {
 #[serde(rename_all = "camelCase")]
 pub struct Web3Header {
     pub difficulty:        U256,
-    pub extra_data:        Hex,
+    pub extra_data:        Vec<Hex>,
     pub gas_limit:         U256,
     pub gas_used:          U256,
     pub logs_bloom:        Option<Bloom>,
@@ -849,7 +854,11 @@ impl From<Header> for Web3Header {
             receipts_root:     h.receipts_root,
             miner:             h.proposer,
             difficulty:        U256::one(),
-            extra_data:        Hex::encode(&h.extra_data),
+            extra_data:        h
+                .extra_data
+                .into_iter()
+                .map(|i| Hex::encode(i.inner.encode().unwrap()))
+                .collect(),
             gas_limit:         h.gas_limit,
             gas_used:          h.gas_used,
             timestamp:         h.timestamp.into(),
