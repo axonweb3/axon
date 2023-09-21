@@ -24,7 +24,7 @@ describe("eth_feeHistory", () => {
       baseFeePerGas: ["0x539", "0x539"],
       gasUsedRatio: [0],
       oldestBlock: "0x0",
-      reward: [["0x24f304", "0x0"]],
+      reward: [["0x0", "0x0"]],
     });
   }, 100000);
 
@@ -79,7 +79,7 @@ describe("eth_feeHistory", () => {
       baseFeePerGas: ["0x539", "0x539"],
       gasUsedRatio: [0],
       oldestBlock: "0x0",
-      reward: [["0x24f304", "0x0"]],
+      reward: [["0x0", "0x0"]],
     });
   }, 100000);
 });
