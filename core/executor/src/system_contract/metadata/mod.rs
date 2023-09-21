@@ -120,10 +120,12 @@ impl<Adapter: ExecutorAdapter + ApplyBackend> SystemContract<Adapter>
 
         let mut store = MetadataStore::new(root).unwrap();
 
-        if let Ok(data) = HardforkInfoInner::decode(adapter.get_ctx().extra_data) {
-            store
-                .set_hardfork_info(data.block_number, data.flags)
-                .expect("set new hardfork info fail")
+        if let Some(t) = adapter.get_ctx().extra_data.get(0) {
+            if let Ok(data) = HardforkInfoInner::decode(&t.inner) {
+                store
+                    .set_hardfork_info(data.block_number, data.flags)
+                    .expect("set new hardfork info fail")
+            }
         }
 
         let hardfork = store.hardfork_info(block_number.as_u64()).unwrap();

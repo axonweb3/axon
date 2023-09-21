@@ -19,8 +19,8 @@ use common_merkle::TrieMerkle;
 use core_executor::MetadataHandle;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
-    Block, BlockVersion, Bytes, ExecResp, Hash, Hex, Metadata, Proof, Proposal, SignedTransaction,
-    ValidatorExtend, BASE_FEE_PER_GAS, MAX_BLOCK_GAS_LIMIT, RLP_NULL,
+    Block, BlockVersion, Bytes, ExecResp, ExtraData, Hash, Hex, Metadata, Proof, Proposal,
+    SignedTransaction, ValidatorExtend, BASE_FEE_PER_GAS, MAX_BLOCK_GAS_LIMIT, RLP_NULL,
 };
 use protocol::{
     async_trait, codec::ProtocolCodec, tokio::sync::Mutex as AsyncMutex, types::HardforkInfoInner,
@@ -91,12 +91,14 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
                     if v.block_number <= next_number {
                         hardfork.take();
                         remove = true;
-                        Default::default()
+                        Vec::new()
                     } else {
-                        v.encode().unwrap()
+                        vec![ExtraData {
+                            inner: v.encode().unwrap(),
+                        }]
                     }
                 }
-                None => Default::default(),
+                None => Vec::new(),
             }
         };
 
@@ -161,17 +163,30 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             .into());
         }
 
-        if let Ok(data) = HardforkInfoInner::decode(&proposal.extra_data) {
-            if !self
-                .node_info
-                .hardfork_proposals
-                .read()
-                .unwrap()
-                .as_ref()
-                .map(|v| &data == v)
-                .unwrap_or_default()
-            {
-                return Err(ProtocolError::from(ConsensusError::HardforkDontMatch).into());
+        if let Some(t) = proposal.extra_data.get(0) {
+            match HardforkInfoInner::decode(&t.inner) {
+                Ok(data) => {
+                    if !self
+                        .node_info
+                        .hardfork_proposals
+                        .read()
+                        .unwrap()
+                        .as_ref()
+                        .map(|v| &data == v)
+                        .unwrap_or_default()
+                    {
+                        return Err(ProtocolError::from(ConsensusError::Hardfork(
+                            "hardfork proposal doesn't match".to_string(),
+                        ))
+                        .into());
+                    }
+                }
+                Err(_) => {
+                    return Err(ProtocolError::from(ConsensusError::Hardfork(
+                        "hardfork proposal can't decode".to_string(),
+                    ))
+                    .into())
+                }
             }
         }
 
