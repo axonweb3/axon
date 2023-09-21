@@ -164,17 +164,28 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         }
 
         if let Some(t) = proposal.extra_data.get(0) {
-            if let Ok(data) = HardforkInfoInner::decode(&t.inner) {
-                if !self
-                    .node_info
-                    .hardfork_proposals
-                    .read()
-                    .unwrap()
-                    .as_ref()
-                    .map(|v| &data == v)
-                    .unwrap_or_default()
-                {
-                    return Err(ProtocolError::from(ConsensusError::HardforkDontMatch).into());
+            match HardforkInfoInner::decode(&t.inner) {
+                Ok(data) => {
+                    if !self
+                        .node_info
+                        .hardfork_proposals
+                        .read()
+                        .unwrap()
+                        .as_ref()
+                        .map(|v| &data == v)
+                        .unwrap_or_default()
+                    {
+                        return Err(ProtocolError::from(ConsensusError::Hardfork(
+                            "hardfork proposal doesn't match".to_string(),
+                        ))
+                        .into());
+                    }
+                }
+                Err(_) => {
+                    return Err(ProtocolError::from(ConsensusError::Hardfork(
+                        "hardfork proposal can't decode".to_string(),
+                    ))
+                    .into())
                 }
             }
         }
