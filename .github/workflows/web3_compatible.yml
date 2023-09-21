@@ -75,6 +75,19 @@ jobs:
             --config     devtools/chain/config.toml \
             >> /tmp/log 2>&1 &
 
+      - name: Check Axon Status Before Test
+        run: |
+          sleep 20
+          response=$(curl -s -w "\n%{http_code}" http://localhost:8000 -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"web3_clientVersion","params": [],"id":1}')
+          http_code=$(echo "$response" | tail -n1)
+          response_body=$(echo "$response" | sed '$d')
+          if [[ "$http_code" -ne 200 ]]; then
+            echo "Axon status check failed with HTTP status code: $http_code"
+            exit 1
+          else
+            echo "$response_body"
+          fi
+
       - name: Checkout gpBlockchain/axon-test
         uses: actions/checkout@v4
         with:

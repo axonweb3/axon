@@ -125,6 +125,7 @@ jobs:
 
       - name: Check Axon Status Before Test
         run: |
+          sleep 20
           response=$(curl -s -w "\n%{http_code}" http://localhost:8000 -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"web3_clientVersion","params": [],"id":1}')
           http_code=$(echo "$response" | tail -n1)
           response_body=$(echo "$response" | sed '$d')
@@ -136,6 +137,7 @@ jobs:
           fi
 
       - name: Run prepare
+        if: success() || failure()
         id: runtest
         run: |
           cd /home/runner/work/axon/axon/openzeppelin-contracts
