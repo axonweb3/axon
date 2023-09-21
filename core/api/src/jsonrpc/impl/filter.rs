@@ -2,18 +2,17 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use jsonrpsee::core::Error;
+use jsonrpsee::core::RpcResult;
 use serde::{Deserialize, Serialize};
 
-use protocol::async_trait;
-use protocol::rand::prelude::*;
 use protocol::tokio::sync::mpsc::{channel, Receiver, Sender};
 use protocol::tokio::{self, select, sync::oneshot, time::interval};
 use protocol::traits::{APIAdapter, Context};
 use protocol::types::{BlockNumber, Hash, Receipt, H160, H256, U256, U64};
+use protocol::{async_trait, rand::prelude::*};
 
 use crate::jsonrpc::web3_types::{BlockId, FilterChanges, RawLoggerFilter, Web3Log};
-use crate::jsonrpc::{r#impl::from_receipt_to_web3_log, RpcResult, Web3FilterServer};
+use crate::jsonrpc::{error::RpcError, r#impl::from_receipt_to_web3_log, Web3FilterServer};
 
 pub fn filter_module<Adapter>(
     adapter: Arc<Adapter>,
@@ -62,13 +61,11 @@ pub struct AxonWeb3RpcFilter {
 impl Web3FilterServer for AxonWeb3RpcFilter {
     async fn new_filter(&self, filter: RawLoggerFilter) -> RpcResult<U256> {
         if let Some(BlockId::Pending) = filter.from_block {
-            return Err(Error::Custom(
-                "Invalid from_block and to_block union".to_string(),
-            ));
+            return Err(RpcError::InvalidFromBlockAndToBlockUnion.into());
         }
         match filter.to_block {
             Some(BlockId::Earliest) | Some(BlockId::Num(U64([0]))) => {
-                return Err(Error::Custom("Invalid to_block".to_string()))
+                return Err(RpcError::Internal("Invalid to_block".to_string()).into())
             }
             _ => (),
         }
@@ -77,7 +74,7 @@ impl Web3FilterServer for AxonWeb3RpcFilter {
         self.sender
             .send(Command::NewLogs((filter.into(), tx)))
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         Ok(rx.await.unwrap())
     }
@@ -88,7 +85,7 @@ impl Web3FilterServer for AxonWeb3RpcFilter {
         self.sender
             .send(Command::NewBlocks(tx))
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         Ok(rx.await.unwrap())
     }
@@ -99,7 +96,7 @@ impl Web3FilterServer for AxonWeb3RpcFilter {
         self.sender
             .send(Command::FilterRequest((id, tx)))
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         rx.await.unwrap()
     }
@@ -110,7 +107,7 @@ impl Web3FilterServer for AxonWeb3RpcFilter {
         self.sender
             .send(Command::FilterRequest((id, tx)))
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         rx.await.unwrap()
     }
@@ -121,7 +118,7 @@ impl Web3FilterServer for AxonWeb3RpcFilter {
         self.sender
             .send(Command::Uninstall((id, tx)))
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         Ok(rx.await.unwrap())
     }
@@ -249,10 +246,7 @@ where
             sender.send(res).unwrap()
         } else {
             sender
-                .send(Err(Error::Custom(format!(
-                    "Can't find this filter id: {}",
-                    id
-                ))))
+                .send(Err(RpcError::CannotFindFilterId(id.as_u64()).into()))
                 .unwrap()
         }
     }
@@ -301,7 +295,7 @@ where
             .adapter
             .get_block_by_number(Context::new(), None)
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?
+            .map_err(|e| RpcError::Internal(e.to_string()))?
             .unwrap();
 
         let latest_number = latest_block.header.number;
@@ -335,10 +329,9 @@ where
             return Ok(Vec::new());
         }
         if end.saturating_sub(start) > self.log_filter_max_block_range {
-            return Err(Error::Custom(format!(
-                "Invalid block range {:?} to {:?}, limit to {:?}",
-                start, end, self.log_filter_max_block_range
-            )));
+            return Err(
+                RpcError::InvalidBlockRange(start, end, self.log_filter_max_block_range).into(),
+            );
         }
         let extend_logs = |logs: &mut Vec<Web3Log>, receipts: Vec<Option<Receipt>>| {
             for (index, receipt) in receipts.into_iter().flatten().enumerate() {
@@ -361,13 +354,13 @@ where
                     .adapter
                     .get_block_by_number(Context::new(), Some(n))
                     .await
-                    .map_err(|e| Error::Custom(e.to_string()))?
+                    .map_err(|e| RpcError::Internal(e.to_string()))?
                     .unwrap();
                 let receipts = self
                     .adapter
                     .get_receipts_by_hashes(Context::new(), block.header.number, &block.tx_hashes)
                     .await
-                    .map_err(|e| Error::Custom(e.to_string()))?;
+                    .map_err(|e| RpcError::Internal(e.to_string()))?;
 
                 extend_logs(&mut all_logs, receipts);
             }
@@ -382,7 +375,7 @@ where
                     &latest_block.tx_hashes,
                 )
                 .await
-                .map_err(|e| Error::Custom(e.to_string()))?;
+                .map_err(|e| RpcError::Internal(e.to_string()))?;
 
             extend_logs(&mut all_logs, receipts);
         }

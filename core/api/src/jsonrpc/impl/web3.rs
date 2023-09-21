@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use ckb_types::core::cell::{CellProvider, CellStatus};
 use ckb_types::prelude::Entity;
-use jsonrpsee::core::Error;
+use jsonrpsee::core::RpcResult;
 
 use common_apm::metrics_rpc;
 use protocol::traits::{APIAdapter, Context, Interoperation};
@@ -25,7 +25,7 @@ use crate::jsonrpc::web3_types::{
     RichTransactionOrHash, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter, Web3Log,
     Web3Receipt, Web3Transaction,
 };
-use crate::jsonrpc::{error::RpcError, RpcResult, Web3RpcServer};
+use crate::jsonrpc::{error::RpcError, Web3RpcServer};
 use crate::APIError;
 
 pub(crate) const MAX_LOG_NUM: usize = 10000;
@@ -48,13 +48,13 @@ impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
     async fn get_block_number_by_id(
         &self,
         block_id: Option<BlockId>,
-    ) -> Result<Option<BlockNumber>, Error> {
+    ) -> Result<Option<BlockNumber>, RpcError> {
         match block_id {
             Some(BlockId::Hash(ref hash)) => Ok(self
                 .adapter
                 .get_block_number_by_hash(Context::new(), *hash)
                 .await
-                .map_err(|e| Error::Custom(e.to_string()))?),
+                .map_err(|e| RpcError::Internal(e.to_string()))?),
             _ => Ok(block_id.unwrap_or_default().into()),
         }
     }
@@ -99,12 +99,12 @@ impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
         txs: Vec<H256>,
         reward_percentiles: Vec<f64>,
         reward: &mut Vec<Vec<U256>>,
-    ) -> Result<(), Error> {
+    ) -> Result<(), RpcError> {
         let receipts = self
             .adapter
             .get_receipts_by_hashes(Context::new(), block_number, &txs)
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         let effective_priority_fees: Vec<U256> = receipts
             .iter()
@@ -138,13 +138,13 @@ impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
         height: Option<u64>,
         block_count: U256,
         reward_percentiles: &Option<Vec<f64>>,
-    ) -> Result<(u64, Vec<U256>, Vec<f64>, Vec<Vec<U256>>), Error> {
+    ) -> Result<(u64, Vec<U256>, Vec<f64>, Vec<Vec<U256>>), RpcError> {
         let latest_block = self
             .adapter
             .get_block_by_number(Context::new(), height)
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?
-            .ok_or_else(|| Error::Custom("Latest block not found".to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?
+            .ok_or(RpcError::CannotGetLatestBlock)?;
 
         let latest_block_number = latest_block.header.number;
         let oldest_block_number = latest_block_number
@@ -199,14 +199,16 @@ impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
         // Call CKB-VM mode
         if signature.r[0] == 0 {
             let r = rlp::decode::<CellDepWithPubKey>(&signature.r[1..])
-                .map_err(|e| Error::Custom(e.to_string()))?;
+                .map_err(|e| RpcError::DecodeInteroperationSigR(e.to_string()))?;
 
             return Ok(Hasher::digest(&r.pub_key).into());
         }
 
         // Verify by CKB-VM mode
-        let r = SignatureR::decode(&signature.r).map_err(|e| Error::Custom(e.to_string()))?;
-        let s = SignatureS::decode(&signature.s).map_err(|e| Error::Custom(e.to_string()))?;
+        let r = SignatureR::decode(&signature.r)
+            .map_err(|e| RpcError::DecodeInteroperationSigR(e.to_string()))?;
+        let s = SignatureS::decode(&signature.s)
+            .map_err(|e| RpcError::DecodeInteroperationSigS(e.to_string()))?;
         let address_source = r.address_source();
 
         let ckb_tx_view =
@@ -216,7 +218,7 @@ impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
         let input = ckb_tx_view
             .inputs()
             .get(address_source.index as usize)
-            .ok_or(Error::Custom("Invalid address source".to_string()))?;
+            .ok_or(RpcError::InvalidAddressSource)?;
 
         log::debug!("[mempool]: verify interoperation tx sender \ntx view \n{:?}\ndummy input\n {:?}\naddress source\n{:?}\n", ckb_tx_view, dummy_input, address_source);
 
@@ -226,9 +228,7 @@ impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
 
             if let Some(cell) = dummy_input {
                 if address_source.type_ == 1 && cell.type_script.is_none() {
-                    return Err(Error::Custom(
-                        "Invalid address source in dummy input mode".to_string(),
-                    ));
+                    return Err(RpcError::InvalidAddressSource.into());
                 }
 
                 let script_hash = if address_source.type_ == 0 {
@@ -240,7 +240,7 @@ impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
                 return Ok(Hasher::digest(script_hash).into());
             }
 
-            return Err(Error::Custom("No dummy input cell".to_string()));
+            return Err(RpcError::MissingDummyInputCell.into());
         }
 
         // Reality input mode
@@ -248,7 +248,7 @@ impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
             .adapter
             .get_image_cell_root(Context::new())
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
         match DataProvider::new(root).cell(&input.previous_output(), true) {
             CellStatus::Live(cell) => {
                 let script_hash = if address_source.type_ == 0 {
@@ -256,12 +256,12 @@ impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
                 } else if let Some(type_script) = cell.cell_output.type_().to_opt() {
                     ckb_blake2b_256(type_script.as_slice())
                 } else {
-                    return Err(Error::Custom("Invalid address source".to_string()));
+                    return Err(RpcError::InvalidAddressSource.into());
                 };
 
                 Ok(Hasher::digest(script_hash).into())
             }
-            _ => Err(Error::Custom("Cannot find input cell in ICSC".to_string())),
+            _ => Err(RpcError::CannotFindImageCell.into()),
         }
     }
 }
@@ -271,35 +271,30 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
     #[metrics_rpc("eth_sendRawTransaction")]
     async fn send_raw_transaction(&self, tx: Hex) -> RpcResult<H256> {
         let utx = UnverifiedTransaction::decode(&tx.as_bytes())
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         let gas_price = utx.unsigned.gas_price();
 
         if gas_price == U256::zero() {
-            return Err(Error::Custom(
-                "The transaction gas price is zero".to_string(),
-            ));
+            return Err(RpcError::GasPriceIsZero.into());
         }
 
         if gas_price >= U256::from(u64::MAX) {
-            return Err(Error::Custom("The gas price is too large".to_string()));
+            return Err(RpcError::GasPriceIsTooLarge.into());
         }
 
         let gas_limit = *utx.unsigned.gas_limit();
 
         if gas_limit < MIN_TRANSACTION_GAS_LIMIT.into() {
-            return Err(Error::Custom(
-                "The transaction gas limit less than 21000".to_string(),
-            ));
+            return Err(RpcError::GasLimitIsTooLow.into());
         }
 
         if gas_limit > self.max_gas_cap {
-            return Err(Error::Custom(
-                "The transaction gas limit is too large".to_string(),
-            ));
+            return Err(RpcError::GasLimitIsTooLarge.into());
         }
 
-        utx.check_hash().map_err(|e| Error::Custom(e.to_string()))?;
+        utx.check_hash()
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         let interoperation_sender = if let Some(sig) = utx.signature.as_ref() {
             if sig.is_eth_sig() {
@@ -308,17 +303,17 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
                 Some(self.extract_interoperation_tx_sender(&utx, sig).await?)
             }
         } else {
-            return Err(Error::Custom("The transaction is not signed".to_string()));
+            return Err(RpcError::TransactionIsNotSigned.into());
         };
 
         let stx = SignedTransaction::from_unverified(utx, interoperation_sender)
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
         let hash = stx.transaction.hash;
 
         self.adapter
             .insert_signed_txs(Context::new(), stx)
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         Ok(hash)
     }
@@ -329,21 +324,18 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             .adapter
             .get_transaction_by_hash(Context::new(), hash)
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         if let Some(stx) = res {
             if let Some(receipt) = self
                 .adapter
                 .get_receipt_by_tx_hash(Context::new(), hash)
                 .await
-                .map_err(|e| Error::Custom(e.to_string()))?
+                .map_err(|e| RpcError::Internal(e.to_string()))?
             {
                 Ok(Some((stx, receipt).into()))
             } else {
-                Err(Error::Custom(format!(
-                    "can not get receipt by hash {:?}",
-                    hash
-                )))
+                Err(RpcError::CannotGetReceiptByHash.into())
             }
         } else {
             Ok(None)
@@ -360,7 +352,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             .adapter
             .get_block_by_number(Context::new(), number.into())
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         match block {
             Some(b) => {
@@ -375,7 +367,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
                             .adapter
                             .get_transaction_by_hash(Context::new(), tx.get_hash())
                             .await
-                            .map_err(|e| Error::Custom(e.to_string()))?
+                            .map_err(|e| RpcError::Internal(e.to_string()))?
                             .unwrap();
 
                         txs.push(RichTransactionOrHash::Rich(
@@ -405,7 +397,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             .adapter
             .get_block_by_hash(Context::new(), hash)
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         match block {
             Some(b) => {
@@ -420,7 +412,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
                             .adapter
                             .get_transaction_by_hash(Context::new(), tx.get_hash())
                             .await
-                            .map_err(|e| Error::Custom(e.to_string()))?
+                            .map_err(|e| RpcError::Internal(e.to_string()))?
                             .unwrap();
 
                         txs.push(RichTransactionOrHash::Rich(
@@ -452,7 +444,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
                     .adapter
                     .get_pending_tx_count(Context::new(), address)
                     .await
-                    .map_err(|e| Error::Custom(e.to_string()))?;
+                    .map_err(|e| RpcError::Internal(e.to_string()))?;
                 Ok(self
                     .adapter
                     .get_account(Context::new(), address, BlockId::Pending.into())
@@ -465,7 +457,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
                     .adapter
                     .get_block_number_by_hash(Context::new(), *hash)
                     .await
-                    .map_err(|e| Error::Custom(e.to_string()))?;
+                    .map_err(|e| RpcError::Internal(e.to_string()))?;
                 Ok(self
                     .adapter
                     .get_account(Context::new(), address, number)
@@ -487,9 +479,9 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
         self.adapter
             .get_block_header_by_number(Context::new(), None)
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?
+            .map_err(|e| RpcError::Internal(e.to_string()))?
             .map(|h| U256::from(h.number))
-            .ok_or_else(|| Error::Custom("Cannot get latest block header".to_string()))
+            .ok_or_else(|| RpcError::CannotGetLatestBlock.into())
     }
 
     #[metrics_rpc("eth_getBalance")]
@@ -506,11 +498,11 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
     #[metrics_rpc("eth_call")]
     async fn call(&self, req: Web3CallRequest, block_id: Option<BlockId>) -> RpcResult<Hex> {
         if req.gas_price.unwrap_or_default() > U256::from(u64::MAX) {
-            return Err(Error::Custom("The gas price is too large".to_string()));
+            return Err(RpcError::GasLimitIsTooLarge.into());
         }
 
         if req.gas.unwrap_or_default() > U256::from(MAX_RPC_GAS_CAP) {
-            return Err(Error::Custom("The gas limit is too large".to_string()));
+            return Err(RpcError::GasLimitIsTooLarge.into());
         }
 
         let number = self.get_block_number_by_id(block_id).await?;
@@ -523,7 +515,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
         let resp = self
             .call_evm(req, data_bytes, number)
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         if resp.exit_reason.is_succeed() {
             let call_hex_result = Hex::encode(resp.ret);
@@ -537,13 +529,13 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
     async fn estimate_gas(&self, req: Web3CallRequest, number: Option<BlockId>) -> RpcResult<U256> {
         if let Some(gas_limit) = req.gas.as_ref() {
             if gas_limit == &U256::zero() {
-                return Err(Error::Custom("Failed: Gas cannot be zero".to_string()));
+                return Err(RpcError::GasPriceIsZero.into());
             }
         }
 
         if let Some(price) = req.gas_price.as_ref() {
             if price >= &U256::from(u64::MAX) {
-                return Err(Error::Custom("Failed: Gas price too high".to_string()));
+                return Err(RpcError::GasPriceIsTooLarge.into());
             }
         }
 
@@ -559,7 +551,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
         let resp = self
             .call_evm(req, data_bytes, num)
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         if resp.exit_reason.is_succeed() {
             return Ok(resp.gas_used.into());
@@ -576,13 +568,13 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             .adapter
             .get_account(Context::new(), address, number)
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         let code_result = self
             .adapter
             .get_code_by_hash(Context::new(), &account.code_hash)
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
         if let Some(code_bytes) = code_result {
             Ok(Hex::encode(code_bytes))
         } else {
@@ -596,7 +588,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             .adapter
             .get_block_by_number(Context::new(), number.into())
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
         let count = match block {
             Some(bc) => bc.tx_hashes.len(),
             _ => 0,
@@ -611,14 +603,14 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             .adapter
             .get_transaction_by_hash(ctx.clone(), hash)
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         if let Some(stx) = res {
             if let Some(receipt) = self
                 .adapter
                 .get_receipt_by_tx_hash(ctx, hash)
                 .await
-                .map_err(|e| Error::Custom(e.to_string()))?
+                .map_err(|e| RpcError::Internal(e.to_string()))?
             {
                 return Ok(Some(Web3Receipt::new(receipt, stx)));
             }
@@ -632,7 +624,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
         self.adapter
             .peer_count(Context::new())
             .await
-            .map_err(|e| Error::Custom(e.to_string()))
+            .map_err(|e| RpcError::Internal(e.to_string()).into())
     }
 
     #[metrics_rpc("eth_gasPrice")]
@@ -690,7 +682,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
                     match adapter
                         .get_block_by_hash(Context::new(), hash)
                         .await
-                        .map_err(|e| Error::Custom(e.to_string()))?
+                        .map_err(|e| RpcError::Internal(e.to_string()))?
                     {
                         Some(block) => {
                             let receipts = adapter
@@ -700,22 +692,18 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
                                     &block.tx_hashes,
                                 )
                                 .await
-                                .map_err(|e| Error::Custom(e.to_string()))?;
+                                .map_err(|e| RpcError::Internal(e.to_string()))?;
                             extend_logs(logs, receipts, early_return);
                             Ok(())
                         }
-                        None => Err(Error::Custom(format!(
-                            "Invalid block hash
-                    {}",
-                            hash
-                        ))),
+                        None => Err(RpcError::InvalidBlockHash.into()),
                     }
                 }
                 BlockPosition::Num(n) => {
                     let block = adapter
                         .get_block_by_number(Context::new(), Some(n))
                         .await
-                        .map_err(|e| Error::Custom(e.to_string()))?
+                        .map_err(|e| RpcError::Internal(e.to_string()))?
                         .unwrap();
                     let receipts = adapter
                         .get_receipts_by_hashes(
@@ -724,7 +712,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
                             &block.tx_hashes,
                         )
                         .await
-                        .map_err(|e| Error::Custom(e.to_string()))?;
+                        .map_err(|e| RpcError::Internal(e.to_string()))?;
 
                     extend_logs(logs, receipts, early_return);
                     Ok(())
@@ -737,7 +725,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
                             &block.tx_hashes,
                         )
                         .await
-                        .map_err(|e| Error::Custom(e.to_string()))?;
+                        .map_err(|e| RpcError::Internal(e.to_string()))?;
 
                     extend_logs(logs, receipts, early_return);
                     Ok(())
@@ -765,7 +753,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
                     .adapter
                     .get_block_by_number(Context::new(), None)
                     .await
-                    .map_err(|e| Error::Custom(e.to_string()))?
+                    .map_err(|e| RpcError::Internal(e.to_string()))?
                     .unwrap();
                 let latest_number = latest_block.header.number;
                 let (start, end) = {
@@ -787,14 +775,16 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
                 };
 
                 if start > latest_number {
-                    return Err(Error::Custom(format!("Invalid from_block {}", start)));
+                    return Err(RpcError::InvalidFromBlockNumber(start).into());
                 }
 
                 if end.saturating_sub(start) > self.log_filter_max_block_range {
-                    return Err(Error::Custom(format!(
-                        "Invalid block range {:?} to {:?}, limit to {:?}",
-                        start, end, self.log_filter_max_block_range
-                    )));
+                    return Err(RpcError::InvalidBlockRange(
+                        start,
+                        end,
+                        self.log_filter_max_block_range,
+                    )
+                    .into());
                 }
 
                 let mut visiter_last_block = false;
@@ -920,7 +910,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
                     .adapter
                     .get_block_by_number(Context::new(), Some(0))
                     .await
-                    .map_err(|e| Error::Custom(e.to_string()))?
+                    .map_err(|e| RpcError::Internal(e.to_string()))?
                     .unwrap();
                 let base_fee_per_gas = vec![
                     first_block.header.base_fee_per_gas,
@@ -960,12 +950,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
                     }
                 }
             }
-            _ => {
-                return Err(Error::Custom(format!(
-                    "Invalid parameter newest_block {:?}",
-                    newest_block
-                )))
-            }
+            _ => return Err(RpcError::InvalidNewestBlock(newest_block).into()),
         }
     }
 
@@ -980,7 +965,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             .adapter
             .get_block_by_hash(Context::new(), hash)
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?
+            .map_err(|e| RpcError::Internal(e.to_string()))?
             .map(|b| U256::from(b.tx_hashes.len()))
             .unwrap_or_default())
     }
@@ -992,7 +977,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
         position: U256,
     ) -> RpcResult<Option<Web3Transaction>> {
         if position > U256::from(usize::MAX) {
-            return Err(Error::Custom(format!("invalid position: {}", position)));
+            return Err(RpcError::InvalidPosition(position.as_u64()).into());
         }
 
         let mut raw = [0u8; 32];
@@ -1006,7 +991,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             .adapter
             .get_block_by_hash(Context::new(), hash)
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         if let Some(block) = block {
             if let Some(tx_hash) = block.tx_hashes.get(index) {
@@ -1023,7 +1008,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
         position: U256,
     ) -> RpcResult<Option<Web3Transaction>> {
         if position > U256::from(usize::MAX) {
-            return Err(Error::Custom(format!("invalid position: {}", position)));
+            return Err(RpcError::InvalidPosition(position.as_u64()).into());
         }
 
         let mut raw = [0u8; 32];
@@ -1038,7 +1023,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             .adapter
             .get_block_by_number(Context::new(), number.into())
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         if let Some(block) = block {
             if let Some(tx_hash) = block.tx_hashes.get(index) {
@@ -1061,8 +1046,8 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             .adapter
             .get_block_by_number(Context::new(), number)
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?
-            .ok_or_else(|| Error::Custom("Can't find this block".to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?
+            .ok_or(RpcError::CannotFindBlock)?;
         let value = self
             .adapter
             .get_storage_at(Context::new(), address, position, block.header.state_root)
@@ -1118,12 +1103,7 @@ fn check_reward_percentiles(reward_percentiles: &Option<Vec<f64>>) -> RpcResult<
                 .find(|(_, window)| window[0] >= window[1] || window[0] < 0.0 || window[0] > 100.0)
                 .map(|(_, vec)| vec)
         })
-        .map(|vec| {
-            Err(Error::Custom(format!(
-                "Invalid parameter reward_percentiles: {} {}",
-                vec[0], vec[1]
-            )))
-        })
+        .map(|vec| Err(RpcError::InvalidRewardPercentiles(vec[0], vec[1]).into()))
         .unwrap_or(Ok(()))
 }
 

@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
-use jsonrpsee::core::Error;
+use jsonrpsee::{core::RpcResult, types::error::ErrorCode};
 use strum::IntoEnumIterator;
 
 use common_config_parser::types::spec::HardforkName;
@@ -11,7 +11,7 @@ use protocol::types::{
 };
 
 use crate::jsonrpc::web3_types::{BlockId, HardforkStatus};
-use crate::jsonrpc::{AxonRpcServer, RpcResult};
+use crate::jsonrpc::{error::RpcError, AxonRpcServer};
 
 pub struct AxonRpcImpl<Adapter> {
     adapter: Arc<Adapter>,
@@ -34,9 +34,9 @@ impl<Adapter: APIAdapter + 'static> AxonRpcServer for AxonRpcImpl<Adapter> {
                     .await
             }
             BlockId::Latest => self.adapter.get_block_by_number(Context::new(), None).await,
-            _ => return Err(Error::InvalidRequestId),
+            _ => return Err(ErrorCode::InvalidRequest.into()),
         }
-        .map_err(|e| Error::Custom(e.to_string()))?;
+        .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         Ok(ret)
     }
@@ -54,7 +54,7 @@ impl<Adapter: APIAdapter + 'static> AxonRpcServer for AxonRpcImpl<Adapter> {
             .adapter
             .get_metadata_by_number(Context::new(), Some(block_number.as_u64()))
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         Ok(ret)
     }
@@ -65,14 +65,14 @@ impl<Adapter: APIAdapter + 'static> AxonRpcServer for AxonRpcImpl<Adapter> {
             .adapter
             .get_block_by_number(Context::new(), Some(block_number - 1))
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?
-            .ok_or_else(|| Error::Custom("prev block not found".to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?
+            .ok_or_else(|| RpcError::Internal("prev block not found".to_string()))?;
         let block = self
             .adapter
             .get_block_by_number(Context::new(), Some(block_number))
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?
-            .ok_or_else(|| Error::Custom("block not found".to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?
+            .ok_or_else(|| RpcError::Internal("block not found".to_string()))?;
 
         Ok(Proposal::new_with_state_root(
             &block.header,
@@ -86,7 +86,7 @@ impl<Adapter: APIAdapter + 'static> AxonRpcServer for AxonRpcImpl<Adapter> {
             .adapter
             .get_metadata_by_number(Context::new(), None)
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         Ok(ret)
     }
@@ -96,7 +96,7 @@ impl<Adapter: APIAdapter + 'static> AxonRpcServer for AxonRpcImpl<Adapter> {
             .adapter
             .get_ckb_related_info(Context::new())
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         Ok(ret)
     }
@@ -106,19 +106,19 @@ impl<Adapter: APIAdapter + 'static> AxonRpcServer for AxonRpcImpl<Adapter> {
             .adapter
             .hardfork_info(Context::new())
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         let proposal = self
             .adapter
             .hardfork_proposal(Context::new())
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         let current_number = self
             .adapter
             .get_block_header_by_number(Default::default(), None)
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?
+            .map_err(|e| RpcError::Internal(e.to_string()))?
             .unwrap()
             .number;
 

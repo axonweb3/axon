@@ -4,13 +4,13 @@ use ckb_jsonrpc_types::{CellData, CellInfo, HeaderView as CkbHeaderView, JsonByt
 use ckb_traits::HeaderProvider;
 use ckb_types::core::cell::{CellProvider, CellStatus};
 use ckb_types::{packed, prelude::Pack};
+use jsonrpsee::core::RpcResult;
 
 use core_executor::DataProvider;
-use jsonrpsee::core::Error;
 use protocol::traits::{APIAdapter, Context};
 use protocol::{async_trait, ckb_blake2b_256, types::H256};
 
-use crate::jsonrpc::{CkbLightClientRpcServer, RpcResult};
+use crate::jsonrpc::{error::RpcError, CkbLightClientRpcServer};
 
 #[derive(Clone, Debug)]
 pub struct CkbLightClientRpcImpl<Adapter: APIAdapter> {
@@ -24,7 +24,7 @@ impl<Adapter: APIAdapter + 'static> CkbLightClientRpcServer for CkbLightClientRp
             .adapter
             .get_image_cell_root(Context::new())
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
         Ok(DataProvider::new(root)
             .get_header(&(hash.0.pack()))
             .map(Into::into))
@@ -40,7 +40,7 @@ impl<Adapter: APIAdapter + 'static> CkbLightClientRpcServer for CkbLightClientRp
             .adapter
             .get_image_cell_root(Context::new())
             .await
-            .map_err(|e| Error::Custom(e.to_string()))?;
+            .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         match DataProvider::new(root).cell(&out_point, false) {
             CellStatus::Live(c) => {

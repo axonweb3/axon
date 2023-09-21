@@ -7,10 +7,10 @@ edition = "2021"
 [dependencies]
 # async-graphql = { version = "3.0", features = ["tracing"] }
 beef = "0.5"
-ckb-jsonrpc-types = "0.108"
-ckb-traits = "0.108"
-ckb-types = "0.108"
-jsonrpsee = { version = "0.16", features = ["macros", "server"] }
+ckb-jsonrpc-types = "0.111"
+ckb-traits = "0.111"
+ckb-types = "0.111"
+jsonrpsee = { version = "0.20", features = ["macros", "server"] }
 log = "0.4"
 parking_lot = "0.12"
 pprof = { version = "0.11", features = ["prost-codec"], optional = true }

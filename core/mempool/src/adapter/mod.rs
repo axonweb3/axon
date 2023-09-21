@@ -319,7 +319,7 @@ where
 
                 InteroperationImpl::verify_by_ckb_vm(
                     Default::default(),
-                    &DataProvider::new(root),
+                    DataProvider::new(root),
                     &InteroperationImpl::dummy_transaction(
                         r.clone(),
                         s,
