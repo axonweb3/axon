@@ -97,13 +97,18 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-node_modules-
 
-      - name: Cache of the axon binary
+      - name: Cache of Cargo
         uses: actions/cache@v3
         with:
           path: |
-            target/debug/axon
-            target/release/axon
-          key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-axon-${{ github.sha }}
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - name: Build Axon in the development profile
+        run: cargo build
 
       - name: Deploy Local Network of Axon
         run: |
@@ -116,6 +121,18 @@ jobs:
           ./target/debug/axon run  \
             --config     devtools/chain/config.toml \
             >> /tmp/log 2>&1 &
+
+      - name: Check Axon Status Before Test
+        run: |
+          response=$(curl -s -w "\n%{http_code}" http://localhost:8000 -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"web3_clientVersion","params": [],"id":1}')
+          http_code=$(echo "$response" | tail -n1)
+          response_body=$(echo "$response" | sed '$d')
+          if [[ "$http_code" -ne 200 ]]; then
+            echo "Axon status check failed with HTTP status code: $http_code"
+            exit 1
+          else
+            echo "$response_body"
+          fi
 
       - name: Run prepare
         id: runtest
