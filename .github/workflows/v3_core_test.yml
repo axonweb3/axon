@@ -112,15 +112,23 @@ jobs:
 
       - name: Check Axon Status Before Test
         run: |
-          response=$(curl -s -w "\n%{http_code}" http://localhost:8000 -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"web3_clientVersion","params": [],"id":1}')
-          http_code=$(echo "$response" | tail -n1)
-          response_body=$(echo "$response" | sed '$d')
-          if [[ "$http_code" -ne 200 ]]; then
-            echo "Axon status check failed with HTTP status code: $http_code"
-            exit 1
-          else
-            echo "$response_body"
-          fi
+          MAX_RETRIES=10
+          for i in $(seq 1 $MAX_RETRIES); do
+            sleep 10
+            response=$(curl -s -w "\n%{http_code}" http://localhost:8000 -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"web3_clientVersion","params": [],"id":1}')
+            http_code=$(echo "$response" | tail -n1)
+            response_body=$(echo "$response" | sed '$d')
+            if [[ "$http_code" -eq 200 ]]; then
+              echo "$response_body"
+              exit 0
+            else
+              echo "Axon status check failed with HTTP status code: $http_code, retrying ($i/$MAX_RETRIES)"
+              if [[ "$i" -eq $MAX_RETRIES ]]; then
+                echo "Axon status check failed after $MAX_RETRIES attempts."
+                exit 1
+              fi
+            fi
+          done
 
       - name: Install dependencies
         run: |
@@ -132,6 +140,7 @@ jobs:
           cd /home/runner/work/axon/axon/v3-core
           yarn compile
       - name: Run tests 0
+        if: success() || failure()
         id: runtest
         run: |
           cd /home/runner/work/axon/axon/v3-core
