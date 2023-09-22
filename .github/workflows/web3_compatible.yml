@@ -4,9 +4,10 @@ on:
   merge_group:
   workflow_dispatch:
     inputs:
+      # used by regression_testing.yml and entry_workflow.yml
       dispatch:
         type: string
-        description: "Dispatch contains pr context that want to trigger web3-compatible test"
+        description: "'regression' or the JSON of a PR's context"
         required: false
 
 jobs:
@@ -60,12 +61,13 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-build
       - name: Build Axon in the development profile
         run: cargo build
       - name: Deploy Local Network of Axon
         run: |
-          rm -rf ./devtools/chain/data
           ./target/debug/axon init \
             --config     devtools/chain/config.toml \
             --chain-spec devtools/chain/specs/single_node/chain-spec.toml \

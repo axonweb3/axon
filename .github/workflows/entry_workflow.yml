@@ -75,21 +75,6 @@ jobs:
               check_list=`${check_list}\n - Coverage Test`;
               }
 
-            // check E2E Tests exist or not
-            const e2e_match = pr.data.body.includes("[x] E2E Tests");
-            if (e2e_match) {
-             const resp =  await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: "e2e_test.yml",
-              ref: `main`,
-              inputs: {
-                dispatch: jsonDispatch,
-              }
-              });
-              core.info(`${JSON.stringify(resp, null, 2)}`);
-              check_list=`${check_list}\n - E2E Tests`;
-              }
             // check OCT 1-5 And 12-15 exist or not
             const OCT_match = pr.data.body.includes("[x] OCT 1-5 And 12-15");
             if (OCT_match) {
