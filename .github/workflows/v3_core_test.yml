@@ -12,12 +12,7 @@ on:
         required: true
 
 jobs:
-  # Build Axon and cache the binary
-  build-axon:
-    uses: ./.github/workflows/build.yml
-
   v3-core-test:
-    needs: build-axon
     strategy:
       matrix:
         # Supported GitHub-hosted runners and hardware resources

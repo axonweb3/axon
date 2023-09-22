@@ -7,13 +7,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Build Axon and cache the binary
-  build-axon:
-    uses: ./.github/workflows/build.yml
-
   # Start a single Axon node
   single-node:
-    needs: build-axon
     strategy:
       matrix:
         # Supported GitHub-hosted runners and hardware resources
@@ -23,14 +18,19 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
-    - name: Cache of the axon binary
-      id: axon-bin-cache
+
+    - name: Cache of Cargo
       uses: actions/cache@v3
       with:
         path: |
-          target/debug/axon
-          target/release/axon
-        key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-axon-${{ github.sha }}
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+    - name: Build Axon in the development profile
+      run: cargo build
 
     - name: Start a single Axon node
       env:
@@ -63,7 +63,6 @@ jobs:
           ${{ runner.temp }}/${{ matrix.os }}-single-axon-node.log
 
   multi-nodes:
-    needs: build-axon
     strategy:
       matrix:
         # Supported GitHub-hosted runners and hardware resources
@@ -73,14 +72,19 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v4
-    - name: Cache of the axon binary
-      id: axon-bin-cache
+    
+    - name: Cache of Cargo
       uses: actions/cache@v3
       with:
         path: |
-          target/debug/axon
-          target/release/axon
-        key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-axon-${{ github.sha }}
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+    - name: Build Axon in the development profile
+      run: cargo build
 
     - name: Start multiple Axon nodes
       env:
