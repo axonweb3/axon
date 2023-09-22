@@ -37,7 +37,6 @@ jobs:
           key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-build
-            ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo
 
       - uses: lyricwulf/abc@v1
         with:
