@@ -12,12 +12,7 @@ on:
         required: true
 
 jobs:
-  # Build Axon and cache the binary
-  build-axon:
-    uses: ./.github/workflows/build.yml
-
   v3-core-test:
-    needs: build-axon
     strategy:
       matrix:
         # Supported GitHub-hosted runners and hardware resources
@@ -94,7 +89,9 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-build
       - name: Build Axon in the development profile
         run: cargo build
 
