@@ -131,10 +131,15 @@ pub fn init<Adapter: ExecutorAdapter + ApplyBackend>(
     let current_cell_root =
         adapter.storage(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY);
 
+    // Current cell root is zero means there is no image cell and header contains in
+    // the MPT. Because of the empty cell root is zero rather than NLP_NULL, it is
+    // necessary to init the ckb light client and image account in state MPT. The
+    // initial process is set the storage root of the two accounts as H256::zero().
     if current_cell_root.is_zero() {
         let changes = generate_mpt_root_changes(adapter, CKB_LIGHT_CLIENT_CONTRACT_ADDRESS);
         adapter.apply(changes, vec![], false);
     }
+
     (current_metadata_root, current_cell_root)
 }
 
