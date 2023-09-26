@@ -1,10 +1,4 @@
-use std::{
-    ffi::OsStr,
-    fmt,
-    fs::File,
-    io::{self, Read as _},
-    path::PathBuf,
-};
+use std::{ffi::OsStr, fmt, fs::File, io::Read as _, path::PathBuf};
 
 use clap::{
     builder::{StringValueParser, TypedValueParser, ValueParserFactory},
@@ -16,10 +10,7 @@ use strum_macros::EnumIter;
 use common_crypto::Secp256k1RecoverablePrivateKey;
 use protocol::{
     codec::{decode_256bits_key, deserialize_address, ProtocolCodec},
-    types::{
-        Block, ExtraData, HardforkInfoInner, Header, Key256Bits, Metadata, RichBlock,
-        SignedTransaction, H160, H256, U256,
-    },
+    types::{ExtraData, HardforkInfoInner, Header, Key256Bits, Metadata, H160, H256, U256},
 };
 
 use crate::parse_file;
@@ -44,11 +35,6 @@ pub struct Genesis {
     pub hardforks:        Vec<HardforkName>,
     pub base_fee_per_gas: U256,
     pub chain_id:         u64,
-
-    #[serde(rename = "transactions")]
-    pub txs_file: Option<PathBuf>,
-    #[serde(skip)]
-    pub txs:      Vec<SignedTransaction>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -101,41 +87,14 @@ impl TypedValueParser for ChainSpecValueParser {
         let file_path = StringValueParser::new()
             .parse_ref(cmd, arg, value)
             .map(PathBuf::from)?;
-        let dir_path = file_path.parent().ok_or_else(|| {
-            let err = {
-                let kind = io::ErrorKind::Other;
-                let msg = format!("no parent directory of {}", file_path.display());
-                io::Error::new(kind, msg)
-            };
+        parse_file(&file_path, false).map_err(|err| {
             let kind = clap::error::ErrorKind::InvalidValue;
-            clap::Error::raw(kind, err)
-        })?;
-        parse_file(&file_path, false)
-            .map_err(|err| {
-                let kind = clap::error::ErrorKind::InvalidValue;
-                let msg = format!(
-                    "failed to parse chain spec file {} since {err}",
-                    file_path.display()
-                );
-                clap::Error::raw(kind, msg)
-            })
-            .and_then(|mut spec: Self::Value| {
-                if let Some(ref mut f) = spec.genesis.txs_file {
-                    let txs_file = dir_path.join(&f);
-                    let txs: Vec<SignedTransaction> =
-                        parse_file(&txs_file, true).map_err(|err| {
-                            let kind = clap::error::ErrorKind::InvalidValue;
-                            let msg = format!(
-                                "failed to parse transactions json file {} since {err}",
-                                txs_file.display()
-                            );
-                            clap::Error::raw(kind, msg)
-                        })?;
-                    *f = txs_file;
-                    spec.genesis.txs = txs;
-                }
-                Ok(spec)
-            })
+            let msg = format!(
+                "failed to parse chain spec file {} since {err}",
+                file_path.display()
+            );
+            clap::Error::raw(kind, msg)
+        })
     }
 }
 
@@ -241,21 +200,6 @@ impl TypedValueParser for PrivateKeyFileValueParser {
 }
 
 impl Genesis {
-    /// Build a `RichBlock` of the genesis block from the user provided
-    /// parameters.
-    pub fn build_rich_block(&self) -> RichBlock {
-        let block = self.build_block();
-        let txs = self.txs.clone();
-        RichBlock { block, txs }
-    }
-
-    /// Build a `Block` of the genesis block from the user provided parameters.
-    pub fn build_block(&self) -> Block {
-        let header = self.build_header();
-        let tx_hashes = self.txs.iter().map(|tx| tx.transaction.hash).collect();
-        Block { header, tx_hashes }
-    }
-
     /// Build a `Header` of the genesis block from the user provided parameters.
     pub fn build_header(&self) -> Header {
         Header {
