@@ -12,20 +12,20 @@ Run Axon and it's explorer ([blockscan](https://github.com/Magickbase/blockscan)
 Before getting started, ensure that you have the following prerequisites installed on your system:
 
 - Docker v20.10+
-- Docker-compose 2.x.x+
+- Docker Compose v2.x.x+
 
 ## Run the Services
 
 ```bash
 git clone --depth=1 https://github.com/axonweb3/axon.git
 cd axon/devtools/chain
-docker-compose up -d
+docker compose up -d
 ```
 
 ### Watch the Logs
 To monitor the logs of the running services, use the following command:
 ```bash
-docker-compose logs -f --tail 1
+docker compose logs -f --tail 1
 ```
 
 This command will display the logs of the services, showing the latest log entries.
