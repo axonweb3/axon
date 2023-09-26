@@ -38,6 +38,7 @@ library MetadataType {
         uint64 max_tx_size;
         uint64 gas_limit;
         uint64 interval;
+        uint64 max_contract_limit;
     }
 
     struct CkbRelatedInfo {
@@ -56,7 +57,11 @@ library MetadataType {
 interface MetadataManager {
     function appendMetadata(MetadataType.Metadata memory metadata) external;
 
-    function updateConsensusConfig(MetadataType.ConsensusConfig memory config) external;
+    function updateConsensusConfig(
+        MetadataType.ConsensusConfig memory config
+    ) external;
 
-    function setCkbRelatedInfo(MetadataType.CkbRelatedInfo memory info) external;
+    function setCkbRelatedInfo(
+        MetadataType.CkbRelatedInfo memory info
+    ) external;
 }

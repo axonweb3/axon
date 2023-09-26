@@ -11,7 +11,7 @@ pub use metadata_contract::*;
 )]
 pub mod metadata_contract {
     #[rustfmt::skip]
-    const __ABI: &str = "[\n  {\n    \"inputs\": [\n      {\n        \"components\": [\n          {\n            \"components\": [\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"start\",\n                \"type\": \"uint64\"\n              },\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"end\",\n                \"type\": \"uint64\"\n              }\n            ],\n            \"internalType\": \"struct MetadataType.MetadataVersion\",\n            \"name\": \"version\",\n            \"type\": \"tuple\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"epoch\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"components\": [\n              {\n                \"internalType\": \"bytes\",\n                \"name\": \"bls_pub_key\",\n                \"type\": \"bytes\"\n              },\n              {\n                \"internalType\": \"bytes\",\n                \"name\": \"pub_key\",\n                \"type\": \"bytes\"\n              },\n              {\n                \"internalType\": \"address\",\n                \"name\": \"address_\",\n                \"type\": \"address\"\n              },\n              {\n                \"internalType\": \"uint32\",\n                \"name\": \"propose_weight\",\n                \"type\": \"uint32\"\n              },\n              {\n                \"internalType\": \"uint32\",\n                \"name\": \"vote_weight\",\n                \"type\": \"uint32\"\n              }\n            ],\n            \"internalType\": \"struct MetadataType.ValidatorExtend[]\",\n            \"name\": \"verifier_list\",\n            \"type\": \"tuple[]\"\n          },\n          {\n            \"components\": [\n              {\n                \"internalType\": \"address\",\n                \"name\": \"address_\",\n                \"type\": \"address\"\n              },\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"count\",\n                \"type\": \"uint64\"\n              }\n            ],\n            \"internalType\": \"struct MetadataType.ProposeCount[]\",\n            \"name\": \"propose_counter\",\n            \"type\": \"tuple[]\"\n          },\n          {\n            \"components\": [\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"propose_ratio\",\n                \"type\": \"uint64\"\n              },\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"prevote_ratio\",\n                \"type\": \"uint64\"\n              },\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"precommit_ratio\",\n                \"type\": \"uint64\"\n              },\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"brake_ratio\",\n                \"type\": \"uint64\"\n              },\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"tx_num_limit\",\n                \"type\": \"uint64\"\n              },\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"max_tx_size\",\n                \"type\": \"uint64\"\n              },\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"gas_limit\",\n                \"type\": \"uint64\"\n              },\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"interval\",\n                \"type\": \"uint64\"\n              }\n            ],\n            \"internalType\": \"struct MetadataType.ConsensusConfig\",\n            \"name\": \"consensus_config\",\n            \"type\": \"tuple\"\n          }\n        ],\n        \"internalType\": \"struct MetadataType.Metadata\",\n        \"name\": \"metadata\",\n        \"type\": \"tuple\"\n      }\n    ],\n    \"name\": \"appendMetadata\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"components\": [\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"metadata_type_id\",\n            \"type\": \"bytes32\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"checkpoint_type_id\",\n            \"type\": \"bytes32\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"xudt_args\",\n            \"type\": \"bytes32\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"stake_smt_type_id\",\n            \"type\": \"bytes32\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"delegate_smt_type_id\",\n            \"type\": \"bytes32\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"reward_smt_type_id\",\n            \"type\": \"bytes32\"\n          }\n        ],\n        \"internalType\": \"struct MetadataType.CkbRelatedInfo\",\n        \"name\": \"info\",\n        \"type\": \"tuple\"\n      }\n    ],\n    \"name\": \"setCkbRelatedInfo\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"components\": [\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"propose_ratio\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"prevote_ratio\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"precommit_ratio\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"brake_ratio\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"tx_num_limit\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"max_tx_size\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"gas_limit\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"interval\",\n            \"type\": \"uint64\"\n          }\n        ],\n        \"internalType\": \"struct MetadataType.ConsensusConfig\",\n        \"name\": \"config\",\n        \"type\": \"tuple\"\n      }\n    ],\n    \"name\": \"updateConsensusConfig\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  }\n]\n";
+    const __ABI: &str = "[\n  {\n    \"inputs\": [\n      {\n        \"components\": [\n          {\n            \"components\": [\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"start\",\n                \"type\": \"uint64\"\n              },\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"end\",\n                \"type\": \"uint64\"\n              }\n            ],\n            \"internalType\": \"struct MetadataType.MetadataVersion\",\n            \"name\": \"version\",\n            \"type\": \"tuple\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"epoch\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"components\": [\n              {\n                \"internalType\": \"bytes\",\n                \"name\": \"bls_pub_key\",\n                \"type\": \"bytes\"\n              },\n              {\n                \"internalType\": \"bytes\",\n                \"name\": \"pub_key\",\n                \"type\": \"bytes\"\n              },\n              {\n                \"internalType\": \"address\",\n                \"name\": \"address_\",\n                \"type\": \"address\"\n              },\n              {\n                \"internalType\": \"uint32\",\n                \"name\": \"propose_weight\",\n                \"type\": \"uint32\"\n              },\n              {\n                \"internalType\": \"uint32\",\n                \"name\": \"vote_weight\",\n                \"type\": \"uint32\"\n              }\n            ],\n            \"internalType\": \"struct MetadataType.ValidatorExtend[]\",\n            \"name\": \"verifier_list\",\n            \"type\": \"tuple[]\"\n          },\n          {\n            \"components\": [\n              {\n                \"internalType\": \"address\",\n                \"name\": \"address_\",\n                \"type\": \"address\"\n              },\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"count\",\n                \"type\": \"uint64\"\n              }\n            ],\n            \"internalType\": \"struct MetadataType.ProposeCount[]\",\n            \"name\": \"propose_counter\",\n            \"type\": \"tuple[]\"\n          },\n          {\n            \"components\": [\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"propose_ratio\",\n                \"type\": \"uint64\"\n              },\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"prevote_ratio\",\n                \"type\": \"uint64\"\n              },\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"precommit_ratio\",\n                \"type\": \"uint64\"\n              },\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"brake_ratio\",\n                \"type\": \"uint64\"\n              },\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"tx_num_limit\",\n                \"type\": \"uint64\"\n              },\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"max_tx_size\",\n                \"type\": \"uint64\"\n              },\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"gas_limit\",\n                \"type\": \"uint64\"\n              },\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"interval\",\n                \"type\": \"uint64\"\n              },\n              {\n                \"internalType\": \"uint64\",\n                \"name\": \"max_contract_limit\",\n                \"type\": \"uint64\"\n              }\n            ],\n            \"internalType\": \"struct MetadataType.ConsensusConfig\",\n            \"name\": \"consensus_config\",\n            \"type\": \"tuple\"\n          }\n        ],\n        \"internalType\": \"struct MetadataType.Metadata\",\n        \"name\": \"metadata\",\n        \"type\": \"tuple\"\n      }\n    ],\n    \"name\": \"appendMetadata\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"components\": [\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"metadata_type_id\",\n            \"type\": \"bytes32\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"checkpoint_type_id\",\n            \"type\": \"bytes32\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"xudt_args\",\n            \"type\": \"bytes32\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"stake_smt_type_id\",\n            \"type\": \"bytes32\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"delegate_smt_type_id\",\n            \"type\": \"bytes32\"\n          },\n          {\n            \"internalType\": \"bytes32\",\n            \"name\": \"reward_smt_type_id\",\n            \"type\": \"bytes32\"\n          }\n        ],\n        \"internalType\": \"struct MetadataType.CkbRelatedInfo\",\n        \"name\": \"info\",\n        \"type\": \"tuple\"\n      }\n    ],\n    \"name\": \"setCkbRelatedInfo\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  },\n  {\n    \"inputs\": [\n      {\n        \"components\": [\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"propose_ratio\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"prevote_ratio\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"precommit_ratio\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"brake_ratio\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"tx_num_limit\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"max_tx_size\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"gas_limit\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"interval\",\n            \"type\": \"uint64\"\n          },\n          {\n            \"internalType\": \"uint64\",\n            \"name\": \"max_contract_limit\",\n            \"type\": \"uint64\"\n          }\n        ],\n        \"internalType\": \"struct MetadataType.ConsensusConfig\",\n        \"name\": \"config\",\n        \"type\": \"tuple\"\n      }\n    ],\n    \"name\": \"updateConsensusConfig\",\n    \"outputs\": [],\n    \"stateMutability\": \"nonpayable\",\n    \"type\": \"function\"\n  }\n]\n";
     /// The parsed JSON ABI of the contract.
     pub static METADATACONTRACT_ABI: ::ethers::contract::Lazy<::ethers::core::abi::Abi> =
         ::ethers::contract::Lazy::new(|| {
@@ -57,13 +57,13 @@ pub mod metadata_contract {
             ))
         }
 
-        /// Calls the contract's `appendMetadata` (0x4677ae59) function
+        /// Calls the contract's `appendMetadata` (0x53ec79e6) function
         pub fn append_metadata(
             &self,
             metadata: Metadata,
         ) -> ::ethers::contract::builders::ContractCall<M, ()> {
             self.0
-                .method_hash([70, 119, 174, 89], (metadata,))
+                .method_hash([83, 236, 121, 230], (metadata,))
                 .expect("method not found (this should never happen)")
         }
 
@@ -77,13 +77,13 @@ pub mod metadata_contract {
                 .expect("method not found (this should never happen)")
         }
 
-        /// Calls the contract's `updateConsensusConfig` (0x3b05ee4f) function
+        /// Calls the contract's `updateConsensusConfig` (0xb76fac01) function
         pub fn update_consensus_config(
             &self,
             config: ConsensusConfig,
         ) -> ::ethers::contract::builders::ContractCall<M, ()> {
             self.0
-                .method_hash([59, 5, 238, 79], (config,))
+                .method_hash([183, 111, 172, 1], (config,))
                 .expect("method not found (this should never happen)")
         }
     }
@@ -98,7 +98,7 @@ pub mod metadata_contract {
     /// function with signature
     /// `appendMetadata(((uint64,uint64),uint64,(bytes,bytes,address,uint32,
     /// uint32)[],(address,uint64)[],(uint64,uint64,uint64,uint64,uint64,uint64,
-    /// uint64,uint64)))` and selector `0x4677ae59`
+    /// uint64,uint64,uint64)))` and selector `0x53ec79e6`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -111,7 +111,7 @@ pub mod metadata_contract {
     )]
     #[ethcall(
         name = "appendMetadata",
-        abi = "appendMetadata(((uint64,uint64),uint64,(bytes,bytes,address,uint32,uint32)[],(address,uint64)[],(uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64)))"
+        abi = "appendMetadata(((uint64,uint64),uint64,(bytes,bytes,address,uint32,uint32)[],(address,uint64)[],(uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64)))"
     )]
     pub struct AppendMetadataCall {
         pub metadata: Metadata,
@@ -140,7 +140,7 @@ pub mod metadata_contract {
     /// Container type for all input parameters for the `updateConsensusConfig`
     /// function with signature
     /// `updateConsensusConfig((uint64,uint64,uint64,uint64,uint64,uint64,
-    /// uint64,uint64))` and selector `0x3b05ee4f`
+    /// uint64,uint64,uint64))` and selector `0xb76fac01`
     #[derive(
         Clone,
         ::ethers::contract::EthCall,
@@ -153,7 +153,7 @@ pub mod metadata_contract {
     )]
     #[ethcall(
         name = "updateConsensusConfig",
-        abi = "updateConsensusConfig((uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64))"
+        abi = "updateConsensusConfig((uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64,uint64))"
     )]
     pub struct UpdateConsensusConfigCall {
         pub config: ConsensusConfig,
@@ -243,7 +243,7 @@ pub mod metadata_contract {
         pub reward_smt_type_id:   [u8; 32],
     }
     /// `ConsensusConfig(uint64,uint64,uint64,uint64,uint64,uint64,uint64,
-    /// uint64)`
+    /// uint64,uint64)`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,
@@ -255,18 +255,19 @@ pub mod metadata_contract {
         Hash,
     )]
     pub struct ConsensusConfig {
-        pub propose_ratio:   u64,
-        pub prevote_ratio:   u64,
-        pub precommit_ratio: u64,
-        pub brake_ratio:     u64,
-        pub tx_num_limit:    u64,
-        pub max_tx_size:     u64,
-        pub gas_limit:       u64,
-        pub interval:        u64,
+        pub propose_ratio:      u64,
+        pub prevote_ratio:      u64,
+        pub precommit_ratio:    u64,
+        pub brake_ratio:        u64,
+        pub tx_num_limit:       u64,
+        pub max_tx_size:        u64,
+        pub gas_limit:          u64,
+        pub interval:           u64,
+        pub max_contract_limit: u64,
     }
     /// `Metadata((uint64,uint64),uint64,(bytes,bytes,address,uint32,uint32)[],
     /// (address,uint64)[],(uint64,uint64,uint64,uint64,uint64,uint64,uint64,
-    /// uint64))`
+    /// uint64,uint64))`
     #[derive(
         Clone,
         ::ethers::contract::EthAbiType,

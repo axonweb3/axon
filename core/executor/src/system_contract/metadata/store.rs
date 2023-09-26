@@ -1,17 +1,20 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
+use common_config_parser::types::spec::HardforkName;
 use protocol::trie::Trie as _;
-use protocol::types::{CkbRelatedInfo, HardforkInfo, HardforkInfoInner, Metadata, H160, H256};
+use protocol::types::{
+    CkbRelatedInfo, ConsensusConfig, ConsensusConfigV0, HardforkInfo, HardforkInfoInner, Metadata,
+    MetadataInner, H160, H256,
+};
 use protocol::{codec::ProtocolCodec, ProtocolResult};
 
 use crate::system_contract::metadata::{
-    segment::EpochSegment, CKB_RELATED_INFO_KEY, EPOCH_SEGMENT_KEY, HARDFORK_KEY,
+    segment::EpochSegment, CKB_RELATED_INFO_KEY, CONSENSUS_CONFIG, EPOCH_SEGMENT_KEY,
+    HARDFORK_INFO, HARDFORK_KEY,
 };
 use crate::system_contract::{error::SystemScriptError, METADATA_DB};
 use crate::{adapter::RocksTrieDB, MPTTrie, CURRENT_METADATA_ROOT};
-
-use super::metadata_abi::ConsensusConfig;
 
 /// The metadata store does not follow the storage layout of EVM smart contract.
 /// It use MPT called Metadata MPT with the following layout:
@@ -108,13 +111,18 @@ impl MetadataStore {
 
         epoch_segment.append_endpoint(metadata.version.end)?;
 
+        let (inner, config) = metadata.into_part();
+        let current_hardfork = **HARDFORK_INFO.load();
+
         self.trie.insert(
             EPOCH_SEGMENT_KEY.as_bytes().to_vec(),
             epoch_segment.as_bytes(),
         )?;
+        self.trie
+            .insert(inner.epoch.to_be_bytes().to_vec(), inner.encode()?.to_vec())?;
         self.trie.insert(
-            metadata.epoch.to_be_bytes().to_vec(),
-            metadata.encode()?.to_vec(),
+            CONSENSUS_CONFIG.as_bytes().to_vec(),
+            encode_consensus_config(current_hardfork, config.encode()?.to_vec()),
         )?;
         let new_root = self.trie.commit()?;
         CURRENT_METADATA_ROOT.with(|r| *r.borrow_mut() = new_root);
@@ -127,7 +135,8 @@ impl MetadataStore {
         block_number: u64,
         proposer: &H160,
     ) -> ProtocolResult<()> {
-        let mut metadata = self.get_metadata_by_block_number(block_number)?;
+        let epoch = self.get_epoch_by_block_number(block_number)?;
+        let mut metadata = self.get_metadata_inner(epoch)?;
         if let Some(counter) = metadata
             .propose_counter
             .iter_mut()
@@ -152,11 +161,26 @@ impl MetadataStore {
     }
 
     pub fn get_metadata(&self, epoch: u64) -> ProtocolResult<Metadata> {
+        let inner = self.get_metadata_inner(epoch)?;
+        let config = self.get_consensus_config()?;
+        Ok(Metadata::from_parts(inner, config))
+    }
+
+    fn get_metadata_inner(&self, epoch: u64) -> ProtocolResult<MetadataInner> {
         let raw = self
             .trie
             .get(&epoch.to_be_bytes())?
             .ok_or_else(|| SystemScriptError::MissingRecord(epoch))?;
-        Metadata::decode(raw)
+        MetadataInner::decode(raw)
+    }
+
+    fn get_consensus_config(&self) -> ProtocolResult<ConsensusConfig> {
+        let raw = self
+            .trie
+            .get(CONSENSUS_CONFIG.as_bytes())?
+            .expect("Inner panic with can't find consensus config");
+
+        decode_consensus_config(raw)
     }
 
     pub fn get_metadata_by_block_number(&self, block_number: u64) -> ProtocolResult<Metadata> {
@@ -173,14 +197,10 @@ impl MetadataStore {
     }
 
     pub fn update_consensus_config(&mut self, config: ConsensusConfig) -> ProtocolResult<()> {
-        let epoch_segment = self.get_epoch_segment()?;
-        let latest_epoch = epoch_segment.get_latest_epoch_number();
-        let mut metadata = self.get_metadata(latest_epoch)?;
-
-        metadata.consensus_config = config.into();
+        let current_hardfork = **HARDFORK_INFO.load();
         self.trie.insert(
-            metadata.epoch.to_be_bytes().to_vec(),
-            metadata.encode()?.to_vec(),
+            CONSENSUS_CONFIG.as_bytes().to_vec(),
+            encode_consensus_config(current_hardfork, config.encode()?.to_vec()),
         )?;
         let new_root = self.trie.commit()?;
         CURRENT_METADATA_ROOT.with(|r| *r.borrow_mut() = new_root);
@@ -243,4 +263,56 @@ impl MetadataStore {
             None => Ok(HardforkInfo::default()),
         }
     }
+}
+
+#[derive(Debug)]
+enum ConsensusConfigFlag {
+    V0 = 0b0,
+    V1 = 0b1,
+}
+
+impl From<u16> for ConsensusConfigFlag {
+    fn from(value: u16) -> Self {
+        match value {
+            0b0 => ConsensusConfigFlag::V0,
+            0b1 => ConsensusConfigFlag::V1,
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl ConsensusConfigFlag {
+    fn new(flags: H256) -> Self {
+        let v1_name_flag = H256::from_low_u64_be((HardforkName::Andromeda as u64).to_be());
+        let res = flags & v1_name_flag;
+
+        if res & v1_name_flag == v1_name_flag {
+            ConsensusConfigFlag::V1
+        } else {
+            ConsensusConfigFlag::V0
+        }
+    }
+}
+
+fn decode_consensus_config(raw: Vec<u8>) -> ProtocolResult<ConsensusConfig> {
+    let raw_flag = {
+        let mut a = [0u8; 2];
+        a[0] = raw[0];
+        a[1] = raw[1];
+        a
+    };
+    let flag = ConsensusConfigFlag::from(u16::from_be_bytes(raw_flag));
+
+    match flag {
+        ConsensusConfigFlag::V0 => ConsensusConfigV0::decode(&raw[2..]).map(Into::into),
+        ConsensusConfigFlag::V1 => ConsensusConfig::decode(&raw[2..]),
+    }
+}
+
+pub fn encode_consensus_config(current_hardfork: H256, config: Vec<u8>) -> Vec<u8> {
+    let flag = ConsensusConfigFlag::new(current_hardfork);
+
+    let mut res = (flag as u16).to_be_bytes().to_vec();
+    res.extend(config);
+    res
 }

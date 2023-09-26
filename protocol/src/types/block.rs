@@ -369,6 +369,7 @@ mod tests {
                 brake_ratio: 10,
                 tx_num_limit: 20000,
                 max_tx_size: 1024,
+                max_contract_limit: 0x6000
             }
         };
 
