@@ -132,7 +132,7 @@ pub fn init<Adapter: ExecutorAdapter + ApplyBackend>(
         adapter.storage(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY);
 
     if current_cell_root.is_zero() {
-        let changes = generate_mpt_root_changes(adapter, IMAGE_CELL_CONTRACT_ADDRESS);
+        let changes = generate_mpt_root_changes(adapter, CKB_LIGHT_CLIENT_CONTRACT_ADDRESS);
         adapter.apply(changes, vec![], false);
     }
     (current_metadata_root, current_cell_root)
