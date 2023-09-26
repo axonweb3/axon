@@ -115,6 +115,11 @@
                 "internalType": "uint64",
                 "name": "interval",
                 "type": "uint64"
+              },
+              {
+                "internalType": "uint64",
+                "name": "max_contract_limit",
+                "type": "uint64"
               }
             ],
             "internalType": "struct MetadataType.ConsensusConfig",
@@ -219,6 +224,11 @@
           {
             "internalType": "uint64",
             "name": "interval",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "max_contract_limit",
             "type": "uint64"
           }
         ],

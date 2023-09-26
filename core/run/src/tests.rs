@@ -12,21 +12,28 @@ use clap::{builder::TypedValueParser as _, Command};
 use hasher::HasherKeccak;
 
 use common_config_parser::types::{
-    spec::{ChainSpec, ChainSpecValueParser, PrivateKeyFileValueParser},
+    spec::{ChainSpec, ChainSpecValueParser, HardforkName, PrivateKeyFileValueParser},
     Config, ConfigValueParser,
 };
 use common_crypto::Secp256k1RecoverablePrivateKey;
 use core_executor::{
-    system_contract::metadata::{segment::EpochSegment, EPOCH_SEGMENT_KEY},
+    system_contract::metadata::{
+        encode_consensus_config, segment::EpochSegment, CONSENSUS_CONFIG, EPOCH_SEGMENT_KEY,
+        HARDFORK_KEY,
+    },
     AxonExecutorApplyAdapter, MetadataHandle,
 };
 use protocol::{
     codec::{hex_decode, ProtocolCodec as _},
     tokio,
     trie::{MemoryDB, PatriciaTrie, Trie as _},
+<<<<<<< HEAD
     types::{
         Bloom, BloomInput, Header, Metadata, Proposal, RichBlock, H256, RLP_EMPTY_LIST, RLP_NULL,
     },
+=======
+    types::{HardforkInfo, HardforkInfoInner, Header, Metadata, Proposal, RichBlock, H256},
+>>>>>>> 80c12a3 (feat: first hardfork with contract limit)
 };
 
 use crate::{components::chain_spec::ChainSpecExt as _, execute_genesis, DatabaseGroup};
@@ -280,17 +287,52 @@ fn generate_memory_mpt_root(metadata_0: Metadata, metadata_1: Metadata) -> Vec<u
     memory_mpt
         .insert(EPOCH_SEGMENT_KEY.as_bytes().to_vec(), seg.as_bytes())
         .unwrap();
+    let (inner_0, config_0) = metadata_0.into_part();
+    let (inner_1, config_1) = metadata_1.into_part();
 
     memory_mpt
         .insert(
-            metadata_0.epoch.to_be_bytes().to_vec(),
-            metadata_0.encode().unwrap().to_vec(),
+            inner_0.epoch.to_be_bytes().to_vec(),
+            inner_0.encode().unwrap().to_vec(),
         )
         .unwrap();
     memory_mpt
         .insert(
-            metadata_1.epoch.to_be_bytes().to_vec(),
-            metadata_1.encode().unwrap().to_vec(),
+            CONSENSUS_CONFIG.as_bytes().to_vec(),
+            encode_consensus_config(
+                H256::from_low_u64_be((HardforkName::None as u64).to_be()),
+                config_0.encode().unwrap().to_vec(),
+            ),
+        )
+        .unwrap();
+    memory_mpt
+        .insert(
+            inner_1.epoch.to_be_bytes().to_vec(),
+            inner_1.encode().unwrap().to_vec(),
+        )
+        .unwrap();
+    memory_mpt
+        .insert(
+            CONSENSUS_CONFIG.as_bytes().to_vec(),
+            encode_consensus_config(
+                H256::from_low_u64_be((HardforkName::None as u64).to_be()),
+                config_1.encode().unwrap().to_vec(),
+            ),
+        )
+        .unwrap();
+
+    let info = HardforkInfoInner {
+        flags:        H256::from_low_u64_be(HardforkName::all().to_be()),
+        block_number: 0,
+    };
+
+    memory_mpt
+        .insert(
+            HARDFORK_KEY.as_bytes().to_vec(),
+            HardforkInfo { inner: vec![info] }
+                .encode()
+                .unwrap()
+                .to_vec(),
         )
         .unwrap();
     memory_mpt.root().unwrap()

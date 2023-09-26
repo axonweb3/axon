@@ -213,12 +213,18 @@ impl Genesis {
             // genesis
             extra_data: {
                 vec![ExtraData {
-                    inner: Into::<HardforkInfoInner>::into(HardforkInput {
-                        hardforks:    self.hardforks.clone(),
-                        block_number: 0,
-                    })
-                    .encode()
-                    .unwrap(),
+                    inner: {
+                        let mut info = Into::<HardforkInfoInner>::into(HardforkInput {
+                            hardforks:    self.hardforks.clone(),
+                            block_number: 0,
+                        });
+
+                        if info.flags.is_zero() {
+                            info.flags = H256::from_low_u64_be(HardforkName::all().to_be());
+                        }
+
+                        info.encode().unwrap()
+                    },
                 }]
             },
             base_fee_per_gas: self.base_fee_per_gas,
@@ -258,4 +264,11 @@ impl From<HardforkInput> for HardforkInfoInner {
 #[derive(Clone, Debug, Serialize, Deserialize, Copy, ValueEnum, EnumIter, PartialEq, Eq, Hash)]
 pub enum HardforkName {
     None = 0b0,
+    Andromeda = 0b1,
+}
+
+impl HardforkName {
+    pub fn all() -> u64 {
+        HardforkName::None as u64 | HardforkName::Andromeda as u64
+    }
 }

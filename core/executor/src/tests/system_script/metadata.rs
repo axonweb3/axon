@@ -184,14 +184,15 @@ fn prepare_metadata() -> Metadata {
         verifier_list:    vec![prepare_validator()],
         propose_counter:  vec![],
         consensus_config: ConsensusConfig {
-            gas_limit:       1u64,
-            interval:        0u64,
-            propose_ratio:   1u64,
-            prevote_ratio:   1u64,
-            precommit_ratio: 1u64,
-            brake_ratio:     1u64,
-            tx_num_limit:    1u64,
-            max_tx_size:     1u64,
+            gas_limit:          1u64,
+            interval:           0u64,
+            propose_ratio:      1u64,
+            prevote_ratio:      1u64,
+            precommit_ratio:    1u64,
+            brake_ratio:        1u64,
+            tx_num_limit:       1u64,
+            max_tx_size:        1u64,
+            max_contract_limit: 0x6000u64,
         },
     }
 }
