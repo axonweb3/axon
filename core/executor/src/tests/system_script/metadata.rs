@@ -7,7 +7,7 @@ use protocol::types::{MemoryBackend, SignedTransaction, H160, U256};
 
 use crate::{
     system_contract::{
-        init,
+        init_system_contract_db,
         metadata::{
             metadata_abi::{self, ConsensusConfig, Metadata, MetadataVersion, ValidatorExtend},
             MetadataContract, MetadataStore,
@@ -30,7 +30,7 @@ fn test_write_functions() {
     let inner_db = RocksAdapter::new(ROCKSDB_PATH, Default::default())
         .unwrap()
         .inner_db();
-    init(inner_db, &mut backend);
+    init_system_contract_db(inner_db, &mut backend);
 
     test_init(&mut backend, &executor);
 

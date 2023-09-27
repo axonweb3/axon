@@ -173,7 +173,9 @@ async fn start<K: KeyProvider>(
         Proposal::new_without_state_root(&current_block.header).into(),
     )?;
 
-    system_contract::init(inner_db, &mut backend);
+    // The first two metadata has been inserted in the init process, only need to
+    // init the system contract DB here.
+    system_contract::init_system_contract_db(inner_db, &mut backend);
 
     // Init mempool and recover signed transactions with the current block number
     let current_stxs = txs_wal.load_by_number(current_block.header.number + 1);
@@ -445,7 +447,18 @@ async fn execute_genesis(
     spec: &ChainSpec,
     db_group: &DatabaseGroup,
 ) -> ProtocolResult<RichBlock> {
-    let resp = execute_transactions(&partial_genesis, db_group, &spec.accounts)?;
+    let metadata_0 = spec.params.clone();
+    let metadata_1 = {
+        let mut tmp = metadata_0.clone();
+        tmp.epoch = metadata_0.epoch + 1;
+        tmp.version.start = metadata_0.version.end + 1;
+        tmp.version.end = tmp.version.start + metadata_0.version.end - 1;
+        tmp
+    };
+
+    let resp = execute_transactions(&partial_genesis, db_group, &spec.accounts, &[
+        metadata_0, metadata_1,
+    ])?;
 
     partial_genesis.block.header.state_root = resp.state_root;
     partial_genesis.block.header.receipts_root = resp.receipt_root;
@@ -465,6 +478,7 @@ fn execute_transactions(
     rich: &RichBlock,
     db_group: &DatabaseGroup,
     accounts: &[InitialAccount],
+    metadata_list: &[Metadata],
 ) -> ProtocolResult<ExecResp> {
     let state_root = MPTTrie::new(db_group.trie_db())
         .insert_accounts(accounts)
@@ -477,7 +491,7 @@ fn execute_transactions(
         Proposal::new_without_state_root(&rich.block.header).into(),
     )?;
 
-    system_contract::init(db_group.inner_db(), &mut backend);
+    system_contract::init(db_group.inner_db(), &mut backend, metadata_list)?;
 
     let resp = AxonExecutor.exec(&mut backend, &rich.txs, &[]);
 
@@ -527,7 +541,7 @@ pub fn set_hardfork_info(
         let current_block = storage.get_latest_block(Context::new()).await?;
         let current_state_root = current_block.header.state_root;
 
-        // Init system contract
+        // Init system contract DB
         let mut backend = AxonExecutorApplyAdapter::from_root(
             current_block.header.state_root,
             Arc::clone(&trie_db),
@@ -535,7 +549,7 @@ pub fn set_hardfork_info(
             Proposal::new_without_state_root(&current_block.header).into(),
         )?;
 
-        system_contract::init(inner_db, &mut backend);
+        system_contract::init_system_contract_db(inner_db, &mut backend);
 
         let metadata_root = AxonExecutorReadOnlyAdapter::from_root(
             current_state_root,

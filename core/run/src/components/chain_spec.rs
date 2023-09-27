@@ -1,14 +1,8 @@
-use ethers_core::abi::AbiEncode;
-
 use common_config_parser::types::spec::ChainSpec;
 use common_crypto::{PrivateKey as _, Secp256k1RecoverablePrivateKey, Signature};
-use core_executor::system_contract::{
-    metadata::metadata_abi::{AppendMetadataCall, MetadataContractCalls},
-    METADATA_CONTRACT_ADDRESS,
-};
 
 use protocol::types::{
-    Block, Eip1559Transaction, Hasher, Metadata, RichBlock, SignedTransaction, TransactionAction,
+    Block, Eip1559Transaction, Hasher, RichBlock, SignedTransaction, TransactionAction,
     UnsignedTransaction, UnverifiedTransaction, BASE_FEE_PER_GAS,
 };
 
@@ -18,39 +12,18 @@ pub(crate) trait ChainSpecExt {
 }
 
 impl ChainSpecExt for ChainSpec {
-    fn generate_genesis_block(&self, genesis_key: Secp256k1RecoverablePrivateKey) -> RichBlock {
-        let metadata_0 = self.params.clone();
-        let metadata_1 = {
-            let mut tmp = metadata_0.clone();
-            tmp.epoch = metadata_0.epoch + 1;
-            tmp.version.start = metadata_0.version.end + 1;
-            tmp.version.end = tmp.version.start + metadata_0.version.end - 1;
-            tmp
+    fn generate_genesis_block(&self, _genesis_key: Secp256k1RecoverablePrivateKey) -> RichBlock {
+        let txs = vec![];
+        let block = Block {
+            header:    self.genesis.build_header(),
+            tx_hashes: vec![],
         };
-        let data_0 = encode_metadata(metadata_0);
-        let data_1 = encode_metadata(metadata_1);
-
-        let chain_id = self.genesis.chain_id;
-
-        let txs: Vec<_> = [data_0, data_1]
-            .into_iter()
-            .enumerate()
-            .map(|(index, data)| {
-                let nonce = index as u64;
-                let action = TransactionAction::Call(METADATA_CONTRACT_ADDRESS);
-                let utx = build_unverified_transaction(nonce, action, data);
-                build_transaction(&genesis_key, utx, chain_id)
-            })
-            .collect();
-
-        let header = self.genesis.build_header();
-        let tx_hashes = txs.iter().map(|tx| tx.transaction.hash).collect::<Vec<_>>();
-        let block = Block { header, tx_hashes };
 
         RichBlock { block, txs }
     }
 }
 
+#[allow(dead_code)]
 fn build_unverified_transaction(
     nonce: u64,
     action: TransactionAction,
@@ -69,6 +42,7 @@ fn build_unverified_transaction(
     UnsignedTransaction::Eip1559(tx)
 }
 
+#[allow(dead_code)]
 fn build_transaction(
     priv_key: &Secp256k1RecoverablePrivateKey,
     tx: UnsignedTransaction,
@@ -89,11 +63,4 @@ fn build_transaction(
     .calc_hash();
 
     SignedTransaction::from_unverified(utx, None).unwrap()
-}
-
-fn encode_metadata(metadata: Metadata) -> Vec<u8> {
-    MetadataContractCalls::AppendMetadata(AppendMetadataCall {
-        metadata: metadata.into(),
-    })
-    .encode()
 }

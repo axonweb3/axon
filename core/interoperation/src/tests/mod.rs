@@ -60,7 +60,7 @@ impl TestHandle {
         )
         .unwrap();
 
-        core_executor::system_contract::init(inner_db, &mut backend);
+        core_executor::system_contract::init_system_contract_db(inner_db, &mut backend);
 
         handle
     }
