@@ -13,10 +13,11 @@ use common_config_parser::types::{
     Config, ConfigValueParser,
 };
 use common_crypto::Secp256k1RecoverablePrivateKey;
+use core_executor::{AxonExecutorApplyAdapter, MetadataHandle};
 use protocol::{
     codec::hex_decode,
     tokio,
-    types::{RichBlock, H256},
+    types::{Header, Metadata, Proposal, RichBlock, H256},
 };
 
 use crate::{components::chain_spec::ChainSpecExt as _, execute_transactions, DatabaseGroup};
@@ -116,6 +117,8 @@ async fn check_genesis_data<'a>(case: &TestCase<'a>) {
     };
     let genesis = chain_spec.generate_genesis_block(key);
 
+    assert!(genesis.txs.is_empty());
+
     println!("checking genesis hash");
     check_hashes(
         case.chain_name,
@@ -164,6 +167,10 @@ async fn check_genesis_data<'a>(case: &TestCase<'a>) {
     ])
     .expect("execute transactions");
 
+    let mut header = genesis.block.header.clone();
+    header.state_root = resp.state_root;
+    header.receipts_root = resp.receipt_root;
+
     println!("checking state root");
     check_hashes(
         case.chain_name,
@@ -180,7 +187,33 @@ async fn check_genesis_data<'a>(case: &TestCase<'a>) {
         resp.receipt_root,
     );
 
+    println!("checking state");
+    check_state(&chain_spec, &header, &db_group);
+
     set_current_dir(current_dir).expect("change back to original work directory");
+}
+
+fn check_state(spec: &ChainSpec, genesis_header: &Header, db_group: &DatabaseGroup) {
+    let backend = AxonExecutorApplyAdapter::from_root(
+        genesis_header.state_root,
+        db_group.trie_db(),
+        db_group.storage(),
+        Proposal::new_without_state_root(genesis_header).into(),
+    )
+    .unwrap();
+
+    let metadata_0 = spec.params.clone();
+    let metadata_1 = {
+        let mut tmp = metadata_0.clone();
+        tmp.epoch = metadata_0.epoch + 1;
+        tmp.version.start = metadata_0.version.end + 1;
+        tmp.version.end = tmp.version.start + metadata_0.version.end - 1;
+        tmp
+    };
+    let handle = MetadataHandle::new(backend.get_metadata_root());
+
+    assert_metadata(metadata_0, handle.get_metadata_by_epoch(0).unwrap());
+    assert_metadata(metadata_1, handle.get_metadata_by_epoch(1).unwrap());
 }
 
 fn check_hashes(chain: &str, name: &str, expected_str: &str, actual: H256) {
@@ -190,6 +223,13 @@ fn check_hashes(chain: &str, name: &str, expected_str: &str, actual: H256) {
         expected, actual,
         "hash {name} of chain {chain} is changed, expect {expected:#x}, but got {actual:#x}",
     );
+}
+
+fn assert_metadata(metadata_0: Metadata, metadata_1: Metadata) {
+    assert_eq!(metadata_0.version, metadata_1.version);
+    assert_eq!(metadata_0.epoch, metadata_1.epoch);
+    assert_eq!(metadata_0.verifier_list, metadata_1.verifier_list);
+    assert_eq!(metadata_0.consensus_config, metadata_1.consensus_config);
 }
 
 fn copy_dir(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> {
