@@ -1,4 +1,4 @@
-use protocol::types::{CkbRelatedInfo, HardforkInfo, Metadata, H160, H256};
+use protocol::types::{CkbRelatedInfo, ConsensusConfig, HardforkInfo, Metadata, H160, H256};
 use protocol::ProtocolResult;
 
 use std::sync::Arc;
@@ -61,5 +61,9 @@ impl MetadataHandle {
 
         HARDFORK_INFO.swap(Arc::new(hardfork));
         Ok(())
+    }
+
+    pub fn get_consensus_config(&self) -> ProtocolResult<ConsensusConfig> {
+        MetadataStore::new(self.root)?.get_consensus_config()
     }
 }
