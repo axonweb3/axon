@@ -9,7 +9,6 @@ RUN set -eux; \
         cmake \
         clang \
         llvm \
-        jq \
         gcc; \
     rm -rf /var/lib/apt/lists/*
 
@@ -17,6 +16,11 @@ RUN cd /build && cargo build --release
 
 
 FROM debian:bookworm-20230612-slim
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends curl jq \
+ && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 COPY --from=builder \

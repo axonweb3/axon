@@ -107,17 +107,18 @@ jobs:
 
     - name: Review devtools/chain/docker-compose.yml
       run: |
-        echo "====== devtools/chain/docker-compose.yml ======\n"
+        echo "====== devtools/chain/docker-compose.yml ======"
         cat docker-compose.yml
-        echo "===============================================\n"
+        echo "==============================================="
+        docker -v
 
-    - name: Run docker compose up and a simple test
+    - name: Run docker compose (v2) up and check the Axon node's health
       run: |
-        docker-compose up -d
-        docker-compose ps
-        docker-compose logs --tail 6
+        echo "start containers in detached mode and wait for them to become healthy"
+        docker compose up -d --wait
 
-        echo "TODO: health_check" && sleep 6
+        docker compose ps
+        docker compose logs --tail 6
 
         npx zx <<'EOF'
         import { waitXBlocksPassed } from '../ci/scripts/helper.js'
