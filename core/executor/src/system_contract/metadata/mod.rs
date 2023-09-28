@@ -34,7 +34,7 @@ lazy_static::lazy_static! {
     static ref CKB_RELATED_INFO_KEY: H256 = Hasher::digest("ckb_related_info");
     pub static ref CONSENSUS_CONFIG: H256 = Hasher::digest("consensus_config");
     pub static ref HARDFORK_KEY: H256 = Hasher::digest("hardfork");
-    static ref HARDFORK_INFO: ArcSwap<H256> = ArcSwap::new(Arc::new(H256::zero()));
+    pub static ref HARDFORK_INFO: ArcSwap<H256> = ArcSwap::new(Arc::new(H256::zero()));
     static ref METADATA_CACHE: RwLock<LruCache<Epoch, Metadata>> =  RwLock::new(LruCache::new(METADATA_CACHE_SIZE));
 }
 
@@ -129,6 +129,8 @@ impl<Adapter: ExecutorAdapter + ApplyBackend> SystemContract<Adapter>
         HARDFORK_INFO.swap(Arc::new(hardfork));
 
         if block_number.is_zero() {
+            let changes = generate_mpt_root_changes(adapter, Self::ADDRESS);
+            adapter.apply(changes, vec![], false);
             return;
         }
 

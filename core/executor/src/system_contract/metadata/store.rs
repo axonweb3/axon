@@ -174,7 +174,7 @@ impl MetadataStore {
         MetadataInner::decode(raw)
     }
 
-    fn get_consensus_config(&self) -> ProtocolResult<ConsensusConfig> {
+    pub fn get_consensus_config(&self) -> ProtocolResult<ConsensusConfig> {
         let raw = self
             .trie
             .get(CONSENSUS_CONFIG.as_bytes())?

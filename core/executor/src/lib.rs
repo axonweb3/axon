@@ -10,7 +10,10 @@ mod utils;
 pub use crate::adapter::{
     AxonExecutorApplyAdapter, AxonExecutorReadOnlyAdapter, MPTTrie, RocksTrieDB,
 };
-pub use crate::system_contract::{metadata::MetadataHandle, DataProvider};
+pub use crate::system_contract::{
+    metadata::{MetadataHandle, HARDFORK_INFO},
+    DataProvider,
+};
 pub use crate::utils::{code_address, decode_revert_msg, DefaultFeeAllocator, FeeInlet};
 
 use std::cell::RefCell;
@@ -18,6 +21,7 @@ use std::collections::BTreeMap;
 use std::iter::FromIterator;
 
 use arc_swap::ArcSwap;
+use common_config_parser::types::spec::HardforkName;
 use evm::executor::stack::{MemoryStackState, PrecompileFn, StackExecutor, StackSubstateMetadata};
 use evm::CreateScheme;
 
@@ -69,7 +73,7 @@ impl Executor for AxonExecutor {
         value: U256,
         data: Vec<u8>,
     ) -> TxResp {
-        let config = Config::london();
+        let config = self.config();
         let metadata = StackSubstateMetadata::new(gas_limit, &config);
         let state = MemoryStackState::new(metadata, backend);
         let precompiles = build_precompile_set();
@@ -134,7 +138,7 @@ impl Executor for AxonExecutor {
         let mut hashes = Vec::with_capacity(txs_len);
         let (mut gas, mut fee) = (0u64, U256::zero());
         let precompiles = build_precompile_set();
-        let config = Config::london();
+        let config = self.config();
 
         self.init_local_system_contract_roots(adapter);
 
@@ -314,6 +318,23 @@ impl AxonExecutor {
         CURRENT_METADATA_ROOT.with(|root| {
             *root.borrow_mut() = adapter.storage(METADATA_CONTRACT_ADDRESS, *METADATA_ROOT_KEY);
         });
+    }
+
+    fn config(&self) -> Config {
+        let mut config = Config::london();
+        let create_contract_limit = {
+            let latest_hardfork_info = &**HARDFORK_INFO.load();
+            let enable_contract_limit_flag = H256::from_low_u64_be(HardforkName::Andromeda as u64);
+            if latest_hardfork_info & &enable_contract_limit_flag == enable_contract_limit_flag {
+                let handle = MetadataHandle::new(CURRENT_METADATA_ROOT.with(|r| *r.borrow()));
+                let config = handle.get_consensus_config().unwrap();
+                Some(config.max_contract_limit as usize)
+            } else {
+                None
+            }
+        };
+        config.create_contract_limit = create_contract_limit;
+        config
     }
 
     #[cfg(test)]
