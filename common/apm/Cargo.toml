@@ -10,7 +10,6 @@ arc-swap = "1.6"
 axum = "0.6"
 beef = "0.5"
 derive_more = "0.99"
-hyper = { version = "0.14", features = ["http1", "server"] }
 lazy_static = "1.4"
 log = "0.4"
 minstant = "0.1"
