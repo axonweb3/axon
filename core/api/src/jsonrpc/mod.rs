@@ -6,8 +6,10 @@ mod ws_subscription;
 use std::{collections::HashMap, sync::Arc};
 
 use ckb_jsonrpc_types::{CellInfo, HeaderView as CkbHeaderView, OutPoint};
+use hyper::{header::CONTENT_TYPE, Method};
 use jsonrpsee::server::{ServerBuilder, ServerHandle};
 use jsonrpsee::{core::RpcResult, proc_macros::rpc};
+use tower_http::cors::{Any as CorsAny, CorsLayer};
 
 use common_config_parser::types::{spec::HardforkName, Config};
 use protocol::traits::APIAdapter;
@@ -268,11 +270,18 @@ pub async fn run_jsonrpc_server<Adapter: APIAdapter + 'static>(
     rpc.merge(ckb_light_client_rpc).unwrap();
 
     if let Some(addr) = config.rpc.http_listening_address {
+        let cors = CorsLayer::new()
+            .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
+            .allow_origin(CorsAny)
+            .allow_headers([CONTENT_TYPE]);
+        let middleware = tower::ServiceBuilder::new().layer(cors);
+
         let server = ServerBuilder::new()
             .http_only()
             .max_request_body_size(config.rpc.max_payload_size)
             .max_response_body_size(config.rpc.max_payload_size)
             .max_connections(config.rpc.maxconn)
+            .set_middleware(middleware)
             .build(addr)
             .await
             .map_err(|e| APIError::HttpServer(e.to_string()))?;
