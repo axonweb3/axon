@@ -1,7 +1,7 @@
 name: PR Lint
 
 concurrency:
-  group: Conventional PR-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 on:
