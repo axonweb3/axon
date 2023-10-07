@@ -1,9 +1,8 @@
 use common_config_parser::types::spec::ChainSpec;
-use common_crypto::{PrivateKey as _, Secp256k1RecoverablePrivateKey, Signature};
+use common_crypto::Secp256k1RecoverablePrivateKey;
 
 use protocol::types::{
-    Block, Eip1559Transaction, Hasher, RichBlock, SignedTransaction, TransactionAction,
-    UnsignedTransaction, UnverifiedTransaction, BASE_FEE_PER_GAS,
+    Block, Eip1559Transaction, RichBlock, TransactionAction, UnsignedTransaction, BASE_FEE_PER_GAS,
 };
 
 pub(crate) trait ChainSpecExt {
@@ -40,27 +39,4 @@ fn build_unverified_transaction(
         action,
     };
     UnsignedTransaction::Eip1559(tx)
-}
-
-#[allow(dead_code)]
-fn build_transaction(
-    priv_key: &Secp256k1RecoverablePrivateKey,
-    tx: UnsignedTransaction,
-    id: u64,
-) -> SignedTransaction {
-    let signature = priv_key.sign_message(
-        &Hasher::digest(tx.encode(Some(id), None))
-            .as_bytes()
-            .try_into()
-            .unwrap(),
-    );
-    let utx = UnverifiedTransaction {
-        unsigned:  tx,
-        signature: Some(signature.to_bytes().into()),
-        chain_id:  Some(id),
-        hash:      Default::default(),
-    }
-    .calc_hash();
-
-    SignedTransaction::from_unverified(utx, None).unwrap()
 }

@@ -20,7 +20,9 @@ use protocol::{
     types::{Header, Metadata, Proposal, RichBlock, H256},
 };
 
-use crate::{components::chain_spec::ChainSpecExt as _, execute_transactions, DatabaseGroup};
+use crate::{
+    components::chain_spec::ChainSpecExt as _, execute_genesis_transactions, DatabaseGroup,
+};
 
 const DEV_CONFIG_DIR: &str = "../../devtools/chain";
 
@@ -162,7 +164,7 @@ async fn check_genesis_data<'a>(case: &TestCase<'a>) {
         tmp.version.end = tmp.version.start + metadata_0.version.end - 1;
         tmp
     };
-    let resp = execute_transactions(&genesis, &db_group, &chain_spec.accounts, &[
+    let resp = execute_genesis_transactions(&genesis, &db_group, &chain_spec.accounts, &[
         metadata_0, metadata_1,
     ])
     .expect("execute transactions");

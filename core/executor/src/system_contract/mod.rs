@@ -10,7 +10,6 @@ pub use crate::system_contract::ckb_light_client::{
     CkbLightClientContract, CKB_LIGHT_CLIENT_CONTRACT_ADDRESS,
 };
 pub use crate::system_contract::image_cell::{ImageCellContract, IMAGE_CELL_CONTRACT_ADDRESS};
-use crate::system_contract::metadata::MetadataStore;
 pub use crate::system_contract::metadata::{
     check_ckb_related_info_exist, MetadataContract, METADATA_CONTRACT_ADDRESS,
 };
@@ -34,7 +33,7 @@ use protocol::{ckb_blake2b_256, ProtocolResult};
 
 use crate::adapter::RocksTrieDB;
 use crate::system_contract::{
-    ckb_light_client::CkbHeaderReader, image_cell::ImageCellReader,
+    ckb_light_client::CkbHeaderReader, image_cell::ImageCellReader, metadata::MetadataStore,
     utils::generate_mpt_root_changes,
 };
 

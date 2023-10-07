@@ -456,7 +456,7 @@ async fn execute_genesis(
         tmp
     };
 
-    let resp = execute_transactions(&partial_genesis, db_group, &spec.accounts, &[
+    let resp = execute_genesis_transactions(&partial_genesis, db_group, &spec.accounts, &[
         metadata_0, metadata_1,
     ])?;
 
@@ -474,7 +474,7 @@ async fn execute_genesis(
     Ok(partial_genesis)
 }
 
-fn execute_transactions(
+fn execute_genesis_transactions(
     rich: &RichBlock,
     db_group: &DatabaseGroup,
     accounts: &[InitialAccount],
