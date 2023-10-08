@@ -3,7 +3,7 @@
 pragma solidity >=0.7.0;
 
 // **Notice**
-// The solidity contract only define the interface of metadata contract. The real
+// This solidity contract only defines the interface of metadata contract. The real
 // implementation is in `core/executor/src/system_contract/metadata`.
 
 contract MetadataManager {
