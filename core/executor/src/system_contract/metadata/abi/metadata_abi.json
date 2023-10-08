@@ -113,11 +113,6 @@
               },
               {
                 "internalType": "uint64",
-                "name": "gas_price",
-                "type": "uint64"
-              },
-              {
-                "internalType": "uint64",
                 "name": "interval",
                 "type": "uint64"
               }
@@ -219,11 +214,6 @@
           {
             "internalType": "uint64",
             "name": "gas_limit",
-            "type": "uint64"
-          },
-          {
-            "internalType": "uint64",
-            "name": "gas_price",
             "type": "uint64"
           },
           {

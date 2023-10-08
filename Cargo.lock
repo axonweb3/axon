@@ -1746,6 +1746,7 @@ dependencies = [
  "core-rpc-client",
  "core-storage",
  "criterion",
+ "env_logger",
  "ethabi 18.0.0",
  "ethabi-contract",
  "ethabi-derive",

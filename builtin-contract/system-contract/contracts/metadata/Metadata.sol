@@ -37,7 +37,6 @@ library MetadataType {
         uint64 tx_num_limit;
         uint64 max_tx_size;
         uint64 gas_limit;
-        uint64 gas_price;
         uint64 interval;
     }
 

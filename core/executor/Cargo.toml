@@ -42,6 +42,7 @@ common-crypto = { path = "../../common/crypto" }
 core-rpc-client = { path = "../rpc-client" }
 core-storage = { path = "../storage" }
 criterion = "0.5"
+env_logger = "0.10"
 ethabi = "18.0"
 ethabi-contract = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }
 ethabi-derive = { git = "https://github.com/rust-ethereum/ethabi.git", rev = "7edf185" }

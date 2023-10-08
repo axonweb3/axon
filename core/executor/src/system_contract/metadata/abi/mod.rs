@@ -42,7 +42,6 @@ impl From<ConsensusConfig> for metadata_abi::ConsensusConfig {
             tx_num_limit:    value.tx_num_limit,
             max_tx_size:     value.max_tx_size,
             gas_limit:       value.gas_limit,
-            gas_price:       value.gas_price,
             interval:        value.interval,
         }
     }
@@ -58,7 +57,6 @@ impl From<metadata_abi::ConsensusConfig> for ConsensusConfig {
             tx_num_limit:    value.tx_num_limit,
             max_tx_size:     value.max_tx_size,
             gas_limit:       value.gas_limit,
-            gas_price:       value.gas_price,
             interval:        value.interval,
         }
     }

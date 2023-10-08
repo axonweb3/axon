@@ -7,7 +7,6 @@ mod ecrecover;
 mod get_cell;
 mod get_header;
 mod identity;
-mod metadata;
 mod modexp;
 mod ripemd160;
 mod rsa;

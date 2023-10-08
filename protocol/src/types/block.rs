@@ -362,7 +362,6 @@ mod tests {
             }],
             consensus_config: ConsensusConfig {
                 gas_limit: 4294967295,
-                gas_price: 1,
                 interval: 3000,
                 propose_ratio: 15,
                 prevote_ratio: 10,
