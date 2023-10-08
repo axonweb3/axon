@@ -51,7 +51,7 @@ library MetadataType {
 }
 
 // **Notice**
-// This solidity contract only defines the interface of metadata contract. The real
+// This file only defines the interface of metadata contract. The real
 // implementation is in `core/executor/src/system_contract/metadata`.
 interface MetadataManager {
     function appendMetadata(MetadataType.Metadata memory metadata) external;

@@ -17,6 +17,9 @@ library ImageCellType {
     }
 }
 
+// **Notice**
+// This file only defines the interface of image cell contract. The real
+// implementation is in `core/executor/src/system_contract/image_cell`.
 interface ImageCell {
     function setState(bool allowRead) public;
 

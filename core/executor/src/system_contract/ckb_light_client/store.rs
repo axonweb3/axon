@@ -24,7 +24,7 @@ use crate::{adapter::RocksTrieDB, MPTTrie, CURRENT_HEADER_CELL_ROOT};
 /// client and image cell contract account as follow:
 ///
 /// **CKB light client Account**
-/// | address | `0xFFfffFFfFFfffFfFffFFfFfFfFffFfffFFFFFf02`|
+/// | address | `0xFfFfFFFfFFfFFFFfFFFFffFfFFfffFFFfffffF02`|
 /// | nonce   | `0x0`                                       |
 /// | balance | `0x0`                                       |
 /// | storage | `storage_root`                              |
@@ -33,7 +33,7 @@ use crate::{adapter::RocksTrieDB, MPTTrie, CURRENT_HEADER_CELL_ROOT};
 /// | HEADER_CELL_ROOT_KEY | HeaderCell MPT root |
 ///
 /// **Image cell Account**
-/// | address | `0xFFfffFFfFFfffFfFffFFfFfFfFffFfffFFFFFf03`|
+/// | address | `0xffffffffFfFFffffFFFfffFfFFfFffFffFFFff03`|
 /// | nonce   | `0x0`                                       |
 /// | balance | `0x0`                                       |
 /// | storage | `storage_root`                              |
