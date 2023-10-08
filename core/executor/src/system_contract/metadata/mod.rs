@@ -90,7 +90,7 @@ impl<Adapter: ExecutorAdapter + ApplyBackend> SystemContract<Adapter>
                 }
 
                 exec_try!(
-                    store.set_ckb_related_info(&c.ckb_related_info.into()),
+                    store.set_ckb_related_info(&c.info.into()),
                     gas_limit,
                     "[metadata] set ckb related info"
                 );
@@ -101,11 +101,6 @@ impl<Adapter: ExecutorAdapter + ApplyBackend> SystemContract<Adapter>
                     gas_limit,
                     "[metadata] update consensus config"
                 );
-            }
-            // TODO: Metadata doesn't accept all abi calls so far.
-            _ => {
-                log::error!("[metadata] invalid tx data");
-                return revert_resp(gas_limit);
             }
         }
 

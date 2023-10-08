@@ -4,10 +4,7 @@ pragma solidity >=0.8.0;
 
 import "../libraries/CkbType.sol";
 
-contract ImageCell {
-    using CkbType for CkbType.CellInfo;
-    using CkbType for CkbType.OutPoint;
-
+library ImageCellType {
     struct BlockUpdate {
         uint64 blockNumber;
         CkbType.OutPoint[] txInputs;
@@ -18,10 +15,12 @@ contract ImageCell {
         CkbType.OutPoint[] txInputs;
         CkbType.OutPoint[] txOutputs;
     }
+}
 
-    function setState(bool allowRead) public view {}
+interface ImageCell {
+    function setState(bool allowRead) public;
 
-    function update(BlockUpdate[] calldata blocks) public view {}
+    function update(ImageCellType.BlockUpdate[] calldata blocks) public;
 
-    function rollback(BlockRollBlack[] calldata blocks) public view {}
+    function rollback(ImageCellType.BlockRollBlack[] calldata blocks) public;
 }

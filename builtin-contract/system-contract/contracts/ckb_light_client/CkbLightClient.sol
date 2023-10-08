@@ -3,12 +3,10 @@ pragma solidity >=0.8.0;
 
 import "../libraries/CkbType.sol";
 
-contract CkbLightClient {
-    using CkbType for CkbType.Header;
-    
-    function setState(bool allowRead) public view {}
+interface CkbLightClient {
+    function setState(bool allowRead) public;
 
-    function update(CkbType.Header[] calldata headers) public view {}
+    function update(CkbTypes.Header[] calldata headers) public;
 
-    function rollback(bytes32[] calldata blockHashes) public view {}
+    function rollback(bytes32[] calldata blockHashes) public;
 }

@@ -16,7 +16,7 @@
                 "type": "uint64"
               }
             ],
-            "internalType": "struct MetadataManager.MetadataVersion",
+            "internalType": "struct MetadataType.MetadataVersion",
             "name": "version",
             "type": "tuple"
           },
@@ -53,7 +53,7 @@
                 "type": "uint32"
               }
             ],
-            "internalType": "struct MetadataManager.ValidatorExtend[]",
+            "internalType": "struct MetadataType.ValidatorExtend[]",
             "name": "verifier_list",
             "type": "tuple[]"
           },
@@ -70,7 +70,7 @@
                 "type": "uint64"
               }
             ],
-            "internalType": "struct MetadataManager.ProposeCount[]",
+            "internalType": "struct MetadataType.ProposeCount[]",
             "name": "propose_counter",
             "type": "tuple[]"
           },
@@ -122,12 +122,12 @@
                 "type": "uint64"
               }
             ],
-            "internalType": "struct MetadataManager.ConsensusConfig",
+            "internalType": "struct MetadataType.ConsensusConfig",
             "name": "consensus_config",
             "type": "tuple"
           }
         ],
-        "internalType": "struct MetadataManager.Metadata",
+        "internalType": "struct MetadataType.Metadata",
         "name": "metadata",
         "type": "tuple"
       }
@@ -140,145 +140,46 @@
   {
     "inputs": [
       {
-        "internalType": "uint64",
-        "name": "epoch",
-        "type": "uint64"
-      }
-    ],
-    "name": "getMetadata",
-    "outputs": [
-      {
         "components": [
           {
-            "components": [
-              {
-                "internalType": "uint64",
-                "name": "start",
-                "type": "uint64"
-              },
-              {
-                "internalType": "uint64",
-                "name": "end",
-                "type": "uint64"
-              }
-            ],
-            "internalType": "struct MetadataManager.MetadataVersion",
-            "name": "version",
-            "type": "tuple"
+            "internalType": "bytes32",
+            "name": "metadata_type_id",
+            "type": "bytes32"
           },
           {
-            "internalType": "uint64",
-            "name": "epoch",
-            "type": "uint64"
+            "internalType": "bytes32",
+            "name": "checkpoint_type_id",
+            "type": "bytes32"
           },
           {
-            "components": [
-              {
-                "internalType": "bytes",
-                "name": "bls_pub_key",
-                "type": "bytes"
-              },
-              {
-                "internalType": "bytes",
-                "name": "pub_key",
-                "type": "bytes"
-              },
-              {
-                "internalType": "address",
-                "name": "address_",
-                "type": "address"
-              },
-              {
-                "internalType": "uint32",
-                "name": "propose_weight",
-                "type": "uint32"
-              },
-              {
-                "internalType": "uint32",
-                "name": "vote_weight",
-                "type": "uint32"
-              }
-            ],
-            "internalType": "struct MetadataManager.ValidatorExtend[]",
-            "name": "verifier_list",
-            "type": "tuple[]"
+            "internalType": "bytes32",
+            "name": "xudt_args",
+            "type": "bytes32"
           },
           {
-            "components": [
-              {
-                "internalType": "address",
-                "name": "address_",
-                "type": "address"
-              },
-              {
-                "internalType": "uint64",
-                "name": "count",
-                "type": "uint64"
-              }
-            ],
-            "internalType": "struct MetadataManager.ProposeCount[]",
-            "name": "propose_counter",
-            "type": "tuple[]"
+            "internalType": "bytes32",
+            "name": "stake_smt_type_id",
+            "type": "bytes32"
           },
           {
-            "components": [
-              {
-                "internalType": "uint64",
-                "name": "propose_ratio",
-                "type": "uint64"
-              },
-              {
-                "internalType": "uint64",
-                "name": "prevote_ratio",
-                "type": "uint64"
-              },
-              {
-                "internalType": "uint64",
-                "name": "precommit_ratio",
-                "type": "uint64"
-              },
-              {
-                "internalType": "uint64",
-                "name": "brake_ratio",
-                "type": "uint64"
-              },
-              {
-                "internalType": "uint64",
-                "name": "tx_num_limit",
-                "type": "uint64"
-              },
-              {
-                "internalType": "uint64",
-                "name": "max_tx_size",
-                "type": "uint64"
-              },
-              {
-                "internalType": "uint64",
-                "name": "gas_limit",
-                "type": "uint64"
-              },
-              {
-                "internalType": "uint64",
-                "name": "gas_price",
-                "type": "uint64"
-              },
-              {
-                "internalType": "uint64",
-                "name": "interval",
-                "type": "uint64"
-              }
-            ],
-            "internalType": "struct MetadataManager.ConsensusConfig",
-            "name": "consensus_config",
-            "type": "tuple"
+            "internalType": "bytes32",
+            "name": "delegate_smt_type_id",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "reward_smt_type_id",
+            "type": "bytes32"
           }
         ],
-        "internalType": "struct MetadataManager.Metadata",
-        "name": "",
+        "internalType": "struct MetadataType.CkbRelatedInfo",
+        "name": "info",
         "type": "tuple"
       }
     ],
-    "stateMutability": "view",
+    "name": "setCkbRelatedInfo",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -331,59 +232,14 @@
             "type": "uint64"
           }
         ],
-        "internalType": "struct MetadataManager.ConsensusConfig",
+        "internalType": "struct MetadataType.ConsensusConfig",
         "name": "config",
         "type": "tuple"
       }
     ],
     "name": "updateConsensusConfig",
     "outputs": [],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "components": [
-          {
-            "internalType": "bytes32",
-            "name": "metadata_type_id",
-            "type": "bytes32"
-          },
-          {
-            "internalType": "bytes32",
-            "name": "checkpoint_type_id",
-            "type": "bytes32"
-          },
-          {
-            "internalType": "bytes32",
-            "name": "xudt_args",
-            "type": "bytes32"
-          },
-          {
-            "internalType": "bytes32",
-            "name": "stake_smt_type_id",
-            "type": "bytes32"
-          },
-          {
-            "internalType": "bytes32",
-            "name": "delegate_smt_type_id",
-            "type": "bytes32"
-          },
-          {
-            "internalType": "bytes32",
-            "name": "reward_smt_type_id",
-            "type": "bytes32"
-          }
-        ],
-        "internalType": "struct MetadataManager.CkbRelatedInfo",
-        "name": "ckb_related_info",
-        "type": "tuple"
-      }
-    ],
-    "name": "setCkbRelatedInfo",
-    "outputs": [],
-    "stateMutability": "view",
+    "stateMutability": "nonpayable",
     "type": "function"
   }
 ]

@@ -157,9 +157,7 @@ mod tests {
             reward_smt_type_id:   H256::from([6u8; 32]),
         }
         .into();
-        let call = metadata_abi::SetCkbRelatedInfoCall {
-            ckb_related_info: info,
-        };
+        let call = metadata_abi::SetCkbRelatedInfoCall { info };
 
         let raw = AbiEncode::encode(call.clone());
         let decode = metadata_abi::SetCkbRelatedInfoCall::decode(raw).unwrap();
