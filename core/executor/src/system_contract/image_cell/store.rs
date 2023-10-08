@@ -17,6 +17,41 @@ pub struct CellKey {
     pub index:   u32,
 }
 
+/// The CKB light client store does not follow the storage layout of EVM smart
+/// contract. It use MPT called HeaderCell MPT with the following layout:
+/// | key                   | value                    |
+/// | --------------------- | ------------------------ |
+/// | CKB Header Hash       | `CkbHeader.encode()`     |
+/// | ...                   | ...                      |
+/// | CellOutpoint.encode() | `CellInfo.encode()`      |
+/// | ...                   | ...                      |
+///
+/// All these data are stored in a the `c10` column family of RocksDB, and the
+/// root of the HeaderCell MPT is stored in the storage MPT of the CKB light
+/// client and image cell contract account as follow:
+///
+/// **CKB light client Account**
+/// | address | `0xFFfffFFfFFfffFfFffFFfFfFfFffFfffFFFFFf02`|
+/// | nonce   | `0x0`                                       |
+/// | balance | `0x0`                                       |
+/// | storage | `storage_root`                              |
+///
+/// **CKB light client Storage MPT**
+/// | HEADER_CELL_ROOT_KEY | HeaderCell MPT root |
+///
+/// **Image cell Account**
+/// | address | `0xFFfffFFfFFfffFfFffFFfFfFfFffFfffFFFFFf03`|
+/// | nonce   | `0x0`                                       |
+/// | balance | `0x0`                                       |
+/// | storage | `storage_root`                              |
+///
+/// **Image cell Storage MPT**
+/// | HEADER_CELL_ROOT_KEY | HeaderCell MPT root |
+///
+/// **Notice**: The `storage_root` of the CKB light client and image cell
+/// contract Account are same, so once the HeaderCell MPT has been changed, the
+/// `storage_root` of the CKB light client and image cell both need to be
+/// updated.
 pub struct ImageCellStore {
     pub trie: MPTTrie<RocksTrieDB>,
 }

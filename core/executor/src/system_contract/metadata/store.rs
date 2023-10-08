@@ -13,6 +13,28 @@ use crate::{adapter::RocksTrieDB, MPTTrie, CURRENT_METADATA_ROOT};
 
 use super::metadata_abi::ConsensusConfig;
 
+/// The metadata store does not follow the storage layout of EVM smart contract.
+/// It use MPT called Metadata MPT with the following layout:
+/// | key                  | value                    |
+/// | -------------------- | ------------------------ |
+/// | EPOCH_SEGMENT_KEY    | `EpochSegment.encode()`  |
+/// | CKB_RELATED_INFO_KEY | `CkbRelatedInfo.encode()`|
+/// | epoch_0.be_bytes()   | `Metadata.encode()`      |
+/// | epoch_1.be_bytes()   | `Metadata.encode()`      |
+/// | ...                  | ...                      |
+///
+/// All these data are stored in a the `c9` column family of RocksDB, and the
+/// root of the Metadata MPT is stored in the storage MPT of the metadata
+/// contract Account as follow:
+///
+/// **Metadata Account**
+/// | address | `0xFFfffFFfFFfffFfFffFFfFfFfFffFfffFFFFFf01`|
+/// | nonce   | `0x0`                                       |
+/// | balance | `0x0`                                       |
+/// | storage | `storage_root`                              |
+///
+/// **Metadata Storage MPT**
+/// | METADATA_ROOT_KEY | Metadata MPT root |
 pub struct MetadataStore {
     pub trie: MPTTrie<RocksTrieDB>,
 }
