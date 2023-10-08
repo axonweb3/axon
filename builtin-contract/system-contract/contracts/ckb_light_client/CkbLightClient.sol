@@ -7,9 +7,9 @@ import "../libraries/CkbType.sol";
 // This file only defines the interface of CKB light client contract. The real
 // implementation is in `core/executor/src/system_contract/ckb_light_client`.
 interface CkbLightClient {
-    function setState(bool allowRead) public;
+    function setState(bool allowRead) external;
 
-    function update(CkbTypes.Header[] calldata headers) public;
+    function update(CkbType.Header[] calldata headers) external;
 
-    function rollback(bytes32[] calldata blockHashes) public;
+    function rollback(bytes32[] calldata blockHashes) external;
 }

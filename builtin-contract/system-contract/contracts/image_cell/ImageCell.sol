@@ -21,9 +21,9 @@ library ImageCellType {
 // This file only defines the interface of image cell contract. The real
 // implementation is in `core/executor/src/system_contract/image_cell`.
 interface ImageCell {
-    function setState(bool allowRead) public;
+    function setState(bool allowRead) external;
 
-    function update(ImageCellType.BlockUpdate[] calldata blocks) public;
+    function update(ImageCellType.BlockUpdate[] calldata blocks) external;
 
-    function rollback(ImageCellType.BlockRollBlack[] calldata blocks) public;
+    function rollback(ImageCellType.BlockRollBlack[] calldata blocks) external;
 }
