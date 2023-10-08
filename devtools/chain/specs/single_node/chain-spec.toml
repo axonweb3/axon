@@ -74,7 +74,6 @@ brake_ratio = 10
 tx_num_limit = 20000
 max_tx_size = 409600000
 gas_limit = 4294967295000
-gas_price = 1
 interval = 3000
 
 [[params.verifier_list]]
