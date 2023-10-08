@@ -22,7 +22,6 @@ static ROCKSDB_PATH: &str = "./free-space/system-contract/metadata";
 
 #[test]
 fn test_write_functions() {
-    env_logger::init();
     let vicinity = gen_vicinity();
     let mut backend = MemoryBackend::new(&vicinity, BTreeMap::new());
 
@@ -48,7 +47,6 @@ fn test_init<'a>(backend: &mut MemoryBackend<'a>, executor: &MetadataContract<Me
     let addr = H160::from_str("0xf000000000000000000000000000000000000000").unwrap();
     let tx = prepare_tx_1(&addr);
     let r = executor.exec_(backend, &tx);
-    println!("{:?}", r);
     assert!(r.exit_reason.is_succeed());
 }
 

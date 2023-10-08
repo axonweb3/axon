@@ -1910,6 +1910,7 @@ dependencies = [
  "core-storage",
  "ethers-core",
  "futures",
+ "hasher",
  "log",
  "rlp",
  "serde",

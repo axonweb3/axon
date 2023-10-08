@@ -1,22 +1,29 @@
 use std::{
+    collections::BTreeMap,
     convert::AsRef,
     env::{current_dir, set_current_dir},
     fs, io,
     path::{Path, PathBuf},
     str::FromStr,
+    sync::Arc,
 };
 
 use clap::{builder::TypedValueParser as _, Command};
+use hasher::HasherKeccak;
 
 use common_config_parser::types::{
     spec::{ChainSpec, ChainSpecValueParser, PrivateKeyFileValueParser},
     Config, ConfigValueParser,
 };
 use common_crypto::Secp256k1RecoverablePrivateKey;
-use core_executor::{AxonExecutorApplyAdapter, MetadataHandle};
+use core_executor::{
+    system_contract::metadata::{segment::EpochSegment, EPOCH_SEGMENT_KEY},
+    AxonExecutorApplyAdapter, MetadataHandle,
+};
 use protocol::{
-    codec::hex_decode,
+    codec::{hex_decode, ProtocolCodec as _},
     tokio,
+    trie::{MemoryDB, PatriciaTrie, Trie as _},
     types::{Header, Metadata, Proposal, RichBlock, H256},
 };
 
@@ -43,7 +50,7 @@ const TESTCASES: &[TestCase] = &[
         chain_spec_file:       "specs/single_node/chain-spec.toml",
         key_file:              "debug.key",
         input_genesis_hash:    "0x4e06dc4a01178db42c029f7d65f65a5763702a21082cfcb626c6c41054a7a276",
-        genesis_state_root:    "0x6d872daaeadbd0c57d9ca58b51e210ff1b440983b8ba2c8cdd208d090e7607f9",
+        genesis_state_root:    "0x2f1e8e50d5ab97af96fdb5d6de8e691e5bb80f46f2c98c4133d265bd8b60de61",
         genesis_receipts_root: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
     },
     TestCase {
@@ -52,7 +59,7 @@ const TESTCASES: &[TestCase] = &[
         chain_spec_file:       "specs/multi_nodes/chain-spec.toml",
         key_file:              "debug.key",
         input_genesis_hash:    "0xf16db25ca1a0cff5339d76e9802c75c43faac35ee4a9294a51234b167c69159f",
-        genesis_state_root:    "0x019fd9142c6f68322427c71345ef96d2ed42b122c477e342bb97d3b2d34f6a8e",
+        genesis_state_root:    "0xf684cbec490eb5b8a07b80f369f3bf87f05ec73494b869111010a6ad6fa89894",
         genesis_receipts_root: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
     },
     TestCase {
@@ -61,7 +68,7 @@ const TESTCASES: &[TestCase] = &[
         chain_spec_file:       "specs/multi_nodes_short_epoch_len/chain-spec.toml",
         key_file:              "debug.key",
         input_genesis_hash:    "0x4e06dc4a01178db42c029f7d65f65a5763702a21082cfcb626c6c41054a7a276",
-        genesis_state_root:    "0xb7d27d3c2dc9c99aaf8a4a1420f802c317cb7b053d9268a14a78613949a192a1",
+        genesis_state_root:    "0xa5e1e7ac3e03f7dc26cc93ab69c0ec49e591cbdaa7694c75682745c40bfca468",
         genesis_receipts_root: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
     },
 ];
@@ -128,6 +135,8 @@ async fn check_genesis_data<'a>(case: &TestCase<'a>) {
         case.input_genesis_hash,
         genesis.block.header.hash(),
     );
+
+    assert!(genesis.txs.is_empty());
 
     for (i, (block_cached, tx)) in genesis
         .block
@@ -214,6 +223,11 @@ fn check_state(spec: &ChainSpec, genesis_header: &Header, db_group: &DatabaseGro
     };
     let handle = MetadataHandle::new(backend.get_metadata_root());
 
+    assert_eq!(
+        backend.get_metadata_root().as_bytes(),
+        generate_memory_mpt_root(metadata_0.clone(), metadata_1.clone())
+    );
+
     assert_metadata(metadata_0, handle.get_metadata_by_epoch(0).unwrap());
     assert_metadata(metadata_1, handle.get_metadata_by_epoch(1).unwrap());
 }
@@ -227,11 +241,11 @@ fn check_hashes(chain: &str, name: &str, expected_str: &str, actual: H256) {
     );
 }
 
-fn assert_metadata(metadata_0: Metadata, metadata_1: Metadata) {
-    assert_eq!(metadata_0.version, metadata_1.version);
-    assert_eq!(metadata_0.epoch, metadata_1.epoch);
-    assert_eq!(metadata_0.verifier_list, metadata_1.verifier_list);
-    assert_eq!(metadata_0.consensus_config, metadata_1.consensus_config);
+fn assert_metadata(left: Metadata, right: Metadata) {
+    assert_eq!(left.version, right.version);
+    assert_eq!(left.epoch, right.epoch);
+    assert_eq!(left.verifier_list, right.verifier_list);
+    assert_eq!(left.consensus_config, right.consensus_config);
 }
 
 fn copy_dir(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> {
@@ -246,4 +260,50 @@ fn copy_dir(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> {
         }
     }
     Ok(())
+}
+
+fn generate_memory_mpt_root(metadata_0: Metadata, metadata_1: Metadata) -> Vec<u8> {
+    let metadata_0 = sort_metadata(metadata_0);
+    let metadata_1 = sort_metadata(metadata_1);
+    let mut memory_mpt = PatriciaTrie::new(
+        Arc::new(MemoryDB::new(false)),
+        Arc::new(HasherKeccak::new()),
+    );
+    let mut seg = EpochSegment::new();
+
+    memory_mpt
+        .insert(EPOCH_SEGMENT_KEY.as_bytes().to_vec(), seg.as_bytes())
+        .unwrap();
+    seg.append_endpoint(metadata_0.version.end).unwrap();
+    memory_mpt
+        .insert(EPOCH_SEGMENT_KEY.as_bytes().to_vec(), seg.as_bytes())
+        .unwrap();
+    seg.append_endpoint(metadata_1.version.end).unwrap();
+    memory_mpt
+        .insert(EPOCH_SEGMENT_KEY.as_bytes().to_vec(), seg.as_bytes())
+        .unwrap();
+
+    memory_mpt
+        .insert(
+            metadata_0.epoch.to_be_bytes().to_vec(),
+            metadata_0.encode().unwrap().to_vec(),
+        )
+        .unwrap();
+    memory_mpt
+        .insert(
+            metadata_1.epoch.to_be_bytes().to_vec(),
+            metadata_1.encode().unwrap().to_vec(),
+        )
+        .unwrap();
+    memory_mpt.root().unwrap()
+}
+
+fn sort_metadata(mut metadata: Metadata) -> Metadata {
+    let map = metadata
+        .verifier_list
+        .iter()
+        .map(|v| (v.address, 0u64))
+        .collect::<BTreeMap<_, _>>();
+    metadata.propose_counter = map.into_iter().map(Into::into).collect();
+    metadata
 }

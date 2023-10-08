@@ -1,6 +1,6 @@
 mod abi;
 pub(crate) mod handle;
-mod segment;
+pub mod segment;
 mod store;
 
 pub use abi::metadata_abi;
@@ -30,7 +30,7 @@ pub const METADATA_CONTRACT_ADDRESS: H160 = system_contract_address(0x1);
 const METADATA_CACHE_SIZE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(10) };
 
 lazy_static::lazy_static! {
-    static ref EPOCH_SEGMENT_KEY: H256 = Hasher::digest("epoch_segment");
+    pub static ref EPOCH_SEGMENT_KEY: H256 = Hasher::digest("epoch_segment");
     static ref CKB_RELATED_INFO_KEY: H256 = Hasher::digest("ckb_related_info");
     static ref HARDFORK_KEY: H256 = Hasher::digest("hardfork");
     static ref HARDFORK_INFO: ArcSwap<H256> = ArcSwap::new(Arc::new(H256::zero()));
