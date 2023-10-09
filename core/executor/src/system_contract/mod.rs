@@ -27,13 +27,13 @@ use evm::backend::ApplyBackend;
 use parking_lot::RwLock;
 use rocksdb::DB;
 
-use protocol::ckb_blake2b_256;
 use protocol::traits::{CkbDataProvider, ExecutorAdapter};
-use protocol::types::{Bytes, Hasher, SignedTransaction, TxResp, H160, H256};
+use protocol::types::{Bytes, Hasher, Metadata, SignedTransaction, TxResp, H160, H256};
+use protocol::{ckb_blake2b_256, ProtocolResult};
 
 use crate::adapter::RocksTrieDB;
 use crate::system_contract::{
-    ckb_light_client::CkbHeaderReader, image_cell::ImageCellReader,
+    ckb_light_client::CkbHeaderReader, image_cell::ImageCellReader, metadata::MetadataStore,
     utils::generate_mpt_root_changes,
 };
 
@@ -105,7 +105,27 @@ pub fn swap_header_cell_db(new_db: Arc<RocksTrieDB>) -> Arc<RocksTrieDB> {
         .unwrap_or_else(|| panic!("header cell db is not initialized"))
 }
 
+/// This method init the CKB light client and metadata DB and insert the first
+/// two metadata, so the `metadata_list.len()` should be equal to 2. The Axon
+/// run process contains two part: `init` and `start`. The `init` part
+/// should initialize the DB and insert the first two metadata. The `start` part
+/// only need to initialize the DB. This method should be used in the `init`
+/// process.
 pub fn init<Adapter: ExecutorAdapter + ApplyBackend>(
+    db: Arc<DB>,
+    adapter: &mut Adapter,
+    metadata_list: &[Metadata],
+) -> ProtocolResult<(H256, H256)> {
+    let ret = init_system_contract_db(db, adapter);
+    init_metadata(adapter, ret.0, metadata_list)?;
+
+    Ok(ret)
+}
+
+/// This method only init the CKB light client and metadata DB and should be
+/// used in run process. The return value`tuple[0]` is current metadata MPT
+/// root, `tuple[1]` is current CKB light client MPT root.
+pub fn init_system_contract_db<Adapter: ExecutorAdapter + ApplyBackend>(
     db: Arc<DB>,
     adapter: &mut Adapter,
 ) -> (H256, H256) {
@@ -128,19 +148,38 @@ pub fn init<Adapter: ExecutorAdapter + ApplyBackend>(
         )));
     }
 
-    let current_cell_root =
+    let current_light_client_root =
         adapter.storage(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY);
 
     // Current cell root is zero means there is no image cell and header contains in
     // the MPT. Because of the empty cell root is zero rather than NLP_NULL, it is
     // necessary to init the ckb light client and image account in state MPT. The
     // initial process is set the storage root of the two accounts as H256::zero().
-    if current_cell_root.is_zero() {
+    if current_light_client_root.is_zero() {
         let changes = generate_mpt_root_changes(adapter, CKB_LIGHT_CLIENT_CONTRACT_ADDRESS);
         adapter.apply(changes, vec![], false);
     }
 
-    (current_metadata_root, current_cell_root)
+    (current_metadata_root, current_light_client_root)
+}
+
+/// This method is used for insert the first two metadata, so the
+/// `metadata_list.len()` should be equal to 2.
+fn init_metadata<Adapter: ExecutorAdapter + ApplyBackend>(
+    adapter: &mut Adapter,
+    metadata_root: H256,
+    metadata_list: &[Metadata],
+) -> ProtocolResult<()> {
+    debug_assert!(metadata_list.len() == 2);
+
+    let mut store = MetadataStore::new(metadata_root)?;
+    store.append_metadata(&metadata_list[0])?;
+    store.append_metadata(&metadata_list[1])?;
+
+    let changes = generate_mpt_root_changes(adapter, METADATA_CONTRACT_ADDRESS);
+    adapter.apply(changes, vec![], false);
+
+    Ok(())
 }
 
 pub fn before_block_hook<Adapter: ExecutorAdapter + ApplyBackend>(adapter: &mut Adapter) {

@@ -11,8 +11,8 @@ use crate::system_contract::image_cell::{
     image_cell_abi, CellInfo, CellKey, ImageCellContract, ImageCellReader,
 };
 use crate::system_contract::{
-    init, SystemContract, CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, HEADER_CELL_ROOT_KEY,
-    IMAGE_CELL_CONTRACT_ADDRESS,
+    init_system_contract_db, SystemContract, CKB_LIGHT_CLIENT_CONTRACT_ADDRESS,
+    HEADER_CELL_ROOT_KEY, IMAGE_CELL_CONTRACT_ADDRESS,
 };
 use crate::tests::{gen_tx, gen_vicinity};
 use crate::{CURRENT_HEADER_CELL_ROOT, CURRENT_METADATA_ROOT};
@@ -27,7 +27,7 @@ pub fn test_write_functions() {
     let inner_db = RocksAdapter::new(ROCKSDB_PATH, Default::default())
         .unwrap()
         .inner_db();
-    let (m_root, h_root) = init(inner_db, &mut backend);
+    let (m_root, h_root) = init_system_contract_db(inner_db, &mut backend);
 
     CURRENT_METADATA_ROOT.with(|r| *r.borrow_mut() = m_root);
     CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow_mut() = h_root);

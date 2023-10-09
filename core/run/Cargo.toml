@@ -38,6 +38,7 @@ jemallocator = { version = "0.5", features = ["profiling", "stats", "unprefixed_
 
 [dev-dependencies]
 clap = "4.4"
+hasher = "0.1"
 tempfile = "3.6"
 
 [features]

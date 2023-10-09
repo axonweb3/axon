@@ -7,7 +7,7 @@ use protocol::types::{MemoryBackend, SignedTransaction, H160, U256};
 
 use crate::{
     system_contract::{
-        init,
+        init_system_contract_db,
         metadata::{
             metadata_abi::{self, ConsensusConfig, Metadata, MetadataVersion, ValidatorExtend},
             MetadataContract, MetadataStore,
@@ -22,7 +22,6 @@ static ROCKSDB_PATH: &str = "./free-space/system-contract/metadata";
 
 #[test]
 fn test_write_functions() {
-    env_logger::init();
     let vicinity = gen_vicinity();
     let mut backend = MemoryBackend::new(&vicinity, BTreeMap::new());
 
@@ -30,7 +29,7 @@ fn test_write_functions() {
     let inner_db = RocksAdapter::new(ROCKSDB_PATH, Default::default())
         .unwrap()
         .inner_db();
-    init(inner_db, &mut backend);
+    init_system_contract_db(inner_db, &mut backend);
 
     test_init(&mut backend, &executor);
 
@@ -48,7 +47,6 @@ fn test_init<'a>(backend: &mut MemoryBackend<'a>, executor: &MetadataContract<Me
     let addr = H160::from_str("0xf000000000000000000000000000000000000000").unwrap();
     let tx = prepare_tx_1(&addr);
     let r = executor.exec_(backend, &tx);
-    println!("{:?}", r);
     assert!(r.exit_reason.is_succeed());
 }
 
