@@ -313,8 +313,6 @@ pub struct ConsensusConfig {
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub gas_limit:       u64,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
-    pub gas_price:       u64,
-    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub interval:        u64,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub propose_ratio:   u64,

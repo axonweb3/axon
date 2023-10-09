@@ -79,13 +79,6 @@ security-audit:
 	@cargo audit --version || cargo install cargo-audit
 	@cargo audit
 
-metadata-test:
-	cd builtin-contract/metadata \
-		&& yarn --from-lock-file && yarn run compile && yarn run test
-
-metadata-genesis-deploy:
-	cd builtin-contract/metadata && yarn run deploy
-
 crosschain-test:
 	cd builtin-contract/crosschain \
 		&& yarn --from-lock-file && yarn run compile && yarn run test
@@ -93,7 +86,7 @@ crosschain-test:
 crosschain-genesis-deploy:
 	cd builtin-contract/crosschain && yarn run deploy
 
-unit-test: test metadata-test crosschain-test
+unit-test: test crosschain-test
 
 schema:
 	make -C core/cross-client/ schema

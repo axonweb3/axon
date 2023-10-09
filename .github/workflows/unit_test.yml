@@ -36,7 +36,7 @@ jobs:
           ~/.cargo/git/db/
           target/
         key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
-  
+
     - name: Run Rust unit-test
       run: make test
 
@@ -45,7 +45,5 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v3
-    - name: Run metadata-test
-      run: make metadata-test
     - name: Run crosschain-test
       run: make crosschain-test

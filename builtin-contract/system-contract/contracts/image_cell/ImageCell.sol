@@ -4,10 +4,7 @@ pragma solidity >=0.8.0;
 
 import "../libraries/CkbType.sol";
 
-contract ImageCell {
-    using CkbType for CkbType.CellInfo;
-    using CkbType for CkbType.OutPoint;
-
+library ImageCellType {
     struct BlockUpdate {
         uint64 blockNumber;
         CkbType.OutPoint[] txInputs;
@@ -18,10 +15,15 @@ contract ImageCell {
         CkbType.OutPoint[] txInputs;
         CkbType.OutPoint[] txOutputs;
     }
+}
 
-    function setState(bool allowRead) public view {}
+// **Notice**
+// This file only defines the interface of image cell contract. The real
+// implementation is in `core/executor/src/system_contract/image_cell`.
+interface ImageCell {
+    function setState(bool allowRead) external;
 
-    function update(BlockUpdate[] calldata blocks) public view {}
+    function update(ImageCellType.BlockUpdate[] calldata blocks) external;
 
-    function rollback(BlockRollBlack[] calldata blocks) public view {}
+    function rollback(ImageCellType.BlockRollBlack[] calldata blocks) external;
 }
