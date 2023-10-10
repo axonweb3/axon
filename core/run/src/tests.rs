@@ -27,13 +27,10 @@ use protocol::{
     codec::{hex_decode, ProtocolCodec as _},
     tokio,
     trie::{MemoryDB, PatriciaTrie, Trie as _},
-<<<<<<< HEAD
     types::{
-        Bloom, BloomInput, Header, Metadata, Proposal, RichBlock, H256, RLP_EMPTY_LIST, RLP_NULL,
+        Bloom, BloomInput, HardforkInfo, HardforkInfoInner, Header, Metadata, Proposal, RichBlock,
+        H256, RLP_EMPTY_LIST, RLP_NULL,
     },
-=======
-    types::{HardforkInfo, HardforkInfoInner, Header, Metadata, Proposal, RichBlock, H256},
->>>>>>> 80c12a3 (feat: first hardfork with contract limit)
 };
 
 use crate::{components::chain_spec::ChainSpecExt as _, execute_genesis, DatabaseGroup};
@@ -55,24 +52,24 @@ const TESTCASES: &[TestCase] = &[
         config_file:        "config.toml",
         chain_spec_file:    "specs/single_node/chain-spec.toml",
         key_file:           "debug.key",
-        input_genesis_hash: "0xe3a40f0115fbf101520ceea1ce7103a73cb46554187ac7ed67f3522103e06d99",
-        genesis_state_root: "0x2f1e8e50d5ab97af96fdb5d6de8e691e5bb80f46f2c98c4133d265bd8b60de61",
+        input_genesis_hash: "0x21e10c85388a1606ef0b8d258d95d4403faefc4c9672623c524b5070fae92ca5",
+        genesis_state_root: "0xf939bf06a1d818aee1555a11f06b20c215003c056e26403ecb1cb4b15958f6ac",
     },
     TestCase {
         chain_name:         "multi_nodes",
         config_file:        "nodes/node_1.toml",
         chain_spec_file:    "specs/multi_nodes/chain-spec.toml",
         key_file:           "debug.key",
-        input_genesis_hash: "0x1b4cf78373961dabcba5d4a9402c924fc4fecdd9ce367239f02c8971a052f3b5",
-        genesis_state_root: "0xf684cbec490eb5b8a07b80f369f3bf87f05ec73494b869111010a6ad6fa89894",
+        input_genesis_hash: "0x12da11f848f789ff8c7b6d75faf0740899588d17f0f3c3b9ffa53df30f7d22ce",
+        genesis_state_root: "0xe911923f522acff78d3f08b851aca86870bda9f24f1722f1d97518ff3b8697c6",
     },
     TestCase {
         chain_name:         "multi_nodes_short_epoch_len",
         config_file:        "nodes/node_1.toml",
         chain_spec_file:    "specs/multi_nodes_short_epoch_len/chain-spec.toml",
         key_file:           "debug.key",
-        input_genesis_hash: "0xd930632a7565acfc149c1d896d79910608768de5b936fdb34cc47c9b2296dd2a",
-        genesis_state_root: "0xa5e1e7ac3e03f7dc26cc93ab69c0ec49e591cbdaa7694c75682745c40bfca468",
+        input_genesis_hash: "0x6519f88a4a02d6a04806f837133bab7a44d64e78efff5f599d07a23d9a2cf9a2",
+        genesis_state_root: "0x1fc51ffe40ba5f03523370e8a1baba3046574db9abf769f21e42458f50047a2c",
     },
 ];
 
