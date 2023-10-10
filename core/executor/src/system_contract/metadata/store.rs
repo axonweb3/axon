@@ -22,6 +22,7 @@ use crate::{adapter::RocksTrieDB, MPTTrie, CURRENT_METADATA_ROOT};
 /// | -------------------- | ------------------------ |
 /// | EPOCH_SEGMENT_KEY    | `EpochSegment.encode()`  |
 /// | CKB_RELATED_INFO_KEY | `CkbRelatedInfo.encode()`|
+/// | HARDFORK_KEY         | `HardforkInfo.encode()`  |
 /// | epoch_0.be_bytes()   | `Metadata.encode()`      |
 /// | epoch_1.be_bytes()   | `Metadata.encode()`      |
 /// | ...                  | ...                      |
@@ -120,10 +121,9 @@ impl MetadataStore {
         )?;
         self.trie
             .insert(inner.epoch.to_be_bytes().to_vec(), inner.encode()?.to_vec())?;
-        self.trie.insert(
-            CONSENSUS_CONFIG.as_bytes().to_vec(),
-            encode_consensus_config(current_hardfork, config.encode()?.to_vec()),
-        )?;
+        let config = encode_consensus_config(current_hardfork, config.encode()?.to_vec());
+        self.trie
+            .insert(CONSENSUS_CONFIG.as_bytes().to_vec(), config)?;
         let new_root = self.trie.commit()?;
         CURRENT_METADATA_ROOT.with(|r| *r.borrow_mut() = new_root);
 
@@ -231,6 +231,7 @@ impl MetadataStore {
                 },
             }
         };
+
         self.trie.insert(
             HARDFORK_KEY.as_bytes().to_vec(),
             current_info.encode()?.to_vec(),

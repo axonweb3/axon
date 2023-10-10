@@ -279,10 +279,12 @@ fn generate_memory_mpt_root(metadata_0: Metadata, metadata_1: Metadata) -> Vec<u
     memory_mpt
         .insert(EPOCH_SEGMENT_KEY.as_bytes().to_vec(), seg.as_bytes())
         .unwrap();
+
     seg.append_endpoint(metadata_0.version.end).unwrap();
     memory_mpt
         .insert(EPOCH_SEGMENT_KEY.as_bytes().to_vec(), seg.as_bytes())
         .unwrap();
+
     seg.append_endpoint(metadata_1.version.end).unwrap();
     memory_mpt
         .insert(EPOCH_SEGMENT_KEY.as_bytes().to_vec(), seg.as_bytes())
@@ -325,15 +327,13 @@ fn generate_memory_mpt_root(metadata_0: Metadata, metadata_1: Metadata) -> Vec<u
         flags:        H256::from_low_u64_be(HardforkName::all().to_be()),
         block_number: 0,
     };
+    let hardfork = HardforkInfo { inner: vec![info] }
+        .encode()
+        .unwrap()
+        .to_vec();
 
     memory_mpt
-        .insert(
-            HARDFORK_KEY.as_bytes().to_vec(),
-            HardforkInfo { inner: vec![info] }
-                .encode()
-                .unwrap()
-                .to_vec(),
-        )
+        .insert(HARDFORK_KEY.as_bytes().to_vec(), hardfork)
         .unwrap();
     memory_mpt.root().unwrap()
 }

@@ -456,9 +456,13 @@ async fn execute_genesis(
         tmp
     };
 
-    let resp = execute_genesis_transactions(&partial_genesis, db_group, &spec.accounts, &[
-        metadata_0, metadata_1,
-    ])?;
+    let resp = execute_genesis_transactions(
+        &partial_genesis,
+        db_group,
+        &spec.accounts,
+        &[metadata_0, metadata_1],
+        spec.genesis.generate_hardfork_info(),
+    )?;
 
     partial_genesis.block.header.state_root = resp.state_root;
     partial_genesis.block.header.receipts_root = resp.receipt_root;
@@ -488,6 +492,7 @@ fn execute_genesis_transactions(
     db_group: &DatabaseGroup,
     accounts: &[InitialAccount],
     metadata_list: &[Metadata],
+    hardfork: HardforkInfoInner,
 ) -> ProtocolResult<ExecResp> {
     let state_root = MPTTrie::new(db_group.trie_db())
         .insert_accounts(accounts)
@@ -500,7 +505,7 @@ fn execute_genesis_transactions(
         Proposal::new_without_state_root(&rich.block.header).into(),
     )?;
 
-    system_contract::init(db_group.inner_db(), &mut backend, metadata_list)?;
+    system_contract::init(db_group.inner_db(), &mut backend, metadata_list, hardfork)?;
 
     let resp = AxonExecutor.exec(&mut backend, &rich.txs, &[]);
 
