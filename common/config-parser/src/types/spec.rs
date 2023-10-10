@@ -209,28 +209,23 @@ impl Genesis {
             transactions_root: RLP_NULL,
             signed_txs_hash: RLP_EMPTY_LIST,
             timestamp: self.timestamp,
-            // todo: if Hardforkinput is empty, it must change to latest hardfork info to init
-            // genesis
-            extra_data: {
-                vec![ExtraData {
-                    inner: {
-                        let mut info = Into::<HardforkInfoInner>::into(HardforkInput {
-                            hardforks:    self.hardforks.clone(),
-                            block_number: 0,
-                        });
-
-                        if info.flags.is_zero() {
-                            info.flags = H256::from_low_u64_be(HardforkName::all().to_be());
-                        }
-
-                        info.encode().unwrap()
-                    },
-                }]
-            },
             base_fee_per_gas: self.base_fee_per_gas,
             chain_id: self.chain_id,
             ..Default::default()
         }
+    }
+
+    pub fn generate_hardfork_info(&self) -> HardforkInfoInner {
+        let mut info = Into::<HardforkInfoInner>::into(HardforkInput {
+            hardforks:    self.hardforks.clone(),
+            block_number: 0,
+        });
+
+        if info.flags.is_zero() {
+            info.flags = H256::from_low_u64_be(HardforkName::all().to_be());
+        }
+
+        info
     }
 }
 
