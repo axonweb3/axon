@@ -18,14 +18,15 @@ use crate::{adapter::RocksTrieDB, MPTTrie, CURRENT_METADATA_ROOT};
 
 /// The metadata store does not follow the storage layout of EVM smart contract.
 /// It use MPT called Metadata MPT with the following layout:
-/// | key                  | value                    |
-/// | -------------------- | ------------------------ |
-/// | EPOCH_SEGMENT_KEY    | `EpochSegment.encode()`  |
-/// | CKB_RELATED_INFO_KEY | `CkbRelatedInfo.encode()`|
-/// | HARDFORK_KEY         | `HardforkInfo.encode()`  |
-/// | epoch_0.be_bytes()   | `Metadata.encode()`      |
-/// | epoch_1.be_bytes()   | `Metadata.encode()`      |
-/// | ...                  | ...                      |
+/// | key                  | value                                |
+/// | -------------------- | ------------------------------------ |
+/// | EPOCH_SEGMENT_KEY    | `EpochSegment.encode()`              |
+/// | CKB_RELATED_INFO_KEY | `CkbRelatedInfo.encode()`            |
+/// | HARDFORK_KEY         | `HardforkInfo.encode()`              |
+/// | epoch_0.be_bytes()   | `Metadata.encode()`                  |
+/// | epoch_1.be_bytes()   | `Metadata.encode()`                  |
+/// | CONSENSUS_CONFIG     | `version + ConsensesConfig.encode()` |
+/// | ...                  | ...                                  |
 ///
 /// All these data are stored in a the `c9` column family of RocksDB, and the
 /// root of the Metadata MPT is stored in the storage MPT of the metadata

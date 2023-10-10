@@ -9,10 +9,9 @@ use strum_macros::EnumIter;
 
 use common_crypto::Secp256k1RecoverablePrivateKey;
 use protocol::{
-    codec::{decode_256bits_key, deserialize_address, ProtocolCodec},
+    codec::{decode_256bits_key, deserialize_address},
     types::{
-        ExtraData, HardforkInfoInner, Header, Key256Bits, Metadata, H160, H256, RLP_EMPTY_LIST,
-        RLP_NULL, U256,
+        HardforkInfoInner, Header, Key256Bits, Metadata, H160, H256, RLP_EMPTY_LIST, RLP_NULL, U256,
     },
 };
 
@@ -216,16 +215,10 @@ impl Genesis {
     }
 
     pub fn generate_hardfork_info(&self) -> HardforkInfoInner {
-        let mut info = Into::<HardforkInfoInner>::into(HardforkInput {
+        Into::<HardforkInfoInner>::into(HardforkInput {
             hardforks:    self.hardforks.clone(),
             block_number: 0,
-        });
-
-        if info.flags.is_zero() {
-            info.flags = H256::from_low_u64_be(HardforkName::all().to_be());
-        }
-
-        info
+        })
     }
 }
 
@@ -243,10 +236,22 @@ pub struct HardforkInput {
 
 impl From<HardforkInput> for HardforkInfoInner {
     fn from(value: HardforkInput) -> Self {
-        let flags = {
-            let r = value.hardforks.into_iter().fold(0, |acc, s| acc | s as u64);
+        let convert_fn = |hardforks: Vec<HardforkName>| -> H256 {
+            let r = hardforks.into_iter().fold(0, |acc, s| acc | s as u64);
 
             H256::from_low_u64_be(r.to_be())
+        };
+
+        let flags = if value.hardforks.is_empty() {
+            H256::from_low_u64_be(HardforkName::all().to_be())
+        } else if value.hardforks.len() == 1 {
+            if value.hardforks[0] == HardforkName::None {
+                H256::zero()
+            } else {
+                convert_fn(value.hardforks)
+            }
+        } else {
+            convert_fn(value.hardforks)
         };
 
         HardforkInfoInner {
@@ -264,6 +269,6 @@ pub enum HardforkName {
 
 impl HardforkName {
     pub fn all() -> u64 {
-        HardforkName::None as u64 | HardforkName::Andromeda as u64
+        HardforkName::Andromeda as u64
     }
 }

@@ -27,8 +27,8 @@ use protocol::{
     tokio,
     trie::{MemoryDB, PatriciaTrie, Trie as _},
     types::{
-        HardforkInfo, HardforkInfoInner, Header, Metadata, Proposal, RichBlock, H256,
-        RLP_EMPTY_LIST, RLP_NULL,
+        Bloom, BloomInput, HardforkInfo, HardforkInfoInner, Header, Metadata, Proposal, RichBlock,
+        H256, RLP_EMPTY_LIST, RLP_NULL,
     },
 };
 
