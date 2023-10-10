@@ -27,9 +27,7 @@ use protocol::{
     types::{Header, Metadata, Proposal, RichBlock, H256},
 };
 
-use crate::{
-    components::chain_spec::ChainSpecExt as _, execute_genesis_transactions, DatabaseGroup,
-};
+use crate::{components::chain_spec::ChainSpecExt as _, execute_genesis, DatabaseGroup};
 
 const DEV_CONFIG_DIR: &str = "../../devtools/chain";
 
@@ -49,7 +47,7 @@ const TESTCASES: &[TestCase] = &[
         config_file:           "config.toml",
         chain_spec_file:       "specs/single_node/chain-spec.toml",
         key_file:              "debug.key",
-        input_genesis_hash:    "0x4e06dc4a01178db42c029f7d65f65a5763702a21082cfcb626c6c41054a7a276",
+        input_genesis_hash:    "0x57db5b4b5c7dd1246c97b0c28aa4d10664035b2ee367df2ae1916c86b6fdffa9",
         genesis_state_root:    "0x2f1e8e50d5ab97af96fdb5d6de8e691e5bb80f46f2c98c4133d265bd8b60de61",
         genesis_receipts_root: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
     },
@@ -58,7 +56,7 @@ const TESTCASES: &[TestCase] = &[
         config_file:           "nodes/node_1.toml",
         chain_spec_file:       "specs/multi_nodes/chain-spec.toml",
         key_file:              "debug.key",
-        input_genesis_hash:    "0xf16db25ca1a0cff5339d76e9802c75c43faac35ee4a9294a51234b167c69159f",
+        input_genesis_hash:    "0x9dc9e22c984214a8a82f24045079e2c4dc7aa3c8510343b9c40a6e50986f3c9f",
         genesis_state_root:    "0xf684cbec490eb5b8a07b80f369f3bf87f05ec73494b869111010a6ad6fa89894",
         genesis_receipts_root: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
     },
@@ -67,7 +65,7 @@ const TESTCASES: &[TestCase] = &[
         config_file:           "nodes/node_1.toml",
         chain_spec_file:       "specs/multi_nodes_short_epoch_len/chain-spec.toml",
         key_file:              "debug.key",
-        input_genesis_hash:    "0x4e06dc4a01178db42c029f7d65f65a5763702a21082cfcb626c6c41054a7a276",
+        input_genesis_hash:    "0x02c6715381ee05c5e6b2a432c9da4843108c573aca6369a85ca06d26b88c1fb7",
         genesis_state_root:    "0xa5e1e7ac3e03f7dc26cc93ab69c0ec49e591cbdaa7694c75682745c40bfca468",
         genesis_receipts_root: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
     },
@@ -124,38 +122,7 @@ async fn check_genesis_data<'a>(case: &TestCase<'a>) {
             .expect("parse key file");
         Secp256k1RecoverablePrivateKey::try_from(key_data.as_ref()).expect("load key data")
     };
-    let genesis = chain_spec.generate_genesis_block(key);
 
-    assert!(genesis.txs.is_empty());
-
-    println!("checking genesis hash");
-    check_hashes(
-        case.chain_name,
-        "input genesis hash",
-        case.input_genesis_hash,
-        genesis.block.header.hash(),
-    );
-
-    assert!(genesis.txs.is_empty());
-
-    for (i, (block_cached, tx)) in genesis
-        .block
-        .tx_hashes
-        .iter()
-        .zip(genesis.txs.iter())
-        .enumerate()
-    {
-        let tx_cached = tx.transaction.hash;
-        assert_eq!(
-            *block_cached, tx_cached,
-            "check hash of tx[{i}], in-block: {block_cached:#x}, tx-cached: {tx_cached:#x}",
-        );
-        let calculated = tx.transaction.clone().calc_hash().hash;
-        assert_eq!(
-            tx_cached, calculated,
-            "check hash of tx[{i}], cached: {tx_cached:#x}, calculated: {calculated:#x}",
-        );
-    }
     let path_block = tmp_dir.path().join("block");
     let db_group = DatabaseGroup::new(
         &config.rocksdb,
@@ -165,29 +132,28 @@ async fn check_genesis_data<'a>(case: &TestCase<'a>) {
     )
     .expect("initialize databases");
 
-    let metadata_0 = chain_spec.params.clone();
-    let metadata_1 = {
-        let mut tmp = metadata_0.clone();
-        tmp.epoch = metadata_0.epoch + 1;
-        tmp.version.start = metadata_0.version.end + 1;
-        tmp.version.end = tmp.version.start + metadata_0.version.end - 1;
-        tmp
-    };
-    let resp = execute_genesis_transactions(&genesis, &db_group, &chain_spec.accounts, &[
-        metadata_0, metadata_1,
-    ])
-    .expect("execute transactions");
+    let partial_genesis = chain_spec.generate_genesis_block(key);
+    let genesis = execute_genesis(partial_genesis, &chain_spec, &db_group)
+        .await
+        .expect("complete genesis block");
 
-    let mut header = genesis.block.header.clone();
-    header.state_root = resp.state_root;
-    header.receipts_root = resp.receipt_root;
+    assert!(genesis.txs.is_empty());
+    assert!(genesis.block.tx_hashes.is_empty());
+
+    println!("checking genesis hash");
+    check_hashes(
+        case.chain_name,
+        "input genesis hash",
+        case.input_genesis_hash,
+        genesis.block.header.hash(),
+    );
 
     println!("checking state root");
     check_hashes(
         case.chain_name,
         "genesis state root",
         case.genesis_state_root,
-        resp.state_root,
+        genesis.block.header.state_root,
     );
 
     println!("checking receipts hash");
@@ -195,11 +161,11 @@ async fn check_genesis_data<'a>(case: &TestCase<'a>) {
         case.chain_name,
         "genesis receipts root",
         case.genesis_receipts_root,
-        resp.receipt_root,
+        genesis.block.header.receipts_root,
     );
 
     println!("checking state");
-    check_state(&chain_spec, &header, &db_group);
+    check_state(&chain_spec, &genesis.block.header, &db_group);
 
     set_current_dir(current_dir).expect("change back to original work directory");
 }
