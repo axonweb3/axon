@@ -231,14 +231,11 @@ async fn start<K: KeyProvider>(
     let hardfork_info = storage.hardfork_proposal(Default::default()).await?;
     let overlord_consensus = {
         let consensus_wal_path = config.data_path_for_consensus_wal();
-        let bls_priv_key =
-            BlsPrivateKey::try_from(config.bls_privkey.as_ref()).map_err(MainError::Crypto)?;
         let node_info = Secp256k1PrivateKey::try_from(config.net_privkey.as_ref())
             .map(|privkey| {
                 NodeInfo::new(
                     current_block.header.chain_id,
                     privkey.pub_key(),
-                    bls_priv_key.pub_key(&Default::default()),
                     hardfork_info,
                 )
             })

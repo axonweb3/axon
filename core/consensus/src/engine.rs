@@ -775,8 +775,8 @@ pub fn generate_new_crypto_map(metadata: Metadata) -> ProtocolResult<HashMap<Byt
     let mut new_addr_pubkey_map = HashMap::new();
     for validator in metadata.verifier_list.into_iter() {
         let addr = validator.pub_key.as_bytes();
-        let hex_pubkey = validator.bls_pub_key.as_bytes();
-        let pubkey = BlsPublicKey::try_from(hex_pubkey.as_ref())
+        let bls_pubkey = validator.bls_pub_key.as_bytes();
+        let pubkey = BlsPublicKey::try_from(bls_pubkey.as_ref())
             .map_err(|err| ConsensusError::Other(format!("try from bls pubkey error {:?}", err)))?;
         new_addr_pubkey_map.insert(addr, pubkey);
     }

@@ -3,7 +3,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use common_crypto::{BlsPublicKey, Secp256k1PublicKey};
+use common_crypto::Secp256k1PublicKey;
 
 use crate::types::{
     Address, Block, BlockNumber, Bytes, ExecResp, HardforkInfoInner, Hash, Header, Hex, MerkleRoot,
@@ -21,7 +21,6 @@ pub enum MessageTarget {
 pub struct NodeInfo {
     pub chain_id:           u64,
     pub self_pub_key:       Secp256k1PublicKey,
-    pub self_bls_pub_key:   BlsPublicKey,
     pub self_address:       Address,
     pub hardfork_proposals: Arc<RwLock<Option<HardforkInfoInner>>>,
 }
@@ -30,14 +29,12 @@ impl NodeInfo {
     pub fn new(
         chain_id: u64,
         pub_key: Secp256k1PublicKey,
-        bls_pub_key: BlsPublicKey,
         hardfork_info: Option<HardforkInfoInner>,
     ) -> Self {
         let address = Address::from_pubkey(&pub_key);
         Self {
             chain_id,
             self_pub_key: pub_key,
-            self_bls_pub_key: bls_pub_key,
             self_address: address,
             hardfork_proposals: Arc::new(RwLock::new(hardfork_info)),
         }
