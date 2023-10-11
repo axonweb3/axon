@@ -197,15 +197,7 @@ async fn start<K: KeyProvider>(
     metadata_handle.init_hardfork(current_block.header.number)?;
 
     let metadata = metadata_handle.get_metadata_by_block_number(current_block.header.number)?;
-    let validators: Vec<Validator> = metadata
-        .verifier_list
-        .iter()
-        .map(|v| Validator {
-            pub_key:        v.pub_key.as_bytes(),
-            propose_weight: v.propose_weight,
-            vote_weight:    v.vote_weight,
-        })
-        .collect::<Vec<_>>();
+    let validators: Vec<Validator> = metadata.verifier_list.iter().map(Into::into).collect();
 
     // Set args in mempool
     mempool.set_args(

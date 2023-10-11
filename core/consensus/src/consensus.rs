@@ -144,7 +144,7 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
                         metadata.consensus_config.prevote_ratio,
                         metadata.consensus_config.precommit_ratio,
                         metadata.consensus_config.brake_ratio,
-                        metadata.verifier_list.into_iter().map(Into::into).collect(),
+                        metadata.verifier_list.iter().map(Into::into).collect(),
                     )),
                 )
                 .unwrap();
@@ -167,6 +167,7 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
         validators: Vec<Validator>,
         timer_config: Option<DurationConfig>,
     ) -> ProtocolResult<()> {
+        // The address field of Node struct should use the node's secp256k1 public key
         let authority_list = validators
             .into_iter()
             .map(|v| Node {
@@ -194,6 +195,7 @@ pub fn gen_overlord_status(
     brake_ratio: u64,
     validators: Vec<Validator>,
 ) -> Status {
+    // The address field of Node struct should use the node's secp256k1 public key
     let mut authority_list = validators
         .into_iter()
         .map(|v| Node {

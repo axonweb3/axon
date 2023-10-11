@@ -391,8 +391,8 @@ impl Ord for ValidatorExtend {
     }
 }
 
-impl From<ValidatorExtend> for Validator {
-    fn from(ve: ValidatorExtend) -> Self {
+impl From<&ValidatorExtend> for Validator {
+    fn from(ve: &ValidatorExtend) -> Self {
         Validator {
             pub_key:        ve.pub_key.as_bytes(),
             propose_weight: ve.propose_weight,

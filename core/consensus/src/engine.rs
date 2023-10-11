@@ -449,6 +449,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
                 .await?
         };
 
+        // The address field of Node struct should use the node's secp256k1 public key
         let mut old_validators = old_metadata
             .verifier_list
             .into_iter()
@@ -784,6 +785,7 @@ pub fn generate_new_crypto_map(metadata: Metadata) -> ProtocolResult<HashMap<Byt
 }
 
 fn convert_to_overlord_authority(validators: &[ValidatorExtend]) -> Vec<Node> {
+    // The address field of Node struct should use the node's secp256k1 public key
     let mut authority = validators
         .iter()
         .map(|v| Node {
