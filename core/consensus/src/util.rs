@@ -35,7 +35,9 @@ pub fn time_now() -> u64 {
 /// a map to get the blst public key by the address. To be notice that the
 /// address uses secp256k1 **public key** which is same as the `address` field
 /// in `Node` struct. Use secp256k1 public key instead of address can reduce the
-/// `keccak256` hash calculation at the end of each height.
+/// `keccak256` hash calculation at the end of each height. The reason why not
+/// use address directly is that the `PeerId` is binding with public key not
+/// address.
 pub struct OverlordCrypto {
     private_key: BlsPrivateKey,
     addr_pubkey: RwLock<HashMap<Bytes, BlsPublicKey>>,
