@@ -224,7 +224,7 @@ async fn start<K: KeyProvider>(
 
     // Init overlord consensus and synchronization
     let lock = Arc::new(AsyncMutex::new(()));
-    let crypto = init_crypto(config.privkey.as_ref(), &metadata.verifier_list)?;
+    let crypto = init_crypto(config.bls_privkey.as_ref(), &metadata.verifier_list)?;
     let consensus_adapter = OverlordConsensusAdapter::<_, _, _, _>::new(
         Arc::new(network_service.handle()),
         Arc::clone(&mempool),
@@ -238,7 +238,7 @@ async fn start<K: KeyProvider>(
     let hardfork_info = storage.hardfork_proposal(Default::default()).await?;
     let overlord_consensus = {
         let consensus_wal_path = config.data_path_for_consensus_wal();
-        let node_info = Secp256k1PrivateKey::try_from(config.privkey.as_ref())
+        let node_info = Secp256k1PrivateKey::try_from(config.bls_privkey.as_ref())
             .map(|privkey| {
                 NodeInfo::new(
                     current_block.header.chain_id,

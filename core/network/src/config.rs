@@ -114,7 +114,7 @@ impl NetworkConfig {
                     .collect(),
             )
             .listen_addr(config.network.listening_address.clone())
-            .secio_keypair(config.privkey.as_ref())?
+            .secio_keypair(config.net_privkey.as_ref())?
             .chain_id(chain_id)
             .max_connections(config.network.max_connected_peers)
     }
