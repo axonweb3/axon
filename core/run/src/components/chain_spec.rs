@@ -1,5 +1,4 @@
 use common_config_parser::types::spec::ChainSpec;
-use common_crypto::Secp256k1RecoverablePrivateKey;
 
 use protocol::types::{
     Block, Eip1559Transaction, RichBlock, TransactionAction, UnsignedTransaction, BASE_FEE_PER_GAS,
@@ -7,11 +6,11 @@ use protocol::types::{
 
 pub(crate) trait ChainSpecExt {
     //! Generate the genesis block.
-    fn generate_genesis_block(&self, genesis_key: Secp256k1RecoverablePrivateKey) -> RichBlock;
+    fn generate_genesis_block(&self) -> RichBlock;
 }
 
 impl ChainSpecExt for ChainSpec {
-    fn generate_genesis_block(&self, _genesis_key: Secp256k1RecoverablePrivateKey) -> RichBlock {
+    fn generate_genesis_block(&self) -> RichBlock {
         let txs = vec![];
         let block = Block {
             header:    self.genesis.build_header(),
