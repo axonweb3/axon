@@ -38,7 +38,13 @@ jobs:
         key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
 
     - name: Run Rust unit-test
-      run: make test
+      run: |
+        make test
+        du -hd1 target/debug/
+        echo "reduce the cargo cache size"
+        rm -rf target/debug/examples
+        rm -rf target/debug/incremental
+        du -hd1 target/debug/
 
   other-unit-test:
     runs-on: ubuntu-latest
