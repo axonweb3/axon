@@ -26,7 +26,6 @@ jobs:
          ./axon init \
            --config     ${{ github.workspace }}/axon/config.toml \
            --chain-spec ${{ github.workspace }}/axon/specs/single_node/chain-spec.toml \
-           --key-file   ${{ github.workspace }}/axon/debug.key \
            > /tmp/log 2>&1
          ./axon run  \
            --config     ${{ github.workspace }}/axon/config.toml \

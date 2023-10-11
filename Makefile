@@ -51,7 +51,6 @@ e2e-test:
 	./target/debug/axon init \
 		--config     devtools/chain/config.toml \
 		--chain-spec devtools/chain/specs/single_node/chain-spec.toml \
-		--key-file   devtools/chain/debug.key \
 		> /tmp/log 2>&1
 	./target/debug/axon run  \
 		--config     devtools/chain/config.toml \

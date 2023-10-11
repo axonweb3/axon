@@ -59,8 +59,7 @@ cargo build --release
 # Initialize the chain
 target/release/axon init \
     --config     devtools/chain/config.toml \
-    --chain-spec devtools/chain/specs/single_node/chain-spec.toml \
-    --key-file   devtools/chain/debug.key
+    --chain-spec devtools/chain/specs/single_node/chain-spec.toml
 # Start a single Axon node
 target/release/axon run --config devtools/chain/config.toml
 ```

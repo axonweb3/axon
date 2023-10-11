@@ -12,10 +12,9 @@ use clap::{builder::TypedValueParser as _, Command};
 use hasher::HasherKeccak;
 
 use common_config_parser::types::{
-    spec::{ChainSpec, ChainSpecValueParser, PrivateKeyFileValueParser},
+    spec::{ChainSpec, ChainSpecValueParser},
     Config, ConfigValueParser,
 };
-use common_crypto::Secp256k1RecoverablePrivateKey;
 use core_executor::{
     system_contract::metadata::{segment::EpochSegment, EPOCH_SEGMENT_KEY},
     AxonExecutorApplyAdapter, MetadataHandle,
@@ -37,7 +36,6 @@ struct TestCase<'a> {
     chain_name:         &'a str,
     config_file:        &'a str,
     chain_spec_file:    &'a str,
-    key_file:           &'a str,
     input_genesis_hash: &'a str,
     genesis_state_root: &'a str,
 }
@@ -47,7 +45,6 @@ const TESTCASES: &[TestCase] = &[
         chain_name:         "single_node",
         config_file:        "config.toml",
         chain_spec_file:    "specs/single_node/chain-spec.toml",
-        key_file:           "debug.key",
         input_genesis_hash: "0xe3a40f0115fbf101520ceea1ce7103a73cb46554187ac7ed67f3522103e06d99",
         genesis_state_root: "0x2f1e8e50d5ab97af96fdb5d6de8e691e5bb80f46f2c98c4133d265bd8b60de61",
     },
@@ -55,7 +52,6 @@ const TESTCASES: &[TestCase] = &[
         chain_name:         "multi_nodes",
         config_file:        "nodes/node_1.toml",
         chain_spec_file:    "specs/multi_nodes/chain-spec.toml",
-        key_file:           "debug.key",
         input_genesis_hash: "0x1b4cf78373961dabcba5d4a9402c924fc4fecdd9ce367239f02c8971a052f3b5",
         genesis_state_root: "0xf684cbec490eb5b8a07b80f369f3bf87f05ec73494b869111010a6ad6fa89894",
     },
@@ -63,7 +59,6 @@ const TESTCASES: &[TestCase] = &[
         chain_name:         "multi_nodes_short_epoch_len",
         config_file:        "nodes/node_1.toml",
         chain_spec_file:    "specs/multi_nodes_short_epoch_len/chain-spec.toml",
-        key_file:           "debug.key",
         input_genesis_hash: "0xd930632a7565acfc149c1d896d79910608768de5b936fdb34cc47c9b2296dd2a",
         genesis_state_root: "0xa5e1e7ac3e03f7dc26cc93ab69c0ec49e591cbdaa7694c75682745c40bfca468",
     },
@@ -113,13 +108,6 @@ async fn check_genesis_data<'a>(case: &TestCase<'a>) {
             .parse_ref(&command, None, chain_spec_path.as_os_str())
             .expect("parse chain-spec file")
     };
-    let key: Secp256k1RecoverablePrivateKey = {
-        let key_file_path = tmp_dir_path.join(case.key_file);
-        let key_data = PrivateKeyFileValueParser
-            .parse_ref(&command, None, key_file_path.as_os_str())
-            .expect("parse key file");
-        Secp256k1RecoverablePrivateKey::try_from(key_data.as_ref()).expect("load key data")
-    };
 
     let path_block = tmp_dir.path().join("block");
     let db_group = DatabaseGroup::new(
@@ -130,7 +118,7 @@ async fn check_genesis_data<'a>(case: &TestCase<'a>) {
     )
     .expect("initialize databases");
 
-    let partial_genesis = chain_spec.generate_genesis_block(key);
+    let partial_genesis = chain_spec.generate_genesis_block();
     let genesis = execute_genesis(partial_genesis, &chain_spec, &db_group)
         .await
         .expect("complete genesis block");

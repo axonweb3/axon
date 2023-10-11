@@ -3,10 +3,7 @@ use std::{collections::HashMap, sync::Arc, time::Duration};
 use common_apm::metrics::mempool::{MEMPOOL_CO_QUEUE_LEN, MEMPOOL_LEN_GAUGE};
 use common_config_parser::types::spec::{ChainSpec, InitialAccount};
 use common_config_parser::types::{Config, ConfigMempool};
-use common_crypto::{
-    BlsPrivateKey, BlsPublicKey, Secp256k1, Secp256k1PrivateKey, Secp256k1RecoverablePrivateKey,
-    ToPublicKey,
-};
+use common_crypto::{BlsPrivateKey, BlsPublicKey, Secp256k1, Secp256k1PrivateKey, ToPublicKey};
 
 use protocol::tokio::{
     self, runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep,
@@ -50,12 +47,8 @@ use components::{
 pub use error::MainError;
 use key_provider::KeyP;
 
-pub fn init(
-    config: Config,
-    spec: ChainSpec,
-    key: Secp256k1RecoverablePrivateKey,
-) -> ProtocolResult<()> {
-    let genesis = spec.generate_genesis_block(key);
+pub fn init(config: Config, spec: ChainSpec) -> ProtocolResult<()> {
+    let genesis = spec.generate_genesis_block();
 
     let path_rocksdb = config.data_path_for_rocksdb();
     if path_rocksdb.exists() {
