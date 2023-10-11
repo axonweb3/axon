@@ -24,7 +24,9 @@ use protocol::{
     codec::{hex_decode, ProtocolCodec as _},
     tokio,
     trie::{MemoryDB, PatriciaTrie, Trie as _},
-    types::{Header, Metadata, Proposal, RichBlock, H256},
+    types::{
+        Bloom, BloomInput, Header, Metadata, Proposal, RichBlock, H256, RLP_EMPTY_LIST, RLP_NULL,
+    },
 };
 
 use crate::{components::chain_spec::ChainSpecExt as _, execute_genesis, DatabaseGroup};
@@ -32,42 +34,38 @@ use crate::{components::chain_spec::ChainSpecExt as _, execute_genesis, Database
 const DEV_CONFIG_DIR: &str = "../../devtools/chain";
 
 struct TestCase<'a> {
-    chain_name:            &'a str,
-    config_file:           &'a str,
-    chain_spec_file:       &'a str,
-    key_file:              &'a str,
-    input_genesis_hash:    &'a str,
-    genesis_state_root:    &'a str,
-    genesis_receipts_root: &'a str,
+    chain_name:         &'a str,
+    config_file:        &'a str,
+    chain_spec_file:    &'a str,
+    key_file:           &'a str,
+    input_genesis_hash: &'a str,
+    genesis_state_root: &'a str,
 }
 
 const TESTCASES: &[TestCase] = &[
     TestCase {
-        chain_name:            "single_node",
-        config_file:           "config.toml",
-        chain_spec_file:       "specs/single_node/chain-spec.toml",
-        key_file:              "debug.key",
-        input_genesis_hash:    "0x57db5b4b5c7dd1246c97b0c28aa4d10664035b2ee367df2ae1916c86b6fdffa9",
-        genesis_state_root:    "0x2f1e8e50d5ab97af96fdb5d6de8e691e5bb80f46f2c98c4133d265bd8b60de61",
-        genesis_receipts_root: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+        chain_name:         "single_node",
+        config_file:        "config.toml",
+        chain_spec_file:    "specs/single_node/chain-spec.toml",
+        key_file:           "debug.key",
+        input_genesis_hash: "0xe3a40f0115fbf101520ceea1ce7103a73cb46554187ac7ed67f3522103e06d99",
+        genesis_state_root: "0x2f1e8e50d5ab97af96fdb5d6de8e691e5bb80f46f2c98c4133d265bd8b60de61",
     },
     TestCase {
-        chain_name:            "multi_nodes",
-        config_file:           "nodes/node_1.toml",
-        chain_spec_file:       "specs/multi_nodes/chain-spec.toml",
-        key_file:              "debug.key",
-        input_genesis_hash:    "0x9dc9e22c984214a8a82f24045079e2c4dc7aa3c8510343b9c40a6e50986f3c9f",
-        genesis_state_root:    "0xf684cbec490eb5b8a07b80f369f3bf87f05ec73494b869111010a6ad6fa89894",
-        genesis_receipts_root: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+        chain_name:         "multi_nodes",
+        config_file:        "nodes/node_1.toml",
+        chain_spec_file:    "specs/multi_nodes/chain-spec.toml",
+        key_file:           "debug.key",
+        input_genesis_hash: "0x1b4cf78373961dabcba5d4a9402c924fc4fecdd9ce367239f02c8971a052f3b5",
+        genesis_state_root: "0xf684cbec490eb5b8a07b80f369f3bf87f05ec73494b869111010a6ad6fa89894",
     },
     TestCase {
-        chain_name:            "multi_nodes_short_epoch_len",
-        config_file:           "nodes/node_1.toml",
-        chain_spec_file:       "specs/multi_nodes_short_epoch_len/chain-spec.toml",
-        key_file:              "debug.key",
-        input_genesis_hash:    "0x02c6715381ee05c5e6b2a432c9da4843108c573aca6369a85ca06d26b88c1fb7",
-        genesis_state_root:    "0xa5e1e7ac3e03f7dc26cc93ab69c0ec49e591cbdaa7694c75682745c40bfca468",
-        genesis_receipts_root: "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+        chain_name:         "multi_nodes_short_epoch_len",
+        config_file:        "nodes/node_1.toml",
+        chain_spec_file:    "specs/multi_nodes_short_epoch_len/chain-spec.toml",
+        key_file:           "debug.key",
+        input_genesis_hash: "0xd930632a7565acfc149c1d896d79910608768de5b936fdb34cc47c9b2296dd2a",
+        genesis_state_root: "0xa5e1e7ac3e03f7dc26cc93ab69c0ec49e591cbdaa7694c75682745c40bfca468",
     },
 ];
 
@@ -141,7 +139,7 @@ async fn check_genesis_data<'a>(case: &TestCase<'a>) {
     assert!(genesis.block.tx_hashes.is_empty());
 
     println!("checking genesis hash");
-    check_hashes(
+    check_hashes_via_str(
         case.chain_name,
         "input genesis hash",
         case.input_genesis_hash,
@@ -149,19 +147,49 @@ async fn check_genesis_data<'a>(case: &TestCase<'a>) {
     );
 
     println!("checking state root");
-    check_hashes(
+    check_hashes_via_str(
         case.chain_name,
         "genesis state root",
         case.genesis_state_root,
         genesis.block.header.state_root,
     );
 
+    check_hashes(
+        case.chain_name,
+        "genesis transactions root",
+        genesis.block.header.transactions_root,
+        RLP_NULL,
+    );
+
+    check_hashes(
+        case.chain_name,
+        "genesis signed transactions hash",
+        genesis.block.header.signed_txs_hash,
+        RLP_EMPTY_LIST,
+    );
+
     println!("checking receipts hash");
     check_hashes(
         case.chain_name,
         "genesis receipts root",
-        case.genesis_receipts_root,
         genesis.block.header.receipts_root,
+        RLP_NULL,
+    );
+
+    let logs: Vec<Bloom> = Default::default();
+    let expected_log_bloom = Bloom::from(BloomInput::Raw(rlp::encode_list(&logs).as_ref()));
+    assert_eq!(
+        genesis.block.header.log_bloom, expected_log_bloom,
+        "log bloom in genesis of chain {} should be empty since no transactions, \
+        expect {expected_log_bloom:#x}, actual {:#x}",
+        case.chain_name, genesis.block.header.log_bloom,
+    );
+
+    assert!(
+        genesis.block.header.gas_used.is_zero(),
+        "gas used in genesis of chain {} should be zero since no transactions, actual {}",
+        case.chain_name,
+        genesis.block.header.gas_used,
     );
 
     println!("checking state");
@@ -198,9 +226,13 @@ fn check_state(spec: &ChainSpec, genesis_header: &Header, db_group: &DatabaseGro
     assert_metadata(metadata_1, handle.get_metadata_by_epoch(1).unwrap());
 }
 
-fn check_hashes(chain: &str, name: &str, expected_str: &str, actual: H256) {
+fn check_hashes_via_str(chain: &str, name: &str, expected_str: &str, actual: H256) {
     let expected = H256::from_str(expected_str)
         .unwrap_or_else(|err| panic!("failed to parse hash {name} of chain {chain} since {err}"));
+    check_hashes(chain, name, expected, actual);
+}
+
+fn check_hashes(chain: &str, name: &str, expected: H256, actual: H256) {
     assert_eq!(
         expected, actual,
         "hash {name} of chain {chain} is changed, expect {expected:#x}, but got {actual:#x}",

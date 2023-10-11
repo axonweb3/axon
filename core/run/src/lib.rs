@@ -15,8 +15,8 @@ use protocol::traits::{
     Context, Executor, Gossip, MemPool, Network, NodeInfo, PeerTrust, ReadOnlyStorage, Rpc, Storage,
 };
 use protocol::types::{
-    Block, ExecResp, HardforkInfoInner, Header, Metadata, Proposal, RichBlock, SignedTransaction,
-    Validator, ValidatorExtend, H256,
+    Block, Bloom, BloomInput, ExecResp, HardforkInfoInner, Header, Metadata, Proposal, RichBlock,
+    SignedTransaction, Validator, ValidatorExtend, H256,
 };
 use protocol::{lazy::CHAIN_ID, trie::DB as TrieDB, ProtocolResult};
 
@@ -462,6 +462,15 @@ async fn execute_genesis(
 
     partial_genesis.block.header.state_root = resp.state_root;
     partial_genesis.block.header.receipts_root = resp.receipt_root;
+
+    let logs = resp
+        .tx_resp
+        .iter()
+        .map(|r| Bloom::from(BloomInput::Raw(rlp::encode_list(&r.logs).as_ref())))
+        .collect::<Vec<_>>();
+    let log_bloom = Bloom::from(BloomInput::Raw(rlp::encode_list(&logs).as_ref()));
+
+    partial_genesis.block.header.log_bloom = log_bloom;
 
     log::info!("The genesis block is executed {:?}", partial_genesis.block);
     log::info!("Response for genesis is {:?}", resp);

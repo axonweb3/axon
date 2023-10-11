@@ -10,7 +10,10 @@ use strum_macros::EnumIter;
 use common_crypto::Secp256k1RecoverablePrivateKey;
 use protocol::{
     codec::{decode_256bits_key, deserialize_address, ProtocolCodec},
-    types::{ExtraData, HardforkInfoInner, Header, Key256Bits, Metadata, H160, H256, U256},
+    types::{
+        ExtraData, HardforkInfoInner, Header, Key256Bits, Metadata, H160, H256, RLP_EMPTY_LIST,
+        RLP_NULL, U256,
+    },
 };
 
 use crate::parse_file;
@@ -203,6 +206,8 @@ impl Genesis {
     /// Build a `Header` of the genesis block from the user provided parameters.
     pub fn build_header(&self) -> Header {
         Header {
+            transactions_root: RLP_NULL,
+            signed_txs_hash: RLP_EMPTY_LIST,
             timestamp: self.timestamp,
             // todo: if Hardforkinput is empty, it must change to latest hardfork info to init
             // genesis
