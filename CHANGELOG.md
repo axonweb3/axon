@@ -1,4 +1,8 @@
-## Unreleased
+# CHANGELOG
+
+## v0.2.0-beta.1
+
+The release of version `0.2.0-beta.1` marks the commencement of a new epoch in Axon development. With this release, all future breaking changes will be introduced as hardforks. The primary modifications include the following:
 
 ### BREAKING CHANGES
 
@@ -15,6 +19,10 @@
 - Remove useless fields in `Header`
   ([\#1339](https://github.com/axonweb3/axon/pull/1339))
 - Change the rlp codec of `Hex` ([\#1382](https://github.com/axonweb3/axon/pull/1382))
+- Insert metadata directly when initialize chain
+  ([\#1454](https://github.com/axonweb3/axon/pull/1454))
+- Split bls and secp256k1 private key
+  ([\#1471](https://github.com/axonweb3/axon/pull/1471))
 
 ### BUG FIXES
 
@@ -35,6 +43,27 @@
   ([\#1370](https://github.com/axonweb3/axon/pull/1370))
 - The  deserialize of  ([\#1396](https://github.com/axonweb3/axon/pull/1396))
 - `genesis-generator` is nondeterministic ([\#1400](https://github.com/axonweb3/axon/pull/1400))
+- Return RPC `null` when no receipt was found
+  ([\#1404](https://github.com/axonweb3/axon/pull/1404))
+- Fix display of signature v in transaction
+  ([\#1431](https://github.com/axonweb3/axon/pull/1431))
+- Set CORS to any to accept RPC alls from web-based apps
+  ([\#1459](https://github.com/axonweb3/axon/pull/1459))
+- Default values of genesis fields should be same as normal blocks
+  ([\#1468](https://github.com/axonweb3/axon/pull/1468))
+
+### CODE REFACTOR
+
+- Change serialization for block header `extra_data`
+  ([\#1442](https://github.com/axonweb3/axon/pull/1442))
+- Remove first transaction in genesis
+  ([\#1443](https://github.com/axonweb3/axon/pull/1443)
+- Remove metadata precompile contract
+  ([\#1449](https://github.com/axonweb3/axon/pull/1449))
+- Initialize chain without genesis transaction file
+  ([\#1450](https://github.com/axonweb3/axon/pull/1450))
+- Initialize chain without any secret key
+  ([\#1467](https://github.com/axonweb3/axon/pull/1467))
 
 ### CODE REFACTORS
 
@@ -63,6 +92,8 @@
   ([\#1367](https://github.com/axonweb3/axon/pull/1367))
 - Change the memory layout of `Hex`
   ([\#1371](https://github.com/axonweb3/axon/pull/1371))
+- Make error message display better
+  ([\#1405](https://github.com/axonweb3/axon/pull/1405))
 
 ### DOCUMENTS
 
@@ -71,6 +102,10 @@
 - Fix some typos ([\#1369](https://github.com/axonweb3/axon/pull/1369))
 - Update the meaning of genesis transactions
   ([\#1379](https://github.com/axonweb3/axon/pull/1379))
+- Update `Getting Started` section in README.md
+  ([\#1430](https://github.com/axonweb3/axon/pull/1430))
+- Update default dev chain ID
+  ([\#1434](https://github.com/axonweb3/axon/pull/1434))
 
 ### FEATURES
 
@@ -80,10 +115,22 @@
   ([\#1340](https://github.com/axonweb3/axon/pull/1340))
 - Add hardfork storage to metadata system contract
   ([\#1380](https://github.com/axonweb3/axon/pull/1380))
+- Split `run` command to `init` and `run`
+  ([\#1386](https://github.com/axonweb3/axon/pull/1386))
 - Storage batch insert data with sync
   ([\#1389](https://github.com/axonweb3/axon/pull/1389))
+- Integrate genesis-generator into axon `init` command
+  ([\#1402](https://github.com/axonweb3/axon/pull/1402))
+- Add hardfork proposal process
+  ([\#1404](https://github.com/axonweb3/axon/pull/1404))
+- Support set hardfork in command line
+  ([\#1422](https://github.com/axonweb3/axon/pull/1422))
+- First hardfork with contract size limit
+  ([\#1451](https://github.com/axonweb3/axon/pull/1451))
 
 ### PERFORMANCE IMPROVEMENTS
 
 - Reduce memory cost in `modexp` precompile contract
   ([\#1300](https://github.com/axonweb3/axon/pull/1300))
+
+Changelogs before 0.2.0 can be found [here](./CHANGELOG_OLD.md).
