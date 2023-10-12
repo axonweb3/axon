@@ -23,8 +23,10 @@ pub const DEFAULT_CACHE_SIZE: usize = 100;
 #[derive(Clone, Debug, Deserialize)]
 pub struct Config {
     // crypto
+    /// `net_privkey` is used for network connection.
     #[serde(deserialize_with = "deserialize_256bits_key")]
     pub net_privkey: Key256Bits,
+    /// `bls_privkey` is used for signing consensus messages.
     #[serde(deserialize_with = "deserialize_256bits_key")]
     pub bls_privkey: Key256Bits,
 
