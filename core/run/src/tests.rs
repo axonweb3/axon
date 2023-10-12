@@ -45,22 +45,22 @@ const TESTCASES: &[TestCase] = &[
         chain_name:         "single_node",
         config_file:        "config.toml",
         chain_spec_file:    "specs/single_node/chain-spec.toml",
-        input_genesis_hash: "0xe3a40f0115fbf101520ceea1ce7103a73cb46554187ac7ed67f3522103e06d99",
-        genesis_state_root: "0x2f1e8e50d5ab97af96fdb5d6de8e691e5bb80f46f2c98c4133d265bd8b60de61",
+        input_genesis_hash: "0x274c0c52500c3978776d8836b8afe0999a946a010166c12a85a1c45b9cd2c5a2",
+        genesis_state_root: "0x940458498b6ac368ab17e9ede64d0cc1d321bc4ec835e09a333a4151c7785ea1",
     },
     TestCase {
         chain_name:         "multi_nodes",
         config_file:        "nodes/node_1.toml",
         chain_spec_file:    "specs/multi_nodes/chain-spec.toml",
-        input_genesis_hash: "0x1b4cf78373961dabcba5d4a9402c924fc4fecdd9ce367239f02c8971a052f3b5",
-        genesis_state_root: "0xf684cbec490eb5b8a07b80f369f3bf87f05ec73494b869111010a6ad6fa89894",
+        input_genesis_hash: "0x70cc025ae586f054157f6d8a6558c39c359cde0eb4b9acbdf3f31a8e14a6a6fc",
+        genesis_state_root: "0x9976026c069e8d931d55f93637663e494caae772c2c274ad636de9bc7baf5191",
     },
     TestCase {
         chain_name:         "multi_nodes_short_epoch_len",
         config_file:        "nodes/node_1.toml",
         chain_spec_file:    "specs/multi_nodes_short_epoch_len/chain-spec.toml",
-        input_genesis_hash: "0xd930632a7565acfc149c1d896d79910608768de5b936fdb34cc47c9b2296dd2a",
-        genesis_state_root: "0xa5e1e7ac3e03f7dc26cc93ab69c0ec49e591cbdaa7694c75682745c40bfca468",
+        input_genesis_hash: "0x4213963522f2d72fa8b33ab4a8b33d79f0d387999f97f38d5c93d9b047baa743",
+        genesis_state_root: "0x33a4f19a7d1bca010f6c3f17904e23f099dd2a022e1f1401fbffed27a1919370",
     },
 ];
 

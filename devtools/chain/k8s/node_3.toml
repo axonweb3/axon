@@ -1,5 +1,6 @@
 # crypto
-privkey = "0x51ce21643b911347c5d5c85c323d9d5421810dc89f46b688720b2715f5e8e936"
+net_privkey = "0x51ce21643b911347c5d5c85c323d9d5421810dc89f46b688720b2715f5e8e936"
+bls_privkey = "0x51a04542786ca3bae046d1c7451b6a0745efdcc66c39ede37827172f964d5fdf"
 
 # db config
 data_path = "./devtools/chain/data3"

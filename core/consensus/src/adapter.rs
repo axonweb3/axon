@@ -502,6 +502,7 @@ where
             .into());
         }
 
+        // The address field of Node struct should use the node's secp256k1 public key
         let mut authority_list = metadata
             .verifier_list
             .iter()

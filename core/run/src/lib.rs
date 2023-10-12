@@ -197,15 +197,7 @@ async fn start<K: KeyProvider>(
     metadata_handle.init_hardfork(current_block.header.number)?;
 
     let metadata = metadata_handle.get_metadata_by_block_number(current_block.header.number)?;
-    let validators: Vec<Validator> = metadata
-        .verifier_list
-        .iter()
-        .map(|v| Validator {
-            pub_key:        v.pub_key.as_bytes(),
-            propose_weight: v.propose_weight,
-            vote_weight:    v.vote_weight,
-        })
-        .collect::<Vec<_>>();
+    let validators: Vec<Validator> = metadata.verifier_list.iter().map(Into::into).collect();
 
     // Set args in mempool
     mempool.set_args(
@@ -217,7 +209,7 @@ async fn start<K: KeyProvider>(
 
     // Init overlord consensus and synchronization
     let lock = Arc::new(AsyncMutex::new(()));
-    let crypto = init_crypto(config.privkey.as_ref(), &metadata.verifier_list)?;
+    let crypto = init_crypto(config.bls_privkey.as_ref(), &metadata.verifier_list)?;
     let consensus_adapter = OverlordConsensusAdapter::<_, _, _, _>::new(
         Arc::new(network_service.handle()),
         Arc::clone(&mempool),
@@ -231,7 +223,7 @@ async fn start<K: KeyProvider>(
     let hardfork_info = storage.hardfork_proposal(Default::default()).await?;
     let overlord_consensus = {
         let consensus_wal_path = config.data_path_for_consensus_wal();
-        let node_info = Secp256k1PrivateKey::try_from(config.privkey.as_ref())
+        let node_info = Secp256k1PrivateKey::try_from(config.net_privkey.as_ref())
             .map(|privkey| {
                 NodeInfo::new(
                     current_block.header.chain_id,

@@ -518,7 +518,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             metadata.consensus_config.prevote_ratio,
             metadata.consensus_config.precommit_ratio,
             metadata.consensus_config.brake_ratio,
-            metadata.verifier_list.into_iter().map(Into::into).collect(),
+            metadata.verifier_list.iter().map(Into::into).collect(),
         )?;
 
         log::info!(
