@@ -5,7 +5,7 @@ mod store;
 
 pub use abi::metadata_abi;
 pub use handle::MetadataHandle;
-pub use store::MetadataStore;
+pub use store::{encode_consensus_config, MetadataStore};
 
 use std::{num::NonZeroUsize, sync::Arc};
 
@@ -32,8 +32,9 @@ const METADATA_CACHE_SIZE: NonZeroUsize = unsafe { NonZeroUsize::new_unchecked(1
 lazy_static::lazy_static! {
     pub static ref EPOCH_SEGMENT_KEY: H256 = Hasher::digest("epoch_segment");
     static ref CKB_RELATED_INFO_KEY: H256 = Hasher::digest("ckb_related_info");
-    static ref HARDFORK_KEY: H256 = Hasher::digest("hardfork");
-    static ref HARDFORK_INFO: ArcSwap<H256> = ArcSwap::new(Arc::new(H256::zero()));
+    pub static ref CONSENSUS_CONFIG: H256 = Hasher::digest("consensus_config");
+    pub static ref HARDFORK_KEY: H256 = Hasher::digest("hardfork");
+    pub static ref HARDFORK_INFO: ArcSwap<H256> = ArcSwap::new(Arc::new(H256::zero()));
     static ref METADATA_CACHE: RwLock<LruCache<Epoch, Metadata>> =  RwLock::new(LruCache::new(METADATA_CACHE_SIZE));
 }
 
@@ -97,7 +98,7 @@ impl<Adapter: ExecutorAdapter + ApplyBackend> SystemContract<Adapter>
             }
             metadata_abi::MetadataContractCalls::UpdateConsensusConfig(c) => {
                 exec_try!(
-                    store.update_consensus_config(c.config),
+                    store.update_consensus_config(c.config.into()),
                     gas_limit,
                     "[metadata] update consensus config"
                 );
@@ -111,6 +112,10 @@ impl<Adapter: ExecutorAdapter + ApplyBackend> SystemContract<Adapter>
 
     fn after_block_hook(&self, adapter: &mut Adapter) {
         let block_number = adapter.block_number();
+        if block_number.is_zero() {
+            return;
+        }
+
         let root = CURRENT_METADATA_ROOT.with(|r| *r.borrow());
 
         let mut store = MetadataStore::new(root).unwrap();
@@ -126,10 +131,6 @@ impl<Adapter: ExecutorAdapter + ApplyBackend> SystemContract<Adapter>
         let hardfork = store.hardfork_info(block_number.as_u64()).unwrap();
 
         HARDFORK_INFO.swap(Arc::new(hardfork));
-
-        if block_number.is_zero() {
-            return;
-        }
 
         if let Err(e) = store.update_propose_count(block_number.as_u64(), &adapter.origin()) {
             panic!("Update propose count at {:?} failed: {:?}", block_number, e)

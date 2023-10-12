@@ -155,10 +155,10 @@ fn enabled_and_determined(iter: &[HardforkInfoInner], current_number: u64) -> (H
     if iter.len() < 2 {
         match iter.last() {
             Some(latest) => {
-                if latest.block_number >= current_number {
-                    (latest.flags, H256::zero())
-                } else {
+                if latest.block_number > current_number {
                     (H256::zero(), latest.flags)
+                } else {
+                    (latest.flags, H256::zero())
                 }
             }
             None => (H256::zero(), H256::zero()),

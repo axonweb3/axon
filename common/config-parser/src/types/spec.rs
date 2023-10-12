@@ -5,14 +5,14 @@ use clap::{
     Args, ValueEnum,
 };
 use serde::{Deserialize, Serialize};
+use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 use common_crypto::Secp256k1RecoverablePrivateKey;
 use protocol::{
-    codec::{decode_256bits_key, deserialize_address, ProtocolCodec},
+    codec::{decode_256bits_key, deserialize_address},
     types::{
-        ExtraData, HardforkInfoInner, Header, Key256Bits, Metadata, H160, H256, RLP_EMPTY_LIST,
-        RLP_NULL, U256,
+        HardforkInfoInner, Header, Key256Bits, Metadata, H160, H256, RLP_EMPTY_LIST, RLP_NULL, U256,
     },
 };
 
@@ -209,22 +209,17 @@ impl Genesis {
             transactions_root: RLP_NULL,
             signed_txs_hash: RLP_EMPTY_LIST,
             timestamp: self.timestamp,
-            // todo: if Hardforkinput is empty, it must change to latest hardfork info to init
-            // genesis
-            extra_data: {
-                vec![ExtraData {
-                    inner: Into::<HardforkInfoInner>::into(HardforkInput {
-                        hardforks:    self.hardforks.clone(),
-                        block_number: 0,
-                    })
-                    .encode()
-                    .unwrap(),
-                }]
-            },
             base_fee_per_gas: self.base_fee_per_gas,
             chain_id: self.chain_id,
             ..Default::default()
         }
+    }
+
+    pub fn generate_hardfork_info(&self) -> HardforkInfoInner {
+        Into::<HardforkInfoInner>::into(HardforkInput {
+            hardforks:    self.hardforks.clone(),
+            block_number: 0,
+        })
     }
 }
 
@@ -242,10 +237,22 @@ pub struct HardforkInput {
 
 impl From<HardforkInput> for HardforkInfoInner {
     fn from(value: HardforkInput) -> Self {
-        let flags = {
-            let r = value.hardforks.into_iter().fold(0, |acc, s| acc | s as u64);
+        let convert_fn = |hardforks: Vec<HardforkName>| -> H256 {
+            let r = hardforks.into_iter().fold(0, |acc, s| acc | s as u64);
 
             H256::from_low_u64_be(r.to_be())
+        };
+
+        let flags = if value.hardforks.is_empty() {
+            H256::from_low_u64_be(HardforkName::all().to_be())
+        } else if value.hardforks.len() == 1 {
+            if value.hardforks[0] == HardforkName::None {
+                H256::zero()
+            } else {
+                convert_fn(value.hardforks)
+            }
+        } else {
+            convert_fn(value.hardforks)
         };
 
         HardforkInfoInner {
@@ -255,7 +262,21 @@ impl From<HardforkInput> for HardforkInfoInner {
     }
 }
 
+/// inspired by https://www.wikiwand.com/en/IAU_designated_constellations#List
 #[derive(Clone, Debug, Serialize, Deserialize, Copy, ValueEnum, EnumIter, PartialEq, Eq, Hash)]
 pub enum HardforkName {
     None = 0b0,
+    /// If this hardfork is activated, chain validators can modify the EVM
+    /// contract size limit.
+    Andromeda = 0b1,
+}
+
+impl HardforkName {
+    pub fn all() -> u64 {
+        let mut res = 0u64;
+        for name in HardforkName::iter() {
+            res |= name as u64
+        }
+        res
+    }
 }

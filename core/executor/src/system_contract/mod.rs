@@ -28,7 +28,9 @@ use parking_lot::RwLock;
 use rocksdb::DB;
 
 use protocol::traits::{CkbDataProvider, ExecutorAdapter};
-use protocol::types::{Bytes, Hasher, Metadata, SignedTransaction, TxResp, H160, H256};
+use protocol::types::{
+    Bytes, HardforkInfoInner, Hasher, Metadata, SignedTransaction, TxResp, H160, H256,
+};
 use protocol::{ckb_blake2b_256, ProtocolResult};
 
 use crate::adapter::RocksTrieDB;
@@ -115,9 +117,10 @@ pub fn init<Adapter: ExecutorAdapter + ApplyBackend>(
     db: Arc<DB>,
     adapter: &mut Adapter,
     metadata_list: &[Metadata],
+    hardfork: HardforkInfoInner,
 ) -> ProtocolResult<(H256, H256)> {
     let ret = init_system_contract_db(db, adapter);
-    init_metadata(adapter, ret.0, metadata_list)?;
+    init_metadata_and_hardfork(adapter, ret.0, metadata_list, hardfork)?;
 
     Ok(ret)
 }
@@ -165,16 +168,18 @@ pub fn init_system_contract_db<Adapter: ExecutorAdapter + ApplyBackend>(
 
 /// This method is used for insert the first two metadata, so the
 /// `metadata_list.len()` should be equal to 2.
-fn init_metadata<Adapter: ExecutorAdapter + ApplyBackend>(
+fn init_metadata_and_hardfork<Adapter: ExecutorAdapter + ApplyBackend>(
     adapter: &mut Adapter,
     metadata_root: H256,
     metadata_list: &[Metadata],
+    hardfork: HardforkInfoInner,
 ) -> ProtocolResult<()> {
     debug_assert!(metadata_list.len() == 2);
 
     let mut store = MetadataStore::new(metadata_root)?;
     store.append_metadata(&metadata_list[0])?;
     store.append_metadata(&metadata_list[1])?;
+    store.set_hardfork_info(hardfork.block_number, hardfork.flags)?;
 
     let changes = generate_mpt_root_changes(adapter, METADATA_CONTRACT_ADDRESS);
     adapter.apply(changes, vec![], false);

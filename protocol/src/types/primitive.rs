@@ -306,10 +306,42 @@ pub struct Metadata {
     pub consensus_config: ConsensusConfig,
 }
 
+impl Metadata {
+    pub fn into_part(self) -> (MetadataInner, ConsensusConfig) {
+        (
+            MetadataInner {
+                version:         self.version,
+                epoch:           self.epoch,
+                verifier_list:   self.verifier_list,
+                propose_counter: self.propose_counter,
+            },
+            self.consensus_config,
+        )
+    }
+
+    pub fn from_parts(inner: MetadataInner, config: ConsensusConfig) -> Self {
+        Metadata {
+            version:          inner.version,
+            epoch:            inner.epoch,
+            verifier_list:    inner.verifier_list,
+            propose_counter:  inner.propose_counter,
+            consensus_config: config,
+        }
+    }
+}
+
+#[derive(RlpEncodable, RlpDecodable, Default, Clone, Debug, PartialEq, Eq)]
+pub struct MetadataInner {
+    pub version:         MetadataVersion,
+    pub epoch:           u64,
+    pub verifier_list:   Vec<ValidatorExtend>,
+    pub propose_counter: Vec<ProposeCount>,
+}
+
 #[derive(
     RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq,
 )]
-pub struct ConsensusConfig {
+pub struct ConsensusConfigV0 {
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub gas_limit:       u64,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
@@ -326,6 +358,51 @@ pub struct ConsensusConfig {
     pub tx_num_limit:    u64,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub max_tx_size:     u64,
+}
+
+impl From<ConsensusConfigV0> for ConsensusConfig {
+    fn from(value: ConsensusConfigV0) -> Self {
+        ConsensusConfig {
+            gas_limit:          value.gas_limit,
+            interval:           value.interval,
+            precommit_ratio:    value.precommit_ratio,
+            propose_ratio:      value.propose_ratio,
+            prevote_ratio:      value.prevote_ratio,
+            brake_ratio:        value.brake_ratio,
+            tx_num_limit:       value.tx_num_limit,
+            max_tx_size:        value.max_tx_size,
+            max_contract_limit: default_max_contract_limit(),
+        }
+    }
+}
+
+#[derive(
+    RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq,
+)]
+pub struct ConsensusConfig {
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
+    pub gas_limit:          u64,
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
+    pub interval:           u64,
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
+    pub propose_ratio:      u64,
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
+    pub prevote_ratio:      u64,
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
+    pub precommit_ratio:    u64,
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
+    pub brake_ratio:        u64,
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
+    pub tx_num_limit:       u64,
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
+    pub max_tx_size:        u64,
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
+    #[serde(default = "default_max_contract_limit")]
+    pub max_contract_limit: u64,
+}
+
+pub fn default_max_contract_limit() -> u64 {
+    0x6000
 }
 
 impl From<Metadata> for DurationConfig {

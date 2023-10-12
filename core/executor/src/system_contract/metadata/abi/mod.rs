@@ -35,14 +35,15 @@ impl From<Metadata> for metadata_abi::Metadata {
 impl From<ConsensusConfig> for metadata_abi::ConsensusConfig {
     fn from(value: ConsensusConfig) -> Self {
         metadata_abi::ConsensusConfig {
-            propose_ratio:   value.propose_ratio,
-            prevote_ratio:   value.prevote_ratio,
-            precommit_ratio: value.precommit_ratio,
-            brake_ratio:     value.brake_ratio,
-            tx_num_limit:    value.tx_num_limit,
-            max_tx_size:     value.max_tx_size,
-            gas_limit:       value.gas_limit,
-            interval:        value.interval,
+            propose_ratio:      value.propose_ratio,
+            prevote_ratio:      value.prevote_ratio,
+            precommit_ratio:    value.precommit_ratio,
+            brake_ratio:        value.brake_ratio,
+            tx_num_limit:       value.tx_num_limit,
+            max_tx_size:        value.max_tx_size,
+            gas_limit:          value.gas_limit,
+            interval:           value.interval,
+            max_contract_limit: value.max_contract_limit,
         }
     }
 }
@@ -50,14 +51,15 @@ impl From<ConsensusConfig> for metadata_abi::ConsensusConfig {
 impl From<metadata_abi::ConsensusConfig> for ConsensusConfig {
     fn from(value: metadata_abi::ConsensusConfig) -> Self {
         ConsensusConfig {
-            propose_ratio:   value.propose_ratio,
-            prevote_ratio:   value.prevote_ratio,
-            precommit_ratio: value.precommit_ratio,
-            brake_ratio:     value.brake_ratio,
-            tx_num_limit:    value.tx_num_limit,
-            max_tx_size:     value.max_tx_size,
-            gas_limit:       value.gas_limit,
-            interval:        value.interval,
+            propose_ratio:      value.propose_ratio,
+            prevote_ratio:      value.prevote_ratio,
+            precommit_ratio:    value.precommit_ratio,
+            brake_ratio:        value.brake_ratio,
+            tx_num_limit:       value.tx_num_limit,
+            max_tx_size:        value.max_tx_size,
+            gas_limit:          value.gas_limit,
+            interval:           value.interval,
+            max_contract_limit: value.max_contract_limit,
         }
     }
 }

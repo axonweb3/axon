@@ -288,8 +288,8 @@ impl RichBlock {
 #[cfg(test)]
 mod tests {
     use crate::types::{
-        Block, BlockVersion, ConsensusConfig, Header, Hex, Metadata, MetadataVersion, ProposeCount,
-        RichBlock, ValidatorExtend, H160,
+        primitive::default_max_contract_limit, Block, BlockVersion, ConsensusConfig, Header, Hex,
+        Metadata, MetadataVersion, ProposeCount, RichBlock, ValidatorExtend, H160,
     };
     use std::{
         str::FromStr,
@@ -369,6 +369,7 @@ mod tests {
                 brake_ratio: 10,
                 tx_num_limit: 20000,
                 max_tx_size: 1024,
+                max_contract_limit: default_max_contract_limit()
             }
         };
 
