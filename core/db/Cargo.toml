@@ -6,7 +6,7 @@ edition = "2021"
 
 [dependencies]
 parking_lot = "0.12"
-rocksdb = { package = "ckb-rocksdb", version = "0.20" }
+rocksdb = { version = "0.21", package = "ckb-rocksdb" }
 
 common-apm = { path = "../../common/apm" }
 common-apm-derive = { path = "../../common/apm-derive" }

@@ -14,7 +14,7 @@ stringreader = "0.1"
 strum = "0.25"
 strum_macros = "0.25"
 tentacle-multiaddr = "0.3"
-toml = "0.7"
+toml = "0.8"
 
 common-crypto = { path = "../../common/crypto" }
 protocol = { path = "../../protocol", package = "axon-protocol", default-features = false }
