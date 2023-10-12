@@ -12,7 +12,7 @@ use clap::{builder::TypedValueParser as _, Command};
 use hasher::HasherKeccak;
 
 use common_config_parser::types::{
-    spec::{ChainSpec, ChainSpecValueParser, HardforkName, PrivateKeyFileValueParser},
+    spec::{ChainSpec, ChainSpecValueParser, HardforkName},
     Config, ConfigValueParser,
 };
 use core_executor::{
@@ -49,22 +49,22 @@ const TESTCASES: &[TestCase] = &[
         chain_name:         "single_node",
         config_file:        "config.toml",
         chain_spec_file:    "specs/single_node/chain-spec.toml",
-        input_genesis_hash: "0x274c0c52500c3978776d8836b8afe0999a946a010166c12a85a1c45b9cd2c5a2",
-        genesis_state_root: "0x940458498b6ac368ab17e9ede64d0cc1d321bc4ec835e09a333a4151c7785ea1",
+        input_genesis_hash: "0x766cd8e7a32f698eb1180cd736bad6d316ebd3c185326bf6be24ef34996f545a",
+        genesis_state_root: "0x2131e3b9b90adc4c5e2b5136f3789b982029ab43c610cee0b05d8d2759dbdac4",
     },
     TestCase {
         chain_name:         "multi_nodes",
         config_file:        "nodes/node_1.toml",
         chain_spec_file:    "specs/multi_nodes/chain-spec.toml",
-        input_genesis_hash: "0x70cc025ae586f054157f6d8a6558c39c359cde0eb4b9acbdf3f31a8e14a6a6fc",
-        genesis_state_root: "0x9976026c069e8d931d55f93637663e494caae772c2c274ad636de9bc7baf5191",
+        input_genesis_hash: "0x6e6160ffd1dcbcec8fa57a9a62479a9ace98f53bfd512fe946fe17f50c08def9",
+        genesis_state_root: "0x754e9d640f31758f44dbdb18b266dcfb87945d96d713f0a28a06bf6dfa665585",
     },
     TestCase {
         chain_name:         "multi_nodes_short_epoch_len",
         config_file:        "nodes/node_1.toml",
         chain_spec_file:    "specs/multi_nodes_short_epoch_len/chain-spec.toml",
-        input_genesis_hash: "0x4213963522f2d72fa8b33ab4a8b33d79f0d387999f97f38d5c93d9b047baa743",
-        genesis_state_root: "0x33a4f19a7d1bca010f6c3f17904e23f099dd2a022e1f1401fbffed27a1919370",
+        input_genesis_hash: "0x38814e4efa8ec97e659905208d808e5f7118bb039aa7aaee89937dad8bdee756",
+        genesis_state_root: "0xe2cb19b9ce6655838aa5e280d4f6fb06fcf367d454d4bc1c47f5bfd85d75432e",
     },
 ];
 

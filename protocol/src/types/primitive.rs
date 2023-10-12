@@ -371,7 +371,7 @@ impl From<ConsensusConfigV0> for ConsensusConfig {
             brake_ratio:        value.brake_ratio,
             tx_num_limit:       value.tx_num_limit,
             max_tx_size:        value.max_tx_size,
-            max_contract_limit: 0x6000,
+            max_contract_limit: default_max_contract_limit(),
         }
     }
 }
@@ -401,7 +401,7 @@ pub struct ConsensusConfig {
     pub max_contract_limit: u64,
 }
 
-fn default_max_contract_limit() -> u64 {
+pub fn default_max_contract_limit() -> u64 {
     0x6000
 }
 

@@ -5,6 +5,7 @@ use clap::{
     Args, ValueEnum,
 };
 use serde::{Deserialize, Serialize};
+use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
 use common_crypto::Secp256k1RecoverablePrivateKey;
@@ -261,14 +262,21 @@ impl From<HardforkInput> for HardforkInfoInner {
     }
 }
 
+/// inspired by https://www.wikiwand.com/en/IAU_designated_constellations#List
 #[derive(Clone, Debug, Serialize, Deserialize, Copy, ValueEnum, EnumIter, PartialEq, Eq, Hash)]
 pub enum HardforkName {
     None = 0b0,
+    /// If this hardfork is activated, chain validators can modify the EVM
+    /// contract size limit.
     Andromeda = 0b1,
 }
 
 impl HardforkName {
     pub fn all() -> u64 {
-        HardforkName::Andromeda as u64
+        let mut res = 0u64;
+        for name in HardforkName::iter() {
+            res |= name as u64
+        }
+        res
     }
 }
