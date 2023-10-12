@@ -9,7 +9,7 @@ arc-swap = "1.6"
 futures = "0.3"
 lazy_static = "1.4"
 log = "0.4"
-lru = "0.11"
+lru = "0.12"
 parking_lot = "0.12"
 
 common-apm = { path = "../../common/apm" }
