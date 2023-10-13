@@ -10,65 +10,190 @@ Axon JSON-RPC allow you to interact with a local or remote axon node using HTTP,
 
 ## Table of Contents
 
-* [RPC Methods](#rpc-methods)
-    * [Gossip Methods](#Gossip-Methods)
-        * [Method `eth_sendRawTransaction`](#method-eth_sendRawTransaction)
-        * [Method `eth_blockNumber`](#method-eth_blockNumber)
-		* [Method `eth_submitWork`](#method-eth_submitWork)
-		* [Method `eth_submitHashrate`](#method-eth_submitHashrate)
-    * [History Methods](#History-Methods)
-        * [Method `eth_getBlockByNumber`](#method-eth_getBlockByNumber)
-        * [Method `eth_getBlockByHash`](#method-eth_getBlockByHash)
-        * [Method `eth_getTransactionByHash`](#method-eth_getTransactionByHash)
-		* [Method `eth_getBlockTransactionCountByNumber`](#method-eth_getBlockTransactionCountByNumber)
-		* [Method `eth_getTransactionReceipt`](#method-eth_getTransactionReceipt)
-		* [Method `eth_feeHistory`](#method-eth_feeHistory)
-		* [Method `eth_getBlockTransactionCountByHash`](#method-eth_getBlockTransactionCountByHash)
-		* [Method `eth_getTransactionByBlockHashAndIndex`](#method-eth_getTransactionByBlockHashAndIndex)
-		* [Method `eth_getTransactionByBlockNumberAndIndex`](#method-eth_getTransactionByBlockNumberAndIndex)
-    * [State Methods](#State-Methods)
-        * [Method `eth_getTransactionCount`](#method-eth_getTransactionCount)
-        * [Method `eth_getBalance`](#method-eth_getBalance)
-		* [Method `eth_chainId`](#method-eth_chainId)
-		* [Method `net_version`](#method-net_version)
-		* [Method `eth_call`](#method-eth_call)
-		* [Method `eth_estimateGas`](#method-eth_estimateGas)
-		* [Method `eth_getCode`](#method-eth_getCode)
-		* [Method `eth_gasPrice`](#method-eth_gasPrice)
-		* [Method `net_listening`](#method-net_listening)
-		* [Method `eth_mining`](#method-eth_mining)
-		* [Method `net_peerCount`](#method-net_peerCount)
-		* [Method `eth_syncing`](#method-eth_syncing)
-		* [Method `eth_getLogs`](#method-eth_getLogs)
-		* [Method `web3_clientVersion`](#method-web3_clientVersion)
-		* [Method `eth_accounts`](#method-eth_accounts)
-		* [Method `web3_sha3`](#method-web3_sha3)
-		* [Method `eth_getStorageAt`](#method-eth_getStorageAt)
-		* [Method `eth_coinbase`](#method-eth_coinbase)
-		* [Method `eth_hashrate`](#method-eth_hashrate)
-* [RPC Errors](#rpc-errors)
-* [RPC Types](#rpc-types)
-    * [Type `BlockId`](#type-BlockId)
-	* [Type `H160`](#type-H160)
-	* [Type `H256`](#type-H256)
-	* [Type `Hex`](#type-Hex)
-	* [Type `Hash`](#type-Hash)
-	* [Type `String`](#type-String)
-	* [Type `bool`](#type-bool)
-	* [Type `f64`](#type-f64)
-	* [Type `Bloom`](#type-Bloom)
-	* [Type `U64`](#type-U64)
-	* [Type `U256`](#type-U256)
-	* [Type `BlockView`](#type-BlockView)
-    * [Type `Web3Log`](#type-Web3Log)
-	* [Type `Web3SyncStatus`](#type-Web3SyncStatus)
-	* [Type `Web3CallRequest`](#type-Web3CallRequest)
-    * [Type `AccessList`](#type-AccessList)
-    * [Type `AccessListItem`](#type-AccessListItem)
-    * [Type `TransactionView`](#type-TransactionView)
-	* [Type `Web3FeeHistory`](#type-Web3FeeHistory)
-	* [Type `Web3Receipt`](#type-Web3Receipt)
-	* [Type `Web3ReceiptLog`](#type-Web3ReceiptLog)
+- [Axon JSON-RPC Protocols](#axon-json-rpc-protocols)
+	- [JSONRPC Deprecation Process](#jsonrpc-deprecation-process)
+	- [Table of Contents](#table-of-contents)
+	- [RPC Methods](#rpc-methods)
+		- [Gossip-Methods](#gossip-methods)
+			- [Method `eth_sendRawTransaction`](#method-eth_sendrawtransaction)
+				- [Params](#params)
+				- [Returns](#returns)
+				- [Examples](#examples)
+			- [Method `eth_blockNumber`](#method-eth_blocknumber)
+				- [Params](#params-1)
+				- [Returns](#returns-1)
+				- [Examples](#examples-1)
+			- [Method `eth_submitWork`](#method-eth_submitwork)
+				- [Params](#params-2)
+				- [Returns](#returns-2)
+				- [Examples](#examples-2)
+			- [Method `eth_submitHashrate`](#method-eth_submithashrate)
+				- [Params](#params-3)
+				- [Returns](#returns-3)
+				- [Examples](#examples-3)
+		- [History-Methods](#history-methods)
+			- [Method `eth_getBlockByHash`](#method-eth_getblockbyhash)
+				- [Params](#params-4)
+				- [Returns](#returns-4)
+				- [Examples](#examples-4)
+			- [Method `eth_getTransactionByHash`](#method-eth_gettransactionbyhash)
+				- [Params](#params-5)
+				- [Returns](#returns-5)
+				- [Examples](#examples-5)
+			- [Method `eth_getBlockTransactionCountByNumber`](#method-eth_getblocktransactioncountbynumber)
+				- [Params](#params-6)
+				- [Returns](#returns-6)
+				- [Examples](#examples-6)
+			- [Method `eth_getTransactionReceipt`](#method-eth_gettransactionreceipt)
+				- [Params](#params-7)
+				- [Returns](#returns-7)
+				- [Examples](#examples-7)
+			- [Method `eth_feeHistory`](#method-eth_feehistory)
+				- [Params](#params-8)
+				- [Returns](#returns-8)
+				- [Examples](#examples-8)
+			- [Method `eth_getBlockTransactionCountByHash`](#method-eth_getblocktransactioncountbyhash)
+				- [Params](#params-9)
+				- [Returns](#returns-9)
+				- [Examples](#examples-9)
+			- [Method `eth_getTransactionByBlockHashAndIndex`](#method-eth_gettransactionbyblockhashandindex)
+				- [Params](#params-10)
+				- [Returns](#returns-10)
+				- [Examples](#examples-10)
+			- [Method `eth_getTransactionByBlockNumberAndIndex`](#method-eth_gettransactionbyblocknumberandindex)
+				- [Params](#params-11)
+				- [Returns](#returns-11)
+				- [Examples](#examples-11)
+			- [Method `eth_getBlockByNumber`](#method-eth_getblockbynumber)
+				- [Params](#params-12)
+				- [Returns](#returns-12)
+				- [Examples](#examples-12)
+		- [State-Methods](#state-methods)
+			- [Method `eth_getTransactionCount`](#method-eth_gettransactioncount)
+				- [Params](#params-13)
+				- [Returns](#returns-13)
+				- [Examples](#examples-13)
+			- [Method `eth_getBalance`](#method-eth_getbalance)
+				- [Params](#params-14)
+				- [Returns](#returns-14)
+				- [Examples](#examples-14)
+			- [Method `eth_chainId`](#method-eth_chainid)
+				- [Params](#params-15)
+				- [Returns](#returns-15)
+				- [Examples](#examples-15)
+			- [Method `net_version`](#method-net_version)
+				- [Params](#params-16)
+				- [Returns](#returns-16)
+				- [Examples](#examples-16)
+			- [Method `eth_call`](#method-eth_call)
+				- [Params](#params-17)
+				- [Returns](#returns-17)
+				- [Examples](#examples-17)
+			- [Method `eth_estimateGas`](#method-eth_estimategas)
+				- [Params](#params-18)
+				- [Returns](#returns-18)
+				- [Examples](#examples-18)
+			- [Method `eth_getCode`](#method-eth_getcode)
+				- [Params](#params-19)
+				- [Returns](#returns-19)
+				- [Examples](#examples-19)
+			- [Method `eth_gasPrice`](#method-eth_gasprice)
+				- [Params](#params-20)
+				- [Returns](#returns-20)
+				- [Examples](#examples-20)
+			- [Method `net_listening`](#method-net_listening)
+				- [Params](#params-21)
+				- [Returns](#returns-21)
+				- [Examples](#examples-21)
+			- [Method `eth_mining`](#method-eth_mining)
+				- [Params](#params-22)
+				- [Returns](#returns-22)
+				- [Examples](#examples-22)
+			- [Method `net_peerCount`](#method-net_peercount)
+				- [Params](#params-23)
+				- [Returns](#returns-23)
+				- [Examples](#examples-23)
+			- [Method `eth_syncing`](#method-eth_syncing)
+				- [Params](#params-24)
+				- [Returns](#returns-24)
+				- [Examples](#examples-24)
+			- [Method `eth_getLogs`](#method-eth_getlogs)
+				- [Params](#params-25)
+				- [Returns](#returns-25)
+				- [Examples](#examples-25)
+			- [Method `web3_clientVersion`](#method-web3_clientversion)
+				- [Params](#params-26)
+				- [Returns](#returns-26)
+				- [Examples](#examples-26)
+			- [Method `eth_accounts`](#method-eth_accounts)
+				- [Params](#params-27)
+				- [Returns](#returns-27)
+				- [Examples](#examples-27)
+			- [Method `web3_sha3`](#method-web3_sha3)
+				- [Params](#params-28)
+				- [Returns](#returns-28)
+				- [Examples](#examples-28)
+			- [Method `eth_getStorageAt`](#method-eth_getstorageat)
+				- [Params](#params-29)
+				- [Returns](#returns-29)
+				- [Examples](#examples-29)
+			- [Method `eth_coinbase`](#method-eth_coinbase)
+				- [Params](#params-30)
+				- [Returns](#returns-30)
+				- [Examples](#examples-30)
+			- [Method `eth_hashrate`](#method-eth_hashrate)
+				- [Params](#params-31)
+				- [Returns](#returns-31)
+				- [Examples](#examples-31)
+			- [Method `axon_getCurrentMetadata`](#method-axon_getcurrentmetadata)
+				- [Params](#params-32)
+				- [Returns](#returns-32)
+				- [Examples](#examples-32)
+			- [Method `axon_getHardforkInfo`](#method-axon_gethardforkinfo)
+				- [Params](#params-33)
+				- [Returns](#returns-33)
+				- [Examples](#examples-33)
+	- [RPC Types](#rpc-types)
+		- [Type `Web3Filter`](#type-web3filter)
+			- [Fields](#fields)
+		- [Type `Web3Log`](#type-web3log)
+			- [Fields](#fields-1)
+		- [Type `Web3SyncStatus`](#type-web3syncstatus)
+			- [Fields](#fields-2)
+		- [Type `Web3CallRequest`](#type-web3callrequest)
+			- [Fields](#fields-3)
+		- [Type `AccessList`](#type-accesslist)
+			- [Fields](#fields-4)
+		- [Type `AccessListItem`](#type-accesslistitem)
+			- [Fields](#fields-5)
+		- [Type `BlockView`](#type-blockview)
+			- [Fields](#fields-6)
+		- [Type `Web3FeeHistory`](#type-web3feehistory)
+			- [Fields](#fields-7)
+		- [Type `Web3Receipt`](#type-web3receipt)
+			- [Fields](#fields-8)
+		- [Type `Web3ReceiptLog`](#type-web3receiptlog)
+			- [Fields](#fields-9)
+		- [Type `BlockId`](#type-blockid)
+		- [Type `H256`](#type-h256)
+			- [Examples](#examples-34)
+		- [Type `H160`](#type-h160)
+			- [Examples](#examples-35)
+		- [Type `Hex`](#type-hex)
+			- [Examples](#examples-36)
+		- [Type `Hash`](#type-hash)
+			- [Examples](#examples-37)
+		- [Type `String`](#type-string)
+			- [Examples](#examples-38)
+		- [Type `bool`](#type-bool)
+			- [Examples](#examples-39)
+		- [Type `f64`](#type-f64)
+		- [Type `Bloom`](#type-bloom)
+		- [Type `U64`](#type-u64)
+		- [Type `U256`](#type-u256)
+		- [Type `TransactionView`](#type-transactionview)
+			- [Fields](#fields-10)
+				- [Examples](#examples-40)
 
 
 ## RPC Methods
@@ -1850,7 +1975,117 @@ Response
 
 ```
 
+#### Method `axon_getCurrentMetadata`
+* `axon_getCurrentMetadata()`
+* result: [`Metadata`](#Metadata) 
 
+Returns axon current metadata info.
+
+##### Params
+
+*   None
+
+##### Returns
+
+Returns axon current metadata info.
+
+##### Examples
+
+Request
+
+
+```
+{
+	"jsonrpc": "2.0",
+	"method": "axon_getCurrentMetadata",
+	"params": [
+	],
+	"id": 64
+}
+```
+
+
+Response
+
+
+```
+{
+	"jsonrpc": "2.0",
+	"result": {
+		"version": {
+			"start": "0x1",
+			"end": "0x5f5e100"
+		},
+		"epoch": "0x0",
+		"verifier_list": [{
+			"bls_pub_key": "0xa26e3fe1cf51bd4822072c61bdc315ac32e3d3c2e2484bb92942666399e863b4bf56cf2926383cc706ffc15dfebc85c6",
+			"pub_key": "0x031ddc35212b7fc7ff6685b17d91f77c972535aee5c7ae5684d3e72b986f08834b",
+			"address": "0x8ab0cf264df99d83525e9e11c7e4db01558ae1b1",
+			"propose_weight": "0x1",
+			"vote_weight": "0x1"
+		}],
+		"propose_counter": [{
+			"address": "0x8ab0cf264df99d83525e9e11c7e4db01558ae1b1",
+			"count": "0xb4"
+		}],
+		"consensus_config": {
+			"gas_limit": "0x3e7fffffc18",
+			"interval": "0xbb8",
+			"propose_ratio": "0xf",
+			"prevote_ratio": "0xa",
+			"precommit_ratio": "0xa",
+			"brake_ratio": "0xa",
+			"tx_num_limit": "0x4e20",
+			"max_tx_size": "0x186a0000",
+			"max_contract_limit": "0x8000"
+		}
+	},
+	"id": 73
+}
+```
+
+#### Method `axon_getHardforkInfo`
+* `axon_getHardforkInfo()`
+* result: [`HardforkInfos`](#HardforkInfos) 
+
+Returns axon current hardfork infos.
+
+##### Params
+
+*   None
+
+##### Returns
+
+Returns axon current hardfork infos.
+
+##### Examples
+
+Request
+
+
+```
+{
+	"jsonrpc": "2.0",
+	"method": "axon_getHardforkInfo",
+	"params": [
+	],
+	"id": 64
+}
+```
+
+
+Response
+
+
+```
+{
+	"jsonrpc": "2.0",
+	"result": {
+		"Andromeda":"enabled"
+	},
+	"id": 73
+}
+```
 
 ## RPC Types
 
