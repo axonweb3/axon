@@ -122,7 +122,7 @@ impl MetadataStore {
         )?;
         self.trie
             .insert(inner.epoch.to_be_bytes().to_vec(), inner.encode()?.to_vec())?;
-        let config = encode_consensus_config(current_hardfork, config.encode()?.to_vec());
+        let config = encode_consensus_config(current_hardfork, config)?;
         self.trie
             .insert(CONSENSUS_CONFIG.as_bytes().to_vec(), config)?;
         let new_root = self.trie.commit()?;
@@ -201,7 +201,7 @@ impl MetadataStore {
         let current_hardfork = **HARDFORK_INFO.load();
         self.trie.insert(
             CONSENSUS_CONFIG.as_bytes().to_vec(),
-            encode_consensus_config(current_hardfork, config.encode()?.to_vec()),
+            encode_consensus_config(current_hardfork, config)?,
         )?;
         let new_root = self.trie.commit()?;
         CURRENT_METADATA_ROOT.with(|r| *r.borrow_mut() = new_root);
@@ -311,10 +311,17 @@ fn decode_consensus_config(raw: Vec<u8>) -> ProtocolResult<ConsensusConfig> {
     }
 }
 
-pub fn encode_consensus_config(current_hardfork: H256, config: Vec<u8>) -> Vec<u8> {
+pub fn encode_consensus_config(
+    current_hardfork: H256,
+    config: ConsensusConfig,
+) -> ProtocolResult<Vec<u8>> {
     let flag = ConsensusConfigFlag::new(current_hardfork);
 
+    let config_bytes = match flag {
+        ConsensusConfigFlag::V0 => Into::<ConsensusConfigV0>::into(config).encode()?,
+        ConsensusConfigFlag::V1 => config.encode()?,
+    };
     let mut res = (flag as u16).to_be_bytes().to_vec();
-    res.extend(config);
-    res
+    res.extend(config_bytes.to_vec());
+    Ok(res)
 }

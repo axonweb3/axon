@@ -49,22 +49,22 @@ const TESTCASES: &[TestCase] = &[
         chain_name:         "single_node",
         config_file:        "config.toml",
         chain_spec_file:    "specs/single_node/chain-spec.toml",
-        input_genesis_hash: "0x766cd8e7a32f698eb1180cd736bad6d316ebd3c185326bf6be24ef34996f545a",
-        genesis_state_root: "0x2131e3b9b90adc4c5e2b5136f3789b982029ab43c610cee0b05d8d2759dbdac4",
+        input_genesis_hash: "0x3428ea0eb8fb33f193e4680772ec6f68279c24bb7f135a8a3f790af6539fc100",
+        genesis_state_root: "0xe7799df5d8256add895412df5889c4ae07bb5c0d7fa438801b910cfef9d5dc37",
     },
     TestCase {
         chain_name:         "multi_nodes",
         config_file:        "nodes/node_1.toml",
         chain_spec_file:    "specs/multi_nodes/chain-spec.toml",
-        input_genesis_hash: "0x6e6160ffd1dcbcec8fa57a9a62479a9ace98f53bfd512fe946fe17f50c08def9",
-        genesis_state_root: "0x754e9d640f31758f44dbdb18b266dcfb87945d96d713f0a28a06bf6dfa665585",
+        input_genesis_hash: "0xa2559187fdb9bc172ee82b40c9f4f166d56d0ba9dc2fc47538e7d95a8d641575",
+        genesis_state_root: "0x04b03f59e424ab276cd3a8c54e9f3d51c8f1c9fc64c4b2fda7accd2ddffb46b4",
     },
     TestCase {
         chain_name:         "multi_nodes_short_epoch_len",
         config_file:        "nodes/node_1.toml",
         chain_spec_file:    "specs/multi_nodes_short_epoch_len/chain-spec.toml",
-        input_genesis_hash: "0x38814e4efa8ec97e659905208d808e5f7118bb039aa7aaee89937dad8bdee756",
-        genesis_state_root: "0xe2cb19b9ce6655838aa5e280d4f6fb06fcf367d454d4bc1c47f5bfd85d75432e",
+        input_genesis_hash: "0xa710efc9621394b5138a0e9a87c7b8586a88f4d26059bcb06ee76cc5e0bf12b0",
+        genesis_state_root: "0x3a9030d8e60478866e618a92c5137e02c1f3dc0b20dc5b51f4e720d7a7a58a0b",
     },
 ];
 
@@ -288,8 +288,9 @@ fn generate_memory_mpt_root(metadata_0: Metadata, metadata_1: Metadata) -> Vec<u
             CONSENSUS_CONFIG.as_bytes().to_vec(),
             encode_consensus_config(
                 H256::from_low_u64_be((HardforkName::None as u64).to_be()),
-                config_0.encode().unwrap().to_vec(),
-            ),
+                config_0,
+            )
+            .unwrap(),
         )
         .unwrap();
     memory_mpt
@@ -303,8 +304,9 @@ fn generate_memory_mpt_root(metadata_0: Metadata, metadata_1: Metadata) -> Vec<u
             CONSENSUS_CONFIG.as_bytes().to_vec(),
             encode_consensus_config(
                 H256::from_low_u64_be((HardforkName::None as u64).to_be()),
-                config_1.encode().unwrap().to_vec(),
-            ),
+                config_1,
+            )
+            .unwrap(),
         )
         .unwrap();
 
