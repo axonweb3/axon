@@ -400,6 +400,20 @@ pub struct ConsensusConfig {
     #[serde(default = "default_max_contract_limit")]
     pub max_contract_limit: u64,
 }
+impl From<ConsensusConfig> for ConsensusConfigV0 {
+    fn from(value: ConsensusConfig) -> Self {
+        ConsensusConfigV0 {
+            gas_limit:       value.gas_limit,
+            interval:        value.interval,
+            precommit_ratio: value.precommit_ratio,
+            propose_ratio:   value.propose_ratio,
+            prevote_ratio:   value.prevote_ratio,
+            brake_ratio:     value.brake_ratio,
+            tx_num_limit:    value.tx_num_limit,
+            max_tx_size:     value.max_tx_size,
+        }
+    }
+}
 
 pub fn default_max_contract_limit() -> u64 {
     0x6000
