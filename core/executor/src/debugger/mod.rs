@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 mod create2;
 mod uniswap2;
 
@@ -8,15 +6,13 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use evm::tracing::{Event, EventListener};
 
-use common_config_parser::parse_file;
-use common_crypto::{PrivateKey, Secp256k1RecoverablePrivateKey, Signature};
-use protocol::codec::{hex_decode, ProtocolCodec};
+use protocol::codec::ProtocolCodec;
 use protocol::traits::{Backend, Executor};
 use protocol::trie::Trie as _;
 use protocol::types::{
-    Account, Eip1559Transaction, ExecResp, ExecutorContext, Hash, Hasher, RichBlock,
-    SignedTransaction, TxResp, UnsignedTransaction, UnverifiedTransaction, H160, H256,
-    MAX_BLOCK_GAS_LIMIT, NIL_DATA, RLP_NULL, U256,
+    Account, Eip1559Transaction, ExecResp, ExecutorContext, Hash, Hasher, SignedTransaction,
+    TxResp, UnsignedTransaction, UnverifiedTransaction, H160, H256, MAX_BLOCK_GAS_LIMIT, NIL_DATA,
+    RLP_NULL, U256,
 };
 
 use core_db::RocksAdapter;
@@ -24,11 +20,6 @@ use core_storage::ImplStorage;
 
 use crate::adapter::{AxonExecutorApplyAdapter, MPTTrie};
 use crate::{AxonExecutor, RocksTrieDB};
-
-const GENESIS_PATH: &str = "../../tests/data/genesis.json";
-pub const CROSSCHAIN_CONTRACT_ADDRESS: H160 = H160([
-    180, 132, 253, 72, 14, 89, 134, 33, 99, 143, 56, 15, 64, 70, 151, 205, 159, 88, 176, 248,
-]);
 
 pub struct EvmDebugger {
     state_root: H256,
@@ -71,11 +62,6 @@ impl EvmDebugger {
             storage:    Arc::new(ImplStorage::new(rocks_adapter, 10)),
             trie_db:    trie,
         }
-    }
-
-    pub fn init_genesis(&mut self) {
-        let genesis: RichBlock = parse_file(GENESIS_PATH, true).unwrap();
-        self.exec(0, genesis.txs);
     }
 
     pub fn exec(&mut self, number: u64, txs: Vec<SignedTransaction>) -> ExecResp {
@@ -137,30 +123,6 @@ impl EventListener for EvmListener {
     }
 }
 
-pub fn mock_efficient_signed_tx(tx: Eip1559Transaction, private_key: &str) -> SignedTransaction {
-    let priv_key =
-        Secp256k1RecoverablePrivateKey::try_from(hex_decode(private_key).unwrap().as_ref())
-            .expect("Invalid secp private key");
-
-    let tx = UnsignedTransaction::Eip1559(tx);
-    let signature = priv_key.sign_message(
-        &Hasher::digest(tx.encode(Some(5u64), None))
-            .as_bytes()
-            .try_into()
-            .unwrap(),
-    );
-
-    let utx = UnverifiedTransaction {
-        unsigned:  tx,
-        hash:      Hash::default(),
-        chain_id:  Some(5u64),
-        signature: Some(signature.to_bytes().into()),
-    }
-    .calc_hash();
-
-    SignedTransaction::from_unverified(utx, None).unwrap()
-}
-
 pub fn mock_signed_tx(tx: Eip1559Transaction, sender: H160) -> SignedTransaction {
     let utx = UnverifiedTransaction {
         unsigned:  UnsignedTransaction::Eip1559(tx),
@@ -174,10 +136,6 @@ pub fn mock_signed_tx(tx: Eip1559Transaction, sender: H160) -> SignedTransaction
         sender,
         public: None,
     }
-}
-
-pub fn clear_data(db_path: &str) {
-    std::fs::remove_dir_all(db_path).unwrap()
 }
 
 fn time_now() -> u64 {

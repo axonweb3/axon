@@ -27,8 +27,8 @@ use protocol::{
     tokio,
     trie::{MemoryDB, PatriciaTrie, Trie as _},
     types::{
-        Bloom, BloomInput, HardforkInfo, HardforkInfoInner, Header, Metadata, Proposal, RichBlock,
-        H256, RLP_EMPTY_LIST, RLP_NULL,
+        Bloom, BloomInput, HardforkInfo, HardforkInfoInner, Header, Metadata, Proposal, H256,
+        RLP_EMPTY_LIST, RLP_NULL,
     },
 };
 
@@ -67,12 +67,6 @@ const TESTCASES: &[TestCase] = &[
         genesis_state_root: "0x3a9030d8e60478866e618a92c5137e02c1f3dc0b20dc5b51f4e720d7a7a58a0b",
     },
 ];
-
-#[test]
-fn decode_genesis() {
-    let raw = fs::read("../../tests/data/genesis.json").unwrap();
-    assert!(serde_json::from_slice::<RichBlock>(&raw).is_ok());
-}
 
 #[test]
 fn decode_type_id() {

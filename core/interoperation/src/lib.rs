@@ -1,6 +1,3 @@
-#[cfg(test)]
-#[allow(dead_code)]
-mod tests;
 pub mod utils;
 
 use std::{error::Error, sync::Arc};
