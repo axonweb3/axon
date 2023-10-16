@@ -1,8 +1,9 @@
 # crypto
+# file paths to private keys.
 # net_privkey is used for network, bls_privkey is use for sign consensus messages
 # DO NOT USE this private key in any production environment!
-net_privkey = "0x37aa0f893d05914a4def0460c0a984d3611546cfb26924d7a7ca6e0db9950a2d"
-bls_privkey = "0x4179b05f5ad5bdd46ca98a9e8b435b00a504562dfe02687895edf747ddf5de18"
+net_privkey_file = "net.key"
+bls_privkey_file = "bls.key"
 
 # db config
 data_path = "./devtools/chain/data"
