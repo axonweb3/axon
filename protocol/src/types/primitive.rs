@@ -79,6 +79,10 @@ impl Hex {
         Hex(Bytes::default())
     }
 
+    pub fn with_length(len: usize) -> Self {
+        Hex(vec![0u8; len].into())
+    }
+
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
@@ -105,12 +109,6 @@ impl Hex {
 
     fn is_prefixed(s: &str) -> bool {
         s.starts_with(HEX_PREFIX)
-    }
-}
-
-impl Default for Hex {
-    fn default() -> Self {
-        Hex(vec![0u8; 8].into())
     }
 }
 
@@ -459,7 +457,7 @@ pub struct Validator {
     pub vote_weight:    u32,
 }
 
-#[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, PartialEq, Eq, Default)]
+#[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct ValidatorExtend {
     pub bls_pub_key:    Hex,
     pub pub_key:        Hex,
@@ -488,6 +486,18 @@ impl From<&ValidatorExtend> for Validator {
             pub_key:        ve.pub_key.as_bytes(),
             propose_weight: ve.propose_weight,
             vote_weight:    ve.vote_weight,
+        }
+    }
+}
+
+impl Default for ValidatorExtend {
+    fn default() -> Self {
+        Self {
+            bls_pub_key:    Hex::with_length(8),
+            pub_key:        Hex::with_length(8),
+            address:        Default::default(),
+            propose_weight: Default::default(),
+            vote_weight:    Default::default(),
         }
     }
 }
