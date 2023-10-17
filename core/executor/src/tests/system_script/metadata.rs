@@ -252,8 +252,11 @@ fn prepare_validator() -> ValidatorExtend {
 //         .gas(21000)
 //         .nonce(nonce);
 
-//     let wallet = LocalWallet::from_str(PRIVATE_KEY).expect("failed to create
-// wallet");     let tx = Legacy(transaction_request);
+//     let wallet = LocalWallet::from_str(PRIVATE_KEY).expect(
+//         "failed to create
+// wallet",
+//     );
+//     let tx = Legacy(transaction_request);
 //     let signature: Signature = wallet.sign_transaction(&tx).await.unwrap();
 
 //     provider

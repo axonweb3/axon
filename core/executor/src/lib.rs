@@ -73,6 +73,7 @@ impl Executor for AxonExecutor {
         value: U256,
         data: Vec<u8>,
     ) -> TxResp {
+        self.init_local_system_contract_roots(backend);
         let config = self.config();
         let metadata = StackSubstateMetadata::new(gas_limit, &config);
         let state = MemoryStackState::new(metadata, backend);
@@ -138,9 +139,8 @@ impl Executor for AxonExecutor {
         let mut hashes = Vec::with_capacity(txs_len);
         let (mut gas, mut fee) = (0u64, U256::zero());
         let precompiles = build_precompile_set();
-        let config = self.config();
-
         self.init_local_system_contract_roots(adapter);
+        let config = self.config();
 
         // Execute system contracts before block hook.
         before_block_hook(adapter);
@@ -309,7 +309,7 @@ impl AxonExecutor {
     /// The `exec()` function is run in `tokio::task::block_in_place()` and all
     /// the read or write operations are in the scope of exec function. The
     /// thread context is not switched during exec function.
-    fn init_local_system_contract_roots<Adapter: ExecutorAdapter>(&self, adapter: &mut Adapter) {
+    fn init_local_system_contract_roots<Adapter: Backend>(&self, adapter: &Adapter) {
         CURRENT_HEADER_CELL_ROOT.with(|root| {
             *root.borrow_mut() =
                 adapter.storage(CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, *HEADER_CELL_ROOT_KEY);
@@ -324,13 +324,14 @@ impl AxonExecutor {
         let mut config = Config::london();
         let create_contract_limit = {
             let latest_hardfork_info = &**HARDFORK_INFO.load();
-            let enable_contract_limit_flag = H256::from_low_u64_be(HardforkName::Andromeda as u64);
+            let enable_contract_limit_flag =
+                H256::from_low_u64_be((HardforkName::Andromeda as u64).to_be());
             if latest_hardfork_info & &enable_contract_limit_flag == enable_contract_limit_flag {
                 let handle = MetadataHandle::new(CURRENT_METADATA_ROOT.with(|r| *r.borrow()));
                 let config = handle.get_consensus_config().unwrap();
                 Some(config.max_contract_limit as usize)
             } else {
-                None
+                Some(0x6000)
             }
         };
         config.create_contract_limit = create_contract_limit;
