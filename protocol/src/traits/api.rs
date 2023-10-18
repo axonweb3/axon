@@ -104,7 +104,7 @@ pub trait APIAdapter: Send + Sync {
 
     async fn get_image_cell_root(&self, ctx: Context) -> ProtocolResult<H256>;
 
-    async fn get_metadata_root(&self, ctx: Context) -> ProtocolResult<H256>;
+    async fn get_metadata_root(&self, ctx: Context, number: Option<u64>) -> ProtocolResult<H256>;
 
     async fn hardfork_info(&self, ctx: Context) -> ProtocolResult<HardforkInfo>;
 
