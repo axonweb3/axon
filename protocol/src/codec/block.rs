@@ -23,7 +23,7 @@ impl Decodable for BlockVersion {
 
 impl Encodable for Proposal {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(11)
+        s.begin_list(12)
             .append(&self.version)
             .append(&self.prev_hash)
             .append(&self.proposer)
@@ -32,6 +32,7 @@ impl Encodable for Proposal {
             .append(&self.signed_txs_hash)
             .append(&self.timestamp)
             .append(&self.number)
+            .append_list(&self.extra_data)
             .append(&self.proof)
             .append(&self.call_system_script_count)
             .append_list(&self.tx_hashes);
@@ -50,12 +51,12 @@ impl Decodable for Proposal {
             timestamp:                r.val_at(6)?,
             number:                   r.val_at(7)?,
             gas_limit:                MAX_BLOCK_GAS_LIMIT.into(),
-            extra_data:               Default::default(),
+            extra_data:               r.list_at(8)?,
             base_fee_per_gas:         BASE_FEE_PER_GAS.into(),
-            proof:                    r.val_at(8)?,
+            proof:                    r.val_at(9)?,
             chain_id:                 **CHAIN_ID.load(),
-            call_system_script_count: r.val_at(9)?,
-            tx_hashes:                r.list_at(10)?,
+            call_system_script_count: r.val_at(10)?,
+            tx_hashes:                r.list_at(11)?,
         })
     }
 }
@@ -75,9 +76,14 @@ impl Codec for Proposal {
 #[cfg(test)]
 mod tests {
     use crate::traits::MessageCodec;
-    use crate::types::{Block, Header, Proof};
+    use crate::types::{Block, Bytes, ExtraData, Header, Proof, H160, H256};
+    use rand::random;
 
     use super::*;
+
+    fn rand_bytes(len: usize) -> Bytes {
+        (0..len).map(|_| random::<u8>()).collect::<Vec<_>>().into()
+    }
 
     #[test]
     fn test_version_codec() {
@@ -116,10 +122,31 @@ mod tests {
 
     #[test]
     fn test_proposal_codec() {
+        let mock_proof = Proof {
+            number:     random(),
+            round:      random(),
+            block_hash: H256::random(),
+            signature:  rand_bytes(65),
+            bitmap:     rand_bytes(32),
+        };
         let mut proposal = Proposal {
-            gas_limit: 30000000u64.into(),
-            base_fee_per_gas: 1337u64.into(),
-            ..Default::default()
+            version:                  BlockVersion::V0,
+            prev_hash:                H256::random(),
+            proposer:                 H160::random(),
+            prev_state_root:          H256::random(),
+            transactions_root:        H256::random(),
+            signed_txs_hash:          H256::random(),
+            timestamp:                random(),
+            number:                   random(),
+            gas_limit:                30000000u64.into(),
+            extra_data:               vec![ExtraData {
+                inner: H256::random().0.to_vec().into(),
+            }],
+            base_fee_per_gas:         1337u64.into(),
+            proof:                    mock_proof,
+            chain_id:                 0,
+            call_system_script_count: random(),
+            tx_hashes:                vec![H256::random()],
         };
         let bytes = proposal.encode_msg().unwrap();
         let decode: Proposal = Proposal::decode_msg(bytes).unwrap();
