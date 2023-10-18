@@ -54,8 +54,8 @@ pub enum RpcError {
     #[display(fmt = "Invalid filter id {}", _0)]
     CannotFindFilterId(u64),
 
-    #[display(fmt = "CKB-VM error {}", "decode_revert_msg(&_0.ret)")]
-    VM(TxResp),
+    #[display(fmt = "EVM error {}", "decode_revert_msg(&_0.ret)")]
+    Evm(TxResp),
     #[display(fmt = "Internal error")]
     Internal(String),
 }
@@ -92,7 +92,7 @@ impl RpcError {
             RpcError::InvalidFromBlockAndToBlockUnion => -40021,
             RpcError::CannotFindFilterId(_) => -40022,
 
-            RpcError::VM(_) => -49998,
+            RpcError::Evm(_) => -49998,
             RpcError::Internal(_) => -49999,
         }
     }
@@ -134,7 +134,7 @@ impl From<RpcError> for ErrorObjectOwned {
             }
             RpcError::CannotFindFilterId(_) => ErrorObject::owned(err_code, err, none_data),
 
-            RpcError::VM(resp) => {
+            RpcError::Evm(resp) => {
                 ErrorObject::owned(err_code, err.clone(), Some(vm_err(resp.clone())))
             }
             RpcError::Internal(msg) => ErrorObject::owned(err_code, err.clone(), Some(msg)),
