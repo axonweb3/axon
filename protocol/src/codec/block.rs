@@ -3,7 +3,7 @@ use std::error::Error;
 use overlord::Codec;
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 
-use crate::types::{BlockVersion, Bytes, Proposal, BASE_FEE_PER_GAS, MAX_BLOCK_GAS_LIMIT};
+use crate::types::{BlockVersion, Bytes, Proposal, BASE_FEE_PER_GAS};
 use crate::{codec::error::CodecError, lazy::CHAIN_ID, ProtocolError};
 
 impl Encodable for BlockVersion {
@@ -23,7 +23,7 @@ impl Decodable for BlockVersion {
 
 impl Encodable for Proposal {
     fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(12)
+        s.begin_list(13)
             .append(&self.version)
             .append(&self.prev_hash)
             .append(&self.proposer)
@@ -32,6 +32,7 @@ impl Encodable for Proposal {
             .append(&self.signed_txs_hash)
             .append(&self.timestamp)
             .append(&self.number)
+            .append(&self.gas_limit.as_u64())
             .append_list(&self.extra_data)
             .append(&self.proof)
             .append(&self.call_system_script_count)
@@ -50,13 +51,13 @@ impl Decodable for Proposal {
             signed_txs_hash:          r.val_at(5)?,
             timestamp:                r.val_at(6)?,
             number:                   r.val_at(7)?,
-            gas_limit:                MAX_BLOCK_GAS_LIMIT.into(),
-            extra_data:               r.list_at(8)?,
+            gas_limit:                r.val_at::<u64>(8)?.into(),
+            extra_data:               r.list_at(9)?,
             base_fee_per_gas:         BASE_FEE_PER_GAS.into(),
-            proof:                    r.val_at(9)?,
+            proof:                    r.val_at(10)?,
             chain_id:                 **CHAIN_ID.load(),
-            call_system_script_count: r.val_at(10)?,
-            tx_hashes:                r.list_at(11)?,
+            call_system_script_count: r.val_at(11)?,
+            tx_hashes:                r.list_at(12)?,
         })
     }
 }
