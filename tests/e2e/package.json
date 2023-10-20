@@ -6,7 +6,7 @@
     "lint": "eslint src/*.js ./*.js"
   },
   "dependencies": {
-    "@chainsafe/dappeteer": "^5",
+    "@chainsafe/dappeteer": "^5.2.0",
     "@ethereumjs/common": "^3.1.1",
     "@ethereumjs/tx": "^4.2.0",
     "puppeteer": "^21.2.1",
