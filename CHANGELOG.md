@@ -1,8 +1,46 @@
 # CHANGELOG
 
+## v0.2.0-beta.2
+
+<!--
+    Add a summary for the release here.
+
+    If you don't change this message, or if this file is empty, the release
+    will not be created. -->
+...
+
+### BUG FIXES
+
+- Fix encode consensus config function
+  ([\#1476](https://github.com/axonweb3/axon/pull/1476))
+- Fix get metadata by block number
+  ([\#1483](https://github.com/axonweb3/axon/pull/1483))
+- Fix init EVM config ([\#1484](https://github.com/axonweb3/axon/pull/1484))
+- Fix encode and decode of Proposal struct
+  ([\#1485](https://github.com/axonweb3/axon/pull/1485))
+
+### CODE REFACTORS
+
+- No plain-text private key in configuration file
+  ([\#1481](https://github.com/axonweb3/axon/pull/1481))
+- Remove default value of Hex
+  ([\#1482](https://github.com/axonweb3/axon/pull/1482))
+- Change the calculation of receipts root to EIP-2718
+  ([\#1486](https://github.com/axonweb3/axon/pull/1486))
+
+### DOCUMENTS
+
+- Add hardfork related APIs document
+  ([\#1479](https://github.com/axonweb3/axon/pull/1479))
+
 ## v0.2.0-beta.1
 
-The release of version `0.2.0-beta.1` marks the commencement of a new epoch in Axon development. With this release, all future breaking changes will be introduced as hardforks. The primary modifications include the following:
+<!--
+    Add a summary for the release here.
+
+    If you don't change this message, or if this file is empty, the release
+    will not be created. -->
+tmp
 
 ### BREAKING CHANGES
 
@@ -134,3 +172,4 @@ The release of version `0.2.0-beta.1` marks the commencement of a new epoch in A
   ([\#1300](https://github.com/axonweb3/axon/pull/1300))
 
 Changelogs before 0.2.0 can be found [here](./CHANGELOG_OLD.md).
+
