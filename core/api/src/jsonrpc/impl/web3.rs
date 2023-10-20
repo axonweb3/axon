@@ -522,7 +522,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             return Ok(call_hex_result);
         }
 
-        Err(RpcError::VM(resp).into())
+        Err(RpcError::Evm(resp).into())
     }
 
     #[metrics_rpc("eth_estimateGas")]
@@ -557,7 +557,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             return Ok(resp.gas_used.into());
         }
 
-        Err(RpcError::VM(resp).into())
+        Err(RpcError::Evm(resp).into())
     }
 
     #[metrics_rpc("eth_getCode")]

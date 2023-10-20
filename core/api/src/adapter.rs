@@ -246,7 +246,7 @@ where
         block_number: Option<u64>,
     ) -> ProtocolResult<Metadata> {
         if let Some(num) = block_number {
-            return MetadataHandle::new(self.get_metadata_root(ctx).await?)
+            return MetadataHandle::new(self.get_metadata_root(ctx, Some(num)).await?)
                 .get_metadata_by_block_number(num);
         }
 
@@ -255,11 +255,12 @@ where
             .get_latest_block_header(ctx.clone())
             .await?
             .number;
-        MetadataHandle::new(self.get_metadata_root(ctx).await?).get_metadata_by_block_number(num)
+        MetadataHandle::new(self.get_metadata_root(ctx, None).await?)
+            .get_metadata_by_block_number(num)
     }
 
     async fn get_ckb_related_info(&self, ctx: Context) -> ProtocolResult<CkbRelatedInfo> {
-        MetadataHandle::new(self.get_metadata_root(ctx).await?).get_ckb_related_info()
+        MetadataHandle::new(self.get_metadata_root(ctx, None).await?).get_ckb_related_info()
     }
 
     async fn get_image_cell_root(&self, ctx: Context) -> ProtocolResult<H256> {
@@ -274,8 +275,17 @@ where
         .get_image_cell_root())
     }
 
-    async fn get_metadata_root(&self, ctx: Context) -> ProtocolResult<H256> {
-        let state_root = self.storage.get_latest_block_header(ctx).await?.state_root;
+    async fn get_metadata_root(&self, ctx: Context, number: Option<u64>) -> ProtocolResult<H256> {
+        let state_root = match number {
+            Some(n) => {
+                self.storage
+                    .get_block_header(ctx, n)
+                    .await?
+                    .ok_or_else(|| APIError::RequestPayload("Not found number".to_string()))?
+                    .state_root
+            }
+            None => self.storage.get_latest_block_header(ctx).await?.state_root,
+        };
 
         Ok(AxonExecutorReadOnlyAdapter::from_root(
             state_root,
@@ -287,7 +297,7 @@ where
     }
 
     async fn hardfork_info(&self, ctx: Context) -> ProtocolResult<HardforkInfo> {
-        MetadataHandle::new(self.get_metadata_root(ctx).await?).hardfork_infos()
+        MetadataHandle::new(self.get_metadata_root(ctx, None).await?).hardfork_infos()
     }
 
     async fn hardfork_proposal(&self, ctx: Context) -> ProtocolResult<Option<HardforkInfoInner>> {

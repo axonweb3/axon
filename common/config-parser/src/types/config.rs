@@ -1,13 +1,17 @@
-use std::{collections::HashMap, ffi::OsStr, io, net::SocketAddr, path::PathBuf};
+use std::{
+    collections::HashMap,
+    ffi::OsStr,
+    fs::File,
+    io::{self, Read as _},
+    net::SocketAddr,
+    path::{Path, PathBuf},
+};
 
 use clap::builder::{StringValueParser, TypedValueParser, ValueParserFactory};
 use serde::Deserialize;
 use tentacle_multiaddr::MultiAddr;
 
-use protocol::{
-    codec::deserialize_256bits_key,
-    types::{Key256Bits, H160},
-};
+use protocol::types::{Key256Bits, H160};
 
 use crate::parse_file;
 
@@ -24,11 +28,13 @@ pub const DEFAULT_CACHE_SIZE: usize = 100;
 pub struct Config {
     // crypto
     /// `net_privkey` is used for network connection.
-    #[serde(deserialize_with = "deserialize_256bits_key")]
-    pub net_privkey: Key256Bits,
+    #[serde(skip)]
+    pub net_privkey:      Key256Bits,
+    pub net_privkey_file: PathBuf,
     /// `bls_privkey` is used for signing consensus messages.
-    #[serde(deserialize_with = "deserialize_256bits_key")]
-    pub bls_privkey: Key256Bits,
+    #[serde(skip)]
+    pub bls_privkey:      Key256Bits,
+    pub bls_privkey_file: PathBuf,
 
     // db config
     pub data_path: PathBuf,
@@ -124,7 +130,49 @@ impl TypedValueParser for ConfigValueParser {
                 );
                 clap::Error::raw(kind, msg)
             })
+            .and_then(|mut config: Self::Value| {
+                let privkey_path = dir_path.join(&config.net_privkey_file);
+                config.net_privkey = load_privkey_from_file(&privkey_path)?;
+                Ok(config)
+            })
+            .and_then(|mut config: Self::Value| {
+                let privkey_path = dir_path.join(&config.bls_privkey_file);
+                config.bls_privkey = load_privkey_from_file(&privkey_path)?;
+                Ok(config)
+            })
     }
+}
+
+fn load_privkey_from_file(privkey_path: &Path) -> Result<Key256Bits, clap::Error> {
+    File::open(privkey_path)
+        .and_then(|mut f| {
+            let mut buffer = Vec::new();
+            f.read_to_end(&mut buffer).map(|_| buffer)
+        })
+        .map_err(|err| {
+            let kind = clap::error::ErrorKind::InvalidValue;
+            let msg = format!(
+                "failed to parse private key file {} since {err}",
+                privkey_path.display()
+            );
+            clap::Error::raw(kind, msg)
+        })
+        .and_then(|bytes| {
+            const LEN: usize = 32;
+            if bytes.len() == LEN {
+                let mut v = [0u8; 32];
+                v.copy_from_slice(&bytes);
+                Ok(Key256Bits::from(v))
+            } else {
+                let kind = clap::error::ErrorKind::InvalidValue;
+                let msg = format!(
+                    "failed to parse private key file {} since its length is {} but expect {LEN}.",
+                    privkey_path.display(),
+                    bytes.len()
+                );
+                Err(clap::Error::raw(kind, msg))
+            }
+        })
 }
 
 #[derive(Clone, Debug, Deserialize)]
