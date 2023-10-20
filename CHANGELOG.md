@@ -7,25 +7,26 @@
 
     If you don't change this message, or if this file is empty, the release
     will not be created. -->
-...
+    
+This release contains some important bugfixes from the previous 0.2.0-beta.1 version.
 
 ### BUG FIXES
 
-- Fix encode consensus config function
+- Fix the encode `ConsensusConfig` function
   ([\#1476](https://github.com/axonweb3/axon/pull/1476))
 - Fix get metadata by block number
   ([\#1483](https://github.com/axonweb3/axon/pull/1483))
 - Fix init EVM config ([\#1484](https://github.com/axonweb3/axon/pull/1484))
-- Fix encode and decode of Proposal struct
+- Fix encode and decode of `Proposal` struct
   ([\#1485](https://github.com/axonweb3/axon/pull/1485))
 
 ### CODE REFACTORS
 
 - No plain-text private key in configuration file
   ([\#1481](https://github.com/axonweb3/axon/pull/1481))
-- Remove default value of Hex
+- Remove default value of `Hex`
   ([\#1482](https://github.com/axonweb3/axon/pull/1482))
-- Change the calculation of receipts root to EIP-2718
+- Change the calculation of receipts root to [EIP-2718](https://eips.ethereum.org/EIPS/eip-2718)
   ([\#1486](https://github.com/axonweb3/axon/pull/1486))
 
 ### DOCUMENTS
@@ -40,7 +41,8 @@
 
     If you don't change this message, or if this file is empty, the release
     will not be created. -->
-tmp
+
+Release 0.2.0-beta.1 version.
 
 ### BREAKING CHANGES
 

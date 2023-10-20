@@ -3,4 +3,5 @@
 
     If you don't change this message, or if this file is empty, the release
     will not be created. -->
-tmp
+
+Release 0.2.0-beta.1 version.
