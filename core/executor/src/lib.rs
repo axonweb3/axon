@@ -321,21 +321,22 @@ impl AxonExecutor {
     }
 
     fn config(&self) -> Config {
-        let mut config = Config::london();
+        let mut evm_config = Config::london();
         let create_contract_limit = {
             let latest_hardfork_info = &**HARDFORK_INFO.load();
             let enable_contract_limit_flag =
                 H256::from_low_u64_be((HardforkName::Andromeda as u64).to_be());
             if latest_hardfork_info & &enable_contract_limit_flag == enable_contract_limit_flag {
                 let handle = MetadataHandle::new(CURRENT_METADATA_ROOT.with(|r| *r.borrow()));
-                let config = handle.get_consensus_config().unwrap();
-                Some(config.max_contract_limit as usize)
+                let consensus_config = handle.get_consensus_config().unwrap();
+                Some(consensus_config.max_contract_limit as usize)
             } else {
-                Some(0x6000)
+                // If the hardfork is not enabled, the limit is set to 0x6000
+                evm_config.create_contract_limit
             }
         };
-        config.create_contract_limit = create_contract_limit;
-        config
+        evm_config.create_contract_limit = create_contract_limit;
+        evm_config
     }
 
     #[cfg(test)]
@@ -427,4 +428,15 @@ pub fn is_call_system_script(action: &TransactionAction) -> bool {
 
 pub fn is_transaction_call(action: &TransactionAction, addr: &H160) -> bool {
     action == &TransactionAction::Call(*addr)
+}
+
+#[cfg(test)]
+mod test {
+    use super::* ;
+
+    #[test]
+    fn test_config_contract_limit() {
+        let config = Config::london();
+        assert_eq!(config.create_contract_limit, Some(0x6000));
+    }
 }
