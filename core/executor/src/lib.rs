@@ -18,7 +18,6 @@ pub use crate::utils::{code_address, decode_revert_msg, DefaultFeeAllocator, Fee
 
 use std::cell::RefCell;
 use std::collections::BTreeMap;
-use std::iter::FromIterator;
 
 use arc_swap::ArcSwap;
 use common_config_parser::types::spec::HardforkName;
@@ -28,9 +27,8 @@ use evm::CreateScheme;
 use common_merkle::TrieMerkle;
 use protocol::traits::{Backend, Executor, ExecutorAdapter};
 use protocol::types::{
-    data_gas_cost, logs_bloom, Config, ExecResp, Hasher, SignedTransaction, TransactionAction,
-    TxResp, ValidatorExtend, GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160, H256, RLP_NULL,
-    U256,
+    data_gas_cost, logs_bloom, Config, ExecResp, SignedTransaction, TransactionAction, TxResp,
+    ValidatorExtend, GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160, H256, RLP_NULL, U256,
 };
 
 use crate::precompiles::build_precompile_set;
@@ -39,6 +37,9 @@ use crate::system_contract::{
     CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, HEADER_CELL_ROOT_KEY, IMAGE_CELL_CONTRACT_ADDRESS,
     METADATA_CONTRACT_ADDRESS, METADATA_ROOT_KEY, NATIVE_TOKEN_CONTRACT_ADDRESS,
 };
+
+#[cfg(test)]
+use {protocol::types::Hasher, std::iter::FromIterator};
 
 lazy_static::lazy_static! {
     pub static ref FEE_ALLOCATOR: ArcSwap<Box<dyn FeeAllocate>> = ArcSwap::from_pointee(Box::new(DefaultFeeAllocator));
@@ -136,7 +137,7 @@ impl Executor for AxonExecutor {
         let txs_len = txs.len();
         let block_number = adapter.block_number();
         let mut res = Vec::with_capacity(txs_len);
-        let mut hashes = Vec::with_capacity(txs_len);
+        let mut encode_receipts = Vec::with_capacity(txs_len);
         let (mut gas, mut fee) = (0u64, U256::zero());
         let precompiles = build_precompile_set();
         self.init_local_system_contract_roots(adapter);
@@ -160,8 +161,8 @@ impl Executor for AxonExecutor {
 
             let logs_bloom = logs_bloom(r.logs.iter());
             let receipt = tx.encode_receipt(&r, logs_bloom);
+            encode_receipts.push(receipt);
 
-            hashes.push(Hasher::digest(&receipt));
             res.push(r);
         }
 
@@ -189,10 +190,10 @@ impl Executor for AxonExecutor {
 
         // self.update_system_contract_roots_for_external_module();
 
-        let receipt_root = if hashes.is_empty() {
+        let receipt_root = if encode_receipts.is_empty() {
             RLP_NULL
         } else {
-            TrieMerkle::from_iter(hashes.iter().enumerate())
+            TrieMerkle::from_receipts(&encode_receipts)
                 .root_hash()
                 .unwrap_or_else(|err| {
                     panic!("failed to calculate trie root hash for receipts since {err}")
@@ -206,6 +207,90 @@ impl Executor for AxonExecutor {
             tx_resp: res,
         }
     }
+}
+
+#[cfg(test)]
+#[test]
+fn test_receipt() {
+    use evm::{ExitReason, ExitSucceed};
+    use protocol::types::{Eip1559Transaction, UnsignedTransaction, UnverifiedTransaction};
+
+    let eip1559_tx = Eip1559Transaction {
+        nonce:                    Default::default(),
+        max_priority_fee_per_gas: Default::default(),
+        gas_price:                Default::default(),
+        gas_limit:                Default::default(),
+        action:                   TransactionAction::Create,
+        value:                    Default::default(),
+        data:                     Default::default(),
+        access_list:              Default::default(),
+    };
+    let unsigned_tx = UnsignedTransaction::Eip1559(eip1559_tx);
+    let unverified_tx = UnverifiedTransaction {
+        unsigned:  unsigned_tx,
+        signature: Default::default(),
+        chain_id:  Default::default(),
+        hash:      Default::default(),
+    };
+    let tx = SignedTransaction {
+        transaction: unverified_tx,
+        sender:      Default::default(),
+        public:      Default::default(),
+    };
+
+    let exit_reason = ExitReason::Succeed(ExitSucceed::Stopped);
+    let log = evm::backend::Log {
+        address: Default::default(),
+        topics:  Default::default(),
+        data:    Default::default(),
+    };
+    let tx_resp = TxResp {
+        exit_reason,
+        ret: Default::default(),
+        gas_used: 10,
+        remain_gas: Default::default(),
+        fee_cost: Default::default(),
+        logs: vec![log],
+        code_address: Default::default(),
+        removed: Default::default(),
+    };
+
+    let logs_bloom = logs_bloom(tx_resp.logs.iter());
+    let receipt = tx.encode_receipt(&tx_resp, logs_bloom);
+
+    let reference_encode: Vec<u8> = [
+        2u8, 249, 1, 30, 1, 10, 185, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 128, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 216,
+        215, 148, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 192, 128,
+    ]
+    .to_vec();
+
+    assert_eq!(receipt.to_vec(), reference_encode);
+
+    let encode_receipts = vec![receipt];
+
+    let receipt_root = if encode_receipts.is_empty() {
+        RLP_NULL
+    } else {
+        TrieMerkle::from_receipts(&encode_receipts)
+            .root_hash()
+            .unwrap_or_else(|err| {
+                panic!("failed to calculate trie root hash for receipts since {err}")
+            })
+    };
+
+    let reference_root = [
+        197u8, 180, 204, 76, 181, 157, 142, 152, 246, 237, 148, 126, 24, 207, 94, 119, 119, 205,
+        11, 16, 193, 17, 102, 157, 61, 7, 166, 133, 173, 208, 124, 6,
+    ];
+    assert_eq!(receipt_root, H256::from(reference_root));
 }
 
 impl AxonExecutor {

@@ -93,4 +93,15 @@ impl TrieMerkle {
         let ret = self.0.get_proof(&key)?;
         Ok(ret)
     }
+
+    pub fn from_receipts(receipts: &[Bytes]) -> Self {
+        let mut trie = Self::default();
+        for (i, receipt) in receipts.iter().enumerate() {
+            trie.0
+                .insert(rlp::encode(&i).to_vec(), receipt.to_vec())
+                .unwrap();
+        }
+
+        trie
+    }
 }
