@@ -523,10 +523,10 @@
   resolved "https://registry.yarnpkg.com/@bcoe/v8-coverage/-/v8-coverage-0.2.3.tgz#75a2e8b51cb758a7553d6804a5932d7aace75c39"
   integrity sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==
 
-"@chainsafe/dappeteer@^5":
-  version "5.0.1"
-  resolved "https://registry.yarnpkg.com/@chainsafe/dappeteer/-/dappeteer-5.0.1.tgz#7274a2b70e60613704c9f3ea14227a51f360fcf0"
-  integrity sha512-A1j0l+/dhH5REqhBiSLsLuAKqExgonO9nKh+pUhJmTjhJtvXoxo+1vbNxE9URp2eIPOF2ndAgGfBhIzuPSGdHw==
+"@chainsafe/dappeteer@^5.2.0":
+  version "5.2.0"
+  resolved "https://registry.yarnpkg.com/@chainsafe/dappeteer/-/dappeteer-5.2.0.tgz#4d13051fbcf3e0f0477642a92592bbad7035e656"
+  integrity sha512-JOJxhn47YDQobJf+i8L1ZXJguApF4iIngiixdJtGXVW8Q956WsHmf0bSR7Lxf0lJ2TvQ7B4s3b29g/FR6ycHpw==
   dependencies:
     "@metamask/providers" "^9.1.0"
     fs-extra "^11.1.0"
