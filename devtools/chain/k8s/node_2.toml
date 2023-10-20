@@ -1,6 +1,6 @@
 # crypto
-net_privkey = "0x383fcff8683b8115e31613949be24254b4204ffbe43c227408a76334a2e3fb32"
-bls_privkey = "0x422951d5ac7ddbe86cae7d2d4c82af713785b3177043ac6feb50eda7e360b860"
+net_privkey_file = "node_2_net.key"
+bls_privkey_file = "node_2_bls.key"
 
 # db config
 data_path = "./devtools/chain/data2"
