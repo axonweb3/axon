@@ -432,7 +432,7 @@ pub fn is_transaction_call(action: &TransactionAction, addr: &H160) -> bool {
 
 #[cfg(test)]
 mod test {
-    use super::* ;
+    use super::*;
 
     #[test]
     fn test_config_contract_limit() {
