@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: Namchee/conventional-pr@v0.14.0
+      - uses: Namchee/conventional-pr@v0.14.1
         # env:
         #   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
