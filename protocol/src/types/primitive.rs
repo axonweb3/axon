@@ -414,7 +414,7 @@ impl From<ConsensusConfig> for ConsensusConfigV0 {
 }
 
 pub fn default_max_contract_limit() -> u64 {
-    0x6000
+    0xc000
 }
 
 impl From<Metadata> for DurationConfig {

@@ -27,8 +27,9 @@ use evm::CreateScheme;
 use common_merkle::TrieMerkle;
 use protocol::traits::{Backend, Executor, ExecutorAdapter};
 use protocol::types::{
-    data_gas_cost, logs_bloom, Config, ExecResp, SignedTransaction, TransactionAction, TxResp,
-    ValidatorExtend, GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160, H256, RLP_NULL, U256,
+    data_gas_cost, default_max_contract_limit, logs_bloom, Config, ExecResp, SignedTransaction,
+    TransactionAction, TxResp, ValidatorExtend, GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160,
+    H256, RLP_NULL, U256,
 };
 
 use crate::precompiles::build_precompile_set;
@@ -417,7 +418,7 @@ impl AxonExecutor {
                 Some(consensus_config.max_contract_limit as usize)
             } else {
                 // If the hardfork is not enabled, the limit is set to 0x6000
-                evm_config.create_contract_limit
+                Some(default_max_contract_limit() as usize)
             }
         };
         evm_config.create_contract_limit = create_contract_limit;
