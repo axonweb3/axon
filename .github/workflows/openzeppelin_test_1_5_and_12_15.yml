@@ -75,7 +75,7 @@ jobs:
           repository: gpBlockchain/openzeppelin-contracts
           ref: compatibillity-axon
           path: openzeppelin-contracts
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: "16"
       - name: Get yarn cache directory path
