@@ -74,7 +74,7 @@ jobs:
         with:
           repository: gpBlockchain/v3-core
           path: v3-core
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: 20.x
       - id: yarn-cache

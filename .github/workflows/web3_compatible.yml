@@ -102,7 +102,7 @@ jobs:
           repository: gpBlockchain/axon-test
           path: axon-test
 
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: "18"
       - name: Get yarn cache directory
