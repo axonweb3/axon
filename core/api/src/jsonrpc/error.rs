@@ -9,9 +9,9 @@ use crate::jsonrpc::web3_types::BlockId;
 
 #[derive(Clone, Display, Debug)]
 pub enum RpcError {
-    #[display(fmt = "Decode interoperation signature r error")]
+    #[display(fmt = "Decode interoperation signature r error since {}", _0)]
     DecodeInteroperationSigR(String),
-    #[display(fmt = "Decode interoperation signature s error")]
+    #[display(fmt = "Decode interoperation signature s error since {}", _0)]
     DecodeInteroperationSigS(String),
     #[display(fmt = "Invalid address source")]
     InvalidAddressSource,
@@ -56,7 +56,7 @@ pub enum RpcError {
 
     #[display(fmt = "EVM error {}", "decode_revert_msg(&_0.ret)")]
     Evm(TxResp),
-    #[display(fmt = "Internal error")]
+    #[display(fmt = "Internal error: {}", _0)]
     Internal(String),
 }
 
