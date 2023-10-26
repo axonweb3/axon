@@ -16,8 +16,8 @@ use protocol::traits::{
     TrustFeedback,
 };
 use protocol::types::{
-    recover_intact_pub_key, Backend, BatchSignedTxs, CellDepWithPubKey, Hash, MerkleRoot,
-    SignatureR, SignatureS, SignedTransaction, H160, U256,
+    recover_intact_pub_key, Backend, BatchSignedTxs, CKBVMVersion, CellDepWithPubKey, Hash,
+    MerkleRoot, SignatureR, SignatureS, SignedTransaction, H160, U256,
 };
 use protocol::{
     async_trait, codec::ProtocolCodec, tokio, trie, Display, ProtocolError, ProtocolErrorKind,
@@ -25,9 +25,11 @@ use protocol::{
 };
 
 use common_apm_derive::trace_span;
+use common_config_parser::types::spec::HardforkName;
 use common_crypto::{Crypto, Secp256k1Recoverable};
 use core_executor::{
-    is_call_system_script, AxonExecutorReadOnlyAdapter, DataProvider, MetadataHandle,
+    enable_hardfork, is_call_system_script, AxonExecutorReadOnlyAdapter, DataProvider,
+    MetadataHandle,
 };
 use core_interoperation::InteroperationImpl;
 
@@ -288,6 +290,11 @@ where
         }
 
         let root = self.executor_backend(ctx).await?.get_image_cell_root();
+        let version = if enable_hardfork(HardforkName::Antlia) {
+            CKBVMVersion::V2023
+        } else {
+            CKBVMVersion::V2021
+        };
 
         // Verify interoperation signature
         match signature.r[0] {
@@ -302,6 +309,7 @@ where
                     r.cell_dep,
                     &[r.pub_key, signature.s],
                     u64::MAX,
+                    version,
                 )
                 .map_err(|e| AdapterError::VerifySignature(e.to_string()))?;
             }
@@ -327,6 +335,7 @@ where
                     ),
                     r.dummy_input(),
                     MAX_VERIFY_CKB_VM_CYCLES,
+                    version,
                 )
                 .map_err(|e| AdapterError::VerifySignature(e.to_string()))?;
             }

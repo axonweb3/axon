@@ -2,7 +2,7 @@ use ckb_traits::{CellDataProvider, ExtensionProvider, HeaderProvider};
 use ckb_types::core::{cell::CellProvider, Cycle, TransactionView};
 use ckb_types::{packed, prelude::*};
 
-use crate::types::{Bytes, CellDep, CellWithData, SignatureR, SignatureS, VMResp};
+use crate::types::{Bytes, CKBVMVersion, CellDep, CellWithData, SignatureR, SignatureS, VMResp};
 use crate::{lazy::DUMMY_INPUT_OUT_POINT, traits::Context, ProtocolResult};
 
 pub const BYTE_SHANNONS: u64 = 100_000_000;
@@ -36,6 +36,7 @@ pub trait Interoperation: Sync + Send {
         data_cell_dep: CellDep,
         args: &[Bytes],
         max_cycles: u64,
+        vesion: CKBVMVersion,
     ) -> ProtocolResult<VMResp>;
 
     fn verify_by_ckb_vm<DL: CkbDataProvider + Sync + Send + 'static>(
@@ -44,6 +45,7 @@ pub trait Interoperation: Sync + Send {
         mocked_tx: &TransactionView,
         dummy_input: Option<CellWithData>,
         max_cycles: u64,
+        vesion: CKBVMVersion,
     ) -> ProtocolResult<Cycle>;
 
     /// The function construct the `TransactionView` payload required by

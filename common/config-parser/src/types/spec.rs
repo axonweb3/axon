@@ -269,6 +269,8 @@ pub enum HardforkName {
     /// If this hardfork is activated, chain validators can modify the EVM
     /// contract size limit.
     Andromeda = 0b1,
+    /// Enable CKB hardfork 2023 with new VM
+    Antlia = 0b10,
 }
 
 impl HardforkName {

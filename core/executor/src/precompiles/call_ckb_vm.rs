@@ -1,16 +1,17 @@
+use common_config_parser::types::spec::HardforkName;
 use ethers::contract::{EthAbiCodec, EthAbiType};
 use ethers::{abi::AbiDecode, core::types::Bytes as EthBytes};
 use evm::executor::stack::{PrecompileFailure, PrecompileOutput};
 use evm::{Context, ExitError, ExitSucceed};
 
 use protocol::traits::Interoperation;
-use protocol::types::{Bytes, H160};
+use protocol::types::{Bytes, CKBVMVersion, H160};
 
 use core_interoperation::{cycle_to_gas, gas_to_cycle, InteroperationImpl};
 
 use crate::precompiles::{axon_precompile_address, PrecompileContract};
 use crate::system_contract::{image_cell::image_cell_abi::OutPoint, DataProvider};
-use crate::{err, CURRENT_HEADER_CELL_ROOT};
+use crate::{enable_hardfork, err, CURRENT_HEADER_CELL_ROOT};
 
 #[derive(Default, Clone)]
 pub struct CallCkbVM;
@@ -27,12 +28,18 @@ impl PrecompileContract for CallCkbVM {
     ) -> Result<(PrecompileOutput, u64), PrecompileFailure> {
         if let Some(gas) = gas_limit {
             let (cell_dep, args) = parse_input(input)?;
+            let version = if enable_hardfork(HardforkName::Antlia) {
+                CKBVMVersion::V2023
+            } else {
+                CKBVMVersion::V2021
+            };
             let res = <InteroperationImpl as Interoperation>::call_ckb_vm(
                 Default::default(),
                 &DataProvider::new(CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow())),
                 cell_dep.into(),
                 &args,
                 gas_to_cycle(gas),
+                version,
             )
             .map_err(|e| err!(_, e.to_string()))?;
 

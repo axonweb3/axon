@@ -4,13 +4,14 @@ use evm::executor::stack::{PrecompileFailure, PrecompileOutput};
 use evm::{Context, ExitError, ExitSucceed};
 
 use protocol::traits::Interoperation;
-use protocol::types::{SignatureR, SignatureS, H160, H256};
+use protocol::types::{CKBVMVersion, SignatureR, SignatureS, H160, H256};
 
+use common_config_parser::types::spec::HardforkName;
 use core_interoperation::{cycle_to_gas, gas_to_cycle, InteroperationImpl};
 
 use crate::precompiles::{axon_precompile_address, call_ckb_vm::CellDep, PrecompileContract};
 use crate::system_contract::{image_cell::image_cell_abi::OutPoint, DataProvider};
-use crate::{err, CURRENT_HEADER_CELL_ROOT};
+use crate::{enable_hardfork, err, CURRENT_HEADER_CELL_ROOT};
 
 #[derive(Default, Clone)]
 pub struct CkbVM;
@@ -28,6 +29,11 @@ impl PrecompileContract for CkbVM {
         let payload = parse_input(input)?;
 
         if let Some(gas) = gas_limit {
+            let version = if enable_hardfork(HardforkName::Antlia) {
+                CKBVMVersion::V2023
+            } else {
+                CKBVMVersion::V2021
+            };
             let res = InteroperationImpl::verify_by_ckb_vm(
                 Default::default(),
                 DataProvider::new(CURRENT_HEADER_CELL_ROOT.with(|r| *r.borrow())),
@@ -43,6 +49,7 @@ impl PrecompileContract for CkbVM {
                 ),
                 None,
                 gas_to_cycle(gas),
+                version,
             )
             .map_err(|e| err!(_, e.to_string()))?;
 

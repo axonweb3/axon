@@ -135,6 +135,11 @@ impl SignatureR {
     }
 }
 
+pub enum CKBVMVersion {
+    V2021,
+    V2023,
+}
+
 #[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct CKBTxMockByRef {
     pub cell_deps:             Vec<CellDep>,
