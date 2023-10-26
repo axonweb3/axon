@@ -22,7 +22,9 @@ const GAS_TO_CYCLE_COEF: u64 = 6_000;
 // The following information is from CKB block [10976708](https://explorer.nervos.org/block/10976708)
 // which is CKB2023 disabled.
 const CKB2023_DISABLED_NUMBER: u64 = 10_976_708;
-const CKB2023_DISABLED_EPOCH: u64 = 0x53c007f0020c8;
+// The value must be less than the epoch of the 2023 hardfork and greater than
+// the epoch of the 2021 hardfork
+const CKB2023_DISABLED_EPOCH: u64 = 0x20c8;
 
 pub const fn gas_to_cycle(gas: u64) -> u64 {
     gas * GAS_TO_CYCLE_COEF
