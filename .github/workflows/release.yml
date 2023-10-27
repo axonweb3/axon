@@ -151,26 +151,6 @@ jobs:
           git tag v${{ needs.version.outputs.major }} ${{ needs.version.outputs.tag }} -f
           git push origin refs/tags/v${{ needs.version.outputs.major }} -f
 
-  trigger-somking-test:
-    runs-on: ubuntu-22.04
-    needs:
-      - version
-      - package
-    steps:
-      - uses: actions/checkout@v4
-      - name: Generate axon-bot token
-        id: generate_axon_bot_token
-        uses: wow-actions/use-app-token@v2
-        with:
-          app_id: ${{ secrets.AXON_BOT_APP_ID }}
-          private_key: ${{ secrets.AXON_BOT_PRIVATE_KEY }}
-      - name: Invoke somking test with inputs
-        uses: aurelien-baudet/workflow-dispatch@v2
-        with:
-          workflow: Somking test suit
-          token: ${{ secrets.GITHUB_TOKEN }}
-          inputs: '{ "axon_linux_release_tag": "${{ needs.version.outputs.tag }}" }'
-
   trigger-build-docker-image:
     runs-on: ubuntu-22.04
     needs:
