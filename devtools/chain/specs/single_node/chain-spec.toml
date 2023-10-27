@@ -77,7 +77,7 @@ gas_limit = 4294967295000
 interval = 3000
 
 [[params.verifier_list]]
-bls_pub_key = "0xa26e3fe1cf51bd4822072c61bdc315ac32e3d3c2e2484bb92942666399e863b4bf56cf2926383cc706ffc15dfebc85c6"
+bls_pub_key = "0xac85bbb40347b6e06ac2dc2da1f75eece029cdc0ed2d456c457d27e288bfbfbcd4c5c19716e9b250134a0e76ce50fa22"
 pub_key = "0x031ddc35212b7fc7ff6685b17d91f77c972535aee5c7ae5684d3e72b986f08834b"
 address = "0x8ab0cf264df99d83525e9e11c7e4db01558ae1b1"
 propose_weight = 1
