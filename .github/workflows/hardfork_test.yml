@@ -80,6 +80,16 @@ jobs:
         repository: sunchengzhu/axon-hardfork-test
         path: axon-hardfork-test
 
+    - name: Choose network
+      working-directory: axon-hardfork-test
+      run: |
+        node_ids=(1 2 3 4)
+        random_value=$(( (RANDOM % ${#node_ids[@]}) + 1 ))
+        network=node_"$random_value"
+        echo "choose network: $network"
+        sed -i '' "s/defaultNetwork: \"node_1\"/defaultNetwork: \"$network\"/" hardhat.config.ts
+        grep "defaultNetwork" hardhat.config.ts
+
     - name: Run test cases before hardfork
       working-directory: axon-hardfork-test
       run: |
@@ -97,11 +107,7 @@ jobs:
       working-directory: axon-hardfork-test
       run: |
         npx hardhat test --grep "check hardfork info after hardfork"
-
-        node_ids=(1 2 3 4)
-        random_value=$(( (RANDOM % ${#node_ids[@]}) + 1 ))
-        echo "Invoke system contract via node_"$random_value
-        npx hardhat test --grep "update max_contract_limit" --network "node_"$random_value
+        npx hardhat test --grep "update max_contract_limit"
         npx hardhat test --grep "deploy a big contract smaller than max_contract_limit"
 
     - name: Archive logs
