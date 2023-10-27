@@ -75,7 +75,7 @@ jobs:
       timeout-minutes: 1
 
     - name: Checkout axonweb3/axon-hardfork-test
-      uses: axonweb3/checkout@v4
+      uses: actions/checkout@v4
       with:
         repository: sunchengzhu/axon-hardfork-test
         path: axon-hardfork-test
