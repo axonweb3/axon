@@ -97,8 +97,8 @@ jobs:
           # check for AVX2 support by inspecting `/proc/cpuinfo` or running `lscpu`
           # related issue: https://github.com/axonweb3/axon/issues/1387
           lscpu
-          # RocksDB uses `-march=native`. Axon uses it too.
-          RUSTFLAGS="-C target-cpu=native" cargo build
+          # PORTABLE=1 USE_SSE=1 tell rocksdb to target AVX2
+          PORTABLE=1 USE_SSE=1 cargo build
 
       - name: Deploy Local Network of Axon
         run: |
