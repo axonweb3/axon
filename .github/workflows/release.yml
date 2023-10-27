@@ -139,18 +139,6 @@ jobs:
           asset_path: ${{ github.workspace }}/axon_${{ needs.version.outputs.tag }}_${{ matrix.REL_PKG }}
           asset_content_type: application/octet-stream
 
-  force-push:
-    runs-on: ubuntu-22.04
-    needs:
-      - version
-      - Upload-release-files
-    steps:
-      - uses: actions/checkout@v4
-      - name: force update major tag
-        run: |
-          git tag v${{ needs.version.outputs.major }} ${{ needs.version.outputs.tag }} -f
-          git push origin refs/tags/v${{ needs.version.outputs.major }} -f
-
   trigger-build-docker-image:
     runs-on: ubuntu-22.04
     needs:
