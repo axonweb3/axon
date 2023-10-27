@@ -105,7 +105,12 @@ jobs:
           restore-keys: |
             ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-build
       - name: Build Axon in the development profile
-        run: cargo build
+        run: |
+          # check for AVX2 support by inspecting `/proc/cpuinfo` or running `lscpu`
+          # related issue: https://github.com/axonweb3/axon/issues/1387
+          lscpu
+          # PORTABLE=1 USE_SSE=1 tell rocksdb to target AVX2
+          PORTABLE=1 USE_SSE=1 cargo build
 
       - name: Deploy Local Network of Axon
         run: |
