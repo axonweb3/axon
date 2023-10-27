@@ -3,7 +3,7 @@ name: OCT 11
 on:
   push:
     branches:
-      - main
+      - yangby/*
   workflow_dispatch:
     inputs:
       dispatch:

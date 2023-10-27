@@ -3,7 +3,7 @@ name: v3 Core Tests
 on:
   push:
     branches:
-      - main
+      - yangby/*
   workflow_dispatch:
     inputs:
       dispatch:

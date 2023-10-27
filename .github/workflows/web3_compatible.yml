@@ -1,6 +1,9 @@
 name: Web3 Compatible Tests
 
 on:
+  push:
+    branches:
+      - yangby/*
   merge_group:
   workflow_dispatch:
     inputs:
