@@ -87,7 +87,8 @@ jobs:
         random_value=$(( (RANDOM % ${#node_ids[@]}) + 1 ))
         network=node_"$random_value"
         echo "choose network: $network"
-        sed -i '' "s/defaultNetwork: \"node_1\"/defaultNetwork: \"$network\"/" hardhat.config.ts
+        sed -i "s/defaultNetwork: \"node_1\"/defaultNetwork: \"$network\"/" hardhat.config.ts
+
         grep "defaultNetwork" hardhat.config.ts
 
     - name: Run test cases before hardfork
