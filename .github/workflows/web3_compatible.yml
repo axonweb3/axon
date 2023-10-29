@@ -101,10 +101,10 @@ jobs:
             fi
           done
 
-      - name: Checkout gpBlockchain/axon-test
+      - name: Checkout axonweb3/axon-test
         uses: actions/checkout@v4
         with:
-          repository: gpBlockchain/axon-test
+          repository: axonweb3/axon-test
           path: axon-test
 
       - uses: actions/setup-node@v4

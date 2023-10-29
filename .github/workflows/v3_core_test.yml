@@ -72,7 +72,7 @@ jobs:
           ref: ${{ steps.escape_multiple_lines_test_inputs.outputs.result || 'main' }}
       - uses: actions/checkout@v4
         with:
-          repository: gpBlockchain/v3-core
+          repository: axonweb3/v3-core
           path: v3-core
       - uses: actions/setup-node@v4
         with:
