@@ -72,7 +72,7 @@ jobs:
           ref: ${{ steps.escape_multiple_lines_test_inputs.outputs.result || 'main'}}
       - uses: actions/checkout@v4
         with:
-          repository: gpBlockchain/openzeppelin-contracts
+          repository: axonweb3/openzeppelin-contracts
           ref: compatibillity-axon
           path: openzeppelin-contracts
       - uses: actions/setup-node@v4
