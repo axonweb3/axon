@@ -368,6 +368,7 @@ fn init_crypto(
         bls_pub_keys.insert(address, pub_key);
     }
 
+    // The `common_ref` is a placeholder, use empty string.
     let crypto = OverlordCrypto::new(bls_priv_key, bls_pub_keys, String::new());
     Ok(Arc::new(crypto))
 }

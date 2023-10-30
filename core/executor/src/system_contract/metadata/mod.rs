@@ -86,10 +86,6 @@ impl<Adapter: ExecutorAdapter + ApplyBackend> SystemContract<Adapter>
                 );
             }
             metadata_abi::MetadataContractCalls::SetCkbRelatedInfo(c) => {
-                if !adapter.block_number().is_zero() {
-                    return revert_resp(gas_limit);
-                }
-
                 exec_try!(
                     store.set_ckb_related_info(&c.info.into()),
                     gas_limit,
