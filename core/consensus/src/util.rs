@@ -38,6 +38,8 @@ pub fn time_now() -> u64 {
 /// `keccak256` hash calculation at the end of each height. The reason why not
 /// use address directly is that the `PeerId` is binding with public key not
 /// address.
+/// The `common_ref` do not affect the signature verification, it is a
+/// placeholder.
 pub struct OverlordCrypto {
     private_key: BlsPrivateKey,
     addr_pubkey: RwLock<HashMap<Bytes, BlsPublicKey>>,
