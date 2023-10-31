@@ -53,3 +53,4 @@ common-merkle = { path = "../common/merkle" }
 [features]
 default = ["hex-serialize"]
 hex-serialize = []
+hex-deserialize = []

@@ -8,7 +8,7 @@ pub use transaction::truncate_slice;
 
 use ethers_core::utils::parse_checksummed;
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
-use serde::{Deserialize as _, Deserializer, Serializer};
+use serde::{de::Deserialize, Deserializer, Serializer};
 
 use crate::types::{Address, Bytes, DBBytes, Hex, Key256Bits, TypesError, H160, U256};
 use crate::ProtocolResult;
@@ -106,6 +106,62 @@ where
         s.serialize_str("0x0")
     } else {
         s.serialize_str(to_hex_raw(&mut slice, bytes, true))
+    }
+}
+
+pub fn from_hex(hex: &str) -> Result<Vec<u8>, &'static str> {
+    let mut bytes = Vec::with_capacity((hex.len() + 1) / 2);
+
+    let mut start_i = 0;
+    if hex.len() % 2 != 0 {
+        let byte = u8::from_str_radix(&hex[0..1], 16).map_err(|_| "Failed to parse hex string")?;
+        bytes.push(byte);
+        start_i = 1;
+    }
+
+    for i in (start_i..hex.len()).step_by(2) {
+        let end_i = if i + 2 > hex.len() { i + 1 } else { i + 2 };
+        let byte =
+            u8::from_str_radix(&hex[i..end_i], 16).map_err(|_| "Failed to parse hex string")?;
+        bytes.push(byte);
+    }
+
+    Ok(bytes)
+}
+
+pub fn deserialize_hex_u32<'de, D>(deserializer: D) -> Result<u32, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    if s == "0x0" {
+        return Ok(0);
+    }
+
+    if s.len() >= 2 && &s[0..2] == "0x" {
+        let bytes = from_hex(&s[2..]).map_err(serde::de::Error::custom)?;
+        let val = U256::from_big_endian(&bytes);
+        Ok(val.low_u32())
+    } else {
+        Err(serde::de::Error::custom("Invalid format"))
+    }
+}
+
+pub fn deserialize_hex_u64<'de, D>(deserializer: D) -> Result<u64, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    if s == "0x0" {
+        return Ok(0);
+    }
+
+    if s.len() >= 2 && &s[0..2] == "0x" {
+        let bytes = from_hex(&s[2..]).map_err(serde::de::Error::custom)?;
+        let val = U256::from_big_endian(&bytes);
+        Ok(val.low_u64())
+    } else {
+        Err(serde::de::Error::custom("Invalid format"))
     }
 }
 
