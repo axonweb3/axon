@@ -4,12 +4,13 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "hex-serialize")]
 use crate::codec::serialize_uint;
+#[cfg(feature = "hex-deserialize")]
+use crate::codec::{deserialize_hex_u32, deserialize_hex_u64};
 use crate::types::{
     logs_bloom, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, Log, MerkleRoot, Receipt,
     SignedTransaction, H160, U256,
 };
 use crate::{codec::ProtocolCodec, types::TypesError};
-
 pub type BlockNumber = u64;
 
 pub const MAX_BLOCK_GAS_LIMIT: u64 = 30_000_000;
@@ -53,17 +54,33 @@ pub struct Proposal {
     pub prev_state_root:          MerkleRoot,
     pub transactions_root:        MerkleRoot,
     pub signed_txs_hash:          Hash,
-    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint",))]
+    #[cfg_attr(
+        feature = "hex-deserialize",
+        serde(deserialize_with = "deserialize_hex_u64")
+    )]
     pub timestamp:                u64,
-    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint",))]
+    #[cfg_attr(
+        feature = "hex-deserialize",
+        serde(deserialize_with = "deserialize_hex_u64")
+    )]
     pub number:                   BlockNumber,
     pub gas_limit:                U256,
     pub extra_data:               Vec<ExtraData>,
     pub base_fee_per_gas:         U256,
     pub proof:                    Proof,
-    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint",))]
+    #[cfg_attr(
+        feature = "hex-deserialize",
+        serde(deserialize_with = "deserialize_hex_u64")
+    )]
     pub chain_id:                 u64,
-    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint",))]
+    #[cfg_attr(
+        feature = "hex-deserialize",
+        serde(deserialize_with = "deserialize_hex_u32")
+    )]
     pub call_system_script_count: u32,
     pub tx_hashes:                Vec<Hash>,
 }
@@ -213,9 +230,17 @@ pub struct Header {
     pub signed_txs_hash:          Hash,
     pub receipts_root:            MerkleRoot,
     pub log_bloom:                Bloom,
-    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint",))]
+    #[cfg_attr(
+        feature = "hex-deserialize",
+        serde(deserialize_with = "deserialize_hex_u64")
+    )]
     pub timestamp:                u64,
-    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint",))]
+    #[cfg_attr(
+        feature = "hex-deserialize",
+        serde(deserialize_with = "deserialize_hex_u64")
+    )]
     pub number:                   BlockNumber,
     pub gas_used:                 U256,
     pub gas_limit:                U256,
@@ -225,9 +250,17 @@ pub struct Header {
     pub extra_data:               Vec<ExtraData>,
     pub base_fee_per_gas:         U256,
     pub proof:                    Proof,
-    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint",))]
+    #[cfg_attr(
+        feature = "hex-deserialize",
+        serde(deserialize_with = "deserialize_hex_u32")
+    )]
     pub call_system_script_count: u32,
-    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint",))]
+    #[cfg_attr(
+        feature = "hex-deserialize",
+        serde(deserialize_with = "deserialize_hex_u64")
+    )]
     pub chain_id:                 u64,
 }
 
@@ -247,7 +280,10 @@ impl Header {
 pub struct ExtraData {
     #[cfg_attr(
         feature = "hex-serialize",
-        serde(serialize_with = "withpfx_lowercase::serialize")
+        serde(
+            serialize_with = "withpfx_lowercase::serialize",
+            deserialize_with = "withpfx_lowercase::deserialize"
+        )
     )]
     pub inner: Bytes,
 }
@@ -256,19 +292,33 @@ pub struct ExtraData {
     RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq,
 )]
 pub struct Proof {
-    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint",))]
+    #[cfg_attr(
+        feature = "hex-deserialize",
+        serde(deserialize_with = "deserialize_hex_u64")
+    )]
     pub number:     u64,
-    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint",))]
+    #[cfg_attr(
+        feature = "hex-deserialize",
+        serde(deserialize_with = "deserialize_hex_u64")
+    )]
     pub round:      u64,
     pub block_hash: Hash,
     #[cfg_attr(
         feature = "hex-serialize",
-        serde(serialize_with = "withpfx_lowercase::serialize")
+        serde(
+            serialize_with = "withpfx_lowercase::serialize",
+            deserialize_with = "withpfx_lowercase::deserialize"
+        )
     )]
     pub signature:  Bytes,
     #[cfg_attr(
         feature = "hex-serialize",
-        serde(serialize_with = "withpfx_lowercase::serialize")
+        serde(
+            serialize_with = "withpfx_lowercase::serialize",
+            deserialize_with = "withpfx_lowercase::deserialize"
+        )
     )]
     pub bitmap:     Bytes,
 }
