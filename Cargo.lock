@@ -303,7 +303,7 @@ dependencies = [
  "async-trait",
  "bincode",
  "bytes",
- "cita_trie",
+ "cita_trie 5.0.0",
  "ckb-hash",
  "ckb-jsonrpc-types",
  "ckb-sdk",
@@ -333,6 +333,28 @@ dependencies = [
  "tokio",
  "toml 0.8.2",
  "zeroize",
+]
+
+[[package]]
+name = "axon-tools"
+version = "0.1.1"
+dependencies = [
+ "bit-vec",
+ "blst",
+ "bytes",
+ "cita_trie 4.1.0",
+ "derive_more",
+ "ethereum",
+ "ethereum-types 0.14.1",
+ "faster-hex 0.8.1",
+ "log",
+ "overlord",
+ "rand 0.8.5",
+ "rlp",
+ "rlp-derive",
+ "serde",
+ "serde_json",
+ "tiny-keccak",
 ]
 
 [[package]]
@@ -858,6 +880,17 @@ dependencies = [
  "crypto-common",
  "inout",
  "zeroize",
+]
+
+[[package]]
+name = "cita_trie"
+version = "4.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8c3d2abadaa28e0d277f9f6d07a2052544f045d929cd4d6f7bcfb43567c9767"
+dependencies = [
+ "hasher",
+ "parking_lot 0.12.1",
+ "rlp",
 ]
 
 [[package]]

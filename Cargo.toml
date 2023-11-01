@@ -42,6 +42,7 @@ members = [
     "core/run",
     "core/storage",
     "devtools/abi-generator",
+    "devtools/axon-tools",
     "devtools/keypair",
     "protocol",
 ]
