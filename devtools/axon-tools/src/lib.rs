@@ -10,6 +10,7 @@ pub mod hash;
 pub mod hex;
 #[cfg(feature = "proof")]
 mod proof;
+mod rlp_codec;
 pub mod types;
 
 pub use error::Error;

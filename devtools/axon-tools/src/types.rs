@@ -1,19 +1,15 @@
-use core::cmp::Ordering;
-
+use crate::error::TypesError;
 use alloc::vec::Vec;
 use bytes::{Bytes, BytesMut};
+use core::cmp::Ordering;
 use core::str::FromStr;
-use derive_more::{Display, From};
+use ethereum_types::{Bloom, H160, H256, U256};
 use faster_hex::withpfx_lowercase;
-use rlp::{Decodable, DecoderError, Rlp};
-
-pub use ethereum_types::{Bloom, H160, H256, H64, U256};
 
 #[cfg(feature = "impl-serde")]
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "impl-rlp")]
-use rlp::{Encodable, RlpStream};
 use rlp_derive::{RlpDecodable, RlpEncodable};
 
 #[cfg(feature = "hex")]
@@ -111,62 +107,6 @@ impl<'de> Deserialize<'de> for Hex {
     }
 }
 
-#[derive(Debug, Display, From)]
-pub enum TypesError {
-    #[display(fmt = "Expect {:?}, get {:?}.", expect, real)]
-    LengthMismatch { expect: usize, real: usize },
-
-    #[display(
-        fmt = "Eip1559Transaction hash mismatch origin {:?}, computed {:?}",
-        origin,
-        calc
-    )]
-    TxHashMismatch { origin: H256, calc: H256 },
-
-    #[display(fmt = "{:?}", _0)]
-    FromHex(faster_hex::Error),
-
-    #[display(fmt = "{:?} is an invalid address", _0)]
-    InvalidAddress(String),
-
-    #[display(fmt = "Hex should start with 0x")]
-    HexPrefix,
-
-    #[display(fmt = "Invalid public key")]
-    InvalidPublicKey,
-
-    #[display(fmt = "Invalid check sum")]
-    InvalidCheckSum,
-
-    #[display(fmt = "Unsigned")]
-    Unsigned,
-
-    // #[display(fmt = "Crypto error {:?}", _0)]
-    // Crypto(CryptoError),
-    #[display(fmt = "Missing signature")]
-    MissingSignature,
-
-    #[display(fmt = "Invalid crosschain direction")]
-    InvalidDirection,
-
-    #[display(fmt = "Signature R is empty")]
-    SignatureRIsEmpty,
-
-    #[display(fmt = "Invalid signature R type")]
-    InvalidSignatureRType,
-
-    #[display(fmt = "Invalid address source type")]
-    InvalidAddressSourceType,
-
-    #[display(fmt = "Missing interoperation sender")]
-    MissingInteroperationSender,
-
-    #[display(fmt = "InvalidBlockVersion {:?}", _0)]
-    InvalidBlockVersion(u8),
-}
-
-impl std::error::Error for TypesError {}
-
 #[derive(Default, Copy, Clone, Debug, PartialEq, Eq)]
 #[cfg(feature = "impl-serde")]
 #[derive(Serialize, Deserialize)]
@@ -186,26 +126,11 @@ impl From<BlockVersion> for u8 {
 impl TryFrom<u8> for BlockVersion {
     type Error = TypesError;
 
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
+    fn try_from(value: u8) -> Result<Self, TypesError> {
         match value {
             0 => Ok(BlockVersion::V0),
             _ => Err(TypesError::InvalidBlockVersion(value)),
         }
-    }
-}
-
-impl Encodable for BlockVersion {
-    fn rlp_append(&self, s: &mut RlpStream) {
-        let ver: u8 = (*self).into();
-        s.begin_list(1).append(&ver);
-    }
-}
-
-impl Decodable for BlockVersion {
-    fn decode(r: &Rlp) -> Result<Self, DecoderError> {
-        let ver: u8 = r.val_at(0)?;
-        ver.try_into()
-            .map_err(|_| DecoderError::Custom("Invalid block version"))
     }
 }
 
@@ -336,26 +261,6 @@ pub struct Proposal {
     pub tx_hashes:                Vec<Hash>,
 }
 
-#[cfg(feature = "impl-rlp")]
-impl Encodable for Proposal {
-    fn rlp_append(&self, s: &mut RlpStream) {
-        s.begin_list(13)
-            .append(&self.version)
-            .append(&self.prev_hash)
-            .append(&self.proposer)
-            .append(&self.prev_state_root)
-            .append(&self.transactions_root)
-            .append(&self.signed_txs_hash)
-            .append(&self.timestamp)
-            .append(&self.number)
-            .append(&self.gas_limit.as_u64())
-            .append_list(&self.extra_data)
-            .append(&self.proof)
-            .append(&self.call_system_script_count)
-            .append_list(&self.tx_hashes);
-    }
-}
-
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 #[cfg_attr(
     feature = "impl-rlp",
@@ -433,18 +338,6 @@ pub struct Vote {
     pub round:      u64,
     pub vote_type:  u8,
     pub block_hash: Bytes,
-}
-
-#[cfg(feature = "impl-rlp")]
-impl Encodable for Vote {
-    fn rlp_append(&self, s: &mut RlpStream) {
-        let vote_type: u8 = self.vote_type;
-        s.begin_list(4)
-            .append(&self.height)
-            .append(&self.round)
-            .append(&vote_type)
-            .append(&self.block_hash.to_vec());
-    }
 }
 
 #[cfg(test)]

@@ -1,3 +1,5 @@
+use derive_more::{Display, From};
+use ethereum_types::H256;
 use std::fmt::{self, Display};
 
 #[allow(dead_code)]
@@ -61,3 +63,59 @@ impl Display for Error {
         }
     }
 }
+
+#[derive(Debug, Display, From)]
+pub enum TypesError {
+    #[display(fmt = "Expect {:?}, get {:?}.", expect, real)]
+    LengthMismatch { expect: usize, real: usize },
+
+    #[display(
+        fmt = "Eip1559Transaction hash mismatch origin {:?}, computed {:?}",
+        origin,
+        calc
+    )]
+    TxHashMismatch { origin: H256, calc: H256 },
+
+    #[display(fmt = "{:?}", _0)]
+    FromHex(faster_hex::Error),
+
+    #[display(fmt = "{:?} is an invalid address", _0)]
+    InvalidAddress(String),
+
+    #[display(fmt = "Hex should start with 0x")]
+    HexPrefix,
+
+    #[display(fmt = "Invalid public key")]
+    InvalidPublicKey,
+
+    #[display(fmt = "Invalid check sum")]
+    InvalidCheckSum,
+
+    #[display(fmt = "Unsigned")]
+    Unsigned,
+
+    // #[display(fmt = "Crypto error {:?}", _0)]
+    // Crypto(CryptoError),
+    #[display(fmt = "Missing signature")]
+    MissingSignature,
+
+    #[display(fmt = "Invalid crosschain direction")]
+    InvalidDirection,
+
+    #[display(fmt = "Signature R is empty")]
+    SignatureRIsEmpty,
+
+    #[display(fmt = "Invalid signature R type")]
+    InvalidSignatureRType,
+
+    #[display(fmt = "Invalid address source type")]
+    InvalidAddressSourceType,
+
+    #[display(fmt = "Missing interoperation sender")]
+    MissingInteroperationSender,
+
+    #[display(fmt = "InvalidBlockVersion {:?}", _0)]
+    InvalidBlockVersion(u8),
+}
+
+impl std::error::Error for TypesError {}
