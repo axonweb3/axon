@@ -188,6 +188,9 @@ name = "arbitrary"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2d098ff73c1ca148721f37baad5ea6a465a13f9573aba8641fbbbae8164a54e"
+dependencies = [
+ "derive_arbitrary",
+]
 
 [[package]]
 name = "arc-swap"
@@ -303,7 +306,7 @@ dependencies = [
  "async-trait",
  "bincode",
  "bytes",
- "cita_trie",
+ "cita_trie 5.0.0",
  "ckb-hash",
  "ckb-jsonrpc-types",
  "ckb-sdk",
@@ -333,6 +336,31 @@ dependencies = [
  "tokio",
  "toml 0.8.2",
  "zeroize",
+]
+
+[[package]]
+name = "axon-tools"
+version = "0.1.1"
+dependencies = [
+ "bit-vec",
+ "blst",
+ "bytes",
+ "cita_trie 4.1.0",
+ "derive_more",
+ "eth_light_client_in_ckb-prover",
+ "ethereum",
+ "ethereum-types 0.14.1",
+ "ethers-core",
+ "faster-hex 0.8.1",
+ "hex",
+ "log",
+ "overlord",
+ "rand 0.8.5",
+ "rlp",
+ "rlp-derive",
+ "serde",
+ "serde_json",
+ "tiny-keccak",
 ]
 
 [[package]]
@@ -584,6 +612,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "bls"
+version = "0.2.0"
+source = "git+https://github.com/synapseweb3/lighthouse?rev=be911e6#be911e6bd3f54ae84b01310b411be19e2b274634"
+dependencies = [
+ "arbitrary",
+ "blst",
+ "eth2_hashing",
+ "eth2_serde_utils",
+ "eth2_ssz",
+ "ethereum-types 0.14.1",
+ "hex",
+ "rand 0.7.3",
+ "serde",
+ "serde_derive",
+ "tree_hash",
+ "zeroize",
+]
+
+[[package]]
 name = "blst"
 version = "0.3.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -657,6 +704,20 @@ dependencies = [
  "cc",
  "libc",
  "pkg-config",
+]
+
+[[package]]
+name = "cached_tree_hash"
+version = "0.1.0"
+source = "git+https://github.com/synapseweb3/lighthouse?rev=be911e6#be911e6bd3f54ae84b01310b411be19e2b274634"
+dependencies = [
+ "eth2_hashing",
+ "eth2_ssz",
+ "eth2_ssz_derive",
+ "eth2_ssz_types",
+ "ethereum-types 0.14.1",
+ "smallvec",
+ "tree_hash",
 ]
 
 [[package]]
@@ -862,6 +923,17 @@ dependencies = [
 
 [[package]]
 name = "cita_trie"
+version = "4.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f8c3d2abadaa28e0d277f9f6d07a2052544f045d929cd4d6f7bcfb43567c9767"
+dependencies = [
+ "hasher",
+ "parking_lot 0.12.1",
+ "rlp",
+]
+
+[[package]]
+name = "cita_trie"
 version = "5.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3dcd16618ce43e86588c5bbc950e790814fa59d1b1898edbbd502440c30106c2"
@@ -1043,6 +1115,15 @@ name = "ckb-merkle-mountain-range"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56ccb671c5921be8a84686e6212ca184cb1d7c51cadcdbfcbd1cc3f042f5dfb8"
+dependencies = [
+ "cfg-if 1.0.0",
+]
+
+[[package]]
+name = "ckb-merkle-mountain-range"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d15193decfa1e0b151ce19e42d118db048459a27720fb3de7d3103c30adccb12"
 dependencies = [
  "cfg-if 1.0.0",
 ]
@@ -1235,7 +1316,7 @@ dependencies = [
  "ckb-fixed-hash",
  "ckb-gen-types",
  "ckb-hash",
- "ckb-merkle-mountain-range",
+ "ckb-merkle-mountain-range 0.5.2",
  "ckb-occupied-capacity",
  "ckb-rational",
  "derive_more",
@@ -1600,6 +1681,20 @@ name = "common-version"
 version = "0.1.0"
 dependencies = [
  "semver",
+]
+
+[[package]]
+name = "compare_fields"
+version = "0.2.0"
+source = "git+https://github.com/synapseweb3/lighthouse?rev=be911e6#be911e6bd3f54ae84b01310b411be19e2b274634"
+
+[[package]]
+name = "compare_fields_derive"
+version = "0.2.0"
+source = "git+https://github.com/synapseweb3/lighthouse?rev=be911e6#be911e6bd3f54ae84b01310b411be19e2b274634"
+dependencies = [
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -2178,6 +2273,41 @@ dependencies = [
 ]
 
 [[package]]
+name = "darling"
+version = "0.13.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a01d95850c592940db9b8194bc39f4bc0e89dee5c4265e4b1807c34a9aba453c"
+dependencies = [
+ "darling_core",
+ "darling_macro",
+]
+
+[[package]]
+name = "darling_core"
+version = "0.13.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "859d65a907b6852c9361e3185c862aae7fafd2887876799fa55f5f99dc40d610"
+dependencies = [
+ "fnv",
+ "ident_case",
+ "proc-macro2",
+ "quote",
+ "strsim 0.10.0",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "darling_macro"
+version = "0.13.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c972679f83bdf9c42bd905396b6c3588a843a17f0f16dfcfa3e2c5d57441835"
+dependencies = [
+ "darling_core",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "dashmap"
 version = "5.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2236,6 +2366,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "derive_arbitrary"
+version = "1.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "67e77553c4162a157adbf834ebae5b415acbecbeafc7a74b0e886657506a7611"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.38",
 ]
 
 [[package]]
@@ -2547,6 +2688,118 @@ dependencies = [
  "sha3",
  "thiserror",
  "uuid 0.8.2",
+]
+
+[[package]]
+name = "eth2_hashing"
+version = "0.3.0"
+source = "git+https://github.com/synapseweb3/lighthouse?rev=be911e6#be911e6bd3f54ae84b01310b411be19e2b274634"
+dependencies = [
+ "cpufeatures",
+ "lazy_static",
+ "ring",
+ "sha2 0.10.6",
+]
+
+[[package]]
+name = "eth2_interop_keypairs"
+version = "0.2.0"
+source = "git+https://github.com/synapseweb3/lighthouse?rev=be911e6#be911e6bd3f54ae84b01310b411be19e2b274634"
+dependencies = [
+ "bls",
+ "eth2_hashing",
+ "hex",
+ "lazy_static",
+ "num-bigint",
+ "serde",
+ "serde_derive",
+ "serde_yaml",
+]
+
+[[package]]
+name = "eth2_serde_utils"
+version = "0.1.1"
+source = "git+https://github.com/synapseweb3/lighthouse?rev=be911e6#be911e6bd3f54ae84b01310b411be19e2b274634"
+dependencies = [
+ "ethereum-types 0.14.1",
+ "hex",
+ "serde",
+ "serde_derive",
+ "serde_json",
+]
+
+[[package]]
+name = "eth2_ssz"
+version = "0.4.1"
+source = "git+https://github.com/synapseweb3/lighthouse?rev=be911e6#be911e6bd3f54ae84b01310b411be19e2b274634"
+dependencies = [
+ "ethereum-types 0.14.1",
+ "itertools",
+ "smallvec",
+]
+
+[[package]]
+name = "eth2_ssz_derive"
+version = "0.3.1"
+source = "git+https://github.com/synapseweb3/lighthouse?rev=be911e6#be911e6bd3f54ae84b01310b411be19e2b274634"
+dependencies = [
+ "darling",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "eth2_ssz_types"
+version = "0.2.2"
+source = "git+https://github.com/synapseweb3/lighthouse?rev=be911e6#be911e6bd3f54ae84b01310b411be19e2b274634"
+dependencies = [
+ "arbitrary",
+ "derivative",
+ "eth2_serde_utils",
+ "eth2_ssz",
+ "serde",
+ "serde_derive",
+ "smallvec",
+ "tree_hash",
+ "typenum",
+]
+
+[[package]]
+name = "eth_light_client_in_ckb-prover"
+version = "0.3.0-alpha"
+source = "git+https://github.com/synapseweb3/eth-light-client-in-ckb#3812d220a7cf9da8cb3da35ebb19ead2c7fd7657"
+dependencies = [
+ "cita_trie 4.1.0",
+ "eth_light_client_in_ckb-verification",
+ "ethers-core",
+ "hasher",
+ "merkle_proof",
+ "tree_hash",
+ "types",
+]
+
+[[package]]
+name = "eth_light_client_in_ckb-verification"
+version = "0.3.0-alpha"
+source = "git+https://github.com/synapseweb3/eth-light-client-in-ckb#3812d220a7cf9da8cb3da35ebb19ead2c7fd7657"
+dependencies = [
+ "bls",
+ "ckb-merkle-mountain-range 0.6.0",
+ "eth2_hashing",
+ "eth2_ssz",
+ "eth2_ssz_derive",
+ "eth2_ssz_types",
+ "ethereum-types 0.14.1",
+ "faster-hex 0.6.1",
+ "log",
+ "merkle_proof",
+ "molecule",
+ "rlp",
+ "tiny-keccak",
+ "tree_hash",
+ "tree_hash_derive",
+ "types",
 ]
 
 [[package]]
@@ -2998,6 +3251,18 @@ dependencies = [
  "js-sys",
  "tempfile",
 ]
+
+[[package]]
+name = "fallible-iterator"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4443176a9f2c162692bd3d352d745ef9413eec5782a80d8fd6f8a1ac692a07f7"
+
+[[package]]
+name = "fallible-streaming-iterator"
+version = "0.1.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7360491ce676a36bf9bb3c56c1aa791658183a54d2744120f27285738d90465a"
 
 [[package]]
 name = "faster-hex"
@@ -3474,6 +3739,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "hashlink"
+version = "0.8.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e8094feaf31ff591f651a2664fb9cfd92bba7a60ce3197265e9482ebe753c8f7"
+dependencies = [
+ "hashbrown 0.14.0",
+]
+
+[[package]]
 name = "heapsize"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3677,6 +3951,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "ident_case"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
+
+[[package]]
 name = "idna"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3808,6 +4088,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a5bbe824c507c5da5956355e86a746d82e0e1464f65d862cc5e71da70e94b2c"
 dependencies = [
  "cfg-if 1.0.0",
+]
+
+[[package]]
+name = "int_to_bytes"
+version = "0.2.0"
+source = "git+https://github.com/synapseweb3/lighthouse?rev=be911e6#be911e6bd3f54ae84b01310b411be19e2b274634"
+dependencies = [
+ "bytes",
 ]
 
 [[package]]
@@ -4081,6 +4369,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "libsqlite3-sys"
+version = "0.25.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "29f835d03d717946d28b1d1ed632eb6f0e24a299388ee623d0c23118d3e8a7fa"
+dependencies = [
+ "cc",
+ "pkg-config",
+ "vcpkg",
+]
+
+[[package]]
 name = "linked-hash-map"
 version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4171,6 +4470,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "maplit"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3e2e65a1a2e43cfcb47a895c4c8b10d1f4a61097f9f254f183aee60cad9c651d"
+
+[[package]]
 name = "match_cfg"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4222,6 +4527,40 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "171d2f700835121c3b04ccf0880882987a050fd5c7ae88148abf537d33dd3a56"
 dependencies = [
  "cfg-if 1.0.0",
+]
+
+[[package]]
+name = "merkle_proof"
+version = "0.2.0"
+source = "git+https://github.com/synapseweb3/lighthouse?rev=be911e6#be911e6bd3f54ae84b01310b411be19e2b274634"
+dependencies = [
+ "eth2_hashing",
+ "ethereum-types 0.14.1",
+ "lazy_static",
+ "safe_arith",
+]
+
+[[package]]
+name = "metastruct"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ccfbb8826226b09b05bb62a0937cf6abb16f1f7d4b746eb95a83db14aec60f06"
+dependencies = [
+ "metastruct_macro",
+]
+
+[[package]]
+name = "metastruct_macro"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "37cb4045d5677b7da537f8cb5d0730d5b6414e3cc81c61e4b50e1f0cbdc73909"
+dependencies = [
+ "darling",
+ "itertools",
+ "proc-macro2",
+ "quote",
+ "smallvec",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -5503,6 +5842,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rand_xorshift"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d25bf25ec5ae4a3f1b92f929810509a2f53d7dca2f50b794ff57e3face536c8f"
+dependencies = [
+ "rand_core 0.6.4",
+]
+
+[[package]]
 name = "rayon"
 version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5731,6 +6079,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "rusqlite"
+version = "0.28.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "01e213bc3ecb39ac32e81e51ebe31fd888a940515173e3a18a35f8c6e896422a"
+dependencies = [
+ "bitflags 1.3.2",
+ "fallible-iterator",
+ "fallible-streaming-iterator",
+ "hashlink",
+ "libsqlite3-sys",
+ "smallvec",
+]
+
+[[package]]
 name = "rust-ini"
 version = "0.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5904,6 +6266,11 @@ name = "ryu"
 version = "1.0.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f91339c0467de62360649f8d3e185ca8de4224ff281f66000de5eb2a77a79041"
+
+[[package]]
+name = "safe_arith"
+version = "0.1.0"
+source = "git+https://github.com/synapseweb3/lighthouse?rev=be911e6#be911e6bd3f54ae84b01310b411be19e2b274634"
 
 [[package]]
 name = "salsa20"
@@ -6171,6 +6538,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_with"
+version = "1.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "678b5a069e50bf00ecd22d0cd8ddf7c236f68581b03db652061ed5eb13a312ff"
+dependencies = [
+ "serde",
+ "serde_with_macros",
+]
+
+[[package]]
+name = "serde_with_macros"
+version = "1.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e182d6ec6f05393cc0e5ed1bf81ad6db3a8feedf8ee515ecdd369809bcce8082"
+dependencies = [
+ "darling",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "serde_yaml"
 version = "0.8.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6285,6 +6674,12 @@ checksum = "6528351c9bc8ab22353f9d776db39a20288e8d6c37ef8cfe3317cf875eecfc2d"
 dependencies = [
  "autocfg",
 ]
+
+[[package]]
+name = "slog"
+version = "2.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8347046d4ebd943127157b94d63abb990fcf729dc4e9978927fdf4ac3c998d06"
 
 [[package]]
 name = "smallvec"
@@ -6466,6 +6861,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6bdef32e8150c2a081110b42772ffe7d7c9032b606bc226c8260fd97e0976601"
 
 [[package]]
+name = "superstruct"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75b9e5728aa1a87141cefd4e7509903fc01fa0dcb108022b1e841a67c5159fc5"
+dependencies = [
+ "darling",
+ "itertools",
+ "proc-macro2",
+ "quote",
+ "smallvec",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "svm-rs"
 version = "0.2.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6494,6 +6903,15 @@ dependencies = [
  "tracing",
  "url",
  "zip",
+]
+
+[[package]]
+name = "swap_or_not_shuffle"
+version = "0.2.0"
+source = "git+https://github.com/synapseweb3/lighthouse?rev=be911e6#be911e6bd3f54ae84b01310b411be19e2b274634"
+dependencies = [
+ "eth2_hashing",
+ "ethereum-types 0.14.1",
 ]
 
 [[package]]
@@ -6685,6 +7103,15 @@ checksum = "633c1a546cee861a1a6d0dc69ebeca693bf4296661ba7852b9d21d159e0506df"
 dependencies = [
  "libc",
  "winapi",
+]
+
+[[package]]
+name = "test_random_derive"
+version = "0.2.0"
+source = "git+https://github.com/synapseweb3/lighthouse?rev=be911e6#be911e6bd3f54ae84b01310b411be19e2b274634"
+dependencies = [
+ "quote",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -7136,6 +7563,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "tree_hash"
+version = "0.4.1"
+source = "git+https://github.com/synapseweb3/lighthouse?rev=be911e6#be911e6bd3f54ae84b01310b411be19e2b274634"
+dependencies = [
+ "eth2_hashing",
+ "ethereum-types 0.14.1",
+ "smallvec",
+]
+
+[[package]]
+name = "tree_hash_derive"
+version = "0.4.0"
+source = "git+https://github.com/synapseweb3/lighthouse?rev=be911e6#be911e6bd3f54ae84b01310b411be19e2b274634"
+dependencies = [
+ "darling",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "triehash"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7186,6 +7633,54 @@ name = "typenum"
 version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "497961ef93d974e23eb6f433eb5fe1b7930b659f06d12dec6fc44a8f554c0bba"
+
+[[package]]
+name = "types"
+version = "0.2.1"
+source = "git+https://github.com/synapseweb3/lighthouse?rev=be911e6#be911e6bd3f54ae84b01310b411be19e2b274634"
+dependencies = [
+ "arbitrary",
+ "bls",
+ "cached_tree_hash",
+ "compare_fields",
+ "compare_fields_derive",
+ "derivative",
+ "eth2_hashing",
+ "eth2_interop_keypairs",
+ "eth2_serde_utils",
+ "eth2_ssz",
+ "eth2_ssz_derive",
+ "eth2_ssz_types",
+ "ethereum-types 0.14.1",
+ "hex",
+ "int_to_bytes",
+ "itertools",
+ "lazy_static",
+ "log",
+ "maplit",
+ "merkle_proof",
+ "metastruct",
+ "parking_lot 0.12.1",
+ "rand 0.8.5",
+ "rand_xorshift",
+ "rayon",
+ "regex",
+ "rusqlite",
+ "safe_arith",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "serde_with",
+ "serde_yaml",
+ "slog",
+ "smallvec",
+ "superstruct",
+ "swap_or_not_shuffle",
+ "tempfile",
+ "test_random_derive",
+ "tree_hash",
+ "tree_hash_derive",
+]
 
 [[package]]
 name = "uint"

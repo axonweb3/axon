@@ -1,0 +1,87 @@
+[package]
+name = "axon-tools"
+version = "0.1.1"
+edition = "2021"
+authors = ["Axon Dev <axon@axonweb3.io>"]
+license = "MIT"
+include = ["src/*", "README.md", "LICENSE"]
+readme = "README.md"
+keywords = ["axon", "tool"]
+categories = ["cryptography"]
+repository = "https://github.com/axonweb3/axon"
+description = """
+Some axon related utilities.
+"""
+
+[dev-dependencies]
+eth_light_client_in_ckb-prover = { version = "0.3.0-alpha", git = "https://github.com/synapseweb3/eth-light-client-in-ckb" }
+ethereum = "0.14"
+ethers-core = "2.0.10"
+hex = "0.4"
+rand = "0.8"
+
+[dependencies]
+derive_more = "0.99"
+log = "0.4.19"
+overlord = "0.4"
+serde_json = "1.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[dependencies.bit-vec]
+version = "0.6"
+default_features = false
+optional = true
+
+[dependencies.blst]
+version = "0.3"
+optional = true
+
+[dependencies.bytes]
+version = "1.4"
+default-features = false
+features = ["serde"]
+
+[dependencies.cita_trie]
+version = "4.0"
+optional = true
+
+[dependencies.ethereum-types]
+version = "0.14"
+default-features = false
+features = ["serialize"]
+
+[dependencies.faster-hex]
+version = "0.8"
+optional = true
+
+[dependencies.rlp]
+version = "0.5"
+default-features = false
+optional = true
+
+[dependencies.rlp-derive]
+version = "0.1"
+optional = true
+
+[dependencies.serde]
+version = "1.0"
+default_features = false
+optional = true
+features = ["derive"]
+
+[dependencies.tiny-keccak]
+version = "2.0"
+optional = true
+features = ["keccak"]
+
+[features]
+default = ["impl-serde", "proof"]
+proof = ["blst", "bit-vec", "cita_trie", "hash", "impl-rlp"]
+hash = ["tiny-keccak"]
+hex = ["faster-hex"]
+impl-rlp = ["rlp", "rlp-derive", "ethereum-types/rlp"]
+impl-serde = ["serde", "ethereum-types/serialize", "hex"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "doc_cfg"]
