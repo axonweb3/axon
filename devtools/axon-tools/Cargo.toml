@@ -14,7 +14,10 @@ Some axon related utilities.
 """
 
 [dev-dependencies]
+eth_light_client_in_ckb-prover = { version = "0.3.0-alpha", git = "https://github.com/synapseweb3/eth-light-client-in-ckb" }
 ethereum = "0.14"
+ethers-core = "2.0.10"
+hex = "0.4"
 rand = "0.8"
 
 [dependencies]

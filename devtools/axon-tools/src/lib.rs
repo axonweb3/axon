@@ -24,3 +24,6 @@ pub use proof::{verify_proof, verify_trie_proof};
 pub use hash::keccak_256;
 
 pub mod consts;
+
+#[cfg(test)]
+mod tests;
