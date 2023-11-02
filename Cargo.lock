@@ -1534,6 +1534,7 @@ name = "common-crypto"
 version = "0.2.1"
 dependencies = [
  "axon-protocol",
+ "blst",
  "criterion",
  "ophelia",
  "ophelia-blst",
