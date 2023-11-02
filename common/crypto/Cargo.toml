@@ -6,6 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+# We need to enable the portable feature because some github runners don't support ADX
+blst = { version = "0.3", features = ["portable"] }
 ophelia = "0.3"
 ophelia-blst = "0.3"
 ophelia-secp256k1 = "0.3"
