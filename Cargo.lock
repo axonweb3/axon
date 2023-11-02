@@ -1590,10 +1590,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "common-channel"
-version = "0.2.1"
-
-[[package]]
 name = "common-config-parser"
 version = "0.2.1"
 dependencies = [
@@ -1671,10 +1667,6 @@ dependencies = [
  "rlp",
  "static_merkle_tree",
 ]
-
-[[package]]
-name = "common-pubsub"
-version = "0.2.1"
 
 [[package]]
 name = "common-version"
