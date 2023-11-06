@@ -55,7 +55,7 @@ impl<Adapter: SynchronizationAdapter> Synchronization for OverlordSynchronizatio
         }
 
         log::info!(
-            "[synchronization]: sync start, remote block number {:?} current block number {:?}",
+            "[synchronization]: sync start, remote block number {} current block number {}",
             remote_number,
             current_number,
         );
@@ -73,7 +73,7 @@ impl<Adapter: SynchronizationAdapter> Synchronization for OverlordSynchronizatio
 
         if let Err(e) = sync_resp {
             log::error!(
-                "[synchronization]: err, current_number {:?} err_msg: {:?}",
+                "[synchronization]: err, current_number {} err_msg: {:?}",
                 sync_status.last_number,
                 e
             );
@@ -85,7 +85,7 @@ impl<Adapter: SynchronizationAdapter> Synchronization for OverlordSynchronizatio
         }
 
         log::info!(
-            "[synchronization]: sync end, remote block number {:?} current block number {:?}",
+            "[synchronization]: sync end, remote block number {} current block number {}",
             remote_number,
             sync_status.last_number,
         );
@@ -168,7 +168,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
                 .await
                 .map_err(|e| {
                     log::error!(
-                        "[synchronization]: get_rich_block_from_remote error, number: {:?}",
+                        "[synchronization]: get_rich_block_from_remote error, number: {}",
                         consenting_number
                     );
                     e
@@ -238,7 +238,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             .await
             .map_err(|e| {
                 log::error!(
-                    "[synchronization]: verify_proof error, syncing block header: {:?}, proof: {:?}",
+                    "[synchronization]: verify_proof error, syncing block header: {}, proof: {}",
                     consenting_rich_block.block.header,
                     consenting_proof,
                 );
@@ -250,7 +250,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             .await
             .map_err(|e| {
                 log::error!(
-                    "[synchronization]: verify_block_header error, block header: {:?}",
+                    "[synchronization]: verify_block_header error, block header: {}",
                     consenting_rich_block.block.header
                 );
                 e
@@ -277,7 +277,7 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
             .await
             .map_err(|e| {
                 log::error!(
-                    "[synchronization]: verify_proof error, previous block header: {:?}, proof: {:?}",
+                    "[synchronization]: verify_proof error, previous block header: {}, proof: {}",
                     previous_block.header,
                     consenting_rich_block.block.header.proof
                 );

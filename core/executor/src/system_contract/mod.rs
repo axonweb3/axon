@@ -206,7 +206,7 @@ pub fn system_contract_dispatch<Adapter: ExecutorAdapter + ApplyBackend>(
     tx: &SignedTransaction,
 ) -> Option<TxResp> {
     if let Some(addr) = tx.get_to() {
-        log::debug!("execute addr {:}", addr);
+        log::debug!("execute addr {:#x}", addr);
 
         if addr == NATIVE_TOKEN_CONTRACT_ADDRESS {
             return Some(NativeTokenContract::default().exec_(adapter, tx));

@@ -20,7 +20,8 @@ use core_executor::MetadataHandle;
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
     Block, BlockVersion, Bytes, ExecResp, ExtraData, Hash, Hex, Metadata, Proof, Proposal,
-    SignedTransaction, ValidatorExtend, BASE_FEE_PER_GAS, MAX_BLOCK_GAS_LIMIT, RLP_NULL,
+    SignedTransaction, ValidatorExtend, VecDisplayHelper, BASE_FEE_PER_GAS, MAX_BLOCK_GAS_LIMIT,
+    RLP_NULL,
 };
 use protocol::{
     async_trait, codec::ProtocolCodec, tokio::sync::Mutex as AsyncMutex, types::HardforkInfoInner,
@@ -229,7 +230,7 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             .write_wal_cost
             .observe(common_apm::metrics::duration_to_sec(time.elapsed()));
         info!(
-            "[consensus-engine]: write wal cost {:?} tx_hashes_len {:?}",
+            "[consensus-engine]: write wal cost {:?} tx_hashes_len {}",
             time.elapsed(),
             tx_hashes_len
         );
@@ -316,9 +317,9 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             .await?;
 
         info!(
-            "[consensus]: validator of number {} is {:?}",
+            "[consensus]: validator of number {} is {}",
             current_number + 1,
-            metadata.verifier_list
+            VecDisplayHelper(&metadata.verifier_list[..])
         );
 
         self.update_status(ctx.clone(), resp, proposal.clone(), proof, signed_txs)
@@ -535,7 +536,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             .await
             .map_err(|e| {
                 error!(
-                    "[consensus] check_block, verify_block_header error, proposal: {:?}",
+                    "[consensus] check_block, verify_block_header error, proposal: {}",
                     proposal
                 );
                 e
@@ -567,7 +568,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             .await
             .map_err(|e| {
                 error!(
-                    "[consensus] check_block, verify_proof error, previous block header: {:?}, proof: {:?}",
+                    "[consensus] check_block, verify_proof error, previous block header: {}, proof: {}",
                     previous_block.header,
                     proposal.proof
                 );
@@ -732,7 +733,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         );
 
         if block.header.number != proof.number {
-            log::error!("[consensus] update_status for handle_commit error, before update, block number {}, proof number {}, proof {:?}",
+            log::error!("[consensus] update_status for handle_commit error, before update, block number {}, proof number {}, proof {}",
                 block_number,
                 proof.number,
                 proof
@@ -755,7 +756,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             .await
             .is_err()
         {
-            log::error!("Missing next {:?} metadata!", next_epoch);
+            log::error!("Missing next {} metadata!", next_epoch);
         }
     }
 
@@ -805,7 +806,7 @@ fn validate_timestamp(
 ) -> bool {
     if proposal_timestamp < previous_timestamp {
         log::error!(
-            "[consensus] invalid timestamp previous {:?}, proposal {:?}",
+            "[consensus] invalid timestamp previous {}, proposal {}",
             previous_timestamp,
             proposal_timestamp
         );
@@ -814,7 +815,7 @@ fn validate_timestamp(
 
     if proposal_timestamp > current_timestamp {
         log::error!(
-            "[consensus] invalid timestamp proposal {:?}, current {:?}",
+            "[consensus] invalid timestamp proposal {}, current {}",
             proposal_timestamp,
             current_timestamp
         );

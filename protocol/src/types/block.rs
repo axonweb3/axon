@@ -1,3 +1,4 @@
+use derive_more::Display;
 use faster_hex::withpfx_lowercase;
 use rlp_derive::{RlpDecodable, RlpEncodable};
 use serde::{Deserialize, Serialize};
@@ -6,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::codec::serialize_uint;
 use crate::types::{
     logs_bloom, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, Log, MerkleRoot, Receipt,
-    SignedTransaction, H160, U256,
+    SignedTransaction, VecDisplayHelper, H160, U256,
 };
 use crate::{codec::ProtocolCodec, types::TypesError};
 
@@ -20,7 +21,7 @@ pub const MAX_FEE_HISTORY: u64 = 1024;
 pub const MAX_RPC_GAS_CAP: u64 = 50_000_000;
 pub const BASE_FEE_PER_GAS: u64 = 0x539;
 
-#[derive(Serialize, Deserialize, Default, Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Default, Copy, Clone, Debug, PartialEq, Eq, Display)]
 pub enum BlockVersion {
     #[default]
     V0,
@@ -45,7 +46,30 @@ impl TryFrom<u8> for BlockVersion {
     }
 }
 
-#[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq, Display)]
+#[display(
+    fmt = "Proposal {{ \
+        version: {:?}, prev_hash: {:#x}, proposer: {:#x}, prev_state_root: {:#x}, \
+        transactions_root: {:#x}, signed_txs_hash: {:#x}, timestamp: {}, number: {}, \
+        gas_limit: {}, extra_data: {}, base_fee_per_gas: {}, proof: {}, \
+        call_system_script_count: {}, chain_id: {} tx_hashes: {:?} \
+    }}",
+    version,
+    prev_hash,
+    proposer,
+    prev_state_root,
+    transactions_root,
+    signed_txs_hash,
+    timestamp,
+    number,
+    gas_limit,
+    "VecDisplayHelper(&self.extra_data)",
+    base_fee_per_gas,
+    proof,
+    call_system_script_count,
+    chain_id,
+    tx_hashes
+)]
 pub struct Proposal {
     pub version:                  BlockVersion,
     pub prev_hash:                Hash,
@@ -120,8 +144,18 @@ pub struct PackedTxHashes {
 }
 
 #[derive(
-    RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq,
+    RlpEncodable,
+    RlpDecodable,
+    Serialize,
+    Deserialize,
+    Default,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Display,
 )]
+#[display(fmt = "Block {{ header: {}, tx_hashes: {:?} }}", header, tx_hashes)]
 pub struct Block {
     pub header:    Header,
     pub tx_hashes: Vec<Hash>,
@@ -202,7 +236,42 @@ impl Block {
 }
 
 #[derive(
-    RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq,
+    RlpEncodable,
+    RlpDecodable,
+    Serialize,
+    Deserialize,
+    Default,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Display,
+)]
+#[display(
+    fmt = "Header {{ \
+        version: {:?}, prev_hash: {:#x}, proposer: {:#x}, state_root: {:#x}, \
+        transactions_root: {:#x}, signed_txs_hash: {:#x}, receipts_root: {:#x}, \
+        log_bloom: {:#x}, timestamp: {}, number: {}, gas_used: {}, \
+        gas_limit: {}, extra_data: {}, base_fee_per_gas: {}, proof: {}, \
+        call_system_script_count: {}, chain_id: {} \
+    }}",
+    version,
+    prev_hash,
+    proposer,
+    state_root,
+    transactions_root,
+    signed_txs_hash,
+    receipts_root,
+    log_bloom,
+    timestamp,
+    number,
+    gas_used,
+    gas_limit,
+    "VecDisplayHelper(&self.extra_data)",
+    base_fee_per_gas,
+    proof,
+    call_system_script_count,
+    chain_id
 )]
 pub struct Header {
     pub version:                  BlockVersion,
@@ -242,8 +311,18 @@ impl Header {
 }
 
 #[derive(
-    RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq,
+    RlpEncodable,
+    RlpDecodable,
+    Serialize,
+    Deserialize,
+    Default,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Display,
 )]
+#[display(fmt = "0x{:x}", inner)]
 pub struct ExtraData {
     #[cfg_attr(
         feature = "hex-serialize",
@@ -253,7 +332,27 @@ pub struct ExtraData {
 }
 
 #[derive(
-    RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq,
+    RlpEncodable,
+    RlpDecodable,
+    Serialize,
+    Deserialize,
+    Default,
+    Clone,
+    Debug,
+    PartialEq,
+    Eq,
+    Display,
+)]
+#[display(
+    fmt = "Proof {{ \
+        number: {}, round: {}, block_hash: {:#x}, \
+        signature: 0x{:x}, bitmap: 0x{:x} \
+    }}",
+    number,
+    round,
+    block_hash,
+    signature,
+    bitmap
 )]
 pub struct Proof {
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]

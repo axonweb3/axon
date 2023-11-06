@@ -7,6 +7,7 @@ use zeroize::Zeroizing;
 use std::cmp::Ordering;
 use std::{fmt, str::FromStr};
 
+use derive_more::Display;
 use faster_hex::withpfx_lowercase;
 use ophelia::{PublicKey, UncompressedPublicKey};
 use overlord::DurationConfig;
@@ -44,7 +45,23 @@ pub const RLP_EMPTY_LIST: H256 = H256([
     0xd3, 0x12, 0x45, 0x1b, 0x94, 0x8a, 0x74, 0x13, 0xf0, 0xa1, 0x42, 0xfd, 0x40, 0xd4, 0x93, 0x47,
 ]);
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct VecDisplayHelper<'a, T: fmt::Display>(pub &'a [T]);
+
+impl<'a, T: fmt::Display> fmt::Display for VecDisplayHelper<'a, T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "[ ")?;
+        if !self.0.is_empty() {
+            write!(f, "{}", self.0[0])?;
+            for item in self.0.iter().skip(1) {
+                write!(f, ", {}", item)?;
+            }
+        }
+        write!(f, " ]")
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Display)]
+#[display(fmt = "0x{:x}", _0)]
 pub struct DBBytes(pub Bytes);
 
 impl AsRef<[u8]> for DBBytes {
@@ -71,7 +88,8 @@ impl Hasher {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Display)]
+#[display(fmt = "0x{:x}", _0)]
 pub struct Hex(Bytes);
 
 impl Hex {
@@ -457,7 +475,17 @@ pub struct Validator {
     pub vote_weight:    u32,
 }
 
-#[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, PartialEq, Eq, Display)]
+#[display(
+    fmt = "ValidatorExtend {{ \
+        bls_pub_key: {}, pub_key: {}, address: {:#x}, propose_weight: {}, vote_weight: {} \
+    }}",
+    bls_pub_key,
+    pub_key,
+    address,
+    propose_weight,
+    vote_weight
+)]
 pub struct ValidatorExtend {
     pub bls_pub_key:    Hex,
     pub pub_key:        Hex,
@@ -513,7 +541,7 @@ impl std::fmt::Debug for ValidatorExtend {
 
         write!(
             f,
-            "bls public key {:?}, public key {:?}, address {:?} propose weight {}, vote weight {}",
+            "bls public key {}, public key {}, address {:#x}, propose weight {}, vote weight {}",
             pk, self.pub_key, self.address, self.propose_weight, self.vote_weight
         )
     }

@@ -170,7 +170,7 @@ where
             .collect::<Result<Vec<U256>, ProtocolError>>()?;
 
         log::info!(
-            "[mempool] verify txs done, size {:?} cost {:?}",
+            "[mempool] verify txs done, size {} cost {:?}",
             len,
             inst.elapsed()
         );
