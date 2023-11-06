@@ -142,7 +142,11 @@ where
         ctx: Context,
         tx_hash: Hash,
     ) -> ProtocolResult<Option<SignedTransaction>> {
-        self.storage.get_transaction_by_hash(ctx, &tx_hash).await
+        if let Some(tx) = self.mempool.get_tx_from_mem(ctx.clone(), &tx_hash) {
+            Ok(Some(tx))
+        } else {
+            self.storage.get_transaction_by_hash(ctx, &tx_hash).await
+        }
     }
 
     async fn get_transactions_by_hashes(
