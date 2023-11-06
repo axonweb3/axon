@@ -105,7 +105,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: axonweb3/axon-test
-          ref: 0e2e379ac17175c301115127ea679f1d0085ddc3
+          ref: be8b502423fa41d4656ec2369d3ee5a729f56326
           path: axon-test
 
       - uses: actions/setup-node@v4
