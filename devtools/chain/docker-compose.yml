@@ -31,7 +31,7 @@ services:
     networks:
     - axon-net
     restart: unless-stopped
-    command: bash -c "bin/blockscout eval \"Elixir.Explorer.ReleaseTasks.create_and_migrate()\" && bin/blockscout start"
+    command: sh -c "bin/blockscout eval \"Elixir.Explorer.ReleaseTasks.create_and_migrate()\" && bin/blockscout start"
 
   explorer-db:
     container_name: postgres
