@@ -335,7 +335,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             {
                 Ok(Some((stx, receipt).into()))
             } else {
-                Err(RpcError::CannotGetReceiptByHash.into())
+                Ok(Some(stx.into()))
             }
         } else {
             Ok(None)

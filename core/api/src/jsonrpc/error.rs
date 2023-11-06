@@ -31,8 +31,6 @@ pub enum RpcError {
     GasLimitIsZero,
     #[display(fmt = "Transaction is not signed")]
     TransactionIsNotSigned,
-    #[display(fmt = "Cannot get receipt by hash")]
-    CannotGetReceiptByHash,
     #[display(fmt = "Cannot get latest block")]
     CannotGetLatestBlock,
     #[display(fmt = "Invalid block hash")]
@@ -80,7 +78,6 @@ impl RpcError {
             RpcError::GasLimitIsTooLarge => -40009,
             RpcError::GasLimitIsZero => -40010,
             RpcError::TransactionIsNotSigned => -40011,
-            RpcError::CannotGetReceiptByHash => -40012,
             RpcError::CannotGetLatestBlock => -40013,
             RpcError::InvalidBlockHash => -40014,
             RpcError::InvalidFromBlockNumber(_) => -40015,
@@ -118,7 +115,6 @@ impl From<RpcError> for ErrorObjectOwned {
             RpcError::GasLimitIsTooLarge => ErrorObject::owned(err_code, err, none_data),
             RpcError::GasLimitIsZero => ErrorObject::owned(err_code, err, none_data),
             RpcError::TransactionIsNotSigned => ErrorObject::owned(err_code, err, none_data),
-            RpcError::CannotGetReceiptByHash => ErrorObject::owned(err_code, err, none_data),
             RpcError::CannotGetLatestBlock => ErrorObject::owned(err_code, err, none_data),
             RpcError::InvalidBlockHash => ErrorObject::owned(err_code, err, none_data),
             RpcError::InvalidFromBlockNumber(_) => ErrorObject::owned(err_code, err, none_data),
