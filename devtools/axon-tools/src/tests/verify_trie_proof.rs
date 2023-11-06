@@ -1,9 +1,12 @@
+#[cfg(feature = "proof")]
 use crate::verify_trie_proof;
 use eth_light_client_in_ckb_prover::{encode_receipt, Receipts};
 use ethereum_types::{Bloom, H256, U256};
+#[cfg(feature = "proof")]
+use ethers_core::utils::rlp;
 use ethers_core::{
     types::{Log, TransactionReceipt, U64},
-    utils::{keccak256, rlp},
+    utils::keccak256,
 };
 
 #[test]
@@ -52,6 +55,7 @@ fn test_receipt() {
 }
 
 #[test]
+#[cfg(all(feature = "proof", feature = "std"))]
 fn test_verify_trie_proof() {
     let mut tx_receipts = Vec::<TransactionReceipt>::new();
 

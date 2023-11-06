@@ -2,9 +2,7 @@ use crate::error::TypesError;
 use alloc::vec::Vec;
 use bytes::{Bytes, BytesMut};
 use core::cmp::Ordering;
-use core::str::FromStr;
 use ethereum_types::{Bloom, H160, H256, U256};
-use faster_hex::withpfx_lowercase;
 
 #[cfg(feature = "impl-serde")]
 use serde::{Deserialize, Serialize};
@@ -16,12 +14,15 @@ use rlp_derive::{RlpDecodable, RlpEncodable};
 use crate::hex::{hex_decode, hex_encode};
 #[cfg(feature = "hex")]
 use crate::Error;
+#[cfg(feature = "hex")]
+use core::str::FromStr;
+#[cfg(feature = "hex")]
+use faster_hex::withpfx_lowercase;
 
 const HEX_PREFIX: &str = "0x";
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg(feature = "impl-rlp")]
-#[derive(RlpEncodable, RlpDecodable)]
+#[cfg_attr(feature = "impl-rlp", derive(RlpEncodable, RlpDecodable))]
 pub struct Hex(Bytes);
 
 impl Hex {
@@ -41,10 +42,12 @@ impl Hex {
         Hex(BytesMut::from(src.as_ref()).freeze())
     }
 
+    #[cfg(feature = "hex")]
     pub fn as_string(&self) -> String {
         HEX_PREFIX.to_string() + &hex_encode(self.0.as_ref())
     }
 
+    #[cfg(feature = "hex")]
     pub fn as_string_trim0x(&self) -> String {
         hex_encode(self.0.as_ref())
     }
@@ -70,6 +73,7 @@ impl AsRef<[u8]> for Hex {
     }
 }
 
+#[cfg(feature = "hex")]
 impl FromStr for Hex {
     type Err = Error;
 
@@ -88,6 +92,7 @@ impl From<Hex> for Bytes {
     }
 }
 
+#[cfg(feature = "impl-serde")]
 impl Serialize for Hex {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -97,6 +102,7 @@ impl Serialize for Hex {
     }
 }
 
+#[cfg(feature = "impl-serde")]
 impl<'de> Deserialize<'de> for Hex {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -108,8 +114,7 @@ impl<'de> Deserialize<'de> for Hex {
 }
 
 #[derive(Default, Copy, Clone, Debug, PartialEq, Eq)]
-#[cfg(feature = "impl-serde")]
-#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "impl-serde", derive(Serialize, Deserialize))]
 pub enum BlockVersion {
     #[default]
     V0,
@@ -341,6 +346,7 @@ pub struct Vote {
 }
 
 #[cfg(test)]
+#[cfg(feature = "proof")]
 impl Vote {
     fn random() -> Self {
         Self {
@@ -381,12 +387,13 @@ impl MetadataVersion {
     }
 }
 
-#[derive(Default, Clone, Debug, PartialEq, Eq)]
+#[derive(Default, Clone, PartialEq, Eq)]
 #[cfg_attr(
     feature = "impl-rlp",
     derive(rlp_derive::RlpEncodable, rlp_derive::RlpDecodable)
 )]
 #[cfg_attr(feature = "impl-serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "hex", derive(Debug))]
 pub struct Metadata {
     pub version:          MetadataVersion,
     #[cfg_attr(
@@ -395,7 +402,7 @@ pub struct Metadata {
     )]
     pub epoch:            u64,
     pub verifier_list:    Vec<ValidatorExtend>,
-    #[serde(skip_deserializing)]
+    #[cfg_attr(feature = "impl-serde", serde(skip_deserializing))]
     pub propose_counter:  Vec<ProposeCount>,
     pub consensus_config: ConsensusConfig,
 }
@@ -449,7 +456,8 @@ pub struct ConsensusConfig {
     pub max_tx_size:     u64,
 }
 
-#[derive(rlp_derive::RlpEncodable, rlp_derive::RlpDecodable, Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "impl-rlp", derive(RlpEncodable, RlpDecodable))]
 #[cfg_attr(feature = "impl-serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ProposeCount {
     pub address: H160,
@@ -494,16 +502,17 @@ impl Ord for ValidatorExtend {
     }
 }
 
-impl From<ValidatorExtend> for Validator {
-    fn from(ve: ValidatorExtend) -> Self {
-        Validator {
-            pub_key:        ve.pub_key.as_bytes(),
-            propose_weight: ve.propose_weight,
-            vote_weight:    ve.vote_weight,
-        }
-    }
-}
+// impl From<ValidatorExtend> for Validator {
+//     fn from(ve: ValidatorExtend) -> Self {
+//         Validator {
+//             pub_key:        ve.pub_key.as_bytes(),
+//             propose_weight: ve.propose_weight,
+//             vote_weight:    ve.vote_weight,
+//         }
+//     }
+// }
 
+#[cfg(feature = "hex")]
 impl std::fmt::Debug for ValidatorExtend {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let bls_pub_key = self.bls_pub_key.as_string_trim0x();
@@ -697,6 +706,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "proof")]
     fn test_vote_codec() {
         let vote = Vote::random();
         let raw = rlp::encode(&vote);

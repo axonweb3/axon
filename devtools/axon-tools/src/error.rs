@@ -77,6 +77,7 @@ pub enum TypesError {
     TxHashMismatch { origin: H256, calc: H256 },
 
     #[display(fmt = "{:?}", _0)]
+    #[cfg(feature = "hex")]
     FromHex(faster_hex::Error),
 
     #[display(fmt = "{:?} is an invalid address", _0)]
