@@ -8,8 +8,8 @@ use serde::{Deserialize, Serialize};
 use common_crypto::secp256k1_recover;
 
 use crate::types::{
-    Bloom, Bytes, BytesMut, ExitReason, Hash, Hasher, Public, TxResp, TypesError, H160, H256, H520,
-    U256,
+    Bloom, Bytes, BytesMut, CellDepWithPubKey, ExitReason, Hash, Hasher, Public, TxResp,
+    TypesError, H160, H256, H520, U256,
 };
 use crate::ProtocolResult;
 
@@ -412,6 +412,18 @@ impl SignatureComponents {
         }
     }
 
+    pub(crate) fn extract_interoperation_tx_sender(&self) -> ProtocolResult<H160> {
+        // Only call CKB-VM mode is supported now
+        if self.r[0] == 0 {
+            let r = rlp::decode::<CellDepWithPubKey>(&self.r[1..])
+                .map_err(TypesError::DecodeInteroperationSigR)?;
+
+            return Ok(Hasher::digest(&r.pub_key).into());
+        }
+
+        Err(TypesError::InvalidSignatureRType.into())
+    }
+
     #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         self.r.len() + self.s.len() + 1
@@ -426,24 +438,19 @@ pub struct SignedTransaction {
 }
 
 impl SignedTransaction {
-    pub fn from_unverified(
-        utx: UnverifiedTransaction,
-        sender: Option<H160>,
-    ) -> ProtocolResult<Self> {
+    pub fn from_unverified(utx: UnverifiedTransaction) -> ProtocolResult<Self> {
         if utx.signature.is_none() {
             return Err(TypesError::Unsigned.into());
         }
 
         let hash = utx.signature_hash(true);
+        let sig = utx.signature.as_ref().unwrap();
 
-        if utx.signature.as_ref().unwrap().is_eth_sig() {
+        if sig.is_eth_sig() {
             let public = Public::from_slice(
-                &secp256k1_recover(
-                    hash.as_bytes(),
-                    utx.signature.as_ref().unwrap().as_bytes().as_ref(),
-                )
-                .map_err(TypesError::Crypto)?
-                .serialize_uncompressed()[1..65],
+                &secp256k1_recover(hash.as_bytes(), sig.as_bytes().as_ref())
+                    .map_err(TypesError::Crypto)?
+                    .serialize_uncompressed()[1..65],
             );
 
             return Ok(SignedTransaction {
@@ -453,14 +460,11 @@ impl SignedTransaction {
             });
         }
 
-        if sender.is_none() {
-            return Err(TypesError::MissingInteroperationSender.into());
-        }
-
+        // Otherwise it is an interoperation transaction
         Ok(SignedTransaction {
-            transaction: utx.calc_hash(),
-            sender:      sender.unwrap(),
+            sender:      sig.extract_interoperation_tx_sender()?,
             public:      Some(Public::zero()),
+            transaction: utx.calc_hash(),
         })
     }
 

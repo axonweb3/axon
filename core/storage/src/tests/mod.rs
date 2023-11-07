@@ -42,7 +42,7 @@ fn mock_signed_tx() -> SignedTransaction {
     .to_bytes();
     utx.signature = Some(signature.into());
 
-    SignedTransaction::from_unverified(utx, None).unwrap()
+    SignedTransaction::from_unverified(utx).unwrap()
 }
 
 fn mock_receipt(hash: Hash) -> Receipt {

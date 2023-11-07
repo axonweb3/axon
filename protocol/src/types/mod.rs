@@ -84,6 +84,9 @@ pub enum TypesError {
 
     #[display(fmt = "InvalidBlockVersion {}", _0)]
     InvalidBlockVersion(u8),
+
+    #[display(fmt = "Decode interoperation signature R error {:?}", _0)]
+    DecodeInteroperationSigR(rlp::DecoderError),
 }
 
 impl Error for TypesError {}
