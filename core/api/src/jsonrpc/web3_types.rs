@@ -164,7 +164,7 @@ impl From<(SignedTransaction, Receipt)> for Web3Transaction {
             block_hash:               Some(receipt.block_hash),
             raw:                      Hex::encode(stx.transaction.encode().unwrap()),
             public_key:               stx.public,
-            gas:                      receipt.used_gas,
+            gas:                      *stx.transaction.unsigned.gas_limit(),
             gas_price:                stx.transaction.unsigned.gas_price(),
             max_fee_per_gas:          if is_eip1559 {
                 Some(U256::from(MAX_PRIORITY_FEE_PER_GAS))
