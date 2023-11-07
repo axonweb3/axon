@@ -426,7 +426,7 @@ where
         // Todo: refactor after the first hard fork occurs.
         if previous_block.header.version != proposal.version {
             log::error!(
-                "[consensus] verify_version, block.header.version: {:?}, correct version {:?}",
+                "[consensus] verify_version, block.header.version: {}, correct version {}",
                 proposal.version,
                 BlockVersion::V0
             );
@@ -437,7 +437,7 @@ where
 
         if previous_block_hash != proposal.prev_hash {
             log::error!(
-                "[consensus] verify_block_header, previous_block_hash: {:?}, block.header.prev_hash: {:?}",
+                "[consensus] verify_block_header, previous_block_hash: {:#x}, block.header.prev_hash: {:#x}",
                 previous_block_hash,
                 proposal.prev_hash
             );
@@ -481,7 +481,7 @@ where
 
         if proposal_hash != proof.block_hash {
             log::error!(
-                "[consensus] verify_proof, block hash: {:?}, proof.block_hash: {:?}",
+                "[consensus] verify_proof, block hash: {:#x}, proof.block_hash: {:#x}",
                 proposal_hash,
                 proof.block_hash
             );
@@ -557,7 +557,7 @@ where
             proof.signature.clone(),
             hex_pubkeys,
         ).await.map_err(|e| {
-            log::error!("[consensus] verify_proof_signature error, number {}, vote: {:?}, vote_hash:{:?}, sig:{:?}, signed_voter:{:?}",
+            log::error!("[consensus] verify_proof_signature error, number {}, vote: {}, vote_hash: {:#x}, sig: 0x{:x}, signed_voter: {:?}",
             block.header.number,
             vote,
             vote_hash,
@@ -610,7 +610,7 @@ where
                     .ok_or(ConsensusError::VerifyProof(block_number, WeightNotFound))
                     .map_err(|e| {
                         log::error!(
-                            "[consensus] verify_proof_weight,signed_voter_address: {:?}",
+                            "[consensus] verify_proof_weight,signed_voter_address: {:#x}",
                             signed_voter_address
                         );
                         e
@@ -618,7 +618,7 @@ where
                 accumulator += u64::from(*(weight));
             } else {
                 log::error!(
-                    "[consensus] verify_proof_weight, weight not found, signed_voter_address: {:?}",
+                    "[consensus] verify_proof_weight, weight not found, signed_voter_address: {:#x}",
                     signed_voter_address
                 );
                 return Err(

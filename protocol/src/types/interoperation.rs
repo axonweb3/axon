@@ -1,4 +1,5 @@
 use ckb_types::{core::cell::CellMeta, packed, prelude::*};
+use derive_more::Display;
 use rlp_derive::{RlpDecodable, RlpEncodable};
 use serde::{Deserialize, Serialize};
 
@@ -247,7 +248,10 @@ pub struct CellDepWithPubKey {
     pub pub_key:  Bytes,
 }
 
-#[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(
+    RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Display,
+)]
+#[display(fmt = "OutPoint {{ tx_hash: {:#x}, index: {} }}", tx_hash, index)]
 pub struct OutPoint {
     pub tx_hash: H256,
     pub index:   u32,

@@ -205,7 +205,7 @@ where
                 self.network.report(
                     ctx,
                     TrustFeedback::Worse(format!(
-                        "Mempool wrong chain of tx {:?}",
+                        "Mempool wrong chain of tx {:#x}",
                         stx.transaction.hash
                     )),
                 );
@@ -225,7 +225,7 @@ where
                 self.network.report(
                     ctx,
                     TrustFeedback::Bad(format!(
-                        "Mempool exceed size limit of tx {:?}",
+                        "Mempool exceed size limit of tx {:#x}",
                         stx.transaction.hash
                     )),
                 );
@@ -257,7 +257,7 @@ where
                 self.network.report(
                     ctx,
                     TrustFeedback::Bad(format!(
-                        "Mempool exceed cycle limit of tx {:?}",
+                        "Mempool exceed cycle limit of tx {:#x}",
                         stx.transaction.hash
                     )),
                 );
