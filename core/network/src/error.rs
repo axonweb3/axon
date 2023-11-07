@@ -60,7 +60,7 @@ pub enum ErrorKind {
     NoReactor(String),
 
     #[display(
-        fmt = "kind: cannot create chain address from bytes {:?} {}",
+        fmt = "kind: cannot create chain address from bytes {:#x} {}",
         pubkey,
         cause
     )]

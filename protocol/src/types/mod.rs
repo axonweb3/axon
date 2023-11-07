@@ -33,11 +33,11 @@ use crate::{ProtocolError, ProtocolErrorKind};
 
 #[derive(Debug, Display, From)]
 pub enum TypesError {
-    #[display(fmt = "Expect {:?}, get {:?}.", expect, real)]
+    #[display(fmt = "Expect {}, get {}.", expect, real)]
     LengthMismatch { expect: usize, real: usize },
 
     #[display(
-        fmt = "Eip1559Transaction hash mismatch origin {:?}, computed {:?}",
+        fmt = "Eip1559Transaction hash mismatch origin {:#x}, computed {:#x}",
         origin,
         calc
     )]
@@ -82,7 +82,7 @@ pub enum TypesError {
     #[display(fmt = "Missing interoperation sender")]
     MissingInteroperationSender,
 
-    #[display(fmt = "InvalidBlockVersion {:?}", _0)]
+    #[display(fmt = "InvalidBlockVersion {}", _0)]
     InvalidBlockVersion(u8),
 }
 

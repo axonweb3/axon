@@ -56,23 +56,35 @@ pub enum ConsensusType {
 #[derive(Debug, Display)]
 pub enum ConsensusError {
     /// Check block error.
-    #[display(fmt = "Check invalid prev_hash, expect {:?} get {:?}", expect, actual)]
+    #[display(
+        fmt = "Check invalid prev_hash, expect {:#x} get {:#x}",
+        expect,
+        actual
+    )]
     InvalidPrevhash { expect: Hash, actual: Hash },
 
-    #[display(fmt = "Check invalid order root, expect {:?} get {:?}", expect, actual)]
+    #[display(
+        fmt = "Check invalid order root, expect {:#x} get {:#x}",
+        expect,
+        actual
+    )]
     InvalidOrderRoot {
         expect: MerkleRoot,
         actual: MerkleRoot,
     },
 
-    #[display(fmt = "Check invalid state root, expect {:?} get {:?}", expect, actual)]
+    #[display(
+        fmt = "Check invalid state root, expect {:#x} get {:#x}",
+        expect,
+        actual
+    )]
     InvalidStateRoot {
         expect: MerkleRoot,
         actual: MerkleRoot,
     },
 
     #[display(
-        fmt = "Check invalid receipts root, expect {:?} get {:?}",
+        fmt = "Check invalid receipts root, expect {:#x} get {:#x}",
         expect,
         actual
     )]
@@ -82,7 +94,7 @@ pub enum ConsensusError {
     },
 
     #[display(
-        fmt = "Check invalid order signed transactions hash, expect {:?} get {:?}",
+        fmt = "Check invalid order signed transactions hash, expect {:#x} get {:#x}",
         expect,
         actual
     )]
@@ -112,7 +124,7 @@ pub enum ConsensusError {
     InvalidProof { expect: u64, actual: u64 },
 
     /// Consensus missed the pill.
-    #[display(fmt = "Consensus missed pill cooresponding {:?}", _0)]
+    #[display(fmt = "Consensus missed pill cooresponding {:#x}", _0)]
     MissingPill(Hash),
 
     /// Invalid timestamp

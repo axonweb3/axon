@@ -114,7 +114,7 @@ pub enum InteroperationError {
     #[display(fmt = "Transaction missing signature")]
     MissingSignature,
 
-    #[display(fmt = "Cannot get program of out point {:?}", _0)]
+    #[display(fmt = "Cannot get program of out point {}", _0)]
     GetProgram(OutPoint),
 
     #[display(fmt = "CKB VM verify script failed {:?}", _0)]
@@ -123,10 +123,10 @@ pub enum InteroperationError {
     #[display(fmt = "CKB VM call failed {:?}", _0)]
     CkbVM(VMError),
 
-    #[display(fmt = "Unsupported blockchain id {:?}", _0)]
+    #[display(fmt = "Unsupported blockchain id {}", _0)]
     GetBlockchainCodeHash(u8),
 
-    #[display(fmt = "Get unknown cell by out point {:?}", _0)]
+    #[display(fmt = "Get unknown cell by out point {}", _0)]
     GetUnknownCell(OutPoint),
 
     #[display(fmt = "Invalid dep group {:?}", _0)]
