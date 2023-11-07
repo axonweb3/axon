@@ -340,19 +340,24 @@ impl Decodable for SignedTransaction {
             .as_ref()
             .ok_or(DecoderError::Custom("missing signature"))?;
 
-        let public = if sig.is_eth_sig() {
-            Public::from_slice(
+        let (public, sender_addr) = if sig.is_eth_sig() {
+            let public = Public::from_slice(
                 &secp256k1_recover(utx.signature_hash(true).as_bytes(), sig.as_bytes().as_ref())
                     .map_err(|_| DecoderError::Custom("recover signature"))?
                     .serialize_uncompressed()[1..65],
-            )
+            );
+            (public, public_to_address(&public))
         } else {
-            Public::zero()
+            (
+                Public::zero(),
+                sig.extract_interoperation_tx_sender()
+                    .map_err(|_| DecoderError::Custom("Invalid interoperation sender"))?,
+            )
         };
 
         Ok(SignedTransaction {
             transaction: utx,
-            sender:      public_to_address(&public),
+            sender:      sender_addr,
             public:      Some(public),
         })
     }
@@ -460,7 +465,7 @@ mod tests {
     fn test_signed_tx_codec() {
         let raw = hex_decode("02f8670582010582012c82012c825208945cf83df52a32165a7f392168ac009b168c9e89150180c001a0a68aeb0db4d84cf16da5a6918becefd254654854cfc23f0112ef78154ce84db89f4b0af1cbf12f5bfaec81c3d4d495717d720b574a05092f6b436c2ab255cd35").unwrap();
         let utx = UnverifiedTransaction::decode(&Rlp::new(&raw)).unwrap();
-        let origin = SignedTransaction::from_unverified(utx, None).unwrap();
+        let origin = SignedTransaction::from_unverified(utx).unwrap();
         let encode = origin.rlp_bytes().freeze().to_vec();
         let decode: SignedTransaction = rlp::decode(&encode).unwrap();
         assert_eq!(origin, decode);
@@ -559,7 +564,7 @@ mod tests {
         let test_vector = |tx_data: &str, address: &'static str| {
             let utx =
                 UnverifiedTransaction::decode(&Rlp::new(&hex_decode(tx_data).unwrap())).unwrap();
-            let signed = SignedTransaction::from_unverified(utx.clone(), None).unwrap();
+            let signed = SignedTransaction::from_unverified(utx.clone()).unwrap();
             assert_eq!(
                 signed.sender,
                 H160::from_slice(&hex_decode(address).unwrap())
