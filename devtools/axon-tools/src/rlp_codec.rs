@@ -1,4 +1,7 @@
-use crate::types::{BlockVersion, Proposal, Vote};
+#[cfg(feature = "impl-rlp")]
+use crate::types::BlockVersion;
+#[cfg(feature = "proof")]
+use crate::types::{Proposal, Vote};
 #[cfg(feature = "impl-rlp")]
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 

@@ -1,16 +1,24 @@
+#[cfg(feature = "proof")]
 use crate::hash::keccak_256;
+#[cfg(feature = "proof")]
 use crate::types::{AxonBlock, BlockVersion, Metadata, Proof, Proposal, ValidatorExtend};
+#[cfg(feature = "proof")]
 use bytes::Bytes;
+#[cfg(feature = "proof")]
 use ethereum_types::{H160, H256, U256};
+#[cfg(feature = "proof")]
 use rlp::Encodable;
+#[cfg(feature = "proof")]
 use serde::de::DeserializeOwned;
 
+#[cfg(feature = "proof")]
 fn read_json<T: DeserializeOwned>(path: &str) -> T {
     let json = std::fs::read_to_string(path).unwrap();
     serde_json::from_str(&json).unwrap()
 }
 
 #[test]
+#[cfg(feature = "proof")]
 fn test_proposal() {
     let proposal = Proposal {
         version:                  BlockVersion::V0,
@@ -46,6 +54,7 @@ fn test_proposal() {
 }
 
 #[test]
+#[cfg(feature = "proof")]
 fn test_verify_proof() {
     let block: AxonBlock = read_json("src/tests/block.json");
     let proof: Proof = read_json("src/tests/proof.json");

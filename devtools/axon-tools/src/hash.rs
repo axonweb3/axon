@@ -13,6 +13,7 @@ pub fn keccak_256(data: &[u8]) -> [u8; 32] {
 #[derive(Default)]
 pub(crate) struct InnerKeccak;
 
+#[cfg(all(feature = "proof", feature = "std"))]
 impl cita_trie::Hasher for InnerKeccak {
     const LENGTH: usize = 32;
 
