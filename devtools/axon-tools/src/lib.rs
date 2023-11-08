@@ -1,3 +1,5 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+// #![no_std]
 #![cfg_attr(doc_cfg, feature(doc_cfg))]
 
 extern crate alloc;
@@ -17,7 +19,10 @@ pub use error::Error;
 
 #[cfg(feature = "proof")]
 #[cfg_attr(doc_cfg, doc(cfg(feature = "proof")))]
-pub use proof::{verify_proof, verify_trie_proof};
+pub use proof::verify_proof;
+
+#[cfg(all(feature = "proof", feature = "std"))]
+pub use proof::verify_trie_proof;
 
 #[cfg(feature = "hash")]
 #[cfg_attr(doc_cfg, doc(cfg(feature = "hash")))]
