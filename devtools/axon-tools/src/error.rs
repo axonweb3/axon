@@ -1,5 +1,4 @@
-use derive_more::{Display, From};
-use ethereum_types::H256;
+#[cfg(feature = "std")]
 use std::fmt::{self, Display};
 
 #[allow(dead_code)]
@@ -18,7 +17,7 @@ pub enum Error {
     #[cfg_attr(doc_cfg, doc(cfg(feature = "proof")))]
     Bls(blst::BLST_ERROR),
 
-    #[cfg(feature = "proof")]
+    #[cfg(all(feature = "proof", feature = "std"))]
     #[cfg_attr(doc_cfg, doc(cfg(feature = "proof")))]
     Trie(cita_trie::TrieError),
 }
@@ -39,7 +38,7 @@ impl From<blst::BLST_ERROR> for Error {
     }
 }
 
-#[cfg(feature = "proof")]
+#[cfg(all(feature = "proof", feature = "std"))]
 #[cfg_attr(doc_cfg, doc(cfg(feature = "proof")))]
 impl From<cita_trie::TrieError> for Error {
     fn from(e: cita_trie::TrieError) -> Self {
@@ -47,6 +46,7 @@ impl From<cita_trie::TrieError> for Error {
     }
 }
 
+#[cfg(feature = "std")]
 impl Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -64,59 +64,7 @@ impl Display for Error {
     }
 }
 
-#[derive(Debug, Display, From)]
+#[derive(Debug)]
 pub enum TypesError {
-    #[display(fmt = "Expect {:?}, get {:?}.", expect, real)]
-    LengthMismatch { expect: usize, real: usize },
-
-    #[display(
-        fmt = "Eip1559Transaction hash mismatch origin {:?}, computed {:?}",
-        origin,
-        calc
-    )]
-    TxHashMismatch { origin: H256, calc: H256 },
-
-    #[display(fmt = "{:?}", _0)]
-    #[cfg(feature = "hex")]
-    FromHex(faster_hex::Error),
-
-    #[display(fmt = "{:?} is an invalid address", _0)]
-    InvalidAddress(String),
-
-    #[display(fmt = "Hex should start with 0x")]
-    HexPrefix,
-
-    #[display(fmt = "Invalid public key")]
-    InvalidPublicKey,
-
-    #[display(fmt = "Invalid check sum")]
-    InvalidCheckSum,
-
-    #[display(fmt = "Unsigned")]
-    Unsigned,
-
-    // #[display(fmt = "Crypto error {:?}", _0)]
-    // Crypto(CryptoError),
-    #[display(fmt = "Missing signature")]
-    MissingSignature,
-
-    #[display(fmt = "Invalid crosschain direction")]
-    InvalidDirection,
-
-    #[display(fmt = "Signature R is empty")]
-    SignatureRIsEmpty,
-
-    #[display(fmt = "Invalid signature R type")]
-    InvalidSignatureRType,
-
-    #[display(fmt = "Invalid address source type")]
-    InvalidAddressSourceType,
-
-    #[display(fmt = "Missing interoperation sender")]
-    MissingInteroperationSender,
-
-    #[display(fmt = "InvalidBlockVersion {:?}", _0)]
     InvalidBlockVersion(u8),
 }
-
-impl std::error::Error for TypesError {}

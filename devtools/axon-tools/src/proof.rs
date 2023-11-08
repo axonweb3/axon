@@ -7,11 +7,14 @@ use bytes::Bytes;
 use ethereum_types::H256;
 use rlp::Encodable;
 
+#[cfg(all(feature = "proof", feature = "std"))]
+use crate::hash::InnerKeccak;
 use crate::types::{AxonBlock, Proof, Proposal, ValidatorExtend, Vote};
-use crate::{error::Error, hash::InnerKeccak, keccak_256};
+use crate::{error::Error, keccak_256};
 
 const DST: &str = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RONUL";
 
+#[cfg(all(feature = "proof", feature = "std"))]
 pub fn verify_trie_proof(
     root: H256,
     key: &[u8],
@@ -91,11 +94,6 @@ fn extract_pks(
         count += 1;
     }
 
-    log::debug!(
-        "extract_pks count: {}, validator len: {}",
-        count,
-        validator_list.len()
-    );
     if count * 3 <= validator_list.len() * 2 {
         return Err(Error::NotEnoughSignatures);
     }
