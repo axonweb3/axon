@@ -73,6 +73,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: axonweb3/v3-core
+          ref: d60a654a45874155467b5e40605e5b8e1f5b423e
           path: v3-core
       - uses: actions/setup-node@v4
         with:
