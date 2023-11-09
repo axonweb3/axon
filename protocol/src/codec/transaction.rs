@@ -370,10 +370,7 @@ mod tests {
     use common_crypto::secp256k1_recover;
 
     use crate::codec::hex_decode;
-    use crate::types::{
-        AddressSource, Bytes, CKBTxMockByRefAndOneInput, CellDep, CellWithData, Public, Script,
-        SignatureR, SignatureS, Witness, H160, H256, U256,
-    };
+    use crate::types::{Public, SignatureS, Witness, H160, U256};
 
     #[test]
     fn test_legacy_decode() {
@@ -614,44 +611,6 @@ mod tests {
         let utx = UnverifiedTransaction::decode(&Rlp::new(&raw)).unwrap();
         assert!(utx.check_hash().is_ok());
         assert!(!utx.signature.as_ref().unwrap().is_eth_sig());
-    }
-
-    #[test]
-    fn test_signature_r_codec() {
-        let cell_dep = CellDep {
-            tx_hash:  H256::from_slice(&[
-                243, 81, 120, 199, 161, 165, 164, 229, 177, 100, 21, 122, 165, 73, 164, 147, 206,
-                188, 154, 48, 121, 182, 169, 237, 231, 174, 82, 7, 173, 179, 244, 212,
-            ]),
-            index:    0,
-            dep_type: 1,
-        };
-        let cell_with_data = CellWithData {
-            type_script: None,
-            lock_script: Script {
-                code_hash: H256::from_slice(&[
-                    210, 55, 97, 179, 100, 33, 7, 53, 193, 156, 96, 86, 29, 33, 63, 179, 190, 174,
-                    47, 214, 23, 39, 67, 113, 158, 255, 105, 32, 224, 32, 186, 172,
-                ]),
-                args:      vec![
-                    0, 1, 96, 145, 217, 61, 186, 177, 47, 22, 100, 15, 179, 160, 168, 241, 231,
-                    126, 3, 251, 197, 28,
-                ]
-                .into(),
-                hash_type: 1,
-            },
-            data:        Bytes::new(),
-        };
-        let address_source = AddressSource { index: 0, type_: 0 };
-
-        let sig_r = SignatureR::ByRefAndOneInput(CKBTxMockByRefAndOneInput {
-            cell_deps:             vec![cell_dep],
-            header_deps:           vec![],
-            input_cell_with_data:  cell_with_data,
-            out_point_addr_source: address_source,
-        });
-
-        assert_eq!(SignatureR::decode(&sig_r.encode()).unwrap(), sig_r);
     }
 
     #[test]

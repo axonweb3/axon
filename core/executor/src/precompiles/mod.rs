@@ -16,7 +16,6 @@ mod sha256;
 
 #[cfg(test)]
 mod tests;
-mod verify_by_ckb_vm;
 
 use std::collections::BTreeMap;
 
