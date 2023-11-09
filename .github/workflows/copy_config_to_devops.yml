@@ -18,6 +18,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: axonweb3/axon-devops
+          ref: 32e274a1f14c065fe63d37f006ac1a3c4f70654f
           path: ${{ github.workspace}}/axon-devops
       - name: apply config toml config_toml.patch
         run: |
