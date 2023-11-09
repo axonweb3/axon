@@ -20,9 +20,7 @@ use futures::future::try_join_all;
 use common_apm::Instant;
 
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
-use protocol::types::{
-    AddressSource, BlockNumber, Hash, PackedTxHashes, SignedTransaction, H160, H256, U256,
-};
+use protocol::types::{BlockNumber, Hash, PackedTxHashes, SignedTransaction, H160, H256, U256};
 use protocol::{async_trait, tokio, Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 use core_executor::is_call_system_script;
@@ -450,12 +448,6 @@ pub enum MemPoolError {
 
     #[display(fmt = "Encode transaction to JSON failed")]
     EncodeJson,
-
-    #[display(fmt = "Invalid address source {:?}", _0)]
-    InvalidAddressSource(AddressSource),
-
-    #[display(fmt = "Invalid dummy input")]
-    InvalidDummyInput,
 
     #[display(fmt = "Invalid sender, expect: {:?}, get: {:?}", expect, actual)]
     InvalidSender { expect: H160, actual: H160 },
