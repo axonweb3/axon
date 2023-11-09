@@ -1,5 +1,35 @@
 # CHANGELOG
 
+## v0.2.0-beta.3
+
+<!--
+    Add a summary for the release here.
+
+    If you don't change this message, or if this file is empty, the release
+    will not be created. -->
+Release v0.2.0-beta.3 version.
+
+### BUG FIXES
+
+- Fix value of gas in JSON RPC Transaction should be gas limit
+  ([\#1530](https://github.com/axonweb3/axon/pull/1530))
+
+### CODE REFACTORS
+
+- Add more details for JSON RPC errors
+  ([\#1495](https://github.com/axonweb3/axon/pull/1495))
+- Remove the limitation of set CKB related info in system contract
+  ([\#1517](https://github.com/axonweb3/axon/pull/1517))
+- Enhance readability of output logs and errors
+  ([\#1528](https://github.com/axonweb3/axon/pull/1528))
+
+### FEATURES
+
+- Migrate axon-tools to axon repo
+  ([\#1519](https://github.com/axonweb3/axon/pull/1519))
+- Add no-std feature of axon-tools
+  ([\#1532](https://github.com/axonweb3/axon/pull/1532))
+
 ## v0.2.0-beta.2
 
 <!--
