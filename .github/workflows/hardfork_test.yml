@@ -77,7 +77,8 @@ jobs:
     - name: Checkout axonweb3/axon-hardfork-test
       uses: actions/checkout@v4
       with:
-        repository: sunchengzhu/axon-hardfork-test
+        repository: axonweb3/axon-hardfork-test
+        ref: 33eff5b0341097563ad4042dab3c5f72fd0b3abb
         path: axon-hardfork-test
 
     - name: Choose network

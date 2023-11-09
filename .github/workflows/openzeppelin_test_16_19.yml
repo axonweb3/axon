@@ -73,7 +73,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: axonweb3/openzeppelin-contracts
-          ref: compatibillity-axon
+          ref: c2c4b8f591b7bc048dcbcf45dd2a1d2017074107
           path: openzeppelin-contracts
       - uses: actions/setup-node@v4
         with:
