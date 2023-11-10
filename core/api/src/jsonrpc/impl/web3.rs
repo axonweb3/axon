@@ -7,10 +7,10 @@ use jsonrpsee::core::RpcResult;
 use common_apm::metrics_rpc;
 use protocol::traits::{APIAdapter, Context, Interoperation};
 use protocol::types::{
-    Block, BlockNumber, Bytes, CellDepWithPubKey, Hash, Hasher, Header, Hex, Proposal, Receipt,
-    SignatureComponents, SignatureR, SignatureS, SignedTransaction, TxResp, UnverifiedTransaction,
-    BASE_FEE_PER_GAS, H160, H256, MAX_FEE_HISTORY, MAX_RPC_GAS_CAP, MIN_TRANSACTION_GAS_LIMIT,
-    U256,
+    Block, BlockNumber, Bytes, CellDepWithPubKey, EthAccountProof, Hash, Hasher, Header, Hex,
+    Proposal, Receipt, SignatureComponents, SignatureR, SignatureS, SignedTransaction, TxResp,
+    UnverifiedTransaction, BASE_FEE_PER_GAS, H160, H256, MAX_FEE_HISTORY, MAX_RPC_GAS_CAP,
+    MIN_TRANSACTION_GAS_LIMIT, U256,
 };
 use protocol::{
     async_trait, ckb_blake2b_256, codec::ProtocolCodec, lazy::PROTOCOL_VERSION, ProtocolResult,
@@ -1042,15 +1042,15 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
     ) -> RpcResult<Hex> {
         let number = self.get_block_number_by_id(block_id).await?;
 
-        let block = self
+        let header = self
             .adapter
-            .get_block_by_number(Context::new(), number)
+            .get_block_header_by_number(Context::new(), number)
             .await
             .map_err(|e| RpcError::Internal(e.to_string()))?
             .ok_or(RpcError::CannotFindBlock)?;
         let value = self
             .adapter
-            .get_storage_at(Context::new(), address, position, block.header.state_root)
+            .get_storage_at(Context::new(), address, position, header.state_root)
             .await
             .unwrap_or_else(|_| H256::default().as_bytes().to_vec().into());
 
@@ -1088,6 +1088,28 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
     #[metrics_rpc("eth_getUncleCountByBlockNumber")]
     async fn get_uncle_count_by_block_number(&self, _number: BlockId) -> RpcResult<U256> {
         Ok(U256::zero())
+    }
+
+    #[metrics_rpc("eth_getProof")]
+    async fn get_proof(
+        &self,
+        address: H160,
+        storage_position: Vec<U256>,
+        number: BlockId,
+    ) -> RpcResult<EthAccountProof> {
+        let number = self.get_block_number_by_id(Some(number)).await?;
+
+        let header = self
+            .adapter
+            .get_block_header_by_number(Context::new(), number)
+            .await
+            .map_err(|e| RpcError::Internal(e.to_string()))?
+            .ok_or(RpcError::CannotFindBlock)?;
+
+        self.adapter
+            .get_proof(Context::new(), address, storage_position, header.state_root)
+            .await
+            .map_err(|e| RpcError::Internal(e.to_string()).into())
     }
 }
 

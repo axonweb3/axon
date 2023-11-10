@@ -6,8 +6,8 @@ pub use bytes::{Buf, BufMut, Bytes, BytesMut};
 pub use ckb_client::*;
 pub use evm::{backend::*, ExitError, ExitRevert, ExitSucceed};
 pub use executor::{
-    logs_bloom, AccessList, AccessListItem, Account, Config, ExecResp, ExecutorContext, ExitReason,
-    HasherKeccak, TxResp,
+    logs_bloom, AccessList, AccessListItem, Account, Config, EthAccountProof, EthStorageProof,
+    ExecResp, ExecutorContext, ExitReason, HasherKeccak, TxResp,
 };
 pub use interoperation::*;
 pub use primitive::*;

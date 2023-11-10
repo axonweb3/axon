@@ -43,6 +43,7 @@ make_auto_flush_static_metric! {
         eth_getUncleByBlockNumberAndIndex,
         eth_getUncleCountByBlockHash,
         eth_getUncleCountByBlockNumber,
+        eth_getProof,
     }
 
     pub label_enum Request_Result {
