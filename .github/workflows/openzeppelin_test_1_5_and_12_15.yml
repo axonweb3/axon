@@ -1,14 +1,16 @@
 name: OCT 1-5 And 12-15
 
 on:
+  # TODO: Remove `push` and `pull_request` events after this workflow is stable,
+  #       if the use too much GitHub Action run time.
   push:
-    branches:
-      - main
+  pull_request:
+
   workflow_dispatch:
     inputs:
       dispatch:
         type: string
-        description: "Dispatch contains pr context that want to trigger OCT 1-5 And 12-15 test"
+        description: "'regression' or the JSON of a PR's context"
         required: true
 
 jobs:
@@ -20,63 +22,51 @@ jobs:
         os: [ubuntu-22.04]
       fail-fast: false
     runs-on: ${{ matrix.os }}
-    outputs:
-      output-sha: ${{ steps.escape_multiple_lines_test_inputs.outputs.result }}
+
+    # When the permissions key is used, all unspecified permissions are set to no access,
+    # with the exception of the metadata scope, which always gets read access.
+    # See https://docs.github.com/en/actions/security-guides/automatic-token-authentication#modifying-the-permissions-for-the-github_token
+    permissions:
+      statuses: write
+    
+    env:
+      IS_DISPATCH: ${{ github.event_name == 'workflow_dispatch' }}
+      IS_REGRESSION: ${{ github.event.inputs.dispatch == 'regression' }}
+
     steps:
-      - name: Generate axon-bot token
-        if: contains(github.event_name, 'workflow_dispatch') &&
-            github.repository_owner == 'axonweb3' && github.event.inputs.dispatch != 'regression'
-        id: generate_axon_bot_token
-        uses: wow-actions/use-app-token@v2
-        with:
-          app_id: ${{ secrets.AXON_BOT_APP_ID }}
-          private_key: ${{ secrets.AXON_BOT_PRIVATE_KEY }}
-      - name: Event is dispatch
-        if: contains(github.event_name, 'workflow_dispatch') &&
-            github.repository_owner == 'axonweb3' && github.event.inputs.dispatch != 'regression'
+      - name: Get the git ref of Axon
         uses: actions/github-script@v6
-        id: get_sha
+        id: axon_git_ref
         with:
-          github-token: ${{ steps.generate_axon_bot_token.outputs.BOT_TOKEN }}
           script: |
-            const dispatch = JSON.parse(`${{ github.event.inputs.dispatch }}`);
-            const pr = (
-             await github.rest.pulls.get({
-               owner: dispatch.repo.owner,
-               repo: dispatch.repo.repo,
-               pull_number: dispatch.issue.number,
-            })
-            ).data.head;
-            github.rest.repos.createCommitStatus({
-              state: 'pending',
-              owner: dispatch.repo.owner,
-              repo: dispatch.repo.repo,
-              context: '${{ github.workflow }}',
-              sha: pr.sha,
-              target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-            })
-            return pr.sha
-      - name: Escape multiple lines test inputs
-        if: contains(github.event_name, 'workflow_dispatch') &&
-            github.repository_owner == 'axonweb3' && github.event.inputs.dispatch != 'regression'
-        id: escape_multiple_lines_test_inputs
-        run: |
-          inputs=${{ steps.get_sha.outputs.result}}
-          inputs="${inputs//'%'/'%25'}"
-          inputs="${inputs//'\n'/'%0A'}"
-          inputs="${inputs//'\r'/'%0D'}"
-          echo "result=$inputs" >> $GITHUB_OUTPUT
-      - name: Git checkout
+            if (`${{ env.IS_DISPATCH }}` == 'true' && `${{ env.IS_REGRESSION }}` == 'false' && `${{ github.event.inputs.dispatch }}`) {
+              const dispatch = JSON.parse(`${{ github.event.inputs.dispatch }}`);
+              const prNum = dispatch.issue.number;
+              const { data: pullRequest } = await github.rest.pulls.get({
+                owner: dispatch.repo.owner,
+                repo: dispatch.repo.repo,
+                pull_number: dispatch.issue.number,
+              });
+              return pullRequest.head.sha;
+            }
+            return `${{ github.sha }}`;
+          result-encoding: string
+
+      - name: Checkout Axon commit ${{ steps.axon_git_ref.outputs.result}}
         uses: actions/checkout@v4
         with:
-          ref: ${{ steps.escape_multiple_lines_test_inputs.outputs.result || 'main' }}
-      - uses: actions/checkout@v4
+          ref: ${{ steps.axon_git_ref.outputs.result}}
+
+      - name: Git checkout axonweb3/openzeppelin-contracts
+        uses: actions/checkout@v4
         with:
           repository: axonweb3/openzeppelin-contracts
           ref: c2c4b8f591b7bc048dcbcf45dd2a1d2017074107
           path: openzeppelin-contracts
+
       - uses: actions/setup-node@v4
         with:
+          # TODO: upgrade node-version
           node-version: "16"
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
@@ -124,7 +114,12 @@ jobs:
             --config     devtools/chain/config.toml \
             >> /tmp/log 2>&1 &
 
-      - name: Check Axon Status Before Test
+          npx zx <<'EOF'
+          import { waitXBlocksPassed } from './devtools/ci/scripts/helper.js'
+          await retry(3, '6s', () => waitXBlocksPassed('http://127.0.0.1:8000', 2))
+          EOF
+
+      - name: Check Axon web3_clientVersion Before Test
         run: |
           MAX_RETRIES=10
           for i in $(seq 1 $MAX_RETRIES); do
@@ -200,7 +195,11 @@ jobs:
       - name: Check Axon Status
         if: success() || failure()
         run: |
-          curl http://localhost:8000 -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params": [],"id":1}'
+          npx zx <<'EOF'
+          import { waitXBlocksPassed } from './devtools/ci/scripts/helper.js'
+          await retry(3, '6s', () => waitXBlocksPassed('http://127.0.0.1:8000', 2))
+          EOF
+
       - name: Publish reports
         if: always()
         uses: actions/upload-artifact@v3
@@ -208,31 +207,17 @@ jobs:
           name: jfoa-build-reports-${{ runner.os }}
           path: openzeppelin-contracts/mochawesome-report/
 
-  finally:
-    name: Finally
-    needs: [ openzeppelin-contracts-1 ]
-    if: always() && contains(github.event_name, 'workflow_dispatch') &&
-        github.event.inputs.dispatch != 'regression' && github.repository_owner == 'axonweb3'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Generate axon-bot token
-        id: generate_axon_bot_token
-        uses: wow-actions/use-app-token@v2
+      # The `statuses: write` permission is required in this step.
+      - name: Update the commit Status
+        if: always() && env.IS_DISPATCH == 'true' && env.IS_REGRESSION == 'false'
+        uses: actions/github-script@v6
         with:
-          app_id: ${{ secrets.AXON_BOT_APP_ID }}
-          private_key: ${{ secrets.AXON_BOT_PRIVATE_KEY }}
-      - if: contains(join(needs.*.result, ';'), 'failure') || contains(join(needs.*.result, ';'), 'cancelled')
-        run: exit 1
-      - uses: actions/github-script@v6
-        if: ${{ always() }}
-        with:
-          github-token: ${{ steps.generate_axon_bot_token.outputs.BOT_TOKEN }}
           script: |
             github.rest.repos.createCommitStatus({
               state: '${{ job.status }}',
               owner: context.repo.owner,
               repo: context.repo.repo,
               context: '${{ github.workflow }}',
-              sha: '${{ needs.openzeppelin-contracts-1.outputs.output-sha }}',
+              sha: '${{ steps.axon_git_ref.outputs.result}}',
               target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
             })
