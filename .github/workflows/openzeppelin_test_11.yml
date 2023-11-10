@@ -11,7 +11,7 @@ on:
     inputs:
       dispatch:
         type: string
-        description: "Dispatch contains pr context that want to trigger OCT 11 test"
+        description: "'regression' or the JSON of a PR's context"
         required: true
 
 jobs:
