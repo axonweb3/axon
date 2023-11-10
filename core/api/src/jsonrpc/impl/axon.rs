@@ -10,6 +10,7 @@ use protocol::types::{
     Block, CkbRelatedInfo, HardforkInfoInner, Metadata, Proof, Proposal, H256, U256,
 };
 
+use crate::jsonrpc::r#impl::u256_cast_u64;
 use crate::jsonrpc::web3_types::{BlockId, HardforkStatus};
 use crate::jsonrpc::{error::RpcError, AxonRpcServer};
 
@@ -28,11 +29,13 @@ impl<Adapter: APIAdapter + 'static> AxonRpcServer for AxonRpcImpl<Adapter> {
     async fn get_block_by_id(&self, block_id: BlockId) -> RpcResult<Option<Block>> {
         let ret = match block_id {
             BlockId::Hash(hash) => self.adapter.get_block_by_hash(Context::new(), hash).await,
+            // The block number is checked when deserialize
             BlockId::Num(num) => {
                 self.adapter
                     .get_block_by_number(Context::new(), Some(num.as_u64()))
                     .await
             }
+            BlockId::Earliest => self.adapter.get_block_by_number(Context::new(), Some(0)).await,
             BlockId::Latest => self.adapter.get_block_by_number(Context::new(), None).await,
             _ => return Err(ErrorCode::InvalidRequest.into()),
         }
@@ -50,9 +53,10 @@ impl<Adapter: APIAdapter + 'static> AxonRpcServer for AxonRpcImpl<Adapter> {
     }
 
     async fn get_metadata_by_number(&self, block_number: U256) -> RpcResult<Metadata> {
+        let block_number = u256_cast_u64(block_number)?;
         let ret = self
             .adapter
-            .get_metadata_by_number(Context::new(), Some(block_number.as_u64()))
+            .get_metadata_by_number(Context::new(), Some(block_number))
             .await
             .map_err(|e| RpcError::Internal(e.to_string()))?;
 

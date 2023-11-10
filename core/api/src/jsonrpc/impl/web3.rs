@@ -133,6 +133,7 @@ impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
         block_count: U256,
         reward_percentiles: &Option<Vec<f64>>,
     ) -> Result<(u64, Vec<U256>, Vec<f64>, Vec<Vec<U256>>), RpcError> {
+        let block_count = u256_cast_u64(block_count)?;
         let latest_block = self
             .adapter
             .get_block_by_number(Context::new(), height)
@@ -142,7 +143,7 @@ impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
 
         let latest_block_number = latest_block.header.number;
         let oldest_block_number = latest_block_number
-            .saturating_sub(block_count.as_u64())
+            .saturating_sub(block_count)
             .saturating_add(1);
 
         let mut bash_fee_per_gases: Vec<U256> = Vec::new();
@@ -891,7 +892,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
         position: U256,
     ) -> RpcResult<Option<Web3Transaction>> {
         if position > U256::from(usize::MAX) {
-            return Err(RpcError::InvalidPosition(position.as_u64()).into());
+            return Err(RpcError::InvalidPosition(position).into());
         }
 
         let mut raw = [0u8; 32];
@@ -922,7 +923,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
         position: U256,
     ) -> RpcResult<Option<Web3Transaction>> {
         if position > U256::from(usize::MAX) {
-            return Err(RpcError::InvalidPosition(position.as_u64()).into());
+            return Err(RpcError::InvalidPosition(position).into());
         }
 
         let mut raw = [0u8; 32];

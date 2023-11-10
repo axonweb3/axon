@@ -1,6 +1,6 @@
 use jsonrpsee::types::{error::ErrorObject, ErrorObjectOwned};
 
-use protocol::types::{ExitReason, TxResp};
+use protocol::types::{ExitReason, TxResp, U256};
 use protocol::{codec::hex_encode, Display};
 
 use core_executor::decode_revert_msg;
@@ -42,7 +42,7 @@ pub enum RpcError {
     #[display(fmt = "Invalid newest block {:?}", _0)]
     InvalidNewestBlock(BlockId),
     #[display(fmt = "Invalid position {}", _0)]
-    InvalidPosition(u64),
+    InvalidPosition(U256),
     #[display(fmt = "Cannot find the block")]
     CannotFindBlock,
     #[display(fmt = "Invalid reward percentiles {} {}", _0, _1)]
@@ -51,6 +51,8 @@ pub enum RpcError {
     InvalidFromBlockAndToBlockUnion,
     #[display(fmt = "Invalid filter id {}", _0)]
     CannotFindFilterId(u64),
+    #[display(fmt = "Invalid request params {}", _0)]
+    InvalidRequestParams(U256),
 
     #[display(fmt = "EVM error {}", "decode_revert_msg(&_0.ret)")]
     Evm(TxResp),
@@ -88,6 +90,7 @@ impl RpcError {
             RpcError::InvalidRewardPercentiles(_, _) => -40020,
             RpcError::InvalidFromBlockAndToBlockUnion => -40021,
             RpcError::CannotFindFilterId(_) => -40022,
+            RpcError::InvalidRequestParams(_) => -40023,
 
             RpcError::Evm(_) => -49998,
             RpcError::Internal(_) => -49999,
@@ -129,6 +132,7 @@ impl From<RpcError> for ErrorObjectOwned {
                 ErrorObject::owned(err_code, err, none_data)
             }
             RpcError::CannotFindFilterId(_) => ErrorObject::owned(err_code, err, none_data),
+            RpcError::InvalidRequestParams(_) => ErrorObject::owned(err_code, err, none_data),
 
             RpcError::Evm(resp) => {
                 ErrorObject::owned(err_code, err.clone(), Some(vm_err(resp.clone())))
