@@ -14,6 +14,11 @@ Release v0.2.0-beta.3 version.
 - Fix value of gas in JSON RPC Transaction should be gas limit
   ([\#1530](https://github.com/axonweb3/axon/pull/1530))
 
+### CHORE
+
+- Change default db cache size
+  ([\#1531](https://github.com/axonweb3/axon/pull/1531))
+
 ### CODE REFACTORS
 
 - Add more details for JSON RPC errors
