@@ -1,11 +1,6 @@
 name: OCT 11
 
 on:
-  # TODO: Remove `push` and `pull_request` events after this workflow is stable,
-  #       if the use too much GitHub Action run time.
-  push:
-  pull_request:
-
   merge_group:
   workflow_dispatch:
     inputs:
