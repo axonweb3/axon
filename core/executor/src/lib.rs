@@ -38,9 +38,6 @@ use crate::system_contract::{
     METADATA_CONTRACT_ADDRESS, METADATA_ROOT_KEY, NATIVE_TOKEN_CONTRACT_ADDRESS,
 };
 
-#[cfg(test)]
-use {protocol::types::Hasher, std::iter::FromIterator};
-
 lazy_static::lazy_static! {
     pub static ref FEE_ALLOCATOR: ArcSwap<Box<dyn FeeAllocate>> = ArcSwap::from_pointee(Box::new(DefaultFeeAllocator));
 }
@@ -434,7 +431,7 @@ impl AxonExecutor {
         let txs_len = txs.len();
         let block_number = adapter.block_number();
         let mut res = Vec::with_capacity(txs_len);
-        let mut hashes = Vec::with_capacity(txs_len);
+        let mut encode_receipts = Vec::with_capacity(txs_len);
         let (mut gas, mut fee) = (0u64, U256::zero());
         let precompiles = build_precompile_set();
         let config = Config::london();
@@ -454,8 +451,8 @@ impl AxonExecutor {
 
             let logs_bloom = logs_bloom(r.logs.iter());
             let receipt = tx.encode_receipt(&r, logs_bloom);
+            encode_receipts.push(receipt);
 
-            hashes.push(Hasher::digest(&receipt));
             res.push(r);
         }
 
@@ -478,10 +475,10 @@ impl AxonExecutor {
         // commit changes by all txs included in this block only once
         let new_state_root = adapter.commit();
 
-        let receipt_root = if hashes.is_empty() {
+        let receipt_root = if encode_receipts.is_empty() {
             RLP_NULL
         } else {
-            TrieMerkle::from_iter(hashes.iter().enumerate())
+            TrieMerkle::from_receipts(&encode_receipts)
                 .root_hash()
                 .unwrap_or_else(|err| {
                     panic!("failed to calculate trie root hash for receipts since {err}")
