@@ -5,11 +5,12 @@ use protocol::traits::{
 };
 use protocol::trie::Trie as _;
 use protocol::types::{
-    Account, BigEndianHash, Block, BlockNumber, Bytes, CkbRelatedInfo, ExecutorContext,
-    HardforkInfo, HardforkInfoInner, Hash, Header, Metadata, Proposal, Receipt, SignedTransaction,
-    TxResp, H160, H256, MAX_BLOCK_GAS_LIMIT, NIL_DATA, RLP_NULL, U256,
+    Account, BigEndianHash, Block, BlockNumber, Bytes, CkbRelatedInfo, EthAccountProof,
+    EthStorageProof, ExecutorContext, HardforkInfo, HardforkInfoInner, Hash, Hasher, Header, Hex,
+    Metadata, Proposal, Receipt, SignedTransaction, TxResp, H160, H256, MAX_BLOCK_GAS_LIMIT,
+    NIL_DATA, RLP_NULL, U256,
 };
-use protocol::{async_trait, codec::ProtocolCodec, trie, ProtocolResult};
+use protocol::{async_trait, codec::ProtocolCodec, trie, ProtocolError, ProtocolResult};
 
 use core_executor::{
     system_contract::metadata::MetadataHandle, AxonExecutor, AxonExecutorReadOnlyAdapter, MPTTrie,
@@ -238,6 +239,61 @@ where
             .get(hash.as_bytes())?
             .map(Into::into)
             .ok_or_else(|| APIError::Adapter("Can't find this position".to_string()).into())
+    }
+
+    async fn get_proof(
+        &self,
+        _ctx: Context,
+        address: H160,
+        storage_position: Vec<U256>,
+        state_root: Hash,
+    ) -> ProtocolResult<EthAccountProof> {
+        let state_mpt_tree = MPTTrie::from_root(state_root, Arc::clone(&self.trie_db))?;
+        let raw_account = state_mpt_tree
+            .get(address.as_bytes())?
+            .ok_or_else(|| APIError::Adapter("Can't find this address".to_string()))?;
+
+        let account = Account::decode(raw_account).unwrap();
+
+        let account_proof = state_mpt_tree
+            .get_proof(address.as_bytes())?
+            .into_iter()
+            .map(Hex::encode)
+            .collect();
+
+        let storage_mpt_tree = MPTTrie::from_root(account.storage_root, Arc::clone(&self.trie_db))?;
+
+        let mut storage_proofs = Vec::with_capacity(storage_position.len());
+
+        for h in storage_position {
+            let hash: Hash = BigEndianHash::from_uint(&h);
+            let proof = EthStorageProof {
+                key:   hash,
+                value: storage_mpt_tree
+                    .get(hash.as_bytes())?
+                    .map(|v| H256::from_slice(&v))
+                    .ok_or_else(|| {
+                        Into::<ProtocolError>::into(APIError::Adapter(
+                            "Can't find this position".to_string(),
+                        ))
+                    })?,
+                proof: state_mpt_tree
+                    .get_proof(hash.as_bytes())?
+                    .into_iter()
+                    .map(Hex::encode)
+                    .collect(),
+            };
+            storage_proofs.push(proof);
+        }
+
+        Ok(EthAccountProof {
+            balance: account.balance,
+            code_hash: account.code_hash,
+            nonce: account.nonce,
+            storage_hash: Hasher::digest(account.storage_root),
+            account_proof,
+            storage_proof: storage_proofs,
+        })
     }
 
     async fn get_metadata_by_number(
