@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
 use ckb_types::core::cell::{CellProvider, CellStatus};
 use ckb_types::prelude::Entity;
@@ -13,7 +13,8 @@ use protocol::types::{
     MIN_TRANSACTION_GAS_LIMIT, U256,
 };
 use protocol::{
-    async_trait, ckb_blake2b_256, codec::ProtocolCodec, lazy::PROTOCOL_VERSION, ProtocolResult,
+    async_trait, ckb_blake2b_256, codec::ProtocolCodec, lazy::PROTOCOL_VERSION, tokio::time::sleep,
+    ProtocolResult, MEMPOOL_REFRESH_TIMEOUT,
 };
 
 use core_executor::system_contract::DataProvider;
@@ -314,6 +315,10 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             .insert_signed_txs(Context::new(), stx)
             .await
             .map_err(|e| RpcError::Internal(e.to_string()))?;
+
+        // TODO `eth_getTransactionCount(..., "pending")` should be synchronous with
+        // `eth_sendRawTransaction`. Temporary solution for axonweb3/axon#1544.
+        sleep(Duration::from_millis(MEMPOOL_REFRESH_TIMEOUT)).await;
 
         Ok(hash)
     }
