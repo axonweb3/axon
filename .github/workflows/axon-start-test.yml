@@ -56,7 +56,7 @@ jobs:
 
         npx zx <<'EOF'
         import { waitXBlocksPassed } from './devtools/ci/scripts/helper.js'
-        await waitXBlocksPassed('http://127.0.0.1:8000', 2);
+        await retry(3, '6s', () => waitXBlocksPassed('http://127.0.0.1:8000', 2))
         EOF
       timeout-minutes: 1
 
@@ -122,12 +122,12 @@ jobs:
 
         npx zx <<'EOF'
         import { waitXBlocksPassed } from './devtools/ci/scripts/helper.js'
-        await Promise.all([
+        await retry(3, '6s', () => Promise.all([
           waitXBlocksPassed('http://127.0.0.1:8001', 4),
           waitXBlocksPassed('http://127.0.0.1:8002', 4),
           waitXBlocksPassed('http://127.0.0.1:8003', 4),
           waitXBlocksPassed('http://127.0.0.1:8004', 4),
-        ])
+        ]))
         EOF
       timeout-minutes: 1
 
