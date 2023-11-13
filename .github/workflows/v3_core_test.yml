@@ -156,8 +156,6 @@ jobs:
       - name: Check Axon Status
         if: success() || failure()
         run: |
-          curl http://localhost:8000 -X POST -H "Content-Type: application/json" -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params": [],"id":1}'
-
           npx zx <<'EOF'
           import { waitXBlocksPassed } from './devtools/ci/scripts/helper.js'
           await retry(3, '6s', () => waitXBlocksPassed('http://127.0.0.1:8000', 2))
