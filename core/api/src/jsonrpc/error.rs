@@ -51,8 +51,6 @@ pub enum RpcError {
     InvalidFromBlockAndToBlockUnion,
     #[display(fmt = "Invalid filter id {}", _0)]
     CannotFindFilterId(u64),
-    #[display(fmt = "Invalid request params {}", _0)]
-    InvalidRequestParams(U256),
 
     #[display(fmt = "EVM error {}", "decode_revert_msg(&_0.ret)")]
     Evm(TxResp),
@@ -90,7 +88,6 @@ impl RpcError {
             RpcError::InvalidRewardPercentiles(_, _) => -40020,
             RpcError::InvalidFromBlockAndToBlockUnion => -40021,
             RpcError::CannotFindFilterId(_) => -40022,
-            RpcError::InvalidRequestParams(_) => -40023,
 
             RpcError::Evm(_) => -49998,
             RpcError::Internal(_) => -49999,
@@ -132,7 +129,6 @@ impl From<RpcError> for ErrorObjectOwned {
                 ErrorObject::owned(err_code, err, none_data)
             }
             RpcError::CannotFindFilterId(_) => ErrorObject::owned(err_code, err, none_data),
-            RpcError::InvalidRequestParams(_) => ErrorObject::owned(err_code, err, none_data),
 
             RpcError::Evm(resp) => {
                 ErrorObject::owned(err_code, err.clone(), Some(vm_err(resp.clone())))

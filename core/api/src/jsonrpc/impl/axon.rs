@@ -65,7 +65,7 @@ impl<Adapter: APIAdapter + 'static> AxonRpcServer for AxonRpcImpl<Adapter> {
         Ok(ret)
     }
 
-    async fn get_proposal_by_number(&self, block_number: U256) -> RpcResult<Proposal> {
+    async fn get_proposal_by_number(&self, block_number: U64) -> RpcResult<Proposal> {
         let block_number = block_number.low_u64();
 
         let prev_state_root = if block_number == 0 {
