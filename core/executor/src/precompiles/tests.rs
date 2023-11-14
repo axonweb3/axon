@@ -1,11 +1,11 @@
 use evm::Context;
 use sha2::Digest;
 
-use protocol::{codec::hex_decode, rand::random, types::U256};
+use protocol::{ckb_blake2b_256, codec::hex_decode, rand::random, types::U256};
 
 use crate::precompiles::{
-    Blake2F, EcAdd, EcMul, EcPairing, EcRecover, Identity, ModExp, PrecompileContract, Ripemd160,
-    Sha256,
+    Blake2F, CkbBlake2b, EcAdd, EcMul, EcPairing, EcRecover, Identity, ModExp, PrecompileContract,
+    Ripemd160, Sha256,
 };
 
 macro_rules! test_precompile {
@@ -47,6 +47,14 @@ fn test_sha256() {
     let output = hasher.finalize().to_vec();
 
     test_precompile!(Sha256, &input, output, 108);
+}
+
+#[test]
+fn test_ckb_blake2b() {
+    let input = rand_bytes(100);
+    let output = ckb_blake2b_256(&input);
+
+    test_precompile!(CkbBlake2b, &input, output, 108);
 }
 
 #[test]
