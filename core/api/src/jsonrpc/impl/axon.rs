@@ -32,7 +32,7 @@ impl<Adapter: APIAdapter + 'static> AxonRpcServer for AxonRpcImpl<Adapter> {
             // The block number is checked when deserialize
             BlockId::Num(num) => {
                 self.adapter
-                    .get_block_by_number(Context::new(), Some(num.as_u64()))
+                    .get_block_by_number(Context::new(), Some(num.low_u64()))
                     .await
             }
             BlockId::Earliest => {

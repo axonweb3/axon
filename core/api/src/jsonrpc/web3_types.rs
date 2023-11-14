@@ -335,7 +335,7 @@ impl From<BlockId> for Option<u64> {
     fn from(id: BlockId) -> Self {
         match id {
             // The BlockId deserialize visitor will ensure that the number is in u64 range.
-            BlockId::Num(num) => Some(num.as_u64()),
+            BlockId::Num(num) => Some(num.low_u64()),
             BlockId::Earliest => Some(0),
             _ => None,
         }

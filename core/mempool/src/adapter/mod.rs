@@ -262,7 +262,7 @@ where
             }
             return Err(MemPoolError::ExceedGasLimit {
                 tx_hash:          stx.transaction.hash,
-                gas_limit_tx:     gas_limit_tx.as_u64(),
+                gas_limit_tx:     gas_limit_tx.low_u64(),
                 gas_limit_config: self.gas_limit.load(Ordering::Acquire),
             }
             .into());
@@ -378,8 +378,8 @@ where
         if let Some(res) = self.addr_nonce.get(addr) {
             if tx.transaction.unsigned.nonce() < &res.value().0 {
                 return Err(MemPoolError::InvalidNonce {
-                    current:  res.value().0.as_u64(),
-                    tx_nonce: tx.transaction.unsigned.nonce().as_u64(),
+                    current:  res.value().0.low_u64(),
+                    tx_nonce: tx.transaction.unsigned.nonce().low_u64(),
                 }
                 .into());
             } else if res.value().1 < tx.transaction.unsigned.may_cost() {
@@ -401,8 +401,8 @@ where
 
         if &account.nonce > tx.transaction.unsigned.nonce() {
             return Err(MemPoolError::InvalidNonce {
-                current:  account.nonce.as_u64(),
-                tx_nonce: tx.transaction.unsigned.nonce().as_u64(),
+                current:  account.nonce.low_u64(),
+                tx_nonce: tx.transaction.unsigned.nonce().low_u64(),
             }
             .into());
         }

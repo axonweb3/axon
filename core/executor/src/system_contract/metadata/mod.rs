@@ -50,7 +50,7 @@ impl<Adapter: ExecutorAdapter + ApplyBackend> SystemContract<Adapter>
         let tx = &tx.transaction.unsigned;
         let tx_data = tx.data();
         let gas_limit = *tx.gas_limit();
-        let block_number = adapter.block_number().as_u64();
+        let block_number = adapter.block_number().low_u64();
         let root = CURRENT_METADATA_ROOT.with(|r| *r.borrow());
 
         let mut store = exec_try!(
@@ -124,11 +124,11 @@ impl<Adapter: ExecutorAdapter + ApplyBackend> SystemContract<Adapter>
             }
         }
 
-        let hardfork = store.hardfork_info(block_number.as_u64()).unwrap();
+        let hardfork = store.hardfork_info(block_number.low_u64()).unwrap();
 
         HARDFORK_INFO.swap(Arc::new(hardfork));
 
-        if let Err(e) = store.update_propose_count(block_number.as_u64(), &adapter.origin()) {
+        if let Err(e) = store.update_propose_count(block_number.low_u64(), &adapter.origin()) {
             panic!("Update propose count at {:?} failed: {:?}", block_number, e)
         }
 

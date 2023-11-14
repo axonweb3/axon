@@ -204,7 +204,7 @@ where
 
                 match from {
                     BlockId::Num(n) => {
-                        if n.as_u64() < header.number {
+                        if n.low_u64() < header.number {
                             filter.from_block = Some(BlockId::Num(U64::from(header.number + 1)));
                         }
                     }
@@ -302,7 +302,7 @@ where
         let (start, end) = {
             let convert = |id: &BlockId| -> BlockNumber {
                 match id {
-                    BlockId::Num(n) => n.as_u64(),
+                    BlockId::Num(n) => n.low_u64(),
                     BlockId::Earliest => 0,
                     _ => latest_number,
                 }

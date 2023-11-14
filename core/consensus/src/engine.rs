@@ -729,7 +729,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             ctx,
             resp.state_root,
             MAX_BLOCK_GAS_LIMIT,
-            last_status.max_tx_size.as_u64(),
+            last_status.max_tx_size.low_u64(),
         );
 
         if block.header.number != proof.number {

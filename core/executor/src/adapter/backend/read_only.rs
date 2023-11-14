@@ -77,7 +77,7 @@ where
             return H256::default();
         }
 
-        let number = number.as_u64();
+        let number = number.low_u64();
         blocking_async!(self, get_storage, get_block, Context::new(), number)
             .map(|b| b.hash())
             .unwrap_or_default()

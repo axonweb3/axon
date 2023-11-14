@@ -312,7 +312,7 @@ impl AxonExecutor {
         account.balance = account.balance.saturating_sub(prepay_gas);
         adapter.save_account(&sender, &account);
 
-        let metadata = StackSubstateMetadata::new(gas_limit.as_u64(), config);
+        let metadata = StackSubstateMetadata::new(gas_limit.low_u64(), config);
         let mut executor = StackExecutor::new_with_precompiles(
             MemoryStackState::new(metadata, adapter),
             config,
@@ -333,14 +333,14 @@ impl AxonExecutor {
                 *addr,
                 *tx.transaction.unsigned.value(),
                 tx.transaction.unsigned.data().to_vec(),
-                gas_limit.as_u64(),
+                gas_limit.low_u64(),
                 access_list,
             ),
             TransactionAction::Create => executor.transact_create(
                 tx.sender,
                 *tx.transaction.unsigned.value(),
                 tx.transaction.unsigned.data().to_vec(),
-                gas_limit.as_u64(),
+                gas_limit.low_u64(),
                 access_list,
             ),
         };

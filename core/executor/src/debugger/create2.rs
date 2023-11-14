@@ -29,7 +29,7 @@ async fn test_create2_gas() {
     let gas_used = resp.tx_resp[0].gas_used;
     let after_balance = debugger.backend(1).basic(sender).balance;
 
-    assert_eq!(gas_used * 8, (init_balance - after_balance).as_u64());
+    assert_eq!(gas_used * 8, (init_balance - after_balance).low_u64());
 }
 
 fn mock_create2_tx(nonce: U256, sender: H160) -> SignedTransaction {

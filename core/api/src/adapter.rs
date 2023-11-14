@@ -207,7 +207,7 @@ where
             exec_ctx,
         )?;
         let gas_limit = gas_limit
-            .map(|gas| gas.as_u64())
+            .map(|gas| gas.low_u64())
             .unwrap_or(MAX_BLOCK_GAS_LIMIT);
 
         Ok(AxonExecutor.call(&backend, gas_limit, from, to, value, data))
