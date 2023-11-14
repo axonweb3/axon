@@ -27,7 +27,7 @@ jobs:
       - name: Event is dispatch
         if: contains(github.event_name, 'workflow_dispatch') &&
             github.repository_owner == 'axonweb3'
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         id: get_sha
         with:
           github-token: ${{ steps.generate_axon_bot_token.outputs.BOT_TOKEN }}
@@ -101,7 +101,7 @@ jobs:
           private_key: ${{ secrets.AXON_BOT_PRIVATE_KEY }}
       - if: contains(join(needs.*.result, ';'), 'failure') || contains(join(needs.*.result, ';'), 'cancelled')
         run: exit 1
-      - uses: actions/github-script@v6
+      - uses: actions/github-script@v7
         if: ${{ always() }}
         with:
           github-token: ${{ steps.generate_axon_bot_token.outputs.BOT_TOKEN }}
