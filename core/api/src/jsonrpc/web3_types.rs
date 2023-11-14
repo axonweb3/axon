@@ -6,8 +6,8 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use protocol::codec::ProtocolCodec;
 use protocol::types::{
-    AccessList, Block, Bloom, Bytes, Hash, Header, Hex, Public, Receipt, SignedTransaction,
-    UnsignedTransaction, H160, H256, H64, MAX_PRIORITY_FEE_PER_GAS, U256, U64,
+    AccessList, Block, Bloom, Bytes, Hash, Header, Hex, Public, Receipt, SignedTransaction, H160,
+    H256, H64, MAX_PRIORITY_FEE_PER_GAS, U256, U64,
 };
 
 pub const EMPTY_UNCLE_HASH: H256 = H256([
@@ -98,19 +98,13 @@ impl From<SignedTransaction> for Web3Transaction {
             )
         };
 
-        let gas_limit = match stx.transaction.unsigned {
-            UnsignedTransaction::Legacy(ref inner) => inner.gas_limit,
-            UnsignedTransaction::Eip1559(ref inner) => inner.gas_limit,
-            UnsignedTransaction::Eip2930(ref inner) => inner.gas_limit,
-        };
-
         Web3Transaction {
             type_:                    Some(stx.type_().into()),
             block_number:             None,
             block_hash:               None,
             raw:                      Hex::encode(stx.transaction.encode().unwrap()),
             public_key:               stx.public,
-            gas:                      gas_limit,
+            gas:                      *stx.transaction.unsigned.gas_limit(),
             gas_price:                stx.transaction.unsigned.gas_price(),
             max_fee_per_gas:          if is_eip1559 {
                 Some(U256::from(MAX_PRIORITY_FEE_PER_GAS))
@@ -139,60 +133,6 @@ impl From<SignedTransaction> for Web3Transaction {
     }
 }
 
-impl From<(SignedTransaction, Receipt)> for Web3Transaction {
-    fn from(stx_receipt: (SignedTransaction, Receipt)) -> Self {
-        let (stx, receipt) = stx_receipt;
-        let signature = stx.transaction.signature.clone().unwrap_or_default();
-        let is_eip1559 = stx.transaction.unsigned.is_eip1559();
-
-        let sig_v = signature.add_chain_replay_protection(stx.transaction.chain_id);
-        let (sig_r, sig_s) = if signature.is_eth_sig() {
-            (
-                Either::Left(U256::from(&signature.r[..])),
-                Either::Left(U256::from(&signature.s[..])),
-            )
-        } else {
-            (
-                Either::Right(Hex::encode(signature.r)),
-                Either::Right(Hex::encode(signature.s)),
-            )
-        };
-
-        Web3Transaction {
-            type_:                    Some(stx.type_().into()),
-            block_number:             Some(receipt.block_number.into()),
-            block_hash:               Some(receipt.block_hash),
-            raw:                      Hex::encode(stx.transaction.encode().unwrap()),
-            public_key:               stx.public,
-            gas:                      *stx.transaction.unsigned.gas_limit(),
-            gas_price:                stx.transaction.unsigned.gas_price(),
-            max_fee_per_gas:          if is_eip1559 {
-                Some(U256::from(MAX_PRIORITY_FEE_PER_GAS))
-            } else {
-                None
-            },
-            max_priority_fee_per_gas: if is_eip1559 {
-                Some(*stx.transaction.unsigned.max_priority_fee_per_gas())
-            } else {
-                None
-            },
-            hash:                     receipt.tx_hash,
-            from:                     stx.sender,
-            to:                       stx.get_to(),
-            input:                    Hex::encode(stx.transaction.unsigned.data()),
-            nonce:                    *stx.transaction.unsigned.nonce(),
-            transaction_index:        Some(receipt.tx_index.into()),
-            value:                    *stx.transaction.unsigned.value(),
-            access_list:              Some(stx.transaction.unsigned.access_list()),
-            chain_id:                 stx.transaction.chain_id.map(|id| id.into()),
-            standard_v:               None,
-            v:                        sig_v.into(),
-            r:                        sig_r,
-            s:                        sig_s,
-        }
-    }
-}
-
 impl Web3Transaction {
     pub fn add_block_number(mut self, block_number: u64) -> Self {
         self.block_number = Some(block_number.into());
@@ -207,6 +147,12 @@ impl Web3Transaction {
     pub fn add_tx_index(mut self, index: usize) -> Self {
         self.transaction_index = Some(index.into());
         self
+    }
+
+    pub fn update_with_receipt(&mut self, receipt: &Receipt) {
+        self.block_number = Some(receipt.block_number.into());
+        self.block_hash = Some(receipt.block_hash);
+        self.transaction_index = Some(receipt.tx_index.into());
     }
 }
 
