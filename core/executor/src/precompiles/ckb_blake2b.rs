@@ -35,6 +35,8 @@ impl PrecompileContract for CkbBlake2b {
         ))
     }
 
+    /// Estimate the gas cost = MIN_GAS + dynamic_gas
+    ///                       = MIN_GAS + 12 * data_word_size
     fn gas_cost(input: &[u8]) -> u64 {
         let data_word_size = (input.len() + 31) / 32;
         (data_word_size * 12) as u64 + Self::MIN_GAS
