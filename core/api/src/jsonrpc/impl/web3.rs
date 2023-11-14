@@ -332,16 +332,16 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         if let Some(stx) = res {
+            let mut web3_stx: Web3Transaction = stx.into();
             if let Some(receipt) = self
                 .adapter
                 .get_receipt_by_tx_hash(Context::new(), hash)
                 .await
                 .map_err(|e| RpcError::Internal(e.to_string()))?
             {
-                Ok(Some((stx, receipt).into()))
-            } else {
-                Ok(Some(stx.into()))
+                web3_stx.update_with_receipt(&receipt);
             }
+            Ok(Some(web3_stx))
         } else {
             Ok(None)
         }
