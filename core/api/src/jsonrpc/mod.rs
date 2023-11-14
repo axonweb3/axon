@@ -15,13 +15,13 @@ use common_config_parser::types::{spec::HardforkName, Config};
 use protocol::traits::APIAdapter;
 use protocol::types::{
     Block, CkbRelatedInfo, EthAccountProof, Hash, Hex, Metadata, Proof, Proposal, H160, H256, U256,
+    U64,
 };
 use protocol::ProtocolResult;
 
 use crate::jsonrpc::web3_types::{
-    BlockCount, BlockId, FilterChanges, HardforkStatus, RawLoggerFilter, Web3Block,
-    Web3CallRequest, Web3FeeHistory, Web3Filter, Web3Log, Web3Receipt, Web3SyncStatus,
-    Web3Transaction,
+    BlockId, FilterChanges, HardforkStatus, RawLoggerFilter, Web3Block, Web3CallRequest,
+    Web3FeeHistory, Web3Filter, Web3Log, Web3Receipt, Web3SyncStatus, Web3Transaction,
 };
 use crate::jsonrpc::ws_subscription::{ws_subscription_module, HexIdProvider};
 use crate::APIError;
@@ -88,7 +88,7 @@ pub trait Web3Rpc {
     #[method(name = "eth_feeHistory")]
     async fn fee_history(
         &self,
-        block_count: BlockCount,
+        block_count: U64,
         newest_block: BlockId,
         reward_percentiles: Option<Vec<f64>>,
     ) -> RpcResult<Web3FeeHistory>;
@@ -222,10 +222,10 @@ pub trait AxonRpc {
     async fn get_proof_by_id(&self, block_id: BlockId) -> RpcResult<Option<Proof>>;
 
     #[method(name = "axon_getMetadataByNumber")]
-    async fn get_metadata_by_number(&self, block_number: U256) -> RpcResult<Metadata>;
+    async fn get_metadata_by_number(&self, block_number: U64) -> RpcResult<Metadata>;
 
     #[method(name = "axon_getProposalByNumber")]
-    async fn get_proposal_by_number(&self, block_number: U256) -> RpcResult<Proposal>;
+    async fn get_proposal_by_number(&self, block_number: U64) -> RpcResult<Proposal>;
 
     #[method(name = "axon_getCurrentMetadata")]
     async fn get_current_metadata(&self) -> RpcResult<Metadata>;

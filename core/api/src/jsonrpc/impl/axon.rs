@@ -7,10 +7,9 @@ use common_config_parser::types::spec::HardforkName;
 use protocol::async_trait;
 use protocol::traits::{APIAdapter, Context};
 use protocol::types::{
-    Block, CkbRelatedInfo, HardforkInfoInner, Metadata, Proof, Proposal, H256, U256,
+    Block, CkbRelatedInfo, HardforkInfoInner, Metadata, Proof, Proposal, H256, U64,
 };
 
-use crate::jsonrpc::r#impl::u256_cast_u64;
 use crate::jsonrpc::web3_types::{BlockId, HardforkStatus};
 use crate::jsonrpc::{error::RpcError, AxonRpcServer};
 
@@ -56,11 +55,10 @@ impl<Adapter: APIAdapter + 'static> AxonRpcServer for AxonRpcImpl<Adapter> {
         Ok(ret)
     }
 
-    async fn get_metadata_by_number(&self, block_number: U256) -> RpcResult<Metadata> {
-        let block_number = u256_cast_u64(block_number)?;
+    async fn get_metadata_by_number(&self, block_number: U64) -> RpcResult<Metadata> {
         let ret = self
             .adapter
-            .get_metadata_by_number(Context::new(), Some(block_number))
+            .get_metadata_by_number(Context::new(), Some(block_number.low_u64()))
             .await
             .map_err(|e| RpcError::Internal(e.to_string()))?;
 

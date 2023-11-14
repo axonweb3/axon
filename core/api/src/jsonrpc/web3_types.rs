@@ -691,13 +691,6 @@ pub struct SyncStatus {
     pub pulled_states:  U256,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-#[serde(deny_unknown_fields, rename_all = "camelCase", untagged)]
-pub enum BlockCount {
-    U64Type(u64),
-    U256Type(U256),
-}
-
 /// Response type for `eth_feeHistory` RPC call.
 /// Three types of response are possible:
 /// 1. With reward, it returned when request parameter REWARDPERCENTILES is not

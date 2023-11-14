@@ -7,7 +7,7 @@ use protocol::traits::{APIAdapter, Context};
 use protocol::types::{
     Block, BlockNumber, Bytes, EthAccountProof, Hash, Header, Hex, Proposal, Receipt,
     SignedTransaction, TxResp, UnverifiedTransaction, BASE_FEE_PER_GAS, H160, H256,
-    MAX_FEE_HISTORY, MAX_RPC_GAS_CAP, MIN_TRANSACTION_GAS_LIMIT, U256,
+    MAX_FEE_HISTORY, MAX_RPC_GAS_CAP, MIN_TRANSACTION_GAS_LIMIT, U256, U64,
 };
 use protocol::{
     async_trait, codec::ProtocolCodec, lazy::PROTOCOL_VERSION, tokio::time::sleep, ProtocolResult,
@@ -15,9 +15,8 @@ use protocol::{
 };
 
 use crate::jsonrpc::web3_types::{
-    BlockCount, BlockId, FeeHistoryEmpty, FeeHistoryWithReward, FeeHistoryWithoutReward,
-    RichTransactionOrHash, Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter, Web3Log,
-    Web3Receipt, Web3Transaction,
+    BlockId, FeeHistoryEmpty, FeeHistoryWithReward, FeeHistoryWithoutReward, RichTransactionOrHash,
+    Web3Block, Web3CallRequest, Web3FeeHistory, Web3Filter, Web3Log, Web3Receipt, Web3Transaction,
 };
 use crate::jsonrpc::{error::RpcError, Web3RpcServer};
 use crate::APIError;
@@ -130,10 +129,9 @@ impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
     async fn inner_fee_history(
         &self,
         height: Option<u64>,
-        block_count: U256,
+        block_count: u64,
         reward_percentiles: &Option<Vec<f64>>,
     ) -> Result<(u64, Vec<U256>, Vec<f64>, Vec<Vec<U256>>), RpcError> {
-        let block_count = u256_cast_u64(block_count)?;
         let latest_block = self
             .adapter
             .get_block_by_number(Context::new(), height)
@@ -210,6 +208,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             return Err(RpcError::GasLimitIsTooLow.into());
         }
 
+        // The max_gas_cap must be le u64::MAX
         if gas_limit > self.max_gas_cap {
             return Err(RpcError::GasLimitIsTooLarge.into());
         }
@@ -742,27 +741,25 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
     #[metrics_rpc("eth_feeHistory")]
     async fn fee_history(
         &self,
-        block_count: BlockCount,
+        block_count: U64,
         newest_block: BlockId,
         reward_percentiles: Option<Vec<f64>>,
     ) -> RpcResult<Web3FeeHistory> {
         check_reward_percentiles(&reward_percentiles)?;
 
-        let mut blocks_count;
-        match block_count {
-            BlockCount::U256Type(n) => blocks_count = n,
-            BlockCount::U64Type(n) => blocks_count = n.into(),
-        }
+        let mut blocks_count = block_count.low_u64();
         // Between 1 and 1024 blocks can be requested in a single query.
-        if blocks_count > MAX_FEE_HISTORY.into() {
-            blocks_count = MAX_FEE_HISTORY.into();
+        if blocks_count > MAX_FEE_HISTORY {
+            blocks_count = MAX_FEE_HISTORY;
         }
-        if blocks_count == 0.into() {
+
+        if blocks_count == 0 {
             return Ok(Web3FeeHistory::ZeroBlockCount(FeeHistoryEmpty {
                 oldest_block:   U256::zero(),
                 gas_used_ratio: None,
             }));
         }
+
         match newest_block {
             BlockId::Num(number) => {
                 let (oldest_block_number, bash_fee_per_gases, gas_used_ratios, reward) = self
