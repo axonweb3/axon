@@ -12,9 +12,10 @@ library CkbType {
         bytes32 parentHash;
         bytes32 transactionsRoot;
         bytes32 proposalsHash;
-        bytes32 unclesHash;
+        bytes32 extraHash;
         bytes32 dao;
         uint128 nonce;
+        bytes extension;
         bytes32 blockHash;
     }
 
