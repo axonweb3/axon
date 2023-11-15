@@ -7,6 +7,10 @@ CARGO := cargo
 test:
 	${CARGO} test ${VERBOSE} --all -- --nocapture
 
+# Since Axon uses global variables, run all tests in one process may cause unexpected errors.
+test-in-separate-processes:
+	cargo nextest run --workspace --no-fail-fast --hide-progress-bar --failure-output final
+
 doc:
 	cargo doc --all --no-deps
 
