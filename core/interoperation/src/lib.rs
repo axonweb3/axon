@@ -1,28 +1,16 @@
-pub mod utils;
+use std::error::Error;
 
-use std::{error::Error, sync::Arc};
-
-use ckb_chain_spec::consensus::Consensus;
-use ckb_script::{TransactionScriptsVerifier, TxVerifyEnv};
 use ckb_traits::CellDataProvider;
-use ckb_types::core::{Cycle, HeaderBuilder, TransactionView};
-use ckb_types::{packed, prelude::Pack};
+use ckb_types::packed;
 use ckb_vm::machine::{asm::AsmCoreMachine, DefaultMachineBuilder, SupportMachine, VERSION1};
 use ckb_vm::{Error as VMError, ISA_B, ISA_IMC, ISA_MOP};
 
-use protocol::traits::{CkbDataProvider, Context, Interoperation};
-use protocol::types::{Bytes, CellDep, CellWithData, OutPoint, VMResp};
+use protocol::traits::{Context, Interoperation};
+use protocol::types::{Bytes, CellDep, OutPoint, VMResp};
 use protocol::{Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
-
-use crate::utils::resolve_transaction;
 
 const ISA: u8 = ISA_IMC | ISA_B | ISA_MOP;
 const GAS_TO_CYCLE_COEF: u64 = 6_000;
-
-// The following information is from CKB block [10976708](https://explorer.nervos.org/block/10976708)
-// which is CKB2023 disabled.
-const CKB2023_DISABLED_NUMBER: u64 = 10_976_708;
-const CKB2023_DISABLED_EPOCH: u64 = 0x53c007f0020c8;
 
 pub const fn gas_to_cycle(gas: u64) -> u64 {
     gas * GAS_TO_CYCLE_COEF
@@ -75,37 +63,6 @@ impl Interoperation for InteroperationImpl {
             exit_code: vm.run().map_err(InteroperationError::CkbVM)?,
             cycles:    vm.machine.cycles(),
         })
-    }
-
-    /// Todo: After CKB2023 is enabled, a hardfork is needed to support the new
-    /// VM version and syscalls.
-    fn verify_by_ckb_vm<DL: CkbDataProvider + Sync + Send + 'static>(
-        _ctx: Context,
-        data_loader: DL,
-        mocked_tx: &TransactionView,
-        dummy_input: Option<CellWithData>,
-        max_cycles: u64,
-    ) -> ProtocolResult<Cycle> {
-        let rtx = Arc::new(resolve_transaction(&data_loader, mocked_tx, dummy_input)?);
-        log::debug!("[mempool]: Verify by ckb vm tx {:?}", rtx);
-
-        // The consensus and tx_env arguments are used for judge if the VM version2 and
-        // syscalls3 are enabled. Due to only the hardfork field in consensus and the
-        // epoch field in tx_env is used, the provided arguments only need to fill these
-        // fields correctly.
-        let (ckb_spec, ckb2023_disabled_env) = (
-            Arc::new(Consensus::default()),
-            Arc::new(TxVerifyEnv::new_commit(
-                &HeaderBuilder::default()
-                    .number(CKB2023_DISABLED_NUMBER.pack())
-                    .epoch(CKB2023_DISABLED_EPOCH.pack())
-                    .build(),
-            )),
-        );
-
-        TransactionScriptsVerifier::new(rtx, data_loader, ckb_spec, ckb2023_disabled_env)
-            .verify(max_cycles)
-            .map_err(|e| InteroperationError::Ckb(e).into())
     }
 }
 

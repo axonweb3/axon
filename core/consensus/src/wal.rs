@@ -364,7 +364,7 @@ mod tests {
                 .to_bytes();
         utx.signature = Some(signature.into());
 
-        SignedTransaction::from_unverified(utx, None).unwrap()
+        SignedTransaction::from_unverified(utx).unwrap()
     }
 
     pub fn mock_wal_txs(size: usize) -> Vec<SignedTransaction> {
