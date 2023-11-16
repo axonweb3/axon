@@ -1,6 +1,7 @@
 use crate::types::{
-    Account, Block, BlockNumber, Bytes, CkbRelatedInfo, HardforkInfo, HardforkInfoInner, Hash,
-    Header, Metadata, Proposal, Receipt, SignedTransaction, TxResp, H160, H256, U256,
+    Account, Block, BlockNumber, Bytes, CkbRelatedInfo, EthAccountProof, HardforkInfo,
+    HardforkInfoInner, Hash, Header, Metadata, Proposal, Receipt, SignedTransaction, TxResp, H160,
+    H256, U256,
 };
 use crate::{async_trait, traits::Context, ProtocolResult};
 
@@ -109,4 +110,12 @@ pub trait APIAdapter: Send + Sync {
     async fn hardfork_info(&self, ctx: Context) -> ProtocolResult<HardforkInfo>;
 
     async fn hardfork_proposal(&self, ctx: Context) -> ProtocolResult<Option<HardforkInfoInner>>;
+
+    async fn get_proof(
+        &self,
+        _ctx: Context,
+        address: H160,
+        storage_position: Vec<U256>,
+        state_root: Hash,
+    ) -> ProtocolResult<EthAccountProof>;
 }

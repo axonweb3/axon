@@ -1,24 +1,18 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
-use ckb_types::core::cell::{CellProvider, CellStatus};
-use ckb_types::prelude::Entity;
 use jsonrpsee::core::RpcResult;
 
 use common_apm::metrics_rpc;
-use protocol::traits::{APIAdapter, Context, Interoperation};
+use protocol::traits::{APIAdapter, Context};
 use protocol::types::{
-    Block, BlockNumber, Bytes, CellDepWithPubKey, Hash, Hasher, Header, Hex, Proposal, Receipt,
-    SignatureComponents, SignatureR, SignatureS, SignedTransaction, TxResp, UnverifiedTransaction,
-    BASE_FEE_PER_GAS, H160, H256, MAX_FEE_HISTORY, MAX_RPC_GAS_CAP, MIN_TRANSACTION_GAS_LIMIT,
-    U256,
+    Block, BlockNumber, Bytes, EthAccountProof, Hash, Header, Hex, Proposal, Receipt,
+    SignedTransaction, TxResp, UnverifiedTransaction, BASE_FEE_PER_GAS, H160, H256,
+    MAX_FEE_HISTORY, MAX_RPC_GAS_CAP, MIN_TRANSACTION_GAS_LIMIT, U256,
 };
 use protocol::{
-    async_trait, ckb_blake2b_256, codec::ProtocolCodec, lazy::PROTOCOL_VERSION, ProtocolResult,
+    async_trait, codec::ProtocolCodec, lazy::PROTOCOL_VERSION, tokio::time::sleep, ProtocolResult,
+    MEMPOOL_REFRESH_TIMEOUT,
 };
-
-use core_executor::system_contract::DataProvider;
-use core_interoperation::utils::is_dummy_out_point;
-use core_interoperation::InteroperationImpl;
 
 use crate::jsonrpc::web3_types::{
     BlockCount, BlockId, FeeHistoryEmpty, FeeHistoryWithReward, FeeHistoryWithoutReward,
@@ -190,80 +184,6 @@ impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
             reward,
         ))
     }
-
-    async fn extract_interoperation_tx_sender(
-        &self,
-        utx: &UnverifiedTransaction,
-        signature: &SignatureComponents,
-    ) -> RpcResult<H160> {
-        // Call CKB-VM mode
-        if signature.r[0] == 0 {
-            let r = rlp::decode::<CellDepWithPubKey>(&signature.r[1..])
-                .map_err(|e| RpcError::DecodeInteroperationSigR(e.to_string()))?;
-
-            return Ok(Hasher::digest(&r.pub_key).into());
-        }
-
-        // Verify by CKB-VM mode
-        let r = SignatureR::decode(&signature.r)
-            .map_err(|e| RpcError::DecodeInteroperationSigR(e.to_string()))?;
-        let s = SignatureS::decode(&signature.s)
-            .map_err(|e| RpcError::DecodeInteroperationSigS(e.to_string()))?;
-        let address_source = r.address_source();
-
-        let ckb_tx_view =
-            InteroperationImpl::dummy_transaction(r.clone(), s, Some(utx.signature_hash(true).0));
-        let dummy_input = r.dummy_input();
-
-        let input = ckb_tx_view
-            .inputs()
-            .get(address_source.index as usize)
-            .ok_or(RpcError::InvalidAddressSource)?;
-
-        log::debug!("[mempool]: verify interoperation tx sender \ntx view \n{:?}\ndummy input\n {:?}\naddress source\n{:?}\n", ckb_tx_view, dummy_input, address_source);
-
-        // Dummy input mode
-        if is_dummy_out_point(&input.previous_output()) {
-            log::debug!("[mempool]: verify interoperation tx dummy input mode.");
-
-            if let Some(cell) = dummy_input {
-                if address_source.type_ == 1 && cell.type_script.is_none() {
-                    return Err(RpcError::InvalidAddressSource.into());
-                }
-
-                let script_hash = if address_source.type_ == 0 {
-                    cell.lock_script_hash()
-                } else {
-                    cell.type_script_hash().unwrap()
-                };
-
-                return Ok(Hasher::digest(script_hash).into());
-            }
-
-            return Err(RpcError::MissingDummyInputCell.into());
-        }
-
-        // Reality input mode
-        let root = self
-            .adapter
-            .get_image_cell_root(Context::new())
-            .await
-            .map_err(|e| RpcError::Internal(e.to_string()))?;
-        match DataProvider::new(root).cell(&input.previous_output(), true) {
-            CellStatus::Live(cell) => {
-                let script_hash = if address_source.type_ == 0 {
-                    ckb_blake2b_256(cell.cell_output.lock().as_slice())
-                } else if let Some(type_script) = cell.cell_output.type_().to_opt() {
-                    ckb_blake2b_256(type_script.as_slice())
-                } else {
-                    return Err(RpcError::InvalidAddressSource.into());
-                };
-
-                Ok(Hasher::digest(script_hash).into())
-            }
-            _ => Err(RpcError::CannotFindImageCell.into()),
-        }
-    }
 }
 
 #[async_trait]
@@ -296,17 +216,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
         utx.check_hash()
             .map_err(|e| RpcError::Internal(e.to_string()))?;
 
-        let interoperation_sender = if let Some(sig) = utx.signature.as_ref() {
-            if sig.is_eth_sig() {
-                None
-            } else {
-                Some(self.extract_interoperation_tx_sender(&utx, sig).await?)
-            }
-        } else {
-            return Err(RpcError::TransactionIsNotSigned.into());
-        };
-
-        let stx = SignedTransaction::from_unverified(utx, interoperation_sender)
+        let stx = SignedTransaction::from_unverified(utx)
             .map_err(|e| RpcError::Internal(e.to_string()))?;
         let hash = stx.transaction.hash;
 
@@ -314,6 +224,10 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             .insert_signed_txs(Context::new(), stx)
             .await
             .map_err(|e| RpcError::Internal(e.to_string()))?;
+
+        // TODO `eth_getTransactionCount(..., "pending")` should be synchronous with
+        // `eth_sendRawTransaction`. Temporary solution for axonweb3/axon#1544.
+        sleep(Duration::from_millis(MEMPOOL_REFRESH_TIMEOUT)).await;
 
         Ok(hash)
     }
@@ -327,16 +241,16 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             .map_err(|e| RpcError::Internal(e.to_string()))?;
 
         if let Some(stx) = res {
+            let mut web3_stx: Web3Transaction = stx.into();
             if let Some(receipt) = self
                 .adapter
                 .get_receipt_by_tx_hash(Context::new(), hash)
                 .await
                 .map_err(|e| RpcError::Internal(e.to_string()))?
             {
-                Ok(Some((stx, receipt).into()))
-            } else {
-                Err(RpcError::CannotGetReceiptByHash.into())
+                web3_stx.update_with_receipt(&receipt);
             }
+            Ok(Some(web3_stx))
         } else {
             Ok(None)
         }
@@ -1042,15 +956,15 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
     ) -> RpcResult<Hex> {
         let number = self.get_block_number_by_id(block_id).await?;
 
-        let block = self
+        let header = self
             .adapter
-            .get_block_by_number(Context::new(), number)
+            .get_block_header_by_number(Context::new(), number)
             .await
             .map_err(|e| RpcError::Internal(e.to_string()))?
             .ok_or(RpcError::CannotFindBlock)?;
         let value = self
             .adapter
-            .get_storage_at(Context::new(), address, position, block.header.state_root)
+            .get_storage_at(Context::new(), address, position, header.state_root)
             .await
             .unwrap_or_else(|_| H256::default().as_bytes().to_vec().into());
 
@@ -1088,6 +1002,28 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
     #[metrics_rpc("eth_getUncleCountByBlockNumber")]
     async fn get_uncle_count_by_block_number(&self, _number: BlockId) -> RpcResult<U256> {
         Ok(U256::zero())
+    }
+
+    #[metrics_rpc("eth_getProof")]
+    async fn get_proof(
+        &self,
+        address: H160,
+        storage_position: Vec<U256>,
+        number: BlockId,
+    ) -> RpcResult<EthAccountProof> {
+        let number = self.get_block_number_by_id(Some(number)).await?;
+
+        let header = self
+            .adapter
+            .get_block_header_by_number(Context::new(), number)
+            .await
+            .map_err(|e| RpcError::Internal(e.to_string()))?
+            .ok_or(RpcError::CannotFindBlock)?;
+
+        self.adapter
+            .get_proof(Context::new(), address, storage_position, header.state_root)
+            .await
+            .map_err(|e| RpcError::Internal(e.to_string()).into())
     }
 }
 

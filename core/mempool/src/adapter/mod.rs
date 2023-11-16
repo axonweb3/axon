@@ -17,7 +17,7 @@ use protocol::traits::{
 };
 use protocol::types::{
     recover_intact_pub_key, Backend, BatchSignedTxs, CellDepWithPubKey, Hash, MerkleRoot,
-    SignatureR, SignatureS, SignedTransaction, H160, U256,
+    SignedTransaction, H160, U256,
 };
 use protocol::{
     async_trait, codec::ProtocolCodec, tokio, trie, Display, ProtocolError, ProtocolErrorKind,
@@ -34,8 +34,6 @@ use core_interoperation::InteroperationImpl;
 use crate::adapter::message::{MsgPullTxs, END_GOSSIP_NEW_TXS, RPC_PULL_TXS};
 use crate::context::TxContext;
 use crate::MemPoolError;
-
-const MAX_VERIFY_CKB_VM_CYCLES: u64 = 50_000_000;
 
 struct IntervalTxsBroadcaster;
 
@@ -289,48 +287,17 @@ where
 
         let root = self.executor_backend(ctx).await?.get_image_cell_root();
 
-        // Verify interoperation signature
-        match signature.r[0] {
-            0u8 => {
-                // Call CKB-VM mode
-                let r = rlp::decode::<CellDepWithPubKey>(&signature.r[1..])
-                    .map_err(AdapterError::Rlp)?;
+        // Verify interoperation signature call CKB-VM mode
+        let r = rlp::decode::<CellDepWithPubKey>(&signature.r[1..]).map_err(AdapterError::Rlp)?;
+        InteroperationImpl::call_ckb_vm(
+            Default::default(),
+            &DataProvider::new(root),
+            r.cell_dep,
+            &[r.pub_key, signature.s],
+            u64::MAX,
+        )
+        .map_err(|e| AdapterError::VerifySignature(e.to_string()))?;
 
-                InteroperationImpl::call_ckb_vm(
-                    Default::default(),
-                    &DataProvider::new(root),
-                    r.cell_dep,
-                    &[r.pub_key, signature.s],
-                    u64::MAX,
-                )
-                .map_err(|e| AdapterError::VerifySignature(e.to_string()))?;
-            }
-            _ => {
-                // Verify by mock transaction mode
-                let r = SignatureR::decode(&signature.r)?;
-                let s = SignatureS::decode(&signature.s)?;
-
-                if r.inputs_len() != s.witnesses.len() {
-                    return Err(AdapterError::VerifySignature(
-                        "signature item mismatch".to_string(),
-                    )
-                    .into());
-                }
-
-                InteroperationImpl::verify_by_ckb_vm(
-                    Default::default(),
-                    DataProvider::new(root),
-                    &InteroperationImpl::dummy_transaction(
-                        r.clone(),
-                        s,
-                        Some(stx.transaction.signature_hash(true).0),
-                    ),
-                    r.dummy_input(),
-                    MAX_VERIFY_CKB_VM_CYCLES,
-                )
-                .map_err(|e| AdapterError::VerifySignature(e.to_string()))?;
-            }
-        }
         Ok(())
     }
 

@@ -68,91 +68,95 @@ Axon JSON-RPC allow you to interact with a local or remote axon node using HTTP,
 				- [Params](#params-12)
 				- [Returns](#returns-12)
 				- [Examples](#examples-12)
-		- [State-Methods](#state-methods)
-			- [Method `eth_getTransactionCount`](#method-eth_gettransactioncount)
+			- [Method `eth_getProof`](#method-eth_getproof)
 				- [Params](#params-13)
 				- [Returns](#returns-13)
 				- [Examples](#examples-13)
-			- [Method `eth_getBalance`](#method-eth_getbalance)
+		- [State-Methods](#state-methods)
+			- [Method `eth_getTransactionCount`](#method-eth_gettransactioncount)
 				- [Params](#params-14)
 				- [Returns](#returns-14)
 				- [Examples](#examples-14)
-			- [Method `eth_chainId`](#method-eth_chainid)
+			- [Method `eth_getBalance`](#method-eth_getbalance)
 				- [Params](#params-15)
 				- [Returns](#returns-15)
 				- [Examples](#examples-15)
-			- [Method `net_version`](#method-net_version)
+			- [Method `eth_chainId`](#method-eth_chainid)
 				- [Params](#params-16)
 				- [Returns](#returns-16)
 				- [Examples](#examples-16)
-			- [Method `eth_call`](#method-eth_call)
+			- [Method `net_version`](#method-net_version)
 				- [Params](#params-17)
 				- [Returns](#returns-17)
 				- [Examples](#examples-17)
-			- [Method `eth_estimateGas`](#method-eth_estimategas)
+			- [Method `eth_call`](#method-eth_call)
 				- [Params](#params-18)
 				- [Returns](#returns-18)
 				- [Examples](#examples-18)
-			- [Method `eth_getCode`](#method-eth_getcode)
+			- [Method `eth_estimateGas`](#method-eth_estimategas)
 				- [Params](#params-19)
 				- [Returns](#returns-19)
 				- [Examples](#examples-19)
-			- [Method `eth_gasPrice`](#method-eth_gasprice)
+			- [Method `eth_getCode`](#method-eth_getcode)
 				- [Params](#params-20)
 				- [Returns](#returns-20)
 				- [Examples](#examples-20)
-			- [Method `net_listening`](#method-net_listening)
+			- [Method `eth_gasPrice`](#method-eth_gasprice)
 				- [Params](#params-21)
 				- [Returns](#returns-21)
 				- [Examples](#examples-21)
-			- [Method `eth_mining`](#method-eth_mining)
+			- [Method `net_listening`](#method-net_listening)
 				- [Params](#params-22)
 				- [Returns](#returns-22)
 				- [Examples](#examples-22)
-			- [Method `net_peerCount`](#method-net_peercount)
+			- [Method `eth_mining`](#method-eth_mining)
 				- [Params](#params-23)
 				- [Returns](#returns-23)
 				- [Examples](#examples-23)
-			- [Method `eth_syncing`](#method-eth_syncing)
+			- [Method `net_peerCount`](#method-net_peercount)
 				- [Params](#params-24)
 				- [Returns](#returns-24)
 				- [Examples](#examples-24)
-			- [Method `eth_getLogs`](#method-eth_getlogs)
+			- [Method `eth_syncing`](#method-eth_syncing)
 				- [Params](#params-25)
 				- [Returns](#returns-25)
 				- [Examples](#examples-25)
-			- [Method `web3_clientVersion`](#method-web3_clientversion)
+			- [Method `eth_getLogs`](#method-eth_getlogs)
 				- [Params](#params-26)
 				- [Returns](#returns-26)
 				- [Examples](#examples-26)
-			- [Method `eth_accounts`](#method-eth_accounts)
+			- [Method `web3_clientVersion`](#method-web3_clientversion)
 				- [Params](#params-27)
 				- [Returns](#returns-27)
 				- [Examples](#examples-27)
-			- [Method `web3_sha3`](#method-web3_sha3)
+			- [Method `eth_accounts`](#method-eth_accounts)
 				- [Params](#params-28)
 				- [Returns](#returns-28)
 				- [Examples](#examples-28)
-			- [Method `eth_getStorageAt`](#method-eth_getstorageat)
+			- [Method `web3_sha3`](#method-web3_sha3)
 				- [Params](#params-29)
 				- [Returns](#returns-29)
 				- [Examples](#examples-29)
-			- [Method `eth_coinbase`](#method-eth_coinbase)
+			- [Method `eth_getStorageAt`](#method-eth_getstorageat)
 				- [Params](#params-30)
 				- [Returns](#returns-30)
 				- [Examples](#examples-30)
-			- [Method `eth_hashrate`](#method-eth_hashrate)
+			- [Method `eth_coinbase`](#method-eth_coinbase)
 				- [Params](#params-31)
 				- [Returns](#returns-31)
 				- [Examples](#examples-31)
-			- [Method `axon_getCurrentMetadata`](#method-axon_getcurrentmetadata)
+			- [Method `eth_hashrate`](#method-eth_hashrate)
 				- [Params](#params-32)
 				- [Returns](#returns-32)
 				- [Examples](#examples-32)
-			- [Method `axon_getHardforkInfo`](#method-axon_gethardforkinfo)
+			- [Method `axon_getCurrentMetadata`](#method-axon_getcurrentmetadata)
 				- [Params](#params-33)
 				- [Returns](#returns-33)
 				- [Examples](#examples-33)
+			- [Method `axon_getHardforkInfo`](#method-axon_gethardforkinfo)
+				- [Params](#params-34)
+				- [Returns](#returns-34)
+				- [Examples](#examples-34)
 	- [RPC Types](#rpc-types)
 		- [Type `Web3Filter`](#type-web3filter)
 			- [Fields](#fields)
@@ -176,24 +180,24 @@ Axon JSON-RPC allow you to interact with a local or remote axon node using HTTP,
 			- [Fields](#fields-9)
 		- [Type `BlockId`](#type-blockid)
 		- [Type `H256`](#type-h256)
-			- [Examples](#examples-34)
-		- [Type `H160`](#type-h160)
 			- [Examples](#examples-35)
-		- [Type `Hex`](#type-hex)
+		- [Type `H160`](#type-h160)
 			- [Examples](#examples-36)
-		- [Type `Hash`](#type-hash)
+		- [Type `Hex`](#type-hex)
 			- [Examples](#examples-37)
-		- [Type `String`](#type-string)
+		- [Type `Hash`](#type-hash)
 			- [Examples](#examples-38)
-		- [Type `bool`](#type-bool)
+		- [Type `String`](#type-string)
 			- [Examples](#examples-39)
+		- [Type `bool`](#type-bool)
+			- [Examples](#examples-40)
 		- [Type `f64`](#type-f64)
 		- [Type `Bloom`](#type-bloom)
 		- [Type `U64`](#type-u64)
 		- [Type `U256`](#type-u256)
 		- [Type `TransactionView`](#type-transactionview)
 			- [Fields](#fields-10)
-				- [Examples](#examples-40)
+				- [Examples](#examples-41)
 
 
 ## RPC Methods
@@ -1070,6 +1074,72 @@ Response
 		"nonce": "0x0"
 	},
 	"id": 2
+}
+
+```
+
+#### Method `eth_getProof`
+
+##### Params
+
+*   `DATA`, 20 Bytes - address of the account.
+*   `ARRAY`, 32 Bytes - array of storage-keys which should be proofed and included. See eth_getStorageAt
+*   `QUANTITY|TAG` - integer block number, or the string "latest" or "earliest", see the default block parameter
+
+##### Returns
+
+Object - A account object:
+
+*   `balance`: `QUANTITY` - the balance of the account.
+*   `codeHash`: `DATA`, 32 Bytes - hash of the code of the account. For a simple Account without code it will return "0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+*   `nonce`: `QUANTITY`, - nonce of the account.
+*   `storageHash`: `DATA`, 32 Bytes - SHA3 of the StorageRoot. All storage will deliver a MerkleProof starting with this rootHash.
+*   `accountProof`: `ARRAY` - Array of rlp-serialized MerkleTree-Nodes, starting with the stateRoot-Node, following the path of the SHA3 (address) as key.
+
+*   `storageProof`: `ARRAY` - Array of storage-entries as requested. Each entry is a object with these properties:
+        `key`: `QUANTITY` - the requested storage key
+        `value`: `QUANTITY` - the storage value
+        `proof`: `ARRAY` - Array of rlp-serialized MerkleTree-Nodes, starting with the storageHash-Node, following the path of the SHA3 (key) as path.
+
+##### Examples
+
+Request
+```
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "method": "eth_getProof",
+  "params": [
+    "0x8ab0cf264df99d83525e9e11c7e4db01558ae1b1",
+    [  "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421" ],
+    "latest"
+  ]
+}
+```
+
+Response
+```
+
+{
+    "jsonrpc":"2.0",
+    "result":{
+        "balance":"0x0",
+        "codeHash":"0xc5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470",
+        "nonce":"0x1",
+        "storageHash":"0x6fcd3e8e97da273711ccefb79abdd246c5663c7d61057f82bae745ceac5dcc75",
+        "accountProof":[
+            "0xf9011180a063017aec481298bbc5df01d044f2a85b25f35f565864f285f88355b48332e07da0b01d7c543eaa8e9ae61ef41d6a73e4bc00010807523108be4146c01fb2812163a011deb9627b74106f9b5a605e9a5d7982e217ab4fde0acd3cf40def9010470373808080a06cd5cbddd2b22b17026df25fe3153d555656298115795903ecaa813684bc21e7a021c9bcb004c74f63f386e6cf04a0c59d425c5f8c9e28e9bf172402b431aa249ca005550a2b2f338a7daa477729d59ddecc3852e2821d920b0e4414f801abee27b8a01d65e6a5eb57de1c0b7990e75ed2f39ecb56ed7b18182d00ada8f2088893c32c80808080a0c8487d369704a81bd26ff351c89f333ae51a6adf7676739ba0995f6f97c6b31080",
+            "0xf85d943ab0cf264df99d83525e9e11c7e4db01558ae1b1b846f8440180a056e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421a0c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470"
+        ],
+        "storageProof":[
+			{
+				"key" : "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+				"proof" : [],
+				"value" : "0x0"
+        	}
+        ]
+    },
+    "id":1
 }
 
 ```

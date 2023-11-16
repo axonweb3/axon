@@ -60,13 +60,20 @@ impl<Adapter: APIAdapter + 'static> AxonRpcServer for AxonRpcImpl<Adapter> {
     }
 
     async fn get_proposal_by_number(&self, block_number: U256) -> RpcResult<Proposal> {
-        let block_number = block_number.as_u64();
-        let prev_block = self
-            .adapter
-            .get_block_by_number(Context::new(), Some(block_number - 1))
-            .await
-            .map_err(|e| RpcError::Internal(e.to_string()))?
-            .ok_or_else(|| RpcError::Internal("prev block not found".to_string()))?;
+        let block_number = block_number.low_u64();
+
+        let prev_state_root = if block_number == 0 {
+            H256::default()
+        } else {
+            self.adapter
+                .get_block_by_number(Context::new(), Some(block_number - 1))
+                .await
+                .map_err(|e| RpcError::Internal(e.to_string()))?
+                .ok_or_else(|| RpcError::Internal("prev block not found".to_string()))?
+                .header
+                .state_root
+        };
+
         let block = self
             .adapter
             .get_block_by_number(Context::new(), Some(block_number))
@@ -76,7 +83,7 @@ impl<Adapter: APIAdapter + 'static> AxonRpcServer for AxonRpcImpl<Adapter> {
 
         Ok(Proposal::new_with_state_root(
             &block.header,
-            prev_block.header.state_root,
+            prev_state_root,
             block.tx_hashes,
         ))
     }

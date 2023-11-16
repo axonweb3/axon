@@ -405,10 +405,7 @@ impl AxonExecutor {
     fn config(&self) -> Config {
         let mut evm_config = Config::london();
         let create_contract_limit = {
-            let latest_hardfork_info = &**HARDFORK_INFO.load();
-            let enable_contract_limit_flag =
-                H256::from_low_u64_be((HardforkName::Andromeda as u64).to_be());
-            if latest_hardfork_info & &enable_contract_limit_flag == enable_contract_limit_flag {
+            if enable_hardfork(HardforkName::Andromeda) {
                 let handle = MetadataHandle::new(CURRENT_METADATA_ROOT.with(|r| *r.borrow()));
                 let consensus_config = handle.get_consensus_config().unwrap();
                 Some(consensus_config.max_contract_limit as usize)
@@ -510,6 +507,13 @@ pub fn is_call_system_script(action: &TransactionAction) -> bool {
 
 pub fn is_transaction_call(action: &TransactionAction, addr: &H160) -> bool {
     action == &TransactionAction::Call(*addr)
+}
+
+pub fn enable_hardfork(name: HardforkName) -> bool {
+    let latest_hardfork_info = &**HARDFORK_INFO.load();
+    let enable_flag = H256::from_low_u64_be((name as u64).to_be());
+
+    latest_hardfork_info & &enable_flag == enable_flag
 }
 
 #[cfg(test)]

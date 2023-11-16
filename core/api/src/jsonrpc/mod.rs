@@ -1,6 +1,6 @@
 mod error;
 mod r#impl;
-mod web3_types;
+pub mod web3_types;
 mod ws_subscription;
 
 use std::{collections::HashMap, sync::Arc};
@@ -14,18 +14,17 @@ use tower_http::cors::{Any as CorsAny, CorsLayer};
 use common_config_parser::types::{spec::HardforkName, Config};
 use protocol::traits::APIAdapter;
 use protocol::types::{
-    Block, CkbRelatedInfo, Hash, Hex, Metadata, Proof, Proposal, H160, H256, U256,
+    Block, CkbRelatedInfo, EthAccountProof, Hash, Hex, Metadata, Proof, Proposal, H160, H256, U256,
 };
 use protocol::ProtocolResult;
 
 use crate::jsonrpc::web3_types::{
-    BlockId, FilterChanges, HardforkStatus, RawLoggerFilter, Web3Block, Web3CallRequest,
-    Web3FeeHistory, Web3Filter, Web3Log, Web3Receipt, Web3SyncStatus, Web3Transaction,
+    BlockCount, BlockId, FilterChanges, HardforkStatus, RawLoggerFilter, Web3Block,
+    Web3CallRequest, Web3FeeHistory, Web3Filter, Web3Log, Web3Receipt, Web3SyncStatus,
+    Web3Transaction,
 };
 use crate::jsonrpc::ws_subscription::{ws_subscription_module, HexIdProvider};
 use crate::APIError;
-
-use self::web3_types::BlockCount;
 
 #[rpc(server)]
 pub trait Web3Rpc {
@@ -147,6 +146,14 @@ pub trait Web3Rpc {
 
     #[method(name = "eth_getUncleCountByBlockNumber")]
     async fn get_uncle_count_by_block_number(&self, number: BlockId) -> RpcResult<U256>;
+
+    #[method(name = "eth_getProof")]
+    async fn get_proof(
+        &self,
+        address: H160,
+        storage_position: Vec<U256>,
+        number: BlockId,
+    ) -> RpcResult<EthAccountProof>;
 }
 
 #[rpc(server)]

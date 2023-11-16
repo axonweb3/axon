@@ -6,8 +6,8 @@ pub use bytes::{Buf, BufMut, Bytes, BytesMut};
 pub use ckb_client::*;
 pub use evm::{backend::*, ExitError, ExitRevert, ExitSucceed};
 pub use executor::{
-    logs_bloom, AccessList, AccessListItem, Account, Config, ExecResp, ExecutorContext, ExitReason,
-    HasherKeccak, TxResp,
+    logs_bloom, AccessList, AccessListItem, Account, Config, EthAccountProof, EthStorageProof,
+    ExecResp, ExecutorContext, ExitReason, HasherKeccak, TxResp,
 };
 pub use interoperation::*;
 pub use primitive::*;
@@ -84,6 +84,9 @@ pub enum TypesError {
 
     #[display(fmt = "InvalidBlockVersion {}", _0)]
     InvalidBlockVersion(u8),
+
+    #[display(fmt = "Decode interoperation signature R error {:?}", _0)]
+    DecodeInteroperationSigR(rlp::DecoderError),
 }
 
 impl Error for TypesError {}

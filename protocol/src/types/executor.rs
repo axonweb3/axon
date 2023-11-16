@@ -3,8 +3,13 @@ pub use evm::{backend::Log, Config, ExitError, ExitFatal, ExitReason, ExitRevert
 pub use hasher::HasherKeccak;
 
 use rlp_derive::{RlpDecodable, RlpEncodable};
+use serde::{Deserialize, Serialize};
 
-use crate::types::{Bloom, ExtraData, Hash, Hasher, Header, MerkleRoot, Proposal, H160, U256};
+use crate::types::{
+    Bloom, ExtraData, Hash, Hasher, Header, MerkleRoot, Proposal, H160, H256, U256,
+};
+
+use super::Hex;
 
 const BLOOM_BYTE_LENGTH: usize = 256;
 
@@ -86,6 +91,25 @@ impl From<&Header> for ExecutorContext {
             extra_data:             h.extra_data.clone(),
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct EthAccountProof {
+    pub balance:       U256,
+    pub code_hash:     H256,
+    pub nonce:         U256,
+    pub storage_hash:  H256,
+    pub account_proof: Vec<Hex>,
+    pub storage_proof: Vec<EthStorageProof>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct EthStorageProof {
+    pub key:   H256,
+    pub value: H256,
+    pub proof: Vec<Hex>,
 }
 
 pub fn logs_bloom<'a, I>(logs: I) -> Bloom

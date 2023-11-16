@@ -32,7 +32,7 @@ jobs:
       - name: Dispatch CIs if the user does have correct permission
         if: contains('admin write', fromJson(steps.user_permission.outputs.data).permission)
         id: dispatch
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             const dispatch = {
@@ -179,7 +179,7 @@ jobs:
       - name: Post a coment about component information to PR
         if: contains('admin write', fromJson(steps.user_permission.outputs.data).permission)
         id: post_workflow_run_comment
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           script: |
             console.log(`${{ steps.escape_multiple_lines_test_inputs.outputs.result }}`);

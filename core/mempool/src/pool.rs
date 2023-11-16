@@ -11,7 +11,7 @@ use parking_lot::{Mutex, RwLock};
 
 use protocol::tokio::{self, time::sleep};
 use protocol::types::{BlockNumber, Bytes, Hash, PackedTxHashes, SignedTransaction, H160, U256};
-use protocol::ProtocolResult;
+use protocol::{ProtocolResult, MEMPOOL_REFRESH_TIMEOUT};
 
 use crate::tx_wrapper::{PendingQueue, TxPtr, TxWrapper};
 use crate::MemPoolError;
@@ -72,7 +72,7 @@ impl PriorityPool {
                     }
                 }
 
-                sleep(Duration::from_millis(50)).await;
+                sleep(Duration::from_millis(MEMPOOL_REFRESH_TIMEOUT)).await;
             }
         });
 
