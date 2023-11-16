@@ -6,9 +6,9 @@ use protocol::traits::{
 use protocol::trie::Trie as _;
 use protocol::types::{
     Account, BigEndianHash, Block, BlockNumber, Bytes, CkbRelatedInfo, EthAccountProof,
-    EthStorageProof, ExecutorContext, HardforkInfo, HardforkInfoInner, Hash, Hasher, Header, Hex,
-    Metadata, Proposal, Receipt, SignedTransaction, TxResp, H160, H256, MAX_BLOCK_GAS_LIMIT,
-    NIL_DATA, RLP_NULL, U256,
+    EthStorageProof, ExecutorContext, HardforkInfo, HardforkInfoInner, Hash, Header, Hex, Metadata,
+    Proposal, Receipt, SignedTransaction, TxResp, H160, H256, MAX_BLOCK_GAS_LIMIT, NIL_DATA,
+    RLP_NULL, U256,
 };
 use protocol::{async_trait, codec::ProtocolCodec, trie, ProtocolError, ProtocolResult};
 
@@ -294,7 +294,7 @@ where
             balance: account.balance,
             code_hash: account.code_hash,
             nonce: account.nonce,
-            storage_hash: Hasher::digest(account.storage_root),
+            storage_hash: account.storage_root,
             account_proof,
             storage_proof: storage_proofs,
         })
