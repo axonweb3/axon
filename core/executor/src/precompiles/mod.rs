@@ -1,6 +1,7 @@
 mod blake2_f;
 mod call_ckb_vm;
 mod ckb_blake2b;
+mod ckb_mmr_verify;
 mod ec_add;
 mod ec_mul;
 mod ec_pairing;
