@@ -346,6 +346,7 @@ dependencies = [
  "blst",
  "bytes",
  "cita_trie 4.1.0",
+ "ckb-blst",
  "derive_more",
  "eth_light_client_in_ckb-prover",
  "ethereum",
@@ -941,6 +942,17 @@ dependencies = [
  "hasher",
  "parking_lot 0.12.1",
  "rlp",
+]
+
+[[package]]
+name = "ckb-blst"
+version = "0.100.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23956c8f956fabab27aa20632fcefb1ab31f71544dab732c842064605932aea3"
+dependencies = [
+ "cc",
+ "glob",
+ "zeroize",
 ]
 
 [[package]]
