@@ -281,7 +281,7 @@ where
                             "Can't find this position".to_string(),
                         ))
                     })?,
-                proof: state_mpt_tree
+                proof: storage_mpt_tree
                     .get_proof(hash.as_bytes())?
                     .into_iter()
                     .map(Hex::encode)
