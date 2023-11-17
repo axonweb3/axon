@@ -9,7 +9,7 @@ use rlp::Encodable;
 
 #[cfg(all(feature = "proof", feature = "std"))]
 use crate::hash::InnerKeccak;
-use crate::types::{AxonBlock, Proof, Proposal, ValidatorExtend, Vote};
+use crate::types::{Block, Proof, Proposal, ValidatorExtend, Vote};
 use crate::{error::Error, keccak_256};
 
 const DST: &str = "BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RONUL";
@@ -26,7 +26,7 @@ pub fn verify_trie_proof(
 }
 
 pub fn verify_proof(
-    block: AxonBlock,
+    block: Block,
     previous_state_root: H256,
     validator_list: &mut [ValidatorExtend],
     proof: Proof,

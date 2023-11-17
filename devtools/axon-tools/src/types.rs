@@ -1,3 +1,10 @@
+// The structures (such as Block, Header, etc.) defined in this file have
+// corresponding definitions in the 'axon-protocol' package. It's crucial to
+// maintain consistency between these definitions for the correct functioning of
+// the system. Therefore, any changes in the structure definitions in the
+// 'axon-protocol' package must be mirrored here. Regular synchronization checks
+// are recommended to ensure the definitions in this file align with those in
+// the 'axon-protocol' package.
 use crate::error::TypesError;
 use alloc::vec;
 use alloc::vec::Vec;
@@ -138,7 +145,6 @@ impl From<BlockVersion> for u8 {
     }
 }
 
-// #[cfg(feature = "std")]
 impl TryFrom<u8> for BlockVersion {
     type Error = TypesError;
 
@@ -171,13 +177,14 @@ pub struct ExtraData {
     pub inner: Bytes,
 }
 
+// A copy of axon_protocol::types::block::Header, must be updated simultaneously
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(
     feature = "impl-rlp",
     derive(rlp_derive::RlpEncodable, rlp_derive::RlpDecodable)
 )]
 #[cfg_attr(feature = "impl-serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct AxonHeader {
+pub struct Header {
     pub version:                  BlockVersion,
     pub prev_hash:                Hash,
     pub proposer:                 H160,
@@ -228,17 +235,20 @@ pub struct AxonHeader {
     pub chain_id:                 u64,
 }
 
+// A copy of axon_protocol::types::block::Block, must be updated simultaneously
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(
     feature = "impl-rlp",
     derive(rlp_derive::RlpEncodable, rlp_derive::RlpDecodable)
 )]
 #[cfg_attr(feature = "impl-serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct AxonBlock {
-    pub header:    AxonHeader,
+pub struct Block {
+    pub header:    Header,
     pub tx_hashes: Vec<H256>,
 }
 
+// A copy of axon_protocol::types::block::Proposal, must be updated
+// simultaneously
 #[cfg(feature = "proof")]
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(doc_cfg, doc(cfg(feature = "proof")))]

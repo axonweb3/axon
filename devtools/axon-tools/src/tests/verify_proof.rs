@@ -1,7 +1,7 @@
 #[cfg(feature = "proof")]
 use crate::hash::keccak_256;
 #[cfg(feature = "proof")]
-use crate::types::{AxonBlock, BlockVersion, Metadata, Proof, Proposal, ValidatorExtend};
+use crate::types::{Block, BlockVersion, Metadata, Proof, Proposal, ValidatorExtend};
 #[cfg(feature = "proof")]
 use bytes::Bytes;
 #[cfg(feature = "proof")]
@@ -56,7 +56,7 @@ fn test_proposal() {
 #[test]
 #[cfg(feature = "proof")]
 fn test_verify_proof() {
-    let block: AxonBlock = read_json("src/tests/block.json");
+    let block: Block = read_json("src/tests/block.json");
     let proof: Proof = read_json("src/tests/proof.json");
     let metadata: Metadata = read_json("src/tests/metadata.json");
     let mut validators = metadata
