@@ -7,37 +7,49 @@ import createTransactionData from "../src/create_test_data/createTestDataManage"
 export const MetaMaskOptions = {
   metaMaskVersion: RECOMMENDED_METAMASK_VERSION,
   automation: "puppeteer",
-  headless: process.env.HEADLESS ? true : false,
+  // https://developer.chrome.com/articles/new-headless/
+  headless: process.env.HEADLESS ? 'new' : false,
   metaMaskFlask: false,
   args: [
     process.env.WSL ? "-no-sandbox" : "",
   ]
 };
+
 export default async function setup() {
+  console.log('Setup Start...');
+
   const { metaMask, browser } = await bootstrap(MetaMaskOptions);
+  let hostPage;
   try {
     await createTransactionData.resetTestTmpFiles();
     await createTransactionData.createTransactionData(); // create test data
+
+    process.env.PUPPETEER_WS_ENDPOINT = browser.wsEndpoint();
     global.browser = browser;
+    global.metamask = metaMask;
+
+    console.log(`browser.newPage()`);
+    hostPage = await browser.newPage().catch(err => {
+      console.error("browser.newPage() failed");
+      throw err;
+    });
   } catch (error) {
     // eslint-disable-next-line no-console
     console.log(error);
     throw error;
   }
-  
-  process.env.PUPPETEER_WS_ENDPOINT = browser.wsEndpoint();
-  global.browser = browser;
-  global.metamask = metaMask;
 
-  const hostPage = await browser.newPage();
-  await Config.getIns().initialize();
+  console.log(`goto httpServer: ${Config.getIns().httpServer}`);
   await hostPage.goto(Config.getIns().httpServer);
+
   const configParams = {
     networkName: Config.getIns().axonRpc.netWorkName,
-    rpc: Config.getIns().axonRpc.url,
+    rpc: process.env.AXON_RPC_URL || Config.getIns().axonRpc.url,
     chainId: "0x" + Config.getIns().axonRpc.chainId.toString(16),
     symbol: "AXON"
   }
+  console.log("MetaMask configs:", configParams);
+
   // add custom network to a MetaMask
   await hostPage.evaluate((cfparams) => {
     window.ethereum.request({
@@ -58,7 +70,9 @@ export default async function setup() {
   }, configParams);
   await metaMask.acceptAddNetwork(false);
   await metaMask.switchNetwork("Axon");
-  
+
   await hostPage.bringToFront();
   global.page = hostPage.page;
+
+  console.log('Setup End.');
 }
