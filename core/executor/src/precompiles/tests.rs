@@ -1,11 +1,22 @@
+use std::collections::HashSet;
+
+use ckb_types::prelude::*;
+use ckb_types::utilities::{merkle_root, CBMT};
+use ethers::abi::AbiEncode;
 use evm::Context;
 use sha2::Digest;
 
-use protocol::{ckb_blake2b_256, codec::hex_decode, rand::random, types::U256};
+use protocol::{
+    ckb_blake2b_256,
+    codec::hex_decode,
+    rand::random,
+    types::{H256, U256},
+};
 
+use crate::precompiles::ckb_mbt_verify::VerifyProofPayload;
 use crate::precompiles::{
-    Blake2F, CkbBlake2b, EcAdd, EcMul, EcPairing, EcRecover, Identity, ModExp, PrecompileContract,
-    Ripemd160, Sha256,
+    Blake2F, CMBTVerify, CkbBlake2b, EcAdd, EcMul, EcPairing, EcRecover, Identity, ModExp,
+    PrecompileContract, Ripemd160, Sha256,
 };
 
 macro_rules! test_precompile {
@@ -202,4 +213,60 @@ fn test_blake2f() {
     let input = &hex_decode("0000000c48c9bdf267e6096a3ba7ca8485ae67bb2bf894fe72f36e3cf1361d5f3af54fa5d182e6ad7f520e511f6c3e2b8c68059b6bbd41fbabd9831f79217e1319cde05b61626300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000300000000000000000000000000000001").unwrap();
     let output = hex_decode("ba80a53f981c4d0d6a2797b69f12f6e94c212f14685ac4b74b12bb6fdbffa2d17d87c5392aab792dc252d5de4533cc9518d38aa8dbf1925ab92386edd4009923").unwrap();
     test_precompile!(Blake2F, input, output, 12);
+}
+
+#[test]
+fn test_verify_cmbt_proof() {
+    let build_indices = |input: &[u32]| -> Vec<u32> {
+        let mut set = HashSet::with_capacity(input.len());
+        input.iter().for_each(|i| {
+            set.insert(*i);
+        });
+        set.into_iter().collect()
+    };
+
+    // Tx order is 0, 1, 2
+    let tx_hash_0 = H256::from_low_u64_be(0x00).0.pack();
+    let tx_hash_1 = H256::from_low_u64_be(0x01).0.pack();
+    let tx_hash_2 = H256::from_low_u64_be(0x02).0.pack();
+
+    let witness_hash_0 = H256::from_low_u64_be(0x10).0.pack();
+    let witness_hash_1 = H256::from_low_u64_be(0x11).0.pack();
+    let witness_hash_2 = H256::from_low_u64_be(0x12).0.pack();
+
+    let raw_transactions_root =
+        merkle_root(&[tx_hash_0.clone(), tx_hash_1.clone(), tx_hash_2.clone()]);
+    let witnesses_root = merkle_root(&[
+        witness_hash_0.clone(),
+        witness_hash_1.clone(),
+        witness_hash_2.clone(),
+    ]);
+    let transactions_root = merkle_root(&[raw_transactions_root.clone(), witnesses_root.clone()]);
+
+    let proof = CBMT::build_merkle_proof(
+        &[tx_hash_0.clone(), tx_hash_1.clone(), tx_hash_2.clone()],
+        &build_indices(&[0, 1, 2]),
+    )
+    .unwrap();
+
+    let payload = VerifyProofPayload {
+        transactions_root:     transactions_root.unpack().0,
+        witnesses_root:        witnesses_root.unpack().0,
+        raw_transactions_root: raw_transactions_root.unpack().0,
+        indices:               proof.indices().to_vec(),
+        lemmas:                proof
+            .lemmas()
+            .iter()
+            .map(|l| l.unpack().0)
+            .collect::<Vec<_>>(),
+        leaves:                vec![
+            tx_hash_0.unpack().0,
+            tx_hash_1.unpack().0,
+            tx_hash_2.unpack().0,
+        ],
+    };
+
+    let input = AbiEncode::encode(payload);
+    let output = vec![1u8];
+    test_precompile!(CMBTVerify, &input, output, 56000);
 }

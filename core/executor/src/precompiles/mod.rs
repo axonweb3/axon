@@ -1,7 +1,7 @@
 mod blake2_f;
 mod call_ckb_vm;
 mod ckb_blake2b;
-mod ckb_mmr_verify;
+mod ckb_mbt_verify;
 mod ec_add;
 mod ec_mul;
 mod ec_pairing;
@@ -27,9 +27,9 @@ use evm::{Context, ExitError};
 use protocol::types::H160;
 
 use crate::precompiles::{
-    blake2_f::Blake2F, call_ckb_vm::CallCkbVM, ckb_blake2b::CkbBlake2b, ec_add::EcAdd,
-    ec_mul::EcMul, ec_pairing::EcPairing, ecrecover::EcRecover, identity::Identity, modexp::ModExp,
-    ripemd160::Ripemd160, sha256::Sha256,
+    blake2_f::Blake2F, call_ckb_vm::CallCkbVM, ckb_blake2b::CkbBlake2b, ckb_mbt_verify::CMBTVerify,
+    ec_add::EcAdd, ec_mul::EcMul, ec_pairing::EcPairing, ecrecover::EcRecover, identity::Identity,
+    modexp::ModExp, ripemd160::Ripemd160, sha256::Sha256,
 };
 
 #[macro_export]
