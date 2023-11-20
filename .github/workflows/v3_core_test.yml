@@ -148,6 +148,7 @@ jobs:
           cd /home/runner/work/axon/axon/v3-core
           yarn test:runAll1
       - name: Run test 2
+        timeout-minutes: 30
         if: success() || failure()
         run: |
           cd /home/runner/work/axon/axon/v3-core
