@@ -5,10 +5,7 @@ mod pool;
 mod tests;
 mod tx_wrapper;
 
-pub use adapter::message::{
-    MsgPullTxs, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS, RPC_PULL_TXS, RPC_RESP_PULL_TXS,
-    RPC_RESP_PULL_TXS_SYNC,
-};
+pub use adapter::message::{MsgPullTxs, NewTxsHandler, PullTxsHandler};
 pub use adapter::{AdapterError, DefaultMemPoolAdapter};
 
 use std::collections::HashSet;

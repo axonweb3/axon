@@ -5,17 +5,14 @@ use rlp_derive::{RlpDecodable, RlpEncodable};
 
 use common_apm::Instant;
 use protocol::{
-    async_trait, tokio,
+    async_trait,
+    constants::endpoints::RPC_RESP_PULL_TXS,
+    tokio,
     traits::{Context, MemPool, MessageHandler, Priority, Rpc, TrustFeedback},
     types::{BatchSignedTxs, Hash, SignedTransaction},
 };
 
 use crate::context::TxContext;
-
-pub const END_GOSSIP_NEW_TXS: &str = "/gossip/mempool/new_txs";
-pub const RPC_PULL_TXS: &str = "/rpc_call/mempool/pull_txs";
-pub const RPC_RESP_PULL_TXS: &str = "/rpc_resp/mempool/pull_txs";
-pub const RPC_RESP_PULL_TXS_SYNC: &str = "/rpc_resp/mempool/pull_txs_sync";
 
 pub struct NewTxsHandler<M> {
     mem_pool: Arc<M>,

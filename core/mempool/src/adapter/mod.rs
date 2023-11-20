@@ -20,8 +20,10 @@ use protocol::types::{
     SignedTransaction, H160, U256,
 };
 use protocol::{
-    async_trait, codec::ProtocolCodec, tokio, trie, Display, ProtocolError, ProtocolErrorKind,
-    ProtocolResult,
+    async_trait,
+    codec::ProtocolCodec,
+    constants::endpoints::{END_GOSSIP_NEW_TXS, RPC_PULL_TXS},
+    tokio, trie, Display, ProtocolError, ProtocolErrorKind, ProtocolResult,
 };
 
 use common_apm_derive::trace_span;
@@ -31,7 +33,7 @@ use core_executor::{
 };
 use core_interoperation::InteroperationImpl;
 
-use crate::adapter::message::{MsgPullTxs, END_GOSSIP_NEW_TXS, RPC_PULL_TXS};
+use crate::adapter::message::MsgPullTxs;
 use crate::context::TxContext;
 use crate::MemPoolError;
 
