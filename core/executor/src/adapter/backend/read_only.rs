@@ -5,7 +5,8 @@ use evm::backend::Basic;
 use protocol::traits::{Backend, Context, ExecutorReadOnlyAdapter, ReadOnlyStorage};
 use protocol::trie::Trie as _;
 use protocol::types::{
-    Account, Bytes, ExecutorContext, MerkleRoot, H160, H256, NIL_DATA, RLP_NULL, U256,
+    Account, BigEndianHash, Bytes, ExecutorContext, MerkleRoot, H160, H256, NIL_DATA, RLP_NULL,
+    U256,
 };
 use protocol::{codec::ProtocolCodec, trie, ProtocolResult};
 
@@ -172,7 +173,10 @@ where
                     } else {
                         MPTTrie::from_root(storage_root, Arc::clone(&self.db)).map(
                             |trie| match trie.get(index.as_bytes()) {
-                                Ok(Some(res)) => H256::from_slice(res.as_ref()),
+                                Ok(Some(res)) => {
+                                    let value = U256::decode(res).unwrap();
+                                    BigEndianHash::from_uint(&value)
+                                }
                                 _ => H256::default(),
                             },
                         )

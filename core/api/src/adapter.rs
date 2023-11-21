@@ -239,10 +239,15 @@ where
         let storage_mpt_tree = MPTTrie::from_root(account.storage_root, Arc::clone(&self.trie_db))?;
 
         let hash: Hash = BigEndianHash::from_uint(&position);
-        storage_mpt_tree
+        let value: H256 = storage_mpt_tree
             .get(hash.as_bytes())?
-            .map(Into::into)
-            .ok_or_else(|| APIError::Adapter("Can't find this position".to_string()).into())
+            .map(|v| BigEndianHash::from_uint(&U256::decode(v).unwrap()))
+            .ok_or_else(|| {
+                Into::<ProtocolError>::into(APIError::Adapter(
+                    "Can't find this position".to_string(),
+                ))
+            })?;
+        Ok(Bytes::from(value.0.to_vec()))
     }
 
     async fn get_proof(
@@ -253,51 +258,64 @@ where
         state_root: Hash,
     ) -> ProtocolResult<EthAccountProof> {
         let state_mpt_tree = MPTTrie::from_root(state_root, Arc::clone(&self.trie_db))?;
-        let raw_account = state_mpt_tree
-            .get(address.as_bytes())?
-            .ok_or_else(|| APIError::Adapter("Can't find this address".to_string()))?;
-
-        let account = Account::decode(raw_account).unwrap();
-
-        let account_proof = state_mpt_tree
-            .get_proof(address.as_bytes())?
-            .into_iter()
-            .map(Hex::encode)
-            .collect();
-
-        let storage_mpt_tree = MPTTrie::from_root(account.storage_root, Arc::clone(&self.trie_db))?;
-
-        let mut storage_proofs = Vec::with_capacity(storage_position.len());
-
-        for h in storage_position {
-            let hash: Hash = BigEndianHash::from_uint(&h);
-            let proof = EthStorageProof {
-                key:   hash,
-                value: storage_mpt_tree
-                    .get(hash.as_bytes())?
-                    .map(|v| H256::from_slice(&v))
-                    .ok_or_else(|| {
-                        Into::<ProtocolError>::into(APIError::Adapter(
-                            "Can't find this position".to_string(),
-                        ))
-                    })?,
-                proof: state_mpt_tree
-                    .get_proof(hash.as_bytes())?
+        match state_mpt_tree.get(address.as_bytes()) {
+            Ok(Some(raw_account)) => {
+                let account = Account::decode(raw_account).unwrap();
+                let account_proof: Vec<Hex> = state_mpt_tree
+                    .get_proof(address.as_bytes())?
                     .into_iter()
                     .map(Hex::encode)
-                    .collect(),
-            };
-            storage_proofs.push(proof);
-        }
+                    .collect();
 
-        Ok(EthAccountProof {
-            balance: account.balance,
-            code_hash: account.code_hash,
-            nonce: account.nonce,
-            storage_hash: account.storage_root,
-            account_proof,
-            storage_proof: storage_proofs,
-        })
+                let storage_mpt_tree =
+                    MPTTrie::from_root(account.storage_root, Arc::clone(&self.trie_db))?;
+
+                let mut storage_proofs = Vec::with_capacity(storage_position.len());
+
+                for h in storage_position {
+                    let hash: Hash = BigEndianHash::from_uint(&h);
+                    let proof = match storage_mpt_tree.get(hash.as_bytes()) {
+                        Ok(Some(v)) => EthStorageProof {
+                            key:   h,
+                            value: U256::decode(&v).unwrap(),
+                            proof: storage_mpt_tree
+                                .get_proof(hash.as_bytes())?
+                                .into_iter()
+                                .map(Hex::encode)
+                                .collect(),
+                        },
+                        // key is not exist
+                        Err(_) | Ok(None) => EthStorageProof {
+                            key:   h,
+                            value: U256::zero(),
+                            proof: Vec::new(),
+                        },
+                    };
+                    storage_proofs.push(proof);
+                }
+                Ok(EthAccountProof {
+                    address,
+                    balance: account.balance,
+                    code_hash: account.code_hash,
+                    nonce: account.nonce,
+                    storage_hash: account.storage_root,
+                    account_proof,
+                    storage_proof: storage_proofs,
+                })
+            }
+            Err(_) | Ok(None) => {
+                // account is not exist
+                Ok(EthAccountProof {
+                    address,
+                    balance: U256::zero(),
+                    code_hash: H256::zero(),
+                    nonce: U256::zero(),
+                    storage_hash: H256::zero(),
+                    account_proof: Vec::new(),
+                    storage_proof: Vec::new(),
+                })
+            }
+        }
     }
 
     async fn get_metadata_by_number(

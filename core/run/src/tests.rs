@@ -27,8 +27,8 @@ use protocol::{
     tokio,
     trie::{MemoryDB, PatriciaTrie, Trie as _},
     types::{
-        Bloom, BloomInput, HardforkInfo, HardforkInfoInner, Header, Metadata, Proposal, H256,
-        RLP_EMPTY_LIST, RLP_NULL,
+        Bloom, BloomInput, HardforkInfo, HardforkInfoInner, Hasher, Header, Metadata, Proposal,
+        H256, RLP_EMPTY_LIST, RLP_NULL,
     },
 };
 
@@ -49,22 +49,22 @@ const TESTCASES: &[TestCase] = &[
         chain_name:         "single_node",
         config_file:        "config.toml",
         chain_spec_file:    "specs/single_node/chain-spec.toml",
-        input_genesis_hash: "0x3428ea0eb8fb33f193e4680772ec6f68279c24bb7f135a8a3f790af6539fc100",
-        genesis_state_root: "0xe7799df5d8256add895412df5889c4ae07bb5c0d7fa438801b910cfef9d5dc37",
+        input_genesis_hash: "0x81a546a456b357e2aa153ff1ae52ef72ae88311019e663e0b02d3d17b0a2bab8",
+        genesis_state_root: "0x9f856541bfd1093d7e05e2b6e04920374bacb77bcfbcce84faaf3ae9dcbb84ec",
     },
     TestCase {
         chain_name:         "multi_nodes",
         config_file:        "nodes/node_1.toml",
         chain_spec_file:    "specs/multi_nodes/chain-spec.toml",
-        input_genesis_hash: "0xa2559187fdb9bc172ee82b40c9f4f166d56d0ba9dc2fc47538e7d95a8d641575",
-        genesis_state_root: "0x04b03f59e424ab276cd3a8c54e9f3d51c8f1c9fc64c4b2fda7accd2ddffb46b4",
+        input_genesis_hash: "0x8cd98b38a4497c589d8d9e3702509fdc2926881c15e6213520f45786c997925b",
+        genesis_state_root: "0x9640c85b7678de401d32d3a79eb3720e50652cf9779989ecc64f6e16209ed5f3",
     },
     TestCase {
         chain_name:         "multi_nodes_short_epoch_len",
         config_file:        "nodes/node_1.toml",
         chain_spec_file:    "specs/multi_nodes_short_epoch_len/chain-spec.toml",
-        input_genesis_hash: "0xa710efc9621394b5138a0e9a87c7b8586a88f4d26059bcb06ee76cc5e0bf12b0",
-        genesis_state_root: "0x3a9030d8e60478866e618a92c5137e02c1f3dc0b20dc5b51f4e720d7a7a58a0b",
+        input_genesis_hash: "0x176067cef619d3f70986445c8608f5ab2307b999640a7eccab442905741fddca",
+        genesis_state_root: "0xb99c220162105f73505923d88818d5dd937f14e65b677df1f05a3bb8c4a53265",
     },
 ];
 
@@ -256,30 +256,39 @@ fn generate_memory_mpt_root(metadata_0: Metadata, metadata_1: Metadata) -> Vec<u
     let mut seg = EpochSegment::new();
 
     memory_mpt
-        .insert(EPOCH_SEGMENT_KEY.as_bytes().to_vec(), seg.as_bytes())
+        .insert(
+            Hasher::digest(EPOCH_SEGMENT_KEY.as_bytes()).0.to_vec(),
+            seg.as_bytes(),
+        )
         .unwrap();
 
     seg.append_endpoint(metadata_0.version.end).unwrap();
     memory_mpt
-        .insert(EPOCH_SEGMENT_KEY.as_bytes().to_vec(), seg.as_bytes())
+        .insert(
+            Hasher::digest(EPOCH_SEGMENT_KEY.as_bytes()).0.to_vec(),
+            seg.as_bytes(),
+        )
         .unwrap();
 
     seg.append_endpoint(metadata_1.version.end).unwrap();
     memory_mpt
-        .insert(EPOCH_SEGMENT_KEY.as_bytes().to_vec(), seg.as_bytes())
+        .insert(
+            Hasher::digest(EPOCH_SEGMENT_KEY.as_bytes()).0.to_vec(),
+            seg.as_bytes(),
+        )
         .unwrap();
     let (inner_0, config_0) = metadata_0.into_part();
     let (inner_1, config_1) = metadata_1.into_part();
 
     memory_mpt
         .insert(
-            inner_0.epoch.to_be_bytes().to_vec(),
+            Hasher::digest(inner_0.epoch.to_be_bytes()).0.to_vec(),
             inner_0.encode().unwrap().to_vec(),
         )
         .unwrap();
     memory_mpt
         .insert(
-            CONSENSUS_CONFIG.as_bytes().to_vec(),
+            Hasher::digest(CONSENSUS_CONFIG.as_bytes()).0.to_vec(),
             encode_consensus_config(
                 H256::from_low_u64_be((HardforkName::None as u64).to_be()),
                 config_0,
@@ -289,13 +298,13 @@ fn generate_memory_mpt_root(metadata_0: Metadata, metadata_1: Metadata) -> Vec<u
         .unwrap();
     memory_mpt
         .insert(
-            inner_1.epoch.to_be_bytes().to_vec(),
+            Hasher::digest(inner_1.epoch.to_be_bytes()).0.to_vec(),
             inner_1.encode().unwrap().to_vec(),
         )
         .unwrap();
     memory_mpt
         .insert(
-            CONSENSUS_CONFIG.as_bytes().to_vec(),
+            Hasher::digest(CONSENSUS_CONFIG.as_bytes()).0.to_vec(),
             encode_consensus_config(
                 H256::from_low_u64_be((HardforkName::None as u64).to_be()),
                 config_1,
@@ -314,7 +323,7 @@ fn generate_memory_mpt_root(metadata_0: Metadata, metadata_1: Metadata) -> Vec<u
         .to_vec();
 
     memory_mpt
-        .insert(HARDFORK_KEY.as_bytes().to_vec(), hardfork)
+        .insert(Hasher::digest(HARDFORK_KEY.as_bytes()).0.to_vec(), hardfork)
         .unwrap();
     memory_mpt.root().unwrap()
 }
