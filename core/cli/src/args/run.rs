@@ -18,9 +18,9 @@ pub struct RunArgs {
         value_name = "CONFIG_FILE",
         help = "File path of client configurations."
     )]
-    pub config: Config,
+    pub config:         Config,
     #[arg(long = "mine-blocks", help = "Exit after mine N blocks")]
-    pub mine_blocks: Option<u64>,
+    pub mine_blocks:    Option<u64>,
     #[arg(long = "mine-to-height", help = "Exit when reach the height")]
     pub mine_to_height: Option<u64>,
 }

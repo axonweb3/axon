@@ -110,7 +110,7 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
         adapter: Arc<Adapter>,
         lock: Arc<AsyncMutex<()>>,
         consensus_wal: Arc<ConsensusWal>,
-        stop_signal: StopSignal
+        stop_signal: StopSignal,
     ) -> Self {
         let engine = Arc::new(ConsensusEngine::new(
             status,
@@ -120,7 +120,7 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
             Arc::clone(&crypto),
             lock,
             consensus_wal,
-            stop_signal
+            stop_signal,
         ));
         let status = engine.status();
         let metadata = adapter
@@ -154,7 +154,7 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
         }
 
         Self {
-            inner: Arc::new(overlord),
+            inner:   Arc::new(overlord),
             handler: overlord_handler,
         }
     }
@@ -174,9 +174,9 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
         let authority_list = validators
             .into_iter()
             .map(|v| Node {
-                address: v.pub_key,
+                address:        v.pub_key,
                 propose_weight: v.propose_weight,
-                vote_weight: v.vote_weight,
+                vote_weight:    v.vote_weight,
             })
             .collect::<Vec<_>>();
 
@@ -202,9 +202,9 @@ pub fn gen_overlord_status(
     let mut authority_list = validators
         .into_iter()
         .map(|v| Node {
-            address: v.pub_key,
+            address:        v.pub_key,
             propose_weight: v.propose_weight,
-            vote_weight: v.vote_weight,
+            vote_weight:    v.vote_weight,
         })
         .collect::<Vec<_>>();
 

@@ -401,11 +401,11 @@ async fn get_status_agent(
     let header = &block.header;
     let latest_proof = storage.get_latest_proof(Context::new()).await?;
     let current_consensus_status = CurrentStatus {
-        prev_hash: block.hash(),
-        last_number: header.number,
-        max_tx_size: metadata.consensus_config.max_tx_size.into(),
-        tx_num_limit: metadata.consensus_config.tx_num_limit,
-        proof: latest_proof,
+        prev_hash:       block.hash(),
+        last_number:     header.number,
+        max_tx_size:     metadata.consensus_config.max_tx_size.into(),
+        tx_num_limit:    metadata.consensus_config.tx_num_limit,
+        proof:           latest_proof,
         last_state_root: header.state_root,
     };
 
@@ -427,10 +427,10 @@ fn run_overlord_consensus<M, N, S, DB>(
     DB: TrieDB + Send + Sync,
 {
     let timer_config = DurationConfig {
-        propose_ratio: metadata.consensus_config.propose_ratio,
-        prevote_ratio: metadata.consensus_config.prevote_ratio,
+        propose_ratio:   metadata.consensus_config.propose_ratio,
+        prevote_ratio:   metadata.consensus_config.prevote_ratio,
         precommit_ratio: metadata.consensus_config.precommit_ratio,
-        brake_ratio: metadata.consensus_config.brake_ratio,
+        brake_ratio:     metadata.consensus_config.brake_ratio,
     };
 
     tokio::spawn(async move {
