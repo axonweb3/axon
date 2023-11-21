@@ -72,12 +72,13 @@ impl MetadataStore {
     }
 
     pub fn set_ckb_related_info(&mut self, info: &CkbRelatedInfo) -> ProtocolResult<()> {
-        self.trie
-            .insert(
-                CKB_RELATED_INFO_KEY.as_bytes().to_vec(),
-                info.encode()?.to_vec(),
-            )
-            .map_err(Into::into)
+        self.trie.insert(
+            CKB_RELATED_INFO_KEY.as_bytes().to_vec(),
+            info.encode()?.to_vec(),
+        )?;
+        let new_root = self.trie.commit()?;
+        CURRENT_METADATA_ROOT.with(|r| *r.borrow_mut() = new_root);
+        Ok(())
     }
 
     pub fn append_metadata(&mut self, metadata: &Metadata) -> ProtocolResult<()> {
