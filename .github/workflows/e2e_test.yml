@@ -38,16 +38,29 @@ jobs:
           restore-keys: |
             ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-build
 
-      - uses: lyricwulf/abc@v1
-        with:
-          # https://www.gnu.org/software/m4/
-          linux: m4
+      - name: Start a single Axon node
+        env:
+          LOG_FILE: ${{ runner.temp }}/${{ matrix.os }}-single-axon-node.log
+        run: |
+          target/debug/axon --version | tee ${{ env.LOG_FILE }}
+          target/debug/axon init \
+            --config     devtools/chain/config.toml \
+            --chain-spec devtools/chain/specs/single_node/chain-spec.toml \
+            | tee -a ${{ env.LOG_FILE }}
+          target/debug/axon run \
+            --config     devtools/chain/config.toml \
+            | tee -a ${{ env.LOG_FILE }} &
 
-      # TODO: use Node.js 18
+          npx zx <<'EOF'
+          import { waitXBlocksPassed } from './devtools/ci/scripts/helper.js'
+          await retry(3, '6s', () => waitXBlocksPassed('http://127.0.0.1:8000', 2))
+          EOF
+        timeout-minutes: 1
+
       - name: Use Node.js 16
         uses: actions/setup-node@v4
         with:
-          node-version: "16"
+          node-version: 16
       - name: Get yarn cache directory
         id: yarn-cache-dir
         run: echo "dir=$(yarn cache dir)" >> ${GITHUB_OUTPUT}
@@ -67,6 +80,17 @@ jobs:
             ${{ runner.os }}-node_modules-
 
       - name: E2E Tests Linting in tests/e2e
-        run: make e2e-test-lint
+        working-directory: tests/e2e
+        run: yarn && yarn lint
+
+      - name: Serve files in tests/e2e/src by http-server
+        working-directory: tests/e2e
+        run: echo '\n' | yarn http-server
+
       - name: E2E Tests in tests/e2e
-        run: make e2e-test-ci
+        working-directory: tests/e2e
+        run: |
+          npx zx <<'EOF'
+          await retry(3, expBackoff(), () => $`HEADLESS=new yarn test`)
+          EOF
+        timeout-minutes: 6

@@ -1,5 +1,5 @@
-import Web3 from "web3";
 import fs from "fs";
+import Web3 from "web3";
 import Config from "../../config";
 import erc20 from "./ERC20.json";
 
@@ -116,7 +116,7 @@ const createTestDataMange = {
   },
 
   async sendRawTestTx() {
-    const toAddress = Config.getIns().acount2;
+    const toAddress = Config.getIns().account2;
     const nonce = (await web3.eth.getTransactionCount(accountFrom.address)) + 1;
     const txObject = {
       nonce: web3.utils.toHex(nonce),

@@ -46,31 +46,6 @@ info:
 	pwd
 	env
 
-e2e-test-lint:
-	cd tests/e2e && yarn && yarn lint
-
-e2e-test:
-	cargo build
-	rm -rf ./devtools/chain/data
-	./target/debug/axon init \
-		--config     devtools/chain/config.toml \
-		--chain-spec devtools/chain/specs/single_node/chain-spec.toml \
-		> /tmp/log 2>&1
-	./target/debug/axon run  \
-		--config     devtools/chain/config.toml \
-		>> /tmp/log 2>&1 &
-	cd tests/e2e && yarn
-	cd tests/e2e/src && yarn exec http-server &
-	cd tests/e2e && yarn exec wait-on -t 5000 tcp:8000 && yarn exec wait-on -t 5000 tcp:8080 && HEADLESS="$(HEADLESS)" yarn test
-	pkill -2 axon
-	pkill -2 http-server
-
-e2e-test-ci: HEADLESS=true
-e2e-test-ci: e2e-test
-
-e2e-test-via-docker:
-	docker-compose -f tests/e2e/docker-compose-e2e-test.yaml up --exit-code-from e2e-test --force-recreate
-
 # For counting lines of code
 stats:
 	@cargo count --version || cargo +nightly install --git https://github.com/kbknapp/cargo-count
