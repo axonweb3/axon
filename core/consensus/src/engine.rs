@@ -33,6 +33,7 @@ use crate::message::{
     END_GOSSIP_SIGNED_VOTE,
 };
 use crate::status::{CurrentStatus, StatusAgent};
+use crate::stop_signal::StopSignal;
 use crate::util::{digest_signed_transactions, time_now, OverlordCrypto};
 use crate::wal::{ConsensusWal, SignedTxsWAL};
 use crate::ConsensusError;
@@ -40,18 +41,20 @@ use crate::ConsensusError;
 /// validator is for create new block, and authority is for build overlord
 /// status.
 pub struct ConsensusEngine<Adapter> {
-    status:         StatusAgent,
-    node_info:      NodeInfo,
+    status: StatusAgent,
+    node_info: NodeInfo,
     exemption_hash: RwLock<HashSet<Hash>>,
 
     adapter: Arc<Adapter>,
     txs_wal: Arc<SignedTxsWAL>,
-    crypto:  Arc<OverlordCrypto>,
-    lock:    Arc<AsyncMutex<()>>,
+    crypto: Arc<OverlordCrypto>,
+    lock: Arc<AsyncMutex<()>>,
 
-    last_commit_time:             RwLock<u64>,
-    consensus_wal:                Arc<ConsensusWal>,
+    last_commit_time: RwLock<u64>,
+    consensus_wal: Arc<ConsensusWal>,
     last_check_block_fail_reason: RwLock<String>,
+
+    stop_signal: StopSignal,
 }
 
 #[async_trait]
@@ -108,21 +111,21 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         }
 
         let proposal = Proposal {
-            version:                  BlockVersion::V0,
-            prev_hash:                status.prev_hash,
-            proposer:                 self.node_info.self_address.0,
-            prev_state_root:          self.status.inner().last_state_root,
-            transactions_root:        txs_root,
-            signed_txs_hash:          digest_signed_transactions(&signed_txs),
-            timestamp:                time_now(),
-            number:                   next_number,
-            gas_limit:                MAX_BLOCK_GAS_LIMIT.into(),
-            extra_data:               extra_data_hardfork,
-            base_fee_per_gas:         BASE_FEE_PER_GAS.into(),
-            proof:                    status.proof,
-            chain_id:                 self.node_info.chain_id,
+            version: BlockVersion::V0,
+            prev_hash: status.prev_hash,
+            proposer: self.node_info.self_address.0,
+            prev_state_root: self.status.inner().last_state_root,
+            transactions_root: txs_root,
+            signed_txs_hash: digest_signed_transactions(&signed_txs),
+            timestamp: time_now(),
+            number: next_number,
+            gas_limit: MAX_BLOCK_GAS_LIMIT.into(),
+            extra_data: extra_data_hardfork,
+            base_fee_per_gas: BASE_FEE_PER_GAS.into(),
+            proof: status.proof,
+            chain_id: self.node_info.chain_id,
             call_system_script_count: txs.call_system_script_count,
-            tx_hashes:                txs.hashes,
+            tx_hashes: txs.hashes,
         };
 
         if proposal.number != proposal.proof.number + 1 {
@@ -253,6 +256,17 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         current_number: u64,
         commit: Commit<Proposal>,
     ) -> Result<Status, Box<dyn Error + Send>> {
+        if let Err(_) = self.stop_signal.check_height_and_send(current_number.saturating_sub(1)) {
+            return Err(
+                ProtocolError::from(ConsensusError::Other("send stop signal error".to_string())).into(),
+            );
+        }
+        if self.stop_signal.is_stopped() {
+            return Err(
+                ProtocolError::from(ConsensusError::Other("node is shutdown".to_string())).into(),
+            );
+        }
+
         let lock = self.lock.try_lock();
         if lock.is_err() {
             return Err(ProtocolError::from(ConsensusError::LockInSync).into());
@@ -266,10 +280,10 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
 
         if current_number == status.last_number {
             return Ok(Status {
-                height:         current_number + 1,
-                interval:       Some(metadata.consensus_config.interval),
+                height: current_number + 1,
+                interval: Some(metadata.consensus_config.interval),
                 authority_list: convert_to_overlord_authority(&metadata.verifier_list),
-                timer_config:   Some(metadata.into()),
+                timer_config: Some(metadata.into()),
             });
         }
 
@@ -286,11 +300,11 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
 
         // Storage save the latest proof.
         let proof = Proof {
-            number:     commit.proof.height,
-            round:      commit.proof.round,
+            number: commit.proof.height,
+            round: commit.proof.round,
             block_hash: Hash::from_slice(commit.proof.block_hash.as_ref()),
-            signature:  commit.proof.signature.signature.clone(),
-            bitmap:     commit.proof.signature.address_bitmap.clone(),
+            signature: commit.proof.signature.signature.clone(),
+            bitmap: commit.proof.signature.address_bitmap.clone(),
         };
 
         // Get full transactions from mempool. If is error, try get from wal.
@@ -342,10 +356,10 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             .await?;
         let epoch = metadata.epoch;
         let status = Status {
-            height:         next_block_number,
-            interval:       Some(metadata.consensus_config.interval),
+            height: next_block_number,
+            interval: Some(metadata.consensus_config.interval),
             authority_list: convert_to_overlord_authority(&metadata.verifier_list),
-            timer_config:   Some(metadata.into()),
+            timer_config: Some(metadata.into()),
         };
 
         self.adapter.broadcast_number(ctx, current_number).await?;
@@ -455,9 +469,9 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
             .verifier_list
             .into_iter()
             .map(|v| Node {
-                address:        v.pub_key.as_bytes(),
+                address: v.pub_key.as_bytes(),
                 propose_weight: v.propose_weight,
-                vote_weight:    v.vote_weight,
+                vote_weight: v.vote_weight,
             })
             .collect::<Vec<_>>();
         old_validators.sort();
@@ -509,6 +523,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         crypto: Arc<OverlordCrypto>,
         lock: Arc<AsyncMutex<()>>,
         consensus_wal: Arc<ConsensusWal>,
+        stop_signal: StopSignal,
     ) -> Self {
         Self {
             status,
@@ -521,6 +536,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             last_commit_time: RwLock::new(time_now()),
             consensus_wal,
             last_check_block_fail_reason: RwLock::new(String::new()),
+            stop_signal,
         }
     }
 
@@ -714,12 +730,12 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
 
         let last_status = self.status.inner();
         let new_status = CurrentStatus {
-            prev_hash:       block_hash,
-            last_number:     block_number,
+            prev_hash: block_hash,
+            last_number: block_number,
             last_state_root: resp.state_root,
-            max_tx_size:     last_status.max_tx_size,
-            tx_num_limit:    last_status.tx_num_limit,
-            proof:           proof.clone(),
+            max_tx_size: last_status.max_tx_size,
+            tx_num_limit: last_status.tx_num_limit,
+            proof: proof.clone(),
         };
 
         self.status.swap(new_status);
@@ -790,9 +806,9 @@ fn convert_to_overlord_authority(validators: &[ValidatorExtend]) -> Vec<Node> {
     let mut authority = validators
         .iter()
         .map(|v| Node {
-            address:        v.pub_key.as_bytes(),
+            address: v.pub_key.as_bytes(),
             propose_weight: v.propose_weight,
-            vote_weight:    v.vote_weight,
+            vote_weight: v.vote_weight,
         })
         .collect::<Vec<_>>();
     authority.sort();

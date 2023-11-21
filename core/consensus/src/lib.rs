@@ -11,6 +11,7 @@ mod tests;
 pub mod types;
 pub mod util;
 pub mod wal;
+pub mod stop_signal;
 
 use std::error::Error;
 
