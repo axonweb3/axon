@@ -8,6 +8,7 @@ pub mod synchronization;
 #[cfg(test)]
 mod tests;
 
+pub mod stop_signal;
 pub mod types;
 pub mod util;
 pub mod wal;

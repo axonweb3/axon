@@ -15,6 +15,7 @@ use common_apm::tracing::{AxonTracer, Tag};
 use common_apm_derive::trace_span;
 use common_crypto::PublicKey as _;
 
+use crate::stop_signal::StopSignal;
 use crate::wal::{ConsensusWal, SignedTxsWAL};
 use crate::{
     engine::ConsensusEngine, status::StatusAgent, util::OverlordCrypto, ConsensusError,
@@ -109,6 +110,7 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
         adapter: Arc<Adapter>,
         lock: Arc<AsyncMutex<()>>,
         consensus_wal: Arc<ConsensusWal>,
+        stop_signal: StopSignal,
     ) -> Self {
         let engine = Arc::new(ConsensusEngine::new(
             status,
@@ -118,6 +120,7 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
             Arc::clone(&crypto),
             lock,
             consensus_wal,
+            stop_signal,
         ));
         let status = engine.status();
         let metadata = adapter

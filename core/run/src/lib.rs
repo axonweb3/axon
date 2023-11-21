@@ -5,6 +5,8 @@ use common_config_parser::types::spec::{ChainSpec, InitialAccount};
 use common_config_parser::types::{Config, ConfigMempool};
 use common_crypto::{BlsPrivateKey, BlsPublicKey, Secp256k1, Secp256k1PrivateKey, ToPublicKey};
 
+pub use core_consensus::stop_signal::StopOpt;
+use core_consensus::stop_signal::StopSignal;
 use protocol::tokio::{
     self, runtime::Builder as RuntimeBuilder, sync::Mutex as AsyncMutex, time::sleep,
 };
@@ -80,6 +82,7 @@ pub fn run<K: KeyProvider>(
     version: String,
     config: Config,
     key_provider: Option<K>,
+    stop_opt: Option<StopOpt>,
 ) -> ProtocolResult<()> {
     let path_rocksdb = config.data_path_for_rocksdb();
     if !path_rocksdb.exists() {
@@ -103,7 +106,7 @@ pub fn run<K: KeyProvider>(
             config.executor.triedb_cache_size,
         )?;
         log::info!("Start all services.");
-        start(version, config, key_provider, &db_group).await
+        start(version, config, key_provider, &db_group, stop_opt).await
     })?;
     rt.shutdown_timeout(std::time::Duration::from_secs(1));
 
@@ -115,6 +118,7 @@ async fn start<K: KeyProvider>(
     config: Config,
     key_provider: Option<K>,
     db_group: &DatabaseGroup,
+    stop_opt: Option<StopOpt>,
 ) -> ProtocolResult<()> {
     let storage = db_group.storage();
     let trie_db = db_group.trie_db();
@@ -139,6 +143,18 @@ async fn start<K: KeyProvider>(
     let current_state_root = current_block.header.state_root;
 
     log::info!("At block number {}", current_block.header.number + 1);
+
+    let (stop_tx, stop_rx) = tokio::sync::oneshot::channel::<()>();
+    let stop_signal = match stop_opt {
+        Some(opt) => {
+            let height = match opt {
+                StopOpt::MineNBlocks(n) => current_block.header.number + n,
+                StopOpt::MineToHeight(height) => height,
+            };
+            StopSignal::with_stop_at(stop_tx, height)
+        }
+        None => StopSignal::new(stop_tx),
+    };
 
     // Init network
     let mut network_service =
@@ -240,6 +256,7 @@ async fn start<K: KeyProvider>(
             Arc::clone(&consensus_adapter),
             Arc::clone(&lock),
             Arc::new(ConsensusWal::new(consensus_wal_path)),
+            stop_signal,
         )
         .await;
         Arc::new(overlord_consensus)
@@ -287,7 +304,10 @@ async fn start<K: KeyProvider>(
     // Run consensus
     run_overlord_consensus(metadata, validators, current_block, overlord_consensus);
 
-    components::system::set_ctrl_c_handle().await;
+    tokio::select! {
+        () = components::system::set_ctrl_c_handle() => {}
+        _ = stop_rx => {}
+    }
     components::profiling::stop();
 
     Ok(())

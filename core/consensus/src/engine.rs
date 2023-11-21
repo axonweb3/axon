@@ -33,6 +33,7 @@ use crate::message::{
     END_GOSSIP_SIGNED_VOTE,
 };
 use crate::status::{CurrentStatus, StatusAgent};
+use crate::stop_signal::StopSignal;
 use crate::util::{digest_signed_transactions, time_now, OverlordCrypto};
 use crate::wal::{ConsensusWal, SignedTxsWAL};
 use crate::ConsensusError;
@@ -52,6 +53,8 @@ pub struct ConsensusEngine<Adapter> {
     last_commit_time:             RwLock<u64>,
     consensus_wal:                Arc<ConsensusWal>,
     last_check_block_fail_reason: RwLock<String>,
+
+    stop_signal: StopSignal,
 }
 
 #[async_trait]
@@ -253,6 +256,14 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         current_number: u64,
         commit: Commit<Proposal>,
     ) -> Result<Status, Box<dyn Error + Send>> {
+        self.stop_signal
+            .check_height_and_send(current_number.saturating_sub(1));
+        if self.stop_signal.is_stopped() {
+            return Err(
+                ProtocolError::from(ConsensusError::Other("node is shutdown".to_string())).into(),
+            );
+        }
+
         let lock = self.lock.try_lock();
         if lock.is_err() {
             return Err(ProtocolError::from(ConsensusError::LockInSync).into());
@@ -509,6 +520,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         crypto: Arc<OverlordCrypto>,
         lock: Arc<AsyncMutex<()>>,
         consensus_wal: Arc<ConsensusWal>,
+        stop_signal: StopSignal,
     ) -> Self {
         Self {
             status,
@@ -521,6 +533,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             last_commit_time: RwLock::new(time_now()),
             consensus_wal,
             last_check_block_fail_reason: RwLock::new(String::new()),
+            stop_signal,
         }
     }
 
