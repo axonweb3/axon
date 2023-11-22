@@ -250,9 +250,14 @@ fn test_verify_cmbt_proof() {
     .unwrap();
 
     let witness_merkle_proof = CBMT::build_merkle_proof(
-        &[witness_hash_0.clone(), witness_hash_1.clone(), witness_hash_2.clone()],
+        &[
+            witness_hash_0.clone(),
+            witness_hash_1.clone(),
+            witness_hash_2.clone(),
+        ],
         &build_indices(&[0, 1, 2]),
-    ).unwrap();
+    )
+    .unwrap();
 
     let raw_tx_proof = Proof {
         indices: tx_proof.indices().to_vec(),
