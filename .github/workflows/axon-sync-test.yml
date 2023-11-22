@@ -7,7 +7,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Start a single Axon node
   Build_and_Archive_Axon:
     strategy:
       matrix:
@@ -49,25 +48,18 @@ jobs:
            devtools/chain/config.toml 
            devtools/chain/nodes/node_1*
         retention-days: 7
+
+        
   Download_and_Start_Axon_Sync:
-    # strategy:
-    #     matrix:
-    #       # Supported GitHub-hosted runners and hardware resources
-    #       # see https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
-    #       os: [ubuntu-22.04]
-    #     fail-fast: false    
     name: Download_and_Start_Axon_Sync
     needs:  Build_and_Archive_Axon       
     runs-on: layer2-runner
-    # container: ubuntu-22.04
+
     steps:
     - name: Download Axon Binary for Build_and_Archive_Axon  
       uses: actions/download-artifact@v3
       with: 
         name: axon-dir   
-        # path: axonweb3
-    # - name: Display structure of downloaded files
-    #   run: ls -R
     - name: Replacement configuration
       run: |
         sed -i 's@bls_privkey_file = "bls.key"@bls_privkey_file = "nodes/node_1_bls.key"@g' devtools/chain/config.toml 
@@ -86,7 +78,6 @@ jobs:
 
          target/debug/axon run \
           --config     devtools/chain/config.toml  
-    #   timeout-minutes: 10
 
 
  
