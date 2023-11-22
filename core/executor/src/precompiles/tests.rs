@@ -13,7 +13,7 @@ use protocol::{
     types::{H256, U256},
 };
 
-use crate::precompiles::ckb_mbt_verify::VerifyProofPayload;
+use crate::precompiles::ckb_mbt_verify::{Proof, VerifyProofPayload};
 use crate::precompiles::{
     Blake2F, CMBTVerify, CkbBlake2b, EcAdd, EcMul, EcPairing, EcRecover, Identity, ModExp,
     PrecompileContract, Ripemd160, Sha256,
@@ -243,30 +243,66 @@ fn test_verify_cmbt_proof() {
     ]);
     let transactions_root = merkle_root(&[raw_transactions_root.clone(), witnesses_root.clone()]);
 
-    let proof = CBMT::build_merkle_proof(
+    let tx_proof = CBMT::build_merkle_proof(
         &[tx_hash_0.clone(), tx_hash_1.clone(), tx_hash_2.clone()],
         &build_indices(&[0, 1, 2]),
     )
     .unwrap();
 
-    let payload = VerifyProofPayload {
-        transactions_root:     transactions_root.unpack().0,
-        witnesses_root:        witnesses_root.unpack().0,
-        raw_transactions_root: raw_transactions_root.unpack().0,
-        indices:               proof.indices().to_vec(),
-        lemmas:                proof
+    let witness_merkle_proof = CBMT::build_merkle_proof(
+        &[witness_hash_0.clone(), witness_hash_1.clone(), witness_hash_2.clone()],
+        &build_indices(&[0, 1, 2]),
+    ).unwrap();
+
+    let raw_tx_proof = Proof {
+        indices: tx_proof.indices().to_vec(),
+        lemmas:  tx_proof
             .lemmas()
             .iter()
             .map(|l| l.unpack().0)
             .collect::<Vec<_>>(),
-        leaves:                vec![
+        leaves:  vec![
             tx_hash_0.unpack().0,
             tx_hash_1.unpack().0,
             tx_hash_2.unpack().0,
         ],
     };
 
-    let input = AbiEncode::encode(payload);
+    let witness_proof = Proof {
+        indices: witness_merkle_proof.indices().to_vec(),
+        lemmas:  witness_merkle_proof
+            .lemmas()
+            .iter()
+            .map(|l| l.unpack().0)
+            .collect::<Vec<_>>(),
+        leaves:  vec![
+            witness_hash_0.unpack().0,
+            witness_hash_1.unpack().0,
+            witness_hash_2.unpack().0,
+        ],
+    };
+
+    let raw_tx_payload = VerifyProofPayload {
+        verify_type:           0,
+        transactions_root:     transactions_root.unpack().0,
+        witnesses_root:        witnesses_root.unpack().0,
+        raw_transactions_root: raw_transactions_root.unpack().0,
+        proof:                 raw_tx_proof,
+    };
+
+    let witness_payload = VerifyProofPayload {
+        verify_type:           1,
+        transactions_root:     transactions_root.unpack().0,
+        witnesses_root:        witnesses_root.unpack().0,
+        raw_transactions_root: raw_transactions_root.unpack().0,
+        proof:                 witness_proof,
+    };
+
+    let input = AbiEncode::encode(raw_tx_payload);
+    let output = vec![1u8];
+    test_precompile!(CMBTVerify, &input, output, 56000);
+
+    let input = AbiEncode::encode(witness_payload);
     let output = vec![1u8];
     test_precompile!(CMBTVerify, &input, output, 56000);
 }
