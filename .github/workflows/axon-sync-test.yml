@@ -31,7 +31,7 @@ jobs:
         key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: |
           ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-build
-    - name: Build Axon in the development profile
+    - name: Build Axon 
       run: |
         # check for AVX2 support by inspecting `/proc/cpuinfo` or running `lscpu`
         # related issue: https://github.com/axonweb3/axon/issues/1387
@@ -43,41 +43,50 @@ jobs:
       with:
         name: axon-dir
         path: |
-           target/ 
+           target/debug/axon 
+           devtools/chain/specs/single_node/chain-spec.toml
+           devtools/chain/default.db-options
+           devtools/chain/config.toml 
+           devtools/chain/nodes/node_1*
+        retention-days: 7
   Download_and_Start_Axon_Sync:
-    strategy:
-        matrix:
-          # Supported GitHub-hosted runners and hardware resources
-          # see https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
-          os: [ubuntu-22.04]
-        fail-fast: false    
-    name: Download axon binary
+    # strategy:
+    #     matrix:
+    #       # Supported GitHub-hosted runners and hardware resources
+    #       # see https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
+    #       os: [ubuntu-22.04]
+    #     fail-fast: false    
+    name: Download_and_Start_Axon_Sync
     needs:  Build_and_Archive_Axon       
-    runs-on: ${{ matrix.os }}
+    runs-on: layer2-runner
+    # container: ubuntu-22.04
     steps:
     - name: Download Axon Binary for Build_and_Archive_Axon  
       uses: actions/download-artifact@v3
       with: 
         name: axon-dir   
-    - name: Start a single Axon node
-      env:
-        LOG_FILE: ${{ runner.temp }}/${{ matrix.os }}-single-axon-node.log
+        # path: axonweb3
+    # - name: Display structure of downloaded files
+    #   run: ls -R
+    - name: Replacement configuration
       run: |
-        target/debug/axon --version | tee ${{ env.LOG_FILE }}
-        target/debug/axon init \
-          --config     devtools/chain/config.toml \
-          --chain-spec devtools/chain/specs/single_node/chain-spec.toml \
-          | tee -a ${{ env.LOG_FILE }}
-        target/debug/axon run \
-          --config     devtools/chain/config.toml \
-          | tee -a ${{ env.LOG_FILE }} &
-      timeout-minutes: 1
+        sed -i 's@bls_privkey_file = "bls.key"@bls_privkey_file = "nodes/node_1_bls.key"@g' devtools/chain/config.toml 
+        sed -i 's@net_privkey_file = "net.key"@net_privkey_file = "nodes/node_1_net.key"@g' devtools/chain/config.toml   
+        sed -i 's@multi_address = "/ip4/127.0.0.1/tcp/8001/p2p/QmNk6bBwkLPuqnsrtxpp819XLZY3ymgjs3p1nKtxBVgqxj"@multi_address = "/dns4/axon1.axon-alphanet.svc.cluster.local/tcp/8001/p2p/QmNk6bBwkLPuqnsrtxpp819XLZY3ymgjs3p1nKtxBVgqxj"@' devtools/chain/config.toml   
 
-    - name: Archive logs
-      if: failure()
-      uses: actions/upload-artifact@v3
-      with:
-        name: single-axon-node-logs
-        path: |
-          ${{ runner.temp }}/${{ matrix.os }}-single-axon-node.log
+    - name: Start Axon Node
+      env:
+        LOG_FILE: ${{ runner.temp }}/layer2-runner-axon-node.log
+      run: |
+         chmod +x target/debug/axon
+         target/debug/axon --version
+         target/debug/axon init \
+          --config     devtools/chain/config.toml  \
+          --chain-spec devtools/chain/specs/single_node/chain-spec.toml 
+
+         target/debug/axon run \
+          --config     devtools/chain/config.toml  
+    #   timeout-minutes: 10
+
+
  
