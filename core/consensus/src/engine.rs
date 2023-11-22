@@ -17,6 +17,10 @@ use common_crypto::BlsPublicKey;
 use common_logger::{json, log};
 use common_merkle::TrieMerkle;
 use core_executor::MetadataHandle;
+use protocol::constants::endpoints::{
+    END_GOSSIP_AGGREGATED_VOTE, END_GOSSIP_SIGNED_CHOKE, END_GOSSIP_SIGNED_PROPOSAL,
+    END_GOSSIP_SIGNED_VOTE,
+};
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
     Block, BlockVersion, Bytes, ExecResp, ExtraData, Hash, Hex, Metadata, Proof, Proposal,
@@ -28,10 +32,6 @@ use protocol::{
     ProtocolError, ProtocolResult,
 };
 
-use crate::message::{
-    END_GOSSIP_AGGREGATED_VOTE, END_GOSSIP_SIGNED_CHOKE, END_GOSSIP_SIGNED_PROPOSAL,
-    END_GOSSIP_SIGNED_VOTE,
-};
 use crate::status::{CurrentStatus, StatusAgent};
 use crate::stop_signal::StopSignal;
 use crate::util::{digest_signed_transactions, time_now, OverlordCrypto};

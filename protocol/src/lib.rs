@@ -1,4 +1,5 @@
 pub mod codec;
+pub mod constants;
 pub mod lazy;
 pub mod traits;
 pub mod types;

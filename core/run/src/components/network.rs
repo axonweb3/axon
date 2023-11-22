@@ -5,20 +5,19 @@ use std::sync::Arc;
 use core_consensus::message::{
     ChokeMessageHandler, ProposalMessageHandler, PullBlockRpcHandler, PullProofRpcHandler,
     PullTxsRpcHandler, QCMessageHandler, RemoteHeightMessageHandler, VoteMessageHandler,
-    BROADCAST_HEIGHT, END_GOSSIP_AGGREGATED_VOTE, END_GOSSIP_SIGNED_CHOKE,
-    END_GOSSIP_SIGNED_PROPOSAL, END_GOSSIP_SIGNED_VOTE, RPC_RESP_SYNC_PULL_BLOCK,
-    RPC_RESP_SYNC_PULL_PROOF, RPC_RESP_SYNC_PULL_TXS, RPC_SYNC_PULL_BLOCK, RPC_SYNC_PULL_PROOF,
-    RPC_SYNC_PULL_TXS,
 };
 use core_consensus::OverlordSynchronization;
 use core_db::RocksAdapter;
-use core_mempool::{
-    NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS, RPC_PULL_TXS, RPC_RESP_PULL_TXS,
-    RPC_RESP_PULL_TXS_SYNC,
-};
+use core_mempool::{NewTxsHandler, PullTxsHandler};
 use core_network::{KeyProvider, NetworkService, PeerId, PeerIdExt};
 use core_storage::ImplStorage;
 use protocol::{
+    constants::endpoints::{
+        BROADCAST_HEIGHT, END_GOSSIP_AGGREGATED_VOTE, END_GOSSIP_NEW_TXS, END_GOSSIP_SIGNED_CHOKE,
+        END_GOSSIP_SIGNED_PROPOSAL, END_GOSSIP_SIGNED_VOTE, RPC_PULL_TXS, RPC_RESP_PULL_TXS,
+        RPC_RESP_PULL_TXS_SYNC, RPC_RESP_SYNC_PULL_BLOCK, RPC_RESP_SYNC_PULL_PROOF,
+        RPC_RESP_SYNC_PULL_TXS, RPC_SYNC_PULL_BLOCK, RPC_SYNC_PULL_PROOF, RPC_SYNC_PULL_TXS,
+    },
     traits::{Consensus, Context, MemPool, Network, SynchronizationAdapter},
     types::ValidatorExtend,
     ProtocolResult,

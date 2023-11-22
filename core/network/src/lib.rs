@@ -3,19 +3,21 @@
 mod common;
 mod compress;
 mod config;
-mod endpoint;
+pub mod endpoint;
 mod error;
 mod message;
 mod outbound;
-mod peer_manager;
-mod protocols;
-mod reactor;
+pub mod peer_manager;
+pub mod protocols;
+pub mod reactor;
 mod rpc;
 mod service;
 mod traits;
 
 pub use self::config::NetworkConfig;
-pub use self::service::{NetworkService, NetworkServiceHandle};
+pub use self::outbound::{NetworkGossip, NetworkRpc};
+pub use self::peer_manager::PeerManager;
+pub use self::service::{NetworkService, NetworkServiceHandle, ServiceHandler};
 pub use self::traits::NetworkContext;
 pub use tentacle::{
     multiaddr,

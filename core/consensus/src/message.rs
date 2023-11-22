@@ -7,6 +7,9 @@ use overlord::Codec;
 use rlp::Encodable;
 
 use common_apm_derive::trace_span;
+use protocol::constants::endpoints::{
+    RPC_RESP_SYNC_PULL_BLOCK, RPC_RESP_SYNC_PULL_PROOF, RPC_RESP_SYNC_PULL_TXS,
+};
 use protocol::traits::{
     Consensus, Context, MessageHandler, Priority, Rpc, Storage, Synchronization, TrustFeedback,
 };
@@ -16,18 +19,6 @@ use protocol::{async_trait, types::BlockNumber, ProtocolError};
 use core_storage::StorageError;
 
 pub use crate::types::PullTxsRequest;
-
-pub const END_GOSSIP_SIGNED_PROPOSAL: &str = "/gossip/consensus/signed_proposal";
-pub const END_GOSSIP_SIGNED_VOTE: &str = "/gossip/consensus/signed_vote";
-pub const END_GOSSIP_AGGREGATED_VOTE: &str = "/gossip/consensus/qc";
-pub const END_GOSSIP_SIGNED_CHOKE: &str = "/gossip/consensus/signed_choke";
-pub const RPC_SYNC_PULL_BLOCK: &str = "/rpc_call/consensus/sync_pull_block";
-pub const RPC_RESP_SYNC_PULL_BLOCK: &str = "/rpc_resp/consensus/sync_pull_block";
-pub const RPC_SYNC_PULL_TXS: &str = "/rpc_call/consensus/sync_pull_txs";
-pub const RPC_RESP_SYNC_PULL_TXS: &str = "/rpc_resp/consensus/sync_pull_txs";
-pub const BROADCAST_HEIGHT: &str = "/gossip/consensus/broadcast_height";
-pub const RPC_SYNC_PULL_PROOF: &str = "/rpc_call/consensus/sync_pull_proof";
-pub const RPC_RESP_SYNC_PULL_PROOF: &str = "/rpc_resp/consensus/sync_pull_proof";
 
 macro_rules! overlord_message {
     ($msg_name: ident, $overlord_type_name: ident) => {

@@ -542,9 +542,9 @@ where
     }
 }
 
-struct ServiceHandler {
-    peer_store: Arc<PeerManager>,
-    config:     Arc<NetworkConfig>,
+pub struct ServiceHandler {
+    pub peer_store: Arc<PeerManager>,
+    pub config:     Arc<NetworkConfig>,
 }
 
 #[async_trait]
