@@ -1,9 +1,9 @@
-use std::{collections::BTreeMap, str::FromStr};
+use std::{collections::BTreeMap, str::FromStr, sync::Arc};
 
 use ethers::abi::AbiEncode;
 
 use core_db::RocksAdapter;
-use protocol::types::{MemoryBackend, SignedTransaction, H160, U256};
+use protocol::types::{CkbRelatedInfo, MemoryBackend, SignedTransaction, H160, H256, U256};
 
 use crate::{
     system_contract::{
@@ -12,13 +12,14 @@ use crate::{
             metadata_abi::{self, ConsensusConfig, Metadata, MetadataVersion, ValidatorExtend},
             MetadataContract, MetadataStore,
         },
-        SystemContract, METADATA_CONTRACT_ADDRESS,
+        SystemContract, METADATA_CONTRACT_ADDRESS, METADATA_DB,
     },
     tests::{gen_tx, gen_vicinity},
-    CURRENT_METADATA_ROOT,
+    RocksTrieDB, CURRENT_METADATA_ROOT,
 };
 
 static ROCKSDB_PATH: &str = "./free-space/system-contract/metadata";
+static CKB_INFO_ROCKSDB_PATH: &str = "./free-space/system-contract/ckb_info";
 
 #[test]
 fn test_write_functions() {
@@ -205,6 +206,49 @@ fn prepare_validator() -> ValidatorExtend {
         propose_weight: 1u32,
         vote_weight:    1u32,
     }
+}
+
+#[test]
+fn test_set_ckb_related_info() {
+    // Init ckb info db.
+    {
+        let inner_db = RocksAdapter::new(CKB_INFO_ROCKSDB_PATH, Default::default())
+            .unwrap()
+            .inner_db();
+        let mut _db = METADATA_DB.write();
+        const METADATA_DB_CACHE_SIZE: usize = 10;
+        _db.replace(Arc::new(RocksTrieDB::new_metadata(
+            Arc::clone(&inner_db),
+            METADATA_DB_CACHE_SIZE,
+        )));
+    }
+
+    let old_metadata_root = H256::zero();
+    let metadata_type_id =
+        H256::from_str("0xdb0782aba62896c2a7c279f3de8dbbd7fd06729cc8b7b499df93f5c450f61839")
+            .unwrap();
+    let mut store = MetadataStore::new(old_metadata_root).unwrap();
+    let ckb_infos = CkbRelatedInfo {
+        metadata_type_id,
+        checkpoint_type_id: H256::zero(),
+        xudt_args: H256::zero(),
+        stake_smt_type_id: H256::zero(),
+        delegate_smt_type_id: H256::zero(),
+        reward_smt_type_id: H256::zero(),
+    };
+    let result = store.set_ckb_related_info(&ckb_infos);
+    assert!(result.is_ok());
+
+    let result = store.get_ckb_related_info();
+    assert!(result.is_ok());
+    let result = result.unwrap();
+    assert_eq!(result.metadata_type_id, metadata_type_id);
+
+    CURRENT_METADATA_ROOT.with(|root| {
+        let new_metadata_root = *root.borrow();
+        println!("new_metadata_root: {:?}", new_metadata_root);
+        assert_ne!(new_metadata_root, old_metadata_root);
+    });
 }
 
 // #[tokio::test]
