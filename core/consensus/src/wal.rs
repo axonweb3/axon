@@ -177,23 +177,24 @@ impl ConsensusWal {
         content.put(check_sum.as_bytes());
         content.put(info);
 
-        let (data_path, timestamp) = {
-            loop {
-                let timestamp = SystemTime::now()
-                    .duration_since(SystemTime::UNIX_EPOCH)
-                    .map_err(ConsensusError::SystemTime)?;
+        let (data_path, timestamp) =
+            {
+                loop {
+                    let timestamp = SystemTime::now()
+                        .duration_since(SystemTime::UNIX_EPOCH)
+                        .map_err(ConsensusError::SystemTime)?;
 
-                let timestamp = timestamp.as_millis();
+                    let timestamp = timestamp.as_millis();
 
-                let mut data_path = dir_path.clone();
+                    let mut data_path = dir_path.clone();
 
-                data_path.push(timestamp.to_string());
+                    data_path.push(timestamp.to_string());
 
-                if !data_path.exists() {
-                    break (data_path, timestamp);
+                    if !data_path.exists() {
+                        break (data_path, timestamp);
+                    }
                 }
-            }
-        };
+            };
 
         let mut data_file = match fs::OpenOptions::new()
             .read(true)
@@ -263,37 +264,38 @@ impl ConsensusWal {
 
         // 3rd, get a latest and valid wal if possible
         let mut index = 0;
-        let content = loop {
-            if index >= file_names_timestamps.len() {
-                break None;
-            }
+        let content =
+            loop {
+                if index >= file_names_timestamps.len() {
+                    break None;
+                }
 
-            let file_name_timestamp = file_names_timestamps[index];
+                let file_name_timestamp = file_names_timestamps[index];
 
-            let mut log_path = dir_path.clone();
-            log_path.push(file_name_timestamp.to_string());
+                let mut log_path = dir_path.clone();
+                log_path.push(file_name_timestamp.to_string());
 
-            let mut read_buf = Vec::new();
-            let mut file = fs::File::open(&log_path).map_err(ConsensusError::WALErr)?;
-            let res = file.read_to_end(&mut read_buf);
-            if res.is_err() {
-                continue;
-            }
+                let mut read_buf = Vec::new();
+                let mut file = fs::File::open(&log_path).map_err(ConsensusError::WALErr)?;
+                let res = file.read_to_end(&mut read_buf);
+                if res.is_err() {
+                    continue;
+                }
 
-            let mut info = Bytes::from(read_buf);
+                let mut info = Bytes::from(read_buf);
 
-            if info.len() < Hash::default().as_bytes().len() {
-                continue;
-            }
+                if info.len() < Hash::default().as_bytes().len() {
+                    continue;
+                }
 
-            let content = info.split_off(Hash::default().as_bytes().len());
+                let content = info.split_off(Hash::default().as_bytes().len());
 
-            if info == Hasher::digest(&content).as_bytes() {
-                break Some(content);
-            } else {
-                index += 1;
-            }
-        };
+                if info == Hasher::digest(&content).as_bytes() {
+                    break Some(content);
+                } else {
+                    index += 1;
+                }
+            };
 
         content.ok_or_else(|| ConsensusError::ConsensusWalNoWalFile.into())
     }

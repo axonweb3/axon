@@ -278,10 +278,11 @@ fn verify_nodes_message(nodes: &Nodes) -> Option<Misbehavior> {
             "Too many items (announce=false) length={}",
             nodes.items.len()
         );
-        misbehavior = Some(Misbehavior::TooManyItems {
-            announce: nodes.announce,
-            length:   nodes.items.len(),
-        });
+        misbehavior =
+            Some(Misbehavior::TooManyItems {
+                announce: nodes.announce,
+                length:   nodes.items.len(),
+            });
     }
 
     if misbehavior.is_none() {

@@ -4,7 +4,7 @@ use std::ops::Bound::{Included, Unbounded};
 use std::sync::atomic::{AtomicU8, Ordering as AtomicOrdering};
 use std::sync::Arc;
 
-use protocol::types::{Hash, SignedTransaction, H160, U256};
+use protocol::types::{Hash, SignedTransaction, H160, U64};
 
 pub type TxPtr = Arc<TxWrapper>;
 
@@ -54,7 +54,7 @@ impl TxWrapper {
         self.tx.transaction.hash
     }
 
-    pub fn nonce(&self) -> &U256 {
+    pub fn nonce(&self) -> &U64 {
         self.tx.transaction.unsigned.nonce()
     }
 
@@ -62,7 +62,7 @@ impl TxWrapper {
         self.tx.sender
     }
 
-    pub fn gas_price(&self) -> U256 {
+    pub fn gas_price(&self) -> U64 {
         self.tx.transaction.unsigned.gas_price()
     }
 
@@ -89,15 +89,15 @@ impl TxWrapper {
 
 #[derive(Default)]
 pub struct PendingQueue {
-    queue:             BTreeMap<U256, TxPtr>,
+    queue:             BTreeMap<U64, TxPtr>,
     // already insert to package list tip nonce
-    pop_tip_nonce:     U256,
-    current_tip_nonce: U256,
+    pop_tip_nonce:     U64,
+    current_tip_nonce: U64,
     need_remove:       bool,
 }
 
 impl PendingQueue {
-    pub fn insert(&mut self, tx: TxPtr, nonce_diff: U256) -> bool {
+    pub fn insert(&mut self, tx: TxPtr, nonce_diff: U64) -> bool {
         let nonce = *tx.nonce();
         let current_tip = nonce - nonce_diff;
         if self.current_tip_nonce > nonce {
@@ -155,7 +155,7 @@ impl PendingQueue {
         self.queue.retain(|_, v| !v.is_dropped());
     }
 
-    pub fn set_drop_by_nonce_tip(&mut self, nonce: U256) {
+    pub fn set_drop_by_nonce_tip(&mut self, nonce: U64) {
         for (_, v) in self.queue.range((Included(0.into()), Included(nonce))) {
             v.set_dropped();
         }

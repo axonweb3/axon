@@ -225,12 +225,14 @@ impl MetadataStore {
                     });
                     hardfork_info
                 }
-                None => HardforkInfo {
-                    inner: vec![HardforkInfoInner {
-                        block_number,
-                        flags: info,
-                    }],
-                },
+                None => {
+                    HardforkInfo {
+                        inner: vec![HardforkInfoInner {
+                            block_number,
+                            flags: info,
+                        }],
+                    }
+                }
             }
         };
 

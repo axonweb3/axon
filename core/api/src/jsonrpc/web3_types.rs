@@ -49,26 +49,26 @@ impl RichTransactionOrHash {
 pub struct Web3Transaction {
     #[serde(rename = "type")]
     pub type_:                    Option<U64>,
-    pub block_number:             Option<U256>,
+    pub block_number:             Option<U64>,
     pub block_hash:               Option<H256>,
     pub hash:                     Hash,
-    pub nonce:                    U256,
-    pub transaction_index:        Option<U256>,
+    pub nonce:                    U64,
+    pub transaction_index:        Option<U64>,
     pub from:                     H160,
     pub to:                       Option<H160>,
     pub value:                    U256,
-    pub gas:                      U256,
-    pub gas_price:                U256,
+    pub gas:                      U64,
+    pub gas_price:                U64,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_fee_per_gas:          Option<U256>,
+    pub max_fee_per_gas:          Option<U64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_priority_fee_per_gas: Option<U256>,
+    pub max_priority_fee_per_gas: Option<U64>,
     pub raw:                      Hex,
     pub input:                    Hex,
     pub public_key:               Option<Public>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub access_list:              Option<AccessList>,
-    pub chain_id:                 Option<U256>,
+    pub chain_id:                 Option<U64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub standard_v:               Option<U256>,
     pub v:                        U256,
@@ -86,17 +86,18 @@ impl From<SignedTransaction> for Web3Transaction {
         let is_eip1559 = stx.transaction.unsigned.is_eip1559();
 
         let sig_v = signature.add_chain_replay_protection(stx.transaction.chain_id);
-        let (sig_r, sig_s) = if signature.is_eth_sig() {
-            (
-                Either::Left(U256::from(&signature.r[..])),
-                Either::Left(U256::from(&signature.s[..])),
-            )
-        } else {
-            (
-                Either::Right(Hex::encode(signature.r)),
-                Either::Right(Hex::encode(signature.s)),
-            )
-        };
+        let (sig_r, sig_s) =
+            if signature.is_eth_sig() {
+                (
+                    Either::Left(U256::from(&signature.r[..])),
+                    Either::Left(U256::from(&signature.s[..])),
+                )
+            } else {
+                (
+                    Either::Right(Hex::encode(signature.r)),
+                    Either::Right(Hex::encode(signature.s)),
+                )
+            };
 
         Web3Transaction {
             type_:                    Some(stx.type_().into()),
@@ -107,7 +108,7 @@ impl From<SignedTransaction> for Web3Transaction {
             gas:                      *stx.transaction.unsigned.gas_limit(),
             gas_price:                stx.transaction.unsigned.gas_price(),
             max_fee_per_gas:          if is_eip1559 {
-                Some(U256::from(MAX_PRIORITY_FEE_PER_GAS))
+                Some(U64::from(MAX_PRIORITY_FEE_PER_GAS))
             } else {
                 None
             },
@@ -162,15 +163,15 @@ pub struct Web3Receipt {
     pub block_number:        U256,
     pub block_hash:          H256,
     pub contract_address:    Option<H160>,
-    pub cumulative_gas_used: U256,
-    pub effective_gas_price: U256,
+    pub cumulative_gas_used: U64,
+    pub effective_gas_price: U64,
     pub from:                H160,
-    pub gas_used:            U256,
+    pub gas_used:            U64,
     pub logs:                Vec<Web3ReceiptLog>,
     pub logs_bloom:          Bloom,
     #[serde(rename = "root")]
     pub state_root:          Hash,
-    pub status:              U256,
+    pub status:              U64,
     pub to:                  Option<H160>,
     pub transaction_hash:    Hash,
     pub transaction_index:   Option<U256>,
@@ -243,16 +244,16 @@ pub struct Web3Block {
     pub state_root:        H256,
     pub transactions_root: H256,
     pub receipts_root:     H256,
-    pub number:            U256,
-    pub gas_used:          U256,
-    pub gas_limit:         U256,
+    pub number:            U64,
+    pub gas_used:          U64,
+    pub gas_limit:         U64,
     pub extra_data:        Hex,
     pub logs_bloom:        Option<Bloom>,
     pub timestamp:         U256,
     pub difficulty:        U256,
     pub total_difficulty:  Option<U256>,
     pub seal_fields:       Vec<Bytes>,
-    pub base_fee_per_gas:  U256,
+    pub base_fee_per_gas:  U64,
     pub uncles:            Vec<H256>,
     pub transactions:      Vec<RichTransactionOrHash>,
     pub size:              Option<U256>,
@@ -308,10 +309,10 @@ pub struct Web3CallRequest {
     pub from:                     Option<H160>,
     pub to:                       Option<H160>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub gas_price:                Option<U256>,
+    pub gas_price:                Option<U64>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_fee_per_gas:          Option<U256>,
-    pub gas:                      Option<U256>,
+    pub max_fee_per_gas:          Option<U64>,
+    pub gas:                      Option<U64>,
     pub value:                    Option<U256>,
     pub data:                     Option<Hex>,
     pub nonce:                    Option<U256>,
@@ -391,9 +392,10 @@ impl<'a> Visitor<'a> for BlockIdVisitor {
                     "blockNumber" => {
                         let value: String = visitor.next_value()?;
                         if let Some(stripper) = value.strip_prefix("0x") {
-                            let number = u64::from_str_radix(stripper, 16).map_err(|e| {
-                                Error::custom(format!("Invalid block number: {}", e))
-                            })?;
+                            let number =
+                                u64::from_str_radix(stripper, 16).map_err(|e| {
+                                    Error::custom(format!("Invalid block number: {}", e))
+                                })?;
 
                             block_number = Some(U64::from(number));
                             break;
@@ -444,9 +446,7 @@ impl<'a> Visitor<'a> for BlockIdVisitor {
             _ if value.starts_with("0x") => u64::from_str_radix(&value[2..], 16)
                 .map(|n| BlockId::Num(U64::from(n)))
                 .map_err(|e| Error::custom(format!("Invalid block number: {}", e))),
-            _ => Err(Error::custom(
-                "Invalid block number: missing 0x prefix".to_string(),
-            )),
+            _ => Err(Error::custom("Invalid block number: missing 0x prefix".to_string())),
         }
     }
 
@@ -727,13 +727,13 @@ pub struct FeeHistoryWithReward {
     /// This includes the next block after the newest of the returned range,
     /// because this value can be derived from the newest block. Zeroes are
     /// returned for pre-EIP-1559 blocks.
-    pub base_fee_per_gas: Vec<U256>,
+    pub base_fee_per_gas: Vec<U64>,
     /// An array of block gas used ratios. These are calculated as the ratio
     /// of `gasUsed` and `gasLimit`.
     pub gas_used_ratio:   Vec<f64>,
     /// An (optional) array of effective priority fee per gas data points from a
     /// single block. All zeroes are returned if the block is empty.
-    pub reward:           Vec<Vec<U256>>,
+    pub reward:           Vec<Vec<U64>>,
 }
 
 /// Response type for `eth_feeHistory` RPC call with parameter REWARDPERCENTILES
@@ -747,7 +747,7 @@ pub struct FeeHistoryWithoutReward {
     /// This includes the next block after the newest of the returned range,
     /// because this value can be derived from the newest block. Zeroes are
     /// returned for pre-EIP-1559 blocks.
-    pub base_fee_per_gas: Vec<U256>,
+    pub base_fee_per_gas: Vec<U64>,
     /// An array of block gas used ratios. These are calculated as the ratio
     /// of `gasUsed` and `gasLimit`.
     pub gas_used_ratio:   Vec<f64>,
@@ -769,8 +769,8 @@ pub struct FeeHistoryEmpty {
 pub struct Web3Header {
     pub difficulty:        U256,
     pub extra_data:        Hex,
-    pub gas_limit:         U256,
-    pub gas_used:          U256,
+    pub gas_limit:         U64,
+    pub gas_used:          U64,
     pub logs_bloom:        Option<Bloom>,
     pub miner:             H160,
     pub nonce:             U256,

@@ -232,20 +232,21 @@ async fn test_nonce_insert() {
         .map(|i| mock_signed_tx(&priv_key, &pub_key, 0, i as u64, true))
         .collect();
 
-    let replace_tx = {
-        let mut tx = txs[4].clone();
-        match tx.transaction.unsigned {
-            UnsignedTransaction::Eip1559(ref mut p) => {
-                p.gas_price = 2.into();
-                p.max_priority_fee_per_gas = 2.into();
+    let replace_tx =
+        {
+            let mut tx = txs[4].clone();
+            match tx.transaction.unsigned {
+                UnsignedTransaction::Eip1559(ref mut p) => {
+                    p.gas_price = 2.into();
+                    p.max_priority_fee_per_gas = 2.into();
+                }
+                UnsignedTransaction::Eip2930(ref mut p) => p.gas_price = 2.into(),
+                UnsignedTransaction::Legacy(ref mut p) => p.gas_price = 2.into(),
             }
-            UnsignedTransaction::Eip2930(ref mut p) => p.gas_price = 2.into(),
-            UnsignedTransaction::Legacy(ref mut p) => p.gas_price = 2.into(),
-        }
-        tx.transaction.hash = H256::from_low_u64_le(2);
+            tx.transaction.hash = H256::from_low_u64_le(2);
 
-        tx
-    };
+            tx
+        };
 
     let pool = mempool.get_tx_cache();
 

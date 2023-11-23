@@ -14,7 +14,7 @@ use protocol::traits::{Context, MemPool, MemPoolAdapter};
 use protocol::types::{
     public_to_address, recover_intact_pub_key, Bytes, Eip1559Transaction, Hash, PackedTxHashes,
     Public, SignedTransaction, TransactionAction, UnsignedTransaction, UnverifiedTransaction, H160,
-    H256, U256,
+    H256, U256, U64,
 };
 use protocol::{async_trait, tokio, ProtocolResult};
 
@@ -72,8 +72,8 @@ impl MemPoolAdapter for HashMemPoolAdapter {
         &self,
         _ctx: Context,
         _tx: &SignedTransaction,
-    ) -> ProtocolResult<U256> {
-        Ok(U256::zero())
+    ) -> ProtocolResult<U64> {
+        Ok(U64::zero())
     }
 
     async fn check_transaction(&self, _ctx: Context, tx: &SignedTransaction) -> ProtocolResult<()> {
@@ -190,19 +190,19 @@ async fn concurrent_broadcast(
     txs: Vec<SignedTransaction>,
     mempool: Arc<MemPoolImpl<HashMemPoolAdapter>>,
 ) {
-    let futs = txs
-        .into_iter()
-        .map(|tx| {
-            let mempool = Arc::clone(&mempool);
-            tokio::spawn(async move {
-                mempool
-                    .get_adapter()
-                    .broadcast_tx(Context::new(), None, tx)
-                    .await
-                    .unwrap()
+    let futs =
+        txs.into_iter()
+            .map(|tx| {
+                let mempool = Arc::clone(&mempool);
+                tokio::spawn(async move {
+                    mempool
+                        .get_adapter()
+                        .broadcast_tx(Context::new(), None, tx)
+                        .await
+                        .unwrap()
+                })
             })
-        })
-        .collect::<Vec<_>>();
+            .collect::<Vec<_>>();
 
     futures::future::try_join_all(futs).await.unwrap();
 }
@@ -254,9 +254,9 @@ async fn exec_get_full_txs(
 fn mock_transaction(nonce: u64, is_call_system_script: bool) -> Eip1559Transaction {
     Eip1559Transaction {
         nonce:                    nonce.into(),
-        gas_limit:                U256::one(),
-        max_priority_fee_per_gas: U256::one(),
-        gas_price:                U256::one(),
+        gas_limit:                U64::one(),
+        max_priority_fee_per_gas: U64::one(),
+        gas_price:                U64::one(),
         action:                   if is_call_system_script {
             TransactionAction::Call(NATIVE_TOKEN_ISSUE_ADDRESS)
         } else {

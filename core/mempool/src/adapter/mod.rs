@@ -17,12 +17,13 @@ use protocol::traits::{
 };
 use protocol::types::{
     recover_intact_pub_key, Backend, BatchSignedTxs, CellDepWithPubKey, Hash, MerkleRoot,
-    SignedTransaction, H160, U256,
+    SignedTransaction, H160, U256, U64,
 };
 use protocol::{
     async_trait,
     codec::ProtocolCodec,
     constants::endpoints::{END_GOSSIP_NEW_TXS, RPC_PULL_TXS},
+    constants::MAX_GAS_PRICE,
     tokio, trie, Display, ProtocolError, ProtocolErrorKind, ProtocolResult,
 };
 
@@ -92,13 +93,14 @@ impl IntervalTxsBroadcaster {
             return;
         }
 
-        let report_if_err = move |ret: ProtocolResult<()>| {
-            if let Err(err) = ret {
-                if err_tx.unbounded_send(err).is_err() {
-                    error!("mempool: default mempool adapter dropped");
+        let report_if_err =
+            move |ret: ProtocolResult<()>| {
+                if let Err(err) = ret {
+                    if err_tx.unbounded_send(err).is_err() {
+                        error!("mempool: default mempool adapter dropped");
+                    }
                 }
-            }
-        };
+            };
 
         for (origin, batch_stxs) in txs_cache.drain() {
             let gossip_msg = BatchSignedTxs(batch_stxs);
@@ -120,7 +122,7 @@ pub struct DefaultMemPoolAdapter<C, N, S, DB, I> {
     storage: Arc<S>,
     trie_db: Arc<DB>,
 
-    addr_nonce:  DashMap<H160, (U256, U256)>,
+    addr_nonce:  DashMap<H160, (U64, U256)>,
     gas_limit:   AtomicU64,
     max_tx_size: AtomicUsize,
     chain_id:    u64,
@@ -183,13 +185,13 @@ where
         &self,
         ctx: Context,
         stx: &SignedTransaction,
-    ) -> ProtocolResult<U256> {
+    ) -> ProtocolResult<U64> {
         let addr = &stx.sender;
         let block = self.storage.get_latest_block(ctx.clone()).await?;
         let root = self.executor_backend(ctx).await?.get_metadata_root();
 
         if MetadataHandle::new(root).is_validator(block.header.number + 1, *addr)? {
-            return Ok(U256::zero());
+            return Ok(U64::zero());
         }
 
         Err(MemPoolError::CheckAuthorization {
@@ -243,8 +245,8 @@ where
 
     fn verify_gas_price(&self, stx: &SignedTransaction) -> ProtocolResult<()> {
         let gas_price = stx.transaction.unsigned.gas_price();
-        if gas_price == U256::zero() || gas_price >= U256::from(u64::MAX) {
-            return Err(MemPoolError::InvalidGasPrice(gas_price).into());
+        if gas_price == U64::zero() || gas_price >= MAX_GAS_PRICE {
+            return Err(MemPoolError::InvalidGasPrice(gas_price.low_u64()).into());
         }
 
         Ok(())
@@ -252,7 +254,7 @@ where
 
     fn verify_gas_limit(&self, ctx: Context, stx: &SignedTransaction) -> ProtocolResult<()> {
         let gas_limit_tx = stx.transaction.unsigned.gas_limit();
-        if gas_limit_tx > &U256::from(self.gas_limit.load(Ordering::Acquire)) {
+        if gas_limit_tx > &U64::from(self.gas_limit.load(Ordering::Acquire)) {
             if ctx.is_network_origin_txs() {
                 self.network.report(
                     ctx,
@@ -371,7 +373,7 @@ where
         &self,
         ctx: Context,
         tx: &SignedTransaction,
-    ) -> ProtocolResult<U256> {
+    ) -> ProtocolResult<U64> {
         if is_call_system_script(tx.transaction.unsigned.action())? {
             return self.check_system_script_tx_authorization(ctx, tx).await;
         }
@@ -399,9 +401,9 @@ where
         let backend = self.executor_backend(ctx).await?;
         let account = backend.basic(*addr);
         self.addr_nonce
-            .insert(*addr, (account.nonce, account.balance));
+            .insert(*addr, (account.nonce.low_u64().into(), account.balance));
 
-        if &account.nonce > tx.transaction.unsigned.nonce() {
+        if account.nonce.low_u64() > tx.transaction.unsigned.nonce().low_u64() {
             return Err(MemPoolError::InvalidNonce {
                 current:  account.nonce.as_u64(),
                 tx_nonce: tx.transaction.unsigned.nonce().as_u64(),
@@ -418,7 +420,7 @@ where
             .into());
         }
 
-        Ok(tx.transaction.unsigned.nonce() - account.nonce)
+        Ok(tx.transaction.unsigned.nonce() - account.nonce.low_u64())
     }
 
     async fn check_transaction(&self, ctx: Context, stx: &SignedTransaction) -> ProtocolResult<()> {
@@ -627,13 +629,9 @@ mod tests {
         let (broadcast_signal_tx, mut broadcast_signal_rx) = unbounded();
         let gossip = MockGossip::new(broadcast_signal_tx);
 
-        tokio::spawn(IntervalTxsBroadcaster::broadcast(
-            stx_rx,
-            1000000,
-            tx_size,
-            gossip.clone(),
-            err_tx,
-        ));
+        tokio::spawn(
+            IntervalTxsBroadcaster::broadcast(stx_rx, 1000000, tx_size, gossip.clone(), err_tx)
+        );
 
         for stx in default_mock_txs(11).into_iter() {
             stx_tx.unbounded_send((None, stx)).expect("send stx fail");
@@ -655,13 +653,9 @@ mod tests {
         let (broadcast_signal_tx, mut broadcast_signal_rx) = unbounded();
         let gossip = MockGossip::new(broadcast_signal_tx);
 
-        tokio::spawn(IntervalTxsBroadcaster::broadcast(
-            stx_rx,
-            200,
-            tx_size,
-            gossip.clone(),
-            err_tx,
-        ));
+        tokio::spawn(
+            IntervalTxsBroadcaster::broadcast(stx_rx, 200, tx_size, gossip.clone(), err_tx)
+        );
 
         for stx in default_mock_txs(9).into_iter() {
             stx_tx.unbounded_send((None, stx)).expect("send stx fail");
@@ -683,13 +677,9 @@ mod tests {
         let (broadcast_signal_tx, mut broadcast_signal_rx) = unbounded();
         let gossip = MockGossip::new(broadcast_signal_tx);
 
-        tokio::spawn(IntervalTxsBroadcaster::broadcast(
-            stx_rx,
-            200,
-            tx_size,
-            gossip.clone(),
-            err_tx,
-        ));
+        tokio::spawn(
+            IntervalTxsBroadcaster::broadcast(stx_rx, 200, tx_size, gossip.clone(), err_tx)
+        );
 
         for stx in default_mock_txs(19).into_iter() {
             stx_tx.unbounded_send((None, stx)).expect("send stx fail");

@@ -62,19 +62,21 @@ make_auto_flush_static_metric! {
 }
 
 lazy_static! {
-    pub static ref API_REQUEST_RESULT_COUNTER_VEC: CounterVec = register_counter_vec!(
-        "axon_api_request_result_total",
-        "Total number of request result",
-        &["type", "result"]
-    )
-    .expect("request result total");
-    pub static ref API_REQUEST_TIME_HISTOGRAM_VEC: HistogramVec = register_histogram_vec!(
-        "axon_api_request_time_cost_seconds",
-        "Request process time cost",
-        &["type"],
-        exponential_buckets(0.001, 2.0, 20).expect("api req time expontial")
-    )
-    .expect("request time cost");
+    pub static ref API_REQUEST_RESULT_COUNTER_VEC: CounterVec =
+        register_counter_vec!(
+            "axon_api_request_result_total",
+            "Total number of request result",
+            &["type", "result"]
+        )
+        .expect("request result total");
+    pub static ref API_REQUEST_TIME_HISTOGRAM_VEC: HistogramVec =
+        register_histogram_vec!(
+            "axon_api_request_time_cost_seconds",
+            "Request process time cost",
+            &["type"],
+            exponential_buckets(0.001, 2.0, 20).expect("api req time expontial")
+        )
+        .expect("request time cost");
 }
 
 lazy_static! {

@@ -10,7 +10,7 @@ use evm::Config;
 use protocol::types::{
     Bytes, Eip1559Transaction, ExecutorContext, ExitReason, ExitSucceed, Public,
     SignatureComponents, SignedTransaction, TransactionAction, UnsignedTransaction,
-    UnverifiedTransaction, H160, H256, U256,
+    UnverifiedTransaction, H160, H256, U256, U64,
 };
 use protocol::{codec::hex_decode, tokio, traits::Executor, trie::MemoryDB};
 
@@ -24,7 +24,7 @@ fn exec_adapter() -> AxonExecutorApplyAdapter<ImplStorage<MemoryAdapter>, Memory
     let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()), 20);
     let ctx = ExecutorContext {
         block_gas_limit: u32::MAX.into(),
-        block_base_fee_per_gas: U256::one(),
+        block_base_fee_per_gas: U64::one(),
         ..Default::default()
     };
 
@@ -50,10 +50,10 @@ fn gen_tx(sender: H160, addr: H160, value: u64, data: Vec<u8>) -> SignedTransact
     SignedTransaction {
         transaction: UnverifiedTransaction {
             unsigned:  UnsignedTransaction::Eip1559(Eip1559Transaction {
-                nonce:                    U256::default(),
-                max_priority_fee_per_gas: U256::default(),
-                gas_price:                U256::default(),
-                gas_limit:                U256::from_str("0x1000000000").unwrap(),
+                nonce:                    U64::default(),
+                max_priority_fee_per_gas: U64::default(),
+                gas_price:                U64::default(),
+                gas_limit:                U64::from_str("0x1000000000").unwrap(),
                 action:                   TransactionAction::Call(addr),
                 value:                    value.into(),
                 data:                     data.into(),
@@ -127,20 +127,6 @@ async fn test_simplestorage() {
     let precompiles = build_precompile_set();
 
     // pragma solidity ^0.4.24;
-    //
-    // contract SimpleStorage {
-    //     uint storedData;
-    //
-    //     function set(uint x) public {
-    //         storedData = x;
-    //     }
-    //
-    //     function get() view public returns (uint) {
-    //         return storedData;
-    //     }
-    // }
-    //
-    // simplestorage_create_code created from above solidity
     let simplestorage_create_code = "608060405234801561001057600080fd5b5060df8061001f6000396000f3006080604052600436106049576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b114604e5780636d4ce63c146078575b600080fd5b348015605957600080fd5b5060766004803603810190808035906020019092919050505060a0565b005b348015608357600080fd5b50608a60aa565b6040518082815260200191505060405180910390f35b8060008190555050565b600080549050905600a165627a7a7230582099c66a25d59f0aa78f7ebc40748fa1d1fbc335d8d780f284841b30e0365acd960029";
     let mut tx = gen_tx(
         H160::from_str("0xf000000000000000000000000000000000000000").unwrap(),
@@ -161,13 +147,14 @@ async fn test_simplestorage() {
     // `println!("{:?}", backend.state().keys());`
 
     // let's call SimpleStorage.set(42)
-    let tx = gen_tx(
-        H160::from_str("0xf000000000000000000000000000000000000000").unwrap(),
-        H160::from_str("0xc15d2ba57d126e6603240e89437efd419ce329d2").unwrap(),
-        0,
-        hex_decode("60fe47b1000000000000000000000000000000000000000000000000000000000000002a")
-            .unwrap(),
-    );
+    let tx =
+        gen_tx(
+            H160::from_str("0xf000000000000000000000000000000000000000").unwrap(),
+            H160::from_str("0xc15d2ba57d126e6603240e89437efd419ce329d2").unwrap(),
+            0,
+            hex_decode("60fe47b1000000000000000000000000000000000000000000000000000000000000002a")
+                .unwrap(),
+        );
     let r = EvmExecutor::evm_exec(&mut adapter, &config, &precompiles, &tx);
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Stopped));
     assert!(r.ret.is_empty());

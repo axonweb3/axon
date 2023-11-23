@@ -48,17 +48,18 @@ impl<Adapter: ConsensusAdapter + 'static> Consensus for OverlordConsensus<Adapte
     }
 
     async fn set_vote(&self, ctx: Context, vote: Vec<u8>) -> ProtocolResult<()> {
-        let ctx = match AxonTracer::default()
-            .span("consensus.set_vote", vec![Tag::new("kind", "consensus")])
-        {
-            Some(mut span) => {
-                span.log(|log| {
-                    log.time(common_apm::Instant::now());
-                });
-                ctx.with_value("parent_span_ctx", span.context().cloned())
-            }
-            None => ctx,
-        };
+        let ctx =
+            match AxonTracer::default()
+                .span("consensus.set_vote", vec![Tag::new("kind", "consensus")])
+            {
+                Some(mut span) => {
+                    span.log(|log| {
+                        log.time(common_apm::Instant::now());
+                    });
+                    ctx.with_value("parent_span_ctx", span.context().cloned())
+                }
+                None => ctx,
+            };
 
         let signed_vote = SignedVote::decode(vote)
             .map_err(|_| ConsensusError::DecodeErr(ConsensusType::SignedVote))?;
@@ -171,14 +172,15 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
         timer_config: Option<DurationConfig>,
     ) -> ProtocolResult<()> {
         // The address field of Node struct should use the node's secp256k1 public key
-        let authority_list = validators
-            .into_iter()
-            .map(|v| Node {
-                address:        v.pub_key,
-                propose_weight: v.propose_weight,
-                vote_weight:    v.vote_weight,
-            })
-            .collect::<Vec<_>>();
+        let authority_list =
+            validators
+                .into_iter()
+                .map(|v| Node {
+                    address:        v.pub_key,
+                    propose_weight: v.propose_weight,
+                    vote_weight:    v.vote_weight,
+                })
+                .collect::<Vec<_>>();
 
         self.inner
             .run(init_height, interval, authority_list, timer_config)

@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::codec::serialize_uint;
 use crate::types::{
     logs_bloom, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, Log, MerkleRoot, Receipt,
-    SignedTransaction, VecDisplayHelper, H160, U256,
+    SignedTransaction, VecDisplayHelper, H160, U64,
 };
 use crate::{codec::ProtocolCodec, types::TypesError};
 
@@ -81,9 +81,9 @@ pub struct Proposal {
     pub timestamp:                u64,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub number:                   BlockNumber,
-    pub gas_limit:                U256,
+    pub gas_limit:                U64,
     pub extra_data:               Vec<ExtraData>,
-    pub base_fee_per_gas:         U256,
+    pub base_fee_per_gas:         U64,
     pub proof:                    Proof,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub chain_id:                 u64,
@@ -176,9 +176,7 @@ impl Block {
             transactions_root:        proposal.transactions_root,
             signed_txs_hash:          proposal.signed_txs_hash,
             receipts_root:            exec_resp.receipt_root,
-            log_bloom:                Bloom::from(BloomInput::Raw(
-                rlp::encode_list(&logs).as_ref(),
-            )),
+            log_bloom:                Bloom::from(BloomInput::Raw(rlp::encode_list(&logs).as_ref())),
             timestamp:                proposal.timestamp,
             number:                   proposal.number,
             gas_used:                 exec_resp.gas_used.into(),
@@ -217,7 +215,7 @@ impl Block {
                     block_hash: self.hash(),
                     tx_index: idx as u32,
                     state_root: self.header.state_root,
-                    used_gas: U256::from(res.gas_used),
+                    used_gas: U64::from(res.gas_used),
                     logs_bloom: logs_bloom(res.logs.iter()),
                     logs: res.logs.clone(),
                     log_index,
@@ -286,13 +284,13 @@ pub struct Header {
     pub timestamp:                u64,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub number:                   BlockNumber,
-    pub gas_used:                 U256,
-    pub gas_limit:                U256,
+    pub gas_used:                 U64,
+    pub gas_limit:                U64,
     /// Extra data for the block header
     /// The first index of extra_data is used to store hardfork information:
     /// `HardforkInfoInner`
     pub extra_data:               Vec<ExtraData>,
-    pub base_fee_per_gas:         U256,
+    pub base_fee_per_gas:         U64,
     pub proof:                    Proof,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub call_system_script_count: u32,

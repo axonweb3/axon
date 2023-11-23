@@ -21,10 +21,6 @@ use crate::{
 };
 
 /// Peer store
-///
-/// | -- choose to identify --| --- choose to feeler --- | --      delete     --
-/// | | 1      | 2     | 3      | 4    | 5    | 6   | 7    | More than seven
-/// days  |
 #[derive(Default)]
 pub struct PeerStore {
     addr_manager: Manager,
@@ -145,9 +141,9 @@ impl PeerStore {
                 extract_peer_id(&peer_addr.addr)
                     .map(|peer_id| !peers.contains_key(&peer_id))
                     .unwrap_or_default()
-                    && peer_addr.connected(|t| {
-                        t > addr_expired_ms && t <= now_ms.saturating_sub(DIAL_INTERVAL)
-                    })
+                    && peer_addr.connected(
+                        |t| t > addr_expired_ms && t <= now_ms.saturating_sub(DIAL_INTERVAL)
+                    )
             })
     }
 

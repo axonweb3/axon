@@ -9,7 +9,7 @@ use common_crypto::secp256k1_recover;
 
 use crate::types::{
     Bloom, Bytes, BytesMut, CellDepWithPubKey, ExitReason, Hash, Hasher, Public, TxResp,
-    TypesError, H160, H256, H520, U256,
+    TypesError, H160, H256, H520, U256, U64,
 };
 use crate::ProtocolResult;
 
@@ -34,7 +34,7 @@ impl UnsignedTransaction {
 
     pub fn may_cost(&self) -> U256 {
         if let Some(res) = self.gas_price().checked_mul(*self.gas_limit()) {
-            return res
+            return U256::from(res.low_u64())
                 .checked_add(*self.value())
                 .unwrap_or_else(U256::max_value);
         }
@@ -74,7 +74,7 @@ impl UnsignedTransaction {
         }
     }
 
-    pub fn gas_price(&self) -> U256 {
+    pub fn gas_price(&self) -> U64 {
         match self {
             UnsignedTransaction::Legacy(tx) => tx.gas_price,
             UnsignedTransaction::Eip2930(tx) => tx.gas_price,
@@ -82,7 +82,7 @@ impl UnsignedTransaction {
         }
     }
 
-    pub fn max_priority_fee_per_gas(&self) -> &U256 {
+    pub fn max_priority_fee_per_gas(&self) -> &U64 {
         match self {
             UnsignedTransaction::Legacy(tx) => &tx.gas_price,
             UnsignedTransaction::Eip2930(tx) => &tx.gas_price,
@@ -135,7 +135,7 @@ impl UnsignedTransaction {
         }
     }
 
-    pub fn gas_limit(&self) -> &U256 {
+    pub fn gas_limit(&self) -> &U64 {
         match self {
             UnsignedTransaction::Legacy(tx) => &tx.gas_limit,
             UnsignedTransaction::Eip2930(tx) => &tx.gas_limit,
@@ -143,7 +143,7 @@ impl UnsignedTransaction {
         }
     }
 
-    pub fn nonce(&self) -> &U256 {
+    pub fn nonce(&self) -> &U64 {
         match self {
             UnsignedTransaction::Legacy(tx) => &tx.nonce,
             UnsignedTransaction::Eip2930(tx) => &tx.nonce,
@@ -170,9 +170,10 @@ impl UnsignedTransaction {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct LegacyTransaction {
-    pub nonce:     U256,
-    pub gas_price: U256,
-    pub gas_limit: U256,
+    // According to [EIP-2681](https://eips.ethereum.org/EIPS/eip-2681), limit account nonce to 2^64-1
+    pub nonce:     U64,
+    pub gas_price: U64,
+    pub gas_limit: U64,
     pub action:    TransactionAction,
     pub value:     U256,
     pub data:      Bytes,
@@ -202,9 +203,9 @@ impl LegacyTransaction {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Eip2930Transaction {
-    pub nonce:       U256,
-    pub gas_price:   U256,
-    pub gas_limit:   U256,
+    pub nonce:       U64,
+    pub gas_price:   U64,
+    pub gas_limit:   U64,
     pub action:      TransactionAction,
     pub value:       U256,
     pub data:        Bytes,
@@ -239,10 +240,10 @@ impl Eip2930Transaction {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Eip1559Transaction {
-    pub nonce:                    U256,
-    pub max_priority_fee_per_gas: U256,
-    pub gas_price:                U256,
-    pub gas_limit:                U256,
+    pub nonce:                    U64,
+    pub max_priority_fee_per_gas: U64,
+    pub gas_price:                U64,
+    pub gas_limit:                U64,
     pub action:                   TransactionAction,
     pub value:                    U256,
     pub data:                     Bytes,

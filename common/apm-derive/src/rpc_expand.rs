@@ -13,29 +13,33 @@ pub fn expand_rpc_metrics(attr: TokenStream, func: TokenStream) -> TokenStream {
     let func_block = &func.block;
     let func_output = &func_sig.output;
     let func_return = PinBoxFutRet::parse(func_output);
-    let func_ret_ty = match func_output {
-        ReturnType::Default => quote! { () },
-        ReturnType::Type(_, ty) => quote! { #ty },
-    };
+    let func_ret_ty =
+        match func_output {
+            ReturnType::Default => quote! { () },
+            ReturnType::Type(_, ty) => quote! { #ty },
+        };
     let ret_ty = func_return.return_type();
     let args = func_sig
         .inputs
         .iter()
         .filter_map(|arg| match arg {
             syn::FnArg::Receiver(_) => None,
-            syn::FnArg::Typed(inner) => match &*inner.pat {
-                syn::Pat::Ident(pat) => Some(pat.ident.clone()),
-                _ => None,
-            },
+            syn::FnArg::Typed(inner) => {
+                match &*inner.pat {
+                    syn::Pat::Ident(pat) => Some(pat.ident.clone()),
+                    _ => None,
+                }
+            }
         })
         .collect::<Vec<_>>();
 
     let fn_name = func_ident.to_string();
-    let mut debug = if args.is_empty() {
-        "call rpc {}".to_string()
-    } else {
-        "call rpc {} with args,".to_string()
-    };
+    let mut debug =
+        if args.is_empty() {
+            "call rpc {}".to_string()
+        } else {
+            "call rpc {} with args,".to_string()
+        };
     for (index, name) in args.iter().enumerate() {
         if index != 0 {
             debug.push(',')

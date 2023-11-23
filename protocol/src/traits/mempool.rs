@@ -1,4 +1,6 @@
-use crate::types::{BlockNumber, Hash, MerkleRoot, PackedTxHashes, SignedTransaction, H160, U256};
+use crate::types::{
+    BlockNumber, Hash, MerkleRoot, PackedTxHashes, SignedTransaction, H160, U256, U64,
+};
 use crate::{async_trait, traits::Context, ProtocolResult};
 
 #[async_trait]
@@ -65,7 +67,7 @@ pub trait MemPoolAdapter: Send + Sync {
         &self,
         ctx: Context,
         tx: &SignedTransaction,
-    ) -> ProtocolResult<U256>;
+    ) -> ProtocolResult<U64>;
 
     async fn check_transaction(&self, ctx: Context, tx: &SignedTransaction) -> ProtocolResult<()>;
 

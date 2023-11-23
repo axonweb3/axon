@@ -97,11 +97,11 @@ where
     }
 
     fn block_gas_limit(&self) -> U256 {
-        self.exec_ctx.block_gas_limit
+        U256::from(self.exec_ctx.block_gas_limit.low_u64())
     }
 
     fn block_base_fee_per_gas(&self) -> U256 {
-        self.exec_ctx.block_base_fee_per_gas
+        U256::from(self.exec_ctx.block_base_fee_per_gas.low_u64())
     }
 
     fn chain_id(&self) -> U256 {
@@ -133,11 +133,12 @@ where
     }
 
     fn code(&self, address: H160) -> Vec<u8> {
-        let code_hash = if let Some(bytes) = self.trie.get(address.as_bytes()).unwrap() {
-            Account::decode(bytes).unwrap().code_hash
-        } else {
-            return Vec::new();
-        };
+        let code_hash =
+            if let Some(bytes) = self.trie.get(address.as_bytes()).unwrap() {
+                Account::decode(bytes).unwrap().code_hash
+            } else {
+                return Vec::new();
+            };
 
         if code_hash == NIL_DATA {
             return Vec::new();

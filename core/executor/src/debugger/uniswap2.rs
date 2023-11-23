@@ -6,7 +6,7 @@ use evm::{ExitReason, ExitSucceed};
 
 use protocol::codec::hex_decode;
 use protocol::tokio;
-use protocol::types::{Bytes, TransactionAction, H160};
+use protocol::types::{Bytes, TransactionAction, H160, U64};
 
 ethabi_contract::use_contract!(factory, "res/factory.abi");
 ethabi_contract::use_contract!(router, "res/router.abi");
@@ -35,9 +35,9 @@ fn read_code(path: &str) -> String {
 
 fn construct_tx(action: TransactionAction, value: U256, data: Vec<u8>) -> Eip1559Transaction {
     Eip1559Transaction {
-        nonce: U256::default(),
-        max_priority_fee_per_gas: U256::default(),
-        gas_price: U256::default(),
+        nonce: U64::default(),
+        max_priority_fee_per_gas: U64::default(),
+        gas_price: U64::default(),
         gas_limit: 10000000000u64.into(),
         action,
         value,
@@ -241,11 +241,12 @@ async fn test_uniswap2_add_liquidity() {
     println!(
         "######## Approve router max allowance of 2rd erc20, which is essential for addLiquidity"
     );
-    let tx = construct_tx(
-        TransactionAction::Call(erc20_address_1),
-        U256::default(),
-        call_approve_code,
-    );
+    let tx =
+        construct_tx(
+            TransactionAction::Call(erc20_address_1),
+            U256::default(),
+            call_approve_code,
+        );
     let stx = mock_signed_tx(tx, sender);
     let resp = debugger.exec(block_number, vec![stx]);
     println!("{:?}", resp);
@@ -312,11 +313,12 @@ async fn test_uniswap2_add_liquidity_eth() {
 
     println!("######## Call router's factory(), which is essential for addLiquidityETH, must be called before deploying erc20 contract");
     let call_factory_code = router_functions::factory::encode_input();
-    let tx = construct_tx(
-        TransactionAction::Call(router_address),
-        U256::default(),
-        call_factory_code,
-    );
+    let tx =
+        construct_tx(
+            TransactionAction::Call(router_address),
+            U256::default(),
+            call_factory_code,
+        );
     let stx = mock_signed_tx(tx, sender);
     let resp = debugger.exec(block_number, vec![stx]);
     println!("{:?}", resp);
@@ -341,11 +343,12 @@ async fn test_uniswap2_add_liquidity_eth() {
     // Approve router max allowance of 1st erc20
     println!("######## Approve router max allowance of erc20, which is essential for addLiquidity");
     let call_approve_code = erc20_functions::approve::encode_input(router_address, U256::MAX);
-    let tx = construct_tx(
-        TransactionAction::Call(erc20_address),
-        U256::default(),
-        call_approve_code,
-    );
+    let tx =
+        construct_tx(
+            TransactionAction::Call(erc20_address),
+            U256::default(),
+            call_approve_code,
+        );
     let stx = mock_signed_tx(tx, sender);
     let resp = debugger.exec(block_number, vec![stx]);
     println!("{:?}", resp);
@@ -373,11 +376,12 @@ async fn test_uniswap2_add_liquidity_eth() {
     println!("pair_address: {:?}", pair_address);
     let value = distribution_amount / 2u64;
     let call_transfer_code = weth_functions::transfer::encode_input(pair_address, value);
-    let tx = construct_tx(
-        TransactionAction::Call(weth_address),
-        U256::default(),
-        call_transfer_code,
-    );
+    let tx =
+        construct_tx(
+            TransactionAction::Call(weth_address),
+            U256::default(),
+            call_transfer_code,
+        );
     let stx = mock_signed_tx(tx, sender);
     let resp = debugger.exec(block_number, vec![stx]);
     println!("{:?}", resp);
@@ -394,14 +398,15 @@ async fn test_uniswap2_add_liquidity_eth() {
     let amount_eth_min: U256 = 10000_000000000000000000u128.into();
     let to = sender;
     let deadline: U256 = (time_now() + 1_000_000).into();
-    let call_add_liquidity_code = router_functions::add_liquidity_eth::encode_input(
-        token,
-        amount_token_desired,
-        amount_token_min,
-        amount_eth_min,
-        to,
-        deadline,
-    );
+    let call_add_liquidity_code =
+        router_functions::add_liquidity_eth::encode_input(
+            token,
+            amount_token_desired,
+            amount_token_min,
+            amount_eth_min,
+            to,
+            deadline,
+        );
     let tx = construct_tx(
         TransactionAction::Call(router_address),
         U256::default(),

@@ -2,7 +2,7 @@ pub use evm::backend::{ApplyBackend, Backend, MemoryBackend};
 
 use crate::types::{
     Account, Bytes, ExecResp, ExecutorContext, Log, MerkleRoot, SignedTransaction, TxResp,
-    ValidatorExtend, H160, U256,
+    ValidatorExtend, H160, U256, U64,
 };
 
 pub trait ExecutorReadOnlyAdapter: Backend {
@@ -16,7 +16,7 @@ pub trait ExecutorReadOnlyAdapter: Backend {
 pub trait ExecutorAdapter: ExecutorReadOnlyAdapter + ApplyBackend {
     fn set_origin(&mut self, origin: H160);
 
-    fn set_gas_price(&mut self, gas_price: U256);
+    fn set_gas_price(&mut self, gas_price: U64);
 
     fn save_account(&mut self, address: &H160, account: &Account);
 
@@ -65,7 +65,7 @@ impl<'a> ExecutorAdapter for MemoryBackend<'a> {
         unreachable!()
     }
 
-    fn set_gas_price(&mut self, _gas_price: U256) {
+    fn set_gas_price(&mut self, _gas_price: U64) {
         unreachable!()
     }
 

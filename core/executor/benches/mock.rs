@@ -9,7 +9,7 @@ use protocol::{
     types::{
         public_to_address, Account, Address, Bytes, Eip1559Transaction, ExecutorContext, Public,
         SignedTransaction, TransactionAction, UnsignedTransaction, UnverifiedTransaction, H160,
-        H512, NIL_DATA, RLP_NULL, U256,
+        H512, NIL_DATA, RLP_NULL, U256, U64,
     },
 };
 
@@ -76,7 +76,7 @@ pub fn mock_transactions(n: usize) -> Vec<SignedTransaction> {
             )
         };
         let raw_tx = Eip1559Transaction {
-            nonce:                    U256::zero(),
+            nonce:                    U64::zero(),
             max_priority_fee_per_gas: 1u64.into(),
             gas_price:                1u64.into(),
             gas_limit:                10_000_000u64.into(),
@@ -93,9 +93,10 @@ pub fn mock_transactions(n: usize) -> Vec<SignedTransaction> {
                 hash:      Default::default(),
             };
             let hash = utx.signature_hash(true);
-            let signature = Secp256k1Recoverable::sign_message(hash.as_bytes(), &sender_priv_key)
-                .unwrap()
-                .to_bytes();
+            let signature =
+                Secp256k1Recoverable::sign_message(hash.as_bytes(), &sender_priv_key)
+                    .unwrap()
+                    .to_bytes();
             utx.signature = Some(signature.into());
             SignedTransaction {
                 transaction: utx.calc_hash(),

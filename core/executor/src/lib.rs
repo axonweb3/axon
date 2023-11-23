@@ -193,9 +193,9 @@ impl Executor for AxonExecutor {
         } else {
             TrieMerkle::from_receipts(&encode_receipts)
                 .root_hash()
-                .unwrap_or_else(|err| {
-                    panic!("failed to calculate trie root hash for receipts since {err}")
-                })
+                .unwrap_or_else(
+                    |err| panic!("failed to calculate trie root hash for receipts since {err}")
+                )
         };
 
         ExecResp {
@@ -224,12 +224,13 @@ fn test_receipt() {
         access_list:              Default::default(),
     };
     let unsigned_tx = UnsignedTransaction::Eip1559(eip1559_tx);
-    let unverified_tx = UnverifiedTransaction {
-        unsigned:  unsigned_tx,
-        signature: Default::default(),
-        chain_id:  Default::default(),
-        hash:      Default::default(),
-    };
+    let unverified_tx =
+        UnverifiedTransaction {
+            unsigned:  unsigned_tx,
+            signature: Default::default(),
+            chain_id:  Default::default(),
+            hash:      Default::default(),
+        };
     let tx = SignedTransaction {
         transaction: unverified_tx,
         sender:      Default::default(),
@@ -279,9 +280,9 @@ fn test_receipt() {
     } else {
         TrieMerkle::from_receipts(&encode_receipts)
             .root_hash()
-            .unwrap_or_else(|err| {
-                panic!("failed to calculate trie root hash for receipts since {err}")
-            })
+            .unwrap_or_else(
+                |err| panic!("failed to calculate trie root hash for receipts since {err}")
+            )
     };
 
     let reference_root = [
@@ -300,17 +301,20 @@ impl AxonExecutor {
     ) -> TxResp {
         // Deduct pre-pay gas
         let sender = tx.sender;
-        let tx_gas_price = adapter.gas_price();
-        let gas_limit = tx.transaction.unsigned.gas_limit();
+        // The `Backend` trait is imply in
+        // `core/executor/src/adapter/backend/read_only.rs`. The `gas_price` is never
+        // larger than u64::MAX.
+        let tx_gas_price = adapter.gas_price().low_u64();
+        let gas_limit = tx.transaction.unsigned.gas_limit().low_u64();
         let prepay_gas = tx_gas_price * gas_limit;
 
         let mut account = adapter.get_account(&sender);
         let old_nonce = account.nonce;
 
-        account.balance = account.balance.saturating_sub(prepay_gas);
+        account.balance = account.balance.saturating_sub(prepay_gas.into());
         adapter.save_account(&sender, &account);
 
-        let metadata = StackSubstateMetadata::new(gas_limit.as_u64(), config);
+        let metadata = StackSubstateMetadata::new(gas_limit, config);
         let mut executor = StackExecutor::new_with_precompiles(
             MemoryStackState::new(metadata, adapter),
             config,
@@ -331,14 +335,14 @@ impl AxonExecutor {
                 *addr,
                 *tx.transaction.unsigned.value(),
                 tx.transaction.unsigned.data().to_vec(),
-                gas_limit.as_u64(),
+                gas_limit,
                 access_list,
             ),
             TransactionAction::Create => executor.transact_create(
                 tx.sender,
                 *tx.transaction.unsigned.value(),
                 tx.transaction.unsigned.data().to_vec(),
-                gas_limit.as_u64(),
+                gas_limit,
                 access_list,
             ),
         };
@@ -365,7 +369,7 @@ impl AxonExecutor {
         // Add remain gas
         if remained_gas != 0 {
             let remain_gas = U256::from(remained_gas)
-                .checked_mul(tx_gas_price)
+                .checked_mul(tx_gas_price.into())
                 .unwrap_or_else(U256::max_value);
             account.balance = account
                 .balance
@@ -380,7 +384,7 @@ impl AxonExecutor {
             ret:          res,
             remain_gas:   remained_gas,
             gas_used:     used_gas,
-            fee_cost:     tx_gas_price
+            fee_cost:     U256::from(tx_gas_price)
                 .checked_mul(used_gas.into())
                 .unwrap_or(U256::max_value()),
             logs:         vec![],
@@ -478,9 +482,9 @@ impl AxonExecutor {
         } else {
             TrieMerkle::from_receipts(&encode_receipts)
                 .root_hash()
-                .unwrap_or_else(|err| {
-                    panic!("failed to calculate trie root hash for receipts since {err}")
-                })
+                .unwrap_or_else(
+                    |err| panic!("failed to calculate trie root hash for receipts since {err}")
+                )
         };
 
         ExecResp {

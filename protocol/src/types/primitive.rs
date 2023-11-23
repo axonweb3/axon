@@ -174,10 +174,6 @@ impl<'de> Deserialize<'de> for Hex {
 }
 
 /// A 256 bits bytes used for sensitive data, such as private keys.
-///
-/// It's implemented a `Drop` handler which erase its memory when it dropped.
-/// This ensures that sensitive data is securely erased from memory when it is
-/// no longer needed.
 pub type Key256Bits = Zeroizing<[u8; 32]>;
 
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
