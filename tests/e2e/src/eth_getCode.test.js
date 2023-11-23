@@ -55,13 +55,13 @@ describe("eth_getCode", () => {
  * param2: real number
  */
   it("eth_getCode_4", async () => {
-      const testType = await page.$(goto.pageIds.testTypeId);
-      const param1 = await page.$(goto.pageIds.param1Id);
-      const param2 = await page.$(goto.pageIds.param2Id);
-      await testType.type("1"); // 0: none params 1: common params to request 2: more params
-      await param1.type(testDataInfo.accountAddress);
-      await param2.type(testDataInfo.hexBlockNumber);
-      await goto.checkAndWait(page, "0x", 20);
+    const testType = await page.$(goto.pageIds.testTypeId);
+    const param1 = await page.$(goto.pageIds.param1Id);
+    const param2 = await page.$(goto.pageIds.param2Id);
+    await testType.type("1"); // 0: none params 1: common params to request 2: more params
+    await param1.type(testDataInfo.accountAddress);
+    await param2.type(testDataInfo.hexBlockNumber);
+    await goto.checkAndWait(page, "0x", 20);
   }, 25000);
 
   /**
