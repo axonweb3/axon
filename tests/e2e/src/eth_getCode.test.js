@@ -61,6 +61,8 @@ describe("eth_getCode", () => {
     await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type(testDataInfo.accountAddress);
     await param2.type(testDataInfo.hexBlockNumber);
+    // Running eth_getCode_4 and eth_getCode_9 simultaneously causes axonweb3/axon/issues/1579
+    // temporary solution: just wait 20 seconds after executing eth_getCode_4
     await goto.checkAndWait(page, "0x", 20);
   }, 25000);
 
