@@ -52,7 +52,7 @@ where
         let raw = raw.unwrap();
         Ok(Some(Account::decode(raw).map(|a| AccountInfo {
             balance:   U256(a.balance.0),
-            nonce:     a.nonce.as_u64(),
+            nonce:     a.nonce.low_u64(),
             code_hash: a.code_hash,
             code:      None,
         })?))
@@ -101,11 +101,11 @@ where
 
     fn block_hash(&mut self, number: U256) -> Result<H256, Self::Error> {
         let current_number = self.exec_ctx.block_number;
-        if number.as_u64() > current_number.as_u64() {
+        if number.low_u64() > current_number.low_u64() {
             return Ok(H256::default());
         }
 
-        let number = number.as_u64();
+        let number = number.low_u64();
         let res = blocking_async!(self, storage, get_block, Context::new(), number)
             .map(|b| b.hash())
             .unwrap_or_default();
@@ -124,16 +124,15 @@ where
             if change.is_empty() {
                 let _ = self.trie.remove(addr.as_bytes());
             }
-            let old_account =
-                match self.trie.get(addr.as_bytes()) {
-                    Ok(Some(raw)) => Account::decode(raw).unwrap(),
-                    _ => Account {
-                        nonce:        Default::default(),
-                        balance:      Default::default(),
-                        storage_root: RLP_NULL,
-                        code_hash:    NIL_DATA,
-                    },
-                };
+            let old_account = match self.trie.get(addr.as_bytes()) {
+                Ok(Some(raw)) => Account::decode(raw).unwrap(),
+                _ => Account {
+                    nonce:        Default::default(),
+                    balance:      Default::default(),
+                    storage_root: RLP_NULL,
+                    code_hash:    NIL_DATA,
+                },
+            };
 
             let storage_root = old_account.storage_root;
             let mut storage_trie = if storage_root == RLP_NULL {
@@ -300,7 +299,7 @@ where
             .nonce;
         set_revm(
             evm,
-            tx.transaction.unsigned.gas_limit().as_u64(),
+            tx.transaction.unsigned.gas_limit().low_u64(),
             Some(tx.sender),
             tx.transaction.unsigned.to(),
             *tx.transaction.unsigned.value(),
@@ -325,7 +324,7 @@ where
             exit_reason: evm::ExitReason::Succeed(ExitSucceed::Returned),
             ret,
             gas_used: res.gas_used,
-            remain_gas: tx.transaction.unsigned.gas_limit().as_u64() - res.gas_used,
+            remain_gas: tx.transaction.unsigned.gas_limit().low_u64() - res.gas_used,
             fee_cost: res.gas_used.into(),
             // todo
             logs: vec![],
@@ -340,9 +339,9 @@ where
     } else {
         TrieMerkle::from_iter(hashes.iter().enumerate())
             .root_hash()
-            .unwrap_or_else(
-                |err| panic!("failed to calculate trie root hash for receipts since {err}")
-            )
+            .unwrap_or_else(|err| {
+                panic!("failed to calculate trie root hash for receipts since {err}")
+            })
     };
 
     ExecResp {

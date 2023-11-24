@@ -66,15 +66,14 @@ impl ImageCellStore {
             }
         };
 
-        let trie =
-            if root == H256::default() {
-                MPTTrie::new(Arc::clone(&trie_db))
-            } else {
-                match MPTTrie::from_root(root, Arc::clone(&trie_db)) {
-                    Ok(m) => m,
-                    Err(e) => return Err(SystemScriptError::RestoreMpt(e.to_string()).into()),
-                }
-            };
+        let trie = if root == H256::default() {
+            MPTTrie::new(Arc::clone(&trie_db))
+        } else {
+            match MPTTrie::from_root(root, Arc::clone(&trie_db)) {
+                Ok(m) => m,
+                Err(e) => return Err(SystemScriptError::RestoreMpt(e.to_string()).into()),
+            }
+        };
 
         Ok(ImageCellStore { trie })
     }
@@ -144,7 +143,9 @@ impl ImageCellStore {
             Err(e) => return Err(SystemScriptError::GetCell(e.to_string()).into()),
         };
 
-        Ok(Some(rlp::decode(&cell).map_err(SystemScriptError::DecodeCell)?))
+        Ok(Some(
+            rlp::decode(&cell).map_err(SystemScriptError::DecodeCell)?,
+        ))
     }
 
     pub fn save_cells(
@@ -180,13 +181,12 @@ impl ImageCellStore {
                 .capacity(cell.output.capacity.pack())
                 .build();
 
-            let cell_info =
-                CellInfo {
-                    cell_output: cell_output.as_bytes(),
-                    cell_data: cell.data.0,
-                    created_number,
-                    consumed_number: None,
-                };
+            let cell_info = CellInfo {
+                cell_output: cell_output.as_bytes(),
+                cell_data: cell.data.0,
+                created_number,
+                consumed_number: None,
+            };
 
             let key = CellKey::new(cell.out_point.tx_hash, cell.out_point.index);
 

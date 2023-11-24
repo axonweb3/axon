@@ -26,27 +26,26 @@ pub fn get_random_bytes(len: usize) -> Bytes {
 }
 
 fn mock_sign_tx() -> SignedTransaction {
-    let mut utx =
-        UnverifiedTransaction {
-            unsigned:  UnsignedTransaction::Eip1559(Eip1559Transaction {
-                nonce:                    Default::default(),
-                max_priority_fee_per_gas: Default::default(),
-                gas_price:                Default::default(),
-                gas_limit:                Default::default(),
-                action:                   TransactionAction::Create,
-                value:                    Default::default(),
-                data:                     Bytes::new(),
-                access_list:              vec![],
-            }),
-            signature: Some(SignatureComponents {
-                standard_v: 4,
-                r:          Default::default(),
-                s:          Default::default(),
-            }),
-            chain_id:  Some(random::<u64>()),
-            hash:      mock_hash(),
-        }
-        .calc_hash();
+    let mut utx = UnverifiedTransaction {
+        unsigned:  UnsignedTransaction::Eip1559(Eip1559Transaction {
+            nonce:                    Default::default(),
+            max_priority_fee_per_gas: Default::default(),
+            gas_price:                Default::default(),
+            gas_limit:                Default::default(),
+            action:                   TransactionAction::Create,
+            value:                    Default::default(),
+            data:                     Bytes::new(),
+            access_list:              vec![],
+        }),
+        signature: Some(SignatureComponents {
+            standard_v: 4,
+            r:          Default::default(),
+            s:          Default::default(),
+        }),
+        chain_id:  Some(random::<u64>()),
+        hash:      mock_hash(),
+    }
+    .calc_hash();
 
     let priv_key = Secp256k1RecoverablePrivateKey::generate(&mut OsRng);
     let signature = Secp256k1Recoverable::sign_message(utx.hash.as_bytes(), &priv_key.to_bytes())

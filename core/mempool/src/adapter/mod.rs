@@ -93,14 +93,13 @@ impl IntervalTxsBroadcaster {
             return;
         }
 
-        let report_if_err =
-            move |ret: ProtocolResult<()>| {
-                if let Err(err) = ret {
-                    if err_tx.unbounded_send(err).is_err() {
-                        error!("mempool: default mempool adapter dropped");
-                    }
+        let report_if_err = move |ret: ProtocolResult<()>| {
+            if let Err(err) = ret {
+                if err_tx.unbounded_send(err).is_err() {
+                    error!("mempool: default mempool adapter dropped");
                 }
-            };
+            }
+        };
 
         for (origin, batch_stxs) in txs_cache.drain() {
             let gossip_msg = BatchSignedTxs(batch_stxs);
@@ -266,7 +265,7 @@ where
             }
             return Err(MemPoolError::ExceedGasLimit {
                 tx_hash:          stx.transaction.hash,
-                gas_limit_tx:     gas_limit_tx.as_u64(),
+                gas_limit_tx:     gas_limit_tx.low_u64(),
                 gas_limit_config: self.gas_limit.load(Ordering::Acquire),
             }
             .into());
@@ -382,8 +381,8 @@ where
         if let Some(res) = self.addr_nonce.get(addr) {
             if tx.transaction.unsigned.nonce() < &res.value().0 {
                 return Err(MemPoolError::InvalidNonce {
-                    current:  res.value().0.as_u64(),
-                    tx_nonce: tx.transaction.unsigned.nonce().as_u64(),
+                    current:  res.value().0.low_u64(),
+                    tx_nonce: tx.transaction.unsigned.nonce().low_u64(),
                 }
                 .into());
             } else if res.value().1 < tx.transaction.unsigned.may_cost() {
@@ -406,7 +405,7 @@ where
         if account.nonce.low_u64() > tx.transaction.unsigned.nonce().low_u64() {
             return Err(MemPoolError::InvalidNonce {
                 current:  account.nonce.as_u64(),
-                tx_nonce: tx.transaction.unsigned.nonce().as_u64(),
+                tx_nonce: tx.transaction.unsigned.nonce().low_u64(),
             }
             .into());
         }
@@ -629,9 +628,13 @@ mod tests {
         let (broadcast_signal_tx, mut broadcast_signal_rx) = unbounded();
         let gossip = MockGossip::new(broadcast_signal_tx);
 
-        tokio::spawn(
-            IntervalTxsBroadcaster::broadcast(stx_rx, 1000000, tx_size, gossip.clone(), err_tx)
-        );
+        tokio::spawn(IntervalTxsBroadcaster::broadcast(
+            stx_rx,
+            1000000,
+            tx_size,
+            gossip.clone(),
+            err_tx,
+        ));
 
         for stx in default_mock_txs(11).into_iter() {
             stx_tx.unbounded_send((None, stx)).expect("send stx fail");
@@ -653,9 +656,13 @@ mod tests {
         let (broadcast_signal_tx, mut broadcast_signal_rx) = unbounded();
         let gossip = MockGossip::new(broadcast_signal_tx);
 
-        tokio::spawn(
-            IntervalTxsBroadcaster::broadcast(stx_rx, 200, tx_size, gossip.clone(), err_tx)
-        );
+        tokio::spawn(IntervalTxsBroadcaster::broadcast(
+            stx_rx,
+            200,
+            tx_size,
+            gossip.clone(),
+            err_tx,
+        ));
 
         for stx in default_mock_txs(9).into_iter() {
             stx_tx.unbounded_send((None, stx)).expect("send stx fail");
@@ -677,9 +684,13 @@ mod tests {
         let (broadcast_signal_tx, mut broadcast_signal_rx) = unbounded();
         let gossip = MockGossip::new(broadcast_signal_tx);
 
-        tokio::spawn(
-            IntervalTxsBroadcaster::broadcast(stx_rx, 200, tx_size, gossip.clone(), err_tx)
-        );
+        tokio::spawn(IntervalTxsBroadcaster::broadcast(
+            stx_rx,
+            200,
+            tx_size,
+            gossip.clone(),
+            err_tx,
+        ));
 
         for stx in default_mock_txs(19).into_iter() {
             stx_tx.unbounded_send((None, stx)).expect("send stx fail");

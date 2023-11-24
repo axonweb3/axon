@@ -107,12 +107,11 @@ impl TypedValueParser for ConfigValueParser {
             .parse_ref(cmd, arg, value)
             .map(PathBuf::from)?;
         let dir_path = file_path.parent().ok_or_else(|| {
-            let err =
-                {
-                    let kind = io::ErrorKind::Other;
-                    let msg = format!("no parent directory of {}", file_path.display());
-                    io::Error::new(kind, msg)
-                };
+            let err = {
+                let kind = io::ErrorKind::Other;
+                let msg = format!("no parent directory of {}", file_path.display());
+                io::Error::new(kind, msg)
+            };
             let kind = clap::error::ErrorKind::InvalidValue;
             clap::Error::raw(kind, err)
         })?;

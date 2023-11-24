@@ -217,9 +217,10 @@ fn test_set_ckb_related_info() {
             .inner_db();
         let mut _db = METADATA_DB.write();
         const METADATA_DB_CACHE_SIZE: usize = 10;
-        _db.replace(Arc::new(
-            RocksTrieDB::new_metadata(Arc::clone(&inner_db), METADATA_DB_CACHE_SIZE)
-        ));
+        _db.replace(Arc::new(RocksTrieDB::new_metadata(
+            Arc::clone(&inner_db),
+            METADATA_DB_CACHE_SIZE,
+        )));
     }
 
     let old_metadata_root = H256::zero();

@@ -79,9 +79,9 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         let txs_root = if !txs.hashes.is_empty() {
             TrieMerkle::from_iter(txs.hashes.iter().enumerate())
                 .root_hash()
-                .unwrap_or_else(
-                    |err| panic!("failed to calculate trie root hash for transactions since {err}")
-                )
+                .unwrap_or_else(|err| {
+                    panic!("failed to calculate trie root hash for transactions since {err}")
+                })
         } else {
             RLP_NULL
         };
@@ -179,16 +179,16 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
                         .map(|v| &data == v)
                         .unwrap_or_default()
                     {
-                        return Err(ProtocolError::from(
-                            ConsensusError::Hardfork("hardfork proposal doesn't match".to_string())
-                        )
+                        return Err(ProtocolError::from(ConsensusError::Hardfork(
+                            "hardfork proposal doesn't match".to_string(),
+                        ))
                         .into());
                     }
                 }
                 Err(_) => {
-                    return Err(ProtocolError::from(
-                        ConsensusError::Hardfork("hardfork proposal can't decode".to_string())
-                    )
+                    return Err(ProtocolError::from(ConsensusError::Hardfork(
+                        "hardfork proposal can't decode".to_string(),
+                    ))
                     .into())
                 }
             }
@@ -285,9 +285,10 @@ impl<Adapter: ConsensusAdapter + 'static> Engine<Proposal> for ConsensusEngine<A
         }
 
         if current_number != status.last_number + 1 {
-            return Err(ProtocolError::from(
-                ConsensusError::OutdatedCommit(current_number, status.last_number)
-            )
+            return Err(ProtocolError::from(ConsensusError::OutdatedCommit(
+                current_number,
+                status.last_number,
+            ))
             .into());
         }
 
@@ -614,9 +615,9 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
         } else {
             TrieMerkle::from_iter(proposal.tx_hashes.iter().enumerate())
                 .root_hash()
-                .unwrap_or_else(
-                    |err| panic!("failed to calculate trie root hash for proposals since {err}")
-                )
+                .unwrap_or_else(|err| {
+                    panic!("failed to calculate trie root hash for proposals since {err}")
+                })
         };
 
         let stxs_hash = digest_signed_transactions(signed_txs);
@@ -741,7 +742,7 @@ impl<Adapter: ConsensusAdapter + 'static> ConsensusEngine<Adapter> {
             ctx,
             resp.state_root,
             MAX_BLOCK_GAS_LIMIT,
-            last_status.max_tx_size.as_u64(),
+            last_status.max_tx_size.low_u64(),
         );
 
         if block.header.number != proof.number {

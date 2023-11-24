@@ -150,12 +150,18 @@ pub fn init_system_contract_db<Adapter: ExecutorAdapter + ApplyBackend>(
     // Init metadata db.
     {
         let mut _db = METADATA_DB.write();
-        _db.replace(Arc::new(RocksTrieDB::new_metadata(Arc::clone(&db), METADATA_DB_CACHE_SIZE)));
+        _db.replace(Arc::new(RocksTrieDB::new_metadata(
+            Arc::clone(&db),
+            METADATA_DB_CACHE_SIZE,
+        )));
     }
 
     {
         let mut _db = HEADER_CELL_DB.write();
-        _db.replace(Arc::new(RocksTrieDB::new_ckb_light_client(db, HEADER_CELL_DB_CACHE_SIZE)));
+        _db.replace(Arc::new(RocksTrieDB::new_ckb_light_client(
+            db,
+            HEADER_CELL_DB_CACHE_SIZE,
+        )));
     }
 
     let current_light_client_root =

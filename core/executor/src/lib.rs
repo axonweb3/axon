@@ -193,9 +193,9 @@ impl Executor for AxonExecutor {
         } else {
             TrieMerkle::from_receipts(&encode_receipts)
                 .root_hash()
-                .unwrap_or_else(
-                    |err| panic!("failed to calculate trie root hash for receipts since {err}")
-                )
+                .unwrap_or_else(|err| {
+                    panic!("failed to calculate trie root hash for receipts since {err}")
+                })
         };
 
         ExecResp {
@@ -224,13 +224,12 @@ fn test_receipt() {
         access_list:              Default::default(),
     };
     let unsigned_tx = UnsignedTransaction::Eip1559(eip1559_tx);
-    let unverified_tx =
-        UnverifiedTransaction {
-            unsigned:  unsigned_tx,
-            signature: Default::default(),
-            chain_id:  Default::default(),
-            hash:      Default::default(),
-        };
+    let unverified_tx = UnverifiedTransaction {
+        unsigned:  unsigned_tx,
+        signature: Default::default(),
+        chain_id:  Default::default(),
+        hash:      Default::default(),
+    };
     let tx = SignedTransaction {
         transaction: unverified_tx,
         sender:      Default::default(),
@@ -280,9 +279,9 @@ fn test_receipt() {
     } else {
         TrieMerkle::from_receipts(&encode_receipts)
             .root_hash()
-            .unwrap_or_else(
-                |err| panic!("failed to calculate trie root hash for receipts since {err}")
-            )
+            .unwrap_or_else(|err| {
+                panic!("failed to calculate trie root hash for receipts since {err}")
+            })
     };
 
     let reference_root = [
@@ -482,9 +481,9 @@ impl AxonExecutor {
         } else {
             TrieMerkle::from_receipts(&encode_receipts)
                 .root_hash()
-                .unwrap_or_else(
-                    |err| panic!("failed to calculate trie root hash for receipts since {err}")
-                )
+                .unwrap_or_else(|err| {
+                    panic!("failed to calculate trie root hash for receipts since {err}")
+                })
         };
 
         ExecResp {

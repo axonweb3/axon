@@ -190,16 +190,15 @@ async fn start<K: KeyProvider>(
     let current_stxs = txs_wal.load_by_number(current_block.header.number + 1);
     log::info!("Recover {} txs from wal", current_stxs.len());
 
-    let mempool =
-        init_mempool(
-            &config.mempool,
-            &current_block.header,
-            &storage,
-            &trie_db,
-            &network_service.handle(),
-            &current_stxs,
-        )
-        .await;
+    let mempool = init_mempool(
+        &config.mempool,
+        &current_block.header,
+        &storage,
+        &trie_db,
+        &network_service.handle(),
+        &current_stxs,
+    )
+    .await;
 
     // Get the validator list from current metadata for consensus initialization
     let metadata_root = AxonExecutorReadOnlyAdapter::from_root(
@@ -240,16 +239,15 @@ async fn start<K: KeyProvider>(
     let hardfork_info = storage.hardfork_proposal(Default::default()).await?;
     let overlord_consensus = {
         let consensus_wal_path = config.data_path_for_consensus_wal();
-        let node_info =
-            Secp256k1PrivateKey::try_from(config.net_privkey.as_ref())
-                .map(|privkey| {
-                    NodeInfo::new(
-                        current_block.header.chain_id,
-                        privkey.pub_key(),
-                        hardfork_info,
-                    )
-                })
-                .map_err(MainError::Crypto)?;
+        let node_info = Secp256k1PrivateKey::try_from(config.net_privkey.as_ref())
+            .map(|privkey| {
+                NodeInfo::new(
+                    current_block.header.chain_id,
+                    privkey.pub_key(),
+                    hardfork_info,
+                )
+            })
+            .map_err(MainError::Crypto)?;
         let overlord_consensus = OverlordConsensus::new(
             status_agent.clone(),
             node_info,
@@ -347,7 +345,7 @@ where
         Arc::clone(storage),
         Arc::clone(trie_db),
         current_header.chain_id,
-        current_header.gas_limit.as_u64(),
+        current_header.gas_limit.low_u64(),
         config.pool_size as usize,
         config.broadcast_txs_size,
         config.broadcast_txs_interval,
@@ -436,15 +434,14 @@ fn run_overlord_consensus<M, N, S, DB>(
     };
 
     tokio::spawn(async move {
-        if let Err(e) =
-            overlord_consensus
-                .run(
-                    current_block.header.number,
-                    metadata.consensus_config.interval,
-                    validators,
-                    Some(timer_config),
-                )
-                .await
+        if let Err(e) = overlord_consensus
+            .run(
+                current_block.header.number,
+                metadata.consensus_config.interval,
+                validators,
+                Some(timer_config),
+            )
+            .await
         {
             log::error!("axon-consensus: {:?} error", e);
         }
@@ -457,14 +454,13 @@ async fn execute_genesis(
     db_group: &DatabaseGroup,
 ) -> ProtocolResult<RichBlock> {
     let metadata_0 = spec.params.clone();
-    let metadata_1 =
-        {
-            let mut tmp = metadata_0.clone();
-            tmp.epoch = metadata_0.epoch + 1;
-            tmp.version.start = metadata_0.version.end + 1;
-            tmp.version.end = tmp.version.start + metadata_0.version.end - 1;
-            tmp
-        };
+    let metadata_1 = {
+        let mut tmp = metadata_0.clone();
+        tmp.epoch = metadata_0.epoch + 1;
+        tmp.version.start = metadata_0.version.end + 1;
+        tmp.version.end = tmp.version.start + metadata_0.version.end - 1;
+        tmp
+    };
 
     let resp = execute_genesis_transactions(
         &partial_genesis,
@@ -504,11 +500,10 @@ fn execute_genesis_transactions(
     metadata_list: &[Metadata],
     hardfork: HardforkInfoInner,
 ) -> ProtocolResult<ExecResp> {
-    let state_root =
-        MPTTrie::new(db_group.trie_db())
-            .insert_accounts(accounts)
-            .expect("insert accounts")
-            .commit()?;
+    let state_root = MPTTrie::new(db_group.trie_db())
+        .insert_accounts(accounts)
+        .expect("insert accounts")
+        .commit()?;
     let mut backend = AxonExecutorApplyAdapter::from_root(
         state_root,
         db_group.trie_db(),
@@ -576,14 +571,13 @@ pub fn set_hardfork_info(
 
         system_contract::init_system_contract_db(inner_db, &mut backend);
 
-        let metadata_root =
-            AxonExecutorReadOnlyAdapter::from_root(
-                current_state_root,
-                Arc::clone(&trie_db),
-                Arc::clone(&storage),
-                Proposal::new_without_state_root(&current_block.header).into(),
-            )?
-            .get_metadata_root();
+        let metadata_root = AxonExecutorReadOnlyAdapter::from_root(
+            current_state_root,
+            Arc::clone(&trie_db),
+            Arc::clone(&storage),
+            Proposal::new_without_state_root(&current_block.header).into(),
+        )?
+        .get_metadata_root();
 
         let metadata_handle = MetadataHandle::new(metadata_root);
         metadata_handle.init_hardfork(current_block.header.number)?;

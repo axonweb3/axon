@@ -93,11 +93,10 @@ impl TypedValueParser for ChainSpecValueParser {
             .map(PathBuf::from)?;
         parse_file(&file_path, false).map_err(|err| {
             let kind = clap::error::ErrorKind::InvalidValue;
-            let msg =
-                format!(
-                    "failed to parse chain spec file {} since {err}",
-                    file_path.display()
-                );
+            let msg = format!(
+                "failed to parse chain spec file {} since {err}",
+                file_path.display()
+            );
             clap::Error::raw(kind, msg)
         })
     }

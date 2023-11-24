@@ -59,15 +59,14 @@ impl CkbLightClientStore {
             }
         };
 
-        let trie =
-            if root == H256::default() {
-                MPTTrie::new(Arc::clone(&trie_db))
-            } else {
-                match MPTTrie::from_root(root, Arc::clone(&trie_db)) {
-                    Ok(m) => m,
-                    Err(e) => return Err(SystemScriptError::RestoreMpt(e.to_string()).into()),
-                }
-            };
+        let trie = if root == H256::default() {
+            MPTTrie::new(Arc::clone(&trie_db))
+        } else {
+            match MPTTrie::from_root(root, Arc::clone(&trie_db)) {
+                Ok(m) => m,
+                Err(e) => return Err(SystemScriptError::RestoreMpt(e.to_string()).into()),
+            }
+        };
 
         Ok(CkbLightClientStore { trie })
     }

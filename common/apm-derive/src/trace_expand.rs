@@ -25,11 +25,10 @@ pub fn expand_trace_span(attr: TokenStream, func: TokenStream) -> TokenStream {
     let func_block = &func.block;
     let func_output = &func_sig.output;
     let func_return = PinBoxFutRet::parse(func_output);
-    let func_ret_ty =
-        match func_output {
-            ReturnType::Default => quote! { () },
-            ReturnType::Type(_, ty) => quote! { #ty },
-        };
+    let func_ret_ty = match func_output {
+        ReturnType::Default => quote! { () },
+        ReturnType::Type(_, ty) => quote! { #ty },
+    };
     let trace_info = TraceAttrs::new(&attr);
     let trace_name = trace_info.trace_name(&func_sig.ident);
     let span_tag_stmts = trace_info.span_tags();

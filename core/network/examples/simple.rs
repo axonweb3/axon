@@ -81,10 +81,9 @@ async fn main() {
         let mut bootstrap = NetworkService::new(bt_conf, bt_keypair);
         let handle = bootstrap.handle();
 
-        let check_out =
-            Checkout {
-                dealer: handle.clone(),
-            };
+        let check_out = Checkout {
+            dealer: handle.clone(),
+        };
 
         bootstrap
             .register_endpoint_handler(SHOP_CASH_CHANNEL, check_out)

@@ -379,13 +379,12 @@ where
         state_root: Hash,
         proposal: &Proposal,
     ) -> ProtocolResult<Hash> {
-        let backend =
-            AxonExecutorApplyAdapter::from_root(
-                state_root,
-                Arc::clone(&self.trie_db),
-                Arc::clone(&self.storage),
-                proposal.clone().into(),
-            )?;
+        let backend = AxonExecutorApplyAdapter::from_root(
+            state_root,
+            Arc::clone(&self.trie_db),
+            Arc::clone(&self.storage),
+            proposal.clone().into(),
+        )?;
         Ok(backend.get_metadata_root())
     }
 
@@ -539,18 +538,17 @@ where
         .await?;
 
         let vote_hash = self.crypto.hash(Bytes::from(rlp::encode(&vote)));
-        let hex_pubkeys =
-            metadata
-                .verifier_list
-                .iter()
-                .filter_map(|v| {
-                    if signed_voters.contains(&v.pub_key.as_bytes()) {
-                        Some(v.bls_pub_key.clone())
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<_>>();
+        let hex_pubkeys = metadata
+            .verifier_list
+            .iter()
+            .filter_map(|v| {
+                if signed_voters.contains(&v.pub_key.as_bytes()) {
+                    Some(v.bls_pub_key.clone())
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
 
         self.verify_proof_signature(
             ctx,

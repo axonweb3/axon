@@ -30,7 +30,9 @@ use tentacle::secio::PublicKey;
 
 pub trait PeerIdExt {
     fn from_pubkey_bytes<'a, B: AsRef<[u8]> + 'a>(bytes: B) -> Result<PeerId, NetworkError> {
-        Ok(PeerId::from_public_key(&PublicKey::from_raw_key(bytes.as_ref().to_vec())))
+        Ok(PeerId::from_public_key(&PublicKey::from_raw_key(
+            bytes.as_ref().to_vec(),
+        )))
     }
 
     fn from_bytes<'a, B: AsRef<[u8]> + 'a>(bytes: B) -> Result<PeerId, NetworkError> {

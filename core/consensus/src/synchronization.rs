@@ -256,17 +256,17 @@ impl<Adapter: SynchronizationAdapter> OverlordSynchronization<Adapter> {
                 e
             })?;
 
-        let previous_block =
-            self.adapter
-                .get_block_by_number(ctx.clone(), consenting_rich_block.block.header.number - 1)
-                .await
-                .map_err(|e| {
-                    log::error!(
-                        "[synchronization] get previous block {} error",
-                        consenting_rich_block.block.header.number - 1
-                    );
-                    e
-                })?;
+        let previous_block = self
+            .adapter
+            .get_block_by_number(ctx.clone(), consenting_rich_block.block.header.number - 1)
+            .await
+            .map_err(|e| {
+                log::error!(
+                    "[synchronization] get previous block {} error",
+                    consenting_rich_block.block.header.number - 1
+                );
+                e
+            })?;
 
         self.adapter
             .verify_proof(

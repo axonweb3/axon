@@ -207,11 +207,10 @@ where
     pub fn new(config: NetworkConfig, key_provider: K) -> Self {
         let config = Arc::new(config);
         let peer_manager = Arc::new(PeerManager::new(Arc::clone(&config)));
-        let service_handle =
-            ServiceHandler {
-                peer_store: Arc::clone(&peer_manager),
-                config:     Arc::clone(&config),
-            };
+        let service_handle = ServiceHandler {
+            peer_store: Arc::clone(&peer_manager),
+            config:     Arc::clone(&config),
+        };
         let message_router = MessageRouter::new();
 
         let mut protocol_meta = Vec::new();
@@ -224,33 +223,34 @@ where
         protocol_meta.push(ping);
 
         let identify_peer_manager = Arc::clone(&peer_manager);
-        let identify =
-            SupportProtocols::Identify.build_meta_with_service_handle(move || {
-                ProtocolHandle::Callback(Box::new(IdentifyProtocol::new(identify_peer_manager)))
-            });
+        let identify = SupportProtocols::Identify.build_meta_with_service_handle(move || {
+            ProtocolHandle::Callback(Box::new(IdentifyProtocol::new(identify_peer_manager)))
+        });
         protocol_meta.push(identify);
 
         let discovery_peer_manager = DiscoveryAddressManager::new(Arc::clone(&peer_manager));
         let discovery = SupportProtocols::Discovery.build_meta_with_service_handle(move || {
-            ProtocolHandle::Callback(Box::new(DiscoveryProtocol::new(discovery_peer_manager, None)))
+            ProtocolHandle::Callback(Box::new(DiscoveryProtocol::new(
+                discovery_peer_manager,
+                None,
+            )))
         });
         protocol_meta.push(discovery);
 
         let transmitter_peer_manager = Arc::clone(&peer_manager);
         let transmitter_router = message_router.clone();
-        let transmitter =
-            SupportProtocols::Transmitter.build_meta_with_service_handle(move || {
-                ProtocolHandle::Callback(Box::new(TransmitterProtocol::new(
-                    transmitter_router,
-                    transmitter_peer_manager,
-                )))
-            });
+        let transmitter = SupportProtocols::Transmitter.build_meta_with_service_handle(move || {
+            ProtocolHandle::Callback(Box::new(TransmitterProtocol::new(
+                transmitter_router,
+                transmitter_peer_manager,
+            )))
+        });
         protocol_meta.push(transmitter);
 
         let feeler_peer_manager = Arc::clone(&peer_manager);
-        let feeler = SupportProtocols::Feeler.build_meta_with_service_handle(
-            move || ProtocolHandle::Callback(Box::new(Feeler::new(feeler_peer_manager)))
-        );
+        let feeler = SupportProtocols::Feeler.build_meta_with_service_handle(move || {
+            ProtocolHandle::Callback(Box::new(Feeler::new(feeler_peer_manager)))
+        });
         protocol_meta.push(feeler);
 
         let mut service_builder = ServiceBuilder::new();
@@ -437,17 +437,16 @@ where
         }
         self.try_identify_count += 1;
 
-        let f =
-            |peer_store: &mut PeerStore, number: usize, now_ms: u64| -> Vec<AddrInfo> {
-                let paddrs = peer_store.fetch_addrs_to_attempt(number);
-                for paddr in paddrs.iter() {
-                    // mark addr as tried
-                    if let Some(paddr) = peer_store.mut_addr_manager().get_mut(&paddr.addr) {
-                        paddr.mark_tried(now_ms);
-                    }
+        let f = |peer_store: &mut PeerStore, number: usize, now_ms: u64| -> Vec<AddrInfo> {
+            let paddrs = peer_store.fetch_addrs_to_attempt(number);
+            for paddr in paddrs.iter() {
+                // mark addr as tried
+                if let Some(paddr) = peer_store.mut_addr_manager().get_mut(&paddr.addr) {
+                    paddr.mark_tried(now_ms);
                 }
-                paddrs
-            };
+            }
+            paddrs
+        };
 
         let peers: Box<dyn Iterator<Item = Multiaddr> + Send> = if self.try_identify_count > 3 {
             self.try_identify_count = 0;
@@ -559,9 +558,9 @@ impl ServiceHandle for ServiceHandler {
                 });
                 let mut public_addrs = self.peer_store.public_addrs.write();
                 match error {
-                    DialerErrorKind::HandshakeError(
-                        HandshakeErrorKind::SecioError(SecioError::ConnectSelf)
-                    ) => {
+                    DialerErrorKind::HandshakeError(HandshakeErrorKind::SecioError(
+                        SecioError::ConnectSelf,
+                    )) => {
                         log::debug!("dial observed address success: {:?}", address);
                         if let Some(ip) = multiaddr_to_socketaddr(&address) {
                             if is_reachable(ip.ip()) {
@@ -658,17 +657,14 @@ impl ServiceHandle for ServiceHandler {
                 if feeler {
                     return;
                 }
-                let disable =
-                    status.total + 1 > self.config.max_connections
-                        || match session_context.ty {
-                            SessionType::Inbound => {
-                                status.inbound + 1 > self.config.inbound_conn_limit
-                            }
-                            SessionType::Outbound => {
-                                status.outbound + 1
-                                    > self.config.max_connections - self.config.inbound_conn_limit
-                            }
-                        };
+                let disable = status.total + 1 > self.config.max_connections
+                    || match session_context.ty {
+                        SessionType::Inbound => status.inbound + 1 > self.config.inbound_conn_limit,
+                        SessionType::Outbound => {
+                            status.outbound + 1
+                                > self.config.max_connections - self.config.inbound_conn_limit
+                        }
+                    };
 
                 if disable && !self.peer_store.always_allow(&session_context.address) {
                     let _ignore = control.disconnect(session_context.id).await;

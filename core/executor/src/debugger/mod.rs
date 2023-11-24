@@ -110,13 +110,12 @@ impl EventListener for EvmListener {
 }
 
 pub fn mock_signed_tx(tx: Eip1559Transaction, sender: H160) -> SignedTransaction {
-    let utx =
-        UnverifiedTransaction {
-            unsigned:  UnsignedTransaction::Eip1559(tx),
-            hash:      Hash::default(),
-            chain_id:  Some(5u64),
-            signature: None,
-        };
+    let utx = UnverifiedTransaction {
+        unsigned:  UnsignedTransaction::Eip1559(tx),
+        hash:      Hash::default(),
+        chain_id:  Some(5u64),
+        signature: None,
+    };
 
     SignedTransaction {
         transaction: utx,

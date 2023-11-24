@@ -43,12 +43,10 @@ fn panic_log(info: &PanicInfo) {
     let location = info.location().unwrap(); // The current implementation always returns Some
     let msg = match info.payload().downcast_ref::<&'static str>() {
         Some(s) => *s,
-        None => {
-            match info.payload().downcast_ref::<String>() {
-                Some(s) => &**s,
-                None => "Box<Any>",
-            }
-        }
+        None => match info.payload().downcast_ref::<String>() {
+            Some(s) => &**s,
+            None => "Box<Any>",
+        },
     };
     log::error!(
         target: "panic", "thread '{}' panicked at '{}': {}:{} {:?}",

@@ -69,9 +69,9 @@ impl NetworkContext for Context {
         self.get::<String>("url")
             .map(String::as_str)
             .ok_or_else(|| {
-                NetworkError::UnexpectedError(
-                    Box::<dyn std::error::Error + Send + Sync>::from("not found")
-                )
+                NetworkError::UnexpectedError(Box::<dyn std::error::Error + Send + Sync>::from(
+                    "not found",
+                ))
             })
     }
 
