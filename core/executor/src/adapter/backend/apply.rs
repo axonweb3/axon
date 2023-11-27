@@ -180,7 +180,7 @@ where
             if v == H256::zero() {
                 storage_trie
                     .remove(k.as_bytes())
-                    .expect("trie tree remove zero key fail");
+                    .expect("Failed to remove entry with zero value from storage trie");
             } else {
                 storage_trie
                     .insert(
