@@ -317,6 +317,7 @@ pub struct Web3CallRequest {
     pub nonce:                    Option<U256>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub access_list:              Option<AccessList>,
+    pub chain_id:                 Option<U64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_priority_fee_per_gas: Option<U256>,
 }

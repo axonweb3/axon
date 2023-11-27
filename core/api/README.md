@@ -2273,6 +2273,8 @@ The Web3CallRequest objects.
 
 *   `access_list`: `Array<` [`AccessList`](#type-AccessList)`>`  - The accessList specifies a list of addresses and storage keys; these addresses and storage keys are added into the accessed_addresses and accessed_storage_keys global sets.
 
+*   `chain_id`: [`U64`](#type-U64)  - QUANTITY - The id of the chain.
+
 *   `max_priority_fee_per_gas`: [`U256`](#type-U256)  -  QUANTITY - (optional) determined by the user, and is paid directly to miners.
 
 ### Type `AccessList`

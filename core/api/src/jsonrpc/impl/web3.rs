@@ -7,7 +7,7 @@ use protocol::traits::{APIAdapter, Context};
 use protocol::types::{
     Block, BlockNumber, Bytes, EthAccountProof, Hash, Header, Hex, Proposal, Receipt,
     SignedTransaction, TxResp, UnverifiedTransaction, BASE_FEE_PER_GAS, H160, H256,
-    MAX_FEE_HISTORY, MAX_RPC_GAS_CAP, MIN_TRANSACTION_GAS_LIMIT, U256,
+    MAX_FEE_HISTORY, MAX_RPC_GAS_CAP, MIN_TRANSACTION_GAS_LIMIT, U256, U64,
 };
 use protocol::{
     async_trait, codec::ProtocolCodec, lazy::PROTOCOL_VERSION, tokio::time::sleep, ProtocolResult,
@@ -1093,7 +1093,11 @@ fn mock_header_by_call_req(latest_header: Header, call_req: &Web3CallRequest) ->
         },
         proof:                    latest_header.proof,
         call_system_script_count: 0,
-        chain_id:                 latest_header.chain_id,
+        chain_id:                 call_req
+            .chain_id
+            .as_ref()
+            .map(U64::low_u64)
+            .unwrap_or(latest_header.chain_id),
     }
 }
 
