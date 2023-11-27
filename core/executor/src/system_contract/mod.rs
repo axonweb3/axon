@@ -47,6 +47,11 @@ pub const fn system_contract_address(addr: u8) -> H160 {
         0xff, 0xff, 0xff, 0xff, addr,
     ])
 }
+const SYSTEM_CONTRACT_ADDRESSES_PREFIX: [u8; 19] = [
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // 0xff * 8
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // 0xff * 8
+    0xff, 0xff, 0xff, // 0xff * 3
+];
 const SYSTEM_CONTRACT_ADDRESSES_SET: [H160; 4] = [
     NATIVE_TOKEN_CONTRACT_ADDRESS,
     METADATA_CONTRACT_ADDRESS,
@@ -314,7 +319,7 @@ impl DataProvider {
 }
 
 pub fn is_system_contract_address_format(addr: &H160) -> bool {
-    addr.0.iter().take(19).all(|i| i == &0xff)
+    addr.0[0..19] == SYSTEM_CONTRACT_ADDRESSES_PREFIX
 }
 
 pub fn is_call_system_script(action: &TransactionAction) -> ProtocolResult<bool> {
@@ -325,7 +330,7 @@ pub fn is_call_system_script(action: &TransactionAction) -> ProtocolResult<bool>
 
     // The first 19 bytes of the address are 0xff, which means that the address
     // follows system contract address format.
-    if call_addr.0.iter().take(19).all(|i| i == &0xff) {
+    if call_addr.0[0..19] == SYSTEM_CONTRACT_ADDRESSES_PREFIX {
         if SYSTEM_CONTRACT_ADDRESSES_SET.contains(call_addr) {
             return Ok(true);
         }
