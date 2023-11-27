@@ -1,5 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
+use core_executor::is_call_system_script;
 use jsonrpsee::core::RpcResult;
 
 use common_apm::metrics_rpc;
@@ -419,6 +420,14 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             return Err(RpcError::GasLimitIsTooLarge.into());
         }
 
+        if let Some(call_addr) = req.to {
+            if is_call_system_script(&TransactionAction::Call(call_addr))
+                .map_err(|e| RpcError::Internal(e.to_string()))?
+            {
+                return Err(RpcError::CallSystemContract.into());
+            }
+        }
+
         let number = self.get_block_number_by_id(block_id).await?;
 
         let data_bytes = req
@@ -450,6 +459,14 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
         if let Some(price) = req.gas_price.as_ref() {
             if price >= &U256::from(u64::MAX) {
                 return Err(RpcError::GasPriceIsTooLarge.into());
+            }
+        }
+
+        if let Some(call_addr) = req.to {
+            if is_call_system_script(&TransactionAction::Call(call_addr))
+                .map_err(|e| RpcError::Internal(e.to_string()))?
+            {
+                return Err(RpcError::CallSystemContract.into());
             }
         }
 
