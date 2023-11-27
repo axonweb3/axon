@@ -13,10 +13,6 @@ use crate::types::{
 };
 use crate::ProtocolResult;
 
-pub const GAS_PER_ZERO_BYTE: u64 = 4;
-pub const GAS_PER_NONZERO_BYTE: u64 = 68;
-pub const GAS_CALL_TRANSACTION: u64 = 21_000;
-pub const GAS_CREATE_TRANSACTION: u64 = 32_000;
 pub const MAX_PRIORITY_FEE_PER_GAS: u64 = 1_337;
 pub const MIN_TRANSACTION_GAS_LIMIT: u64 = 21_000;
 
@@ -44,15 +40,6 @@ impl UnsignedTransaction {
         }
 
         U256::max_value()
-    }
-
-    pub fn base_gas(&self) -> u64 {
-        let base = match self.action() {
-            TransactionAction::Call(_) => GAS_CALL_TRANSACTION,
-            TransactionAction::Create => GAS_CREATE_TRANSACTION + GAS_CALL_TRANSACTION,
-        };
-
-        base + data_gas_cost(self.data())
     }
 
     pub fn is_legacy(&self) -> bool {
@@ -535,18 +522,4 @@ pub fn recover_intact_pub_key(public: &Public) -> H520 {
     let mut inner = vec![4u8];
     inner.extend_from_slice(public.as_bytes());
     H520::from_slice(&inner[0..65])
-}
-
-pub fn data_gas_cost(data: &[u8]) -> u64 {
-    let mut ret = 0u64;
-
-    data.iter().for_each(|b| {
-        if b == &0u8 {
-            ret += GAS_PER_ZERO_BYTE
-        } else {
-            ret += GAS_PER_NONZERO_BYTE
-        }
-    });
-
-    ret
 }
