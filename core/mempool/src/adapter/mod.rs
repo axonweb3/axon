@@ -372,7 +372,7 @@ where
         ctx: Context,
         tx: &SignedTransaction,
     ) -> ProtocolResult<U256> {
-        if is_call_system_script(tx.transaction.unsigned.action()) {
+        if is_call_system_script(tx.transaction.unsigned.action())? {
             return self.check_system_script_tx_authorization(ctx, tx).await;
         }
 

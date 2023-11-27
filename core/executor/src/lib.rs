@@ -11,6 +11,7 @@ pub use crate::adapter::{
     AxonExecutorApplyAdapter, AxonExecutorReadOnlyAdapter, MPTTrie, RocksTrieDB,
 };
 pub use crate::system_contract::{
+    is_call_system_script,
     metadata::{MetadataHandle, HARDFORK_INFO},
     DataProvider,
 };
@@ -34,8 +35,8 @@ use protocol::types::{
 use crate::precompiles::build_precompile_set;
 use crate::system_contract::{
     after_block_hook, before_block_hook, system_contract_dispatch,
-    CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, HEADER_CELL_ROOT_KEY, IMAGE_CELL_CONTRACT_ADDRESS,
-    METADATA_CONTRACT_ADDRESS, METADATA_ROOT_KEY, NATIVE_TOKEN_CONTRACT_ADDRESS,
+    CKB_LIGHT_CLIENT_CONTRACT_ADDRESS, HEADER_CELL_ROOT_KEY, METADATA_CONTRACT_ADDRESS,
+    METADATA_ROOT_KEY,
 };
 
 lazy_static::lazy_static! {
@@ -488,20 +489,6 @@ impl AxonExecutor {
             gas_used: gas,
             tx_resp: res,
         }
-    }
-}
-
-pub fn is_call_system_script(action: &TransactionAction) -> bool {
-    let system_contracts = [
-        NATIVE_TOKEN_CONTRACT_ADDRESS,
-        METADATA_CONTRACT_ADDRESS,
-        CKB_LIGHT_CLIENT_CONTRACT_ADDRESS,
-        IMAGE_CELL_CONTRACT_ADDRESS,
-    ];
-
-    match action {
-        TransactionAction::Call(addr) => system_contracts.contains(addr),
-        TransactionAction::Create => false,
     }
 }
 

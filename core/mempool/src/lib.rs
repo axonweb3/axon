@@ -183,7 +183,7 @@ where
     Adapter: MemPoolAdapter + 'static,
 {
     async fn insert(&self, ctx: Context, tx: SignedTransaction) -> ProtocolResult<()> {
-        let is_call_system_script = is_call_system_script(tx.transaction.unsigned.action());
+        let is_call_system_script = is_call_system_script(tx.transaction.unsigned.action())?;
 
         log::debug!(
             "[mempool]: is call system script {:?}",
@@ -306,7 +306,7 @@ where
 
             for (signed_tx, check_nonce) in txs.into_iter().zip(check_nonces.into_iter()) {
                 let is_call_system_script =
-                    is_call_system_script(signed_tx.transaction.unsigned.action());
+                    is_call_system_script(signed_tx.transaction.unsigned.action())?;
                 if is_call_system_script {
                     self.pool.insert_system_script_tx(signed_tx)?;
                 } else {

@@ -1,13 +1,14 @@
 use std::{sync::Arc, time::Duration};
 
+use core_executor::is_call_system_script;
 use jsonrpsee::core::RpcResult;
 
 use common_apm::metrics_rpc;
 use protocol::traits::{APIAdapter, Context};
 use protocol::types::{
     Block, BlockNumber, Bytes, EthAccountProof, Hash, Header, Hex, Proposal, Receipt,
-    SignedTransaction, TxResp, UnverifiedTransaction, BASE_FEE_PER_GAS, H160, H256,
-    MAX_FEE_HISTORY, MAX_RPC_GAS_CAP, MIN_TRANSACTION_GAS_LIMIT, U256,
+    SignedTransaction, TransactionAction, TxResp, UnverifiedTransaction, BASE_FEE_PER_GAS, H160,
+    H256, MAX_FEE_HISTORY, MAX_RPC_GAS_CAP, MIN_TRANSACTION_GAS_LIMIT, U256,
 };
 use protocol::{
     async_trait, codec::ProtocolCodec, lazy::PROTOCOL_VERSION, tokio::time::sleep, ProtocolResult,
@@ -419,6 +420,14 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             return Err(RpcError::GasLimitIsTooLarge.into());
         }
 
+        if let Some(call_addr) = req.to {
+            if is_call_system_script(&TransactionAction::Call(call_addr))
+                .map_err(|e| RpcError::Internal(e.to_string()))?
+            {
+                return Err(RpcError::CallSystemContract.into());
+            }
+        }
+
         let number = self.get_block_number_by_id(block_id).await?;
 
         let data_bytes = req
@@ -450,6 +459,14 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
         if let Some(price) = req.gas_price.as_ref() {
             if price >= &U256::from(u64::MAX) {
                 return Err(RpcError::GasPriceIsTooLarge.into());
+            }
+        }
+
+        if let Some(call_addr) = req.to {
+            if is_call_system_script(&TransactionAction::Call(call_addr))
+                .map_err(|e| RpcError::Internal(e.to_string()))?
+            {
+                return Err(RpcError::CallSystemContract.into());
             }
         }
 
