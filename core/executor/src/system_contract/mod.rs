@@ -313,6 +313,10 @@ impl DataProvider {
     }
 }
 
+pub fn is_system_contract_address_format(addr: &H160) -> bool {
+    addr.0.iter().take(19).all(|i| i == &0xff)
+}
+
 pub fn is_call_system_script(action: &TransactionAction) -> ProtocolResult<bool> {
     let call_addr = match action {
         TransactionAction::Call(addr) => addr,

@@ -1,9 +1,9 @@
 use std::{sync::Arc, time::Duration};
 
-use core_executor::is_call_system_script;
 use jsonrpsee::core::RpcResult;
 
 use common_apm::metrics_rpc;
+use core_executor::is_system_contract_address_format;
 use protocol::traits::{APIAdapter, Context};
 use protocol::types::{
     Block, BlockNumber, Bytes, EthAccountProof, Hash, Header, Hex, Proposal, Receipt,
@@ -421,9 +421,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
         }
 
         if let Some(call_addr) = req.to {
-            if is_call_system_script(&TransactionAction::Call(call_addr))
-                .map_err(|e| RpcError::Internal(e.to_string()))?
-            {
+            if is_system_contract_address_format(&call_addr) {
                 return Err(RpcError::CallSystemContract.into());
             }
         }
@@ -463,9 +461,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
         }
 
         if let Some(call_addr) = req.to {
-            if is_call_system_script(&TransactionAction::Call(call_addr))
-                .map_err(|e| RpcError::Internal(e.to_string()))?
-            {
+            if is_system_contract_address_format(&call_addr) {
                 return Err(RpcError::CallSystemContract.into());
             }
         }
@@ -1028,6 +1024,10 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
         storage_position: Vec<U256>,
         number: BlockId,
     ) -> RpcResult<EthAccountProof> {
+        if is_system_contract_address_format(&address) {
+            return Err(RpcError::CallSystemContract.into());
+        }
+
         let number = self.get_block_number_by_id(Some(number)).await?;
 
         let header = self

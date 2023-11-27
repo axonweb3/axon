@@ -11,7 +11,7 @@ pub use crate::adapter::{
     AxonExecutorApplyAdapter, AxonExecutorReadOnlyAdapter, MPTTrie, RocksTrieDB,
 };
 pub use crate::system_contract::{
-    is_call_system_script,
+    is_call_system_script, is_system_contract_address_format,
     metadata::{MetadataHandle, HARDFORK_INFO},
     DataProvider,
 };
