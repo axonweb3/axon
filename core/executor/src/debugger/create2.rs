@@ -1,9 +1,9 @@
 use protocol::traits::Backend;
 use protocol::types::{
     LegacyTransaction, SignedTransaction, TransactionAction, UnsignedTransaction,
-    UnverifiedTransaction, H160, H256, MAX_BLOCK_GAS_LIMIT, U256, U64,
+    UnverifiedTransaction, H160, H256, U256, U64,
 };
-use protocol::{codec::hex_decode, tokio};
+use protocol::{codec::hex_decode, constants::MAX_BLOCK_GAS_LIMIT, tokio};
 
 use crate::debugger::EvmDebugger;
 

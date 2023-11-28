@@ -6,13 +6,12 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use evm::tracing::{Event, EventListener};
 
-use protocol::codec::ProtocolCodec;
-use protocol::traits::Backend;
-use protocol::trie::Trie as _;
+use protocol::traits::{Backend, Executor};
 use protocol::types::{
     Account, Eip1559Transaction, ExecResp, ExecutorContext, Hash, Hasher, SignedTransaction,
-    UnsignedTransaction, UnverifiedTransaction, H160, H256, NIL_DATA, RLP_NULL, U256,
+    TxResp, UnsignedTransaction, UnverifiedTransaction, H160, H256, NIL_DATA, RLP_NULL, U256, U64,
 };
+use protocol::{codec::ProtocolCodec, constants::MAX_BLOCK_GAS_LIMIT, trie::Trie as _};
 
 use core_db::RocksAdapter;
 use core_storage::ImplStorage;

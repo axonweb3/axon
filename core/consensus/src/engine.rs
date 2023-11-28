@@ -21,11 +21,11 @@ use protocol::constants::endpoints::{
     END_GOSSIP_AGGREGATED_VOTE, END_GOSSIP_SIGNED_CHOKE, END_GOSSIP_SIGNED_PROPOSAL,
     END_GOSSIP_SIGNED_VOTE,
 };
+use protocol::constants::{BASE_FEE_PER_GAS, MAX_BLOCK_GAS_LIMIT};
 use protocol::traits::{ConsensusAdapter, Context, MessageTarget, NodeInfo};
 use protocol::types::{
     Block, BlockVersion, Bytes, ExecResp, ExtraData, Hash, Hex, Metadata, Proof, Proposal,
-    SignedTransaction, ValidatorExtend, VecDisplayHelper, BASE_FEE_PER_GAS, MAX_BLOCK_GAS_LIMIT,
-    RLP_NULL,
+    SignedTransaction, ValidatorExtend, VecDisplayHelper, RLP_NULL,
 };
 use protocol::{
     async_trait, codec::ProtocolCodec, tokio::sync::Mutex as AsyncMutex, types::HardforkInfoInner,

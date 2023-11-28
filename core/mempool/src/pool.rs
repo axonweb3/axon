@@ -13,7 +13,7 @@ use protocol::tokio::{self, time::sleep};
 use protocol::types::{
     BlockNumber, Bytes, Hash, PackedTxHashes, SignedTransaction, H160, U256, U64,
 };
-use protocol::{ProtocolResult, MEMPOOL_REFRESH_TIMEOUT};
+use protocol::{constants::MEMPOOL_REFRESH_TIMEOUT, ProtocolResult};
 
 use crate::tx_wrapper::{PendingQueue, TxPtr, TxWrapper};
 use crate::MemPoolError;

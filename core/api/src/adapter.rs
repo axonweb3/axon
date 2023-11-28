@@ -7,10 +7,11 @@ use protocol::trie::Trie as _;
 use protocol::types::{
     Account, BigEndianHash, Block, BlockNumber, Bytes, CkbRelatedInfo, EthAccountProof,
     EthStorageProof, ExecutorContext, HardforkInfo, HardforkInfoInner, Hash, Header, Hex, Metadata,
-    Proposal, Receipt, SignedTransaction, TxResp, H160, H256, MAX_BLOCK_GAS_LIMIT, NIL_DATA,
-    RLP_NULL, U256, U64,
+    Proposal, Receipt, SignedTransaction, TxResp, H160, H256, NIL_DATA, RLP_NULL, U256, U64,
 };
-use protocol::{async_trait, codec::ProtocolCodec, trie, ProtocolResult};
+use protocol::{
+    async_trait, codec::ProtocolCodec, constants::MAX_BLOCK_GAS_LIMIT, trie, ProtocolResult,
+};
 
 use core_executor::{
     system_contract::metadata::MetadataHandle, AxonExecutor, AxonExecutorReadOnlyAdapter, MPTTrie,

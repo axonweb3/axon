@@ -12,8 +12,6 @@ pub use {
     trie,
 };
 
-pub const MEMPOOL_REFRESH_TIMEOUT: u64 = 50;
-
 #[derive(Copy, Clone, Debug)]
 pub enum ProtocolErrorKind {
     // traits

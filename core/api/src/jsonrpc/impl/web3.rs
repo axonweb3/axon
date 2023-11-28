@@ -4,15 +4,17 @@ use jsonrpsee::core::RpcResult;
 
 use common_apm::metrics_rpc;
 use core_executor::is_system_contract_address_format;
+use protocol::constants::{
+    BASE_FEE_PER_GAS, MAX_FEE_HISTORY, MAX_GAS_LIMIT, MAX_GAS_PRICE, MEMPOOL_REFRESH_TIMEOUT,
+    MIN_TRANSACTION_GAS_LIMIT,
+};
 use protocol::traits::{APIAdapter, Context};
 use protocol::types::{
     Block, BlockNumber, Bytes, EthAccountProof, Hash, Header, Hex, Proposal, Receipt,
-    SignedTransaction, TxResp, UnverifiedTransaction, BASE_FEE_PER_GAS, H160, H256,
-    MAX_FEE_HISTORY, MAX_RPC_GAS_CAP, MIN_TRANSACTION_GAS_LIMIT, U256, U64,
+    SignedTransaction, TxResp, UnverifiedTransaction, H160, H256, U256, U64,
 };
 use protocol::{
-    async_trait, codec::ProtocolCodec, constants::MAX_GAS_PRICE, lazy::PROTOCOL_VERSION,
-    tokio::time::sleep, ProtocolResult, MEMPOOL_REFRESH_TIMEOUT,
+    async_trait, codec::ProtocolCodec, lazy::PROTOCOL_VERSION, tokio::time::sleep, ProtocolResult,
 };
 
 use crate::jsonrpc::web3_types::{
@@ -113,20 +115,17 @@ impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
             })
             .collect();
 
-        let reward_vec: Vec<U64> =
-            reward_percentiles
-                .iter()
-                .map(|percentile| {
-                    let index = calculate_effective_priority_fees_index(
-                        percentile,
-                        &effective_priority_fees,
-                    );
-                    effective_priority_fees
-                        .get(index)
-                        .cloned()
-                        .unwrap_or(U64::zero())
-                })
-                .collect();
+        let reward_vec: Vec<U64> = reward_percentiles
+            .iter()
+            .map(|percentile| {
+                let index =
+                    calculate_effective_priority_fees_index(percentile, &effective_priority_fees);
+                effective_priority_fees
+                    .get(index)
+                    .cloned()
+                    .unwrap_or(U64::zero())
+            })
+            .collect();
 
         reward.push(reward_vec);
 
@@ -205,7 +204,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             return Err(RpcError::GasPriceIsZero.into());
         }
 
-        if gas_price >= U64::from(u64::MAX) {
+        if gas_price > MAX_GAS_PRICE {
             return Err(RpcError::GasPriceIsTooLarge.into());
         }
 
@@ -417,8 +416,12 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
 
     #[metrics_rpc("eth_call")]
     async fn call(&self, req: Web3CallRequest, block_id: Option<BlockId>) -> RpcResult<Hex> {
-        if req.gas.unwrap_or_default() > U64::from(MAX_RPC_GAS_CAP) {
+        if req.gas.unwrap_or_default() > MAX_GAS_LIMIT.into() {
             return Err(RpcError::GasLimitIsTooLarge.into());
+        }
+
+        if req.gas_price.unwrap_or_default() > MAX_GAS_PRICE {
+            return Err(RpcError::GasPriceIsTooLarge.into());
         }
 
         if let Some(call_addr) = req.to {
@@ -455,10 +458,12 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             }
         }
 
-        if let Some(price) = req.gas_price.as_ref() {
-            if price >= &MAX_GAS_PRICE {
-                return Err(RpcError::GasPriceIsTooLarge.into());
-            }
+        if req.gas.unwrap_or_default() > MAX_GAS_LIMIT.into() {
+            return Err(RpcError::GasLimitIsTooLarge.into());
+        }
+
+        if req.gas_price.unwrap_or_default() > MAX_GAS_PRICE {
+            return Err(RpcError::GasPriceIsTooLarge.into());
         }
 
         if let Some(call_addr) = req.to {
@@ -562,16 +567,15 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
 
     #[metrics_rpc("eth_getLogs")]
     async fn get_logs(&self, filter: Web3Filter) -> RpcResult<Vec<Web3Log>> {
-        let topics: Vec<Option<Vec<Option<H256>>>> =
-            filter
-                .topics
-                .map(|s| {
-                    s.into_iter()
-                        .take(4)
-                        .map(Into::<Option<Vec<Option<H256>>>>::into)
-                        .collect()
-                })
-                .unwrap_or_default();
+        let topics: Vec<Option<Vec<Option<H256>>>> = filter
+            .topics
+            .map(|s| {
+                s.into_iter()
+                    .take(4)
+                    .map(Into::<Option<Vec<Option<H256>>>>::into)
+                    .collect()
+            })
+            .unwrap_or_default();
 
         enum BlockPosition {
             Hash(H256),
@@ -587,25 +591,24 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             address: Option<&Vec<H160>>,
             early_return: &mut bool,
         ) -> RpcResult<()> {
-            let extend_logs =
-                |logs: &mut Vec<Web3Log>,
-                 receipts: Vec<Option<Receipt>>,
-                 early_return: &mut bool| {
-                    for (index, receipt) in receipts.into_iter().flatten().enumerate() {
-                        from_receipt_to_web3_log(
-                            index,
-                            topics,
-                            address.as_ref().unwrap_or(&&Vec::new()),
-                            &receipt,
-                            logs,
-                        );
+            let extend_logs = |logs: &mut Vec<Web3Log>,
+                               receipts: Vec<Option<Receipt>>,
+                               early_return: &mut bool| {
+                for (index, receipt) in receipts.into_iter().flatten().enumerate() {
+                    from_receipt_to_web3_log(
+                        index,
+                        topics,
+                        address.as_ref().unwrap_or(&&Vec::new()),
+                        &receipt,
+                        logs,
+                    );
 
-                        if logs.len() > MAX_LOG_NUM {
-                            *early_return = true;
-                            return;
-                        }
+                    if logs.len() > MAX_LOG_NUM {
+                        *early_return = true;
+                        return;
                     }
-                };
+                }
+            };
 
             match position {
                 BlockPosition::Hash(hash) => {
