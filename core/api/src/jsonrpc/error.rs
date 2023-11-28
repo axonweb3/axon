@@ -51,6 +51,8 @@ pub enum RpcError {
     InvalidFromBlockAndToBlockUnion,
     #[display(fmt = "Invalid filter id {}", _0)]
     CannotFindFilterId(u64),
+    #[display(fmt = "Not allow to call system contract address")]
+    CallSystemContract,
 
     #[display(fmt = "EVM error {}", "decode_revert_msg(&_0.ret)")]
     Evm(TxResp),
@@ -88,6 +90,7 @@ impl RpcError {
             RpcError::InvalidRewardPercentiles(_, _) => -40020,
             RpcError::InvalidFromBlockAndToBlockUnion => -40021,
             RpcError::CannotFindFilterId(_) => -40022,
+            RpcError::CallSystemContract => -40023,
 
             RpcError::Evm(_) => -49998,
             RpcError::Internal(_) => -49999,
@@ -129,6 +132,7 @@ impl From<RpcError> for ErrorObjectOwned {
                 ErrorObject::owned(err_code, err, none_data)
             }
             RpcError::CannotFindFilterId(_) => ErrorObject::owned(err_code, err, none_data),
+            RpcError::CallSystemContract => ErrorObject::owned(err_code, err, none_data),
 
             RpcError::Evm(resp) => {
                 ErrorObject::owned(err_code, err.clone(), Some(vm_err(resp.clone())))

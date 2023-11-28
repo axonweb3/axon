@@ -3,6 +3,7 @@ use std::{sync::Arc, time::Duration};
 use jsonrpsee::core::RpcResult;
 
 use common_apm::metrics_rpc;
+use core_executor::is_system_contract_address_format;
 use protocol::traits::{APIAdapter, Context};
 use protocol::types::{
     Block, BlockNumber, Bytes, EthAccountProof, Hash, Header, Hex, Proposal, Receipt,
@@ -419,6 +420,12 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             return Err(RpcError::GasLimitIsTooLarge.into());
         }
 
+        if let Some(call_addr) = req.to {
+            if is_system_contract_address_format(&call_addr) {
+                return Err(RpcError::CallSystemContract.into());
+            }
+        }
+
         let number = self.get_block_number_by_id(block_id).await?;
 
         let data_bytes = req
@@ -450,6 +457,12 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
         if let Some(price) = req.gas_price.as_ref() {
             if price >= &U256::from(u64::MAX) {
                 return Err(RpcError::GasPriceIsTooLarge.into());
+            }
+        }
+
+        if let Some(call_addr) = req.to {
+            if is_system_contract_address_format(&call_addr) {
+                return Err(RpcError::CallSystemContract.into());
             }
         }
 
@@ -1011,6 +1024,10 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
         storage_position: Vec<U256>,
         number: BlockId,
     ) -> RpcResult<EthAccountProof> {
+        if is_system_contract_address_format(&address) {
+            return Err(RpcError::CallSystemContract.into());
+        }
+
         let number = self.get_block_number_by_id(Some(number)).await?;
 
         let header = self

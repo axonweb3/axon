@@ -3,7 +3,7 @@ use std::io;
 use ethers::abi::AbiError;
 use thiserror::Error;
 
-use protocol::{ProtocolError, ProtocolErrorKind};
+use protocol::{types::H160, ProtocolError, ProtocolErrorKind};
 
 #[derive(Error, Debug)]
 pub enum SystemScriptError {
@@ -84,6 +84,9 @@ pub enum SystemScriptError {
 
     #[error("Metadata version is discontinuous")]
     MetadataVersionDiscontinuity,
+
+    #[error("Call a reserved system contract address {0}")]
+    ReservedAddress(H160),
 }
 
 impl From<SystemScriptError> for ProtocolError {
