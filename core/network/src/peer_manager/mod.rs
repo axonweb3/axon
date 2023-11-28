@@ -43,9 +43,9 @@ impl PeerManager {
         };
         PeerManager {
             online: RwLock::new(Online::default()),
-            peer_store: RwLock::new(PeerStore::load_from_dir_or_default(
-                config.peer_store_path.clone(),
-            )),
+            peer_store: RwLock::new(
+                PeerStore::load_from_dir_or_default(config.peer_store_path.clone())
+            ),
             chain_id: config.chain_id.to_string(),
             bootstraps,
             public_addrs: RwLock::new(HashSet::new()),

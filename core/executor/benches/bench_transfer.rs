@@ -45,12 +45,13 @@ impl BenchAdapter {
 
     fn init_mpt(&self) -> Hash {
         let mut mpt = MPTTrie::new(Arc::clone(&self.trie_db));
-        let distribute_account = Account {
-            nonce:        0u64.into(),
-            balance:      320000011u64.into(),
-            storage_root: RLP_NULL,
-            code_hash:    NIL_DATA,
-        };
+        let distribute_account =
+            Account {
+                nonce:        0u64.into(),
+                balance:      320000011u64.into(),
+                storage_root: RLP_NULL,
+                code_hash:    NIL_DATA,
+            };
 
         mpt.insert(
             DISTRIBUTE_ADDRESS.as_slice().to_vec(),
@@ -105,12 +106,13 @@ fn mock_transaction(nonce: u64) -> SignedTransaction {
         ),
     };
 
-    let mut utx = UnverifiedTransaction {
-        unsigned:  UnsignedTransaction::Eip1559(tx),
-        signature: None,
-        chain_id:  Some(0u64),
-        hash:      Default::default(),
-    };
+    let mut utx =
+        UnverifiedTransaction {
+            unsigned:  UnsignedTransaction::Eip1559(tx),
+            signature: None,
+            chain_id:  Some(0u64),
+            hash:      Default::default(),
+        };
 
     let raw = utx.signature_hash(true);
     let signature = Secp256k1Recoverable::sign_message(raw.as_bytes(), &PRIVATE_KEY.to_bytes())

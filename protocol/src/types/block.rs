@@ -176,9 +176,7 @@ impl Block {
             transactions_root:        proposal.transactions_root,
             signed_txs_hash:          proposal.signed_txs_hash,
             receipts_root:            exec_resp.receipt_root,
-            log_bloom:                Bloom::from(BloomInput::Raw(
-                rlp::encode_list(&logs).as_ref(),
-            )),
+            log_bloom:                Bloom::from(BloomInput::Raw(rlp::encode_list(&logs).as_ref())),
             timestamp:                proposal.timestamp,
             number:                   proposal.number,
             gas_used:                 exec_resp.gas_used.into(),

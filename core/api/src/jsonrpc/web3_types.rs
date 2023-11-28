@@ -86,17 +86,18 @@ impl From<SignedTransaction> for Web3Transaction {
         let is_eip1559 = stx.transaction.unsigned.is_eip1559();
 
         let sig_v = signature.add_chain_replay_protection(stx.transaction.chain_id);
-        let (sig_r, sig_s) = if signature.is_eth_sig() {
-            (
-                Either::Left(U256::from(&signature.r[..])),
-                Either::Left(U256::from(&signature.s[..])),
-            )
-        } else {
-            (
-                Either::Right(Hex::encode(signature.r)),
-                Either::Right(Hex::encode(signature.s)),
-            )
-        };
+        let (sig_r, sig_s) =
+            if signature.is_eth_sig() {
+                (
+                    Either::Left(U256::from(&signature.r[..])),
+                    Either::Left(U256::from(&signature.s[..])),
+                )
+            } else {
+                (
+                    Either::Right(Hex::encode(signature.r)),
+                    Either::Right(Hex::encode(signature.s)),
+                )
+            };
 
         Web3Transaction {
             type_:                    Some(stx.type_().into()),
@@ -391,9 +392,10 @@ impl<'a> Visitor<'a> for BlockIdVisitor {
                     "blockNumber" => {
                         let value: String = visitor.next_value()?;
                         if let Some(stripper) = value.strip_prefix("0x") {
-                            let number = u64::from_str_radix(stripper, 16).map_err(|e| {
-                                Error::custom(format!("Invalid block number: {}", e))
-                            })?;
+                            let number =
+                                u64::from_str_radix(stripper, 16).map_err(|e| {
+                                    Error::custom(format!("Invalid block number: {}", e))
+                                })?;
 
                             block_number = Some(U64::from(number));
                             break;
@@ -444,9 +446,7 @@ impl<'a> Visitor<'a> for BlockIdVisitor {
             _ if value.starts_with("0x") => u64::from_str_radix(&value[2..], 16)
                 .map(|n| BlockId::Num(U64::from(n)))
                 .map_err(|e| Error::custom(format!("Invalid block number: {}", e))),
-            _ => Err(Error::custom(
-                "Invalid block number: missing 0x prefix".to_string(),
-            )),
+            _ => Err(Error::custom("Invalid block number: missing 0x prefix".to_string())),
         }
     }
 

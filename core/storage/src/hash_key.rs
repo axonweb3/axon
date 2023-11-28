@@ -90,9 +90,7 @@ impl CommonHashKey {
 
 impl ProtocolCodec for CommonHashKey {
     fn encode(&self) -> ProtocolResult<Bytes> {
-        Ok(Bytes::copy_from_slice(
-            &self.prefix.make_hash_key(&self.hash),
-        ))
+        Ok(Bytes::copy_from_slice(&self.prefix.make_hash_key(&self.hash)))
     }
 
     fn decode<B: AsRef<[u8]>>(bytes: B) -> ProtocolResult<Self> {

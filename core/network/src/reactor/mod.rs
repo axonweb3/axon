@@ -52,13 +52,14 @@ impl<M: MessageCodec, H: MessageHandler<Message = M>> Reactor for MessageReactor
             .set_remote_peer_id(context.remote_peer.peer_id.clone())
             .set_remote_connected_addr(context.remote_peer.connected_addr.clone());
 
-        let mut ctx = match (network_message.trace_id(), network_message.span_id()) {
-            (Some(trace_id), Some(span_id)) => {
-                let span_state = AxonTracer::new_state(trace_id, span_id);
-                AxonTracer::inject_span_state(ctx, span_state)
-            }
-            _ => ctx,
-        };
+        let mut ctx =
+            match (network_message.trace_id(), network_message.span_id()) {
+                (Some(trace_id), Some(span_id)) => {
+                    let span_state = AxonTracer::new_state(trace_id, span_id);
+                    AxonTracer::inject_span_state(ctx, span_state)
+                }
+                _ => ctx,
+            };
 
         let session_id = context.remote_peer.session_id;
         let _feedback = match endpoint.scheme() {
@@ -76,19 +77,20 @@ impl<M: MessageCodec, H: MessageHandler<Message = M>> Reactor for MessageReactor
                 self.msg_handler.process(ctx, content).await
             }
             EndpointScheme::RpcResponse => {
-                let content = {
-                    if !network_message.content.is_empty() {
-                        let raw = network_message.content.split_off(1);
+                let content =
+                    {
+                        if !network_message.content.is_empty() {
+                            let raw = network_message.content.split_off(1);
 
-                        if network_message.content[0] == 0 {
-                            RpcResponse::Success(Bytes::from(raw))
+                            if network_message.content[0] == 0 {
+                                RpcResponse::Success(Bytes::from(raw))
+                            } else {
+                                RpcResponse::Error(String::from_utf8_lossy(&raw).to_string())
+                            }
                         } else {
-                            RpcResponse::Error(String::from_utf8_lossy(&raw).to_string())
+                            RpcResponse::Error("empty message".to_string())
                         }
-                    } else {
-                        RpcResponse::Error("empty message".to_string())
-                    }
-                };
+                    };
                 let rpc_endpoint = RpcEndpoint::try_from(endpoint)?;
                 let rpc_id = rpc_endpoint.rpc_id().value();
 

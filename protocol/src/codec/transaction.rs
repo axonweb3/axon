@@ -172,30 +172,31 @@ impl Eip2930Transaction {
         }
 
         let id: u64 = r.val_at(0)?;
-        let tx = UnsignedTransaction::Eip2930(Eip2930Transaction {
-            nonce:       r.val_at(1)?,
-            gas_price:   r.val_at(2)?,
-            gas_limit:   r.val_at(3)?,
-            action:      r.val_at(4)?,
-            value:       r.val_at(5)?,
-            data:        r.val_at(6)?,
-            access_list: {
-                let accl_rlp = r.at(7)?;
-                let mut access_list: AccessList = Vec::new();
-                for i in 0..accl_rlp.item_count()? {
-                    let accounts = accl_rlp.at(i)?;
-                    if accounts.item_count()? != 2 {
-                        return Err(DecoderError::Custom("Unknown access list length"));
-                    }
+        let tx =
+            UnsignedTransaction::Eip2930(Eip2930Transaction {
+                nonce:       r.val_at(1)?,
+                gas_price:   r.val_at(2)?,
+                gas_limit:   r.val_at(3)?,
+                action:      r.val_at(4)?,
+                value:       r.val_at(5)?,
+                data:        r.val_at(6)?,
+                access_list: {
+                    let accl_rlp = r.at(7)?;
+                    let mut access_list: AccessList = Vec::new();
+                    for i in 0..accl_rlp.item_count()? {
+                        let accounts = accl_rlp.at(i)?;
+                        if accounts.item_count()? != 2 {
+                            return Err(DecoderError::Custom("Unknown access list length"));
+                        }
 
-                    access_list.push(AccessListItem {
-                        address:      accounts.val_at(0)?,
-                        storage_keys: accounts.list_at(1)?,
-                    });
-                }
-                access_list
-            },
-        });
+                        access_list.push(AccessListItem {
+                            address:      accounts.val_at(0)?,
+                            storage_keys: accounts.list_at(1)?,
+                        });
+                    }
+                    access_list
+                },
+            });
 
         Ok(UnverifiedTransaction {
             hash:      Hasher::digest([&[tx.as_u8()], r.as_raw()].concat()),
@@ -644,9 +645,10 @@ mod tests {
             output_type: None,
             lock:        None,
         };
-        let s = SignatureS {
-            witnesses: vec![witness],
-        };
+        let s =
+            SignatureS {
+                witnesses: vec![witness],
+            };
 
         assert_eq!(SignatureS::decode(&Rlp::new(&s.rlp_bytes())).unwrap(), s);
     }

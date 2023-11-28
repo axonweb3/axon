@@ -93,9 +93,10 @@ pub fn mock_transactions(n: usize) -> Vec<SignedTransaction> {
                 hash:      Default::default(),
             };
             let hash = utx.signature_hash(true);
-            let signature = Secp256k1Recoverable::sign_message(hash.as_bytes(), &sender_priv_key)
-                .unwrap()
-                .to_bytes();
+            let signature =
+                Secp256k1Recoverable::sign_message(hash.as_bytes(), &sender_priv_key)
+                    .unwrap()
+                    .to_bytes();
             utx.signature = Some(signature.into());
             SignedTransaction {
                 transaction: utx.calc_hash(),

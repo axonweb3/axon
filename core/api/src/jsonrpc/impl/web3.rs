@@ -113,17 +113,20 @@ impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
             })
             .collect();
 
-        let reward_vec: Vec<U64> = reward_percentiles
-            .iter()
-            .map(|percentile| {
-                let index =
-                    calculate_effective_priority_fees_index(percentile, &effective_priority_fees);
-                effective_priority_fees
-                    .get(index)
-                    .cloned()
-                    .unwrap_or(U64::zero())
-            })
-            .collect();
+        let reward_vec: Vec<U64> =
+            reward_percentiles
+                .iter()
+                .map(|percentile| {
+                    let index = calculate_effective_priority_fees_index(
+                        percentile,
+                        &effective_priority_fees,
+                    );
+                    effective_priority_fees
+                        .get(index)
+                        .cloned()
+                        .unwrap_or(U64::zero())
+                })
+                .collect();
 
         reward.push(reward_vec);
 
@@ -559,15 +562,16 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
 
     #[metrics_rpc("eth_getLogs")]
     async fn get_logs(&self, filter: Web3Filter) -> RpcResult<Vec<Web3Log>> {
-        let topics: Vec<Option<Vec<Option<H256>>>> = filter
-            .topics
-            .map(|s| {
-                s.into_iter()
-                    .take(4)
-                    .map(Into::<Option<Vec<Option<H256>>>>::into)
-                    .collect()
-            })
-            .unwrap_or_default();
+        let topics: Vec<Option<Vec<Option<H256>>>> =
+            filter
+                .topics
+                .map(|s| {
+                    s.into_iter()
+                        .take(4)
+                        .map(Into::<Option<Vec<Option<H256>>>>::into)
+                        .collect()
+                })
+                .unwrap_or_default();
 
         enum BlockPosition {
             Hash(H256),
@@ -583,24 +587,25 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             address: Option<&Vec<H160>>,
             early_return: &mut bool,
         ) -> RpcResult<()> {
-            let extend_logs = |logs: &mut Vec<Web3Log>,
-                               receipts: Vec<Option<Receipt>>,
-                               early_return: &mut bool| {
-                for (index, receipt) in receipts.into_iter().flatten().enumerate() {
-                    from_receipt_to_web3_log(
-                        index,
-                        topics,
-                        address.as_ref().unwrap_or(&&Vec::new()),
-                        &receipt,
-                        logs,
-                    );
+            let extend_logs =
+                |logs: &mut Vec<Web3Log>,
+                 receipts: Vec<Option<Receipt>>,
+                 early_return: &mut bool| {
+                    for (index, receipt) in receipts.into_iter().flatten().enumerate() {
+                        from_receipt_to_web3_log(
+                            index,
+                            topics,
+                            address.as_ref().unwrap_or(&&Vec::new()),
+                            &receipt,
+                            logs,
+                        );
 
-                    if logs.len() > MAX_LOG_NUM {
-                        *early_return = true;
-                        return;
+                        if logs.len() > MAX_LOG_NUM {
+                            *early_return = true;
+                            return;
+                        }
                     }
-                }
-            };
+                };
 
             match position {
                 BlockPosition::Hash(hash) => {

@@ -156,15 +156,16 @@ impl<Adapter: StorageAdapter> ImplStorage<Adapter> {
             .map(|item| (item.tx_hash, StorageBatchModify::Insert(block_number)))
             .unzip();
 
-        let (keys, batch_stxs): (Vec<_>, Vec<_>) = receipts
-            .into_iter()
-            .map(|item| {
-                (
-                    CommonHashKey::new(block_number, item.tx_hash),
-                    StorageBatchModify::Insert(item),
-                )
-            })
-            .unzip();
+        let (keys, batch_stxs): (Vec<_>, Vec<_>) =
+            receipts
+                .into_iter()
+                .map(|item| {
+                    (
+                        CommonHashKey::new(block_number, item.tx_hash),
+                        StorageBatchModify::Insert(item),
+                    )
+                })
+                .unzip();
 
         self.adapter
             .batch_modify::<ReceiptSchema>(keys, batch_stxs)?;

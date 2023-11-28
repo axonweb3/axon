@@ -207,12 +207,13 @@ where
             .map(|p| U256::from(p.low_u64()))
             .unwrap_or_else(U256::one);
 
-        let backend = AxonExecutorReadOnlyAdapter::from_root(
-            state_root,
-            Arc::clone(&self.trie_db),
-            Arc::clone(&self.storage),
-            exec_ctx,
-        )?;
+        let backend =
+            AxonExecutorReadOnlyAdapter::from_root(
+                state_root,
+                Arc::clone(&self.trie_db),
+                Arc::clone(&self.storage),
+                exec_ctx,
+            )?;
         let gas_limit = gas_limit
             .map(|gas| gas.low_u64())
             .unwrap_or(MAX_BLOCK_GAS_LIMIT);

@@ -218,9 +218,8 @@ impl IdentifyProtocol {
         }
 
         if extract_peer_id(&observed).is_none() {
-            observed.push(Protocol::P2P(Cow::Borrowed(
-                self.peer_manager.local_peer_id().as_bytes(),
-            )))
+            observed
+                .push(Protocol::P2P(Cow::Borrowed(self.peer_manager.local_peer_id().as_bytes())))
         }
 
         let source_addr = observed.clone();
@@ -290,18 +289,18 @@ impl ServiceProtocol for IdentifyProtocol {
         trace!("IdentifyProtocol connected from {:?}", remote_info.peer_id);
         self.remote_infos.insert(session.id, remote_info);
 
-        let listen_addrs: Vec<Multiaddr> = self
-            .peer_manager
-            .local_listen_addrs()
-            .iter()
-            .filter(|addr| {
-                multiaddr_to_socketaddr(addr)
-                    .map(|socket_addr| !self.global_ip_only || is_reachable(socket_addr.ip()))
-                    .unwrap_or(false)
-            })
-            .take(MAX_ADDRS)
-            .cloned()
-            .collect();
+        let listen_addrs: Vec<Multiaddr> =
+            self.peer_manager
+                .local_listen_addrs()
+                .iter()
+                .filter(|addr| {
+                    multiaddr_to_socketaddr(addr)
+                        .map(|socket_addr| !self.global_ip_only || is_reachable(socket_addr.ip()))
+                        .unwrap_or(false)
+                })
+                .take(MAX_ADDRS)
+                .cloned()
+                .collect();
 
         let data = Identity::new(
             self.peer_manager.chain_id(),

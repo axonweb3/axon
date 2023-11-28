@@ -190,19 +190,19 @@ async fn concurrent_broadcast(
     txs: Vec<SignedTransaction>,
     mempool: Arc<MemPoolImpl<HashMemPoolAdapter>>,
 ) {
-    let futs = txs
-        .into_iter()
-        .map(|tx| {
-            let mempool = Arc::clone(&mempool);
-            tokio::spawn(async move {
-                mempool
-                    .get_adapter()
-                    .broadcast_tx(Context::new(), None, tx)
-                    .await
-                    .unwrap()
+    let futs =
+        txs.into_iter()
+            .map(|tx| {
+                let mempool = Arc::clone(&mempool);
+                tokio::spawn(async move {
+                    mempool
+                        .get_adapter()
+                        .broadcast_tx(Context::new(), None, tx)
+                        .await
+                        .unwrap()
+                })
             })
-        })
-        .collect::<Vec<_>>();
+            .collect::<Vec<_>>();
 
     futures::future::try_join_all(futs).await.unwrap();
 }
