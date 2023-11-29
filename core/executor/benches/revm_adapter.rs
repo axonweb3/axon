@@ -124,16 +124,15 @@ where
             if change.is_empty() {
                 let _ = self.trie.remove(addr.as_bytes());
             }
-            let old_account =
-                match self.trie.get(addr.as_bytes()) {
-                    Ok(Some(raw)) => Account::decode(raw).unwrap(),
-                    _ => Account {
-                        nonce:        Default::default(),
-                        balance:      Default::default(),
-                        storage_root: RLP_NULL,
-                        code_hash:    NIL_DATA,
-                    },
-                };
+            let old_account = match self.trie.get(addr.as_bytes()) {
+                Ok(Some(raw)) => Account::decode(raw).unwrap(),
+                _ => Account {
+                    nonce:        Default::default(),
+                    balance:      Default::default(),
+                    storage_root: RLP_NULL,
+                    code_hash:    NIL_DATA,
+                },
+            };
 
             let storage_root = old_account.storage_root;
             let mut storage_trie = if storage_root == RLP_NULL {
@@ -340,9 +339,9 @@ where
     } else {
         TrieMerkle::from_iter(hashes.iter().enumerate())
             .root_hash()
-            .unwrap_or_else(
-                |err| panic!("failed to calculate trie root hash for receipts since {err}")
-            )
+            .unwrap_or_else(|err| {
+                panic!("failed to calculate trie root hash for receipts since {err}")
+            })
     };
 
     ExecResp {

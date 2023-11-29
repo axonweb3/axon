@@ -278,33 +278,32 @@ mod test {
         });
         assert_eq!(vd31, H256::zero());
 
-        let v4 =
-            vec![
-                HardforkInfoInner {
-                    block_number: 0,
-                    flags:        {
-                        let mut a = [0; 32];
-                        a[0] = 0b10;
-                        H256::from(a)
-                    },
+        let v4 = vec![
+            HardforkInfoInner {
+                block_number: 0,
+                flags:        {
+                    let mut a = [0; 32];
+                    a[0] = 0b10;
+                    H256::from(a)
                 },
-                HardforkInfoInner {
-                    block_number: 5,
-                    flags:        {
-                        let mut a = [0; 32];
-                        a[0] = 0b11;
-                        H256::from(a)
-                    },
+            },
+            HardforkInfoInner {
+                block_number: 5,
+                flags:        {
+                    let mut a = [0; 32];
+                    a[0] = 0b11;
+                    H256::from(a)
                 },
-                HardforkInfoInner {
-                    block_number: 10,
-                    flags:        {
-                        let mut a = [0; 32];
-                        a[0] = 0b111;
-                        H256::from(a)
-                    },
+            },
+            HardforkInfoInner {
+                block_number: 10,
+                flags:        {
+                    let mut a = [0; 32];
+                    a[0] = 0b111;
+                    H256::from(a)
                 },
-            ];
+            },
+        ];
 
         let (ve4, vd4) = enabled_and_determined(&v4, 0);
 

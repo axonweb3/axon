@@ -37,9 +37,9 @@ macro_rules! overlord_message {
             }
 
             fn decode<B: AsRef<[u8]>>(bytes: B) -> protocol::ProtocolResult<Self> {
-                Ok(Self(rlp::decode(bytes.as_ref()).map_err(
-                    |_| crate::ConsensusError::DecodeErr(crate::ConsensusType::SignedChoke)
-                )?))
+                Ok(Self(rlp::decode(bytes.as_ref()).map_err(|_| {
+                    crate::ConsensusError::DecodeErr(crate::ConsensusType::SignedChoke)
+                })?))
             }
         }
 
@@ -66,9 +66,9 @@ macro_rules! overlord_message {
             }
 
             fn decode<B: AsRef<[u8]>>(bytes: B) -> protocol::ProtocolResult<Self> {
-                Ok(Self(rlp::decode(bytes.as_ref()).map_err(
-                    |_| crate::ConsensusError::DecodeErr(crate::ConsensusType::SignedChoke)
-                )?))
+                Ok(Self(rlp::decode(bytes.as_ref()).map_err(|_| {
+                    crate::ConsensusError::DecodeErr(crate::ConsensusType::SignedChoke)
+                })?))
             }
         }
 

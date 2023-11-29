@@ -56,14 +56,13 @@ lazy_static! {
         exponential_buckets(0.05, 2.0, 10).expect("mempool time expontial")
     )
     .expect("mempool time cost");
-    pub static ref MEMPOOL_PACKAGE_SIZE_VEC: HistogramVec =
-        register_histogram_vec!(
-            "axon_mempool_package_size_vec",
-            "Package size",
-            &["type"],
-            exponential_buckets(0.05, 2.0, 10).expect("mempool package size exponential")
-        )
-        .expect("mempool package size");
+    pub static ref MEMPOOL_PACKAGE_SIZE_VEC: HistogramVec = register_histogram_vec!(
+        "axon_mempool_package_size_vec",
+        "Package size",
+        &["type"],
+        exponential_buckets(0.05, 2.0, 10).expect("mempool package size exponential")
+    )
+    .expect("mempool package size");
     pub static ref MEMPOOL_CURRENT_SIZE_VEC: HistogramVec = register_histogram_vec!(
         "axon_mempool_current_size_vec",
         "Current size",

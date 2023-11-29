@@ -53,12 +53,11 @@ impl<Adapter: ExecutorAdapter + ApplyBackend> SystemContract<Adapter>
         let block_number = adapter.block_number().as_u64();
         let root = CURRENT_METADATA_ROOT.with(|r| *r.borrow());
 
-        let mut store =
-            exec_try!(
-                MetadataStore::new(root),
-                gas_limit,
-                "[metadata] init metadata mpt"
-            );
+        let mut store = exec_try!(
+            MetadataStore::new(root),
+            gas_limit,
+            "[metadata] init metadata mpt"
+        );
 
         if block_number != 0 {
             let handle = MetadataHandle::new(CURRENT_METADATA_ROOT.with(|r| *r.borrow()));

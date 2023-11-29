@@ -39,11 +39,10 @@ where
             .map(PathBuf::from)?;
         parse_file(&file_path, true).map_err(|err| {
             let kind = clap::error::ErrorKind::InvalidValue;
-            let msg =
-                format!(
-                    "failed to parse JSON file {} since {err}",
-                    file_path.display()
-                );
+            let msg = format!(
+                "failed to parse JSON file {} since {err}",
+                file_path.display()
+            );
             clap::Error::raw(kind, msg)
         })
     }

@@ -84,7 +84,10 @@ impl trie::DB for RocksTrieDB {
 
     fn insert_batch(&self, keys: Vec<Vec<u8>>, values: Vec<Vec<u8>>) -> Result<(), io::Error> {
         if keys.len() != values.len() {
-            return Err(io::Error::new(io::ErrorKind::Other, "keys and values length not match"));
+            return Err(io::Error::new(
+                io::ErrorKind::Other,
+                "keys and values length not match",
+            ));
         }
 
         let mut total_size = 0;

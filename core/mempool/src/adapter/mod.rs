@@ -93,14 +93,13 @@ impl IntervalTxsBroadcaster {
             return;
         }
 
-        let report_if_err =
-            move |ret: ProtocolResult<()>| {
-                if let Err(err) = ret {
-                    if err_tx.unbounded_send(err).is_err() {
-                        error!("mempool: default mempool adapter dropped");
-                    }
+        let report_if_err = move |ret: ProtocolResult<()>| {
+            if let Err(err) = ret {
+                if err_tx.unbounded_send(err).is_err() {
+                    error!("mempool: default mempool adapter dropped");
                 }
-            };
+            }
+        };
 
         for (origin, batch_stxs) in txs_cache.drain() {
             let gossip_msg = BatchSignedTxs(batch_stxs);
@@ -629,9 +628,13 @@ mod tests {
         let (broadcast_signal_tx, mut broadcast_signal_rx) = unbounded();
         let gossip = MockGossip::new(broadcast_signal_tx);
 
-        tokio::spawn(
-            IntervalTxsBroadcaster::broadcast(stx_rx, 1000000, tx_size, gossip.clone(), err_tx)
-        );
+        tokio::spawn(IntervalTxsBroadcaster::broadcast(
+            stx_rx,
+            1000000,
+            tx_size,
+            gossip.clone(),
+            err_tx,
+        ));
 
         for stx in default_mock_txs(11).into_iter() {
             stx_tx.unbounded_send((None, stx)).expect("send stx fail");
@@ -653,9 +656,13 @@ mod tests {
         let (broadcast_signal_tx, mut broadcast_signal_rx) = unbounded();
         let gossip = MockGossip::new(broadcast_signal_tx);
 
-        tokio::spawn(
-            IntervalTxsBroadcaster::broadcast(stx_rx, 200, tx_size, gossip.clone(), err_tx)
-        );
+        tokio::spawn(IntervalTxsBroadcaster::broadcast(
+            stx_rx,
+            200,
+            tx_size,
+            gossip.clone(),
+            err_tx,
+        ));
 
         for stx in default_mock_txs(9).into_iter() {
             stx_tx.unbounded_send((None, stx)).expect("send stx fail");
@@ -677,9 +684,13 @@ mod tests {
         let (broadcast_signal_tx, mut broadcast_signal_rx) = unbounded();
         let gossip = MockGossip::new(broadcast_signal_tx);
 
-        tokio::spawn(
-            IntervalTxsBroadcaster::broadcast(stx_rx, 200, tx_size, gossip.clone(), err_tx)
-        );
+        tokio::spawn(IntervalTxsBroadcaster::broadcast(
+            stx_rx,
+            200,
+            tx_size,
+            gossip.clone(),
+            err_tx,
+        ));
 
         for stx in default_mock_txs(19).into_iter() {
             stx_tx.unbounded_send((None, stx)).expect("send stx fail");

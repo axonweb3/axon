@@ -141,9 +141,9 @@ impl PeerStore {
                 extract_peer_id(&peer_addr.addr)
                     .map(|peer_id| !peers.contains_key(&peer_id))
                     .unwrap_or_default()
-                    && peer_addr.connected(
-                        |t| t > addr_expired_ms && t <= now_ms.saturating_sub(DIAL_INTERVAL)
-                    )
+                    && peer_addr.connected(|t| {
+                        t > addr_expired_ms && t <= now_ms.saturating_sub(DIAL_INTERVAL)
+                    })
             })
     }
 

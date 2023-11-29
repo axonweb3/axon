@@ -133,12 +133,11 @@ where
     }
 
     fn code(&self, address: H160) -> Vec<u8> {
-        let code_hash =
-            if let Some(bytes) = self.trie.get(address.as_bytes()).unwrap() {
-                Account::decode(bytes).unwrap().code_hash
-            } else {
-                return Vec::new();
-            };
+        let code_hash = if let Some(bytes) = self.trie.get(address.as_bytes()).unwrap() {
+            Account::decode(bytes).unwrap().code_hash
+        } else {
+            return Vec::new();
+        };
 
         if code_hash == NIL_DATA {
             return Vec::new();

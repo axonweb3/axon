@@ -194,14 +194,13 @@ fn check_state(spec: &ChainSpec, genesis_header: &Header, db_group: &DatabaseGro
     .unwrap();
 
     let metadata_0 = spec.params.clone();
-    let metadata_1 =
-        {
-            let mut tmp = metadata_0.clone();
-            tmp.epoch = metadata_0.epoch + 1;
-            tmp.version.start = metadata_0.version.end + 1;
-            tmp.version.end = tmp.version.start + metadata_0.version.end - 1;
-            tmp
-        };
+    let metadata_1 = {
+        let mut tmp = metadata_0.clone();
+        tmp.epoch = metadata_0.epoch + 1;
+        tmp.version.start = metadata_0.version.end + 1;
+        tmp.version.end = tmp.version.start + metadata_0.version.end - 1;
+        tmp
+    };
     let handle = MetadataHandle::new(backend.get_metadata_root());
 
     assert_eq!(
@@ -314,11 +313,10 @@ fn generate_memory_mpt_root(metadata_0: Metadata, metadata_1: Metadata) -> Vec<u
         )
         .unwrap();
 
-    let info =
-        HardforkInfoInner {
-            flags:        H256::from_low_u64_be(HardforkName::all().to_be()),
-            block_number: 0,
-        };
+    let info = HardforkInfoInner {
+        flags:        H256::from_low_u64_be(HardforkName::all().to_be()),
+        block_number: 0,
+    };
     let hardfork = HardforkInfo { inner: vec![info] }
         .encode()
         .unwrap()

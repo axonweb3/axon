@@ -147,14 +147,13 @@ async fn test_simplestorage() {
     // `println!("{:?}", backend.state().keys());`
 
     // let's call SimpleStorage.set(42)
-    let tx =
-        gen_tx(
-            H160::from_str("0xf000000000000000000000000000000000000000").unwrap(),
-            H160::from_str("0xc15d2ba57d126e6603240e89437efd419ce329d2").unwrap(),
-            0,
-            hex_decode("60fe47b1000000000000000000000000000000000000000000000000000000000000002a")
-                .unwrap(),
-        );
+    let tx = gen_tx(
+        H160::from_str("0xf000000000000000000000000000000000000000").unwrap(),
+        H160::from_str("0xc15d2ba57d126e6603240e89437efd419ce329d2").unwrap(),
+        0,
+        hex_decode("60fe47b1000000000000000000000000000000000000000000000000000000000000002a")
+            .unwrap(),
+    );
     let r = EvmExecutor::evm_exec(&mut adapter, &config, &precompiles, &tx);
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Stopped));
     assert!(r.ret.is_empty());
