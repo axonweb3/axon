@@ -134,7 +134,7 @@ jobs:
                 "content": "Axon-sync-test", 
                 "embeds": [ 
                     {
-                    "title":"Contract Test Status", 
+                    "title":"Axon sync test Status", 
                      "color": 5814789,
                      "fields": [
                          {
@@ -146,7 +146,7 @@ jobs:
                          },
                          {    
                              "name": "URL",
-                             "value": "[Click and jump to Github workflow](https://github.com/Simon-Tl/axon/actions/workflows/axon-sync-test.yml)\n"
+                             "value": "[Click and jump to Github workflow](https://github.com/axonweb3/axon/actions/workflows/axon-sync-test.yml)\n"
                          }
                          
                      ]
