@@ -347,6 +347,7 @@ dependencies = [
  "bytes",
  "cita_trie 4.1.0",
  "ckb-blst",
+ "ckb-types",
  "derive_more",
  "eth_light_client_in_ckb-prover",
  "ethereum",

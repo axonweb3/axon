@@ -50,6 +50,10 @@ features = ["serde"]
 version = "4.0"
 optional = true
 
+[dependencies.ckb-types]
+version = "0.111"
+optional = true
+
 [dependencies.derive_more]
 version = "0.99"
 optional = true
