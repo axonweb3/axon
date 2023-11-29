@@ -320,7 +320,11 @@ where
         Ok(())
     }
 
-    async fn get_tx_count_by_address(&self, _ctx: Context, address: H160) -> ProtocolResult<usize> {
+    async fn get_tx_count_by_address(
+        &self,
+        _ctx: Context,
+        address: H160,
+    ) -> ProtocolResult<(usize, Option<BlockNumber>)> {
         Ok(self.pool.get_tx_count_by_address(address))
     }
 
