@@ -2,8 +2,7 @@ name: Axon sync test
 
 on:
   workflow_dispatch:
-  # TODO: remove push event when this workflow is stable
-  push:
+  push:  
 
 jobs:
   Build_and_Archive_Axon:
@@ -48,13 +47,14 @@ jobs:
            devtools/chain/default.db-options
            devtools/chain/config.toml 
            devtools/chain/nodes/node_1*
+           devtools/ci/scripts/helper.js
         retention-days: 7
 
         
   Download_and_Start_Axon_Sync:
     name: Download_and_Start_Axon_Sync
     needs:  Build_and_Archive_Axon       
-    runs-on: layer2-runner
+    runs-on: layer2-runners
 
     steps:
     - name: Download Axon Binary for Build_and_Archive_Axon  
@@ -65,7 +65,7 @@ jobs:
       run: |
         sed -i 's@bls_privkey_file = "bls.key"@bls_privkey_file = "nodes/node_1_bls.key"@g' devtools/chain/config.toml 
         sed -i 's@net_privkey_file = "net.key"@net_privkey_file = "nodes/node_1_net.key"@g' devtools/chain/config.toml   
-        sed -i 's@multi_address = "/ip4/127.0.0.1/tcp/8001/p2p/QmNk6bBwkLPuqnsrtxpp819XLZY3ymgjs3p1nKtxBVgqxj"@multi_address = "/dns4/axon1.axon-alphanet.svc.cluster.local/tcp/8001/p2p/QmNk6bBwkLPuqnsrtxpp819XLZY3ymgjs3p1nKtxBVgqxj"@' devtools/chain/config.toml   
+        sed -i 's@multi_address = "/ip4/127.0.0.1/tcp/8001/p2p/QmNk6bBwkLPuqnsrtxpp819XLZY3ymgjs3p1nKtxBVgqxj"@multi_address = "/dns4/axon1/tcp/8001/p2p/QmNk6bBwkLPuqnsrtxpp819XLZY3ymgjs3p1nKtxBVgqxj"@' devtools/chain/config.toml   
 
     - name: Start Axon Node
       env:
@@ -75,10 +75,82 @@ jobs:
          target/debug/axon --version
          target/debug/axon init \
           --config     devtools/chain/config.toml  \
-          --chain-spec devtools/chain/specs/single_node/chain-spec.toml 
+          --chain-spec devtools/chain/specs/single_node/chain-spec.toml
 
-         target/debug/axon run \
-          --config     devtools/chain/config.toml  
+         nohup target/debug/axon run \
+          --config     devtools/chain/config.toml  &
 
+    - name: Wati for App to Start
+      run: sleep 10
 
+    - name: Setup Node.js
+      uses: actions/setup-node@v3  
+      with:
+        node-version: '14'
+    
+    - name: Install dependencies
+      run: |
+        npm install -g zx   
  
+    - name:  Compare Block Heights  
+      run: |
+        npx zx <<'EOF'
+        #!/usr/bin/env zx
+        import { getLatestBlockNum } from './devtools/ci/scripts/helper.js'
+
+        async function main() {
+          let previousLocalHeight = null;
+
+          while (true) {
+          const localhostHeight = await getLatestBlockNum('http://127.0.0.1:8000');
+          const remoteHeight = await getLatestBlockNum('https://rpc-alphanet-axon.ckbapp.dev');
+          console.log("localBlockNumber:" + localhostHeight, "remoteBlockNumber:"+ remoteHeight)
+
+          if (localhostHeight === remoteHeight - 10) {
+            console.log("localBlockNumber:" + localhostHeight, "remoteBlockNumber:"+ remoteHeight, "localnode sync succeeded" );
+            process.exit(0);
+          } else if (localhostHeight === previousLocalHeight)  {
+            console.error("synchronization exception localBlockNumber:" + localhostHeight);
+            process.exit(1);
+          }
+          previousLocalHeight = localhostHeight;
+          await new Promise(resolve => setTimeout(resolve, 600000));
+         }
+        }
+        main();
+        EOF
+
+  notice:
+    runs-on: ubuntu-latest
+    needs: Download_and_Start_Axon_Sync 
+    if: success() || failure()
+    steps:
+      - name: send Axon-sync-test status 
+        run: |
+          curl -H "Content-Type: application/json" \
+          -X POST https://discord.com/api/webhooks/${{secrets.DISCORD_CHANNEL_ID}}/${{secrets.DISCORD_CHANNEL_TOKEN}} \
+          --data '
+             { 
+                "content": "Axon-sync-test", 
+                "embeds": [ 
+                    {
+                    "title":"Contract Test Status", 
+                     "color": 5814789,
+                     "fields": [
+                         {
+                             "name": "Job name",
+                             "value": "axon-sync-test\n"
+                         },   
+                         {    "name":  "Job statues",
+                              "value": "${{needs.Download_and_Start_Axon_Sync.result}}\n"
+                         },
+                         {    
+                             "name": "URL",
+                             "value": "[Click and jump to Github workflow](https://github.com/Simon-Tl/axon/actions/workflows/axon-sync-test.yml)\n"
+                         }
+                         
+                     ]
+                } 
+                ]
+            }'            
+
