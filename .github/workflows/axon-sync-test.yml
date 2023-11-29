@@ -2,6 +2,8 @@ name: Axon sync test
 
 on:
   workflow_dispatch:
+  # TODO: remove push event when this workflow is stable
+  push:
 
 jobs:
   Build_and_Archive_Axon:
