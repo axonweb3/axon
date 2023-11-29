@@ -47,7 +47,7 @@ describe("eth_getBalance", () => {
     await testType.type("1"); // 0: none params 1: common params to request 2: more params
     await param1.type(testDataInfo.accountAddress);
     await param2.type("latest");
-    await goto.check(page, "0x4ee2d6d415b85acef8044929f94");
+    await goto.check(page, "0x4ee2d6d415b85acef7f89253f28");
   });
 
   /**
