@@ -75,6 +75,7 @@ impl Executor for AxonExecutor {
         self.init_local_system_contract_roots(backend);
         let config = {
             let mut config = self.config();
+            // run the gasometer in estimate mode
             config.estimate = true;
             config
         };
