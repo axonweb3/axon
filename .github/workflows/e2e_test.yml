@@ -39,6 +39,12 @@ jobs:
           restore-keys: |
             ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-build
 
+      - name: Build Axon in the development profile
+        run: |
+          # check for AVX2 support by inspecting `/proc/cpuinfo` or running `lscpu`
+          lscpu
+          cargo build
+
       - name: Start a single Axon node
         env:
           LOG_FILE: ${{ runner.temp }}/${{ matrix.os }}-single-axon-node.log
