@@ -5,10 +5,7 @@ mod pool;
 mod tests;
 mod tx_wrapper;
 
-pub use adapter::message::{
-    MsgPullTxs, NewTxsHandler, PullTxsHandler, END_GOSSIP_NEW_TXS, RPC_PULL_TXS, RPC_RESP_PULL_TXS,
-    RPC_RESP_PULL_TXS_SYNC,
-};
+pub use adapter::message::{MsgPullTxs, NewTxsHandler, PullTxsHandler};
 pub use adapter::{AdapterError, DefaultMemPoolAdapter};
 
 use std::collections::HashSet;
@@ -186,7 +183,7 @@ where
     Adapter: MemPoolAdapter + 'static,
 {
     async fn insert(&self, ctx: Context, tx: SignedTransaction) -> ProtocolResult<()> {
-        let is_call_system_script = is_call_system_script(tx.transaction.unsigned.action());
+        let is_call_system_script = is_call_system_script(tx.transaction.unsigned.action())?;
 
         log::debug!(
             "[mempool]: is call system script {:?}",
@@ -309,7 +306,7 @@ where
 
             for (signed_tx, check_nonce) in txs.into_iter().zip(check_nonces.into_iter()) {
                 let is_call_system_script =
-                    is_call_system_script(signed_tx.transaction.unsigned.action());
+                    is_call_system_script(signed_tx.transaction.unsigned.action())?;
                 if is_call_system_script {
                     self.pool.insert_system_script_tx(signed_tx)?;
                 } else {
@@ -323,7 +320,11 @@ where
         Ok(())
     }
 
-    async fn get_tx_count_by_address(&self, _ctx: Context, address: H160) -> ProtocolResult<usize> {
+    async fn get_tx_count_by_address(
+        &self,
+        _ctx: Context,
+        address: H160,
+    ) -> ProtocolResult<(usize, Option<BlockNumber>)> {
         Ok(self.pool.get_tx_count_by_address(address))
     }
 

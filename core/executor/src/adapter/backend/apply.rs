@@ -175,7 +175,25 @@ where
         };
 
         storage.into_iter().for_each(|(k, v)| {
-            let _ = storage_trie.insert(k.as_bytes().to_vec(), v.as_bytes().to_vec());
+            // https://github.com/ethereum/go-ethereum/blob/ad16f11f841ab3a5fdedc8ddfc602f0717a34dd0/core/state/state_object.go#L306-L311
+            // if value is zero, delete it's key
+            if v == H256::zero() {
+                storage_trie
+                    .remove(k.as_bytes())
+                    .expect("Failed to remove entry with zero value from storage trie");
+            } else {
+                storage_trie
+                    .insert(
+                        k.as_bytes().to_vec(),
+                        // https://github.com/ethereum/go-ethereum/blob/ad16f11f841ab3a5fdedc8ddfc602f0717a34dd0/core/state/state_object.go#L314
+                        // Trim left zeroes and then rlp
+                        U256::from_big_endian(v.as_bytes())
+                            .encode()
+                            .unwrap()
+                            .to_vec(),
+                    )
+                    .expect("trie tree insert fail");
+            }
         });
 
         let storage_root = storage_trie

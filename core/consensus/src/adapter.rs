@@ -10,6 +10,9 @@ use common_apm_derive::trace_span;
 use core_executor::system_contract::metadata::MetadataHandle;
 use core_executor::{AxonExecutor, AxonExecutorApplyAdapter, AxonExecutorReadOnlyAdapter};
 use core_network::{PeerId, PeerIdExt};
+use protocol::constants::endpoints::{
+    BROADCAST_HEIGHT, RPC_SYNC_PULL_BLOCK, RPC_SYNC_PULL_PROOF, RPC_SYNC_PULL_TXS,
+};
 use protocol::traits::{
     CommonConsensusAdapter, ConsensusAdapter, Context, Executor, Gossip, MemPool, MessageTarget,
     Network, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
@@ -22,9 +25,6 @@ use protocol::types::{
 use protocol::{async_trait, tokio::task, trie, ProtocolResult};
 
 use crate::consensus::gen_overlord_status;
-use crate::message::{
-    BROADCAST_HEIGHT, RPC_SYNC_PULL_BLOCK, RPC_SYNC_PULL_PROOF, RPC_SYNC_PULL_TXS,
-};
 use crate::util::{convert_hex_to_bls_pubkeys, OverlordCrypto};
 use crate::BlockHeaderField::{PreviousBlockHash, Version};
 use crate::BlockProofField::{BitMap, HashMismatch, HeightMismatch, Signature, WeightNotFound};

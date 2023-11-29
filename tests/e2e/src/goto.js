@@ -20,6 +20,14 @@ const goto = {
     await currentpage.waitForFunction(() => document.getElementById("ret").innerText !== "");
     await expect(currentpage.$eval("#ret", (e) => e.innerText)).resolves.toMatch(expectedValue);
   },
+
+  async checkAndWait(currentpage, expectedValue, second) {
+    await currentpage.click(goto.pageIds.btnId);
+    await currentpage.waitForFunction(() => document.getElementById("ret").innerText !== "");
+    await new Promise((resolve) => { setTimeout(resolve, second * 1000); });
+    await expect(currentpage.$eval("#ret", (e) => e.innerText)).resolves.toMatch(expectedValue);
+  },
+
   // get the  value
   async value(currentpage) {
     await currentpage.click(goto.pageIds.btnId);

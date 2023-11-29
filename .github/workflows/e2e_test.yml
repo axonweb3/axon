@@ -4,6 +4,7 @@ on:
   push:
   pull_request:
   merge_group:
+  workflow_dispatch:
 
 # Ensure that only a single job or workflow using the same concurrency group will run at a time.
 # see https://docs.github.com/en/actions/using-jobs/using-concurrency#example-only-cancel-in-progress-jobs-or-runs-for-the-current-workflow
@@ -37,6 +38,12 @@ jobs:
           key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-build
+
+      - name: Build Axon in the development profile
+        run: |
+          # check for AVX2 support by inspecting `/proc/cpuinfo` or running `lscpu`
+          lscpu
+          cargo build
 
       - name: Start a single Axon node
         env:

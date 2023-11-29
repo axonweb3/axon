@@ -9,6 +9,7 @@ pub mod metadata;
 pub use crate::system_contract::ckb_light_client::{
     CkbLightClientContract, CKB_LIGHT_CLIENT_CONTRACT_ADDRESS,
 };
+use crate::system_contract::error::SystemScriptError;
 pub use crate::system_contract::image_cell::{ImageCellContract, IMAGE_CELL_CONTRACT_ADDRESS};
 pub use crate::system_contract::metadata::{
     check_ckb_related_info_exist, MetadataContract, METADATA_CONTRACT_ADDRESS,
@@ -29,7 +30,8 @@ use rocksdb::DB;
 
 use protocol::traits::{CkbDataProvider, ExecutorAdapter};
 use protocol::types::{
-    Bytes, HardforkInfoInner, Hasher, Metadata, SignedTransaction, TxResp, H160, H256,
+    Bytes, HardforkInfoInner, Hasher, Metadata, SignedTransaction, TransactionAction, TxResp, H160,
+    H256,
 };
 use protocol::{ckb_blake2b_256, ProtocolResult};
 
@@ -45,6 +47,17 @@ pub const fn system_contract_address(addr: u8) -> H160 {
         0xff, 0xff, 0xff, 0xff, addr,
     ])
 }
+const SYSTEM_CONTRACT_ADDRESSES_PREFIX: [u8; 19] = [
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // 0xff * 8
+    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, // 0xff * 8
+    0xff, 0xff, 0xff, // 0xff * 3
+];
+const SYSTEM_CONTRACT_ADDRESSES_SET: [H160; 4] = [
+    NATIVE_TOKEN_CONTRACT_ADDRESS,
+    METADATA_CONTRACT_ADDRESS,
+    CKB_LIGHT_CLIENT_CONTRACT_ADDRESS,
+    IMAGE_CELL_CONTRACT_ADDRESS,
+];
 const HEADER_CELL_DB_CACHE_SIZE: usize = 200;
 const METADATA_DB_CACHE_SIZE: usize = 10;
 
@@ -302,5 +315,65 @@ impl CkbDataProvider for DataProvider {}
 impl DataProvider {
     pub fn new(root: H256) -> Self {
         DataProvider { root }
+    }
+}
+
+pub fn is_system_contract_address_format(addr: &H160) -> bool {
+    addr.0[0..19] == SYSTEM_CONTRACT_ADDRESSES_PREFIX
+}
+
+pub fn is_call_system_script(action: &TransactionAction) -> ProtocolResult<bool> {
+    let call_addr = match action {
+        TransactionAction::Call(addr) => addr,
+        TransactionAction::Create => return Ok(false),
+    };
+
+    // The first 19 bytes of the address are 0xff, which means that the address
+    // follows system contract address format.
+    if call_addr.0[0..19] == SYSTEM_CONTRACT_ADDRESSES_PREFIX {
+        if SYSTEM_CONTRACT_ADDRESSES_SET.contains(call_addr) {
+            return Ok(true);
+        }
+
+        // Call a reserved system contract address returns error.
+        return Err(SystemScriptError::ReservedAddress(*call_addr).into());
+    }
+
+    // The address is not a system contract address.
+    Ok(false)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_call_system_contract() {
+        let action = TransactionAction::Create;
+        assert!(!is_call_system_script(&action).unwrap());
+
+        let addr = H160::from_low_u64_be(0x1);
+        let action = TransactionAction::Call(addr);
+        assert!(!is_call_system_script(&action).unwrap());
+
+        let addr = NATIVE_TOKEN_CONTRACT_ADDRESS;
+        let action = TransactionAction::Call(addr);
+        assert!(is_call_system_script(&action).unwrap());
+
+        let addr = METADATA_CONTRACT_ADDRESS;
+        let action = TransactionAction::Call(addr);
+        assert!(is_call_system_script(&action).unwrap());
+
+        let addr = CKB_LIGHT_CLIENT_CONTRACT_ADDRESS;
+        let action = TransactionAction::Call(addr);
+        assert!(is_call_system_script(&action).unwrap());
+
+        let addr = IMAGE_CELL_CONTRACT_ADDRESS;
+        let action = TransactionAction::Call(addr);
+        assert!(is_call_system_script(&action).unwrap());
+
+        let addr = system_contract_address(0x4);
+        let action = TransactionAction::Call(addr);
+        assert!(is_call_system_script(&action).is_err());
     }
 }

@@ -69,6 +69,12 @@ pub struct MessageRouter {
     pub(crate) rpc_map: Arc<RpcMap>,
 }
 
+impl Default for MessageRouter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MessageRouter {
     pub fn new() -> Self {
         MessageRouter {

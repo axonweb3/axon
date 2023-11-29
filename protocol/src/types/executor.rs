@@ -96,6 +96,7 @@ impl From<&Header> for ExecutorContext {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct EthAccountProof {
+    pub address:       H160,
     pub balance:       U256,
     pub code_hash:     H256,
     pub nonce:         U256,
@@ -107,8 +108,8 @@ pub struct EthAccountProof {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct EthStorageProof {
-    pub key:   H256,
-    pub value: H256,
+    pub key:   U256,
+    pub value: U256,
     pub proof: Vec<Hex>,
 }
 

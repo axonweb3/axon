@@ -13,7 +13,7 @@ use crate::message::NetworkMessage;
 use crate::rpc::RpcResponse;
 use crate::traits::NetworkContext;
 
-pub(crate) use router::{MessageRouter, RemotePeer, RouterContext};
+pub use router::{MessageRouter, RemotePeer, RouterContext};
 
 #[async_trait]
 pub trait Reactor: Send + Sync {
@@ -130,6 +130,15 @@ where
 {
     pub fn new() -> Self {
         NoopHandler { pin_m: PhantomData }
+    }
+}
+
+impl<M> Default for NoopHandler<M>
+where
+    M: MessageCodec,
+{
+    fn default() -> Self {
+        Self::new()
     }
 }
 

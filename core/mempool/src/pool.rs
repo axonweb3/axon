@@ -18,12 +18,22 @@ use crate::MemPoolError;
 
 pub struct PriorityPool {
     sys_tx_bucket:          BuiltInContractTxBucket,
+    // The transaction data in this queue should be consistent with the real queue.
+    // The difference is that it will be grouped by Sender and sorted by nonce to implement
+    // the replace by fee function.
     pending_queue:          Arc<DashMap<H160, PendingQueue>>,
+    // The transactions in this queue have not been processed yet and cannot be packaged.
     co_queue:               Arc<ArrayQueue<(TxPtr, U256)>>,
+    // Transactions in this queue will be packaged into blocks
     real_queue:             Arc<Mutex<Vec<TxPtr>>>,
+    // Record all transactions in the transaction pool
     tx_map:                 DashMap<Hash, TxPtr>,
     stock_len:              AtomicUsize,
+    // Record the height at which the transaction first enters the transaction pool
+    // There must be a record for each block height, keeping timeout_config
     pub(crate) timeout_gap: Mutex<BTreeMap<BlockNumber, HashSet<Hash>>>,
+    // When a transaction is not submitted for more than timeout_config blocks
+    // in the transaction pool, the transaction will be discarded.
     timeout_config:         u64,
 
     flush_lock: Arc<RwLock<()>>,
@@ -79,12 +89,13 @@ impl PriorityPool {
         pool
     }
 
-    pub fn get_tx_count_by_address(&self, address: H160) -> usize {
+    pub fn get_tx_count_by_address(&self, address: H160) -> (usize, Option<BlockNumber>) {
+        let number = self.timeout_gap.lock().last_entry().map(|f| *f.key());
         if let Some(set) = self.pending_queue.get(&address) {
-            return set.count();
+            return (set.count(), number);
         }
 
-        0usize
+        (0usize, number)
     }
 
     pub fn insert_system_script_tx(&self, stx: SignedTransaction) -> ProtocolResult<()> {

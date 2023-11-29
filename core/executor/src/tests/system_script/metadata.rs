@@ -1,9 +1,9 @@
-use std::{collections::BTreeMap, str::FromStr};
+use std::{collections::BTreeMap, str::FromStr, sync::Arc};
 
 use ethers::abi::AbiEncode;
 
 use core_db::RocksAdapter;
-use protocol::types::{MemoryBackend, SignedTransaction, H160, U256};
+use protocol::types::{CkbRelatedInfo, MemoryBackend, SignedTransaction, H160, H256, U256};
 
 use crate::{
     system_contract::{
@@ -12,13 +12,14 @@ use crate::{
             metadata_abi::{self, ConsensusConfig, Metadata, MetadataVersion, ValidatorExtend},
             MetadataContract, MetadataStore,
         },
-        SystemContract, METADATA_CONTRACT_ADDRESS,
+        SystemContract, METADATA_CONTRACT_ADDRESS, METADATA_DB,
     },
     tests::{gen_tx, gen_vicinity},
-    CURRENT_METADATA_ROOT,
+    RocksTrieDB, CURRENT_METADATA_ROOT,
 };
 
 static ROCKSDB_PATH: &str = "./free-space/system-contract/metadata";
+static CKB_INFO_ROCKSDB_PATH: &str = "./free-space/system-contract/ckb_info";
 
 #[test]
 fn test_write_functions() {
@@ -207,63 +208,45 @@ fn prepare_validator() -> ValidatorExtend {
     }
 }
 
-// #[tokio::test]
-// async fn update_consensus_config() {
-//     let config:
-// crate::system_contract::metadata::metadata_abi::ConsensusConfig =
-// ConsensusConfig {         gas_limit:          0x3e7fffffc18,
-//         interval:           0xbb8,
-//         propose_ratio:      0xf,
-//         prevote_ratio:      0xa,
-//         precommit_ratio:    0xa,
-//         brake_ratio:        0xa,
-//         tx_num_limit:       0x4e20,
-//         max_tx_size:        0x186a0000,
-//         max_contract_limit: 0x8000u64,
-//     }
-//     .into();
+#[test]
+fn test_set_ckb_related_info() {
+    // Init ckb info db.
+    {
+        let inner_db = RocksAdapter::new(CKB_INFO_ROCKSDB_PATH, Default::default())
+            .unwrap()
+            .inner_db();
+        let mut _db = METADATA_DB.write();
+        const METADATA_DB_CACHE_SIZE: usize = 10;
+        _db.replace(Arc::new(RocksTrieDB::new_metadata(
+            Arc::clone(&inner_db),
+            METADATA_DB_CACHE_SIZE,
+        )));
+    }
 
-//     let tx_data =
-//         crate::system_contract::metadata::metadata_abi::UpdateConsensusConfigCall { config }
-//             .encode();
+    let old_metadata_root = H256::zero();
+    let metadata_type_id =
+        H256::from_str("0xdb0782aba62896c2a7c279f3de8dbbd7fd06729cc8b7b499df93f5c450f61839")
+            .unwrap();
+    let mut store = MetadataStore::new(old_metadata_root).unwrap();
+    let ckb_infos = CkbRelatedInfo {
+        metadata_type_id,
+        checkpoint_type_id: H256::zero(),
+        xudt_args: H256::zero(),
+        stake_smt_type_id: H256::zero(),
+        delegate_smt_type_id: H256::zero(),
+        reward_smt_type_id: H256::zero(),
+    };
+    let result = store.set_ckb_related_info(&ckb_infos);
+    assert!(result.is_ok());
 
-//     send_eth_tx("http://127.0.0.1:8000", tx_data, METADATA_CONTRACT_ADDRESS).await
-// }
-// use ethers::prelude::*;
-// use ethers::signers::{LocalWallet, Signer};
-// use ethers::types::transaction::eip2718::TypedTransaction::Legacy;
-// use ethers::types::{Address, TransactionRequest};
+    let result = store.get_ckb_related_info();
+    assert!(result.is_ok());
+    let result = result.unwrap();
+    assert_eq!(result.metadata_type_id, metadata_type_id);
 
-// const ADDRESS: &str = "0x8ab0CF264DF99D83525e9E11c7e4db01558AE1b1";
-// const PRIVATE_KEY: &str =
-// "37aa0f893d05914a4def0460c0a984d3611546cfb26924d7a7ca6e0db9950a2d"; pub async
-// fn send_eth_tx(axon_url: &str, data: Vec<u8>, to: Address) {     let provider
-// = Provider::<Http>::try_from(axon_url).unwrap();
-
-//     let from: Address = ADDRESS.parse().unwrap();
-//     let nonce = provider.get_transaction_count(from, None).await.unwrap();
-
-//     let transaction_request = TransactionRequest::new()
-//         .chain_id(0x41786f6e)
-//         .to(to)
-//         .data(data)
-//         .from(from)
-//         .gas_price(1)
-//         .gas(21000)
-//         .nonce(nonce);
-
-//     let wallet = LocalWallet::from_str(PRIVATE_KEY).expect(
-//         "failed to create
-// wallet",
-//     );
-//     let tx = Legacy(transaction_request);
-//     let signature: Signature = wallet.sign_transaction(&tx).await.unwrap();
-
-//     provider
-//         .send_raw_transaction(tx.rlp_signed(&signature))
-//         .await
-//         .unwrap()
-//         .await
-//         .unwrap()
-//         .expect("failed to send eth tx");
-// }
+    CURRENT_METADATA_ROOT.with(|root| {
+        let new_metadata_root = *root.borrow();
+        println!("new_metadata_root: {:?}", new_metadata_root);
+        assert_ne!(new_metadata_root, old_metadata_root);
+    });
+}

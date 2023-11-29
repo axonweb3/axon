@@ -3,26 +3,26 @@ use std::sync::Arc;
 use hasher::HasherKeccak;
 
 use protocol::trie::{PatriciaTrie, Trie, TrieError, DB as TrieDB};
-use protocol::types::MerkleRoot;
+use protocol::types::{Hasher, MerkleRoot};
 use protocol::ProtocolResult;
 
 pub struct MPTTrie<DB: TrieDB>(PatriciaTrie<DB, HasherKeccak>);
 
 impl<DB: TrieDB> Trie<DB, HasherKeccak> for MPTTrie<DB> {
     fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>, TrieError> {
-        self.0.get(key)
+        self.0.get(&Hasher::digest(key).0)
     }
 
     fn contains(&self, key: &[u8]) -> Result<bool, TrieError> {
-        self.0.contains(key)
+        self.0.contains(&Hasher::digest(key).0)
     }
 
     fn insert(&mut self, key: Vec<u8>, value: Vec<u8>) -> Result<(), TrieError> {
-        self.0.insert(key, value)
+        self.0.insert(Hasher::digest(key).0.to_vec(), value)
     }
 
     fn remove(&mut self, key: &[u8]) -> Result<bool, TrieError> {
-        self.0.remove(key)
+        self.0.remove(&Hasher::digest(key).0)
     }
 
     fn root(&mut self) -> Result<Vec<u8>, TrieError> {
@@ -30,7 +30,7 @@ impl<DB: TrieDB> Trie<DB, HasherKeccak> for MPTTrie<DB> {
     }
 
     fn get_proof(&self, key: &[u8]) -> Result<Vec<Vec<u8>>, TrieError> {
-        self.0.get_proof(key)
+        self.0.get_proof(&Hasher::digest(key).0)
     }
 
     fn verify_proof(
@@ -39,7 +39,8 @@ impl<DB: TrieDB> Trie<DB, HasherKeccak> for MPTTrie<DB> {
         key: &[u8],
         proof: Vec<Vec<u8>>,
     ) -> Result<Option<Vec<u8>>, TrieError> {
-        self.0.verify_proof(root_hash, key, proof)
+        self.0
+            .verify_proof(root_hash, &Hasher::digest(key).0, proof)
     }
 }
 
