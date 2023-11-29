@@ -177,11 +177,15 @@ where
         }
     }
 
-    async fn get_pending_tx_count(&self, ctx: Context, address: H160) -> ProtocolResult<U256> {
+    async fn get_pending_tx_count(
+        &self,
+        ctx: Context,
+        address: H160,
+    ) -> ProtocolResult<(U256, Option<BlockNumber>)> {
         self.mempool
             .get_tx_count_by_address(ctx, address)
             .await
-            .map(U256::from)
+            .map(|(n, b)| (U256::from(n), b))
     }
 
     async fn evm_call(
