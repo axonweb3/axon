@@ -73,7 +73,12 @@ impl Executor for AxonExecutor {
         data: Vec<u8>,
     ) -> TxResp {
         self.init_local_system_contract_roots(backend);
-        let config = self.config();
+        let config = {
+            let mut config = self.config();
+            // run the gasometer in estimate mode
+            config.estimate = true;
+            config
+        };
         let metadata = StackSubstateMetadata::new(gas_limit, &config);
         let state = MemoryStackState::new(metadata, backend);
         let precompiles = build_precompile_set();
