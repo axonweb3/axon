@@ -385,7 +385,7 @@ where
                     tx_nonce: tx.transaction.unsigned.nonce().low_u64(),
                 }
                 .into());
-            } else if res.value().1 < tx.transaction.unsigned.may_cost() {
+            } else if res.value().1 < tx.transaction.unsigned.may_cost()? {
                 return Err(MemPoolError::ExceedBalance {
                     tx_hash:         tx.transaction.hash,
                     account_balance: res.value().1,
@@ -410,7 +410,7 @@ where
             .into());
         }
 
-        if account.balance < tx.transaction.unsigned.may_cost() {
+        if account.balance < tx.transaction.unsigned.may_cost()? {
             return Err(MemPoolError::ExceedBalance {
                 tx_hash:         tx.transaction.hash,
                 account_balance: account.balance,

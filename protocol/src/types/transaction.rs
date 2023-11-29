@@ -31,14 +31,16 @@ impl UnsignedTransaction {
         }
     }
 
-    pub fn may_cost(&self) -> U256 {
-        if let Some(res) = self.gas_price().checked_mul(*self.gas_limit()) {
-            return U256::from(res.low_u64())
+    pub fn may_cost(&self) -> ProtocolResult<U256> {
+        if let Some(res) = U256::from(self.gas_price().low_u64())
+            .checked_mul(U256::from(self.gas_limit().low_u64()))
+        {
+            return Ok(res
                 .checked_add(*self.value())
-                .unwrap_or_else(U256::max_value);
+                .unwrap_or_else(U256::max_value));
         }
 
-        U256::max_value()
+        Err(TypesError::PrepayGasIsTooLarge.into())
     }
 
     pub fn is_legacy(&self) -> bool {
@@ -169,7 +171,8 @@ impl UnsignedTransaction {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct LegacyTransaction {
-    // According to [EIP-2681](https://eips.ethereum.org/EIPS/eip-2681), limit account nonce to 2^64-1
+    /// According to [EIP-2681](https://eips.ethereum.org/EIPS/eip-2681),
+    /// limit account nonce to 2^64-1.
     pub nonce:     U64,
     pub gas_price: U64,
     pub gas_limit: U64,
@@ -202,6 +205,8 @@ impl LegacyTransaction {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Eip2930Transaction {
+    /// According to [EIP-2681](https://eips.ethereum.org/EIPS/eip-2681),
+    /// limit account nonce to 2^64-1.
     pub nonce:       U64,
     pub gas_price:   U64,
     pub gas_limit:   U64,

@@ -303,14 +303,16 @@ impl AxonExecutor {
         // The `Backend` trait is imply in
         // `core/executor/src/adapter/backend/read_only.rs`. The `gas_price` is never
         // larger than u64::MAX.
-        let tx_gas_price = adapter.gas_price().low_u64();
+        let tx_gas_price = adapter.gas_price();
         let gas_limit = tx.transaction.unsigned.gas_limit().low_u64();
-        let prepay_gas = tx_gas_price * gas_limit;
+        // The overflow check is done in the `check_authorization` function
+        // of`core/mempool/src/adapter/mod.rs`.
+        let prepay_gas = tx_gas_price * U256::from(gas_limit);
 
         let mut account = adapter.get_account(&sender);
         let old_nonce = account.nonce;
 
-        account.balance = account.balance.saturating_sub(prepay_gas.into());
+        account.balance = account.balance.saturating_sub(prepay_gas);
         adapter.save_account(&sender, &account);
 
         let metadata = StackSubstateMetadata::new(gas_limit, config);
@@ -367,9 +369,7 @@ impl AxonExecutor {
 
         // Add remain gas
         if remained_gas != 0 {
-            let remain_gas = U256::from(remained_gas)
-                .checked_mul(tx_gas_price.into())
-                .unwrap_or_else(U256::max_value);
+            let remain_gas = U256::from(remained_gas) * tx_gas_price;
             account.balance = account
                 .balance
                 .checked_add(remain_gas)
@@ -383,9 +383,8 @@ impl AxonExecutor {
             ret:          res,
             remain_gas:   remained_gas,
             gas_used:     used_gas,
-            fee_cost:     U256::from(tx_gas_price)
-                .checked_mul(used_gas.into())
-                .unwrap_or(U256::max_value()),
+            fee_cost:     tx_gas_price * U256::from(used_gas), /* used_gas must le transaction
+                                                                * gas_limit */
             logs:         vec![],
             code_address: code_addr,
             removed:      false,
