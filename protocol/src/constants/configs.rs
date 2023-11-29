@@ -2,8 +2,8 @@ use crate::types::U64;
 
 /// There is not a standard for the maximum gas limit, as long as the account
 /// balance can pay the `gas_limit * gas_price`. For reduce some useless
-/// calculation, `50_000_000` is large enough to cover the transaction usage.
-pub const MAX_GAS_LIMIT: u64 = 50_000_000;
+/// calculation, `30_000_000` is large enough to cover the transaction usage.
+pub const MAX_GAS_LIMIT: u64 = 30_000_000;
 /// According to [go-ethereum](https://github.com/ethereum/go-ethereum/blob/be65b47/eth/gasprice/gasprice.go#L38),
 /// the maximum gas price is 500 Gwei.
 pub const MAX_GAS_PRICE: U64 = U64([500 * GWEI]);
