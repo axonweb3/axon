@@ -351,6 +351,7 @@ dependencies = [
  "eth_light_client_in_ckb-prover",
  "ethereum",
  "ethereum-types 0.14.1",
+ "ethers-contract",
  "ethers-core",
  "faster-hex 0.8.1",
  "hex",
