@@ -48,32 +48,30 @@ jobs:
               .replace(/\\t/g, "\\\\t");
 
             // get pr comments body,not issue comments body
-            const pr =
-             await github.rest.pulls.get({
-               owner: context.repo.owner,
-               repo: context.repo.repo,
-               pull_number: context.issue.number,
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
             });
 
-            let check_list=`
+            let check_list = `
             \### CI test list:
             `;
 
-            // check Coverage Test exist or not
-            const coverage_match = pr.data.body.includes("[x] Coverage Test");
-            if (coverage_match) {
-             const resp =  await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: "coverage.yml",
-              ref: `main`,
-              inputs: {
-                dispatch: jsonDispatch,
-              }
+            const dispatchWorkflow = async (workflowId) => {
+              const resp = await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: workflowId,
+                ref: `main`,
+                inputs: {
+                  dispatch: jsonDispatch,
+                }
               });
+
               core.info(`${JSON.stringify(resp, null, 2)}`);
-              check_list=`${check_list}\n - Coverage Test`;
-            }
+              check_list = `${check_list}\n - ${workflowId}`;
+            };
 
             // check if OpenZeppelin tests is required
             const OCT_match = pr.data.body.includes("[x] OpenZeppelin tests");
@@ -84,52 +82,21 @@ jobs:
                 "openzeppelin_test_11.yml",
                 "openzeppelin_test_16_19.yml",
               ];
-              await Promise.all(workflowIds.map(async (workflowId) => {
-                const resp = await github.rest.actions.createWorkflowDispatch({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  workflow_id: workflowId,
-                  ref: `main`,
-                  inputs: {
-                    dispatch: jsonDispatch,
-                  }
-                });
-                core.info(`${JSON.stringify(resp, null, 2)}`);
-                check_list = `${check_list}\n - ${workflowId}`;
-              }));
+              await Promise.all(workflowIds.map(dispatchWorkflow));
             }
 
             // check v3 Core Tests exist or not
             const v3_match = pr.data.body.includes("[x] v3 Core Tests");
             if (v3_match) {
-             const resp =  await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: "v3_core_test.yml",
-              ref: `main`,
-              inputs: {
-                dispatch: jsonDispatch,
-              }
-              });
-              core.info(`${JSON.stringify(resp, null, 2)}`);
-              check_list=`${check_list}\n - v3 Core Tests`;
+              await dispatchWorkflow("v3_core_test.yml");
             }
 
             // check Unit Tests exist or not
             const web3_match = pr.data.body.includes("[x] Web3 Compatible Tests");
             if (web3_match) {
-             const resp =  await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: "web3_compatible.yml",
-              ref: `main`,
-              inputs: {
-                dispatch: jsonDispatch,
-              }
-              });
-              core.info(`${JSON.stringify(resp, null, 2)}`);
-              check_list=`${check_list}\n - Web3 Compatible Tests`;
+              await dispatchWorkflow("web3_compatible.yml");
             };
+
             return check_list
 
       - name: Escape check list
