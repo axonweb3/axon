@@ -73,68 +73,32 @@ jobs:
               });
               core.info(`${JSON.stringify(resp, null, 2)}`);
               check_list=`${check_list}\n - Coverage Test`;
-              }
+            }
 
-            // check OCT 1-5 And 12-15 exist or not
-            const OCT_match = pr.data.body.includes("[x] OCT 1-5 And 12-15");
+            // check if OpenZeppelin tests is required
+            const OCT_match = pr.data.body.includes("[x] OpenZeppelin tests");
             if (OCT_match) {
-             const resp =  await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: "openzeppelin_test_1_5_and_12_15.yml",
-              ref: `main`,
-              inputs: {
-                dispatch: jsonDispatch,
-              }
-              });
-              core.info(`${JSON.stringify(resp, null, 2)}`);
-              check_list=`${check_list}\n - OCT 1-5 And 12-15`;
-              }
-            // check OCT 6-10 exist or not
-            const OCT_6_match = pr.data.body.includes("[x] OCT 6-10");
-            if (OCT_6_match) {
-             const resp =  await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: "openzeppelin_test_6_10.yml",
-              ref: `main`,
-              inputs: {
-                dispatch: jsonDispatch,
-              }
-              });
-              core.info(`${JSON.stringify(resp, null, 2)}`);
-              check_list=`${check_list}\n - OCT 6-10`;
-              }
-            // check OCT 11 exist or not
-            const OCT_11_match = pr.data.body.includes("[x] OCT 11");
-            if (OCT_11_match) {
-             const resp =  await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: "openzeppelin_test_11.yml",
-              ref: `main`,
-              inputs: {
-                dispatch: jsonDispatch,
-              }
-              });
-              core.info(`${JSON.stringify(resp, null, 2)}`);
-              check_list=`${check_list}\n - OCT 11`;
-              }
-            // check OCT 16-19 exist or not
-            const OCT_16_match = pr.data.body.includes("[x] OCT 16-19");
-            if (OCT_16_match) {
-             const resp =  await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: "openzeppelin_test_16_19.yml",
-              ref: `main`,
-              inputs: {
-                dispatch: jsonDispatch,
-              }
-              });
-              core.info(`${JSON.stringify(resp, null, 2)}`);
-              check_list=`${check_list}\n - OCT 16-19`;
-              }
+              const workflowIds = [
+                "openzeppelin_test_1_5_and_12_15.yml",
+                "openzeppelin_test_6_10.yml",
+                "openzeppelin_test_11.yml",
+                "openzeppelin_test_16_19.yml",
+              ];
+              await Promise.all(workflowIds.map(async (workflowId) => {
+                const resp = await github.rest.actions.createWorkflowDispatch({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  workflow_id: workflowId,
+                  ref: `main`,
+                  inputs: {
+                    dispatch: jsonDispatch,
+                  }
+                });
+                core.info(`${JSON.stringify(resp, null, 2)}`);
+                check_list = `${check_list}\n - ${workflowId}`;
+              }));
+            }
+
             // check v3 Core Tests exist or not
             const v3_match = pr.data.body.includes("[x] v3 Core Tests");
             if (v3_match) {
@@ -149,7 +113,8 @@ jobs:
               });
               core.info(`${JSON.stringify(resp, null, 2)}`);
               check_list=`${check_list}\n - v3 Core Tests`;
-              }
+            }
+
             // check Unit Tests exist or not
             const web3_match = pr.data.body.includes("[x] Web3 Compatible Tests");
             if (web3_match) {
@@ -164,8 +129,8 @@ jobs:
               });
               core.info(`${JSON.stringify(resp, null, 2)}`);
               check_list=`${check_list}\n - Web3 Compatible Tests`;
-              };
-              return check_list
+            };
+            return check_list
 
       - name: Escape check list
         id: escape_multiple_lines_test_inputs
