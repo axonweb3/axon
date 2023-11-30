@@ -28,8 +28,8 @@ use evm::CreateScheme;
 use common_merkle::TrieMerkle;
 use protocol::traits::{Backend, Executor, ExecutorAdapter};
 use protocol::types::{
-    data_gas_cost, logs_bloom, Config, ExecResp, SignedTransaction, TransactionAction, TxResp,
-    ValidatorExtend, GAS_CALL_TRANSACTION, GAS_CREATE_TRANSACTION, H160, H256, RLP_NULL, U256,
+    logs_bloom, Config, ExecResp, SignedTransaction, TransactionAction, TxResp, ValidatorExtend,
+    H160, H256, RLP_NULL, U256,
 };
 
 use crate::precompiles::build_precompile_set;
@@ -84,12 +84,6 @@ impl Executor for AxonExecutor {
         let precompiles = build_precompile_set();
         let mut executor = StackExecutor::new_with_precompiles(state, &config, &precompiles);
 
-        let base_gas = if to.is_some() {
-            GAS_CALL_TRANSACTION + data_gas_cost(&data)
-        } else {
-            GAS_CREATE_TRANSACTION + GAS_CALL_TRANSACTION + data_gas_cost(&data)
-        };
-
         let (exit, res) = if let Some(addr) = &to {
             executor.transact_call(
                 from.unwrap_or_default(),
@@ -103,7 +97,7 @@ impl Executor for AxonExecutor {
             executor.transact_create(from.unwrap_or_default(), value, data, gas_limit, Vec::new())
         };
 
-        let used_gas = executor.used_gas() + base_gas;
+        let used_gas = executor.used_gas();
 
         TxResp {
             exit_reason:  exit,
