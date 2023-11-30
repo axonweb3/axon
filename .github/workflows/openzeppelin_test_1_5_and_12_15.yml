@@ -56,7 +56,7 @@ jobs:
           script: |
             if (`${{ env.IS_DISPATCH }}` == 'true' && `${{ env.IS_REGRESSION }}` == 'false') {
               github.rest.repos.createCommitStatus({
-                state: '${{ job.status }}',
+                state: 'pending',
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 context: '${{ github.workflow }}',
