@@ -48,6 +48,23 @@ jobs:
             return `${{ github.sha }}`;
           result-encoding: string
 
+      # The `statuses: write` permission is required in this step.
+      - name: Update the commit Status
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            if (`${{ env.IS_DISPATCH }}` == 'true' && `${{ env.IS_REGRESSION }}` == 'false') {
+              github.rest.repos.createCommitStatus({
+                state: '${{ job.status }}',
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                context: '${{ github.workflow }}',
+                sha: '${{ steps.axon_git_ref.outputs.result}}',
+                target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+              });
+            }
+
       - name: Checkout Axon commit ${{ steps.axon_git_ref.outputs.result}}
         uses: actions/checkout@v4
         with:
@@ -217,5 +234,5 @@ jobs:
                 context: '${{ github.workflow }}',
                 sha: '${{ steps.axon_git_ref.outputs.result}}',
                 target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-              })
+              });
             }
