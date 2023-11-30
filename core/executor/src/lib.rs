@@ -71,12 +71,13 @@ impl Executor for AxonExecutor {
         to: Option<H160>,
         value: U256,
         data: Vec<u8>,
+        estimate: bool,
     ) -> TxResp {
         self.init_local_system_contract_roots(backend);
         let config = {
             let mut config = self.config();
-            // run the gasometer in estimate mode
-            config.estimate = true;
+            // whether run the gasometer in estimate mode or not
+            config.estimate = estimate;
             config
         };
         let metadata = StackSubstateMetadata::new(gas_limit, &config);

@@ -192,6 +192,7 @@ async fn test_simplestorage() {
         Some(H160::from_str("0xc15d2ba57d126e6603240e89437efd419ce329d2").unwrap()),
         U256::default(),
         hex_decode("6d4ce63c").unwrap(),
+        false,
     );
     assert_eq!(r.exit_reason, ExitReason::Succeed(ExitSucceed::Stopped));
 }
