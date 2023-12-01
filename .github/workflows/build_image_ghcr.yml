@@ -39,6 +39,8 @@ jobs:
           type=ref,event=tag
           type=semver,pattern={{version}}
           type=ref,event=branch
+          type=ref,event=branch,suffix=-{{date 'YYYYMMDDHHmm'}}
+          type=ref,event=branch,suffix=-{{sha}}
           # minimal (short sha)
           type=sha,enable=true,prefix=sha-,format=short
     - name: Echo steps.meta.outputs.bake-file
