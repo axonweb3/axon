@@ -1,3 +1,7 @@
+use alloc::string::String;
+use alloc::vec;
+use alloc::vec::Vec;
+
 use crate::Error;
 
 pub fn hex_encode<T: AsRef<[u8]>>(src: T) -> String {

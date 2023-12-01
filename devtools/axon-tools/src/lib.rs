@@ -12,8 +12,9 @@ pub mod hash;
 pub mod hex;
 #[cfg(feature = "precompile")]
 pub mod precompile;
-#[cfg(all(feature = "proof", feature = "std"))]
+#[cfg(feature = "proof")]
 mod proof;
+#[cfg(feature = "impl-rlp")]
 mod rlp_codec;
 pub mod types;
 

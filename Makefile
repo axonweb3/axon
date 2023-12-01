@@ -29,8 +29,14 @@ check-fmt:
 fmt:
 	cargo +nightly fmt ${VERBOSE} --all
 
-clippy:
+clippy: axon-clippy axon-tools-clippy
+
+axon-clippy:
 	${CARGO} clippy ${VERBOSE} --all --all-targets --all-features -- \
+		-D warnings -D clippy::clone_on_ref_ptr -D clippy::enum_glob_use
+
+axon-tools-clippy:
+	${CARGO} clippy ${VERBOSE} --manifest-path=devtools/axon-tools/Cargo.toml --all-features -- \
 		-D warnings -D clippy::clone_on_ref_ptr -D clippy::enum_glob_use
 
 sort:

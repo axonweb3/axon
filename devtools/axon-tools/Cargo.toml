@@ -98,6 +98,7 @@ features = ["derive"]
 [dependencies.serde_json]
 version = "1.0"
 default_features = false
+features = ["alloc"]
 optional = true
 
 [dependencies.tiny-keccak]
