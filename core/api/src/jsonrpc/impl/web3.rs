@@ -59,6 +59,7 @@ impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
         req: Web3CallRequest,
         data: Bytes,
         number: Option<u64>,
+        estimate: bool,
     ) -> ProtocolResult<TxResp> {
         if req.from.is_none() && req.to.is_none() {
             return Err(APIError::RequestPayload("from and to are both None".to_string()).into());
@@ -81,6 +82,7 @@ impl<Adapter: APIAdapter> Web3RpcImpl<Adapter> {
                 req.gas,
                 req.value.unwrap_or_default(),
                 data.to_vec(),
+                estimate,
                 mock_header.state_root,
                 Proposal::new_without_state_root(&mock_header),
             )
@@ -434,7 +436,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             .map(|hex| hex.as_bytes())
             .unwrap_or_default();
         let resp = self
-            .call_evm(req, data_bytes, number)
+            .call_evm(req, data_bytes, number, false)
             .await
             .map_err(|e| RpcError::Internal(e.to_string()))?;
 
@@ -476,7 +478,7 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
             .map(|hex| hex.as_bytes())
             .unwrap_or_default();
         let resp = self
-            .call_evm(req, data_bytes, num)
+            .call_evm(req, data_bytes, num, true)
             .await
             .map_err(|e| RpcError::Internal(e.to_string()))?;
 

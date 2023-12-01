@@ -34,6 +34,7 @@ pub trait Executor: Send + Sync {
         to: Option<H160>,
         value: U256,
         data: Vec<u8>,
+        estimate: bool,
     ) -> TxResp;
 
     fn exec<Adapter: ExecutorAdapter + ApplyBackend>(

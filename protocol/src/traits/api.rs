@@ -83,6 +83,7 @@ pub trait APIAdapter: Send + Sync {
         gas_limit: Option<U256>,
         value: U256,
         data: Vec<u8>,
+        estimate: bool,
         state_root: Hash,
         proposal: Proposal,
     ) -> ProtocolResult<TxResp>;

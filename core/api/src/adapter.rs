@@ -197,6 +197,7 @@ where
         gas_limit: Option<U256>,
         value: U256,
         data: Vec<u8>,
+        estimate: bool,
         state_root: Hash,
         mock_header: Proposal,
     ) -> ProtocolResult<TxResp> {
@@ -214,7 +215,7 @@ where
             .map(|gas| gas.as_u64())
             .unwrap_or(MAX_BLOCK_GAS_LIMIT);
 
-        Ok(AxonExecutor.call(&backend, gas_limit, from, to, value, data))
+        Ok(AxonExecutor.call(&backend, gas_limit, from, to, value, data, estimate))
     }
 
     async fn get_code_by_hash(&self, ctx: Context, hash: &Hash) -> ProtocolResult<Option<Bytes>> {

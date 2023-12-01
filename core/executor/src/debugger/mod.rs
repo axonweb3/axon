@@ -7,12 +7,11 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use evm::tracing::{Event, EventListener};
 
 use protocol::codec::ProtocolCodec;
-use protocol::traits::{Backend, Executor};
+use protocol::traits::Backend;
 use protocol::trie::Trie as _;
 use protocol::types::{
     Account, Eip1559Transaction, ExecResp, ExecutorContext, Hash, Hasher, SignedTransaction,
-    TxResp, UnsignedTransaction, UnverifiedTransaction, H160, H256, MAX_BLOCK_GAS_LIMIT, NIL_DATA,
-    RLP_NULL, U256,
+    UnsignedTransaction, UnverifiedTransaction, H160, H256, NIL_DATA, RLP_NULL, U256,
 };
 
 use core_db::RocksAdapter;
@@ -69,19 +68,6 @@ impl EvmDebugger {
         let res = AxonExecutor.test_exec(&mut backend, &txs, &[]);
         self.state_root = res.state_root;
         res
-    }
-
-    #[allow(dead_code)]
-    pub fn call(
-        &self,
-        number: u64,
-        from: Option<H160>,
-        to: Option<H160>,
-        value: U256,
-        data: Vec<u8>,
-    ) -> TxResp {
-        let backend = self.backend(number);
-        AxonExecutor.call(&backend, MAX_BLOCK_GAS_LIMIT, from, to, value, data)
     }
 
     fn backend(
