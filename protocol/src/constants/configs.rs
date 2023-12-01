@@ -18,4 +18,4 @@ pub const MAX_FEE_HISTORY: u64 = 1024;
 pub const MAX_RPC_GAS_CAP: u64 = 50_000_000;
 pub const BASE_FEE_PER_GAS: u64 = 0x539;
 
-const GWEI: u64 = 100_000_000;
+const GWEI: u64 = 1_000_000_000;
