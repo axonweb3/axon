@@ -10,6 +10,8 @@ pub mod hash;
 #[cfg(feature = "hex")]
 #[cfg_attr(doc_cfg, doc(cfg(feature = "hex")))]
 pub mod hex;
+#[cfg(feature = "precompile")]
+pub mod precompile;
 #[cfg(feature = "proof")]
 mod proof;
 mod rlp_codec;
