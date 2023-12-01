@@ -24,8 +24,7 @@ use crate::hex::{hex_decode, hex_encode};
 use crate::Error;
 #[cfg(feature = "hex")]
 use core::str::FromStr;
-#[cfg(feature = "hex")]
-use faster_hex::withpfx_lowercase;
+
 
 #[cfg(feature = "std")]
 const HEX_PREFIX: &str = "0x";
@@ -115,7 +114,7 @@ impl Serialize for Hex {
     where
         S: serde::ser::Serializer,
     {
-        withpfx_lowercase::serialize(&self.0, serializer)
+        faster_hex::withpfx_lowercase::serialize(&self.0, serializer)
     }
 }
 
@@ -170,8 +169,8 @@ pub struct ExtraData {
     #[cfg_attr(
         all(feature = "impl-serde", feature = "std"),
         serde(
-            serialize_with = "withpfx_lowercase::serialize",
-            deserialize_with = "withpfx_lowercase::deserialize"
+            serialize_with = "faster_hex::withpfx_lowercase::serialize",
+            deserialize_with = "faster_hex::withpfx_lowercase::deserialize"
         )
     )]
     pub inner: Bytes,
@@ -314,16 +313,16 @@ pub struct Proof {
     #[cfg_attr(
         all(feature = "impl-serde", feature = "std"),
         serde(
-            serialize_with = "withpfx_lowercase::serialize",
-            deserialize_with = "withpfx_lowercase::deserialize"
+            serialize_with = "faster_hex::withpfx_lowercase::serialize",
+            deserialize_with = "faster_hex::withpfx_lowercase::deserialize"
         )
     )]
     pub signature:  Bytes,
     #[cfg_attr(
         all(feature = "impl-serde", feature = "std"),
         serde(
-            serialize_with = "withpfx_lowercase::serialize",
-            deserialize_with = "withpfx_lowercase::deserialize"
+            serialize_with = "faster_hex::withpfx_lowercase::serialize",
+            deserialize_with = "faster_hex::withpfx_lowercase::deserialize"
         )
     )]
     pub bitmap:     Bytes,

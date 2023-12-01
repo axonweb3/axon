@@ -12,7 +12,7 @@ pub mod hash;
 pub mod hex;
 #[cfg(feature = "precompile")]
 pub mod precompile;
-#[cfg(feature = "proof")]
+#[cfg(all(feature = "proof", feature = "std"))]
 mod proof;
 mod rlp_codec;
 pub mod types;
