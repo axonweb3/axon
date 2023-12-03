@@ -32,7 +32,7 @@ hash = ["tiny-keccak"]
 hex = ["faster-hex"]
 impl-rlp = ["rlp", "rlp-derive", "ethereum-types/rlp"]
 impl-serde = ["serde", "ethereum-types/serialize"]
-precompile = ["ethers-contract", "ethers-core"]
+precompile = ["ckb-types", "ethers-contract", "ethers-core", "std"]
 std = ["cita_trie", "hex", "log", "derive_more", "serde_json"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -98,6 +98,7 @@ features = ["derive"]
 [dependencies.serde_json]
 version = "1.0"
 default_features = false
+features = ["alloc"]
 optional = true
 
 [dependencies.tiny-keccak]

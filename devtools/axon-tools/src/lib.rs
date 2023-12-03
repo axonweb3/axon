@@ -14,6 +14,7 @@ pub mod hex;
 pub mod precompile;
 #[cfg(feature = "proof")]
 mod proof;
+#[cfg(feature = "impl-rlp")]
 mod rlp_codec;
 pub mod types;
 

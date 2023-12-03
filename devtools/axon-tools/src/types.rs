@@ -6,6 +6,8 @@
 // are recommended to ensure the definitions in this file align with those in
 // the 'axon-protocol' package.
 use crate::error::TypesError;
+#[cfg(any(feature = "hex", feature = "impl-serde"))]
+use alloc::string::String;
 use alloc::vec;
 use alloc::vec::Vec;
 use bytes::{Bytes, BytesMut};
@@ -24,10 +26,8 @@ use crate::hex::{hex_decode, hex_encode};
 use crate::Error;
 #[cfg(feature = "hex")]
 use core::str::FromStr;
-#[cfg(feature = "hex")]
-use faster_hex::withpfx_lowercase;
 
-#[cfg(feature = "std")]
+#[cfg(feature = "hex")]
 const HEX_PREFIX: &str = "0x";
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -53,7 +53,7 @@ impl Hex {
 
     #[cfg(feature = "hex")]
     pub fn as_string(&self) -> String {
-        HEX_PREFIX.to_string() + &hex_encode(self.0.as_ref())
+        String::from(HEX_PREFIX) + &hex_encode(self.0.as_ref())
     }
 
     #[cfg(feature = "hex")]
@@ -115,7 +115,7 @@ impl Serialize for Hex {
     where
         S: serde::ser::Serializer,
     {
-        withpfx_lowercase::serialize(&self.0, serializer)
+        faster_hex::withpfx_lowercase::serialize(&self.0, serializer)
     }
 }
 
@@ -170,8 +170,8 @@ pub struct ExtraData {
     #[cfg_attr(
         all(feature = "impl-serde", feature = "std"),
         serde(
-            serialize_with = "withpfx_lowercase::serialize",
-            deserialize_with = "withpfx_lowercase::deserialize"
+            serialize_with = "faster_hex::withpfx_lowercase::serialize",
+            deserialize_with = "faster_hex::withpfx_lowercase::deserialize"
         )
     )]
     pub inner: Bytes,
@@ -314,16 +314,16 @@ pub struct Proof {
     #[cfg_attr(
         all(feature = "impl-serde", feature = "std"),
         serde(
-            serialize_with = "withpfx_lowercase::serialize",
-            deserialize_with = "withpfx_lowercase::deserialize"
+            serialize_with = "faster_hex::withpfx_lowercase::serialize",
+            deserialize_with = "faster_hex::withpfx_lowercase::deserialize"
         )
     )]
     pub signature:  Bytes,
     #[cfg_attr(
         all(feature = "impl-serde", feature = "std"),
         serde(
-            serialize_with = "withpfx_lowercase::serialize",
-            deserialize_with = "withpfx_lowercase::deserialize"
+            serialize_with = "faster_hex::withpfx_lowercase::serialize",
+            deserialize_with = "faster_hex::withpfx_lowercase::deserialize"
         )
     )]
     pub bitmap:     Bytes,
@@ -417,7 +417,7 @@ impl MetadataVersion {
     all(feature = "impl-serde", feature = "std"),
     derive(serde::Serialize, serde::Deserialize)
 )]
-#[cfg_attr(feature = "hex", derive(Debug))]
+#[cfg_attr(feature = "std", derive(Debug))]
 pub struct Metadata {
     pub version:          MetadataVersion,
     #[cfg_attr(
@@ -532,7 +532,7 @@ impl Ord for ValidatorExtend {
     }
 }
 
-#[cfg(feature = "hex")]
+#[cfg(feature = "std")]
 impl std::fmt::Debug for ValidatorExtend {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let bls_pub_key = self.bls_pub_key.as_string_trim0x();

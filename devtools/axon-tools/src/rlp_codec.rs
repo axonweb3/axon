@@ -1,11 +1,8 @@
-#[cfg(feature = "impl-rlp")]
 use crate::types::BlockVersion;
 #[cfg(feature = "proof")]
 use crate::types::{Proposal, Vote};
-#[cfg(feature = "impl-rlp")]
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 
-#[cfg(feature = "impl-rlp")]
 impl Encodable for BlockVersion {
     fn rlp_append(&self, s: &mut RlpStream) {
         let ver: u8 = (*self).into();
@@ -13,7 +10,6 @@ impl Encodable for BlockVersion {
     }
 }
 
-#[cfg(feature = "impl-rlp")]
 impl Decodable for BlockVersion {
     fn decode(r: &Rlp) -> Result<Self, DecoderError> {
         let ver: u8 = r.val_at(0)?;
@@ -22,7 +18,7 @@ impl Decodable for BlockVersion {
     }
 }
 
-#[cfg(feature = "impl-rlp")]
+#[cfg(feature = "proof")]
 impl Encodable for Vote {
     fn rlp_append(&self, s: &mut RlpStream) {
         let vote_type: u8 = self.vote_type;
@@ -34,7 +30,7 @@ impl Encodable for Vote {
     }
 }
 
-#[cfg(feature = "impl-rlp")]
+#[cfg(feature = "proof")]
 impl Encodable for Proposal {
     fn rlp_append(&self, s: &mut RlpStream) {
         s.begin_list(13)
