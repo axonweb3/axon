@@ -1,5 +1,62 @@
 # CHANGELOG
 
+## Unreleased (v0.3.0-dev)
+
+### BREAKING CHANGES
+* refactor!: remove the limitation of set ckb related info ([\#1517](https://github.com/axonweb3/axon/pull/1517))
+* fix(executor)!: set_ckb_related_info transaction is not committed ([\#1576](https://github.com/axonweb3/axon/pull/1576))
+* fix!: fix the implementation of Axon Tries ([\#1580](https://github.com/axonweb3/axon/pull/1580))
+* refactor!: call reserved system contract address is forbidden ([\#1597](https://github.com/axonweb3/axon/pull/1597))
+* refactor!: change many U256 type to U64 ([\#1591](https://github.com/axonweb3/axon/pull/1591))
+
+### FEATURES
+
+- Migrate axon-tools to axon repo in
+  ([\#1519](https://github.com/axonweb3/axon/pull/1519)) and ([\#1545](https://github.com/axonweb3/axon/pull/1545))
+- Add no-std feature of axon-tools, using use ckb-blst for riscv64
+  ([\#1532](https://github.com/axonweb3/axon/pull/1532)) and ([\#1563](https://github.com/axonweb3/axon/pull/1563))
+* feat: add `eth_getProof` JSON RPC API ([\#1540](https://github.com/axonweb3/axon/pull/1540), [\#1549](https://github.com/axonweb3/axon/pull/1549), [\#1564](https://github.com/axonweb3/axon/pull/1564), [\#1571](https://github.com/axonweb3/axon/pull/1571))
+* feat: add `ckb_blake2b` precompile contract ([\#1555](https://github.com/axonweb3/axon/pull/1555))
+* feat: add ckb mbt proof verify precompile contract ([\#1578](https://github.com/axonweb3/axon/pull/1578))
+* feat: support stop at specific height ([\#1581](https://github.com/axonweb3/axon/pull/1581))
+
+
+### BUG FIXES
+
+- Fix value of gas in JSON RPC Transaction should be gas limit
+  ([\#1530](https://github.com/axonweb3/axon/pull/1530))
+* fix: check mempool when call `eth_getTransactionByHash` ([\#1526](https://github.com/axonweb3/axon/pull/1526))
+* fix: use a same default value for `max_payload_size` ([\#1548](https://github.com/axonweb3/axon/pull/1548))
+* fix: rlp decode of `SignedTransction` with interoperation signature ([\#1533](https://github.com/axonweb3/axon/pull/1533))
+* fix: get genesis block proposal may panic ([\#1554](https://github.com/axonweb3/axon/pull/1554))
+* fix: field `chainId` should be acceptable for `eth_estimateGas` ([\#1601](https://github.com/axonweb3/axon/pull/1601))
+* fix: enable estimation mode for query apis ([\#1603](https://github.com/axonweb3/axon/pull/1603))
+* fix: get pending tx count by number ([\#1605](https://github.com/axonweb3/axon/pull/1605))
+* fix: duplicated calculation in `eth_estimateGas` ([\#1599](https://github.com/axonweb3/axon/pull/1599), [\#1609](https://github.com/axonweb3/axon/pull/1609))
+
+
+### CODE REFACTORS
+
+- Add more details for JSON RPC errors ([\#1495](https://github.com/axonweb3/axon/pull/1495))
+- Remove the limitation of set CKB related info in system contract ([\#1517](https://github.com/axonweb3/axon/pull/1517))
+* Remove empty crates ([\#1521](https://github.com/axonweb3/axon/pull/1521))
+- Enhance readability of output logs and errors ([\#1528](https://github.com/axonweb3/axon/pull/1528))
+- Change default db cache size ([\#1531](https://github.com/axonweb3/axon/pull/1531))
+* config(blockscan): update the env variables of Axon's explorer ([\#1550](https://github.com/axonweb3/axon/pull/1550))
+* Refactor fn is_hardfork_enabled ([\#1538](https://github.com/axonweb3/axon/pull/1538))
+* Remove duplicated code to protect ([\#1556](https://github.com/axonweb3/axon/pull/1556))
+* Update CkbType.sol and ImageCell.sol for consistent ABI output with json file in ([\#1558](https://github.com/axonweb3/axon/pull/1558), [\#1567](https://github.com/axonweb3/axon/pull/1567))
+* ci: refactor OpenZeppelin tests and entry_workflow.yml ([\#1610](https://github.com/axonweb3/axon/pull/1610))
+
+
+### CHORE
+* ci: adjust CI after migrating the test projects ([\#1513](https://github.com/axonweb3/axon/pull/1513))
+* chore: make blst portable ([\#1520](https://github.com/axonweb3/axon/pull/1520))
+* ci: run unit tests in separate processes ([\#1559](https://github.com/axonweb3/axon/pull/1559))
+
+
+**Full Changelog**: https://github.com/axonweb3/axon/compare/v0.2.0-beta.2...v0.3.0-dev
+
 ## v0.2.0-beta.2
 
 <!--
