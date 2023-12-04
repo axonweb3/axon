@@ -2,7 +2,7 @@ name: Build ghcr.io image
 
 on:
   push:
-    branches: [ 'main', '*docker*', '*dev*' ]
+    branches: [ 'main', '*dev*', '*alpha*', '*beta*', '*rc*' ]
     tags:
   workflow_dispatch:
     inputs:
