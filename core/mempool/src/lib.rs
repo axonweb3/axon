@@ -17,7 +17,9 @@ use futures::future::try_join_all;
 use common_apm::Instant;
 
 use protocol::traits::{Context, MemPool, MemPoolAdapter};
-use protocol::types::{BlockNumber, Hash, PackedTxHashes, SignedTransaction, H160, H256, U256};
+use protocol::types::{
+    BlockNumber, Hash, PackedTxHashes, SignedTransaction, H160, H256, U256, U64,
+};
 use protocol::{async_trait, tokio, Display, ProtocolError, ProtocolErrorKind, ProtocolResult};
 
 use core_executor::is_call_system_script;
@@ -87,7 +89,7 @@ where
         self.adapter
             .check_storage_exist(ctx.clone(), &stx.transaction.hash)
             .await?;
-        self.pool.insert(stx, true, U256::zero())
+        self.pool.insert(stx, true, U64::zero())
     }
 
     async fn insert_tx(
@@ -134,7 +136,7 @@ where
         &self,
         ctx: Context,
         txs: Vec<SignedTransaction>,
-    ) -> ProtocolResult<Vec<U256>> {
+    ) -> ProtocolResult<Vec<U64>> {
         let inst = Instant::now();
         let len = txs.len();
 
@@ -155,20 +157,21 @@ where
             })
             .collect::<Vec<tokio::task::JoinHandle<Result<_, ProtocolError>>>>();
 
-        let res: Vec<U256> = try_join_all(futs)
+        let res: Vec<U64> = try_join_all(futs)
             .await
             .map_err(|e| {
                 log::error!("[mempool] verify batch txs error {:?}", e);
                 MemPoolError::VerifyBatchTransactions
             })?
             .into_iter()
-            .collect::<Result<Vec<U256>, ProtocolError>>()?;
+            .collect::<Result<Vec<U64>, ProtocolError>>()?;
 
         log::info!(
             "[mempool] verify txs done, size {} cost {:?}",
             len,
             inst.elapsed()
         );
+
         Ok(res)
     }
 
@@ -369,11 +372,11 @@ pub enum MemPoolError {
     ExceedBalance {
         tx_hash:         Hash,
         account_balance: U256,
-        tx_gas_limit:    U256,
+        tx_gas_limit:    U64,
     },
 
     #[display(fmt = "Invalid gas price {:?}", _0)]
-    InvalidGasPrice(U256),
+    InvalidGasPrice(u64),
 
     #[display(
         fmt = "Tx: {:?} exceeds size limit, now: {}, limit: {} Bytes",

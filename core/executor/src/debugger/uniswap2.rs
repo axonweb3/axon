@@ -6,7 +6,7 @@ use evm::{ExitReason, ExitSucceed};
 
 use protocol::codec::hex_decode;
 use protocol::tokio;
-use protocol::types::{Bytes, TransactionAction, H160};
+use protocol::types::{Bytes, TransactionAction, H160, U64};
 
 ethabi_contract::use_contract!(factory, "res/factory.abi");
 ethabi_contract::use_contract!(router, "res/router.abi");
@@ -35,9 +35,9 @@ fn read_code(path: &str) -> String {
 
 fn construct_tx(action: TransactionAction, value: U256, data: Vec<u8>) -> Eip1559Transaction {
     Eip1559Transaction {
-        nonce: U256::default(),
-        max_priority_fee_per_gas: U256::default(),
-        gas_price: U256::default(),
+        nonce: U64::default(),
+        max_priority_fee_per_gas: U64::default(),
+        gas_price: U64::default(),
         gas_limit: 10000000000u64.into(),
         action,
         value,

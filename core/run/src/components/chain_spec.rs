@@ -1,7 +1,8 @@
 use common_config_parser::types::spec::ChainSpec;
 
+use protocol::constants::BASE_FEE_PER_GAS;
 use protocol::types::{
-    Block, Eip1559Transaction, RichBlock, TransactionAction, UnsignedTransaction, BASE_FEE_PER_GAS,
+    Block, Eip1559Transaction, RichBlock, TransactionAction, UnsignedTransaction,
 };
 
 pub(crate) trait ChainSpecExt {

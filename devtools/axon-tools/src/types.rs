@@ -12,7 +12,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 use bytes::{Bytes, BytesMut};
 use core::cmp::Ordering;
-use ethereum_types::{Bloom, H160, H256, U256};
+use ethereum_types::{Bloom, H160, H256, U64};
 
 #[cfg(feature = "impl-serde")]
 use serde::{Deserialize, Serialize};
@@ -209,13 +209,13 @@ pub struct Header {
         )
     )]
     pub number:                   BlockNumber,
-    pub gas_used:                 U256,
-    pub gas_limit:                U256,
+    pub gas_used:                 U64,
+    pub gas_limit:                U64,
     /// Extra data for the block header
     /// The first index of extra_data is used to store hardfork information:
     /// `HardforkInfoInner`
     pub extra_data:               Vec<ExtraData>,
-    pub base_fee_per_gas:         U256,
+    pub base_fee_per_gas:         U64,
     pub proof:                    Proof,
     #[cfg_attr(
         all(feature = "impl-serde", feature = "std"),
@@ -270,9 +270,9 @@ pub struct Proposal {
         serde(deserialize_with = "decode::deserialize_hex_u64")
     )]
     pub number:                   BlockNumber,
-    pub gas_limit:                U256,
+    pub gas_limit:                U64,
     pub extra_data:               Vec<ExtraData>,
-    pub base_fee_per_gas:         U256,
+    pub base_fee_per_gas:         U64,
     pub proof:                    Proof,
     #[cfg_attr(
         all(feature = "impl-serde", feature = "std"),

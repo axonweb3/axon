@@ -30,7 +30,7 @@ impl<Adapter: APIAdapter + 'static> AxonRpcServer for AxonRpcImpl<Adapter> {
             BlockId::Hash(hash) => self.adapter.get_block_by_hash(Context::new(), hash).await,
             BlockId::Num(num) => {
                 self.adapter
-                    .get_block_by_number(Context::new(), Some(num.as_u64()))
+                    .get_block_by_number(Context::new(), Some(num.low_u64()))
                     .await
             }
             BlockId::Latest => self.adapter.get_block_by_number(Context::new(), None).await,
@@ -52,7 +52,7 @@ impl<Adapter: APIAdapter + 'static> AxonRpcServer for AxonRpcImpl<Adapter> {
     async fn get_metadata_by_number(&self, block_number: U256) -> RpcResult<Metadata> {
         let ret = self
             .adapter
-            .get_metadata_by_number(Context::new(), Some(block_number.as_u64()))
+            .get_metadata_by_number(Context::new(), Some(block_number.low_u64()))
             .await
             .map_err(|e| RpcError::Internal(e.to_string()))?;
 
