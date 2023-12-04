@@ -312,7 +312,6 @@ pub struct Proof {
     )]
     pub round: u64,
 
-    #[cfg_attr(feature = "impl-serde", serde(rename(deserialize = "block_hash")))]
     pub proposal_hash: Hash,
 
     #[cfg_attr(
