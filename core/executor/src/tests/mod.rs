@@ -127,6 +127,20 @@ async fn test_simplestorage() {
     let precompiles = build_precompile_set();
 
     // pragma solidity ^0.4.24;
+    //
+    // contract SimpleStorage {
+    //     uint storedData;
+    //
+    //     function set(uint x) public {
+    //         storedData = x;
+    //     }
+    //
+    //     function get() view public returns (uint) {
+    //         return storedData;
+    //     }
+    // }
+    //
+    // simplestorage_create_code created from above solidity
     let simplestorage_create_code = "608060405234801561001057600080fd5b5060df8061001f6000396000f3006080604052600436106049576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806360fe47b114604e5780636d4ce63c146078575b600080fd5b348015605957600080fd5b5060766004803603810190808035906020019092919050505060a0565b005b348015608357600080fd5b50608a60aa565b6040518082815260200191505060405180910390f35b8060008190555050565b600080549050905600a165627a7a7230582099c66a25d59f0aa78f7ebc40748fa1d1fbc335d8d780f284841b30e0365acd960029";
     let mut tx = gen_tx(
         H160::from_str("0xf000000000000000000000000000000000000000").unwrap(),
