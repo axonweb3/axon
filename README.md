@@ -15,7 +15,11 @@
   </p>
 </p>
 
-> Axon is still in active development.
+## Versioning
+
+Note this is the branch for Axon v0.3.
+
+[Axon v0.2 (beta)](https://github.com/axonweb3/axon/tree/0.2.0-beta) is still in operation but is not being actively developed.
 
 ## What is Axon
 
