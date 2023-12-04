@@ -973,6 +973,10 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
         position: U256,
         block_id: Option<BlockId>,
     ) -> RpcResult<Hex> {
+        if is_system_contract_address_format(&address) {
+            return Err(RpcError::CallSystemContract.into());
+        }
+
         let number = self.get_block_number_by_id(block_id).await?;
 
         let header = self
