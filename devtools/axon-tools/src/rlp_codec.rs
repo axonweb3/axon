@@ -42,7 +42,7 @@ impl Encodable for Proposal {
             .append(&self.signed_txs_hash)
             .append(&self.timestamp)
             .append(&self.number)
-            .append(&self.gas_limit.as_u64())
+            .append(&self.gas_limit.low_u64())
             .append_list(&self.extra_data)
             .append(&self.proof)
             .append(&self.call_system_script_count)

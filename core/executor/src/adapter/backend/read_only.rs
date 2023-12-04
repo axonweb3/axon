@@ -78,7 +78,7 @@ where
             return H256::default();
         }
 
-        let number = number.as_u64();
+        let number = number.low_u64();
         blocking_async!(self, get_storage, get_block, Context::new(), number)
             .map(|b| b.hash())
             .unwrap_or_default()
@@ -97,11 +97,11 @@ where
     }
 
     fn block_gas_limit(&self) -> U256 {
-        self.exec_ctx.block_gas_limit
+        U256::from(self.exec_ctx.block_gas_limit.low_u64())
     }
 
     fn block_base_fee_per_gas(&self) -> U256 {
-        self.exec_ctx.block_base_fee_per_gas
+        U256::from(self.exec_ctx.block_base_fee_per_gas.low_u64())
     }
 
     fn chain_id(&self) -> U256 {

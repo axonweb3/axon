@@ -10,7 +10,7 @@ use evm::Config;
 use protocol::types::{
     Bytes, Eip1559Transaction, ExecutorContext, ExitReason, ExitSucceed, Public,
     SignatureComponents, SignedTransaction, TransactionAction, UnsignedTransaction,
-    UnverifiedTransaction, H160, H256, U256,
+    UnverifiedTransaction, H160, H256, U256, U64,
 };
 use protocol::{codec::hex_decode, tokio, traits::Executor, trie::MemoryDB};
 
@@ -24,7 +24,7 @@ fn exec_adapter() -> AxonExecutorApplyAdapter<ImplStorage<MemoryAdapter>, Memory
     let storage = ImplStorage::new(Arc::new(MemoryAdapter::new()), 20);
     let ctx = ExecutorContext {
         block_gas_limit: u32::MAX.into(),
-        block_base_fee_per_gas: U256::one(),
+        block_base_fee_per_gas: U64::one(),
         ..Default::default()
     };
 
@@ -50,10 +50,10 @@ fn gen_tx(sender: H160, addr: H160, value: u64, data: Vec<u8>) -> SignedTransact
     SignedTransaction {
         transaction: UnverifiedTransaction {
             unsigned:  UnsignedTransaction::Eip1559(Eip1559Transaction {
-                nonce:                    U256::default(),
-                max_priority_fee_per_gas: U256::default(),
-                gas_price:                U256::default(),
-                gas_limit:                U256::from_str("0x1000000000").unwrap(),
+                nonce:                    U64::default(),
+                max_priority_fee_per_gas: U64::default(),
+                gas_price:                U64::default(),
+                gas_limit:                U64::from_str("0x1000000000").unwrap(),
                 action:                   TransactionAction::Call(addr),
                 value:                    value.into(),
                 data:                     data.into(),

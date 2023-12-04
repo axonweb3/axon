@@ -7,19 +7,11 @@ use serde::{Deserialize, Serialize};
 use crate::codec::serialize_uint;
 use crate::types::{
     logs_bloom, Bloom, BloomInput, Bytes, ExecResp, Hash, Hasher, Log, MerkleRoot, Receipt,
-    SignedTransaction, VecDisplayHelper, H160, U256,
+    SignedTransaction, VecDisplayHelper, H160, U64,
 };
 use crate::{codec::ProtocolCodec, types::TypesError};
 
 pub type BlockNumber = u64;
-
-pub const MAX_BLOCK_GAS_LIMIT: u64 = 30_000_000;
-// MAX_FEE_HISTORY is the maximum number of blocks that can be retrieved for a
-// fee history request. Between 1 and 1024 blocks can be requested in a single
-// query. reference: https://docs.infura.io/infura/networks/ethereum/json-rpc-methods/eth_feehistory/
-pub const MAX_FEE_HISTORY: u64 = 1024;
-pub const MAX_RPC_GAS_CAP: u64 = 50_000_000;
-pub const BASE_FEE_PER_GAS: u64 = 0x539;
 
 #[derive(Serialize, Deserialize, Default, Copy, Clone, Debug, PartialEq, Eq, Display)]
 pub enum BlockVersion {
@@ -81,9 +73,9 @@ pub struct Proposal {
     pub timestamp:                u64,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub number:                   BlockNumber,
-    pub gas_limit:                U256,
+    pub gas_limit:                U64,
     pub extra_data:               Vec<ExtraData>,
-    pub base_fee_per_gas:         U256,
+    pub base_fee_per_gas:         U64,
     pub proof:                    Proof,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub chain_id:                 u64,
@@ -217,7 +209,7 @@ impl Block {
                     block_hash: self.hash(),
                     tx_index: idx as u32,
                     state_root: self.header.state_root,
-                    used_gas: U256::from(res.gas_used),
+                    used_gas: U64::from(res.gas_used),
                     logs_bloom: logs_bloom(res.logs.iter()),
                     logs: res.logs.clone(),
                     log_index,
@@ -286,13 +278,13 @@ pub struct Header {
     pub timestamp:                u64,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub number:                   BlockNumber,
-    pub gas_used:                 U256,
-    pub gas_limit:                U256,
+    pub gas_used:                 U64,
+    pub gas_limit:                U64,
     /// Extra data for the block header
     /// The first index of extra_data is used to store hardfork information:
     /// `HardforkInfoInner`
     pub extra_data:               Vec<ExtraData>,
-    pub base_fee_per_gas:         U256,
+    pub base_fee_per_gas:         U64,
     pub proof:                    Proof,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub call_system_script_count: u32,

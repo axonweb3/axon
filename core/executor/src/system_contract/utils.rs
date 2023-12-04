@@ -1,7 +1,7 @@
 use evm::ExitSucceed;
 
 use protocol::types::{
-    Apply, ApplyBackend, Backend, ExitReason, ExitRevert, TxResp, H160, H256, U256,
+    Apply, ApplyBackend, Backend, ExitReason, ExitRevert, TxResp, H160, H256, U256, U64,
 };
 
 use crate::system_contract::{
@@ -10,11 +10,11 @@ use crate::system_contract::{
 };
 use crate::{CURRENT_HEADER_CELL_ROOT, CURRENT_METADATA_ROOT};
 
-pub fn revert_resp(gas_limit: U256) -> TxResp {
+pub fn revert_resp(gas_limit: U64) -> TxResp {
     TxResp {
         exit_reason:  ExitReason::Revert(ExitRevert::Reverted),
         ret:          vec![],
-        gas_used:     (gas_limit - 1).as_u64(),
+        gas_used:     (gas_limit - 1).low_u64(),
         remain_gas:   1u64,
         fee_cost:     U256::one(),
         logs:         vec![],
@@ -23,12 +23,12 @@ pub fn revert_resp(gas_limit: U256) -> TxResp {
     }
 }
 
-pub fn succeed_resp(gas_limit: U256) -> TxResp {
+pub fn succeed_resp(gas_limit: U64) -> TxResp {
     TxResp {
         exit_reason:  ExitReason::Succeed(ExitSucceed::Stopped),
         ret:          vec![],
         gas_used:     0u64,
-        remain_gas:   gas_limit.as_u64(),
+        remain_gas:   gas_limit.low_u64(),
         fee_cost:     U256::zero(),
         logs:         vec![],
         code_address: None,

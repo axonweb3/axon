@@ -9,6 +9,7 @@ use protocol::traits::{
 use protocol::trie::Trie;
 use protocol::types::{
     Account, Bytes, ExecutorContext, Hasher, Log, MerkleRoot, H160, H256, NIL_DATA, RLP_NULL, U256,
+    U64,
 };
 use protocol::{codec::ProtocolCodec, trie, ProtocolResult};
 
@@ -114,8 +115,8 @@ where
         self.inner.exec_ctx.origin = origin;
     }
 
-    fn set_gas_price(&mut self, gas_price: U256) {
-        self.inner.exec_ctx.gas_price = gas_price;
+    fn set_gas_price(&mut self, gas_price: U64) {
+        self.inner.exec_ctx.gas_price = gas_price.low_u64().into();
     }
 
     fn take_logs(&mut self) -> Vec<Log> {
