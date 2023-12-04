@@ -301,7 +301,8 @@ pub struct Proof {
             deserialize_with = "decode::deserialize_hex_u64"
         )
     )]
-    pub number:     u64,
+    pub number: u64,
+
     #[cfg_attr(
         all(feature = "impl-serde", feature = "std"),
         serde(
@@ -309,8 +310,11 @@ pub struct Proof {
             deserialize_with = "decode::deserialize_hex_u64"
         )
     )]
-    pub round:      u64,
-    pub block_hash: Hash,
+    pub round: u64,
+
+    #[cfg_attr(feature = "impl-serde", serde(rename(deserialize = "block_hash")))]
+    pub proposal_hash: Hash,
+
     #[cfg_attr(
         all(feature = "impl-serde", feature = "std"),
         serde(
@@ -318,7 +322,8 @@ pub struct Proof {
             deserialize_with = "faster_hex::withpfx_lowercase::deserialize"
         )
     )]
-    pub signature:  Bytes,
+    pub signature: Bytes,
+
     #[cfg_attr(
         all(feature = "impl-serde", feature = "std"),
         serde(
@@ -326,7 +331,7 @@ pub struct Proof {
             deserialize_with = "faster_hex::withpfx_lowercase::deserialize"
         )
     )]
-    pub bitmap:     Bytes,
+    pub bitmap: Bytes,
 }
 
 #[cfg(feature = "proof")]
@@ -360,10 +365,10 @@ impl core::cmp::Ord for Validator {
 #[cfg_attr(doc_cfg, doc(cfg(feature = "proof")))]
 #[cfg_attr(feature = "impl-serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Vote {
-    pub height:     u64,
-    pub round:      u64,
-    pub vote_type:  u8,
-    pub block_hash: Bytes,
+    pub height:        u64,
+    pub round:         u64,
+    pub vote_type:     u8,
+    pub proposal_hash: Bytes,
 }
 
 #[cfg(test)]
@@ -371,10 +376,10 @@ pub struct Vote {
 impl Vote {
     fn random() -> Self {
         Self {
-            height:     rand::random(),
-            round:      rand::random(),
-            vote_type:  2,
-            block_hash: tests::random_bytes(32),
+            height:        rand::random(),
+            round:         rand::random(),
+            vote_type:     2,
+            proposal_hash: tests::random_bytes(32),
         }
     }
 }
@@ -445,42 +450,49 @@ pub struct ConsensusConfig {
         all(feature = "impl-serde", feature = "std"),
         serde(deserialize_with = "decode::deserialize_hex_u64")
     )]
-    pub gas_limit:       u64,
+    pub gas_limit: u64,
+
     #[cfg_attr(
         all(feature = "impl-serde", feature = "std"),
         serde(deserialize_with = "decode::deserialize_hex_u64")
     )]
-    pub interval:        u64,
+    pub interval: u64,
+
     #[cfg_attr(
         all(feature = "impl-serde", feature = "std"),
         serde(deserialize_with = "decode::deserialize_hex_u64")
     )]
-    pub propose_ratio:   u64,
+    pub propose_ratio: u64,
+
     #[cfg_attr(
         all(feature = "impl-serde", feature = "std"),
         serde(deserialize_with = "decode::deserialize_hex_u64")
     )]
-    pub prevote_ratio:   u64,
+    pub prevote_ratio: u64,
+
     #[cfg_attr(
         all(feature = "impl-serde", feature = "std"),
         serde(deserialize_with = "decode::deserialize_hex_u64")
     )]
     pub precommit_ratio: u64,
+
     #[cfg_attr(
         all(feature = "impl-serde", feature = "std"),
         serde(deserialize_with = "decode::deserialize_hex_u64")
     )]
-    pub brake_ratio:     u64,
+    pub brake_ratio: u64,
+
     #[cfg_attr(
         all(feature = "impl-serde", feature = "std"),
         serde(deserialize_with = "decode::deserialize_hex_u64")
     )]
-    pub tx_num_limit:    u64,
+    pub tx_num_limit: u64,
+
     #[cfg_attr(
         all(feature = "impl-serde", feature = "std"),
         serde(deserialize_with = "decode::deserialize_hex_u64")
     )]
-    pub max_tx_size:     u64,
+    pub max_tx_size: u64,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -733,6 +745,6 @@ mod tests {
         let decoded: overlord::types::Vote = rlp::decode(&raw).unwrap();
         assert_eq!(vote.height, decoded.height);
         assert_eq!(vote.round, decoded.round);
-        assert_eq!(vote.block_hash, decoded.block_hash);
+        assert_eq!(vote.proposal_hash, decoded.block_hash);
     }
 }

@@ -359,6 +359,7 @@ pub struct Proof {
     pub number:     u64,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub round:      u64,
+    #[serde(rename(serialize = "proposal_hash"))]
     pub block_hash: Hash,
     #[cfg_attr(
         feature = "hex-serialize",

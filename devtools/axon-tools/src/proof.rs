@@ -50,15 +50,15 @@ pub fn verify_proof(
     }
     .rlp_bytes();
 
-    if keccak_256(&raw_proposal) != proof.block_hash.0 {
+    if keccak_256(&raw_proposal) != proof.proposal_hash.0 {
         return Err(Error::InvalidProofBlockHash);
     }
 
     let vote = Vote {
-        height:     proof.number,
-        round:      proof.round,
-        vote_type:  2u8,
-        block_hash: Bytes::from(proof.block_hash.0.to_vec()),
+        height:        proof.number,
+        round:         proof.round,
+        vote_type:     2u8,
+        proposal_hash: Bytes::from(proof.proposal_hash.0.to_vec()),
     };
 
     let hash_vote = keccak_256(rlp::encode(&vote).as_ref());
