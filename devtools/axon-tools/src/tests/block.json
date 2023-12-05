@@ -17,7 +17,7 @@
         "proof": {
             "number": "0xe7c2",
             "round": "0x0",
-            "block_hash": "0x734f6e28a7caf9df326c21d8c57b89034ed02f782a11d04d18284b7aa4de43f0",
+            "proposal_hash": "0x734f6e28a7caf9df326c21d8c57b89034ed02f782a11d04d18284b7aa4de43f0",
             "signature": "0x933be0cd674477473bd68a55a53511a652fbcecfa4cafaa244d0b55ca3f6a7f296d50a2744337365fd6407d737cc389f054b70b3c82ee27a1669a43cc344ba7ad42a7cc663faa63190a739dc1c6a1a5d80d45f5903f42d118fc5e4d695cc4815",
             "bitmap": "0xb0"
         },

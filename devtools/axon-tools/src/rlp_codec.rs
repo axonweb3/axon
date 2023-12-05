@@ -26,7 +26,7 @@ impl Encodable for Vote {
             .append(&self.height)
             .append(&self.round)
             .append(&vote_type)
-            .append(&self.block_hash.to_vec());
+            .append(&self.proposal_hash.to_vec());
     }
 }
 
