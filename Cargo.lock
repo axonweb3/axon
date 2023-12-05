@@ -290,8 +290,7 @@ version = "0.2.1"
 dependencies = [
  "axon-protocol",
  "clap 2.34.0",
- "ophelia",
- "ophelia-blst",
+ "common-crypto",
  "rand 0.7.3",
  "serde",
  "serde_json",

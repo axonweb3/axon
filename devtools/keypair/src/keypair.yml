@@ -10,15 +10,9 @@ args:
               long: number
               default_value: "4"
 
-      - private_keys:
-              help: Generate keypairs from a given private key vector
+      - binary-path:
+              help: The path to save net and bls private key binary
               short: p
-              long: private_keys
-              multiple: true
+              long: path
               takes_value: true
-
-      - common_ref:
-              help: common_ref for bls signature, it will be randomly generated if not passed
-              short: c
-              long: common_ref
-              default_value: ""
+              default_value: "private-binary"
