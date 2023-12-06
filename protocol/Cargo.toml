@@ -16,7 +16,7 @@ ckb-traits = "0.111"
 ckb-types = "0.111"
 creep = "0.2"
 derive_more = "0.99"
-ethereum = { version = "0.15", features = ["with-codec", "with-serde"] }
+ethereum = { version = "0.14", features = ["with-codec", "with-serde"] }
 ethereum-types = { version = "0.14", features = [
     "arbitrary",
     "codec",
