@@ -10,7 +10,7 @@ block_stats() {
     current_block=$(block_number)
     start_time=$(date +%s)
     wait_seconds=60
-    
+
     while true; do
         latest_block=$(block_number)
         if [ $current_block -lt  $latest_block ]
