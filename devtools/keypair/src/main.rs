@@ -23,6 +23,7 @@ struct Keypair {
 
 #[derive(Default, Serialize, Debug)]
 struct Output {
+    #[serde(skip)]
     pub common_ref: String,
     pub keypairs:   Vec<Keypair>,
 }
@@ -32,7 +33,7 @@ pub fn main() {
     let yml = load_yaml!("keypair.yml");
     let m = App::from(yml).get_matches();
     let number = value_t!(m, "number", usize).unwrap();
-    let path = value_t!(m, "binary-path", String).unwrap();
+    let path = value_t!(m, "private-key-path", String).unwrap();
     let path = PathBuf::from(path);
     let _ = fs::create_dir(path.clone());
 

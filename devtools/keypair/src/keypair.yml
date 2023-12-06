@@ -10,7 +10,7 @@ args:
               long: number
               default_value: "4"
 
-      - binary-path:
+      - private-key-path:
               help: The path to save net and bls private key binary
               short: p
               long: path
