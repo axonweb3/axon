@@ -27,8 +27,6 @@ pub enum RpcError {
     GasLimitIsTooLow,
     #[display(fmt = "Gas limit is too large")]
     GasLimitIsTooLarge,
-    #[display(fmt = "Gas limit is zero")]
-    GasLimitIsZero,
     #[display(fmt = "Transaction is not signed")]
     TransactionIsNotSigned,
     #[display(fmt = "Cannot get latest block")]
@@ -78,7 +76,6 @@ impl RpcError {
             RpcError::GasPriceIsTooLarge => -40007,
             RpcError::GasLimitIsTooLow => -40008,
             RpcError::GasLimitIsTooLarge => -40009,
-            RpcError::GasLimitIsZero => -40010,
             RpcError::TransactionIsNotSigned => -40011,
             RpcError::CannotGetLatestBlock => -40013,
             RpcError::InvalidBlockHash => -40014,
@@ -116,7 +113,6 @@ impl From<RpcError> for ErrorObjectOwned {
             RpcError::GasPriceIsTooLarge => ErrorObject::owned(err_code, err, none_data),
             RpcError::GasLimitIsTooLow => ErrorObject::owned(err_code, err, none_data),
             RpcError::GasLimitIsTooLarge => ErrorObject::owned(err_code, err, none_data),
-            RpcError::GasLimitIsZero => ErrorObject::owned(err_code, err, none_data),
             RpcError::TransactionIsNotSigned => ErrorObject::owned(err_code, err, none_data),
             RpcError::CannotGetLatestBlock => ErrorObject::owned(err_code, err, none_data),
             RpcError::InvalidBlockHash => ErrorObject::owned(err_code, err, none_data),
