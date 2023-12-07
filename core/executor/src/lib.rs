@@ -95,6 +95,7 @@ impl Executor for AxonExecutor {
 
         let used_gas = executor.used_gas();
         let used_gas =if is_estimate {
+            // The estimate gas coef is 1.25
             (used_gas / 4) + used_gas
         } else {
             used_gas
