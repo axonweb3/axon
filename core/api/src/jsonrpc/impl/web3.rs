@@ -453,8 +453,8 @@ impl<Adapter: APIAdapter + 'static> Web3RpcServer for Web3RpcImpl<Adapter> {
     #[metrics_rpc("eth_estimateGas")]
     async fn estimate_gas(&self, req: Web3CallRequest, number: Option<BlockId>) -> RpcResult<U256> {
         if let Some(gas_limit) = req.gas.as_ref() {
-            if gas_limit == &U64::zero() {
-                return Err(RpcError::GasPriceIsZero.into());
+            if gas_limit < &(MIN_TRANSACTION_GAS_LIMIT.into()) {
+                return Err(RpcError::GasLimitIsTooLow.into());
             }
         }
 
