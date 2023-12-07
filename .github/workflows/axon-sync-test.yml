@@ -1,0 +1,163 @@
+name: Axon sync test
+
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  Build_and_Archive_Axon:
+    strategy:
+      matrix:
+        # Supported GitHub-hosted runners and hardware resources
+        # see https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
+        os: [ubuntu-22.04]
+      fail-fast: false
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Cache of Cargo
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-build
+
+    - name: Build Axon 
+      run: |
+        # check for AVX2 support by inspecting `/proc/cpuinfo` or running `lscpu`
+        # related issue: https://github.com/axonweb3/axon/issues/1387
+        lscpu
+        # PORTABLE=1 USE_SSE=1 tell rocksdb to target AVX2
+        PORTABLE=1 USE_SSE=1 cargo build
+    - name: Generate Key
+      run: |
+        openssl rand -hex 32 |xxd -p -r >  devtools/chain/net.key
+        cargo run --package axon-keypair --bin axon-keypair | jq '.keypairs[0].private_key'  | xxd -p -r > devtools/chain/bls.key
+    - name: Archive axon artifacts  
+      uses: actions/upload-artifact@v3
+      with:
+        name: axon-dir
+        path: |
+           target/debug/axon 
+           devtools/chain/specs/multi_nodes/chain-spec.toml
+           devtools/chain/default.db-options
+           devtools/chain/config.toml 
+           devtools/chain/*.key
+           devtools/ci/scripts/helper.js
+        retention-days: 7
+
+        
+  Download_and_Start_Axon_Sync:
+    name: Download_and_Start_Axon_Sync
+    needs:  Build_and_Archive_Axon       
+    runs-on: layer2-runners
+    timeout-minutes: 1800
+
+    steps:
+    - name: Download Axon Binary for Build_and_Archive_Axon  
+      uses: actions/download-artifact@v3
+      with: 
+        name: axon-dir   
+    - name: Replacement configuration
+      run: |
+        sed -i 's@multi_address = "/ip4/127.0.0.1/tcp/8001/p2p/QmNk6bBwkLPuqnsrtxpp819XLZY3ymgjs3p1nKtxBVgqxj"@multi_address = "/dns4/axon1/tcp/8001/p2p/QmNk6bBwkLPuqnsrtxpp819XLZY3ymgjs3p1nKtxBVgqxj"@' devtools/chain/config.toml   
+        sed -i 's@hardforks = \[\]@hardforks = \["None"\]@g' devtools/chain/specs/multi_nodes/chain-spec.toml
+      
+
+    - name: Start Axon Node
+      env:
+        LOG_FILE: ${{ runner.temp }}/layer2-runner-axon-node.log
+      run: |
+         chmod +x target/debug/axon
+         target/debug/axon --version
+         target/debug/axon init \
+          --config     devtools/chain/config.toml  \
+          --chain-spec devtools/chain/specs/multi_nodes/chain-spec.toml
+
+         nohup target/debug/axon run \
+          --config     devtools/chain/config.toml  &
+
+    - name: Wati for App to Start
+      run: sleep 15
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3  
+      with:
+        node-version: '20'
+    
+    - name:  Compare Block Heights  
+      run: |
+        npx zx <<'EOF'
+        #!/usr/bin/env zx
+        import { getLatestBlockNum } from './devtools/ci/scripts/helper.js';
+
+        async function main() {
+          let previousLocalHeight = null;
+
+          while (true) {
+            const localHeight = await getLatestBlockNum('http://127.0.0.1:8000');
+            const remoteHeight = await getLatestBlockNum('https://rpc-alphanet-axon.ckbapp.dev');
+        
+            console.log(`localBlockNumber: ${localHeight}, remoteBlockNumber: ${remoteHeight}`);
+        
+            if (localHeight >= remoteHeight - 10 && localHeight <= remoteHeight) {
+              console.log(`localBlockNumber: ${localHeight}, remoteBlockNumber: ${remoteHeight}, localnode sync succeeded`);
+              return process.exit(0);
+            }
+        
+            if (localHeight === previousLocalHeight) {
+              console.error(`synchronization exception localBlockNumber: ${localHeight}`);
+              return process.exit(1);
+            }
+        
+            previousLocalHeight = localHeight;
+            await new Promise(resolve => setTimeout(resolve, 600000));
+          }
+        }
+        
+        main();
+        EOF
+      timeout-minutes: 1800 
+
+
+
+  notice:
+    runs-on: ubuntu-latest
+    needs: Download_and_Start_Axon_Sync 
+    if: success() || failure()
+    steps:
+      - name: send Axon-sync-test status 
+        run: |
+          curl -H "Content-Type: application/json" \
+          -X POST https://discord.com/api/webhooks/${{secrets.DISCORD_CHANNEL_ID}}/${{secrets.DISCORD_CHANNEL_TOKEN}} \
+          --data '
+             { 
+                "content": "Axon-sync-test", 
+                "embeds": [ 
+                    {
+                    "title":"Axon Sync test Status", 
+                     "color": 5814789,
+                     "fields": [
+                         {
+                             "name": "Job name",
+                             "value": "axon-sync-test\n"
+                         },   
+                         {    "name":  "Job statues",
+                              "value": "${{needs.Download_and_Start_Axon_Sync.result}}\n"
+                         },
+                         {    
+                             "name": "URL",
+                             "value": "[Click and jump to Github workflow](https://github.com/axonweb3/axon/actions/workflows/axon-sync-test.yml)\n"                         }
+                         
+                     ]
+                } 
+                ]
+            }'            
+
