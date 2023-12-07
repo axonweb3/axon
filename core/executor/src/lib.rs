@@ -71,15 +71,10 @@ impl Executor for AxonExecutor {
         to: Option<H160>,
         value: U256,
         data: Vec<u8>,
-        estimate: bool,
+        is_estimate: bool,
     ) -> TxResp {
         self.init_local_system_contract_roots(backend);
-        let config = {
-            let mut config = self.config();
-            // whether run the gasometer in estimate mode or not
-            config.estimate = estimate;
-            config
-        };
+        let config = self.config();
         let metadata = StackSubstateMetadata::new(gas_limit, &config);
         let state = MemoryStackState::new(metadata, backend);
         let precompiles = build_precompile_set();
@@ -99,6 +94,11 @@ impl Executor for AxonExecutor {
         };
 
         let used_gas = executor.used_gas();
+        let used_gas =if is_estimate {
+            (used_gas / 4) + used_gas
+        } else {
+            used_gas
+        };
 
         TxResp {
             exit_reason:  exit,
