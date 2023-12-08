@@ -1,7 +1,7 @@
 use crate::types::{
     Account, Block, BlockNumber, Bytes, CkbRelatedInfo, EthAccountProof, HardforkInfo,
     HardforkInfoInner, Hash, Header, Metadata, Proposal, Receipt, SignedTransaction, TxResp, H160,
-    H256, U256,
+    H256, U256, U64,
 };
 use crate::{async_trait, traits::Context, ProtocolResult};
 
@@ -79,8 +79,8 @@ pub trait APIAdapter: Send + Sync {
         ctx: Context,
         from: Option<H160>,
         to: Option<H160>,
-        gas_price: Option<U256>,
-        gas_limit: Option<U256>,
+        gas_price: Option<U64>,
+        gas_limit: Option<U64>,
         value: U256,
         data: Vec<u8>,
         estimate: bool,

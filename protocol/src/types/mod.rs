@@ -87,6 +87,9 @@ pub enum TypesError {
 
     #[display(fmt = "Decode interoperation signature R error {:?}", _0)]
     DecodeInteroperationSigR(rlp::DecoderError),
+
+    #[display(fmt = "Prepay gas is too large")]
+    PrepayGasIsTooLarge,
 }
 
 impl Error for TypesError {}

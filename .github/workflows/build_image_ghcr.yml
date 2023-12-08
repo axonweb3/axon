@@ -2,7 +2,7 @@ name: Build ghcr.io image
 
 on:
   push:
-    branches: [ 'main', '*docker*', '*dev*' ]
+    branches: [ 'main', '*dev*', '*alpha*', '*beta*', '*rc*' ]
     tags:
   workflow_dispatch:
     inputs:
@@ -103,7 +103,7 @@ jobs:
     - name: Modify the Axon image of in devtools/chain/docker-compose.yml
       env:
         AXON_IMAGE: "${{ needs.build-amd64-image-to-ghcr.outputs.image_name }}:${{ needs.build-amd64-image-to-ghcr.outputs.image_tag }}"
-      uses: mikefarah/yq@v4.40.3
+      uses: mikefarah/yq@v4.40.4
       with:
         cmd: yq -i '.services.axon.image = "${{ env.AXON_IMAGE }}"' 'devtools/chain/docker-compose.yml'
 

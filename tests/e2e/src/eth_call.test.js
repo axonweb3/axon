@@ -235,7 +235,7 @@ describe("eth_call", () => {
     await param1.type(testDataInfo.accountAddress);
     await param2.type(testDataInfo.contractAddress);
     await param3.type("0x210000");
-    await param4.type("0xfffffffffff");
+    await param4.type("0xffff");
     await param5.type("0x0");
     await param6.type("0x06fdde03");
     await param7.type("latest");
@@ -264,7 +264,7 @@ describe("eth_call", () => {
     await param1.type(testDataInfo.contractAddress);
     await param2.type(testDataInfo.contractAddress);
     await param3.type("0x210000");
-    await param4.type("0xfffffffffff");
+    await param4.type("0xffff");
     await param5.type("0x0");
     await param6.type("0x06fdde03");
     await param7.type("latest");
@@ -293,7 +293,7 @@ describe("eth_call", () => {
     await param1.type(testDataInfo.contractAddress);
     await param2.type("0x63010dD4c3164dd0D73eCB518972916161fBACd9");
     await param3.type("0x210000");
-    await param4.type("0xfffffffffff");
+    await param4.type("0xffff");
     await param5.type("0x0");
     await param6.type("0x06fdde03");
     await param7.type("latest");
@@ -322,7 +322,7 @@ describe("eth_call", () => {
     await param1.type("0x735EaC8A5f3F197799f2FEaEbc0F6B3F6e4c345D");
     await param2.type(testDataInfo.contractAddress);
     await param3.type("0x210000");
-    await param4.type("0xfffffffffff");
+    await param4.type("0xffff");
     await param5.type("0x0");
     await param6.type("0x06fdde03");
     await param7.type("latest");

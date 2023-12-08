@@ -5,7 +5,7 @@ use crate::types::{Block, BlockVersion, Metadata, Proof, Proposal, ValidatorExte
 #[cfg(feature = "proof")]
 use bytes::Bytes;
 #[cfg(feature = "proof")]
-use ethereum_types::{H160, H256, U256};
+use ethereum_types::{H160, H256, U64};
 #[cfg(feature = "proof")]
 use rlp::Encodable;
 #[cfg(feature = "proof")]
@@ -29,15 +29,15 @@ fn test_proposal() {
         signed_txs_hash:          H256::from([5u8; 32]),
         timestamp:                0,
         number:                   100,
-        gas_limit:                U256::from(6),
+        gas_limit:                U64::from(6),
         extra_data:               Vec::new(),
-        base_fee_per_gas:         U256::from(7),
+        base_fee_per_gas:         U64::from(7),
         proof:                    Proof {
-            number:     0,
-            round:      1,
-            block_hash: H256::from([1u8; 32]),
-            signature:  Bytes::from("1234"),
-            bitmap:     Bytes::from("abcd"),
+            number:        0,
+            round:         1,
+            proposal_hash: H256::from([1u8; 32]),
+            signature:     Bytes::from("1234"),
+            bitmap:        Bytes::from("abcd"),
         },
         chain_id:                 1000,
         call_system_script_count: 1,

@@ -3,8 +3,8 @@ use std::error::Error;
 use overlord::Codec;
 use rlp::{Decodable, DecoderError, Encodable, Rlp, RlpStream};
 
-use crate::types::{BlockVersion, Bytes, Proposal, BASE_FEE_PER_GAS};
-use crate::{codec::error::CodecError, lazy::CHAIN_ID, ProtocolError};
+use crate::types::{BlockVersion, Bytes, Proposal};
+use crate::{codec::error::CodecError, constants::BASE_FEE_PER_GAS, lazy::CHAIN_ID, ProtocolError};
 
 impl Encodable for BlockVersion {
     fn rlp_append(&self, s: &mut RlpStream) {
@@ -32,7 +32,7 @@ impl Encodable for Proposal {
             .append(&self.signed_txs_hash)
             .append(&self.timestamp)
             .append(&self.number)
-            .append(&self.gas_limit.as_u64())
+            .append(&self.gas_limit.low_u64())
             .append_list(&self.extra_data)
             .append(&self.proof)
             .append(&self.call_system_script_count)

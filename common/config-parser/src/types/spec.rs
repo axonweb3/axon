@@ -12,7 +12,8 @@ use common_crypto::Secp256k1RecoverablePrivateKey;
 use protocol::{
     codec::{decode_256bits_key, deserialize_address},
     types::{
-        HardforkInfoInner, Header, Key256Bits, Metadata, H160, H256, RLP_EMPTY_LIST, RLP_NULL, U256,
+        HardforkInfoInner, Header, Key256Bits, Metadata, H160, H256, RLP_EMPTY_LIST, RLP_NULL,
+        U256, U64,
     },
 };
 
@@ -36,7 +37,7 @@ pub struct ChainSpec {
 pub struct Genesis {
     pub timestamp:        u64,
     pub hardforks:        Vec<HardforkName>,
-    pub base_fee_per_gas: U256,
+    pub base_fee_per_gas: U64,
     pub chain_id:         u64,
 }
 

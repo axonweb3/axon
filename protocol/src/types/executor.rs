@@ -6,7 +6,7 @@ use rlp_derive::{RlpDecodable, RlpEncodable};
 use serde::{Deserialize, Serialize};
 
 use crate::types::{
-    Bloom, ExtraData, Hash, Hasher, Header, MerkleRoot, Proposal, H160, H256, U256,
+    Bloom, ExtraData, Hash, Hasher, Header, MerkleRoot, Proposal, H160, H256, U256, U64,
 };
 
 use super::Hex;
@@ -56,8 +56,8 @@ pub struct ExecutorContext {
     pub chain_id:               U256,
     pub origin:                 H160,
     pub gas_price:              U256,
-    pub block_gas_limit:        U256,
-    pub block_base_fee_per_gas: U256,
+    pub block_gas_limit:        U64,
+    pub block_base_fee_per_gas: U64,
     pub extra_data:             Vec<ExtraData>,
 }
 

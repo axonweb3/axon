@@ -7,10 +7,11 @@ use protocol::trie::Trie as _;
 use protocol::types::{
     Account, BigEndianHash, Block, BlockNumber, Bytes, CkbRelatedInfo, EthAccountProof,
     EthStorageProof, ExecutorContext, HardforkInfo, HardforkInfoInner, Hash, Header, Hex, Metadata,
-    Proposal, Receipt, SignedTransaction, TxResp, H160, H256, MAX_BLOCK_GAS_LIMIT, NIL_DATA,
-    RLP_NULL, U256,
+    Proposal, Receipt, SignedTransaction, TxResp, H160, H256, NIL_DATA, RLP_NULL, U256, U64,
 };
-use protocol::{async_trait, codec::ProtocolCodec, trie, ProtocolResult};
+use protocol::{
+    async_trait, codec::ProtocolCodec, constants::MAX_BLOCK_GAS_LIMIT, trie, ProtocolResult,
+};
 
 use core_executor::{
     system_contract::metadata::MetadataHandle, AxonExecutor, AxonExecutorReadOnlyAdapter, MPTTrie,
@@ -193,8 +194,8 @@ where
         _ctx: Context,
         from: Option<H160>,
         to: Option<H160>,
-        gas_price: Option<U256>,
-        gas_limit: Option<U256>,
+        gas_price: Option<U64>,
+        gas_limit: Option<U64>,
         value: U256,
         data: Vec<u8>,
         estimate: bool,
@@ -203,7 +204,9 @@ where
     ) -> ProtocolResult<TxResp> {
         let mut exec_ctx = ExecutorContext::from(mock_header);
         exec_ctx.origin = from.unwrap_or_default();
-        exec_ctx.gas_price = gas_price.unwrap_or_else(U256::one);
+        exec_ctx.gas_price = gas_price
+            .map(|p| U256::from(p.low_u64()))
+            .unwrap_or_else(U256::one);
 
         let backend = AxonExecutorReadOnlyAdapter::from_root(
             state_root,
@@ -212,7 +215,7 @@ where
             exec_ctx,
         )?;
         let gas_limit = gas_limit
-            .map(|gas| gas.as_u64())
+            .map(|gas| gas.low_u64())
             .unwrap_or(MAX_BLOCK_GAS_LIMIT);
 
         Ok(AxonExecutor.call(&backend, gas_limit, from, to, value, data, estimate))

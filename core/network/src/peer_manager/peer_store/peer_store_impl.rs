@@ -21,10 +21,6 @@ use crate::{
 };
 
 /// Peer store
-///
-/// | -- choose to identify --| --- choose to feeler --- | --      delete     --
-/// | | 1      | 2     | 3      | 4    | 5    | 6   | 7    | More than seven
-/// days  |
 #[derive(Default)]
 pub struct PeerStore {
     addr_manager: Manager,
