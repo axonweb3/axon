@@ -78,7 +78,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         repository: axonweb3/axon-hardfork-test
-        ref: b1f768de8be10604cad882474c0dcfa19c0a93ea
+        ref: 69293ac366991cf5830ab8366a85d72449daeadc
         path: axon-hardfork-test
 
     - name: Choose network
@@ -96,6 +96,8 @@ jobs:
       working-directory: axon-hardfork-test
       run: |
         npm install
+        npx hardhat test --grep "transfer demo"
+        npx hardhat test test/verifyProof.ts --network proof
         npx hardhat test --grep "deploy a normal contract"
         npx hardhat test --grep "deploy a big contract larger than max_contract_limit"
         npx hardhat test --grep "check hardfork info before hardfork"
