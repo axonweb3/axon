@@ -1814,9 +1814,11 @@ dependencies = [
 name = "core-cli"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "axon-protocol",
  "clap 4.4.6",
  "common-config-parser",
+ "common-crypto",
  "common-logger",
  "common-version",
  "core-run",
@@ -1824,6 +1826,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "tentacle-secio",
  "thiserror",
 ]
 
