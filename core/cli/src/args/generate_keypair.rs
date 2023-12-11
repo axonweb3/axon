@@ -1,4 +1,8 @@
-use std::{fs::File, io::Write, path::PathBuf};
+use std::{
+    fs::File,
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 use clap::Parser;
 use serde::Serialize;
@@ -35,12 +39,12 @@ impl GenerateKeypairArgs {
     pub(crate) fn execute(self) -> Result<()> {
         let Self { num, path } = self;
         let mut keypairs = Vec::with_capacity(num);
-        let path = PathBuf::from(path);
+        let path = Path::new(&path);
 
         for i in 0..num {
             let key_pair = Keypair::generate(i)?;
             write_private_keys(
-                &path,
+                path,
                 key_pair.net_private_key.as_bytes(),
                 key_pair.bls_private_key.as_bytes(),
                 i,
@@ -94,7 +98,7 @@ impl Keypair {
             public_key:      Hex::encode(&pubkey),
             address:         Address::from_pubkey_bytes(pubkey).map_err(Error::Running)?,
             peer_id:         Hex::encode(secio_keypair.public_key().peer_id().to_base58()),
-            bls_private_key: Hex::encode(bls_seckey.to_vec()),
+            bls_private_key: Hex::encode(&bls_seckey),
             bls_public_key:  Hex::encode(bls_pub_key.to_bytes()),
         })
     }
@@ -105,7 +109,7 @@ struct Output {
     keypairs: Vec<Keypair>,
 }
 
-fn write_private_keys(path: &PathBuf, net_key: Bytes, bls_key: Bytes, index: usize) -> Result<()> {
+fn write_private_keys(path: &Path, net_key: Bytes, bls_key: Bytes, index: usize) -> Result<()> {
     let write = |path: PathBuf, data: Bytes| -> Result<()> {
         let mut file = File::create(path).map_err(Error::WritingPrivateKey)?;
         file.write_all(&data).map_err(Error::WritingPrivateKey)?;
@@ -113,9 +117,9 @@ fn write_private_keys(path: &PathBuf, net_key: Bytes, bls_key: Bytes, index: usi
         Ok(())
     };
 
-    let mut bls_key_path = path.clone();
+    let mut bls_key_path = path.to_path_buf();
     bls_key_path.push(format!("bls_{}.key", index));
-    let mut net_key_path = path.clone();
+    let mut net_key_path = path.to_path_buf();
     net_key_path.push(format!("net_{}.key", index));
 
     write(bls_key_path, bls_key)?;
