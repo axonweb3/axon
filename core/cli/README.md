@@ -55,7 +55,8 @@ Then, update the `bootstraps` in [config](../chain/config.toml) file. Fill the g
 [[network.bootstraps]]
 multi_address = "/ip4/127.0.0.1/tcp/8001/p2p/QmbZEzvonMiPiioRpYeVWxngjN42FHC3EHXjeo2C7o2NDZ"
 ```
-Finally, set the `net_privkey_file` and `bls_privkey_file` with the generated private key file path in [config](../chain/config.toml) file.
+
+Finally, set the `net_privkey_file` and `bls_privkey_file` with the generated private key file path in [config](../../devtools/chain/config.toml) file.
 
 ### Recover Public Key and Peer ID
 
