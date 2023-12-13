@@ -1,6 +1,6 @@
 pub mod message;
 
-use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::{collections::HashMap, error::Error, marker::PhantomData, sync::Arc, time::Duration};
 
 use dashmap::DashMap;
@@ -11,6 +11,7 @@ use futures::{
 use log::{debug, error};
 use parking_lot::Mutex;
 
+use protocol::constants::{MAX_GAS_LIMIT, MIN_TRANSACTION_GAS_LIMIT};
 use protocol::traits::{
     Context, Gossip, Interoperation, MemPoolAdapter, PeerTrust, Priority, ReadOnlyStorage, Rpc,
     TrustFeedback,
@@ -122,7 +123,6 @@ pub struct DefaultMemPoolAdapter<C, N, S, DB, I> {
     trie_db: Arc<DB>,
 
     addr_nonce:  DashMap<H160, (U64, U256)>,
-    gas_limit:   AtomicU64,
     max_tx_size: AtomicUsize,
     chain_id:    u64,
 
@@ -146,7 +146,6 @@ where
         storage: Arc<S>,
         trie_db: Arc<DB>,
         chain_id: u64,
-        gas_limit: u64,
         max_tx_size: usize,
         broadcast_txs_size: usize,
         broadcast_txs_interval: u64,
@@ -168,7 +167,6 @@ where
             trie_db,
 
             addr_nonce: DashMap::new(),
-            gas_limit: AtomicU64::new(gas_limit),
             max_tx_size: AtomicUsize::new(max_tx_size),
             chain_id,
 
@@ -253,7 +251,25 @@ where
 
     fn verify_gas_limit(&self, ctx: Context, stx: &SignedTransaction) -> ProtocolResult<()> {
         let gas_limit_tx = stx.transaction.unsigned.gas_limit();
-        if gas_limit_tx > &U64::from(self.gas_limit.load(Ordering::Acquire)) {
+        if gas_limit_tx < &(MIN_TRANSACTION_GAS_LIMIT.into()) {
+            if ctx.is_network_origin_txs() {
+                self.network.report(
+                    ctx,
+                    TrustFeedback::Bad(format!(
+                        "Mempool under gas limit of tx {:#x}",
+                        stx.transaction.hash
+                    )),
+                );
+            }
+
+            return Err(MemPoolError::UnderGasLimit {
+                tx_hash:      stx.transaction.hash,
+                gas_limit_tx: gas_limit_tx.low_u64(),
+            }
+            .into());
+        }
+
+        if gas_limit_tx > &(MAX_GAS_LIMIT.into()) {
             if ctx.is_network_origin_txs() {
                 self.network.report(
                     ctx,
@@ -263,10 +279,10 @@ where
                     )),
                 );
             }
+
             return Err(MemPoolError::ExceedGasLimit {
-                tx_hash:          stx.transaction.hash,
-                gas_limit_tx:     gas_limit_tx.low_u64(),
-                gas_limit_config: self.gas_limit.load(Ordering::Acquire),
+                tx_hash:      stx.transaction.hash,
+                gas_limit_tx: gas_limit_tx.low_u64(),
             }
             .into());
         }
@@ -474,10 +490,9 @@ where
         &self,
         _context: Context,
         _state_root: MerkleRoot,
-        cycles_limit: u64,
+        _cycles_limit: u64,
         max_tx_size: u64,
     ) {
-        self.gas_limit.store(cycles_limit, Ordering::Release);
         self.max_tx_size
             .store(max_tx_size as usize, Ordering::Release);
         self.addr_nonce.clear();

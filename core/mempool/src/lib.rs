@@ -391,15 +391,23 @@ pub enum MemPoolError {
     },
 
     #[display(
-        fmt = "Tx: {:?} exceeds cycle limit, tx: {}, config: {}",
+        fmt = "Tx: {:?} exceeds 30000000, tx gas limit {}",
         tx_hash,
-        gas_limit_tx,
-        gas_limit_config
+        gas_limit_tx
     )]
     ExceedGasLimit {
-        tx_hash:          Hash,
-        gas_limit_config: u64,
-        gas_limit_tx:     u64,
+        tx_hash:      Hash,
+        gas_limit_tx: u64,
+    },
+
+    #[display(
+        fmt = "Tx: {:?} gas price is less than 21000, tx gas limit {}",
+        tx_hash,
+        gas_limit_tx
+    )]
+    UnderGasLimit {
+        tx_hash:      Hash,
+        gas_limit_tx: u64,
     },
 
     #[display(fmt = "Tx nonce {} is invalid current nonce {}", tx_nonce, current)]

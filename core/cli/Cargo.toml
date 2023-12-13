@@ -5,14 +5,17 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1.0"
 clap = { version = "4.4", features = ["cargo", "string", "derive"] }
 semver = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tempfile = "3.6"
+tentacle-secio = "0.6"
 thiserror = "1.0"
 
 common-config-parser = { path = "../../common/config-parser" }
+common-crypto ={ path = "../../common/crypto" }
 common-logger = { path = "../../common/logger" }
 common-version = { path = "../../common/version" }
 core-run = { path = "../../core/run" }
