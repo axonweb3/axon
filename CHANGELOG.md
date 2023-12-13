@@ -8,6 +8,7 @@
 * fix!: fix the implementation of Axon Tries ([\#1580](https://github.com/axonweb3/axon/pull/1580))
 * refactor!: call reserved system contract address is forbidden ([\#1597](https://github.com/axonweb3/axon/pull/1597))
 * refactor!: change many U256 type to U64 ([\#1591](https://github.com/axonweb3/axon/pull/1591))
+* fix(mempool)!: check gas limit range ([\#1634](https://github.com/axonweb3/axon/pull/1634))
 
 ### FEATURES
 
@@ -17,7 +18,6 @@
 * feat: add `ckb_blake2b` precompile contract ([\#1555](https://github.com/axonweb3/axon/pull/1555))
 * feat: add ckb mbt proof verify precompile contract ([\#1578](https://github.com/axonweb3/axon/pull/1578))
 * feat: support stop at specific height ([\#1581](https://github.com/axonweb3/axon/pull/1581))
-
 
 ### BUG FIXES
 
@@ -45,6 +45,7 @@
 * refactor: rename Proof.block_hash serde to proposal_hash ([\#1618](https://github.com/axonweb3/axon/pull/1618))
 * refactor: forbid call eth_getStorageAt to system contract accounts ([\#1619](https://github.com/axonweb3/axon/pull/1619))
 * refactor: change estimate gas calculation logic ([\#1603](https://github.com/axonweb3/axon/pull/1603), [\#1626](https://github.com/axonweb3/axon/pull/1626))
+* refactor(cli): update keypair generate command ([\#1621](https://github.com/axonweb3/axon/pull/1621))
 
 ### CHORE
 * ci: adjust CI after migrating the test projects ([\#1513](https://github.com/axonweb3/axon/pull/1513))
