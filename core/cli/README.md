@@ -7,7 +7,7 @@ Axon CLI is a command line tool for Axon framework. It is included in the Axon b
 ### Generate Keypair
 
 ```bash
-./target/release/axon generate-keypair -n 1
+./target/release/axon generate-keypair -n 1 -p path-to-save-private-keys
 ```
 
 Example Output:
