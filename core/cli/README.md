@@ -49,7 +49,7 @@ propose_weight = 1
 vote_weight = 1
 ```
 
-Then, update the `bootstraps` in [config](../chain/config.toml) file. Fill the generated `peer_id` to the `multi_address` For example:
+Then, update the `bootstraps` in the [config](../../devtools/chain/config.toml) file. Fill the generated `peer_id` to the `multi_address` For example:
 
 ```toml
 [[network.bootstraps]]
