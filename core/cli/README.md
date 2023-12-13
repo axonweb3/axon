@@ -1,14 +1,15 @@
-# Axon Keypair Generator
+# Axon CLI
 
-This is a simple tool to generate keypair used for Axon. 
+Axon CLI is a command line tool for Axon framework. It is included in the Axon binary with the command of `cargo build --release`.
 
 ## Usage
 
 ### Generate Keypair
 
 ```bash
-cd devtools/keypair & cargo run -- -n number_of_keypair_to_generate -p path_to_save_private_keys
+./target/release/axon generate-keypair -n 1
 ```
+
 Example Output:
 
 ```bash
@@ -33,7 +34,7 @@ The arguments are described in the following table:
 | name | short | default value |
 |--|--|--|
 | number | n | 4 |
-| private-key-path | p | current_path/private-binary/ |
+| private-key-path | p | current_path/free-space/ |
 
 ### Update Config and Spec File
 
@@ -54,4 +55,47 @@ Then, update the `bootstraps` in [config](../chain/config.toml) file. Fill the g
 [[network.bootstraps]]
 multi_address = "/ip4/127.0.0.1/tcp/8001/p2p/QmbZEzvonMiPiioRpYeVWxngjN42FHC3EHXjeo2C7o2NDZ"
 ```
-Finally, set the `net_privkey_file` and `bls_privkey_file` with the generated private key file path in [config](../chain/config.toml) file. 
+Finally, set the `net_privkey_file` and `bls_privkey_file` with the generated private key file path in [config](../chain/config.toml) file.
+
+### Recover Public Key and Peer ID
+
+If you forget your public key and peer id, you can recover them from the private key file.
+
+```bash
+./target/release/axon recover-keypair -n path-of-net-private-key -b path-of-bls-private-key
+```
+
+The arguments are described in the following table:
+
+| name | short | default value |
+|--|--|--|
+| net-path | n | - |
+| bls-path | b | - |
+
+### Init Chain
+
+After the config and spec file are updated, you can initialize the chain with the following command:
+
+```bash
+./target/release/axon init -c path-of-config-file -s path-of-chain-spec-file
+```
+The console will print the execution result of genesis block. The arguments are described in the following table:
+
+| name | short | default value |
+|--|--|--|
+| config | c | - |
+| chain-spec | s | - |
+
+### Run Node
+
+Finally, you can run the node with the following command:
+
+```bash
+./target/release/axon run -c path-of-config-file
+```
+
+The arguments are described in the following table:
+
+| name | short | default value |
+|--|--|--|
+| config | c | - |
