@@ -256,7 +256,7 @@ where
                 self.network.report(
                     ctx,
                     TrustFeedback::Bad(format!(
-                        "Mempool exceed gas limit of tx {:#x}",
+                        "Mempool under gas limit of tx {:#x}",
                         stx.transaction.hash
                     )),
                 );
