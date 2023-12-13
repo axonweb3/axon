@@ -1,8 +1,5 @@
-use std::{
-    fs::File,
-    io::Write,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
+use std::{fs::File, io::Write};
 
 use clap::Parser;
 use serde::Serialize;
@@ -102,6 +99,29 @@ impl Keypair {
             bls_public_key:  Hex::encode(bls_pub_key.to_bytes()),
         })
     }
+
+    #[cfg(test)]
+    pub(crate) fn check(&self) {
+        use common_crypto::{BlsSignatureVerify, HashValue, ToPublicKey};
+        use tentacle_secio::KeyProvider;
+
+        let another_pubkey = Secp256k1PrivateKey::try_from(self.net_private_key.as_ref())
+            .unwrap()
+            .pub_key();
+        assert_eq!(self.public_key, Hex::encode(another_pubkey.to_bytes()));
+        assert_ne!(self.net_private_key, self.bls_private_key);
+
+        let msg = HashValue::from_bytes_unchecked(protocol::types::Hasher::digest("axon").0);
+        let net_priv_key = SecioKeyPair::secp256k1_raw_key(self.net_private_key.as_ref()).unwrap();
+        let bls_priv_key = BlsPrivateKey::try_from(self.bls_private_key.as_ref()).unwrap();
+        let net_sig = net_priv_key.sign_ecdsa(&msg).unwrap();
+        let bls_sig = bls_priv_key.sign_message(&msg);
+        let net_pub_key = net_priv_key.public_key();
+        let bls_pub_key = bls_priv_key.pub_key(&String::new());
+
+        assert!(bls_sig.verify(&msg, &bls_pub_key, &String::new()).is_ok());
+        assert!(net_priv_key.verify_ecdsa(net_pub_key.inner_ref(), &msg, net_sig));
+    }
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -125,4 +145,15 @@ fn write_private_keys(path: &Path, net_key: Bytes, bls_key: Bytes, index: usize)
     write(bls_key_path, bls_key)?;
     write(net_key_path, net_key)?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_generate_keypair() {
+        let keypair = Keypair::generate(1).unwrap();
+        keypair.check();
+    }
 }

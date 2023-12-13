@@ -49,3 +49,19 @@ fn read_private_key(path: &PathBuf) -> Result<Bytes> {
         .map_err(Error::ReadingPrivateKey)?;
     Ok(buf.into())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_read_binary_priv_keys() {
+        let net_key_path = "../../devtools/chain/net.key";
+        let bls_key_path = "../../devtools/chain/bls.key";
+        let net_private_key = read_private_key(&PathBuf::from(net_key_path)).unwrap();
+        let bls_private_key = read_private_key(&PathBuf::from(bls_key_path)).unwrap();
+        Keypair::from_private_keys(net_private_key, bls_private_key, 1)
+            .unwrap()
+            .check();
+    }
+}
