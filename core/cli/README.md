@@ -13,7 +13,7 @@ Axon CLI is a command line tool for Axon framework. It is included in the Axon b
 Example Output:
 
 ```bash
-$ cargo run -- -n 1
+$ cargo run -- -n 1 -p path-to-save-private-keys
 {
   "keypairs": [
     {
