@@ -11,13 +11,22 @@ pub enum Error {
     // Boxing so the error type isn't too large (clippy::result-large-err).
     #[error(transparent)]
     CheckingVersion(Box<CheckingVersionError>),
+
     #[error("reading data version: {0}")]
     ReadingVersion(#[source] io::Error),
     #[error("writing data version: {0}")]
     WritingVersion(#[source] io::Error),
 
+    #[error("reading private key: {0}")]
+    ReadingPrivateKey(#[source] io::Error),
+    #[error("writing private key: {0}")]
+    WritingPrivateKey(#[source] io::Error),
+
     #[error(transparent)]
     Running(ProtocolError),
+
+    #[error("crypto error: {0}")]
+    Crypto(String),
 
     #[error("internal error: {0}")]
     Internal(String),

@@ -2,7 +2,10 @@ mod args;
 mod error;
 pub(crate) mod utils;
 
-pub use args::{hardfork::HardforkArgs, init::InitArgs, run::RunArgs};
+pub use args::{
+    generate_keypair::GenerateKeypairArgs, hardfork::HardforkArgs, init::InitArgs,
+    recover_keypair::RecoverKeypairArgs, run::RunArgs,
+};
 pub use error::{CheckingVersionError, Error, Result};
 
 use clap::{CommandFactory as _, FromArgMatches as _, Parser, Subcommand};
@@ -22,6 +25,8 @@ enum Commands {
     Init(InitArgs),
     Run(RunArgs),
     Hardfork(HardforkArgs),
+    GenerateKeypair(GenerateKeypairArgs),
+    RecoverKeypair(RecoverKeypairArgs),
 }
 
 pub struct AxonCli {
@@ -62,6 +67,8 @@ impl AxonCli {
             Commands::Init(args) => args.execute(kernel_version),
             Commands::Run(args) => args.execute(application_version, kernel_version, key_provider),
             Commands::Hardfork(args) => args.execute(),
+            Commands::GenerateKeypair(args) => args.execute(),
+            Commands::RecoverKeypair(args) => args.execute(),
         }
     }
 }
