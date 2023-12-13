@@ -345,7 +345,6 @@ where
         Arc::clone(storage),
         Arc::clone(trie_db),
         current_header.chain_id,
-        current_header.gas_limit.low_u64(),
         config.pool_size as usize,
         config.broadcast_txs_size,
         config.broadcast_txs_interval,
