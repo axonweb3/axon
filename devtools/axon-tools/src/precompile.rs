@@ -1,6 +1,7 @@
 use ckb_types::utilities::{merkle_root, MerkleProof};
 use ckb_types::{packed, prelude::*};
 use ethers_contract::{EthAbiCodec, EthAbiType};
+use rlp::{Encodable, RlpStream};
 
 #[derive(EthAbiCodec, EthAbiType, Clone, Debug, PartialEq, Eq)]
 pub struct VerifyProofPayload {
@@ -13,6 +14,17 @@ pub struct VerifyProofPayload {
     pub proof:                 Proof,
 }
 
+impl Encodable for VerifyProofPayload {
+    fn rlp_append(&self, s: &mut RlpStream) {
+        s.begin_list(5);
+        s.append(&self.verify_type);
+        s.append(&self.transactions_root.as_slice());
+        s.append(&self.witnesses_root.as_slice());
+        s.append(&self.raw_transactions_root.as_slice());
+        s.append(&self.proof);
+    }
+}
+
 #[derive(EthAbiCodec, EthAbiType, Clone, Debug, PartialEq, Eq)]
 pub struct Proof {
     pub indices: Vec<u32>,
@@ -20,6 +32,24 @@ pub struct Proof {
     pub leaves:  Vec<[u8; 32]>,
 }
 
+impl Encodable for Proof {
+    fn rlp_append(&self, s: &mut RlpStream) {
+        s.begin_list(3);
+        s.append_list(&self.indices);
+
+        // Append each lemma as a separate item
+        s.begin_list(self.lemmas.len());
+        for lemma in &self.lemmas {
+            s.append(&lemma.as_slice());
+        }
+
+        // Append each leaf as a separate item
+        s.begin_list(self.leaves.len());
+        for leaf in &self.leaves {
+            s.append(&leaf.as_slice());
+        }
+    }
+}
 /// A standalone function to verify the ckb-merkle-binary-tree proof.
 pub fn verify_proof(payload: VerifyProofPayload) -> Result<(), String> {
     // Firstly, verify the transactions_root is consist of the raw_transactions_root
