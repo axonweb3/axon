@@ -126,7 +126,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Prepare - Download tar
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: axon_${{ needs.version.outputs.tag }}_${{ matrix.REL_PKG }}
       - name: Upload tar assets
