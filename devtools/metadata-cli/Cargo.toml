@@ -1,0 +1,20 @@
+[package]
+name = "metadata-cli"
+version = "0.1.0"
+edition = "2021"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+name = "axon-metadata"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1.0.75"
+axon-types = { git = "https://github.com/axonweb3/axon-contract.git", rev = "b82a843" }
+clap = { version = "4.4.6", features = ["derive"] }
+hex = "0.4.3"
+molecule = "0.7.5"
+serde = { version = "1.0.193", features = ["derive"] }
+serde_json = "1.0.108"
+serde_with = "3.4.0"
+toml = "0.8.2"
