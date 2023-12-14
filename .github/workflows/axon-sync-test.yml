@@ -2,6 +2,8 @@ name: Axon sync test
 
 on:
   workflow_dispatch:
+  # TODO: remove `pull_request` event when this workflow is stable
+  pull_request:
 
 jobs:
   Build_and_Archive_Axon:
