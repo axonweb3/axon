@@ -54,7 +54,7 @@ jobs:
   Download_and_Start_Axon_Sync:
     name: Download_and_Start_Axon_Sync
     needs:  Build_and_Archive_Axon       
-    runs-on: simon-runners
+    runs-on: layer2-runners
     timeout-minutes: 1800
 
     steps:
@@ -152,7 +152,7 @@ jobs:
                          },
                          {    
                              "name": "URL",
-                             "value": "[Click and jump to Github workflow](https://github.com/Simon-Tl/axon/actions/workflows/axon-sync-test.yml)\n"
+                             "value": "[Click and jump to Github workflow](https://github.com/axonweb3/axon/actions/workflows/axon-sync-test.yml)\n"
                          }
                          
                      ]
