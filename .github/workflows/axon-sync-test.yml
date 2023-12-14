@@ -55,7 +55,7 @@ jobs:
   Download_and_Start_Axon_Sync:
     name: Download_and_Start_Axon_Sync
     needs:  Build_and_Archive_Axon       
-    runs-on: simon-runner
+    runs-on: simon-runners
     timeout-minutes: 1800
 
     steps:
