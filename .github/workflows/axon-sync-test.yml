@@ -45,11 +45,10 @@ jobs:
            target/debug/axon 
            devtools/chain/default.db-options
            devtools/chain/config.toml 
-           devtools/chain/net.key
            devtools/chain/specs/alphanet_nodes/chain-spec.toml
            devtools/ci/scripts/helper.js
            
-        retention-days: 7
+        retention-days: 3
 
         
   Download_and_Start_Axon_Sync:
