@@ -466,7 +466,7 @@ async fn execute_genesis(
         &partial_genesis,
         db_group,
         &spec.accounts,
-        &[metadata_0, metadata_1],
+        &[metadata_0.into(), metadata_1.into()],
         spec.genesis.generate_hardfork_info(),
     )?;
 

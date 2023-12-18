@@ -12,7 +12,7 @@ use common_crypto::Secp256k1RecoverablePrivateKey;
 use protocol::{
     codec::{decode_256bits_key, deserialize_address},
     types::{
-        HardforkInfoInner, Header, Key256Bits, Metadata, H160, H256, RLP_EMPTY_LIST, RLP_NULL,
+        HardforkInfoInner, Header, Key256Bits, SpecMetadata, H160, H256, RLP_EMPTY_LIST, RLP_NULL,
         U256, U64,
     },
 };
@@ -30,7 +30,7 @@ pub struct ChainSpec {
     ///
     /// All parameters are not allowed to be modified after the chain
     /// initialized.
-    pub params:   Metadata,
+    pub params:   SpecMetadata,
 }
 
 #[derive(Clone, Debug, Deserialize)]

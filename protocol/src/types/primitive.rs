@@ -311,6 +311,19 @@ impl MetadataVersion {
 #[derive(
     RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq,
 )]
+pub struct SpecMetadata {
+    pub version:          MetadataVersion,
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
+    pub epoch:            u64,
+    pub verifier_list:    Vec<Validator>,
+    #[serde(skip_deserializing)]
+    pub propose_counter:  Vec<ProposeCount>,
+    pub consensus_config: ConsensusConfig,
+}
+
+#[derive(
+    RlpEncodable, RlpDecodable, Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq,
+)]
 pub struct Metadata {
     pub version:          MetadataVersion,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
@@ -319,6 +332,18 @@ pub struct Metadata {
     #[serde(skip_deserializing)]
     pub propose_counter:  Vec<ProposeCount>,
     pub consensus_config: ConsensusConfig,
+}
+
+impl From<SpecMetadata> for Metadata {
+    fn from(value: SpecMetadata) -> Self {
+        Metadata {
+            version:          value.version,
+            epoch:            value.epoch,
+            verifier_list:    value.verifier_list.into_iter().map(Into::into).collect(),
+            propose_counter:  value.propose_counter,
+            consensus_config: value.consensus_config,
+        }
+    }
 }
 
 impl Metadata {
@@ -474,6 +499,27 @@ pub struct ConsensusValidator {
     pub vote_weight:    u32,
 }
 
+#[derive(
+    RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Display,
+)]
+#[display(
+    fmt = "Validator {{ \
+        bls_pub_key: {}, pub_key: {}, propose_weight: {}, vote_weight: {} \
+    }}",
+    bls_pub_key,
+    pub_key,
+    propose_weight,
+    vote_weight
+)]
+pub struct Validator {
+    pub bls_pub_key:    Hex,
+    pub pub_key:        Hex,
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
+    pub propose_weight: u32,
+    #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
+    pub vote_weight:    u32,
+}
+
 #[derive(RlpEncodable, RlpDecodable, Serialize, Deserialize, Clone, PartialEq, Eq, Display)]
 #[display(
     fmt = "ValidatorExtend {{ \
@@ -493,6 +539,20 @@ pub struct ValidatorExtend {
     pub propose_weight: u32,
     #[cfg_attr(feature = "hex-serialize", serde(serialize_with = "serialize_uint"))]
     pub vote_weight:    u32,
+}
+
+impl From<Validator> for ValidatorExtend {
+    fn from(value: Validator) -> Self {
+        let address =
+            Address::from_pubkey_bytes(value.pub_key.as_ref()).expect("invalid public key");
+        ValidatorExtend {
+            bls_pub_key:    value.bls_pub_key,
+            address:        address.0,
+            pub_key:        value.pub_key,
+            propose_weight: value.propose_weight,
+            vote_weight:    value.vote_weight,
+        }
+    }
 }
 
 impl PartialOrd for ValidatorExtend {
