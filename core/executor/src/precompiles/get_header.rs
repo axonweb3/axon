@@ -1,10 +1,11 @@
-use ethers::abi::AbiDecode;
+use ethers::abi::{AbiDecode, AbiEncode};
 use evm::executor::stack::{PrecompileFailure, PrecompileOutput};
 use evm::{Context, ExitError, ExitSucceed};
 
 use protocol::types::{H160, H256};
 
 use crate::precompiles::{axon_precompile_address, PrecompileContract};
+use crate::system_contract::ckb_light_client::ckb_light_client_abi;
 use crate::{err, system_contract::ckb_light_client::CkbHeaderReader, CURRENT_HEADER_CELL_ROOT};
 
 #[derive(Default, Clone)]
@@ -39,10 +40,13 @@ impl PrecompileContract for GetHeader {
             return err!("get header return None");
         }
 
+        let header =
+            <ckb_light_client_abi::Header as AbiDecode>::decode(header_opt.unwrap()).unwrap();
+
         Ok((
             PrecompileOutput {
                 exit_status: ExitSucceed::Returned,
-                output:      header_opt.unwrap(),
+                output:      AbiEncode::encode((header,)),
             },
             gas,
         ))
