@@ -14,8 +14,8 @@ use protocol::traits::{
     Context, Executor, Gossip, MemPool, Network, NodeInfo, PeerTrust, ReadOnlyStorage, Rpc, Storage,
 };
 use protocol::types::{
-    Block, Bloom, BloomInput, ExecResp, HardforkInfoInner, Header, Metadata, Proposal, RichBlock,
-    SignedTransaction, Validator, ValidatorExtend, H256,
+    Block, Bloom, BloomInput, ConsensusValidator, ExecResp, HardforkInfoInner, Header, Metadata,
+    Proposal, RichBlock, SignedTransaction, ValidatorExtend, H256,
 };
 use protocol::{lazy::CHAIN_ID, trie::DB as TrieDB, ProtocolResult};
 
@@ -213,7 +213,8 @@ async fn start<K: KeyProvider>(
     metadata_handle.init_hardfork(current_block.header.number)?;
 
     let metadata = metadata_handle.get_metadata_by_block_number(current_block.header.number)?;
-    let validators: Vec<Validator> = metadata.verifier_list.iter().map(Into::into).collect();
+    let validators: Vec<ConsensusValidator> =
+        metadata.verifier_list.iter().map(Into::into).collect();
 
     // Set args in mempool
     mempool.set_args(
@@ -416,7 +417,7 @@ async fn get_status_agent(
 
 fn run_overlord_consensus<M, N, S, DB>(
     metadata: Metadata,
-    validators: Vec<Validator>,
+    validators: Vec<ConsensusValidator>,
     current_block: Block,
     overlord_consensus: Arc<OverlordConsensus<OverlordConsensusAdapter<M, N, S, DB>>>,
 ) where
@@ -465,7 +466,7 @@ async fn execute_genesis(
         &partial_genesis,
         db_group,
         &spec.accounts,
-        &[metadata_0, metadata_1],
+        &[metadata_0.into(), metadata_1.into()],
         spec.genesis.generate_hardfork_info(),
     )?;
 

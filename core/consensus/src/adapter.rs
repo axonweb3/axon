@@ -18,8 +18,8 @@ use protocol::traits::{
     Network, PeerTrust, Priority, Rpc, Storage, SynchronizationAdapter,
 };
 use protocol::types::{
-    BatchSignedTxs, Block, BlockNumber, BlockVersion, Bytes, ExecResp, Hash, Header, Hex,
-    MerkleRoot, Metadata, PackedTxHashes, Proof, Proposal, Receipt, SignedTransaction, Validator,
+    BatchSignedTxs, Block, BlockNumber, BlockVersion, Bytes, ConsensusValidator, ExecResp, Hash,
+    Header, Hex, MerkleRoot, Metadata, PackedTxHashes, Proof, Proposal, Receipt, SignedTransaction,
     U256,
 };
 use protocol::{async_trait, tokio::task, trie, ProtocolResult};
@@ -140,7 +140,7 @@ where
         prevote_ratio: u64,
         precommit_ratio: u64,
         brake_ratio: u64,
-        validators: Vec<Validator>,
+        validators: Vec<ConsensusValidator>,
     ) -> ProtocolResult<()> {
         self.overlord_handler
             .read()
