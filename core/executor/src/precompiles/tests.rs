@@ -303,11 +303,11 @@ fn test_verify_cmbt_proof() {
         proof:                 witness_proof,
     };
 
-    let input = AbiEncode::encode(raw_tx_payload);
+    let input = AbiEncode::encode((raw_tx_payload,));
     let output = vec![1u8];
     test_precompile!(CMBTVerify, &input, output, 56000);
 
-    let input = AbiEncode::encode(witness_payload);
+    let input = AbiEncode::encode((witness_payload,));
     let output = vec![1u8];
     test_precompile!(CMBTVerify, &input, output, 56000);
 }
