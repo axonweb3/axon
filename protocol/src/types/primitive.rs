@@ -468,7 +468,7 @@ impl From<(H160, u64)> for ProposeCount {
 }
 
 #[derive(RlpEncodable, RlpDecodable, Clone, Debug, PartialEq, Eq)]
-pub struct Validator {
+pub struct ConsensusValidator {
     pub pub_key:        Bytes,
     pub propose_weight: u32,
     pub vote_weight:    u32,
@@ -507,9 +507,9 @@ impl Ord for ValidatorExtend {
     }
 }
 
-impl From<&ValidatorExtend> for Validator {
+impl From<&ValidatorExtend> for ConsensusValidator {
     fn from(ve: &ValidatorExtend) -> Self {
-        Validator {
+        ConsensusValidator {
             pub_key:        ve.pub_key.as_bytes(),
             propose_weight: ve.propose_weight,
             vote_weight:    ve.vote_weight,

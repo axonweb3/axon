@@ -6,8 +6,9 @@ use std::{
 use common_crypto::Secp256k1PublicKey;
 
 use crate::types::{
-    Address, Block, BlockNumber, Bytes, ExecResp, HardforkInfoInner, Hash, Header, Hex, MerkleRoot,
-    Metadata, PackedTxHashes, Proof, Proposal, Receipt, SignedTransaction, Validator, U256,
+    Address, Block, BlockNumber, Bytes, ConsensusValidator, ExecResp, HardforkInfoInner, Hash,
+    Header, Hex, MerkleRoot, Metadata, PackedTxHashes, Proof, Proposal, Receipt, SignedTransaction,
+    U256,
 };
 use crate::{async_trait, traits::Context, ProtocolResult};
 
@@ -72,7 +73,7 @@ pub trait SynchronizationAdapter: CommonConsensusAdapter + Send + Sync {
         prevote_ratio: u64,
         precommit_ratio: u64,
         brake_ratio: u64,
-        validators: Vec<Validator>,
+        validators: Vec<ConsensusValidator>,
     ) -> ProtocolResult<()>;
 
     /// Pull some blocks from other nodes from `begin` to `end`.
