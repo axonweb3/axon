@@ -1,6 +1,6 @@
 [package]
 name = "axon"
-version = "0.3.0-alpha"
+version = "0.3.0-beta"
 authors = ["Nervos Dev <dev@nervos.org>"]
 edition = "2021"
 repository = "https://github.com/axonweb3/axon"
