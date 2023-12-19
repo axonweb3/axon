@@ -60,7 +60,7 @@ jobs:
 
     steps:
     - name: Download Axon Binary for Build_and_Archive_Axon  
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with: 
         name: axon-dir   
     - name: Replacement configuration
