@@ -3,10 +3,10 @@ use std::path::PathBuf;
 use anyhow::{Context, Result};
 use axon_types::{
     basic::{Byte33, Byte48, Identity, Uint32, Uint64},
-    metadata::{Metadata, MetadataCellData, MetadataList, ValidatorList},
+    metadata::{Metadata, MetadataCellData, MetadataCellDataReader, MetadataList, ValidatorList},
 };
 use clap::{Parser, Subcommand};
-use molecule::prelude::{Builder, Entity};
+use molecule::prelude::{Builder, Entity, Reader};
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, PickFirst};
 
@@ -15,17 +15,12 @@ use serde_helpers::{HexBytes, HexU32, HexU64};
 
 #[serde_as]
 #[derive(Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
 pub struct Validator {
     #[serde_as(as = "HexBytes")]
     pub bls_pub_key: [u8; 48],
 
     #[serde_as(as = "HexBytes")]
     pub pub_key: [u8; 33],
-
-    #[serde_as(as = "HexBytes")]
-    #[serde(default)]
-    pub address: [u8; 20],
 
     #[serde_as(deserialize_as = "PickFirst<(_, HexU64)>")]
     #[serde(default)]
@@ -42,14 +37,32 @@ pub struct Validator {
 
 impl From<Validator> for axon_types::metadata::Validator {
     fn from(value: Validator) -> Self {
+        let address =
+            axon_protocol::types::Address::from_pubkey_bytes(value.pub_key.as_slice()).unwrap();
         Self::new_builder()
-            .bls_pub_key(Byte48::from_slice(&value.bls_pub_key).unwrap())
-            .pub_key(Byte33::from_slice(&value.pub_key).unwrap())
-            .address(Identity::from_slice(&value.address).unwrap())
+            .bls_pub_key(Byte48::from_slice(value.bls_pub_key.as_slice()).unwrap())
+            .pub_key(Byte33::from_slice(value.pub_key.as_slice()).unwrap())
+            .address(Identity::from_slice(address.as_slice()).unwrap())
             .propose_count(Uint64::from_slice(&value.propose_count.to_le_bytes()).unwrap())
             .propose_weight(Uint32::from_slice(&value.propose_weight.to_le_bytes()).unwrap())
             .vote_weight(Uint32::from_slice(&value.vote_weight.to_le_bytes()).unwrap())
             .build()
+    }
+}
+
+impl From<&axon_types::metadata::ValidatorReader<'_>> for Validator {
+    fn from(value: &axon_types::metadata::ValidatorReader) -> Self {
+        Self {
+            bls_pub_key:    value.bls_pub_key().as_slice().try_into().unwrap(),
+            propose_count:  u64::from_le_bytes(
+                value.propose_count().as_slice().try_into().unwrap(),
+            ),
+            propose_weight: u32::from_le_bytes(
+                value.propose_weight().as_slice().try_into().unwrap(),
+            ),
+            pub_key:        value.pub_key().as_slice().try_into().unwrap(),
+            vote_weight:    u32::from_le_bytes(value.vote_weight().as_slice().try_into().unwrap()),
+        }
     }
 }
 
@@ -83,12 +96,14 @@ struct Cli {
 #[derive(Subcommand)]
 enum Command {
     GetData(GetData),
+    ParseData(ParseData),
 }
 
 impl Command {
     fn run(self) -> Result<()> {
         match self {
             Command::GetData(g) => g.run(),
+            Command::ParseData(p) => p.run(),
         }
     }
 }
@@ -145,6 +160,56 @@ impl GetData {
     }
 }
 
+#[derive(Parser)]
+struct ParseData {
+    #[arg(short, long)]
+    input:  PathBuf,
+    #[arg(short, long)]
+    output: Option<PathBuf>,
+}
+
+impl ParseData {
+    fn run(self) -> Result<()> {
+        let input = std::fs::read_to_string(self.input).context("read input file")?;
+        let mut output: Box<dyn std::io::Write> = if let Some(o) = self.output {
+            Box::new(
+                std::fs::OpenOptions::new()
+                    .write(true)
+                    .create(true)
+                    .truncate(true)
+                    .open(o)
+                    .context("open output file")?,
+            )
+        } else {
+            Box::new(std::io::stdout())
+        };
+
+        let input = input.trim();
+        let input = input.strip_prefix("0x").unwrap_or(input);
+        let input = hex::decode(input).context("decoding input")?;
+
+        let data = MetadataCellDataReader::from_slice(&input)
+            .context("decoding input as MetadataCellData")?;
+
+        if data.metadata().len() > 1 {
+            eprintln!("Only showing the first metadata");
+        }
+        let metadata = data.metadata().get(0).context("no metadata")?;
+
+        let result = Input {
+            validators: metadata.validators().iter().map(|v| (&v).into()).collect(),
+        };
+
+        let result = toml::to_string_pretty(&result).context("serializing result")?;
+
+        output
+            .write_all(result.as_bytes())
+            .context("writing output")?;
+
+        Ok(())
+    }
+}
+
 fn main() -> Result<()> {
     Cli::parse().command.run()
 }
@@ -154,7 +219,7 @@ mod tests {
     use anyhow::{Context, Result};
     use clap::Parser;
 
-    use super::GetData;
+    use super::{GetData, ParseData};
 
     #[test]
     fn test_get_data() -> Result<()> {
@@ -186,5 +251,15 @@ mod tests {
         .context("test spec")?;
 
         Ok(())
+    }
+
+    #[test]
+    fn test_parse_data() -> Result<()> {
+        ParseData::parse_from([
+            "parse-data",
+            "-i",
+            concat!(env!("CARGO_MANIFEST_DIR"), "/data.example.hex"),
+        ])
+        .run()
     }
 }

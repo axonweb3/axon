@@ -10,6 +10,7 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0.75"
+axon-protocol = { path = "../../protocol" }
 axon-types = { git = "https://github.com/axonweb3/axon-contract.git", rev = "b82a843" }
 clap = { version = "4.4.6", features = ["derive"] }
 hex = "0.4.3"
