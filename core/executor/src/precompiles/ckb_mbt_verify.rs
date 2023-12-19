@@ -67,7 +67,9 @@ impl PrecompileContract for CMBTVerify {
 }
 
 fn parse_input(input: &[u8]) -> Result<VerifyProofPayload, PrecompileFailure> {
-    <VerifyProofPayload as AbiDecode>::decode(input).map_err(|_| err!(_, "decode input"))
+    <(VerifyProofPayload,) as AbiDecode>::decode(input)
+        .map(|r| r.0)
+        .map_err(|_| err!(_, "decode input"))
 }
 
 fn inner_verify_proof(payload: VerifyProofPayload) -> Result<(), PrecompileFailure> {

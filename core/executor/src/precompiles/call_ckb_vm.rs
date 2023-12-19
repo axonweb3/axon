@@ -55,11 +55,11 @@ impl PrecompileContract for CallCkbVM {
 
 fn parse_input(input: &[u8]) -> Result<(CellDep, Vec<Bytes>), PrecompileFailure> {
     let payload =
-        <CallCkbVmPayload as AbiDecode>::decode(input).map_err(|_| err!(_, "decode input"))?;
+        <(CallCkbVmPayload,) as AbiDecode>::decode(input).map_err(|_| err!(_, "decode input"))?;
 
     Ok((
-        payload.cell,
-        payload.inputs.into_iter().map(|i| i.0).collect(),
+        payload.0.cell,
+        payload.0.inputs.into_iter().map(|i| i.0).collect(),
     ))
 }
 
