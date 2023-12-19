@@ -74,15 +74,15 @@ jobs:
         EOF
       timeout-minutes: 1
 
-    - name: Checkout axonweb3/axon-hardfork-test
+    - name: Checkout axonweb3/system-contract-test
       uses: actions/checkout@v4
       with:
-        repository: axonweb3/axon-hardfork-test
-        ref: b1f768de8be10604cad882474c0dcfa19c0a93ea
-        path: axon-hardfork-test
+        repository: axonweb3/system-contract-test
+        ref: 69293ac366991cf5830ab8366a85d72449daeadc
+        path: system-contract-test
 
     - name: Choose network
-      working-directory: axon-hardfork-test
+      working-directory: system-contract-test
       run: |
         node_ids=(1 2 3 4)
         random_value=$(( (RANDOM % ${#node_ids[@]}) + 1 ))
@@ -93,20 +93,26 @@ jobs:
         grep "defaultNetwork" hardhat.config.ts
 
     - name: Run test cases before hardfork
-      working-directory: axon-hardfork-test
+      working-directory: system-contract-test
       run: |
         npm install
         npx hardhat test --grep "deploy a normal contract"
         npx hardhat test --grep "deploy a big contract larger than max_contract_limit"
         npx hardhat test --grep "check hardfork info before hardfork"
 
+    - name: Run test cases to verify proof
+      working-directory: system-contract-test
+      run: |
+        npx hardhat test --grep "transfer demo"
+        npx hardhat test test/verifyProof.ts --network proof
+
     - name: Hardfork
-      working-directory: axon-hardfork-test
+      working-directory: system-contract-test
       run: |
         bash hardfork.sh ../
 
     - name: Run test cases after hardfork
-      working-directory: axon-hardfork-test
+      working-directory: system-contract-test
       run: |
         npx hardhat test --grep "check hardfork info after hardfork"
         npx hardhat test --grep "update max_contract_limit"
@@ -114,7 +120,7 @@ jobs:
 
     - name: Archive logs
       if: failure()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: multi-axon-nodes-logs
         path: |

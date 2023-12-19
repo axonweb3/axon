@@ -6,7 +6,7 @@ use overlord::types::{
 use overlord::{DurationConfig, Overlord, OverlordHandler};
 
 use protocol::traits::{Consensus, ConsensusAdapter, Context, NodeInfo};
-use protocol::types::{Proposal, Validator};
+use protocol::types::{ConsensusValidator, Proposal};
 use protocol::{
     async_trait, codec::ProtocolCodec, tokio::sync::Mutex as AsyncMutex, ProtocolResult,
 };
@@ -167,7 +167,7 @@ impl<Adapter: ConsensusAdapter + 'static> OverlordConsensus<Adapter> {
         &self,
         init_height: u64,
         interval: u64,
-        validators: Vec<Validator>,
+        validators: Vec<ConsensusValidator>,
         timer_config: Option<DurationConfig>,
     ) -> ProtocolResult<()> {
         // The address field of Node struct should use the node's secp256k1 public key
@@ -196,7 +196,7 @@ pub fn gen_overlord_status(
     prevote_ratio: u64,
     precommit_ratio: u64,
     brake_ratio: u64,
-    validators: Vec<Validator>,
+    validators: Vec<ConsensusValidator>,
 ) -> Status {
     // The address field of Node struct should use the node's secp256k1 public key
     let mut authority_list = validators

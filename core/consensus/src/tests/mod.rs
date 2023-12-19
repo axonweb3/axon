@@ -11,10 +11,10 @@ use protocol::{
     codec::hex_decode,
     traits::{CommonConsensusAdapter, Context, SynchronizationAdapter},
     types::{
-        Address, Block, BlockNumber, Bytes, Eip1559Transaction, ExecResp, Hash, Hasher, Header,
-        Hex, MerkleRoot, Metadata, Proof, Proposal, Public, Receipt, SignatureComponents,
-        SignedTransaction, TransactionAction, UnsignedTransaction, UnverifiedTransaction,
-        Validator, H160, H256, U256, U64,
+        Address, Block, BlockNumber, Bytes, ConsensusValidator, Eip1559Transaction, ExecResp, Hash,
+        Hasher, Header, Hex, MerkleRoot, Metadata, Proof, Proposal, Public, Receipt,
+        SignatureComponents, SignedTransaction, TransactionAction, UnsignedTransaction,
+        UnverifiedTransaction, H160, H256, U256, U64,
     },
     ProtocolResult,
 };
@@ -93,12 +93,12 @@ fn _mock_pub_key() -> Hex {
     Hex::from_str("0x026c184a9016f6f71a234c86b141621f38b68c78602ab06768db4d83682c616004").unwrap()
 }
 
-fn _mock_validators(len: usize) -> Vec<Validator> {
+fn _mock_validators(len: usize) -> Vec<ConsensusValidator> {
     (0..len).map(|_| _mock_validator()).collect::<Vec<_>>()
 }
 
-fn _mock_validator() -> Validator {
-    Validator {
+fn _mock_validator() -> ConsensusValidator {
+    ConsensusValidator {
         pub_key:        _mock_pub_key().as_bytes(),
         propose_weight: random::<u32>(),
         vote_weight:    random::<u32>(),
@@ -145,7 +145,7 @@ impl SynchronizationAdapter for MockSyncAdapter {
         prevote_ratio: u64,
         precommit_ratio: u64,
         brake_ratio: u64,
-        validators: Vec<Validator>,
+        validators: Vec<ConsensusValidator>,
     ) -> ProtocolResult<()> {
         Ok(())
     }

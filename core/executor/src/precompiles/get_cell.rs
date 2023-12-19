@@ -52,7 +52,7 @@ impl PrecompileContract for GetCell {
         Ok((
             PrecompileOutput {
                 exit_status: ExitSucceed::Returned,
-                output:      cell_opt.unwrap().encode(),
+                output:      AbiEncode::encode((cell_opt.unwrap(),)),
             },
             gas,
         ))

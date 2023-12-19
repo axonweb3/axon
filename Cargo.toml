@@ -41,7 +41,7 @@ members = [
     "core/storage",
     "devtools/abi-generator",
     "devtools/axon-tools",
-    "devtools/keypair",
+    "devtools/metadata-cli",
     "protocol",
 ]
 

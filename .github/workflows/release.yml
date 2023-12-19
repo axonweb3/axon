@@ -106,7 +106,7 @@ jobs:
           popd
           mv ${{ github.workspace }}/releases/axon_${{ needs.version.outputs.tag }}_${{ matrix.job.REL_PKG}} ${{ github.workspace }}
       - name: upload-zip-file
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: axon_${{ needs.version.outputs.tag }}_${{ matrix.job.REL_PKG }}
           path: axon_${{ needs.version.outputs.tag }}_${{ matrix.job.REL_PKG }}
@@ -126,7 +126,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Prepare - Download tar
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: axon_${{ needs.version.outputs.tag }}_${{ matrix.REL_PKG }}
       - name: Upload tar assets
@@ -138,22 +138,3 @@ jobs:
           asset_name: axon_${{ needs.version.outputs.tag }}_${{ matrix.REL_PKG }}
           asset_path: ${{ github.workspace }}/axon_${{ needs.version.outputs.tag }}_${{ matrix.REL_PKG }}
           asset_content_type: application/octet-stream
-
-  trigger-build-docker-image:
-    runs-on: ubuntu-22.04
-    needs:
-      - version
-    steps:
-      - uses: actions/checkout@v4
-      - name: Generate axon-bot token
-        id: generate_axon_bot_token
-        uses: wow-actions/use-app-token@v2
-        with:
-          app_id: ${{ secrets.AXON_BOT_APP_ID }}
-          private_key: ${{ secrets.AXON_BOT_PRIVATE_KEY }}
-      - name: Invoke build docker image with inputs
-        uses: aurelien-baudet/workflow-dispatch@v2
-        with:
-          workflow: Build docker image
-          token: ${{ secrets.GITHUB_TOKEN }}
-          inputs: '{ "dispatch": "${{ needs.version.outputs.tag }}" }'

@@ -193,8 +193,8 @@ fn check_state(spec: &ChainSpec, genesis_header: &Header, db_group: &DatabaseGro
     )
     .unwrap();
 
-    let metadata_0 = spec.params.clone();
-    let metadata_1 = {
+    let metadata_0: Metadata = spec.params.clone().into();
+    let metadata_1: Metadata = {
         let mut tmp = metadata_0.clone();
         tmp.epoch = metadata_0.epoch + 1;
         tmp.version.start = metadata_0.version.end + 1;

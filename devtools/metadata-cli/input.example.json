@@ -1,0 +1,66 @@
+{
+  "version": {
+    "start": "0x1",
+    "end": "0x5f5e100"
+  },
+  "epoch": "0x0",
+  "verifier_list": [
+    {
+      "bls_pub_key": "0x95a16ed1f4c43a7470917771bf820741dbd040c51967122de66dc5bc9f6eff5953a36be6c0fdf8c202a26d6f2b0f8885",
+      "pub_key": "0x035e184329714d7e3f7e39e5d96ac3be4835897adbaab85bae2558473391fa8fcf",
+      "address": "0x81fb11017e520fda13df35d1fd1a3903e384020f",
+      "propose_weight": "0x1",
+      "vote_weight": "0x1"
+    },
+    {
+      "bls_pub_key": "0xa8d1c7c4152ce4ad8eff7ee90406b6cdf27eee97f0e520b8098a88ff3873c83aa8b74d9aab3a1c15361b5d3bc9224e9a",
+      "pub_key": "0x02f0018382fef706e37faf9770c14a58d35a457c7a2fa0ec84240d50b6d74f4adb",
+      "address": "0x7249d82017b77a5006808fe020e779af0d95e12e",
+      "propose_weight": "0x1",
+      "vote_weight": "0x1"
+    },
+    {
+      "bls_pub_key": "0x8d999a5c29604f32950bfedf289f6b8e7e2f1a19f86b208d370024e709f77d1208f5e000dc4232a63064530613aa4b26",
+      "pub_key": "0x03ea501a5600c260b62ff0cdb0c227e9374643395243f026f9c73fe9aa8ebcfebd",
+      "address": "0x387f3253e85c320b5e881656447eedccf5230f22",
+      "propose_weight": "0x1",
+      "vote_weight": "0x1"
+    },
+    {
+      "bls_pub_key": "0xafefcad3f6289c0bc0a9fd0015f533dcfcc1d7ba5161ff518702fee7aec33374a08d4fa45baeef85836c1e604e8f221d",
+      "pub_key": "0x02b2daf6d950f25735f2faa129cfe2a65c70bcbd4a050c9d18a06ed0e63a91f2a9",
+      "address": "0xc384b679bbc0de6e471fdb7735c0ff2d9508ece0",
+      "propose_weight": "0x1",
+      "vote_weight": "0x1"
+    }
+  ],
+  "propose_counter": [
+    {
+      "address": "0x387f3253e85c320b5e881656447eedccf5230f22",
+      "count": "0xe605"
+    },
+    {
+      "address": "0x7249d82017b77a5006808fe020e779af0d95e12e",
+      "count": "0xe605"
+    },
+    {
+      "address": "0x81fb11017e520fda13df35d1fd1a3903e384020f",
+      "count": "0xe5f3"
+    },
+    {
+      "address": "0xc384b679bbc0de6e471fdb7735c0ff2d9508ece0",
+      "count": "0xe5ff"
+    }
+  ],
+  "consensus_config": {
+    "gas_limit": "0x3e7fffffc18",
+    "interval": "0xbb8",
+    "propose_ratio": "0xf",
+    "prevote_ratio": "0xa",
+    "precommit_ratio": "0xa",
+    "brake_ratio": "0xa",
+    "tx_num_limit": "0x4e20",
+    "max_tx_size": "0x186a0000",
+    "max_contract_limit": "0xc000"
+  }
+}
