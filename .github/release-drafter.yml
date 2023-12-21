@@ -1,5 +1,5 @@
-name-template: 'v$RESOLVED_VERSION-alpha.1'
-tag-template: 'v$RESOLVED_VERSION-alpha.1'
+name-template: "v$RESOLVED_VERSION-alpha.1"
+tag-template: "v$RESOLVED_VERSION-alpha.1"
 template: |
   # What's Changed
 
@@ -7,35 +7,35 @@ template: |
 
   **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
 categories:
-  - title: '🚀 Features'
-    label: 'feature'
-  - title: '🔥 Enhancement'
-    label: 'enhancement'
-  - title: '🐛 Bug Fixes'
-    label: 'bugfix'
-  - title: '🐝 refactor'
-    label: 'refactor'
-  - title: '🧰 Chore'
-    label: 'chore'
-  - title: '📖 Documentation'
-    label: 'document'
-  - title: '✨ Other changes'
-  - title: '⬆️ Dependency Updates'
-    label: 'dependencies'
-  - title: '🌈 Style'
-    label: 'style'
+  - title: "🚀 Features"
+    label: "feature"
+  - title: "🔥 Enhancement"
+    label: "enhancement"
+  - title: "🐛 Bug Fixes"
+    label: "bugfix"
+  - title: "🐝 refactor"
+    label: "refactor"
+  - title: "🧰 Chore"
+    label: "chore"
+  - title: "📖 Documentation"
+    label: "document"
+  - title: "✨ Other changes"
+  - title: "⬆️ Dependency Updates"
+    label: "dependencies"
+  - title: "🌈 Style"
+    label: "style"
 
 version-resolver:
   minor:
     labels:
-      - 'feature'
+      - "feature"
   patch:
     labels:
-      - 'bug'
-      - 'maintenance'
-      - 'docs'
-      - 'dependencies'
-      - 'security'
+      - "bug"
+      - "maintenance"
+      - "docs"
+      - "dependencies"
+      - "security"
 
 exclude-labels:
-  - 'skip-changelog'
+  - "skip-changelog"

@@ -3,7 +3,7 @@ name: Build docker image
 on:
   push:
     tags:
-      - '*'
+      - "*"
   workflow_dispatch:
     inputs:
       dispatch:
@@ -60,7 +60,7 @@ jobs:
     env:
       AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
       AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
-      AWS_EC2_TYPE:  "c6g.xlarge"
+      AWS_EC2_TYPE: "c6g.xlarge"
       DOCKER_USER: ${{ secrets.DOCKER_HUB_USERNAME }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
       AXON_TAG: arm64-${{needs.output_tag_name.outputs.tag_name}}
@@ -77,10 +77,10 @@ jobs:
         env:
           JOB_ID: "build-arm64-image-${{ github.repository_owner }}-${{ steps.date.outputs.date }}-in-10h"
         run: |
-         ./devtools/ci/build-arm64.sh run
+          ./devtools/ci/build-arm64.sh run
       - name: clean up
         if: ${{ always() }}
         env:
           JOB_ID: "build-arm64-image-${{ github.repository_owner }}-${{ steps.date.outputs.date }}-in-10h"
         run: |
-         ./devtools/ci/build-arm64.sh clean
+          ./devtools/ci/build-arm64.sh clean

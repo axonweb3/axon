@@ -6,7 +6,6 @@
 #   * AWS_SECRET_KEY, required, the AWS secret key
 #   * AWS_EC2_TYPE, optional, default is c6g.xlarge, the AWS EC2 type
 
-
 set -euo pipefail
 
 AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
@@ -17,7 +16,10 @@ AWS_EC2_TYPE=${AWS_EC2_TYPE:-"c6g.xlarge"}
 START_TIME=${START_TIME:-"$(date +%Y-%m-%d' '%H:%M:%S.%6N)"}
 AXON_TAG=${AXON_TAG}
 JOB_ID=${JOB_ID:-"build-arm4-$(date +'%Y-%m-%d')-in-10h"}
-SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+SCRIPT_PATH="$(
+    cd -- "$(dirname "$0")" >/dev/null 2>&1
+    pwd -P
+)"
 JOB_DIRECTORY="$(dirname "$SCRIPT_PATH")/job/$JOB_ID"
 ANSIBLE_DIRECTORY=$JOB_DIRECTORY/ansible
 ANSIBLE_INVENTORY=$JOB_DIRECTORY/ansible/inventory.yml
@@ -27,7 +29,7 @@ SSH_PUBLIC_KEY_PATH=$JOB_DIRECTORY/ssh/id.pub
 
 function job_setup() {
     mkdir -p $JOB_DIRECTORY
-    cp -r "$(dirname "$SCRIPT_PATH")/ci/ansible"   $JOB_DIRECTORY/ansible
+    cp -r "$(dirname "$SCRIPT_PATH")/ci/ansible" $JOB_DIRECTORY/ansible
     cp -r "$(dirname "$SCRIPT_PATH")/ci/terraform" $JOB_DIRECTORY/terraform
 
     ssh_gen_key
@@ -86,9 +88,9 @@ function ansible_config() {
 # Setup Ansible running environment.
 function ansible_setup() {
     cd $ANSIBLE_DIRECTORY
-    echo "image_tag: $AXON_TAG"> $JOB_DIRECTORY/ansible/config.yml
-    echo "docker_user: $DOCKER_USER">> $JOB_DIRECTORY/ansible/config.yml
-    echo "docker_password: $DOCKER_PASSWORD">> $JOB_DIRECTORY/ansible/config.yml
+    echo "image_tag: $AXON_TAG" >$JOB_DIRECTORY/ansible/config.yml
+    echo "docker_user: $DOCKER_USER" >>$JOB_DIRECTORY/ansible/config.yml
+    echo "docker_password: $DOCKER_PASSWORD" >>$JOB_DIRECTORY/ansible/config.yml
 }
 
 # Deploy CKB onto target AWS EC2 instances.
@@ -101,32 +103,27 @@ function ansible_build_docker_image() {
         -t build
 }
 
-
-
-
-
-
 function main() {
     case $1 in
-        "run")
-            job_setup
-            terraform_apply
-            ansible_build_docker_image
-            ;;
-        "setup")
-            job_setup
-            ;;
-        "terraform")
-            terraform_apply
-            ;;
-        "ansible")
-            ansible_build_docker_image
-            ;;
-        "clean")
-            terraform_destroy
-            job_clean
-            ;;
-        esac
+    "run")
+        job_setup
+        terraform_apply
+        ansible_build_docker_image
+        ;;
+    "setup")
+        job_setup
+        ;;
+    "terraform")
+        terraform_apply
+        ;;
+    "ansible")
+        ansible_build_docker_image
+        ;;
+    "clean")
+        terraform_destroy
+        job_clean
+        ;;
+    esac
 }
 
 main $*

@@ -1,38 +1,50 @@
 underlying:
-- any: ['core/consensus/src/*', 'core/mempool/src/*', 'core/executor/src/*', 'core/network/src/*', 'core/storage/src/*']
+  - any:
+      [
+        "core/consensus/src/*",
+        "core/mempool/src/*",
+        "core/executor/src/*",
+        "core/network/src/*",
+        "core/storage/src/*",
+      ]
 
 API:
-- core/api/src/*
+  - core/api/src/*
 
 interoperation:
-- core/interoperation/src/*
+  - core/interoperation/src/*
 
 crosschain:
-- any: ['core/cross-client/src/*', 'core/tx-assembler/src/*']
+  - any: ["core/cross-client/src/*", "core/tx-assembler/src/*"]
 
 devtools:
-- devtools/*
+  - devtools/*
 
 documents:
-- any: ['docs/*', README.md, CHANGELOG.md]
+  - any: ["docs/*", README.md, CHANGELOG.md]
 
 e2e:
-- tests/e2e/src/*
+  - tests/e2e/src/*
 
 contract:
-- builtin-contract/*
+  - builtin-contract/*
 
 protocol:
-- protocol/src/*
+  - protocol/src/*
 
 toolchain:
-- rust-toolchain
+  - rust-toolchain
 
 ci:
-- any: ['.github/actions/*', '.github/workflows/*']
+  - any: [".github/actions/*", ".github/workflows/*"]
 
 apm:
-- any: ['common/apm/src/*', 'common/apm-derive/src/*', 'common/memory-tracker/src/*']
+  - any:
+      [
+        "common/apm/src/*",
+        "common/apm-derive/src/*",
+        "common/memory-tracker/src/*",
+      ]
 
 config:
-- any: ['common/config-parser/src/*']
+  - any: ["common/config-parser/src/*"]

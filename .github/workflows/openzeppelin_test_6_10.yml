@@ -125,7 +125,7 @@ jobs:
           ./target/debug/axon run  \
             --config     devtools/chain/config.toml \
             >> /tmp/log 2>&1 &
-          
+
           npx zx <<'EOF'
           import { waitXBlocksPassed } from './devtools/ci/scripts/helper.js'
           await retry(3, '6s', () => waitXBlocksPassed('http://127.0.0.1:8000', 2))

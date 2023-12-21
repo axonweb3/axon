@@ -6,7 +6,7 @@ jobs:
   issue-comments:
     runs-on: ubuntu-latest
     steps:
-      - name: get assignees 
+      - name: get assignees
         uses: actions/github-script@v7
         id: assignees
         with:
@@ -29,23 +29,23 @@ jobs:
       - name: set output comments
         if: contains(github.event.issue.labels.*.name, 't:bug')
         run: |
-           comments="Please fix this bug."
-           echo "comments=$comments" >> $GITHUB_ENV
+          comments="Please fix this bug."
+          echo "comments=$comments" >> $GITHUB_ENV
       - name: set output comments
         if: contains(github.event.issue.labels.*.name, 't:feature')
         run: |
-           comments="Please develop this feature."
-           echo "comments=$comments" >> $GITHUB_ENV
+          comments="Please develop this feature."
+          echo "comments=$comments" >> $GITHUB_ENV
       - name: set output comments
         if: contains(github.event.issue.labels.*.name, 't:help')
         run: |
-           comments="Please explain this question."
-           echo "comments=$comments" >> $GITHUB_ENV
+          comments="Please explain this question."
+          echo "comments=$comments" >> $GITHUB_ENV
       - name: set output comments
         if: contains(github.event.issue.labels.*.name, 't:others')
         run: |
-           comments="Please work on it."
-           echo "comments=$comments" >> $GITHUB_ENV
+          comments="Please work on it."
+          echo "comments=$comments" >> $GITHUB_ENV
       - name: get assignees
         id: get_assignees
         run: |
@@ -55,9 +55,9 @@ jobs:
       - name: Create comment
         uses: actions-cool/issues-helper@v3
         with:
-          actions: 'create-comment'
+          actions: "create-comment"
           token: ${{ secrets.GITHUB_TOKEN }}
           issue-number: ${{ github.event.issue.number }}
           body: |
             Hello ${{ steps.get_assignees.outputs.result}}. ${{ env.comments }}
-          emoji: 'heart'
+          emoji: "heart"

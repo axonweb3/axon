@@ -44,7 +44,7 @@ resource "aws_security_group" "sg_default" {
   description = "Allow inbound access from anywhere and outbound access to all"
   vpc_id      = aws_vpc.vpc.id
 
-   ingress {
+  ingress {
     description = "ssh"
     from_port   = 22
     to_port     = 22
@@ -69,7 +69,7 @@ resource "aws_security_group" "sg_default" {
 
 resource "aws_instance" "instance" {
   key_name               = aws_key_pair.ssh.id
-  instance_type          = "${var.instance_type}"
+  instance_type          = var.instance_type
   ami                    = data.aws_ami.amazon2.id
   vpc_security_group_ids = [aws_security_group.sg_default.id]
   private_ip             = "${var.private_ip_prefix}.10"
@@ -85,7 +85,7 @@ resource "aws_instance" "instance" {
     private_key = file(var.private_key_path)
   }
   tags = {
-    Name  = "${var.prefix}-instance"
+    Name = "${var.prefix}-instance"
   }
   provisioner "remote-exec" {
     inline = [

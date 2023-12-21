@@ -206,8 +206,8 @@ These methods track the head of the chain. This is how transactions make their w
 #### Method `eth_sendRawTransaction`
 
 - `eth_sendRawTransaction(data)`
-  - `data`: [`Hex`](#type-Hex)
-- result: [`H256`](#type-H256)
+  - `data`: [`Hex`](#type-hex)
+- result: [`H256`](#type-h256)
 
 Submits a pre-signed transaction for broadcast to the Axon network.
 
@@ -247,7 +247,7 @@ Response
 #### Method `eth_blockNumber`
 
 - `eth_blockNumber()`
-- result: [`U256`](#type-U256)
+- result: [`U256`](#type-u256)
 
 Returns the current "latest" block number.
 
@@ -286,9 +286,9 @@ Response
 #### Method `eth_submitWork`
 
 - `eth_submitWork(nc,hash,summary)`
-  - `nc`: [`U256`](#type-U256)
-  - `hash`: [`H256`](#type-H256)
-  - `summary`: [`Hex`](#type-Hex)
+  - `nc`: [`U256`](#type-u256)
+  - `hash`: [`H256`](#type-h256)
+  - `summary`: [`Hex`](#type-hex)
 - result: [`bool`](#type-bool)
 
 Used for submitting a proof-of-work solution. Since the axon does not use it, so returns true forever.
@@ -333,8 +333,8 @@ Response
 #### Method `eth_submitHashrate`
 
 - `eth_submitHashrate(hash_rate,client_id)`
-  - `hash_rate`: [`Hex`](#type-Hex)
-  - `client_id`: [`Hex`](#type-Hex)
+  - `hash_rate`: [`Hex`](#type-hex)
+  - `client_id`: [`Hex`](#type-hex)
 - result: [`bool`](#type-bool)
 
 Used for submitting mining hashrate. This method always returns true.
@@ -381,9 +381,9 @@ Fetches historical records of every block back to genesis. This is like one larg
 #### Method `eth_getBlockByHash`
 
 - `eth_getBlockByHash(hash,show_rich_tx)`
-  - `hash`: [`H256`](#type-H256)
+  - `hash`: [`H256`](#type-h256)
   - `show_rich_tx`: [`bool`](#type-bool)
-- result: [`BlockView`](#type-BlockView)
+- result: [`BlockView`](#type-blockview)
 
 Returns information about a block by hash.
 
@@ -472,8 +472,8 @@ Response
 #### Method `eth_getTransactionByHash`
 
 - `eth_getTransactionByHash(blockHash)`
-  - `blockHash`: [`H256`](#type-H256)
-- result: [`TransactionView`](#type-TransactionView)
+  - `blockHash`: [`H256`](#type-h256)
+- result: [`TransactionView`](#type-transactionview)
 
 Returns the information about a transaction requested by transaction hash.
 
@@ -551,8 +551,8 @@ Response
 #### Method `eth_getBlockTransactionCountByNumber`
 
 - `eth_getBlockTransactionCountByNumber(number)`
-  - `number`: [`BlockId`](#type-BlockId)
-- result: [`U256`](#type-U256)
+  - `number`: [`BlockId`](#type-blockid)
+- result: [`U256`](#type-u256)
 
 Returns the number of transactions in a block matching the given block number.
 
@@ -593,8 +593,8 @@ Response
 #### Method `eth_getTransactionReceipt`
 
 - `eth_getTransactionReceipt(hash)`
-  - `hash`: [`H256`](#type-H256)
-- result: [`Web3Receipt`](#type-Web3Receipt)
+  - `hash`: [`H256`](#type-h256)
+- result: [`Web3Receipt`](#type-web3receipt)
 
 Returns the receipt of a transaction by transaction hash.
 
@@ -676,10 +676,10 @@ Response
 #### Method `eth_feeHistory`
 
 - `eth_feeHistory(block_count,newest_block,reward_percentiles)`
-  - `block_count`: [`U256`](#type-U256)
-  - `newest_block`: [`BlockId`](#type-BlockId)
+  - `block_count`: [`U256`](#type-u256)
+  - `newest_block`: [`BlockId`](#type-blockid)
   - `reward_percentiles`: `Array<`[`f64`](#type-f64)`>`
-- result: [`Web3FeeHistory`](#type-Web3FeeHistory)
+- result: [`Web3FeeHistory`](#type-web3feehistory)
 
 Returns base fee per gas and transaction effective priority fee per gas history for the requested block range if available. The range between headBlock-4 and headBlock is guaranteed to be available while retrieving data from the pending block and older history are optional to support. For pre-EIP-1559 blocks, the gas prices are returned as rewards and zeroes are returned for the base fee per gas.
 blockCount and newestBlock are both required parameters
@@ -733,8 +733,8 @@ Response
 #### Method `eth_getBlockTransactionCountByHash`
 
 - `eth_getBlockTransactionCountByHash(hash)`
-  - `hash`: [`Hash`](#type-Hash)
-- result: [`U256`](#type-U256)
+  - `hash`: [`Hash`](#type-hash)
+- result: [`U256`](#type-u256)
 
 Returns the number of transactions in a block from a block matching the given block hash.
 
@@ -775,9 +775,9 @@ Response
 #### Method `eth_getTransactionByBlockHashAndIndex`
 
 - `eth_getTransactionByBlockHashAndIndex(hash,position)`
-  - `hash`: [`Hash`](#type-Hash)
-  - `position`: [`U256`](#type-U256)
-- result: [`TransactionView`](#type-TransactionView)
+  - `hash`: [`Hash`](#type-hash)
+  - `position`: [`U256`](#type-u256)
+- result: [`TransactionView`](#type-transactionview)
 
 Returns information about a transaction by block hash and transaction index position.
 
@@ -856,9 +856,9 @@ Response
 #### Method `eth_getTransactionByBlockNumberAndIndex`
 
 - `eth_getTransactionByBlockNumberAndIndex(number,position)`
-  - `number`: [`BlockId`](#type-BlockId)
-  - `position`: [`U256`](#type-U256)
-- result: [`TransactionView`](#type-TransactionView)
+  - `number`: [`BlockId`](#type-blockid)
+  - `position`: [`U256`](#type-u256)
+- result: [`TransactionView`](#type-transactionview)
 
 Returns information about a transaction by block number and transaction index position.
 
@@ -937,9 +937,9 @@ Response
 #### Method `eth_getBlockByNumber`
 
 - `eth_getBlockByNumber(number,show_rich_tx)`
-  - `number`: [`BlockId`](#type-BlockId) `|` ` "earliest"``| ` ` "latest"``| ` `"pending"`
+  - `number`: [`BlockId`](#type-blockid) `|` ` "earliest"``| ` ` "latest"``| ` `"pending"`
   - `show_rich_tx`: [`bool`](#type-bool)
-- result: [`BlockView`](#type-Blockview)
+- result: [`BlockView`](#type-blockview)
 
 Returns information about a block by block number.
 
@@ -1100,9 +1100,9 @@ Methods that report the current state of all the data stored. The "state" is lik
 #### Method `eth_getTransactionCount`
 
 - `eth_getTransactionCount(address,number)`
-  - `address`: [`H160`](#type-H160)
-  - `number`: [`BlockId`](#type-BlockId)
-- result: [`U256`](#type-U256)
+  - `address`: [`H160`](#type-h160)
+  - `number`: [`BlockId`](#type-blockid)
+- result: [`U256`](#type-u256)
 
 Returns the number of transactions sent from an address.
 
@@ -1144,9 +1144,9 @@ Response
 #### Method `eth_getBalance`
 
 - `eth_getBalance(address,number)`
-  - `address`: [`H160`](#type-H160)
-  - `number`: [`BlockId`](#type-BlockId)
-- result: [`U256`](#type-U256)
+  - `address`: [`H160`](#type-h160)
+  - `number`: [`BlockId`](#type-blockid)
+- result: [`U256`](#type-u256)
 
 Returns the balance of the account of given address.
 
@@ -1188,7 +1188,7 @@ Response
 #### Method `eth_chainId`
 
 - `eth_chainId()`
-- result: [`U256`](#type-U256)
+- result: [`U256`](#type-u256)
 
 Returns the chain_id of axon network.
 
@@ -1229,7 +1229,7 @@ Response
 #### Method `net_version`
 
 - `net_version()`
-- result: [`U256`](#type-U256)
+- result: [`U256`](#type-u256)
 
 Returns the current network id.
 
@@ -1270,9 +1270,9 @@ Response
 #### Method `eth_call`
 
 - `eth_call(req,number)`
-  - `req`: [`Web3CallRequest`](#type-Web3CallRequest)
-  - `number`: [`BlockId`](#type-BlockId)
-- result: [`Hex`](#type-Hex)
+  - `req`: [`Web3CallRequest`](#type-web3callrequest)
+  - `number`: [`BlockId`](#type-blockid)
+- result: [`Hex`](#type-hex)
 
 Executes a new message call immediately without creating a transaction on the block chain.
 
@@ -1322,9 +1322,9 @@ Response
 #### Method `eth_estimateGas`
 
 - `eth_estimateGas(req,number)`
-  - `req`: [`Web3CallRequest`](#type-Web3CallRequest)
-  - `number`: [`BlockId`](#type-BlockId)
-- result: [`U256`](#type-U256)
+  - `req`: [`Web3CallRequest`](#type-web3callrequest)
+  - `number`: [`BlockId`](#type-blockid)
+- result: [`U256`](#type-u256)
 
 Generates and returns an estimate of how much gas is necessary to allow the transaction to complete. The transaction will not be added to the blockchain. Note that the estimate may be significantly more than the amount of gas actually used by the transaction, for a variety of reasons including EVM mechanics and node performance.
 
@@ -1374,9 +1374,9 @@ Response
 #### Method `eth_getCode`
 
 - `eth_getCode(address,block_number)`
-  - `address`: [`H160`](#type-H160)
-  - `block_number`: [`BlockId`](#type-BlockId)
-- result: [`Hex`](#type-Hex)
+  - `address`: [`H160`](#type-h160)
+  - `block_number`: [`BlockId`](#type-blockid)
+- result: [`Hex`](#type-hex)
 
 Returns code at a given address.
 
@@ -1420,7 +1420,7 @@ Response
 
 - `eth_gasPrice()`
 
-- result: [`U256`](#type-U256)
+- result: [`U256`](#type-u256)
 
 Returns the current price per gas in wei.
 
@@ -1539,7 +1539,7 @@ Response
 
 - `net_peerCount()`
 
-- result: [`U256`](#type-U256)
+- result: [`U256`](#type-u256)
 
 Returns number of peers currently connected to the client.
 
@@ -1578,7 +1578,7 @@ Response
 
 - `eth_syncing()`
 
-- result: [`Web3SyncStatus`](#type-Web3SyncStatus) `|` `false`
+- result: [`Web3SyncStatus`](#type-web3syncstatus) `|` `false`
 
 Returns an object with data about the sync status or false.
 
@@ -1634,8 +1634,8 @@ Or when not syncing
 #### Method `eth_getLogs`
 
 - `eth_getLogs(filter)`
-  - `filter`: [`Web3Filter`](#type-Web3Filter)
-- result: `Arrary`[`Web3Log`](#type-Web3Log)
+  - `filter`: [`Web3Filter`](#type-web3filter)
+- result: `Arrary`[`Web3Log`](#type-web3log)
 
 Returns an array of all logs matching a given filter object.
 
@@ -1650,7 +1650,7 @@ Returns an array of all logs matching a given filter object.
 
 ##### Returns
 
-- Object An object with web3 log data. See [`Web3Log`](#type-Web3Log).
+- Object An object with web3 log data. See [`Web3Log`](#type-web3log).
 
 ##### Examples
 
@@ -1704,7 +1704,7 @@ Response
 #### Method `web3_clientVersion`
 
 - `web3_clientVersion()`
-- result: [`String`](#type-String)
+- result: [`String`](#type-string)
 
 Returns the current client version.
 
@@ -1742,7 +1742,7 @@ Response
 #### Method `eth_accounts`
 
 - `eth_accounts()`
-- result: `Array<`[`Hex`](#type-Hex)`>`
+- result: `Array<`[`Hex`](#type-hex)`>`
 
 Returns a list of addresses owned by client.
 
@@ -1780,8 +1780,8 @@ Response
 #### Method `web3_sha3`
 
 - `web3_sha3(data)`
-  - `data`: [`Hex`](#type-Hex)
-- result: [`Hash`](#type-Hash)
+  - `data`: [`Hex`](#type-hex)
+- result: [`Hash`](#type-hash)
 
 Returns Keccak-256 (not the standardized SHA3-256) of the given data.
 
@@ -1820,10 +1820,10 @@ Response
 #### Method `eth_getStorageAt`
 
 - `eth_getStorageAt(address,position,number)`
-  - `address`: [`H160`](#type-H160)
-  - `position`: [`U256`](#type-U256)
-  - `number`: [`BlockId`](#type-BlockId)
-- result: [`Hex`](#type-Hex)
+  - `address`: [`H160`](#type-h160)
+  - `position`: [`U256`](#type-u256)
+  - `number`: [`BlockId`](#type-blockid)
+- result: [`Hex`](#type-hex)
 
 Returns the value from a storage position at a given address.
 
@@ -1868,7 +1868,7 @@ Response
 #### Method `eth_coinbase`
 
 - `eth_coinbase()`
-- result: [`H160`](#type-H160)
+- result: [`H160`](#type-h160)
 
 Returns the client coinbase address.
 
@@ -1908,7 +1908,7 @@ Response
 #### Method `eth_hashrate`
 
 - `eth_hashrate()`
-- result: [`U256`](#type-U256)
+- result: [`U256`](#type-u256)
 
 Returns the number of hashes per second that the node is mining with.
 
@@ -2065,25 +2065,25 @@ The Web3Filter objects.
 
 `Web3Filter` is a JSON object with the following fields.
 
-- `from_block`: [`BlockId`](#type-BlockId) - [optional, default is "latest"]
+- `from_block`: [`BlockId`](#type-blockid) - [optional, default is "latest"]
 
   hexadecimal block number, or the string "latest", "earliest" or "pending"
 
-- `to_block`: [`BlockId`](#type-BlockId) - [optional, default is "latest"]
+- `to_block`: [`BlockId`](#type-blockid) - [optional, default is "latest"]
 
   hexadecimal block number, or the string "latest", "earliest" or "pending"
 
-- `block_hash`: [`H256`](#type-H256) - [optional] With the addition of EIP-234, blockHash restricts the logs returned to the single block with the 32-byte hash blockHash.
+- `block_hash`: [`H256`](#type-h256) - [optional] With the addition of EIP-234, blockHash restricts the logs returned to the single block with the 32-byte hash blockHash.
 
   UsingblockHash is equivalent to.
 
-- `address`: [`H256`](#type-H256) - [optional] - a string representing the address (20 bytes) to check for balance
+- `address`: [`H256`](#type-h256) - [optional] - a string representing the address (20 bytes) to check for balance
 
   null when its pending.
 
   null when its pending log.
 
-- `topics`: `Array<`[`Hash`](#type-Hash)`>` - [optional] - Array of 32 Bytes DATA topics.
+- `topics`: `Array<`[`Hash`](#type-hash)`>` - [optional] - Array of 32 Bytes DATA topics.
 
   Topics are order-dependent.
 
@@ -2095,31 +2095,31 @@ The Web3Log log objects.
 
 `Web3Log` is a JSON object with the following fields.
 
-- `address`: [`H160`](#type-H160) - Hex encoded 20 Bytes - address from which this log originated.
+- `address`: [`H160`](#type-h160) - Hex encoded 20 Bytes - address from which this log originated.
 
-- `topics`: `Array<`[`H256`](#type-H256)`>` - Array of 0 to 4 32 Bytes of indexed log arguments.
+- `topics`: `Array<`[`H256`](#type-h256)`>` - Array of 0 to 4 32 Bytes of indexed log arguments.
 
   In solidity: The first topic is the hash of the signature of the event (e.g. Deposit(address,bytes32,uint256)), except you declared the event with the anonymous specifier.
 
-- `data`: [`Hex`](#type-Hex) - contains one or more 32 Bytes non-indexed arguments of the log.
+- `data`: [`Hex`](#type-hex) - contains one or more 32 Bytes non-indexed arguments of the log.
 
-- `block_hash`: [`H256`](#type-H256) - [optional] With the addition of EIP-234, blockHash restricts the logs returned to the single block with the 32-byte hash blockHash.
+- `block_hash`: [`H256`](#type-h256) - [optional] With the addition of EIP-234, blockHash restricts the logs returned to the single block with the 32-byte hash blockHash.
 
   UsingblockHash is equivalent to.
 
-- `block_number`: [`U256`](#type-U256) - the block number where this log was in.
+- `block_number`: [`U256`](#type-u256) - the block number where this log was in.
 
   null when its pending.
 
   null when its pending log.
 
-- `transaction_hash`: [`H256`](#type-H256) - Hex encoded 32 Bytes, hash of the transactions this log was created from. null when its pending log..
+- `transaction_hash`: [`H256`](#type-h256) - Hex encoded 32 Bytes, hash of the transactions this log was created from. null when its pending log..
 
-- `transaction_index`: [`U256`](#type-U256) - hexadecimal of the transactions index position log was created from.
+- `transaction_index`: [`U256`](#type-u256) - hexadecimal of the transactions index position log was created from.
 
   null when its pending log.
 
-- `log_index`: [`U256`](#type-U256) - hexadecimal of the log index position in the block.
+- `log_index`: [`U256`](#type-u256) - hexadecimal of the log index position in the block.
 
   null when its pending log.
 
@@ -2133,11 +2133,11 @@ The Web3SyncStatus objects.
 
 `Web3SyncStatus` is a JSON object with the following fields.
 
-- `starting_block`: [`U256`](#type-U256) - QUANTITY - The block at which the import started (will only be reset, after the sync reached his head)
+- `starting_block`: [`U256`](#type-u256) - QUANTITY - The block at which the import started (will only be reset, after the sync reached his head)
 
-- `current_block`: [`U256`](#type-U256) - QUANTITY - The current block, same as eth_blockNumber.
+- `current_block`: [`U256`](#type-u256) - QUANTITY - The current block, same as eth_blockNumber.
 
-- `highest_block`: [`U256`](#type-U256) -QUANTITY - The estimated highest block.
+- `highest_block`: [`U256`](#type-u256) -QUANTITY - The estimated highest block.
 
 ### Type `Web3CallRequest`
 
@@ -2147,31 +2147,31 @@ The Web3CallRequest objects.
 
 `Web3CallRequest` is a JSON object with the following fields.
 
-- `transaction_type`: [`U64`](#type-U64) - 64-bit integer that represents the type of the transaction. Axon has evolved to support 3 types of transactions: Legacy is 0x0, Eip2930 is 0x1 and Eip1559 is 0x2.
+- `transaction_type`: [`U64`](#type-u64) - 64-bit integer that represents the type of the transaction. Axon has evolved to support 3 types of transactions: Legacy is 0x0, Eip2930 is 0x1 and Eip1559 is 0x2.
 
-- `from`:[`H160`](#type-H256) - Hex encoded 20 Bytes - The address the transaction is sent from.
+- `from`:[`H160`](#type-h256) - Hex encoded 20 Bytes - The address the transaction is sent from.
 
-- `to`: [`H160`](#type-H160) - Hex encoded 20 Bytes - The address the transaction is directed to.
+- `to`: [`H160`](#type-h160) - Hex encoded 20 Bytes - The address the transaction is directed to.
 
-- `gas_price`: [`U256`](#type-U256) - [optional] hexadecimal value of the gasPrice used for each paid gas.
+- `gas_price`: [`U256`](#type-u256) - [optional] hexadecimal value of the gasPrice used for each paid gas.
 
-- `max_fee_per_gas`: [`U256`](#type-U256) - [optional] Maximum total fee (base fee + priority fee), in Wei, the sender is willing to pay per gas.
+- `max_fee_per_gas`: [`U256`](#type-u256) - [optional] Maximum total fee (base fee + priority fee), in Wei, the sender is willing to pay per gas.
 
-- `gas`: [`U256`](#type-U256) - [optional] hexadecimal value of the gas provided for the transaction execution.
+- `gas`: [`U256`](#type-u256) - [optional] hexadecimal value of the gas provided for the transaction execution.
 
   eth_call consumes zero gas, but this parameter may be needed by some executions.
 
-- `value`: [`U256`](#type-U256) - [optional] hexadecimal value of the value sent with this transaction.
+- `value`: [`U256`](#type-u256) - [optional] hexadecimal value of the value sent with this transaction.
 
-- `data`: [`Hex`](#type-Hex) - [optional] Hash of the method signature and encoded parameters.
+- `data`: [`Hex`](#type-hex) - [optional] Hash of the method signature and encoded parameters.
 
-- `nonce`: [`U256`](#type-U256) - Nonce is a sequence number, issued by the originating externally owned account, used to prevent message replay.
+- `nonce`: [`U256`](#type-u256) - Nonce is a sequence number, issued by the originating externally owned account, used to prevent message replay.
 
-- `access_list`: `Array<` [`AccessList`](#type-AccessList)`>` - The accessList specifies a list of addresses and storage keys; these addresses and storage keys are added into the accessed_addresses and accessed_storage_keys global sets.
+- `access_list`: `Array<` [`AccessList`](#type-accesslist)`>` - The accessList specifies a list of addresses and storage keys; these addresses and storage keys are added into the accessed_addresses and accessed_storage_keys global sets.
 
-- `chain_id`: [`U64`](#type-U64) - QUANTITY - The id of the chain.
+- `chain_id`: [`U64`](#type-u64) - QUANTITY - The id of the chain.
 
-- `max_priority_fee_per_gas`: [`U256`](#type-U256) - QUANTITY - (optional) determined by the user, and is paid directly to miners.
+- `max_priority_fee_per_gas`: [`U256`](#type-u256) - QUANTITY - (optional) determined by the user, and is paid directly to miners.
 
 ### Type `AccessList`
 
@@ -2191,7 +2191,7 @@ The AccessListItem objects.
 
 `AccessListItem` is a JSON object with the following fields.
 
-- `address`: [`H160`](#type-H160) - DATA, Hex encoded 20 Bytes - The addresses is added into the accessed_addresses global sets.
+- `address`: [`H160`](#type-h160) - DATA, Hex encoded 20 Bytes - The addresses is added into the accessed_addresses global sets.
 
 - `storage_keys`: `Arrar<`[`H256`]`>`(#type-H256) - DATA, Hex encoded 32 Bytes - The storage keys is added into the accessed_storage_keys global sets.
 
@@ -2203,49 +2203,49 @@ The BlockView objects.
 
 `BlockView` is a JSON object with the following fields.
 
-- `hash`: [`H256`](#type-H256) - DATA, Hex encoded 32 Bytes - hash of the block. null when its pending block.
+- `hash`: [`H256`](#type-h256) - DATA, Hex encoded 32 Bytes - hash of the block. null when its pending block.
 
-- `parent_hash`: [`H256`](#type-H256) - DATA, Hex encoded 32 Bytes - hash of the parent block.
+- `parent_hash`: [`H256`](#type-h256) - DATA, Hex encoded 32 Bytes - hash of the parent block.
 
-- `sha3_uncles`: [`H256`](#type-H256) - DATA, Hex encoded 32 Bytes - SHA3 of the uncles data in the block.
+- `sha3_uncles`: [`H256`](#type-h256) - DATA, Hex encoded 32 Bytes - SHA3 of the uncles data in the block.
 
-- `author`: [`H169`](#type-H160) - Hex encoded 20 Bytes - the creator of the block.
+- `author`: [`H169`](#type-h160) - Hex encoded 20 Bytes - the creator of the block.
 
-- `miner`: [`H160`](#type-H160) - DATA, Hex encoded 20 Bytes - the address of the beneficiary to whom the mining rewards were given.
+- `miner`: [`H160`](#type-h160) - DATA, Hex encoded 20 Bytes - the address of the beneficiary to whom the mining rewards were given.
 
-- `state_root`: [`H256`](#type-H256) - DATA, Hex encoded 32 Bytes - the root of the final state trie of the block.
+- `state_root`: [`H256`](#type-h256) - DATA, Hex encoded 32 Bytes - the root of the final state trie of the block.
 
-- `transactions_root`: [`H256`](#type-H256) - DATA, Hex encoded 32 Bytes - the root of the transaction trie of the block.
+- `transactions_root`: [`H256`](#type-h256) - DATA, Hex encoded 32 Bytes - the root of the transaction trie of the block.
 
-- `receipts_root`: [`H256`](#type-H256) - DATA, Hex encoded 32 Bytes - the root of the receipts trie of the block.
+- `receipts_root`: [`H256`](#type-h256) - DATA, Hex encoded 32 Bytes - the root of the receipts trie of the block.
 
-- `number`: [`U256`](#type-U256) - QUANTITY - the block number. null when its pending block.
+- `number`: [`U256`](#type-u256) - QUANTITY - the block number. null when its pending block.
 
-- `gas_used`: [`U256`](#type-U256) - QUANTITY - the total used gas by all transactions in this block.
+- `gas_used`: [`U256`](#type-u256) - QUANTITY - the total used gas by all transactions in this block.
 
-- `gas_limit`: [`U256`](#type-U256) - QUANTITY - the maximum gas allowed in this block.
+- `gas_limit`: [`U256`](#type-u256) - QUANTITY - the maximum gas allowed in this block.
 
-- `extra_data`: [`Hex`](#type-Hex) - DATA - the "extra data" field of this block.
+- `extra_data`: [`Hex`](#type-hex) - DATA - the "extra data" field of this block.
 
 - `logs_bloom`: [`Boolom`](#type-Boolom) - DATA, 256 Bytes - the bloom filter for the logs of the block. null when its pending block.
 
-- `timestamp`: [`U256`](#type-U256) - QUANTITY - the unix timestamp for when the block was collated.
+- `timestamp`: [`U256`](#type-u256) - QUANTITY - the unix timestamp for when the block was collated.
 
-- `difficulty`: [`U256`](#type-U256) - QUANTITY - integer of the difficulty for this block.
+- `difficulty`: [`U256`](#type-u256) - QUANTITY - integer of the difficulty for this block.
 
-- `total_difficulty`: [`U256`](#type-U256) - QUANTITY - integer of the total difficulty of the chain until this block.
+- `total_difficulty`: [`U256`](#type-u256) - QUANTITY - integer of the total difficulty of the chain until this block.
 
-- `base_fee_per_gas`: [`U256`](#type-U256) - he minimum fee per gas required for a transaction to be included in the block.
+- `base_fee_per_gas`: [`U256`](#type-u256) - he minimum fee per gas required for a transaction to be included in the block.
 
-- `uncles`: `Array<`[`U256`](#type-U256)`>` - Array - Array of uncle hashes.
+- `uncles`: `Array<`[`U256`](#type-u256)`>` - Array - Array of uncle hashes.
 
 - `transactions`:`Array<`[`RichTransactionOrHash`](#type-RichTransactionOrHash)`>` - The transactions in the block body.
 
-- `size`: [`U256`](#type-U256) - QUANTITY - integer the size of this block in bytes.
+- `size`: [`U256`](#type-u256) - QUANTITY - integer the size of this block in bytes.
 
-- `mix_hash`: [`H256`](#type-H256) - Hex encoded 32 Bytes - a unique identifier for that block.
+- `mix_hash`: [`H256`](#type-h256) - Hex encoded 32 Bytes - a unique identifier for that block.
 
-- `nonce`: [`U256`](#type-U256) - DATA, 8 Bytes - hash of the generated proof-of-work. null when its pending block.
+- `nonce`: [`U256`](#type-u256) - DATA, 8 Bytes - hash of the generated proof-of-work. null when its pending block.
 
 ### Type `Web3FeeHistory`
 
@@ -2255,14 +2255,14 @@ The Web3FeeHistory objects.
 
 `Web3FeeHistory` is a JSON object with the following fields.
 
-- `oldest_block`: [`U256`](#type-U256) - Lowest number block of the returned range.
+- `oldest_block`: [`U256`](#type-u256) - Lowest number block of the returned range.
 
-- `reward`: `Arrary<`[`U256`](#type-U256)`>` - (Optional) An array of effective priority fee per gas data points from a single block. All zeroes are returned if the block is empty.
+- `reward`: `Arrary<`[`U256`](#type-u256)`>` - (Optional) An array of effective priority fee per gas data points from a single block. All zeroes are returned if the block is empty.
 
-- `base_fee_per_gas`: `Arrary<`[`U256`](#type-U256)`>` - An array of block base fees per gas. This includes the next block after the newest of the returned range, because this value can be derived from the newest block.
+- `base_fee_per_gas`: `Arrary<`[`U256`](#type-u256)`>` - An array of block base fees per gas. This includes the next block after the newest of the returned range, because this value can be derived from the newest block.
   Zeroes are returned for pre-EIP-1559 blocks.
 
-- `gas_used_ratio`: `Arrary<`[`U256`](#type-U256)`>` - An array of block gas used ratios. These are calculated as the ratio of gasUsed and gasLimit.
+- `gas_used_ratio`: `Arrary<`[`U256`](#type-u256)`>` - An array of block gas used ratios. These are calculated as the ratio of gasUsed and gasLimit.
 
 ### Type `Web3Receipt`
 
@@ -2272,35 +2272,35 @@ The Web3Receipt objects.
 
 `Web3Receipt` is a JSON object with the following fields.
 
-- `block_number`: [`U256`](#type-U256) - QUANTITY - block number where this transaction was in.
+- `block_number`: [`U256`](#type-u256) - QUANTITY - block number where this transaction was in.
 
-- `block_hash`: [`H256`](#type-H256) - DATA, Hex encoded 32 Bytes - hash of the block where this transaction was in.
+- `block_hash`: [`H256`](#type-h256) - DATA, Hex encoded 32 Bytes - hash of the block where this transaction was in.
 
-- `contract_address`: [`H160`](#type-H160) - DATA, Hex encoded 20 Bytes - The contract address created, if the transaction was a contract creation, otherwise null.
+- `contract_address`: [`H160`](#type-h160) - DATA, Hex encoded 20 Bytes - The contract address created, if the transaction was a contract creation, otherwise null.
 
-- `cumulative_gas_used`: [`U256`](#type-U256) - QUANTITY - The total amount of gas used when this transaction was executed in the block.
+- `cumulative_gas_used`: [`U256`](#type-u256) - QUANTITY - The total amount of gas used when this transaction was executed in the block.
 
-- `effective_gas_price`: [`U256`](#type-U256) - QUANTITY - the price per gas at the time of your transaction, so the total gas cost of your transaction is effectiveGasPrice \* gasUsed
+- `effective_gas_price`: [`U256`](#type-u256) - QUANTITY - the price per gas at the time of your transaction, so the total gas cost of your transaction is effectiveGasPrice \* gasUsed
 
-- `from`: [`H160`](#type-H160) - DATA, Hex encoded 20 Bytes - address of the sender.
+- `from`: [`H160`](#type-h160) - DATA, Hex encoded 20 Bytes - address of the sender.
 
-- `gas_used`: [`U256`](#type-U256) - QUANTITY - The amount of gas used by this specific transaction alone.
+- `gas_used`: [`U256`](#type-u256) - QUANTITY - The amount of gas used by this specific transaction alone.
 
-- `logs`: `Arrary<`[`Web3ReceiptLog`](#type-Web3ReceiptLog)`>` - Array - Array of log objects, which this transaction generated.
+- `logs`: `Arrary<`[`Web3ReceiptLog`](#type-web3receiptlog)`>` - Array - Array of log objects, which this transaction generated.
 
-- `logs_bloom`: [`Bloom`](#type-Bloom) - DATA, 256 Bytes - Bloom filter for light clients to quickly retrieve related logs.
+- `logs_bloom`: [`Bloom`](#type-bloom) - DATA, 256 Bytes - Bloom filter for light clients to quickly retrieve related logs.
 
-- `state_root`: [`Hash`](#type-Hash) - DATA 32 bytes of post-transaction stateroot (pre Byzantium)
+- `state_root`: [`Hash`](#type-hash) - DATA 32 bytes of post-transaction stateroot (pre Byzantium)
 
-- `status`: [`U256`](#type-U256) - QUANTITY either 1 (success) or 0 (failure)
+- `status`: [`U256`](#type-u256) - QUANTITY either 1 (success) or 0 (failure)
 
-- `to`: [`H160`](#type-H160)- DATA, Hex encoded 20 Bytes - address of the receiver. null when its a contract creation transaction.
+- `to`: [`H160`](#type-h160)- DATA, Hex encoded 20 Bytes - address of the receiver. null when its a contract creation transaction.
 
-- `transaction_hash`: [`Hash`](#type-Hash) - DATA, Hex encoded 32 Bytes - hash of the transaction.
+- `transaction_hash`: [`Hash`](#type-hash) - DATA, Hex encoded 32 Bytes - hash of the transaction.
 
-- `transaction_index`: [`U256`](#type-U256) - QUANTITY - integer of the transactions index position in the block.
+- `transaction_index`: [`U256`](#type-u256) - QUANTITY - integer of the transactions index position in the block.
 
-- `transaction_type`: [`U64`](#type-U64) - 64-bit integer that represents the type of the transaction. Axon has evolved to support 3 types of transactions: Legacy is 0x0, Eip2930 is 0x1 and Eip1559 is 0x2.
+- `transaction_type`: [`U64`](#type-u64) - 64-bit integer that represents the type of the transaction. Axon has evolved to support 3 types of transactions: Legacy is 0x0, Eip2930 is 0x1 and Eip1559 is 0x2.
 
 ### Type `Web3ReceiptLog`
 
@@ -2310,23 +2310,23 @@ The Web3ReceiptLog objects.
 
 `Web3ReceiptLog` is a JSON object with the following fields.
 
-- `address`: [`H160`](#type-H160) - DATA, Hex encoded 20 Bytes - address from which this log originated.
+- `address`: [`H160`](#type-h160) - DATA, Hex encoded 20 Bytes - address from which this log originated.
 
-- `topics`: `Arrary<`[`H256`](#type-H256)`>` - rray of DATA - Array of 0 to 4 Hex encode 32 Bytes DATA of indexed log arguments.
+- `topics`: `Arrary<`[`H256`](#type-h256)`>` - rray of DATA - Array of 0 to 4 Hex encode 32 Bytes DATA of indexed log arguments.
 
   - In solidity: The first topic is the hash of the signature of the event (e.g. Deposit(address,bytes32,uint256)), except you declare the event with the anonymous specifier.
 
-- `data`: [`Hex`](#type-Hex)`>` - DATA - contains one or more 32 Bytes non-indexed arguments of the log.
+- `data`: [`Hex`](#type-hex)`>` - DATA - contains one or more 32 Bytes non-indexed arguments of the log.
 
-- `block_number`: [`U256`](#type-U256) - QUANTITY - the block number where this log was in. null when its pending. null when its pending log.
+- `block_number`: [`U256`](#type-u256) - QUANTITY - the block number where this log was in. null when its pending. null when its pending log.
 
-- `block_hash`: [`Hash`](#type-Hash) - DATA, Hex encode 32 Bytes - hash of the block where this log was in. null when its pending. null when its pending log.
+- `block_hash`: [`Hash`](#type-hash) - DATA, Hex encode 32 Bytes - hash of the block where this log was in. null when its pending. null when its pending log.
 
-- `transaction_hash`: [`Hash`](#type-Hash)`>` - DATA, Hex encoded 32 Bytes - hash of the transactions this log was created from. null when its pending log.
+- `transaction_hash`: [`Hash`](#type-hash)`>` - DATA, Hex encoded 32 Bytes - hash of the transactions this log was created from. null when its pending log.
 
-- `transaction_index`: [`U256`](#type-U256) - QUANTITY - integer of the transactions index position log was created from. null when its pending log.
+- `transaction_index`: [`U256`](#type-u256) - QUANTITY - integer of the transactions index position log was created from. null when its pending log.
 
-- `log_index`: [`U256`](#type-U256)`>` - QUANTITY - integer of the log index position in the block. null when its pending log.
+- `log_index`: [`U256`](#type-u256)`>` - QUANTITY - integer of the log index position in the block. null when its pending log.
 
 - `removed`: [`bool`](#type-bool) - TAG - true when the log was removed, due to a chain reorganization. false if its a valid log.
 
@@ -2442,45 +2442,45 @@ The TransactionView objects.
 
 `TransactionView` is a JSON object with the following fields.
 
-- `type_`: [`U64`](#type-U64) - 64-bit integer that represents the type of the transaction. Axon has evolved to support 3 types of transactions: Legacy is 0x0, Eip2930 is 0x1 and Eip1559 is 0x2.
+- `type_`: [`U64`](#type-u64) - 64-bit integer that represents the type of the transaction. Axon has evolved to support 3 types of transactions: Legacy is 0x0, Eip2930 is 0x1 and Eip1559 is 0x2.
 
-- `block_number`: [`U256`](#type-U256) - QUANTITY - block number where this transaction was in. null when it's pending.
+- `block_number`: [`U256`](#type-u256) - QUANTITY - block number where this transaction was in. null when it's pending.
 
-- `block_hash`: [`H256`](#type-H256) - DATA, Hex encoded 32 Bytes - hash of the block where this transaction was in. null when its pending.
+- `block_hash`: [`H256`](#type-h256) - DATA, Hex encoded 32 Bytes - hash of the block where this transaction was in. null when its pending.
 
-- `hash`: [`Hash`](#type-Hash) - DATA, Hex encoded 32 Bytes - hash of the transaction.
+- `hash`: [`Hash`](#type-hash) - DATA, Hex encoded 32 Bytes - hash of the transaction.
 
-- `nonce`: [`U256`](#type-U256) - QUANTITY - the number of transactions made by the sender prior to this one.
+- `nonce`: [`U256`](#type-u256) - QUANTITY - the number of transactions made by the sender prior to this one.
 
-- `from`: [`H160`](#type-H160) - DATA, Hex encoded 20 Bytes - address of the sender.
+- `from`: [`H160`](#type-h160) - DATA, Hex encoded 20 Bytes - address of the sender.
 
-- `to`: [`H160`](#type-H160) - DATA, Hex encoded 20 Bytes - address of the receiver. null when it's a contract creation transaction.
+- `to`: [`H160`](#type-h160) - DATA, Hex encoded 20 Bytes - address of the receiver. null when it's a contract creation transaction.
 
-- `value`: [`U256`](#type-U256) - QUANTITY - value transferred in Wei.
+- `value`: [`U256`](#type-u256) - QUANTITY - value transferred in Wei.
 
-- `gas`: [`U256`](#type-U256) - QUANTITY - gas provided by the sender.
+- `gas`: [`U256`](#type-u256) - QUANTITY - gas provided by the sender.
 
-- `gas_price`: [`U256`](#type-U256) - QUANTITY - gas price provided by the sender in Wei.
+- `gas_price`: [`U256`](#type-u256) - QUANTITY - gas price provided by the sender in Wei.
 
-- `max_fee_per_gas`: [`U256`](#type-U256) - QUANTITY - the absolute maximum you are willing to pay per unit of gas to get your transaction included in a block. For brevity and clarity, we will refer to this as the Max Fee.
+- `max_fee_per_gas`: [`U256`](#type-u256) - QUANTITY - the absolute maximum you are willing to pay per unit of gas to get your transaction included in a block. For brevity and clarity, we will refer to this as the Max Fee.
 
-- `max_priority_fee_per_gas`: [`U256`](#type-U256) - QUANTITY - (optional) determined by the user, and is paid directly to miners.
+- `max_priority_fee_per_gas`: [`U256`](#type-u256) - QUANTITY - (optional) determined by the user, and is paid directly to miners.
 
-- `raw`: [`Hex`](#type-Hex) - The raw is the signed transaction in Recursive Length Prefix (RLP) encoded form
+- `raw`: [`Hex`](#type-hex) - The raw is the signed transaction in Recursive Length Prefix (RLP) encoded form
 
-- `input`: [`Hex`](#type-Hex) - DATA - The input of the transaction.
+- `input`: [`Hex`](#type-hex) - DATA - The input of the transaction.
 
 - `public_key`: [`Input`](#type-Input) - The public key of the transaction sender.
 
-- `access_list`: [`AccessList`](#type-AccessList) - A list of addresses and storage keys; these addresses and storage keys are added into the accessed_addresses and accessed_storage_keys global sets.
+- `access_list`: [`AccessList`](#type-accesslist) - A list of addresses and storage keys; these addresses and storage keys are added into the accessed_addresses and accessed_storage_keys global sets.
 
-- `chain_id`: [`U256`](#type-U256) - QUANTITY - The id of the chain.
+- `chain_id`: [`U256`](#type-u256) - QUANTITY - The id of the chain.
 
-- `v`: [`U256`](#type-U256) - QUANTITY - ECDSA recovery id.
+- `v`: [`U256`](#type-u256) - QUANTITY - ECDSA recovery id.
 
-- `r`: [`U256`](#type-U256) - DATA, 32 Bytes - ECDSA signature r.
+- `r`: [`U256`](#type-u256) - DATA, 32 Bytes - ECDSA signature r.
 
-- `s`: [`U256`](#type-U256) - DATA, 32 Bytes - ECDSA signature s.
+- `s`: [`U256`](#type-u256) - DATA, 32 Bytes - ECDSA signature s.
 
 ##### Examples
 

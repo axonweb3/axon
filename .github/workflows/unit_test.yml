@@ -23,36 +23,36 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Cache of Cargo
-      id: cargo-test-cache
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cargo/bin/
-          ~/.cargo/registry/index/
-          ~/.cargo/registry/cache/
-          ~/.cargo/git/db/
-          target/
-        key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache of Cargo
+        id: cargo-test-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-test-${{ hashFiles('**/Cargo.lock') }}
 
-    - uses: taiki-e/install-action@nextest
-    - name: Run Rust unit-test
-      run: |
-        make test-in-separate-processes
-        du -hd1 target/debug/
-        echo "reduce the cargo cache size"
-        rm -rf target/debug/examples
-        rm -rf target/debug/incremental
-        du -hd1 target/debug/
-        ls -l ~/.cargo/bin/
-        rm -f ~/.cargo/bin/cargo-nextest
+      - uses: taiki-e/install-action@nextest
+      - name: Run Rust unit-test
+        run: |
+          make test-in-separate-processes
+          du -hd1 target/debug/
+          echo "reduce the cargo cache size"
+          rm -rf target/debug/examples
+          rm -rf target/debug/incremental
+          du -hd1 target/debug/
+          ls -l ~/.cargo/bin/
+          rm -f ~/.cargo/bin/cargo-nextest
 
   other-unit-test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-    - name: Run crosschain-test
-      run: make crosschain-test
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+      - name: Run crosschain-test
+        run: make crosschain-test

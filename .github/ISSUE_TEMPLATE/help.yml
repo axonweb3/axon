@@ -24,4 +24,3 @@ body:
       value: "Describe the problem details:"
     validations:
       required: true
-

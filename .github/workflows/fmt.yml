@@ -23,21 +23,21 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        components: rustfmt
-        toolchain: nightly
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          components: rustfmt
+          toolchain: nightly
 
-    - name: Cargo +nightly fmt --all -- --check
-      run: make check-fmt
+      - name: Cargo +nightly fmt --all -- --check
+        run: make check-fmt
 
-    - name: Install cargo-sort
-      run: |
-        which cargo-sort >/dev/null && echo "cargo-sort is installed" \
-        || (echo "cargo-sort is not installed" && cargo install cargo-sort)
+      - name: Install cargo-sort
+        run: |
+          which cargo-sort >/dev/null && echo "cargo-sort is installed" \
+          || (echo "cargo-sort is not installed" && cargo install cargo-sort)
 
-    - name: Ensure Cargo.toml dependency tables are sorted
-      run: make check-sort
+      - name: Ensure Cargo.toml dependency tables are sorted
+        run: make check-sort

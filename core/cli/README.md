@@ -31,10 +31,10 @@ $ cargo run -- -n 1 -p path-to-save-private-keys
 
 The arguments are described in the following table:
 
-| name | short | default value |
-|--|--|--|
-| number | n | 4 |
-| private-key-path | p | current_path/free-space/ |
+| name             | short | default value            |
+|------------------|-------|--------------------------|
+| number           | n     | 4                        |
+| private-key-path | p     | current_path/free-space/ |
 
 ### Update Config and Spec File
 
@@ -68,10 +68,10 @@ If you forget your public key and peer id, you can recover them from the private
 
 The arguments are described in the following table:
 
-| name | short | default value |
-|--|--|--|
-| net-path | n | - |
-| bls-path | b | - |
+| name     | short | default value |
+|----------|-------|---------------|
+| net-path | n     | -             |
+| bls-path | b     | -             |
 
 ### Init Chain
 
@@ -82,10 +82,10 @@ After the config and spec file are updated, you can initialize the chain with th
 ```
 The console will print the execution result of genesis block. The arguments are described in the following table:
 
-| name | short | default value |
-|--|--|--|
-| config | c | - |
-| chain-spec | s | - |
+| name       | short | default value |
+|------------|-------|---------------|
+| config     | c     | -             |
+| chain-spec | s     | -             |
 
 ### Run Node
 
@@ -97,6 +97,6 @@ Finally, you can run the node with the following command:
 
 The arguments are described in the following table:
 
-| name | short | default value |
-|--|--|--|
-| config | c | - |
+| name   | short | default value |
+|--------|-------|---------------|
+| config | c     | -             |

@@ -54,11 +54,11 @@ curl --location --request POST 'http://127.0.0.1:8000' \
 ```
 
 ### Access [Blockscan](http://127.0.0.1:4020)
-To access the Blockscan explorer, open your browser and visit http://127.0.0.1:4020. This will allow you to explore the Axon blockchain using the Blockscan interface.
+To access the Blockscan explorer, open your browser and visit <http://127.0.0.1:4020>. This will allow you to explore the Axon blockchain using the Blockscan interface.
 ![Blockscan](blockscan-screenshot.png)
 
-## You Are Good to Go!
-Congratulations! 
+## You Are Good to Go
+Congratulations!
 You have successfully set up and run Axon and Blockscan locally in Docker containers. You can now start exploring the Axon blockchain and interacting with the services.
 
 Next Steps: [Deploy and Interact with a Solidity Contract](https://docs.axonweb3.io/getting-started/for-dapp-devs/deploy_solidity)

@@ -24,7 +24,7 @@ jobs:
     # See https://docs.github.com/en/actions/security-guides/automatic-token-authentication#modifying-the-permissions-for-the-github_token
     permissions:
       statuses: write
-    
+
     env:
       IS_DISPATCH: ${{ github.event_name == 'workflow_dispatch' }}
       IS_REGRESSION: ${{ github.event.inputs.dispatch == 'regression' }}

@@ -5,7 +5,7 @@ All current metrics and usage
 ## API
 
 | Metric name                        | Metric types | Related Grafana panel |
-| ---------------------------------- | ------------ | --------------------- |
+|------------------------------------|--------------|-----------------------|
 | axon_api_request_total             | counter      |                       |
 | axon_api_request_result_total      | counter      | processed_tx_request  |
 | axon_api_request_time_cost_seconds | histogram    |                       |

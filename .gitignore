@@ -38,3 +38,5 @@ byzantine/tests/node_modules
 *.out
 
 node_modules/*
+
+megalinter-reports/*
