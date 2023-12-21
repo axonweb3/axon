@@ -72,91 +72,111 @@ Axon JSON-RPC allow you to interact with a local or remote axon node using HTTP,
 				- [Params](#params-13)
 				- [Returns](#returns-13)
 				- [Examples](#examples-13)
-		- [State-Methods](#state-methods)
-			- [Method `eth_getTransactionCount`](#method-eth_gettransactioncount)
+			- [Method `axon_getBlockById`](#method-axon_getblockbyid)
 				- [Params](#params-14)
 				- [Returns](#returns-14)
 				- [Examples](#examples-14)
-			- [Method `eth_getBalance`](#method-eth_getbalance)
+			- [Method `axon_getProofById`](#method-axon_getproofbyid)
 				- [Params](#params-15)
 				- [Returns](#returns-15)
 				- [Examples](#examples-15)
-			- [Method `eth_chainId`](#method-eth_chainid)
+			- [Method `axon_getMetadataByNumber`](#method-axon_getmetadatabynumber)
 				- [Params](#params-16)
 				- [Returns](#returns-16)
 				- [Examples](#examples-16)
-			- [Method `net_version`](#method-net_version)
+			- [Method `axon_getProposalByNumber`](#method-axon_getproposalbynumber)
 				- [Params](#params-17)
 				- [Returns](#returns-17)
 				- [Examples](#examples-17)
-			- [Method `eth_call`](#method-eth_call)
+			- [Method `axon_getCkbRelatedInfo`](#method-axon_getckbrelatedinfo)
 				- [Params](#params-18)
 				- [Returns](#returns-18)
 				- [Examples](#examples-18)
-			- [Method `eth_estimateGas`](#method-eth_estimategas)
+		- [State-Methods](#state-methods)
+			- [Method `eth_getTransactionCount`](#method-eth_gettransactioncount)
 				- [Params](#params-19)
 				- [Returns](#returns-19)
 				- [Examples](#examples-19)
-			- [Method `eth_getCode`](#method-eth_getcode)
+			- [Method `eth_getBalance`](#method-eth_getbalance)
 				- [Params](#params-20)
 				- [Returns](#returns-20)
 				- [Examples](#examples-20)
-			- [Method `eth_gasPrice`](#method-eth_gasprice)
+			- [Method `eth_chainId`](#method-eth_chainid)
 				- [Params](#params-21)
 				- [Returns](#returns-21)
 				- [Examples](#examples-21)
-			- [Method `net_listening`](#method-net_listening)
+			- [Method `net_version`](#method-net_version)
 				- [Params](#params-22)
 				- [Returns](#returns-22)
 				- [Examples](#examples-22)
-			- [Method `eth_mining`](#method-eth_mining)
+			- [Method `eth_call`](#method-eth_call)
 				- [Params](#params-23)
 				- [Returns](#returns-23)
 				- [Examples](#examples-23)
-			- [Method `net_peerCount`](#method-net_peercount)
+			- [Method `eth_estimateGas`](#method-eth_estimategas)
 				- [Params](#params-24)
 				- [Returns](#returns-24)
 				- [Examples](#examples-24)
-			- [Method `eth_syncing`](#method-eth_syncing)
+			- [Method `eth_getCode`](#method-eth_getcode)
 				- [Params](#params-25)
 				- [Returns](#returns-25)
 				- [Examples](#examples-25)
-			- [Method `eth_getLogs`](#method-eth_getlogs)
+			- [Method `eth_gasPrice`](#method-eth_gasprice)
 				- [Params](#params-26)
 				- [Returns](#returns-26)
 				- [Examples](#examples-26)
-			- [Method `web3_clientVersion`](#method-web3_clientversion)
+			- [Method `net_listening`](#method-net_listening)
 				- [Params](#params-27)
 				- [Returns](#returns-27)
 				- [Examples](#examples-27)
-			- [Method `eth_accounts`](#method-eth_accounts)
+			- [Method `eth_mining`](#method-eth_mining)
 				- [Params](#params-28)
 				- [Returns](#returns-28)
 				- [Examples](#examples-28)
-			- [Method `web3_sha3`](#method-web3_sha3)
+			- [Method `net_peerCount`](#method-net_peercount)
 				- [Params](#params-29)
 				- [Returns](#returns-29)
 				- [Examples](#examples-29)
-			- [Method `eth_getStorageAt`](#method-eth_getstorageat)
+			- [Method `eth_syncing`](#method-eth_syncing)
 				- [Params](#params-30)
 				- [Returns](#returns-30)
 				- [Examples](#examples-30)
-			- [Method `eth_coinbase`](#method-eth_coinbase)
+			- [Method `eth_getLogs`](#method-eth_getlogs)
 				- [Params](#params-31)
 				- [Returns](#returns-31)
 				- [Examples](#examples-31)
-			- [Method `eth_hashrate`](#method-eth_hashrate)
+			- [Method `web3_clientVersion`](#method-web3_clientversion)
 				- [Params](#params-32)
 				- [Returns](#returns-32)
 				- [Examples](#examples-32)
-			- [Method `axon_getCurrentMetadata`](#method-axon_getcurrentmetadata)
+			- [Method `eth_accounts`](#method-eth_accounts)
 				- [Params](#params-33)
 				- [Returns](#returns-33)
 				- [Examples](#examples-33)
-			- [Method `axon_getHardforkInfo`](#method-axon_gethardforkinfo)
+			- [Method `web3_sha3`](#method-web3_sha3)
 				- [Params](#params-34)
 				- [Returns](#returns-34)
 				- [Examples](#examples-34)
+			- [Method `eth_getStorageAt`](#method-eth_getstorageat)
+				- [Params](#params-35)
+				- [Returns](#returns-35)
+				- [Examples](#examples-35)
+			- [Method `eth_coinbase`](#method-eth_coinbase)
+				- [Params](#params-36)
+				- [Returns](#returns-36)
+				- [Examples](#examples-36)
+			- [Method `eth_hashrate`](#method-eth_hashrate)
+				- [Params](#params-37)
+				- [Returns](#returns-37)
+				- [Examples](#examples-37)
+			- [Method `axon_getCurrentMetadata`](#method-axon_getcurrentmetadata)
+				- [Params](#params-38)
+				- [Returns](#returns-38)
+				- [Examples](#examples-38)
+			- [Method `axon_getHardforkInfo`](#method-axon_gethardforkinfo)
+				- [Params](#params-39)
+				- [Returns](#returns-39)
+				- [Examples](#examples-39)
 	- [RPC Types](#rpc-types)
 		- [Type `Web3Filter`](#type-web3filter)
 			- [Fields](#fields)
@@ -180,24 +200,24 @@ Axon JSON-RPC allow you to interact with a local or remote axon node using HTTP,
 			- [Fields](#fields-9)
 		- [Type `BlockId`](#type-blockid)
 		- [Type `H256`](#type-h256)
-			- [Examples](#examples-35)
-		- [Type `H160`](#type-h160)
-			- [Examples](#examples-36)
-		- [Type `Hex`](#type-hex)
-			- [Examples](#examples-37)
-		- [Type `Hash`](#type-hash)
-			- [Examples](#examples-38)
-		- [Type `String`](#type-string)
-			- [Examples](#examples-39)
-		- [Type `bool`](#type-bool)
 			- [Examples](#examples-40)
+		- [Type `H160`](#type-h160)
+			- [Examples](#examples-41)
+		- [Type `Hex`](#type-hex)
+			- [Examples](#examples-42)
+		- [Type `Hash`](#type-hash)
+			- [Examples](#examples-43)
+		- [Type `String`](#type-string)
+			- [Examples](#examples-44)
+		- [Type `bool`](#type-bool)
+			- [Examples](#examples-45)
 		- [Type `f64`](#type-f64)
 		- [Type `Bloom`](#type-bloom)
 		- [Type `U64`](#type-u64)
 		- [Type `U256`](#type-u256)
 		- [Type `TransactionView`](#type-transactionview)
 			- [Fields](#fields-10)
-				- [Examples](#examples-41)
+				- [Examples](#examples-46)
 
 
 ## RPC Methods
@@ -1142,6 +1162,260 @@ Response
     "id":1
 }
 
+```
+
+#### Method `axon_getBlockById`
+
+##### Params
+
+*   `QUANTITY|TAG` - integer block number, or the string "latest", but not "earliest", see the default block parameter
+
+##### Returns
+
+The RPC returns the axon block details, not web3 compatible.
+
+##### Examples
+
+Request
+```
+{
+    "id": 2,
+    "jsonrpc": "2.0",
+    "method": "axon_getBlockById",
+    "params": ["latest"]
+}
+```
+
+Response
+```
+{
+    "jsonrpc":"2.0",
+    "result":{
+        "header":{
+            "version":"V0",
+            "prev_hash":"0xc7cc43119b4e12869ff9e43a16c7f34520232752c7c50a09256895389f5fc2b2",
+            "proposer":"0x8ab0cf264df99d83525e9e11c7e4db01558ae1b1",
+            "state_root":"0xd91b19ba782e3a278db25878e02f4e52d4a3e49f2beae20589a0d68de984cbfb",
+            "transactions_root":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+            "signed_txs_hash":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+            "receipts_root":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+            "log_bloom":"0x00000000000000000000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000001000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "timestamp":"0x6583df6b",
+            "number":"0x1ce",
+            "gas_used":"0x0",
+            "gas_limit":"0x1c9c380",
+            "extra_data":[
+            ],
+            "base_fee_per_gas":"0x539",
+            "proof":{
+                "number":"0x1cd",
+                "round":"0x0",
+                "proposal_hash":"0xce3b8b5f649e77b50eccbf2c117c481e3248aa6312863a9eeedba077bcb2b83c",
+                "signature":"0xab61d43e7cae2e0a5edaa5569a4f195bc2e759e6689f941a38cb47f927c5ac09116be9699107084c007b7caab6bf3b2614aa0f96440ef1d02766a41018294a7f92b5954d33f6539c4a186285de18ca998c6fb829cf1e3721b8ddd1665790025d",
+                "bitmap":"0x80"
+            },
+            "call_system_script_count":"0x0",
+            "chain_id":"0x41786f6e"
+        },
+        "tx_hashes":[
+        ]
+    },
+    "id":2
+}
+```
+
+#### Method `axon_getProofById`
+
+##### Params
+
+*   `QUANTITY|TAG` - integer block number, or the string "latest", but not "earliest", see the default block parameter
+
+##### Returns
+
+The RPC returns the axon block proof.
+
+##### Examples
+
+Request
+```
+{
+    "id": 2,
+    "jsonrpc": "2.0",
+    "method": "axon_getProofById",
+    "params": ["latest"]
+}
+```
+
+Response
+```
+{
+    "jsonrpc":"2.0",
+    "result":{
+        "number":"0x1d1",
+        "round":"0x0",
+        "proposal_hash":"0x42c8210c9e8df7a8d13bfcaf00d4e3f87abbb3747ac38a1cd82f9571471d0536",
+        "signature":"0xb624b749aafd1af30736097fc3d87caa55b4f2d18382c2f34522b01bfbb7d5ef75986ddf0f4db01d0b804459396c07480908a3a3c0f46eb2e16ab99d4cc81473bb60b25bac96924d9342b66bceca927fdf407209a07af7426a3cb179e8c11f91",
+        "bitmap":"0x80"
+    },
+    "id":2
+}
+```
+
+#### Method `axon_getMetadataByNumber`
+
+##### Params
+
+* `BlockNumber`: U256
+
+##### Returns
+
+Metadata struct
+
+##### Examples
+
+Request
+```
+{
+    "id": 2,
+    "jsonrpc": "2.0",
+    "method": "axon_getMetadataByNumber",
+    "params": ["0x10"]
+}
+```
+
+Response
+```
+{
+    "jsonrpc":"2.0",
+    "result":{
+        "version":{
+            "start":"0x1",
+            "end":"0x5f5e100"
+        },
+        "epoch":"0x0",
+        "verifier_list":[
+            {
+                "bls_pub_key":"0xa26e3fe1cf51bd4822072c61bdc315ac32e3d3c2e2484bb92942666399e863b4bf56cf2926383cc706ffc15dfebc85c6",
+                "pub_key":"0x031ddc35212b7fc7ff6685b17d91f77c972535aee5c7ae5684d3e72b986f08834b",
+                "address":"0x8ab0cf264df99d83525e9e11c7e4db01558ae1b1",
+                "propose_weight":"0x1",
+                "vote_weight":"0x1"
+            }
+        ],
+        "propose_counter":[
+            {
+                "address":"0x8ab0cf264df99d83525e9e11c7e4db01558ae1b1",
+                "count":"0x10"
+            }
+        ],
+        "consensus_config":{
+            "gas_limit":"0x3e7fffffc18",
+            "interval":"0xbb8",
+            "propose_ratio":"0xf",
+            "prevote_ratio":"0xa",
+            "precommit_ratio":"0xa",
+            "brake_ratio":"0xa",
+            "tx_num_limit":"0x4e20",
+            "max_tx_size":"0x186a0000",
+            "max_contract_limit":"0x6000"
+        }
+    },
+    "id":2
+}
+```
+
+
+#### Method `axon_getProposalByNumber`
+
+##### Params
+
+* `BlockNumber`: U256
+
+##### Returns
+
+Proposal struct
+
+##### Examples
+
+Request
+```
+{
+    "id": 2,
+    "jsonrpc": "2.0",
+    "method": "axon_getProposalByNumber",
+    "params": ["0x10"]
+}
+```
+
+Response
+```
+{
+    "jsonrpc":"2.0",
+    "result":{
+        "version":"V0",
+        "prev_hash":"0x7c3ed8b18b3214b12b34b3374ad199cdf4854713599e3bf5ec2c75bcf02687bd",
+        "proposer":"0x8ab0cf264df99d83525e9e11c7e4db01558ae1b1",
+        "prev_state_root":"0xd2b96eda4834846a228d318f69287b0b5f872ee09ce064a2b6fc8801a6397bc7",
+        "transactions_root":"0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+        "signed_txs_hash":"0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+        "timestamp":"0x655d96e7",
+        "number":"0x10",
+        "gas_limit":"0x1c9c380",
+        "extra_data":[
+        ],
+        "base_fee_per_gas":"0x539",
+        "proof":{
+            "number":"0xf",
+            "round":"0x0",
+            "proposal_hash":"0xe2df5afbaf2e61b6ef66be946872d549771d46744be3a8521f4945ab49779bcd",
+            "signature":"0x9603202565eb0c4fd723e9aa84b4b289f6e546b2a251a1b88ea256f8865381449fc6de3a1f226d1386cb8601b5bf526b117a8858dc989690b1b93429b3332b83ec94d4f0b7f367272cd8e266b887f8fc856e29b1b1276b2691deb3f23aa13382",
+            "bitmap":"0x80"
+        },
+        "chain_id":"0x41786f6e",
+        "call_system_script_count":"0x0",
+        "tx_hashes":[
+        ]
+    },
+    "id":2
+}
+```
+
+#### Method `axon_getCkbRelatedInfo`
+
+##### Params
+
+* None
+
+##### Returns
+
+CkbRelatedInfo struct
+
+##### Examples
+
+Request
+```
+{
+    "id": 2,
+    "jsonrpc": "2.0",
+    "method": "axon_getCkbRelatedInfo",
+    "params": []
+}
+```
+
+Response
+```
+{
+    "jsonrpc":"2.0",
+    "result":{
+		"metadata_type_id": "0x0000000000000000000000000000000000000000000000000000000000000000",
+		"checkpoint_type_id": "0x0000000000000000000000000000000000000000000000000000000000000000",
+		"xudt_args": "0x0000000000000000000000000000000000000000000000000000000000000000",
+		"stake_smt_type_id": "0x0000000000000000000000000000000000000000000000000000000000000000",
+		"delegate_smt_type_id": "0x0000000000000000000000000000000000000000000000000000000000000000",
+		"reward_smt_type_id": "0x0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "id":2
+}
 ```
 
 ### State-Methods
