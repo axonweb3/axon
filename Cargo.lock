@@ -4562,6 +4562,7 @@ name = "metadata-cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "axon-protocol",
  "axon-types",
  "clap 4.4.6",
  "hex",

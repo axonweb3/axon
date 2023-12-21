@@ -1,21 +1,18 @@
 [[verifier_list]]
 bls_pub_key = "0xa26e3fe1cf51bd4822072c61bdc315ac32e3d3c2e2484bb92942666399e863b4bf56cf2926383cc706ffc15dfebc85c6"
 pub_key = "0x031ddc35212b7fc7ff6685b17d91f77c972535aee5c7ae5684d3e72b986f08834b"
-address = "0x8ab0cf264df99d83525e9e11c7e4db01558ae1b1"
 propose_weight = "0x1"
 vote_weight = 1
 
 [[verifier_list]]
 bls_pub_key = "0x80310fa9df724b5603d283b472ed3bf85254a8a4ceda8a274b421f6cf2be1d9184267cdfe9a199d36ff14e57668a55d0"
 pub_key = "0x02b77c74eb68af3d4d6cc7884ed6709f1a2a1af0f713382a4438ec2ea3a70d4d7f"
-address = "0xf386573563c3a75dbbd269fce9782620826ddac2"
 propose_weight = 1
 vote_weight = 1
 
 [[verifier_list]]
 bls_pub_key = "0x897721e9016864141a8b982a48217f66ef318ce598aa31842cddaaebe3cd7feab17050022afa6c2123aba39938fe4142"
 pub_key = "0x027ffd6a6a231561f2afe5878b1c743323b34263d16787130b1815fe35649b0bf5"
-address = "0x8af204ac5d7cb8815a6c53a50b72d01e729d3b22"
 propose_weight = 1
 vote_weight = "0x01"
 
