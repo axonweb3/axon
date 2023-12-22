@@ -1,10 +1,9 @@
 name: cleanup caches daily
 on:
   schedule:
-    - cron: '0 0 * * *'
+    - cron: "0 0 * * *"
   # Manurally trigger
   workflow_dispatch:
-
 
 jobs:
   cleanup:
@@ -12,14 +11,14 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
-        
+
       - name: Cleanup
         run: |
           gh extension install actions/gh-actions-cache
-          
+
           REPO=${{ github.repository }}
           BRANCH="refs/pull/${{ github.event.pull_request.number }}/merge"
-     
+
           echo "Fetching list of cache key"
           cacheKeys=$(gh actions-cache list -R $REPO | cut -f 1 )
 

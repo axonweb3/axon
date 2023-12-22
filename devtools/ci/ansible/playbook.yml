@@ -30,7 +30,6 @@
       tags:
         - build
 
-
     - name: docker login and push image
       shell: docker login -u {{ docker_user }} -p {{ docker_password }} && docker push axonweb3/axon:{{ image_tag }}
       become: yes

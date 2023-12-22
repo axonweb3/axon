@@ -1,8 +1,8 @@
 name: Coverage Test
 on:
   # push:
-    # branches:
-    #   - main
+  # branches:
+  #   - main
   workflow_dispatch:
     inputs:
       dispatch:
@@ -18,7 +18,7 @@ jobs:
     steps:
       - name: Generate axon-bot token
         if: contains(github.event_name, 'workflow_dispatch') &&
-            github.repository_owner == 'axonweb3'
+          github.repository_owner == 'axonweb3'
         id: generate_axon_bot_token
         uses: wow-actions/use-app-token@v2
         with:
@@ -26,7 +26,7 @@ jobs:
           private_key: ${{ secrets.AXON_BOT_PRIVATE_KEY }}
       - name: Event is dispatch
         if: contains(github.event_name, 'workflow_dispatch') &&
-            github.repository_owner == 'axonweb3'
+          github.repository_owner == 'axonweb3'
         uses: actions/github-script@v7
         id: get_sha
         with:
@@ -88,9 +88,9 @@ jobs:
           path: cobertura.xml
   finally:
     name: Finally
-    needs: [ Coverage ]
+    needs: [Coverage]
     if: always() && contains(github.event_name, 'workflow_dispatch') &&
-        github.event.inputs.dispatch != 'regression' && github.repository_owner == 'axonweb3'
+      github.event.inputs.dispatch != 'regression' && github.repository_owner == 'axonweb3'
     runs-on: ubuntu-latest
     steps:
       - name: Generate axon-bot token

@@ -4,8 +4,8 @@ on:
     branches:
       - main
     paths:
-    - 'devtools/chain/default.db-options'
-    - 'devtools/chain/specs/multi_nodes'
+      - "devtools/chain/default.db-options"
+      - "devtools/chain/specs/multi_nodes"
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -13,7 +13,7 @@ jobs:
       - name: Git checkout
         uses: actions/checkout@v4
         with:
-         fetch-depth: 2
+          fetch-depth: 2
       - name: Git checkout devops
         uses: actions/checkout@v4
         with:
@@ -32,13 +32,13 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
         with:
-           token: ${{ secrets.TOKEN }}
-           path: ${{ github.workspace}}/axon-devops
-           signoff: false
-           commit-message: "feat: automated pr to change config files"
-           branch: bot-${{ github.repository }}
-           title: "feat: automated pr to change config files"
-           body: "Automated pr to changes config files by GitHub action"
+          token: ${{ secrets.TOKEN }}
+          path: ${{ github.workspace}}/axon-devops
+          signoff: false
+          commit-message: "feat: automated pr to change config files"
+          branch: bot-${{ github.repository }}
+          title: "feat: automated pr to change config files"
+          body: "Automated pr to changes config files by GitHub action"
       - name: Send some mail
         if: failure()
         uses: dawidd6/action-send-mail@v3

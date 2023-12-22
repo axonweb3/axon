@@ -25,12 +25,12 @@ appenders:
 root:
   level: info
   appenders:
-  - console
-  - file
+    - console
+    - file
 
 loggers:
   metrics:
     level: trace
     appenders:
-    - metrics
+      - metrics
     additive: false

@@ -3,34 +3,34 @@ module.exports = {
     node: true,
     es2022: true,
     jest: true,
-    browser: true,
+    browser: true
   },
   globals: {
-    browser: "writable",
-    metamask: "writable",
-    page: "writable",
+    browser: 'writable',
+    metamask: 'writable',
+    page: 'writable'
   },
-  extends: ["eslint:recommended", "airbnb-base", "plugin:sonarjs/recommended"],
-  plugins: ["sonarjs"],
+  extends: ['eslint:recommended', 'airbnb-base', 'plugin:sonarjs/recommended'],
+  plugins: ['sonarjs'],
   parserOptions: {
-    sourceType: "module",
+    sourceType: 'module'
   },
   rules: {
     indent: [
-      "error",
-      2,
+      'error',
+      2
     ],
-    "linebreak-style": [
-      "error",
-      "unix",
+    'linebreak-style': [
+      'error',
+      'unix'
     ],
     quotes: [
-      "error",
-      "double",
+      'error',
+      'double'
     ],
     semi: [
-      "error",
-      "always",
-    ],
-  },
-};
+      'error',
+      'always'
+    ]
+  }
+}

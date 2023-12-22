@@ -25,7 +25,7 @@ jobs:
         id: invoke-v3-core-test
         uses: aurelien-baudet/workflow-dispatch@v2
         with:
-          workflow:  v3 Core Tests
+          workflow: v3 Core Tests
           wait-for-completion-timeout: 2h
           token: ${{ secrets.GITHUB_TOKEN }}
           inputs: '{ "dispatch": "regression" }'
@@ -38,7 +38,7 @@ jobs:
         id: invoke-web3-compatible-test
         uses: aurelien-baudet/workflow-dispatch@v2
         with:
-          workflow:  Web3 Compatible Tests
+          workflow: Web3 Compatible Tests
           wait-for-completion-timeout: 2h
           token: ${{ secrets.GITHUB_TOKEN }}
           inputs: '{ "dispatch": "regression" }'
@@ -51,7 +51,7 @@ jobs:
         id: invoke-openzeppelin-test-1-5-and-12-15-test
         uses: aurelien-baudet/workflow-dispatch@v2
         with:
-          workflow:  OCT 1-5 And 12-15
+          workflow: OCT 1-5 And 12-15
           wait-for-completion-timeout: 2h
           token: ${{ secrets.GITHUB_TOKEN }}
           inputs: '{ "dispatch": "regression" }'
@@ -64,7 +64,7 @@ jobs:
         id: invoke-OCT-6-10-test
         uses: aurelien-baudet/workflow-dispatch@v2
         with:
-          workflow:  OCT 6-10
+          workflow: OCT 6-10
           wait-for-completion-timeout: 2h
           token: ${{ secrets.GITHUB_TOKEN }}
           inputs: '{ "dispatch": "regression" }'
@@ -77,7 +77,7 @@ jobs:
         id: invoke-OCT-11-test
         uses: aurelien-baudet/workflow-dispatch@v2
         with:
-          workflow:  OCT 11
+          workflow: OCT 11
           wait-for-completion-timeout: 2h
           token: ${{ secrets.GITHUB_TOKEN }}
           inputs: '{ "dispatch": "regression" }'
@@ -90,18 +90,27 @@ jobs:
         id: invoke-OCT-16-19-test
         uses: aurelien-baudet/workflow-dispatch@v2
         with:
-          workflow:  OCT 16-19
+          workflow: OCT 16-19
           wait-for-completion-timeout: 2h
           token: ${{ secrets.GITHUB_TOKEN }}
           inputs: '{ "dispatch": "regression" }'
 
   output-result:
     runs-on: ubuntu-latest
-    needs: [invoke-fmt-test,invoke-v3-core-test,invoke-web3-compatible-test,invoke-openzeppelin-test-1-5-and-12-15-test,invoke-OCT-6-10-test,invoke-OCT-11-test,invoke-OCT-16-19-test]
+    needs:
+      [
+        invoke-fmt-test,
+        invoke-v3-core-test,
+        invoke-web3-compatible-test,
+        invoke-openzeppelin-test-1-5-and-12-15-test,
+        invoke-OCT-6-10-test,
+        invoke-OCT-11-test,
+        invoke-OCT-16-19-test,
+      ]
     if: github.repository_owner == 'axonweb3' && always()
     steps:
-    - name: send message
-      uses: nobrayner/discord-webhook@v1
-      with:
-        github-token: ${{ secrets.github_token }}
-        discord-webhook: ${{ secrets.DISCORD_WEBHOOK }}
+      - name: send message
+        uses: nobrayner/discord-webhook@v1
+        with:
+          github-token: ${{ secrets.github_token }}
+          discord-webhook: ${{ secrets.DISCORD_WEBHOOK }}

@@ -16,112 +16,112 @@ jobs:
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Cache of Cargo
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cargo/bin/
-          ~/.cargo/registry/index/
-          ~/.cargo/registry/cache/
-          ~/.cargo/git/db/
-          target/
-        key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-build
-    - name: Build Axon in the development profile
-      run: |
-        # check for AVX2 support by inspecting `/proc/cpuinfo` or running `lscpu`
-        # related issue: https://github.com/axonweb3/axon/issues/1387
-        lscpu
-        # PORTABLE=1 USE_SSE=1 tell rocksdb to target AVX2
-        PORTABLE=1 USE_SSE=1 cargo build
+      - name: Cache of Cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-build
+      - name: Build Axon in the development profile
+        run: |
+          # check for AVX2 support by inspecting `/proc/cpuinfo` or running `lscpu`
+          # related issue: https://github.com/axonweb3/axon/issues/1387
+          lscpu
+          # PORTABLE=1 USE_SSE=1 tell rocksdb to target AVX2
+          PORTABLE=1 USE_SSE=1 cargo build
 
-    - name: Start multiple Axon nodes
-      env:
-        LOG_PATH: ${{ runner.temp }}/${{ matrix.os }}/multi-axon-nodes
-      run: |
-        echo "LOG_PATH: ${{ env.LOG_PATH }}"
-        mkdir -p ${{ env.LOG_PATH }}
+      - name: Start multiple Axon nodes
+        env:
+          LOG_PATH: ${{ runner.temp }}/${{ matrix.os }}/multi-axon-nodes
+        run: |
+          echo "LOG_PATH: ${{ env.LOG_PATH }}"
+          mkdir -p ${{ env.LOG_PATH }}
 
-        target/debug/axon --version
+          target/debug/axon --version
 
-        sed -i 's/hardforks = \[\]/hardforks = ["None"]/g' devtools/chain/specs/multi_nodes/chain-spec.toml
-        grep "hardforks" devtools/chain/specs/multi_nodes/chain-spec.toml
+          sed -i 's/hardforks = \[\]/hardforks = ["None"]/g' devtools/chain/specs/multi_nodes/chain-spec.toml
+          grep "hardforks" devtools/chain/specs/multi_nodes/chain-spec.toml
 
-        for id in 1 2 3 4; do
-          target/debug/axon init \
-            --config     devtools/chain/nodes/node_${id}.toml \
-            --chain-spec devtools/chain/specs/multi_nodes/chain-spec.toml \
-            > ${{ env.LOG_PATH }}/node_${id}.log
-        done
+          for id in 1 2 3 4; do
+            target/debug/axon init \
+              --config     devtools/chain/nodes/node_${id}.toml \
+              --chain-spec devtools/chain/specs/multi_nodes/chain-spec.toml \
+              > ${{ env.LOG_PATH }}/node_${id}.log
+          done
 
-        for id in 1 2 3 4; do
-          target/debug/axon run \
-            --config     devtools/chain/nodes/node_${id}.toml \
-            >> ${{ env.LOG_PATH }}/node_${id}.log &
-        done
+          for id in 1 2 3 4; do
+            target/debug/axon run \
+              --config     devtools/chain/nodes/node_${id}.toml \
+              >> ${{ env.LOG_PATH }}/node_${id}.log &
+          done
 
-        npx zx <<'EOF'
-        import { waitXBlocksPassed } from './devtools/ci/scripts/helper.js'
-        await retry(3, '6s', () => Promise.all([
-          waitXBlocksPassed('http://127.0.0.1:8001', 4),
-          waitXBlocksPassed('http://127.0.0.1:8002', 4),
-          waitXBlocksPassed('http://127.0.0.1:8003', 4),
-          waitXBlocksPassed('http://127.0.0.1:8004', 4),
-        ]))
-        EOF
-      timeout-minutes: 1
+          npx zx <<'EOF'
+          import { waitXBlocksPassed } from './devtools/ci/scripts/helper.js'
+          await retry(3, '6s', () => Promise.all([
+            waitXBlocksPassed('http://127.0.0.1:8001', 4),
+            waitXBlocksPassed('http://127.0.0.1:8002', 4),
+            waitXBlocksPassed('http://127.0.0.1:8003', 4),
+            waitXBlocksPassed('http://127.0.0.1:8004', 4),
+          ]))
+          EOF
+        timeout-minutes: 1
 
-    - name: Checkout axonweb3/system-contract-test
-      uses: actions/checkout@v4
-      with:
-        repository: axonweb3/system-contract-test
-        ref: 69293ac366991cf5830ab8366a85d72449daeadc
-        path: system-contract-test
+      - name: Checkout axonweb3/system-contract-test
+        uses: actions/checkout@v4
+        with:
+          repository: axonweb3/system-contract-test
+          ref: 69293ac366991cf5830ab8366a85d72449daeadc
+          path: system-contract-test
 
-    - name: Choose network
-      working-directory: system-contract-test
-      run: |
-        node_ids=(1 2 3 4)
-        random_value=$(( (RANDOM % ${#node_ids[@]}) + 1 ))
-        network=node_"$random_value"
-        echo "choose network: $network"
-        sed -i "s/defaultNetwork: \"node_1\"/defaultNetwork: \"$network\"/" hardhat.config.ts
+      - name: Choose network
+        working-directory: system-contract-test
+        run: |
+          node_ids=(1 2 3 4)
+          random_value=$(( (RANDOM % ${#node_ids[@]}) + 1 ))
+          network=node_"$random_value"
+          echo "choose network: $network"
+          sed -i "s/defaultNetwork: \"node_1\"/defaultNetwork: \"$network\"/" hardhat.config.ts
 
-        grep "defaultNetwork" hardhat.config.ts
+          grep "defaultNetwork" hardhat.config.ts
 
-    - name: Run test cases before hardfork
-      working-directory: system-contract-test
-      run: |
-        npm install
-        npx hardhat test --grep "deploy a normal contract"
-        npx hardhat test --grep "deploy a big contract larger than max_contract_limit"
-        npx hardhat test --grep "check hardfork info before hardfork"
+      - name: Run test cases before hardfork
+        working-directory: system-contract-test
+        run: |
+          npm install
+          npx hardhat test --grep "deploy a normal contract"
+          npx hardhat test --grep "deploy a big contract larger than max_contract_limit"
+          npx hardhat test --grep "check hardfork info before hardfork"
 
-    - name: Run test cases to verify proof
-      working-directory: system-contract-test
-      run: |
-        npx hardhat test --grep "transfer demo"
-        npx hardhat test test/verifyProof.ts --network proof
+      - name: Run test cases to verify proof
+        working-directory: system-contract-test
+        run: |
+          npx hardhat test --grep "transfer demo"
+          npx hardhat test test/verifyProof.ts --network proof
 
-    - name: Hardfork
-      working-directory: system-contract-test
-      run: |
-        bash hardfork.sh ../
+      - name: Hardfork
+        working-directory: system-contract-test
+        run: |
+          bash hardfork.sh ../
 
-    - name: Run test cases after hardfork
-      working-directory: system-contract-test
-      run: |
-        npx hardhat test --grep "check hardfork info after hardfork"
-        npx hardhat test --grep "update max_contract_limit"
-        npx hardhat test --grep "deploy a big contract smaller than max_contract_limit"
+      - name: Run test cases after hardfork
+        working-directory: system-contract-test
+        run: |
+          npx hardhat test --grep "check hardfork info after hardfork"
+          npx hardhat test --grep "update max_contract_limit"
+          npx hardhat test --grep "deploy a big contract smaller than max_contract_limit"
 
-    - name: Archive logs
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: multi-axon-nodes-logs
-        path: |
-          ${{ runner.temp }}/${{ matrix.os }}/multi-axon-nodes/
+      - name: Archive logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: multi-axon-nodes-logs
+          path: |
+            ${{ runner.temp }}/${{ matrix.os }}/multi-axon-nodes/

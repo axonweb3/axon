@@ -1,13 +1,13 @@
-version: '3.8'
+version: "3.8"
 
 services:
   axon:
     image: ghcr.io/axonweb3/axon:dev
     ports:
-    - 8000:8000
-    - 127.0.0.1:8100:8100
+      - 8000:8000
+      - 127.0.0.1:8100:8100
     networks:
-    - axon-net
+      - axon-net
     restart: unless-stopped
     # https://docs.docker.com/compose/compose-file/05-services/#healthcheck
     healthcheck:
@@ -22,14 +22,14 @@ services:
     # Dockerfile: https://github.com/Simon-Tl/blockscan/blob/a60dd45ca8577f97683f89c8a372508a84b74e24/docker/Dockerfile#L56
     image: ghcr.io/simon-tl/blockscan:latest
     depends_on:
-    - axon
-    - explorer-db
+      - axon
+      - explorer-db
     env_file:
-    - ./blockscan-explorer.env
+      - ./blockscan-explorer.env
     ports:
-    - 4020:4020
+      - 4020:4020
     networks:
-    - axon-net
+      - axon-net
     restart: unless-stopped
     command: sh -c "bin/blockscout eval \"Elixir.Explorer.ReleaseTasks.create_and_migrate()\" && bin/blockscout start"
 
@@ -40,9 +40,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-b%rnGL8ps}
       POSTGRES_USER: ${POSTGRES_USER:-blockscan}
     expose:
-    - 5432
+      - 5432
     networks:
-    - axon-net
+      - axon-net
     restart: unless-stopped
     command: postgres -c 'max_connections=250'
 

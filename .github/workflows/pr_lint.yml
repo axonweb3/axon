@@ -6,7 +6,7 @@ concurrency:
 
 on:
   pull_request:
-    types: ['opened', 'edited', 'reopened', 'synchronize']
+    types: ["opened", "edited", "reopened", "synchronize"]
 
 jobs:
   WIP:
@@ -28,7 +28,7 @@ jobs:
           # commitlintRulesPath: "./commitlint.rules.js" # default: undefined
           close: false
           issue: false
-          message: 'The title of this PR does not conform the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/). Please fix it, thx.'
+          message: "The title of this PR does not conform the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/). Please fix it, thx."
 
           # if the PR contains a single commit, fail if the commit message and the PR title do not match
           access_token: ${{ secrets.GITHUB_TOKEN }}

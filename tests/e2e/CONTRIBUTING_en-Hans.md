@@ -7,7 +7,7 @@ Prefer to use the assert function provided by `Jest` instead of handling the jud
 #### Definition
 
 `Jest` provides a series of `expect` assertion functions to check whether the results of the code meet expectations.
-* https://jestjs.io/docs/expect
+* <https://jestjs.io/docs/expect>
 
 #### Advantage
 
@@ -55,7 +55,7 @@ For test cases in different situations of the same scenario, they tend to be pla
 #### Definition
 
 The `describe` function can put multiple test cases in the same group.
-* https://jestjs.io/docs/api#describename-fn
+* <https://jestjs.io/docs/api#describename-fn>
 
 #### Advantage
 
@@ -157,10 +157,10 @@ Use the wait method provided by `Puppeteer`.
 
 `Puppeteer` comes with a series of wait methods to wait for the page to reach the state we need.
 
-* https://puppeteer.github.io/puppeteer/docs/puppeteer.frame.waitForSelector
-* https://puppeteer.github.io/puppeteer/docs/puppeteer.frame.waitForXPath
-* https://puppeteer.github.io/puppeteer/docs/puppeteer.frame.waitForFunction
-* https://puppeteer.github.io/puppeteer/docs/puppeteer.frame.waitForTimeout
+* <https://puppeteer.github.io/puppeteer/docs/puppeteer.frame.waitForSelector>
+* <https://puppeteer.github.io/puppeteer/docs/puppeteer.frame.waitForXPath>
+* <https://puppeteer.github.io/puppeteer/docs/puppeteer.frame.waitForFunction>
+* <https://puppeteer.github.io/puppeteer/docs/puppeteer.frame.waitForTimeout>
 
 #### Advantage
 

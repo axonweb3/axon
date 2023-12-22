@@ -43,7 +43,7 @@ See also:
 ### **CI Description**
 
 | CI Name                | Description                                                                                             |
-| ---------------------- | ------------------------------------------------------------------------------------------------------- |
+|------------------------|---------------------------------------------------------------------------------------------------------|
 | *Web3 Compatible Test* | Test the Web3 compatibility of Axon                                                                     |
 | *v3 Core Test*         | Run the compatibility tests provided by Uniswap V3                                                      |
 | *OpenZeppelin tests*   | Run the compatibility tests provided by OpenZeppelin, including OCT 1-5 \| 6-10 \| 11 \| 12-15 \| 16-19 |

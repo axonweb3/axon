@@ -23,24 +23,24 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Cache of Cargo
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cargo/bin/
-          ~/.cargo/registry/index/
-          ~/.cargo/registry/cache/
-          ~/.cargo/git/db/
-          target/
-        key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-clippy-${{ hashFiles('**/Cargo.lock') }}
-        restore-keys: |
-          ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-clippy
-          ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo
+      - name: Cache of Cargo
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-clippy-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo-clippy
+            ${{ matrix.os }}-${{ runner.os }}-${{ runner.arch }}-cargo
 
-    - name: Install cargo-clippy
-      run: rustup component add clippy
+      - name: Install cargo-clippy
+        run: rustup component add clippy
 
-    - name: Run cargo-clippy in Makefile
-      run: make clippy && git diff --exit-code Cargo.lock
+      - name: Run cargo-clippy in Makefile
+        run: make clippy && git diff --exit-code Cargo.lock
