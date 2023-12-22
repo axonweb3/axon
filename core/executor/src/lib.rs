@@ -28,8 +28,8 @@ use evm::CreateScheme;
 use common_merkle::TrieMerkle;
 use protocol::traits::{Backend, Executor, ExecutorAdapter};
 use protocol::types::{
-    logs_bloom, Config, ExecResp, SignedTransaction, TransactionAction, TxResp, ValidatorExtend,
-    H160, H256, RLP_NULL, U256,
+    default_max_contract_limit, logs_bloom, Config, ExecResp, SignedTransaction, TransactionAction,
+    TxResp, ValidatorExtend, H160, H256, RLP_NULL, U256,
 };
 
 use crate::precompiles::build_precompile_set;
@@ -414,8 +414,8 @@ impl AxonExecutor {
                 let consensus_config = handle.get_consensus_config().unwrap();
                 Some(consensus_config.max_contract_limit as usize)
             } else {
-                // If the hardfork is not enabled, the limit is set to 0x6000
-                evm_config.create_contract_limit
+                // If the hardfork is not enabled, use default_max_contract_limit()
+                Some(default_max_contract_limit() as usize)
             }
         };
         evm_config.create_contract_limit = create_contract_limit;
@@ -511,8 +511,11 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_config_contract_limit() {
-        let config = Config::london();
-        assert_eq!(config.create_contract_limit, Some(0x6000));
+    fn test_max_contract_limit() {
+        let london_config = Config::london();
+        assert_eq!(london_config.create_contract_limit, Some(0x6000));
+
+        let config = AxonExecutor.config();
+        assert_eq!(config.create_contract_limit, Some(0xc000));
     }
 }
