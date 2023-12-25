@@ -39,7 +39,7 @@ jobs:
  
 
     - name: Archive Axon Artifacts  
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: axon-dir
         path: |
