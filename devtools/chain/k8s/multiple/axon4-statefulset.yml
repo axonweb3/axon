@@ -1,0 +1,123 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: axon4
+  name: axon4
+  namespace: axon-alphanet
+spec:
+  ports:
+  - name: p2p
+    port: 8001
+    targetPort: 8001
+    protocol: TCP
+  - name: rpc
+    port: 8000
+    targetPort: 8000
+    protocol: TCP
+  - name: websocket
+    port: 8010
+    targetPort: 8010
+    protocol: TCP
+  - name: prometheus
+    port: 8100
+    targetPort: 8100
+    protocol: TCP
+  selector:
+    app: axon4
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: axon4
+  namespace: axon-alphanet
+spec:
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      svc: axon-test
+      app: axon4
+      logging: "true"
+  serviceName: "axon4"
+  template:
+    metadata:
+      labels:
+        svc: axon-test
+        app: axon4
+        logging: "true"
+    spec:
+      containers:
+      - name: axon4
+        #command: ["./axon"] 
+        args:
+        #args: ["hardfork","--config=/app/devtools/chain/k8s/node_4.toml", "--hardfork-start-number", "42640", "--feature", "andromeda"]
+        - ./axon
+        - run
+        #- init
+        - --config=/app/devtools/chain/k8s/node_4.toml
+        #- --chain-spec=/app/devtools/chain/chain-spec.toml
+        image: ghcr.io/axonweb3/axon:0.2.0-dev
+        volumeMounts:
+        - name: config-node4
+          mountPath: /app/devtools/chain/k8s/node_4.toml
+          subPath: node_4.toml
+        - name: node4-net-key
+          mountPath: /app/devtools/chain/k8s/node_4_net.key
+          subPath: node_4_net.key
+        - name: node4-bls-key
+          mountPath: /app/devtools/chain/k8s/node_4_bls.key
+          subPath: node_4_bls.key
+        - name: config-chain-spec
+          mountPath: /app/devtools/chain/chain-spec.toml
+          subPath: chain-spec.toml
+        - name: config-db-options
+          mountPath: /app/devtools/chain/k8s/default.db-options
+          subPath: default.db-options
+        - name: data4
+          mountPath: /app/devtools/chain/data/node_4
+          subPath: node_4
+        ports:
+        - name: p2p
+          containerPort: 8001
+        - name: rpc
+          containerPort: 8000
+        - name: websocket
+          containerPort: 8010
+        - name: prometheus
+          containerPort: 8100
+        resources:
+          requests:
+            cpu: 1
+            memory: 1024Mi
+          limits:
+            cpu: 2
+            memory: 2048Mi
+      volumes:
+      - name: config-node4
+        configMap:
+          name: node4-toml
+      - name: config-chain-spec
+        configMap:
+          name: chain-spec
+      - name: config-db-options
+        configMap:
+          name: db-options
+      - name: node4-net-key
+        configMap:
+          name: node-4-net.key
+      - name: node4-bls-key
+        configMap:
+          name: node-4-bls.key
+      restartPolicy: Always
+  volumeClaimTemplates:
+  - metadata:
+      name: data4
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: chain
+      resources:
+        requests:
+          storage: 100Gi
