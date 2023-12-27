@@ -487,8 +487,8 @@ Response
 
 
 #### Method `eth_getTransactionByHash`
-* `eth_getTransactionByHash(blockHash)`
-    * `blockHash`: [`H256`](#type-H256)
+* `eth_getTransactionByHash(txHash)`
+    * `txHash`: [`H256`](#type-H256)
 * result: [`TransactionView`](#type-TransactionView)
 
 Returns the information about a transaction requested by transaction hash.
@@ -496,7 +496,7 @@ Returns the information about a transaction requested by transaction hash.
 
 ##### Params
 
-*   `blockHash` - Hash of a transaction.
+*   `txHash` - Hash of a transaction.
 
 
 ##### Returns
