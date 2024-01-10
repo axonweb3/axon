@@ -21,7 +21,7 @@ pub struct GenerateKeypairArgs {
         help = "The number of keypairs to generate.",
         default_value = "1"
     )]
-    pub num:  usize,
+    pub num: usize,
     #[arg(
         short = 'p',
         long = "path",
@@ -46,7 +46,7 @@ impl GenerateKeypairArgs {
                 key_pair.bls_private_key.as_bytes(),
                 i,
             )?;
-            keypairs.push(Keypair::generate(i)?);
+            keypairs.push(key_pair);
         }
 
         println!(
@@ -60,13 +60,13 @@ impl GenerateKeypairArgs {
 
 #[derive(Serialize, Clone, Debug)]
 pub struct Keypair {
-    pub index:           usize,
+    pub index: usize,
     pub net_private_key: Hex,
-    pub public_key:      Hex,
-    pub address:         Address,
-    pub peer_id:         String,
+    pub public_key: Hex,
+    pub address: Address,
+    pub peer_id: String,
     pub bls_private_key: Hex,
-    pub bls_public_key:  Hex,
+    pub bls_public_key: Hex,
 }
 
 impl Keypair {
@@ -90,13 +90,13 @@ impl Keypair {
         let bls_pub_key = bls_priv_key.pub_key(&String::new());
 
         Ok(Keypair {
-            index:           i,
+            index: i,
             net_private_key: Hex::encode(&net_seckey),
-            public_key:      Hex::encode(&pubkey),
-            address:         Address::from_pubkey_bytes(pubkey).map_err(Error::Running)?,
-            peer_id:         secio_keypair.public_key().peer_id().to_base58(),
+            public_key: Hex::encode(&pubkey),
+            address: Address::from_pubkey_bytes(pubkey).map_err(Error::Running)?,
+            peer_id: secio_keypair.public_key().peer_id().to_base58(),
             bls_private_key: Hex::encode(&bls_seckey),
-            bls_public_key:  Hex::encode(bls_pub_key.to_bytes()),
+            bls_public_key: Hex::encode(bls_pub_key.to_bytes()),
         })
     }
 
