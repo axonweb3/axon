@@ -1,0 +1,123 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: axon1
+  name: axon1
+  namespace: axon-alphanet
+spec:
+  ports:
+  - name: p2p
+    port: 8001
+    targetPort: 8001
+    protocol: TCP
+  - name: rpc
+    port: 8000
+    targetPort: 8000
+    protocol: TCP
+  - name: websocket
+    port: 8010
+    targetPort: 8010
+    protocol: TCP
+  - name: prometheus
+    port: 8100
+    targetPort: 8100
+    protocol: TCP
+  selector:
+    app: axon1
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: axon1
+  namespace: axon-alphanet
+spec:
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      svc: axon-test
+      app: axon1
+      logging: "true"
+  serviceName: "axon1"
+  template:
+    metadata:
+      labels:
+        svc: axon-test
+        app: axon1
+        logging: "true"
+    spec:
+      containers:
+      - name: axon1
+        #command: ["./axon"] 
+        args:
+        #args: ["hardfork","--config=/app/devtools/chain/k8s/node_1.toml", "--hardfork-start-number", "42640", "--feature", "andromeda"]
+        - ./axon
+        - run
+        #- init
+        - --config=/app/devtools/chain/k8s/node_1.toml
+        #- --chain-spec=/app/devtools/chain/chain-spec.toml
+        image: ghcr.io/axonweb3/axon:0.2.0-dev
+        volumeMounts:
+        - name: config-node1
+          mountPath: /app/devtools/chain/k8s/node_1.toml
+          subPath: node_1.toml
+        - name: node1-net-key
+          mountPath: /app/devtools/chain/k8s/node_1_net.key
+          subPath: node_1_net.key
+        - name: node1-bls-key
+          mountPath: /app/devtools/chain/k8s/node_1_bls.key
+          subPath: node_1_bls.key
+        - name: config-chain-spec
+          mountPath: /app/devtools/chain/chain-spec.toml
+          subPath: chain-spec.toml
+        - name: config-db-options
+          mountPath: /app/devtools/chain/k8s/default.db-options
+          subPath: default.db-options
+        - name: data1
+          mountPath: /app/devtools/chain/data/node_1
+          subPath: node_1
+        ports:
+        - name: p2p
+          containerPort: 8001
+        - name: rpc
+          containerPort: 8000
+        - name: websocket
+          containerPort: 8010
+        - name: prometheus
+          containerPort: 8100
+        resources:
+          requests:
+            cpu: 1
+            memory: 1024Mi
+          limits:
+            cpu: 2
+            memory: 2048Mi
+      volumes:
+      - name: config-node1
+        configMap:
+          name: node1-toml
+      - name: config-chain-spec
+        configMap:
+          name: chain-spec
+      - name: config-db-options
+        configMap:
+          name: db-options
+      - name: node1-net-key
+        configMap:
+          name: node-1-net.key
+      - name: node1-bls-key
+        configMap:
+          name: node-1-bls.key
+      restartPolicy: Always
+  volumeClaimTemplates:
+  - metadata:
+      name: data1
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: chain
+      resources:
+        requests:
+          storage: 100Gi

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: axon-ws
+  name: axon-ws
+  namespace: axon-alphanet
+spec:
+  ports:
+  - name: axon-chain
+    port: 8010
+    targetPort: 8010
+    protocol: TCP
+  selector:
+    svc: axon-test
+  type: ClusterIP

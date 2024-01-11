@@ -1,0 +1,77 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+configMapGenerator:
+- name: node1-toml
+  files:
+  - "node_1.toml"
+
+- name: node-1-net.key
+  files:
+  - key/node_1_net.key
+
+- name: node-1-bls.key
+  files:
+  - key/node_1_bls.key
+
+- name: node2-toml
+  files:
+  - "node_2.toml"
+
+- name: node-2-net.key
+  files:
+  - key/node_2_net.key
+
+- name: node-2-bls.key
+  files:
+  - key/node_2_bls.key
+
+- name: node3-toml
+  files:
+  - "node_3.toml"
+
+- name: node-3-net.key
+  files:
+  - key/node_3_net.key
+
+- name: node-3-bls.key
+  files:
+  - key/node_3_bls.key
+
+- name: node4-toml
+  files:
+  - "node_4.toml"
+
+- name: node-4-net.key
+  files:
+  - key/node_4_net.key
+
+- name: node-4-bls.key
+  files:
+  - key/node_4_bls.key
+
+- name: db-options
+  files:
+  - "default.db-options"
+
+- name: chain-spec
+  files:
+  - "chain-spec.toml"
+
+
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+resources:
+- axon1-statefulset.yml
+- axon2-statefulset.yml
+- axon3-statefulset.yml
+- axon4-statefulset.yml
+- axon-chain.yml
+- axon-ws.yml
+
+images:
+- name: ghcr.io/axonweb3/axon:0.2.0-dev
+  newName: ghcr.io/axonweb3/axon
+  newTag: forcerelay-dev-c203acb

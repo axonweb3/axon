@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: axon-chain
+  name: axon-chain
+  namespace: axon-alphanet
+spec:
+  ports:
+  - name: axon-chain
+    port: 8000
+    targetPort: 8000
+    protocol: TCP
+  selector:
+    svc: axon-test
+  type: ClusterIP

@@ -1,0 +1,101 @@
+#
+# Data of the genesis block.
+#
+
+[genesis]
+timestamp = 1680249207
+base_fee_per_gas = "0x539"
+# The default chain id is the hexadecimal of ASCII string "Axon".
+chain_id = 0x41786f6e
+hardforks = []
+
+#
+# Accounts since the genesis block.
+#
+# WARNING: The following accounts are publicly known, DO NOT USE them in any production environment.
+# Generated with the mnemonic "test test test test test test test test test test test junk".
+
+[[accounts]]
+address = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+balance = "04ee2d6d415b85acef8100000000"
+
+[[accounts]]
+address = "0x70997970C51812dc3A010C7d01b50e0d17dc79C8"
+balance = "04ee2d6d415b85acef8100000000"
+
+[[accounts]]
+address = "0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC"
+balance = "04ee2d6d415b85acef8100000000"
+
+[[accounts]]
+address = "0x90F79bf6EB2c4f870365E785982E1f101E93b906"
+balance = "04ee2d6d415b85acef8100000000"
+
+[[accounts]]
+address = "0x15d34AAf54267DB7D7c367839AAf71A00a2C6A65"
+balance = "04ee2d6d415b85acef8100000000"
+
+[[accounts]]
+address = "0x9965507D1a55bcC2695C58ba16FB37d819B0A4dc"
+balance = "04ee2d6d415b85acef8100000000"
+
+[[accounts]]
+address = "0x976EA74026E726554dB657fA54763abd0C3a0aa9"
+balance = "04ee2d6d415b85acef8100000000"
+
+[[accounts]]
+address = "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955"
+balance = "04ee2d6d415b85acef8100000000"
+
+[[accounts]]
+address = "0x23618e81E3f5cdF7f54C3d65f7FBc0aBf5B21E8f"
+balance = "04ee2d6d415b85acef8100000000"
+
+[[accounts]]
+address = "0xa0Ee7A142d267C1f36714E4a8F75612F20a79720"
+balance = "04ee2d6d415b85acef8100000000"
+
+#
+# Parameters which make the chain to be unique.
+#
+
+[params]
+epoch = 0
+
+[params.version]
+start = 1
+end = 100000000
+
+[params.consensus_config]
+propose_ratio = 15
+prevote_ratio = 10
+precommit_ratio = 10
+brake_ratio = 10
+tx_num_limit = 20000
+max_tx_size = 409600000
+gas_limit = 4294967295000
+interval = 3000
+
+[[params.verifier_list]]
+bls_pub_key = "0xa26e3fe1cf51bd4822072c61bdc315ac32e3d3c2e2484bb92942666399e863b4bf56cf2926383cc706ffc15dfebc85c6"
+pub_key = "0x031ddc35212b7fc7ff6685b17d91f77c972535aee5c7ae5684d3e72b986f08834b"
+propose_weight = 1
+vote_weight = 1
+
+[[params.verifier_list]]
+bls_pub_key = "0x80310fa9df724b5603d283b472ed3bf85254a8a4ceda8a274b421f6cf2be1d9184267cdfe9a199d36ff14e57668a55d0"
+pub_key = "0x02b77c74eb68af3d4d6cc7884ed6709f1a2a1af0f713382a4438ec2ea3a70d4d7f"
+propose_weight = 1
+vote_weight = 1
+
+[[params.verifier_list]]
+bls_pub_key = "0x897721e9016864141a8b982a48217f66ef318ce598aa31842cddaaebe3cd7feab17050022afa6c2123aba39938fe4142"
+pub_key = "0x027ffd6a6a231561f2afe5878b1c743323b34263d16787130b1815fe35649b0bf5"
+propose_weight = 1
+vote_weight = 1
+
+[[params.verifier_list]]
+bls_pub_key = "0x98eef09a3927acb225191101a1d9aa85775fdcdc87b9ba36898f6c132b485d66aef91c0f51cda331be4f985c3be6761c"
+pub_key = "0x0232c489c23b1207107e9a24648c1e4754a8c1c0b38db96df57a526201035058cb"
+propose_weight = 1
+vote_weight = 1
