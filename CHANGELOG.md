@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## v0.3.1-beta
+
+### BUG FIXES
+* fix(cli): Fix peer id generation by @samtvlabs in https://github.com/axonweb3/axon/pull/1656
+
+
 ## v0.3.0-beta
 
 ### BREAKING CHANGES
