@@ -19,12 +19,12 @@ This repository serves as the storage directory for Axon deployment files. It en
 ### 2. Axon Kubernetes Deployment
 
 - Detailed instructions and files for deploying Axon on Kubernetes.
-- Navigate to the [kubernetes-deployment](https://github.com/axonweb3/axon/tree/axon-deploy-kubernetes/devtools/chain/k8s) directory for Kubernetes-specific deployment.
+- Navigate to the [kubernetes-deployment](https://github.com/axonweb3/axon/tree/main/devtools/chain/k8s) directory for Kubernetes-specific deployment.
 
 ### 3. Node Deployment
 
 - Instructions for deploying Axon on individual nodes.
-- Explore the [node-deployment](https://github.com/axonweb3/axon/tree/axon-deploy-kubernetes/devtools/chain/nodes) directory for node-specific deployment details.
+- Explore the [node-deployment](https://github.com/axonweb3/axon/tree/main/devtools/chain/nodes) directory for node-specific deployment details.
 
 ## Important Note
 

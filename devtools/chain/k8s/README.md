@@ -72,15 +72,15 @@ Kubernetes enables you to deploy Axon Chain rapidly while conserving resources.
 
 7. [Generate key](https://github.com/axonweb3/axon/tree/main/core/cli#generate-keypair:~:text=Generate%20Keypair,in%20config%20file.), and update the fields of the chain-spec.yaml and toml files
    
-   - [chain-spec.yaml](https://github.com/axonweb3/axon/blob/axon-deploy-kubernetes/devtools/chain/k8s/multiple/chain-spec.toml#:~:text=interval%20%3D%203000-,%5B%5Bparams.verifier_list%5D%5D,vote_weight%20%3D%201,-axon/devtools/chain)
+   - [chain-spec.yaml](https://github.com/axonweb3/axon/blob/main/devtools/chain/k8s/multiple/chain-spec.toml#:~:text=interval%20%3D%203000-,%5B%5Bparams.verifier_list%5D%5D,vote_weight%20%3D%201,-axon/devtools/chain)
 
-   - [node_1.toml](https://github.com/axonweb3/axon/blob/axon-deploy-kubernetes/devtools/chain/k8s/multiple/node_1.toml#:~:text=%5B%5Bnetwork.,p2p/QmXoSkz4zkHHiFZqmDZQ4gFYtJ72uqtp4m6FX373X4VkRq%22)
+   - [node_1.toml](https://github.com/axonweb3/axon/blob/main/devtools/chain/k8s/multiple/node_1.toml#:~:text=%5B%5Bnetwork.,p2p/QmXoSkz4zkHHiFZqmDZQ4gFYtJ72uqtp4m6FX373X4VkRq%22)
 
-   - [node_2.toml](https://github.com/axonweb3/axon/blob/axon-deploy-kubernetes/devtools/chain/k8s/multiple/node_2.toml#:~:text=%5B%5Bnetwork.,p2p/QmXoSkz4zkHHiFZqmDZQ4gFYtJ72uqtp4m6FX373X4VkRq%22)
+   - [node_2.toml](https://github.com/axonweb3/axon/blob/main/devtools/chain/k8s/multiple/node_2.toml#:~:text=%5B%5Bnetwork.,p2p/QmXoSkz4zkHHiFZqmDZQ4gFYtJ72uqtp4m6FX373X4VkRq%22)
 
-   - [node_3.toml](https://github.com/axonweb3/axon/blob/axon-deploy-kubernetes/devtools/chain/k8s/multiple/node_3.toml#:~:text=%5B%5Bnetwork.,p2p/QmXoSkz4zkHHiFZqmDZQ4gFYtJ72uqtp4m6FX373X4VkRq%22)
+   - [node_3.toml](https://github.com/axonweb3/axon/blob/main/devtools/chain/k8s/multiple/node_3.toml#:~:text=%5B%5Bnetwork.,p2p/QmXoSkz4zkHHiFZqmDZQ4gFYtJ72uqtp4m6FX373X4VkRq%22)
 
-   - [node_4.toml](https://github.com/axonweb3/axon/blob/axon-deploy-kubernetes/devtools/chain/k8s/multiple/node_4.toml#:~:text=%5B%5Bnetwork.,p2p/QmXoSkz4zkHHiFZqmDZQ4gFYtJ72uqtp4m6FX373X4VkRq%22) 
+   - [node_4.toml](https://github.com/axonweb3/axon/blob/main/devtools/chain/k8s/multiple/node_4.toml#:~:text=%5B%5Bnetwork.,p2p/QmXoSkz4zkHHiFZqmDZQ4gFYtJ72uqtp4m6FX373X4VkRq%22) 
 
 7. **Start Axon After the axon initialization is successful, modify the axon1 to axon4 statefulset file to the following format**
 
