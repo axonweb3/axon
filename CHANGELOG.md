@@ -1,4 +1,25 @@
 # CHANGELOG
+<!--
+keep a changelog
+Don’t let your friends dump git logs into changelogs.
+The format is based on https://keepachangelog.com
+-->
+
+## [Unreleased]
+* refactor!: change some precompile input and output to tuple by @KaoImin in https://github.com/axonweb3/axon/pull/1642
+* refactor: omit `address` field in chain spec parsing by @KaoImin in https://github.com/axonweb3/axon/pull/1641
+* feat: rlp encode for VerifyProofPayload by @wenyuanhust in https://github.com/axonweb3/axon/pull/1637
+* feat: enable get header precompile by @blckngm in https://github.com/axonweb3/axon/pull/1649
+* feat: cli for metadata cell data by @blckngm in https://github.com/axonweb3/axon/pull/1640
+* feat: metadata cli parse data by @blckngm in https://github.com/axonweb3/axon/pull/1644
+* chore(CI): add axon sync workflow by @Simon-Tl in https://github.com/axonweb3/axon/pull/1636
+
+
+## v0.3.1-beta
+
+### BUG FIXES
+* fix(cli): Fix peer id generation by @samtvlabs in https://github.com/axonweb3/axon/pull/1656
+
 
 ## v0.3.0-beta
 
