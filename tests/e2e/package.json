@@ -9,6 +9,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "dappeteer-new": "^5.2.1",
     "@chainsafe/dappeteer": "^5.2.0",
     "@ethereumjs/common": "^3.1.1",
     "@ethereumjs/tx": "^4.2.0",

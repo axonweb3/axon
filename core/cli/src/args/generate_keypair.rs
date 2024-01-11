@@ -46,7 +46,7 @@ impl GenerateKeypairArgs {
                 key_pair.bls_private_key.as_bytes(),
                 i,
             )?;
-            keypairs.push(Keypair::generate(i)?);
+            keypairs.push(key_pair);
         }
 
         println!(
@@ -64,7 +64,7 @@ pub struct Keypair {
     pub net_private_key: Hex,
     pub public_key:      Hex,
     pub address:         Address,
-    pub peer_id:         Hex,
+    pub peer_id:         String,
     pub bls_private_key: Hex,
     pub bls_public_key:  Hex,
 }
@@ -94,7 +94,7 @@ impl Keypair {
             net_private_key: Hex::encode(&net_seckey),
             public_key:      Hex::encode(&pubkey),
             address:         Address::from_pubkey_bytes(pubkey).map_err(Error::Running)?,
-            peer_id:         Hex::encode(secio_keypair.public_key().peer_id().to_base58()),
+            peer_id:         secio_keypair.public_key().peer_id().to_base58(),
             bls_private_key: Hex::encode(&bls_seckey),
             bls_public_key:  Hex::encode(bls_pub_key.to_bytes()),
         })
