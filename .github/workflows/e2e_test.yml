@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Cache of Cargo
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/bin/
@@ -76,7 +76,7 @@ jobs:
         shell: bash
         run: echo "dir=$(npm config get cache)" >> ${GITHUB_OUTPUT}
       - name: Node Cache
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         id: npm-and-yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
         with:
           path: |
