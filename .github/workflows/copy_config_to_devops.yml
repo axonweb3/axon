@@ -30,7 +30,7 @@ jobs:
           cp -r ${{ github.workspace}}/devtools/chain/nodes/specs/multi_nodes ${{ github.workspace}}/axon-devops/docker-deploy/devtools/chain/specs
           cp -r ${{ github.workspace}}/devtools/chain/nodes/specs/multi_nodes ${{ github.workspace}}/axon-devops/k8s-deploy/k8s/axon/axon-config/specs
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v6
         with:
            token: ${{ secrets.TOKEN }}
            path: ${{ github.workspace}}/axon-devops
