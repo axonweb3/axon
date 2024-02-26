@@ -103,7 +103,7 @@ jobs:
     - name: Modify the Axon image of in devtools/chain/docker-compose.yml
       env:
         AXON_IMAGE: "${{ needs.build-amd64-image-to-ghcr.outputs.image_name }}:${{ needs.build-amd64-image-to-ghcr.outputs.image_tag }}"
-      uses: mikefarah/yq@v4.40.5
+      uses: mikefarah/yq@v4.42.1
       with:
         cmd: yq -i '.services.axon.image = "${{ env.AXON_IMAGE }}"' 'devtools/chain/docker-compose.yml'
 
